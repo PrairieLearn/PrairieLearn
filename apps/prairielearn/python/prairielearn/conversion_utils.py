@@ -194,10 +194,8 @@ def to_json(
                 "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
-    elif isinstance(v, sympy.Expr):
+    elif isinstance(v, (sympy.Expr, sympy.Set)):
         return sympy_to_json(v)
-    elif isinstance(v, sympy.Set):
-        return sympy_to_json(v, allow_set_notation=True)
     elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape

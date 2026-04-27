@@ -24,7 +24,7 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
-ALLOW_SET_NOTATION_DEFAULT = False
+ALLOW_SETS_DEFAULT = False
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -84,7 +84,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "label",
         "aria-label",
         "display",
-        "allow-set-notation",
+        "allow-sets",
         "allow-complex",
         "imaginary-unit-for-display",
         "allow-trig-functions",
@@ -119,7 +119,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allow_sets = pl.get_boolean_attrib(
-        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+        element, "allow-sets", ALLOW_SETS_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
         element,
@@ -132,7 +132,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         custom_functions,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
-        allow_set_notation=allow_sets,
+        allow_sets=allow_sets,
     )
 
     pl.check_answers_names(data, name)
@@ -152,7 +152,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -186,7 +186,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 initial_value,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -209,7 +209,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if allow_sets and additional_simplifications:
         raise ValueError(
-            "The 'additional-simplifications' attribute cannot be used when 'allow-set-notation' is true."
+            "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true."
         )
     # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
     # intended way to work around SymPy limitations
@@ -244,7 +244,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allow_sets = pl.get_boolean_attrib(
-        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+        element, "allow-sets", ALLOW_SETS_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
@@ -300,7 +300,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_sub,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_sets=allow_sets,
                     custom_functions=custom_functions,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
@@ -312,7 +312,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_sub,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -355,7 +355,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 initial_value,
                 _get_variables_with_fallback(element, data, name),
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
@@ -442,7 +442,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         a_tru,
                         variables,
                         allow_complex=allow_complex,
-                        allow_set_notation=allow_sets,
+                        allow_sets=allow_sets,
                         allow_trig_functions=allow_trig,
                         custom_functions=custom_functions,
                         simplify_expression=simplify_expression,
@@ -454,7 +454,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 psu.json_to_sympy(
                     a_tru,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 ),
@@ -497,7 +497,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
     allow_sets = pl.get_boolean_attrib(
-        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+        element, "allow-sets", ALLOW_SETS_DEFAULT
     )
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
@@ -518,7 +518,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Pre-processing to make submission parseable by SymPy
     a_sub, error_msg = format_submission_for_sympy(
-        submitted_answer, allow_set_notation=allow_sets
+        submitted_answer, allow_sets=allow_sets
     )
     if error_msg is not None:
         data["format_errors"][name] = error_msg
@@ -552,7 +552,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
-        allow_set_notation=allow_sets,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -572,14 +572,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub_json = psu.sympy_to_json(
             a_sub_parsed,
             allow_complex=allow_complex,
-            allow_set_notation=allow_sets,
+            allow_sets=allow_sets,
         )
 
         # Convert safely to sympy
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
-            allow_set_notation=allow_sets,
+            allow_sets=allow_sets,
             simplify_expression=simplify_expression,
         )
 
@@ -593,7 +593,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 
 def format_submission_for_sympy(
-    sub: str | None, *, allow_set_notation: bool = False
+    sub: str | None, *, allow_sets: bool = False
 ) -> tuple[str | None, str | None]:
     """
     Format submission to be compatible with SymPy.
@@ -606,7 +606,7 @@ def format_submission_for_sympy(
 
     Args:
         sub: The text submission to format
-        allow_set_notation: If true, leave any residual ``|`` characters in place
+        allow_sets: If true, leave any residual ``|`` characters in place
             so the SymPy parser can interpret them as set-union operators.
 
     Returns:
@@ -631,7 +631,7 @@ def format_submission_for_sympy(
         content = match.group(0)[1:-1]  # Strip the bars
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
 
-    if not allow_set_notation and "|" in sub:
+    if not allow_sets and "|" in sub:
         return (
             None,
             f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
@@ -831,7 +831,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
     allow_sets = pl.get_boolean_attrib(
-        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+        element, "allow-sets", ALLOW_SETS_DEFAULT
     )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
@@ -869,7 +869,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -878,7 +878,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_tru_sympy = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 simplify_expression=simplify_expression,
             )
 
@@ -889,7 +889,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 variables,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
@@ -899,7 +899,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub_sympy = psu.json_to_sympy(
                 a_sub,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
             )
@@ -960,7 +960,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     allow_sets = pl.get_boolean_attrib(
-        element, "allow-set-notation", ALLOW_SET_NOTATION_DEFAULT
+        element, "allow-sets", ALLOW_SETS_DEFAULT
     )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
@@ -986,7 +986,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
-                    allow_set_notation=allow_sets,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -995,7 +995,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             a_tru = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
-                allow_set_notation=allow_sets,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
             )
 

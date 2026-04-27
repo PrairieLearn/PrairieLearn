@@ -290,7 +290,7 @@ def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
 
     json.dumps(encoded, allow_nan=False)
 
-    assert psu.json_to_sympy(encoded, allow_set_notation=True) == sympy_set
+    assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
 
 
 class DummyEnum(Enum):

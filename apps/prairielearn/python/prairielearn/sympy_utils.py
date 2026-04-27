@@ -184,14 +184,18 @@ class _Constants:
 
 
 class _SympyJsonStrPrinter(StrPrinter):
-    """String printer that keeps set notation parseable by avoiding banned ast nodes."""
+    """String printer that keeps set notation parseable by avoiding banned ast nodes.
+
+    Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
+    """
 
     def _print_EmptySet(self, _expr: sympy.Set) -> str:  # noqa: N802
         return "{}"
 
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
         start, end = self.doprint(expr.start), self.doprint(expr.end)
-        left, right = "(["[not expr.left_open], ")]"[not expr.right_open]
+        left = "(" if expr.left_open else "["
+        right = ")" if expr.right_open else "]"
         return f"{left}{start}, {end}{right}"
 
 
@@ -387,14 +391,14 @@ class CheckAST(ast.NodeVisitor):
         variables: SympyMapT,
         functions: SympyFunctionMapT,
         *,
-        allow_set_notation: bool = False,
+        allow_sets: bool = False,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
         self.__parents = {}
         self.__type_cache = {}
-        self.allow_set_notation = allow_set_notation
+        self.allow_sets = allow_sets
 
     def visit(self, node: ast.AST) -> ASTSympyType | None:
         if not isinstance(node, self.whitelist):
@@ -478,7 +482,7 @@ class CheckAST(ast.NodeVisitor):
             return self._set_type(node, None)
 
         if node.id in self.variables:
-            var_type = None if self.allow_set_notation else ASTSympyType.SCALAR
+            var_type = None if self.allow_sets else ASTSympyType.SCALAR
             return self._set_type(node, var_type)
 
         return self._set_type(node, None)
@@ -501,7 +505,7 @@ class CheckAST(ast.NodeVisitor):
                 overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
                 self._enforce_signature(name, args, *overloads)
                 return self._set_type(node, ASTSympyType.SCALAR)
-            case fn if self.allow_set_notation and fn in _Constants.set_functions:
+            case fn if self.allow_sets and fn in _Constants.set_functions:
                 return self._set_type(node, self._infer_set_function_type(name, args))
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 self._enforce_signature(fn, args, len(args) * [ASTSympyType.SCALAR])
@@ -593,7 +597,7 @@ class CheckAST(ast.NodeVisitor):
 
 
 def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_set_notation: bool = False
+    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
 ) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
@@ -634,7 +638,7 @@ def ast_check_str(
         whitelist,
         locals_for_eval["variables"],
         locals_for_eval["helpers"] | locals_for_eval["functions"],
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
     ).check_expression(expr)
 
 
@@ -643,7 +647,7 @@ def sympy_check(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
-    allow_set_notation: bool,
+    allow_sets: bool,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
@@ -660,7 +664,7 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        if not allow_set_notation and isinstance(item, sympy.Set):
+        if not allow_sets and isinstance(item, sympy.Set):
             raise HasSetNotationError
         # Detect complex numbers both in simplified form (sympy.I) and in
         # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
@@ -691,7 +695,7 @@ def evaluate(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
 ) -> sympy.Expr:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
@@ -702,7 +706,7 @@ def evaluate(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
     )[0]
 
 
@@ -765,7 +769,7 @@ def evaluate_with_source(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     simplify_expression: bool = True,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
@@ -795,7 +799,7 @@ def evaluate_with_source(
         raise HasCommentError(char_offsets[ind])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
-    if not allow_set_notation and any(
+    if not allow_sets and any(
         token in normalized_expr
         for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # noqa: RUF001
     ):
@@ -851,7 +855,7 @@ def evaluate_with_source(
         *sympy_parser.standard_transformations,
         sympy_parser.implicit_multiplication_application,
     )
-    if allow_set_notation:
+    if allow_sets:
         transformations = (
             _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
             _set_literal_transformation,
@@ -897,7 +901,7 @@ def evaluate_with_source(
 
     try:
         ast_check_str(
-            code, parsed_locals_to_eval, allow_set_notation=allow_set_notation
+            code, parsed_locals_to_eval, allow_sets=allow_sets
         )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
@@ -932,7 +936,7 @@ def evaluate_with_source(
         res,
         locals_for_eval,
         allow_complex=allow_complex,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
     )
 
     return res, code
@@ -944,7 +948,7 @@ def convert_string_to_sympy(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -979,7 +983,7 @@ def convert_string_to_sympy(
         expr,
         variables=variables,
         allow_hidden=allow_hidden,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
@@ -994,7 +998,7 @@ def convert_string_to_sympy_with_source(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1029,7 +1033,7 @@ def convert_string_to_sympy_with_source(
         custom_functions if custom_functions is not None else [],
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
     )
 
@@ -1062,7 +1066,7 @@ def convert_string_to_sympy_with_source(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    if allow_set_notation:
+    if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
 
     for name, (is_var, raw_name) in valid_names.items():
@@ -1077,7 +1081,7 @@ def convert_string_to_sympy_with_source(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         simplify_expression=simplify_expression,
     )
 
@@ -1141,11 +1145,11 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
 
 
 def sympy_to_json(
-    a: sympy.Basic,
+    a: sympy.Expr | sympy.Set,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
-    allow_set_notation: bool = False,
+    allow_sets: bool = True,
 ) -> SympyJson:
     """Convert a SymPy expression to a JSON-seralizable dictionary.
 
@@ -1161,7 +1165,7 @@ def sympy_to_json(
     reserved = get_builtin_constants(
         allow_complex=allow_complex, allow_hidden=True
     ) | get_builtin_functions(
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
     )
 
@@ -1195,7 +1199,7 @@ def sympy_to_json(
 def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -1222,7 +1226,7 @@ def json_to_sympy(
         sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
@@ -1236,7 +1240,7 @@ def try_parse_string_as_sympy(
     *,
     allow_complex: bool = False,
     allow_hidden: bool = False,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
@@ -1262,7 +1266,7 @@ def try_parse_string_as_sympy(
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
-            allow_set_notation=allow_set_notation,
+            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
@@ -1400,7 +1404,7 @@ def validate_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
@@ -1418,7 +1422,7 @@ def validate_string_as_sympy(
         expr,
         variables,
         allow_hidden=allow_hidden,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         custom_functions=custom_functions,
@@ -1647,13 +1651,13 @@ def get_builtin_constants(
 
 
 def get_builtin_functions(
-    *, allow_trig_functions: bool = True, allow_set_notation: bool = False
+    *, allow_trig_functions: bool = True, allow_sets: bool = False
 ) -> set[str]:
     """Return the set of built-in function names.
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
-        allow_set_notation: Whether to include set operators and constructors.
+        allow_sets: Whether to include set operators and constructors.
 
     Returns:
         A set of built-in function names.
@@ -1662,7 +1666,7 @@ def get_builtin_functions(
     names = const.functions.keys() | const.helpers.keys()
     if allow_trig_functions:
         names |= const.trig_functions.keys()
-    if allow_set_notation:
+    if allow_sets:
         names |= const.set_functions.keys()
         names |= const.set_operators.keys()
     return names
@@ -1675,7 +1679,7 @@ def _build_name_conflict_data(
     allow_complex: bool,
     allow_hidden: bool,
     allow_trig_functions: bool,
-    allow_set_notation: bool,
+    allow_sets: bool,
 ) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -1685,7 +1689,7 @@ def _build_name_conflict_data(
         custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
         allow_hidden: Whether sympy's long-form names for constants are available.
-        allow_set_notation: Whether set operations are available.
+        allow_sets: Whether set operations are available.
         allow_trig_functions: Whether trig functions are available.
 
     Returns:
@@ -1695,7 +1699,7 @@ def _build_name_conflict_data(
     """
     builtins = get_builtin_functions(
         allow_trig_functions=allow_trig_functions,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
     ) | get_builtin_constants(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
@@ -1705,7 +1709,7 @@ def _build_name_conflict_data(
     def _conflicts(name: str) -> bool:
         if name in builtins:
             return True
-        return allow_set_notation and _split_mangled_binop(set_ops, name) is not None
+        return allow_sets and _split_mangled_binop(set_ops, name) is not None
 
     valid_names: dict[str, tuple[bool, str]] = {}
     conflict_vars: list[str] = []
@@ -1736,7 +1740,7 @@ def validate_names_for_conflicts(
     allow_complex: bool = False,
     allow_hidden_variables: bool = True,
     allow_trig_functions: bool = True,
-    allow_set_notation: bool = False,
+    allow_sets: bool = False,
 ) -> None:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -1746,7 +1750,7 @@ def validate_names_for_conflicts(
         custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
         allow_hidden_variables: Whether sympy's long-form names for constants are available.
-        allow_set_notation: Whether set operations are available.
+        allow_sets: Whether set operations are available.
         allow_trig_functions: Whether trig functions are available.
 
     Raises:
@@ -1757,7 +1761,7 @@ def validate_names_for_conflicts(
         custom_functions,
         allow_complex=allow_complex,
         allow_hidden=allow_hidden_variables,
-        allow_set_notation=allow_set_notation,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
     )
     conflicts = v_conflicts + f_conflicts

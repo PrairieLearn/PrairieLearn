@@ -419,7 +419,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   const errors: string[] = [];
   let answersName: string | null = null;
   let allowBlank = false;
-  let allowSetNotation = false;
+  let allowSets = false;
   let usedAdditionalSimplifications = false;
   let usedBlankValue = false;
   let usedCorrectAnswer = false;
@@ -462,15 +462,15 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           break;
         case 'allow-complex':
         case 'allow-trig-functions':
-        case 'allow-set-notation':
+        case 'allow-sets':
         case 'show-help-text':
         case 'show-score':
         case 'formula-editor':
         case 'display-log-as-ln':
         case 'display-simplified-expression':
           assertBool('pl-symbolic-input', key, val, errors);
-          if (key === 'allow-set-notation') {
-            allowSetNotation = isBooleanTrue(val);
+          if (key === 'allow-sets') {
+            allowSets = isBooleanTrue(val);
           }
           break;
         case 'allow-blank':
@@ -488,9 +488,9 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   if (!answersName) {
     errors.push('pl-symbolic-input: answers-name is a required attribute.');
   }
-  if (allowSetNotation && usedAdditionalSimplifications) {
+  if (allowSets && usedAdditionalSimplifications) {
     errors.push(
-      "The 'additional-simplifications' attribute cannot be used when 'allow-set-notation' is true.",
+      "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true.",
     );
   }
   if (usedBlankValue && !allowBlank) {

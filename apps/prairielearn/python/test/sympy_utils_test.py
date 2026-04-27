@@ -289,7 +289,7 @@ class TestSympy:
         assert sympy_ref == psu.convert_string_to_sympy(
             a_sub,
             self.SYMBOL_NAMES,
-            allow_set_notation=True,
+            allow_sets=True,
             custom_functions=self.FUNCTION_NAMES,
         )
 
@@ -308,7 +308,7 @@ class TestSympy:
             psu.validate_string_as_sympy(
                 a_sub,
                 self.SYMBOL_NAMES,
-                allow_set_notation=True,
+                allow_sets=True,
                 custom_functions=list(self.FUNCTION_NAMES),
             )
             is None
@@ -340,7 +340,7 @@ class TestSympy:
         assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
             text,
             self.SYMBOL_NAMES,
-            allow_set_notation=True,
+            allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
         )
 
@@ -418,7 +418,7 @@ class TestSympy:
             test,
             ["n", "m"],
             custom_functions=["U", "FiniteSet", "Union", "Interval", "Intersection"],
-            allow_set_notation=False,
+            allow_sets=False,
         )
         assert isinstance(out, psu.SympyParseSuccess), f'broke on "{test}": {out}'
 
@@ -454,9 +454,9 @@ class TestSympy:
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
-    def test_sets_json_conversion(self, sympy_expr: sympy.Expr) -> None:
+    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
         assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr), allow_set_notation=True
+            psu.sympy_to_json(sympy_expr), allow_sets=True
         )
 
     @pytest.mark.parametrize(
@@ -476,8 +476,8 @@ class TestSympy:
         expr = sympy.Function(fn_name)(*fn_args)
         assert isinstance(expr, sympy.Basic)
 
-        without_sets = psu.sympy_to_json(expr, allow_set_notation=False)
-        with_sets = psu.sympy_to_json(expr, allow_set_notation=True)
+        without_sets = psu.sympy_to_json(expr, allow_sets=False)
+        with_sets = psu.sympy_to_json(expr, allow_sets=True)
 
         assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
         assert with_sets["_custom_functions"] == []  # type: ignore
@@ -496,8 +496,8 @@ class TestSympy:
         self, sympy_expr: sympy.Expr
     ) -> None:
         assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr, allow_set_notation=False),
-            allow_set_notation=False,
+            psu.sympy_to_json(sympy_expr, allow_sets=False),
+            allow_sets=False,
         )
 
     @pytest.mark.parametrize(
@@ -663,7 +663,7 @@ class TestExceptions:
         self, text: str
     ) -> None:
         with pytest.raises(psu.HasSetNotationError):
-            psu.convert_string_to_sympy(text, allow_set_notation=False)
+            psu.convert_string_to_sympy(text, allow_sets=False)
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
@@ -816,7 +816,7 @@ class TestExceptions:
         ],
     )
     def test_sets_syntax_errors_are_rejected(self, text: str) -> None:
-        out = psu.try_parse_string_as_sympy(text, None, allow_set_notation=True)
+        out = psu.try_parse_string_as_sympy(text, None, allow_sets=True)
         assert isinstance(out, psu.SympyParseFailure)
         assert "syntax error" in out.error
 
@@ -908,7 +908,7 @@ class TestExceptions:
     )
     def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
         expr, expected_caret = _caret_template(caret_spec)
-        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_sets=True)
         assert error_msg is not None
         assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
             f"error message is not descriptive: {error_msg}"
@@ -934,7 +934,7 @@ class TestExceptions:
             expr, expected_caret = _caret_template(caret_spec)
         else:
             expr, expected_caret = caret_spec, None
-        error_msg = psu.validate_string_as_sympy(expr, None, allow_set_notation=True)
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_sets=True)
         assert error_msg is not None
         assert re.search(r"\bset\b", error_msg, re.IGNORECASE), (
             f"error message is not descriptive: {error_msg}"
@@ -1024,19 +1024,19 @@ class TestValidateNamesForConflicts:
         self, conflicting_name: str
     ) -> None:
         psu.validate_names_for_conflicts(
-            "test", [conflicting_name], [], allow_set_notation=False
+            "test", [conflicting_name], [], allow_sets=False
         )
         psu.validate_names_for_conflicts(
-            "test", [], [conflicting_name], allow_set_notation=False
+            "test", [], [conflicting_name], allow_sets=False
         )
 
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts(
-                "test", [conflicting_name], [], allow_set_notation=True
+                "test", [conflicting_name], [], allow_sets=True
             )
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts(
-                "test", [], [conflicting_name], allow_set_notation=True
+                "test", [], [conflicting_name], allow_sets=True
             )
 
     @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
@@ -1063,7 +1063,7 @@ class TestValidateNamesForConflicts:
     ) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
             psu.convert_string_to_sympy(
-                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
+                "0", [conflicting_name], allow_sets=True, custom_functions=[]
             )
 
     @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
@@ -1072,7 +1072,7 @@ class TestValidateNamesForConflicts:
     ) -> None:
         with pytest.raises(psu.HasConflictingFunctionError):
             psu.convert_string_to_sympy(
-                "0", [], allow_set_notation=True, custom_functions=[conflicting_name]
+                "0", [], allow_sets=True, custom_functions=[conflicting_name]
             )
 
     _MANGLED_SET_OPERATORS = tuple(
@@ -1085,7 +1085,7 @@ class TestValidateNamesForConflicts:
     ) -> None:
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts(
-                "0", [conflicting_name], allow_set_notation=True, custom_functions=[]
+                "0", [conflicting_name], allow_sets=True, custom_functions=[]
             )
 
     @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
@@ -1096,7 +1096,7 @@ class TestValidateNamesForConflicts:
             psu.validate_names_for_conflicts(
                 "0",
                 [],
-                allow_set_notation=True,
+                allow_sets=True,
                 custom_functions=[conflicting_name],
             )
 

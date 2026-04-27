@@ -81,14 +81,14 @@ def test_format_submission_for_sympy_preserves_set_union(
     sub: str, expected: str
 ) -> None:
     out, error_msg = symbolic_input.format_submission_for_sympy(
-        sub, allow_set_notation=True
+        sub, allow_sets=True
     )
     assert (out, error_msg) == (expected, None)
 
 
 def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     element_html = build_element_html(
-        'allow-set-notation="true"',
+        'allow-sets="true"',
         'correct-answer="{1} | {2}"',
     )
     data = make_question_data(submitted_answers={"test": "{1} | {2}"})
@@ -99,7 +99,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert psu.json_to_sympy(
-        data["submitted_answers"]["test"], allow_set_notation=True
+        data["submitted_answers"]["test"], allow_sets=True
     ) == sympy.FiniteSet(1, 2)
 
 
@@ -330,7 +330,7 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     answer: str, expected_expr: sympy.Basic
 ) -> None:
     element_html = build_element_html(
-        'allow-set-notation="true"',
+        'allow-sets="true"',
         'variables="x,y"',
         f'correct-answer="{answer}"',
     )
@@ -344,7 +344,7 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
     assert (
-        psu.json_to_sympy(data["submitted_answers"]["test"], allow_set_notation=True)
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
         == expected_expr
     )
 
@@ -357,7 +357,7 @@ def test_interval_correct_answer_renders(
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
     element_html = build_element_html(
-        'allow-set-notation="true"',
+        'allow-sets="true"',
         'correct-answer="[1, 2] U [3, 4]"',
     )
     data = make_question_data(panel="answer", editable=False)
@@ -370,7 +370,7 @@ def test_interval_correct_answer_renders(
 
 def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None:
     element_html = build_element_html(
-        'allow-set-notation="true"',
+        'allow-sets="true"',
         'correct-answer="{}"',
     )
     data = make_question_data(submitted_answers={"test": "{}"})
@@ -381,7 +381,7 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert (
-        psu.json_to_sympy(data["submitted_answers"]["test"], allow_set_notation=True)
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
         == sympy.EmptySet
     )
 
@@ -391,13 +391,13 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
 
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
-        'allow-set-notation="true"',
+        'allow-sets="true"',
         'additional-simplifications="expand"',
         'correct-answer="1"',
     )
     data = make_question_data(submitted_answers={"test": "1"})
 
     with pytest.raises(
-        ValueError, match=(r"'additional-simplifications'.*'allow-set-notation'")
+        ValueError, match=(r"'additional-simplifications'.*'allow-sets'")
     ):
         symbolic_input.prepare(element_html, data)
