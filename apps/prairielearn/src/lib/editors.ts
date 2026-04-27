@@ -2611,7 +2611,6 @@ export async function prepareAccessControlLabelRewriteEditors({
   const editors: FileModifyEditor[] = [];
 
   for (const assessment of assessments) {
-    if (assessment.course_instance_directory == null) continue;
     if (assessment.assessment_directory == null) continue;
 
     const assessmentDir = path.join(

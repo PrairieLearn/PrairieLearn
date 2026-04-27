@@ -156,7 +156,7 @@ const upsert = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
 
@@ -193,7 +193,7 @@ const upsert = t.procedure
         return jsonContents;
       },
       jsonPath: courseInstanceJsonPath,
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],
@@ -326,7 +326,7 @@ const destroy = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
 
@@ -345,7 +345,7 @@ const destroy = t.procedure
         return jsonContents;
       },
       jsonPath: courseInstanceJsonPath,
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],

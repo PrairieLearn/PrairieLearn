@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { queryOptionalRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAppError } from '../lib/client/errors.js';
@@ -17,7 +17,10 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { generateAndEnrollUsers } from '../models/enrollment.js';
+import {
+  generateAndEnrollUsers,
+  selectUsersAndEnrollmentsForCourseInstance,
+} from '../models/enrollment.js';
 import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelsInCourseInstance,
@@ -99,13 +102,15 @@ describe('Instructor student labels page', () => {
 
       const users = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
       studentUids = users.map((u) => u.uid);
-      const userIds = users.map((u) => u.id);
-      const enrollments = await queryRows(
-        'SELECT * FROM enrollments WHERE user_id = ANY($1::bigint[])',
-        [userIds],
-        EnrollmentSchema,
+      const enrollments = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
+      const enrollmentIdByUserId = new Map(
+        enrollments.filter((e) => e.user != null).map((e) => [e.user!.id, e.enrollment.id]),
       );
-      enrollmentIds = enrollments.map((e) => e.id);
+      enrollmentIds = users.map((u) => {
+        const enrollmentId = enrollmentIdByUserId.get(u.id);
+        assert.isDefined(enrollmentId);
+        return enrollmentId;
+      });
     });
   });
 
