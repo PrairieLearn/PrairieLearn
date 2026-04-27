@@ -188,8 +188,8 @@ function DeadlineArrayInput({
     } else if (dueCreditRef.current !== 0) {
       // Late credit must be < 100 AND < dueCredit. When dueCredit >= 100 the
       // tighter bound is 100; when dueCredit < 100 it's dueCredit itself.
-      // Skip when dueCredit === 0 — Constraint 4 flags the whole section
-      // as not-allowed, so a redundant per-field message would be noise.
+      // Skip when dueCredit === 0 — the validator forbids late deadlines
+      // entirely at 0% due credit, so a per-field error would be noise.
       const cap = Math.min(100, dueCreditRef.current);
       if (value < 0 || value >= cap) {
         return cap === 100
