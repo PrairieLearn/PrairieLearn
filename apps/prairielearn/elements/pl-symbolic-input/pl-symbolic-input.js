@@ -736,7 +736,6 @@
       inlineShortcuts.cup = { value: '{#@} \\cup {#?}' };
       inlineShortcuts['\\cup'] = inlineShortcuts.cup;
       inlineShortcuts.U = inlineShortcuts.cup;
-      inlineShortcuts['|'] = inlineShortcuts.cup;
 
       inlineShortcuts.cap = { value: '{#@} \\cap {#?}' };
       inlineShortcuts['\\cap'] = inlineShortcuts.cap;
