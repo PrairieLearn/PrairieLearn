@@ -143,6 +143,26 @@ describe('serializeZonesForJson', () => {
     const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
     assert.equal(reparsed[0].lockpoint, true);
   });
+
+  it('strips empty canView/canSubmit arrays but preserves explicit role overrides', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone with role overrides',
+        canView: ['Manager', 'Recorder'],
+        canSubmit: ['Recorder'],
+        questions: [{ id: 'q1', canView: ['Reflector'], canSubmit: ['Reflector'] }, { id: 'q2' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].canView).toEqual(['Manager', 'Recorder']);
+    expect(serialized[0].canSubmit).toEqual(['Recorder']);
+    expect(serialized[0].questions[0].canView).toEqual(['Reflector']);
+    expect(serialized[0].questions[0].canSubmit).toEqual(['Reflector']);
+    // Defaults (empty arrays) are stripped so the question inherits from the zone.
+    expect(serialized[0].questions[1].canView).toBeUndefined();
+    expect(serialized[0].questions[1].canSubmit).toBeUndefined();
+  });
 });
 
 describe('prepareZonesForEditor', () => {

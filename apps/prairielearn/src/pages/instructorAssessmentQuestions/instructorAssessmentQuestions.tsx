@@ -19,12 +19,17 @@ import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { normalizeGroupSettings } from '../../lib/group-config.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import {
+  type AssessmentJsonInput,
+  type EnumAssessmentTool,
+  ZoneAssessmentJsonSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
@@ -71,6 +76,32 @@ router.get(
     );
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+
+    let groupsConfigured = false;
+    let groupRoles: string[] = [];
+    let assessmentCanView: string[] | undefined;
+    let assessmentCanSubmit: string[] | undefined;
+    try {
+      const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
+      const groupSettings = normalizeGroupSettings(rawJson);
+      // normalizeGroupSettings returns non-null for both the new `groups`
+      // block and the legacy `groupWork: true` shape. Treat `groups.enabled:
+      // false` as "no group configuration" so the role permissions section
+      // stays hidden on non-group assessments.
+      const groupsBlockEnabled = rawJson.groups ? rawJson.groups.enabled !== false : false;
+      const legacyGroupsEnabled = !rawJson.groups && rawJson.groupWork === true;
+      groupsConfigured = !!groupSettings && (groupsBlockEnabled || legacyGroupsEnabled);
+      if (groupSettings) {
+        groupRoles = groupSettings.roles.map((r) => r.name);
+        const viewRoles = groupSettings.roles.filter((r) => r.canView).map((r) => r.name);
+        const submitRoles = groupSettings.roles.filter((r) => r.canSubmit).map((r) => r.name);
+        assessmentCanView = viewRoles.length === groupSettings.roles.length ? undefined : viewRoles;
+        assessmentCanSubmit =
+          submitRoles.length === groupSettings.roles.length ? undefined : submitRoles;
+      }
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') throw err;
+    }
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
@@ -164,6 +195,11 @@ router.get(
                 jsonZones={jsonZones}
                 assessment={pageContext.assessment}
                 assessmentToolDefaults={assessmentToolDefaults}
+                groupsConfigured={groupsConfigured}
+                groupRoles={groupRoles}
+                assessmentCanView={assessmentCanView}
+                assessmentCanSubmit={assessmentCanSubmit}
+                groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
                   pageContext.authz_data.has_course_instance_permission_edit ?? false

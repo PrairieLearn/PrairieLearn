@@ -135,6 +135,11 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -153,6 +158,11 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   assessmentToolDefaults,
+  groupsConfigured,
+  groupRoles,
+  assessmentCanView,
+  assessmentCanSubmit,
+  groupsPageUrl,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -895,6 +905,11 @@ function AssessmentEditorInner({
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -907,6 +922,11 @@ function AssessmentEditorInner({
       assessment.constant_question_value,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,

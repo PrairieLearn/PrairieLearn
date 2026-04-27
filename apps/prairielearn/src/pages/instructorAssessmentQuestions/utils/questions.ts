@@ -609,3 +609,23 @@ export function getZoneMixedToolsWarning({
 
   return null;
 }
+
+/**
+ * Resolves the effective `canView` / `canSubmit` for a given level by walking
+ * the inheritance chain. The first layer that defines an explicit override
+ * (non-undefined) wins; if no layer overrides, the value is undefined
+ * (meaning "all roles" per the JSON schema).
+ *
+ * Layers are passed in order from innermost parent to outermost. For a zone,
+ * pass `[assessmentValue]`; for an alt pool or standalone question, pass
+ * `[zone?.canView, assessmentValue]`; for an alternative inside a pool,
+ * `[pool?.canView, zone?.canView, assessmentValue]`.
+ */
+export function resolveRolePermissionCascade(
+  layers: { value: string[] | undefined; source: 'zone' | 'pool' | 'assessment' }[],
+): { value: string[] | undefined; source: 'zone' | 'pool' | 'assessment' } {
+  for (const layer of layers) {
+    if (layer.value !== undefined) return layer;
+  }
+  return { value: undefined, source: layers.at(-1)?.source ?? 'assessment' };
+}
