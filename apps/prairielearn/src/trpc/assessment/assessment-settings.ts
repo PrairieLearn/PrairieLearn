@@ -83,7 +83,7 @@ const updateAssessment = t.procedure
     const infoAssessmentPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       assessment.tid!,
       'infoAssessment.json',
@@ -107,7 +107,7 @@ const updateAssessment = t.procedure
     const rootPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       assessment.tid!,
     );
@@ -291,7 +291,7 @@ const updateAssessment = t.procedure
     const newInfoAssessmentPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       tid_new,
       'infoAssessment.json',

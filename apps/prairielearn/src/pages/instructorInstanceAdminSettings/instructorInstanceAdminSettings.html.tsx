@@ -41,6 +41,7 @@ export function InstructorInstanceAdminSettings({
   isDevMode,
   isAdministrator,
   nonPublicAssessmentsInCourseInstance,
+  enhancedAccessControlEnabled,
 }: {
   csrfToken: string;
   trpcCsrfToken: string;
@@ -61,6 +62,7 @@ export function InstructorInstanceAdminSettings({
   isDevMode: boolean;
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
+  enhancedAccessControlEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -355,6 +357,7 @@ export function InstructorInstanceAdminSettings({
             courseShortName={course.short_name}
             courseInstance={courseInstance}
             isAdministrator={isAdministrator}
+            enhancedAccessControlEnabled={enhancedAccessControlEnabled}
             onHide={() => setShowCopyModal(false)}
           />
         </TRPCProvider>

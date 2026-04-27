@@ -104,7 +104,10 @@ function SelectAllCheckbox({ table }: { table: Table<CourseUsersRow> }) {
 
 const columnHelper = createColumnHelper<CourseUsersRow>();
 
-const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
+const DEFAULT_SORT: SortingState = [
+  { id: 'course_role', desc: true },
+  { id: 'uid', desc: false },
+];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
 interface StaffTableInnerProps {
@@ -500,7 +503,7 @@ function AddUsersModal({
                           <select
                             className="form-select form-select-sm"
                             value={instanceRoles[ci.id] ?? ''}
-                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                            aria-label={`Role for ${ci.short_name}`}
                             onChange={(e) =>
                               setInstanceRoles((prev) => ({ ...prev, [ci.id]: e.target.value }))
                             }
@@ -722,7 +725,7 @@ function BulkEditAccessModal({
                         <select
                           className="form-select form-select-sm"
                           value={instanceRoles[ci.id] ?? ''}
-                          aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                          aria-label={`Role for ${ci.short_name}`}
                           onChange={(e) =>
                             handleInstanceRoleChange(ci.id, e.target.value as InstanceRole | '')
                           }
@@ -995,6 +998,15 @@ function StaffTableInner({
           if (filterValues.length === 0) return true;
           return filterValues.includes(row.original.course_permission.course_role ?? 'None');
         },
+        sortingFn: (rowA, rowB) => {
+          const indexA = COURSE_ROLE_VALUES.indexOf(
+            rowA.original.course_permission.course_role ?? 'None',
+          );
+          const indexB = COURSE_ROLE_VALUES.indexOf(
+            rowB.original.course_permission.course_role ?? 'None',
+          );
+          return indexA - indexB;
+        },
         cell: (info) => (
           <div className="text-center">
             <CoursePermissionCell
@@ -1015,8 +1027,8 @@ function StaffTableInner({
             'None',
           {
             id: `ci_${ci.id}`,
-            header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
-            meta: { label: ci.short_name ?? `Instance ${ci.id}` },
+            header: () => <code>{ci.short_name}</code>,
+            meta: { label: ci.short_name },
             size: 120,
             enableGlobalFilter: false,
             enableSorting: false,
@@ -1169,10 +1181,12 @@ function StaffTableInner({
     void setColumnVisibility((prev) => ({ ...prev, ...preset }));
   };
 
+  const allInstancesAreActive = activeCourseInstanceIds.size === courseInstances.length;
+
   const viewPresetDropdown =
-    courseInstances.length > 0 ? (
+    courseInstances.length > 0 && !allInstancesAreActive ? (
       <Dropdown as={ButtonGroup}>
-        <Dropdown.Toggle variant="tanstack-table" size="sm">
+        <Dropdown.Toggle variant="tanstack-table">
           <i className="bi bi-funnel me-2" aria-hidden="true" />
           View: {selectedViewPreset ?? 'Custom'}
         </Dropdown.Toggle>

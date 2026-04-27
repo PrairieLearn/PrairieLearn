@@ -66,8 +66,9 @@ async function prepareLocalsForRender(
   if (variant_with_submission_id == null) {
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
-  resLocals.questionRenderContext = 'manual_grading';
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals, {
+    questionRenderContext: 'manual_grading',
+  });
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -337,6 +338,7 @@ router.get(
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
       questionRenderContext: 'manual_grading',
@@ -373,6 +375,7 @@ router.get(
         instance_question: res.locals.instance_question,
         variant: res.locals.variant,
         user: res.locals.user,
+        authn_user: res.locals.authn_user,
         urlPrefix: res.locals.urlPrefix,
         questionContext: 'manual_grading',
         questionRenderContext: 'manual_grading',

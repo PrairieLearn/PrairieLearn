@@ -43,7 +43,7 @@ Below is a complete skeleton showing all available fields. All fields are option
     {
       "beforeRelease": { "listed": true },
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59",
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
         "lateDeadlines": [{ "date": "2025-02-22T23:59:59", "credit": 80 }],
@@ -90,7 +90,7 @@ Controls when the assessment is available and how credit is computed over time.
 
 | Field               | Type    | Description                                                                                                  |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                    |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not visible to students before this date.               |
 | `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                           |
 | `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%). |
 | `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%). |
@@ -120,23 +120,29 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 110% credit             100% credit          80% credit    → afterLastDeadline
 ```
 
-- **Before `releaseDate`**: The assessment is not visible (unless `beforeRelease.listed` is `true`, in which case the title is shown but the assessment cannot be opened).
-- **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
+- **Before `release.date`**: The assessment is not visible (unless `beforeRelease.listed` is `true`, in which case the title is shown but the assessment cannot be opened).
+- **Between `release.date` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or no `releaseDate`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
+- **No `dateControl` or no `release`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
 
 ### `integrations`
 
 #### PrairieTest
 
-| Field                          | Type    | Description                                 |
-| ------------------------------ | ------- | ------------------------------------------- |
-| `prairieTest.exams`            | array   | Array of exam objects.                      |
-| `prairieTest.exams[].examUuid` | string  | UUID of the associated PrairieTest exam.    |
-| `prairieTest.exams[].readOnly` | boolean | Whether the exam is read-only for students. |
+| Field                                                | Type    | Description                                                                                       |
+| ---------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `prairieTest.exams`                                  | array   | Array of exam objects.                                                                            |
+| `prairieTest.exams[].examUuid`                       | string  | UUID of the associated PrairieTest exam.                                                          |
+| `prairieTest.exams[].readOnly`                       | boolean | Whether the exam is read-only for students (review session).                                      |
+| `prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden after the student finishes while the reservation is still active. |
+| `prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden after the student finishes while the reservation is still active.  |
 
-When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
+When PrairieTest exams are configured, an active matching PrairieTest reservation will grant access to the assessment. While a reservation is active, only the matched exam's configuration applies: top-level `dateControl`, `beforeRelease`, and `afterComplete` are ignored, and `durationMinutes` has no effect — time limits are enforced by PrairieTest.
+
+Outside an active reservation — for instance, outside a testing center or before or after the exam — top-level `dateControl`, `beforeRelease`, and `afterComplete` apply as usual. This lets `afterComplete` on the exam describe what the student sees during the reservation, and the top-level `afterComplete` describe what the student sees afterwards.
+
+`readOnly: true` cannot be combined with exam-level `afterComplete` settings that hide questions or scores (`afterComplete.questions.hidden: true` or `afterComplete.score.hidden: true`): a read-only reservation is a review environment that shows everything. Non-hiding settings, such as `afterComplete.questions.hidden: false`, are accepted as no-ops. `afterComplete.score.hidden: true` additionally requires `afterComplete.questions.hidden: true` — we don't support showing the question and submission while hiding the resulting score.
 
 ### `beforeRelease`
 
@@ -176,6 +182,10 @@ Use this to control when students can see their score after completion — for e
 | `visibleFromDate` | string  |         | ISO datetime. Date to re-reveal the score to students.      |
 
 #### Visibility logic
+
+!!! note
+
+    Top-level `afterComplete` only applies outside an active PrairieTest reservation. To control visibility after a student finishes while the reservation is still active, use `prairieTest.exams[].afterComplete` on the matching exam entry.
 
 !!! warning
 
@@ -236,7 +246,7 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59"
       }
     },
@@ -251,7 +261,7 @@ Not all fields behave the same way during cascading:
 ```
 
 - **All students**: due Feb 15.
-- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` from the defaults.
+- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `release` from the defaults.
 
 #### Example 2: Two label overrides stacking
 
@@ -260,7 +270,7 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59",
         "durationMinutes": 60
       }
@@ -297,7 +307,7 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59"
       }
     }
@@ -314,7 +324,7 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59",
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
         "lateDeadlines": [
@@ -347,7 +357,7 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-03-10T09:00:00",
+        "release": { "date": "2025-03-10T09:00:00" },
         "dueDate": "2025-03-10T11:00:00",
         "durationMinutes": 90,
         "password": "exam2025"
@@ -373,18 +383,49 @@ If a student starts close enough to the due date that less than 90 minutes remai
     {
       "integrations": {
         "prairieTest": {
-          "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
+            }
+          ]
         }
-      },
-      "afterComplete": {
-        "questions": { "hidden": true }
       }
     }
   ]
 }
 ```
 
-Students must be checked in via PrairieTest. Time limits and scheduling are managed by PrairieTest. Questions are hidden after completion.
+Students access the assessment through an active PrairieTest reservation; time limits and scheduling are managed by PrairieTest. Once a student finishes the assessment, questions and scores remain visible for the remainder of their reservation.
+
+### Deferred release of feedback and scores after a PrairieTest exam
+
+```json
+{
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": {
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+              "afterComplete": {
+                "questions": { "hidden": true },
+                "score": { "hidden": true }
+              }
+            }
+          ]
+        }
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" },
+        "score": { "hidden": true, "visibleFromDate": "2025-03-15T00:00:00" }
+      }
+    }
+  ]
+}
+```
+
+This is useful when real-time grading is disabled for the exam: since students never see feedback or scores during the exam, questions and scores stay hidden both during the PrairieTest reservation and immediately after, and are released to students at home on March 15.
 
 ### Override extending deadline for a student label
 
@@ -393,7 +434,7 @@ Students must be checked in via PrairieTest. Time limits and scheduling are mana
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
+        "release": { "date": "2025-01-15T00:00:01" },
         "dueDate": "2025-02-15T23:59:59",
         "durationMinutes": 60
       },
@@ -450,7 +491,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
+            "release": { "date": "2025-01-15T00:00:01" },
             "dueDate": "2025-02-15T23:59:59"
           }
         }
@@ -491,7 +532,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
+            "release": { "date": "2025-01-15T00:00:01" },
             "dueDate": "2025-02-15T23:59:59",
             "earlyDeadlines": [
               { "date": "2025-02-01T23:59:59", "credit": 110 }
@@ -529,7 +570,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-03-10T09:00:00",
+            "release": { "date": "2025-03-10T09:00:00" },
             "dueDate": "2025-03-10T11:00:00",
             "durationMinutes": 90
           }
@@ -595,7 +636,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-03-10T09:00:00",
+            "release": { "date": "2025-03-10T09:00:00" },
             "dueDate": "2025-03-10T11:00:00",
             "password": "mysecret"
           }
@@ -632,7 +673,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
+            "release": { "date": "2025-01-15T00:00:01" },
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
@@ -671,7 +712,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
+            "release": { "date": "2025-01-15T00:00:01" },
             "dueDate": "2025-02-15T23:59:59"
           },
           "afterComplete": {
@@ -703,7 +744,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "1970-01-01T00:00:00",
+            "release": { "date": "1970-01-01T00:00:00" },
             "dueDate": "2099-12-31T23:59:59"
           }
         }
@@ -711,7 +752,7 @@ Below are common legacy patterns and their modern equivalents.
     }
     ```
 
-    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but students cannot start it or submit answers.
+    A `release.date` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but students cannot start it or submit answers.
 
 ### View-only after close
 
@@ -740,7 +781,7 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
+            "release": { "date": "2025-01-15T00:00:01" },
             "dueDate": "2025-02-15T23:59:59",
             "afterLastDeadline": {
               "allowSubmissions": true,
