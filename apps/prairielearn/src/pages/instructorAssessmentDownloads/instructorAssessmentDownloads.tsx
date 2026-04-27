@@ -11,7 +11,6 @@ import {
   MINUTE_IN_MILLISECONDS,
   SECOND_IN_MILLISECONDS,
   formatDateISO,
-  formatIntervalMinutes,
 } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
@@ -480,13 +479,14 @@ async function sendInstancesCsv(
     },
     AssessmentInstanceRowSchema,
   );
+  const assessment_label = `${res.locals.assessment_set.name} ${res.locals.assessment.number}`;
 
   res.attachment(req.params.filename);
   await pipeline(
     result.stream(100),
     stringifyWithColumns(columns, (row: AssessmentInstanceRow) => ({
       ...row,
-      assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+      assessment_label,
       username: row.uid?.split('@')[0] ?? null,
       date_formatted:
         row.date == null
@@ -495,7 +495,7 @@ async function sendInstancesCsv(
       time_remaining: row.open
         ? row.date_limit == null
           ? 'Open'
-          : formatIntervalMinutes(row.date_limit.getTime() - Date.now())
+          : `${Math.floor(Math.max(0, (row.date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS))} mins`
         : 'Closed',
       duration_mins:
         row.duration == null ? null : Math.round(row.duration / MINUTE_IN_MILLISECONDS),
@@ -619,7 +619,7 @@ router.get(
         cursor.stream(100),
         stringifyWithColumns(columns, (row: InstanceQuestionRow) => ({
           ...row,
-          assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+          assessment_label: assessmentName,
           date_formatted: formatDateISO(
             row.instance_question_created_at!,
             res.locals.course_instance.display_timezone,
@@ -714,7 +714,7 @@ router.get(
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
         ['Score', 'score'],
-        ['Correct', 'correct'],
+        ['Correct', 'correct_str'],
         ['Feedback', 'feedback'],
         ['Rubric Grading', 'rubric_grading'],
         ['Question points', 'points'],
@@ -731,7 +731,7 @@ router.get(
         cursor.stream(100),
         stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
           ...row,
-          assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+          assessment_label: assessmentName,
           qid: qidWithSharingName(res.locals, row),
           submission_date_formatted: formatDateISO(
             row.submission_date!,
@@ -748,13 +748,13 @@ router.get(
             row.graded_at == null
               ? null
               : formatDateISO(row.graded_at, res.locals.course_instance.display_timezone),
-          correct: row.correct == null ? null : row.correct ? 'TRUE' : 'FALSE',
+          correct_str: row.correct == null ? null : row.correct ? 'TRUE' : 'FALSE',
           rubric_grading:
-            row.manual_rubric_grading_id == null
+            row.manual_rubric_grading_id == null || row.rubric_grading == null
               ? null
               : {
-                  computed_points: row.rubric_grading?.computed_points,
-                  adjust_points: row.rubric_grading?.adjust_points,
+                  computed_points: row.rubric_grading.computed_points,
+                  adjust_points: row.rubric_grading.adjust_points,
                   items: row.rubric_grading_items ?? [],
                 },
         })),
@@ -830,7 +830,6 @@ router.get(
       req.params.filename === filenames.canvasPointsCsvFilename
     ) {
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
-      const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
       const scoreKey = isPoints ? 'points' : 'score_perc';
       const canvasColumns: Columns = [...CANVAS_CSV_FIXED_COLUMNS, [assessmentName, scoreKey]];
       const cursor = await sqldb.queryCursor(
