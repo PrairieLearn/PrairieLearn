@@ -251,14 +251,14 @@ WITH
               'points',
               rgi.points
             )
+            ORDER BY
+              ri.number
           )
         FROM
           rubric_grading_items rgi
           JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
         WHERE
           rgi.rubric_grading_id = rg.id
-        ORDER BY
-          ri.number
       ) AS rubric_grading_items,
       row_number() OVER (
         PARTITION BY
