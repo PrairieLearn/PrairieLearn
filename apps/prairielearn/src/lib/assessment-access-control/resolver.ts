@@ -3,29 +3,12 @@ import assert from 'node:assert';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
-<<<<<<< HEAD
-/**
- * Runtime version of date control fields. Top-level date columns use `Date`
- * objects (they come from the database as Date). Deadline entry dates remain
- * as strings since they are stored as JSON strings in JSONB columns.
- */
-export interface RuntimeDateControl {
-  release?: { date: Date };
-  due?: { date: Date | null; credit?: number };
-  earlyDeadlines?: { date: string; credit: number }[] | null;
-  lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
-  durationMinutes?: number | null;
-  password?: string | null;
-}
-=======
 import {
   type AccessTimelineEntry,
   type RuntimeDateControl,
   buildAccessTimeline,
   buildDeadlines,
 } from './timeline.js';
->>>>>>> c1fb124b0 (Show students modern access control dates and credit (#14729))
 
 export interface RuntimeAfterComplete {
   questions?: {
@@ -301,44 +284,33 @@ function computeCredit(
     };
   }
 
-  // Build timeline segments: each entry is [deadline, creditBefore]
-  // The credit value represents what you get if you submit BEFORE this deadline.
-  const timeline: { date: Date; credit: number }[] = [];
+  const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
 
-  if (dateControl.earlyDeadlines) {
-    for (const entry of dateControl.earlyDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out early deadlines before release date or after due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate > dueDate) continue;
-      // Early credit is floored at the due-date credit so the timeline never
-      // drops below the base credit before the due date itself.
-      timeline.push({ date: entryDate, credit: Math.max(entry.credit, dueCredit) });
+  // No due date or deadlines means 100% credit anytime after the release date.
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
+  if (deadlines.length === 0) {
+    if (dateControl.due && dueDate === null) {
+      return {
+        credit: dueCredit,
+        active: true,
+        beforeRelease: false,
+        nextDeadlineDate: null,
+        password: dateControl.password ?? null,
+        timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+      };
     }
+    return {
+      credit: 100,
+      active: true,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    };
   }
 
-  if (dueDate) {
-    timeline.push({ date: dueDate, credit: dueCredit });
-  }
-
-  if (dateControl.lateDeadlines) {
-    for (const entry of dateControl.lateDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out late deadlines before release date or before due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate < dueDate) continue;
-      // Late credit is capped at the due-date credit so the timeline never
-      // rises above the base credit after the due date.
-      timeline.push({ date: entryDate, credit: Math.min(entry.credit, dueCredit) });
-    }
-  }
-
-  timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  // Before the first deadline, the credit is the first entry's credit value.
-  // After each deadline, the credit becomes the next entry's credit value.
-  // After the last deadline, use afterLastDeadline settings.
-  for (const entry of timeline) {
+  for (const entry of deadlines) {
     if (date < entry.date) {
       const credit = entry.credit;
       const nextDeadline = entry.date;
@@ -358,9 +330,11 @@ function computeCredit(
     }
   }
 
-  // We are past the last deadline (or the timeline was empty).
+  // We are past the last deadline.
   // When `due` is configured with no date, the due-date credit applies indefinitely
   // after release (and, when early deadlines exist, after the last early deadline).
+  // This shadows afterLastDeadline — an explicit `due` with null date is the
+  // author's way of saying "this credit applies forever after all deadlines".
   if (dateControl.due && dueDate === null) {
     return {
       credit: dueCredit,
@@ -369,20 +343,6 @@ function computeCredit(
       nextDeadlineDate: null,
       password: dateControl.password ?? null,
       timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    };
-  }
-
-  // No due date or deadlines means 100% credit anytime after the release date.
-  // afterLastDeadline is ignored here because it's meaningless without at
-  // least one deadline.
-  if (timeline.length === 0) {
-    return {
-      credit: 100,
-      active: true,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
     };
   }
 

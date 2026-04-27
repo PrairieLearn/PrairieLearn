@@ -2452,8 +2452,7 @@ describe('custom due credit', () => {
     expect(result.creditDateString).toBe('50%');
   });
 
-  it('treats 0 credit with null due date as inactive indefinitely', () => {
-    // E.g., Practice assessment: students can submit but receive 0% credit indefinitely
+  it('treats 0 credit with null due date as active (submissions allowed for 0% credit)', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
@@ -2468,7 +2467,7 @@ describe('custom due credit', () => {
     });
     expect(result.authorized).toBe(true);
     expect(result.credit).toBe(0);
-    expect(result.active).toBe(false);
+    expect(result.active).toBe(true);
     expect(result.creditDateString).toBe('None');
   });
 

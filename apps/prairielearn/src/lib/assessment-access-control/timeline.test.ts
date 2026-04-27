@@ -14,7 +14,7 @@ describe('buildAccessTimeline', () => {
   it('returns empty when dueDate <= release date', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-15T00:00:00Z') },
-      dueDate: new Date('2025-03-14T00:00:00Z'),
+      due: { date: new Date('2025-03-14T00:00:00Z') },
     };
     expect(buildAccessTimeline(dc, new Date('2025-03-15T12:00:00Z'))).toEqual([]);
   });
@@ -22,7 +22,7 @@ describe('buildAccessTimeline', () => {
   it('builds credit segment plus after-last-deadline for release + dueDate', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-03-15T00:00:00Z'),
+      due: { date: new Date('2025-03-15T00:00:00Z') },
     };
     const now = new Date('2025-03-10T00:00:00Z');
     const timeline = buildAccessTimeline(dc, now);
@@ -48,7 +48,7 @@ describe('buildAccessTimeline', () => {
   it('builds full timeline with early, due, late, and afterLastDeadline', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-03-15T00:00:00Z'),
+      due: { date: new Date('2025-03-15T00:00:00Z') },
       earlyDeadlines: [{ date: '2025-03-08T00:00:00Z', credit: 120 }],
       lateDeadlines: [{ date: '2025-03-22T00:00:00Z', credit: 50 }],
       afterLastDeadline: { credit: 0 },
@@ -90,7 +90,7 @@ describe('buildAccessTimeline', () => {
   it('marks afterLastDeadline submittable when allowSubmissions is true', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-03-15T00:00:00Z'),
+      due: { date: new Date('2025-03-15T00:00:00Z') },
       afterLastDeadline: { credit: 50, allowSubmissions: true },
     };
     const timeline = buildAccessTimeline(dc, new Date('2025-03-20T00:00:00Z'));
@@ -101,7 +101,7 @@ describe('buildAccessTimeline', () => {
   it('includes afterLastDeadline segment with non-zero credit', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-03-15T00:00:00Z'),
+      due: { date: new Date('2025-03-15T00:00:00Z') },
       afterLastDeadline: { credit: 25 },
     };
     const now = new Date('2025-03-20T00:00:00Z');
@@ -120,7 +120,7 @@ describe('buildAccessTimeline', () => {
   it('prepends before-release entry when date is before release date', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-15T00:00:00Z') },
-      dueDate: new Date('2025-04-01T00:00:00Z'),
+      due: { date: new Date('2025-04-01T00:00:00Z') },
     };
     const now = new Date('2025-03-10T00:00:00Z');
     const timeline = buildAccessTimeline(dc, now);
@@ -142,7 +142,7 @@ describe('buildAccessTimeline', () => {
   it('does not include before-release entry when date is after release date', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-04-01T00:00:00Z'),
+      due: { date: new Date('2025-04-01T00:00:00Z') },
     };
     const now = new Date('2025-03-10T00:00:00Z');
     const timeline = buildAccessTimeline(dc, now);
@@ -154,7 +154,7 @@ describe('buildAccessTimeline', () => {
   it('always includes after-last-deadline entry even without afterLastDeadline config', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-01T00:00:00Z') },
-      dueDate: new Date('2025-03-15T00:00:00Z'),
+      due: { date: new Date('2025-03-15T00:00:00Z') },
     };
     const now = new Date('2025-03-20T00:00:00Z');
     const timeline = buildAccessTimeline(dc, now);
@@ -172,7 +172,7 @@ describe('buildAccessTimeline', () => {
   it('includes both before-release and after-last-deadline in full timeline', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-15T00:00:00Z') },
-      dueDate: new Date('2025-04-01T00:00:00Z'),
+      due: { date: new Date('2025-04-01T00:00:00Z') },
       lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }],
       afterLastDeadline: { credit: 10 },
     };
