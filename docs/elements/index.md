@@ -112,6 +112,7 @@ For wrapping or templating content rather than rendering a specific data type.
 - [`pl-card`](pl-card.md): Display content within a card-styled component.
 - [`pl-template`](pl-template.md): Display content from mustache templates.
 - [`pl-overlay`](pl-overlay.md): Layer elements on top of one another at specific positions — commonly used to place input fields over a [`pl-figure`](pl-figure.md) or [`pl-drawing`](../pl-drawing/index.md) for labeled-diagram questions.
+- [`pl-hidden-hints`](pl-hidden-hints.md): Reveal hints in the question prompt progressively as a student submits more on the current variant.
 
 ## Question flow and feedback
 
@@ -139,9 +140,8 @@ For making content appear in only some panels, or only during specific grading w
 
 ### Submission feedback
 
-For showing feedback about a student's submission — what they sent, hints to nudge them, and results from automated grading.
+For showing what the student submitted and the results that come back from grading.
 
-- [`pl-hidden-hints`](pl-hidden-hints.md): Reveal hints progressively as a student submits more on the current variant.
 - [`pl-file-preview`](pl-file-preview.md): Display a preview of submitted files.
 - [`pl-xss-safe`](pl-xss-safe.md): Sanitize student-provided HTML before displaying it back to the student or grader.
 - [`pl-external-grader-results`](pl-external-grader-results.md): Display results from questions that are externally graded.
