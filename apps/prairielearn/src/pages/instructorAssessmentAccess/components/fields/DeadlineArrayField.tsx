@@ -292,8 +292,8 @@ function DeadlineArrayInput({
           size="sm"
           variant="outline-primary"
           disabled={addEarlyDisabled}
-          onClick={addDeadline}
           title={addEarlyDisabledTitle}
+          onClick={addDeadline}
         >
           Add {isEarly ? 'early' : 'late'}
         </Button>
