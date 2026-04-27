@@ -169,6 +169,103 @@ describe('buildAccessTimeline', () => {
     });
   });
 
+  describe('custom due credit', () => {
+    it('uses the custom due credit before the due date', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 80 },
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2025-03-15T00:00:00Z'));
+      expect(timeline[0].credit).toBe(80);
+      expect(timeline[1].credit).toBe(0);
+    });
+
+    it('caps late-deadline credit at the custom due credit', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 80 },
+        lateDeadlines: [
+          { date: '2025-04-15T00:00:00Z', credit: 90 },
+          { date: '2025-04-30T00:00:00Z', credit: 70 },
+        ],
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2025-04-10T00:00:00Z'));
+      expect(timeline.map((s) => s.credit)).toEqual([80, 80, 70, 0]);
+    });
+
+    it('floors early-deadline credit at the custom due credit when above 100', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-01-01T00:00:00Z') },
+        due: { date: new Date('2025-04-01T00:00:00Z'), credit: 120 },
+        earlyDeadlines: [
+          { date: '2025-02-01T00:00:00Z', credit: 130 },
+          { date: '2025-03-01T00:00:00Z', credit: 110 },
+        ],
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2025-02-15T00:00:00Z'));
+      expect(timeline.map((s) => s.credit)).toEqual([130, 120, 120, 0]);
+    });
+
+    it('applies indefinite due credit when due date is null and no other deadlines exist', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: null, credit: 50 },
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2030-01-01T00:00:00Z'));
+      expect(timeline).toEqual([
+        {
+          credit: 50,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ]);
+    });
+
+    it('applies indefinite default credit when due is configured with null date and no credit', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-03-01T00:00:00Z') },
+        due: { date: null },
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2030-01-01T00:00:00Z'));
+      expect(timeline).toEqual([
+        {
+          credit: 100,
+          startDate: new Date('2025-03-01T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ]);
+    });
+
+    it('applies indefinite due credit after early deadlines, shadowing afterLastDeadline', () => {
+      const dc: RuntimeDateControl = {
+        release: { date: new Date('2025-01-01T00:00:00Z') },
+        due: { date: null, credit: 80 },
+        earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+        afterLastDeadline: { credit: 50, allowSubmissions: true },
+      };
+      const timeline = buildAccessTimeline(dc, new Date('2030-01-01T00:00:00Z'));
+      expect(timeline).toHaveLength(2);
+      expect(timeline[0]).toEqual({
+        credit: 120,
+        startDate: new Date('2025-01-01T00:00:00Z'),
+        endDate: new Date('2025-02-01T00:00:00Z'),
+        current: false,
+        submittable: true,
+      });
+      expect(timeline[1]).toEqual({
+        credit: 80,
+        startDate: new Date('2025-02-01T00:00:00Z'),
+        endDate: null,
+        current: true,
+        submittable: true,
+      });
+    });
+  });
+
   it('includes both before-release and after-last-deadline in full timeline', () => {
     const dc: RuntimeDateControl = {
       release: { date: new Date('2025-03-15T00:00:00Z') },

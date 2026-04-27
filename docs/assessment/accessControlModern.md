@@ -88,15 +88,31 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                                  |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `release`           | object  | Object with `date` (ISO datetime). The assessment is not visible to students before this date.               |
-| `due`               | object  | Object with `date` (ISO datetime) and optional `credit` (0–200, default 100). The primary deadline.          |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%). |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%). |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                 |
-| `password`          | string  | Proctor password required to start the assessment.                                                           |
+| Field               | Type    | Description                                                                                                                       |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not visible to students before this date.                                    |
+| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional `credit` (0–200, default 100). See [`due`](#due) below. |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%).                      |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%).                      |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                                     |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                                      |
+| `password`          | string  | Proctor password required to start the assessment.                                                                                |
+
+#### `due`
+
+| Field    | Type    | Default | Description                                                                                                                                |
+| -------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `date`   | string  |         | ISO datetime of the due date, or `null` to keep the assessment open indefinitely (the `credit` value below applies forever after release). |
+| `credit` | integer | `100`   | Credit percentage at the due date (0–200). Omit to use the default of 100%.                                                                |
+
+A custom `credit` constrains what other deadlines may do:
+
+- **Early deadlines are not allowed when `credit` is set.** Early deadlines layer bonus credit on top of a 100% baseline; if you want a different baseline, set `credit` directly and don't use early deadlines.
+- **Late deadlines must be strictly less than `credit`.** A late deadline ≥ `credit` would be silently clamped, so it's rejected at validation time. Late deadlines are also disallowed when `credit` is `0`.
+- **`afterLastDeadline.credit` may not exceed `credit`** for the same reason.
+- **`credit` above 100%** is accepted but discouraged: it gives every on-time student a flat bonus. If you want to reward early submissions, use an early deadline; if you want students to exceed 100% by doing additional work, use [bonus points](configuration.md#assessment-points).
+
+When `date: null` is set, the `credit` applies indefinitely after release (and after early deadlines, if any), and any `afterLastDeadline` configuration is ignored — there is no "after the last deadline" because the due credit never expires.
 
 #### `afterLastDeadline`
 
@@ -124,7 +140,10 @@ earlyDeadline (110%)    due.date (100%)    lateDeadline (80%)
 - **Between `release.date` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
+- **When `due.date` is `null`**: `due.credit` (default 100%) applies indefinitely after release. Any `afterLastDeadline` is ignored.
 - **No `dateControl` or no `release`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
+
+Early-deadline credits are floored at the due-date credit, and late-deadline credits are capped at it — so a single resolved rule can never drop below the due credit before the due date or rise above it afterwards.
 
 ### `integrations`
 

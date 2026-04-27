@@ -102,6 +102,11 @@ export function buildAccessTimeline(
 
   const releaseDate = dateControl.release.date;
   const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
+  // `due` configured with `date: null` means the due-date credit applies
+  // indefinitely after release and shadows any afterLastDeadline. Mirrors
+  // the special-case branches in `computeCredit`.
+  const dueIsIndefinite = dateControl.due !== undefined && dueDate === null;
 
   if (dueDate && dueDate <= releaseDate) return [];
 
@@ -110,7 +115,7 @@ export function buildAccessTimeline(
   if (deadlines.length === 0) {
     return [
       {
-        credit: 100,
+        credit: dueIsIndefinite ? dueCredit : 100,
         startDate: releaseDate,
         endDate: null,
         current: date >= releaseDate,
@@ -143,13 +148,23 @@ export function buildAccessTimeline(
     segmentStart = deadline.date;
   }
 
-  segments.push({
-    credit: dateControl.afterLastDeadline?.credit ?? 0,
-    startDate: segmentStart,
-    endDate: null,
-    current: date >= segmentStart,
-    submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
-  });
+  if (dueIsIndefinite) {
+    segments.push({
+      credit: dueCredit,
+      startDate: segmentStart,
+      endDate: null,
+      current: date >= segmentStart,
+      submittable: true,
+    });
+  } else {
+    segments.push({
+      credit: dateControl.afterLastDeadline?.credit ?? 0,
+      startDate: segmentStart,
+      endDate: null,
+      current: date >= segmentStart,
+      submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
+    });
+  }
 
   return segments;
 }
