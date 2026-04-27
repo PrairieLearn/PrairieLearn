@@ -194,8 +194,9 @@ export function AuthzAccessMismatch({
   const meta = isCourseInstance ? ALL_PERMISSIONS_META : COURSE_PERMISSIONS_META;
   const permissions: PermissionData[] = meta.map((permission) => ({
     ...permission,
-    value: authzData[permission.key],
-    authnValue: authzData[`authn_${permission.key}`],
+    // `meta` only iterates CI keys when present, so this cast is safe.
+    value: (authzData as CourseInstancePageAuthzData)[permission.key],
+    authnValue: (authzData as CourseInstancePageAuthzData)[`authn_${permission.key}`],
   }));
 
   const [oneOfPermissions, allOtherPermissions] = partition(permissions, (permission) =>
