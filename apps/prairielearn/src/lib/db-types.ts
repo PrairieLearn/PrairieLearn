@@ -7,6 +7,8 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
+import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -141,6 +143,7 @@ export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -154,10 +157,12 @@ export const SprocAuthzAssessmentSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -173,6 +178,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_expired: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
@@ -764,7 +770,7 @@ export const CourseInstanceSchema = z.object({
   self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
-  short_name: z.string().nullable(),
+  short_name: z.string(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),

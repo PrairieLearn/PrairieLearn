@@ -99,7 +99,7 @@ function formJsonToEnrollmentRuleData(
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
-    releaseDate: dc?.releaseDate ?? null,
+    releaseDate: dc?.release?.date ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
     dueDate: dc?.dueDate ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
@@ -216,7 +216,7 @@ const saveAllRules = t.procedure
     const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
-      opts.ctx.course_instance.short_name!,
+      opts.ctx.course_instance.short_name,
       'assessments',
       opts.ctx.assessment.tid!,
     );

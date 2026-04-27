@@ -131,7 +131,7 @@ export default async function ({
 
       return {
         course_instance_id: assessment.course_instance_id,
-        course_instance: courseInstance.short_name ?? '',
+        course_instance: courseInstance.short_name,
         assessment_id: assessment.id,
         assessment: assessment.tid ?? assessment.id,
         assessment_instance_id: instance_question.assessment_instance_id,

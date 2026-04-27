@@ -4,7 +4,7 @@ import type { AccessControlJsonWithId } from '../../../models/assessment-access-
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [
-  'releaseDate',
+  'release',
   'dueDate',
   'earlyDeadlines',
   'lateDeadlines',
@@ -78,7 +78,7 @@ export interface MainRuleData {
   trackingId: string;
   beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string | null;
+  release: { date: string | null };
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -99,7 +99,7 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
-  releaseDate: string | null;
+  release: { date: string | null };
   dueDate: string | null;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -147,14 +147,14 @@ export function jsonToMainRuleFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     beforeReleaseListed: json.beforeRelease?.listed ?? false,
     dateControlEnabled:
-      dc?.releaseDate != null ||
+      dc?.release != null ||
       dc?.dueDate != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
       (dc?.lateDeadlines?.length ?? 0) > 0 ||
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
+    release: { date: toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null },
     dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
@@ -213,10 +213,10 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: OverridableFieldName[] = [];
 
-  let releaseDate: string | null = null;
-  if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
-    overriddenFields.push('releaseDate');
+  let release: { date: string | null } = { date: null };
+  if (dc?.release !== undefined) {
+    release = { date: toLocalDatetimeValue(dc.release.date, displayTimezone) };
+    overriddenFields.push('release');
   }
 
   let dueDate: string | null = null;
@@ -286,7 +286,7 @@ export function jsonToOverrideFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     appliesTo,
     overriddenFields,
-    releaseDate,
+    release,
     dueDate,
     earlyDeadlines,
     lateDeadlines,
@@ -309,7 +309,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
+    if (rule.release.date) output.dateControl.release = { date: rule.release.date };
     if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
     if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
@@ -376,8 +376,8 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate') && rule.releaseDate) {
-      output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('release') && rule.release.date) {
+      output.dateControl.release = { date: rule.release.date };
     }
     if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
     if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
@@ -433,7 +433,7 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: mainRule?.releaseDate ?? null,
+    release: { date: mainRule?.release.date ?? null },
     dueDate: mainRule?.dueDate ?? null,
     earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),

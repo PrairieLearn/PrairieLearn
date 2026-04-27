@@ -21,7 +21,7 @@ export interface AccessControlValidationRule {
 }
 
 export type AccessControlIssuePath =
-  | ['dateControl', 'releaseDate']
+  | ['dateControl', 'release', 'date']
   | ['dateControl', 'dueDate']
   | ['dateControl', 'earlyDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'date']
@@ -51,7 +51,8 @@ function pushIssue(
 }
 
 function findReleaseMs(rule: AccessControlJson): number | null {
-  return rule.dateControl?.releaseDate ? new Date(rule.dateControl.releaseDate).getTime() : null;
+  const releaseDate = rule.dateControl?.release?.date;
+  return releaseDate ? new Date(releaseDate).getTime() : null;
 }
 
 function findDueMs(rule: AccessControlJson): number | null {
@@ -485,7 +486,7 @@ export function validateRule(
   const errors: string[] = [];
 
   if (targetType === 'none') {
-    if (rule.dateControl && !rule.dateControl.releaseDate) {
+    if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
   } else {

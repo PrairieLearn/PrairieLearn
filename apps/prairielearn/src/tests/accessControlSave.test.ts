@@ -30,7 +30,7 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
   return merge(
     {
       dateControl: {
-        releaseDate: '2024-03-14T00:01:00',
+        release: { date: '2024-03-14T00:01:00' },
         dueDate: '2024-03-21T23:59:00',
       },
     },
