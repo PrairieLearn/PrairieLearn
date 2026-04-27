@@ -33,12 +33,14 @@ describe('buildAccessTimeline', () => {
         startDate: new Date('2025-03-01T00:00:00Z'),
         endDate: new Date('2025-03-15T00:00:00Z'),
         active: true,
+        submittable: true,
       },
       {
         credit: 0,
         startDate: new Date('2025-03-15T00:00:00Z'),
         endDate: null,
         active: false,
+        submittable: false,
       },
     ]);
   });
@@ -60,25 +62,40 @@ describe('buildAccessTimeline', () => {
       startDate: new Date('2025-03-01T00:00:00Z'),
       endDate: new Date('2025-03-08T00:00:00Z'),
       active: false,
+      submittable: true,
     });
     expect(timeline[1]).toEqual({
       credit: 100,
       startDate: new Date('2025-03-08T00:00:00Z'),
       endDate: new Date('2025-03-15T00:00:00Z'),
       active: true,
+      submittable: true,
     });
     expect(timeline[2]).toEqual({
       credit: 50,
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: new Date('2025-03-22T00:00:00Z'),
       active: false,
+      submittable: true,
     });
     expect(timeline[3]).toEqual({
       credit: 0,
       startDate: new Date('2025-03-22T00:00:00Z'),
       endDate: null,
       active: false,
+      submittable: false,
     });
+  });
+
+  it('marks afterLastDeadline submittable when allowSubmissions is true', () => {
+    const dc: RuntimeDateControl = {
+      release: { date: new Date('2025-03-01T00:00:00Z') },
+      dueDate: new Date('2025-03-15T00:00:00Z'),
+      afterLastDeadline: { credit: 50, allowSubmissions: true },
+    };
+    const timeline = buildAccessTimeline(dc, new Date('2025-03-20T00:00:00Z'));
+
+    expect(timeline[1].submittable).toBe(true);
   });
 
   it('includes afterLastDeadline segment with non-zero credit', () => {
@@ -96,6 +113,7 @@ describe('buildAccessTimeline', () => {
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: null,
       active: true,
+      submittable: false,
     });
   });
 
@@ -113,6 +131,7 @@ describe('buildAccessTimeline', () => {
       startDate: null,
       endDate: new Date('2025-03-15T00:00:00Z'),
       active: true,
+      submittable: false,
     });
     expect(timeline[1].credit).toBe(100);
     expect(timeline[1].active).toBe(false);
@@ -146,6 +165,7 @@ describe('buildAccessTimeline', () => {
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: null,
       active: true,
+      submittable: false,
     });
   });
 
@@ -165,6 +185,7 @@ describe('buildAccessTimeline', () => {
       startDate: null,
       endDate: new Date('2025-03-15T00:00:00Z'),
       active: true,
+      submittable: false,
     });
     expect(timeline[1].credit).toBe(100);
     expect(timeline[2].credit).toBe(50);
@@ -173,6 +194,7 @@ describe('buildAccessTimeline', () => {
       startDate: new Date('2025-04-08T00:00:00Z'),
       endDate: null,
       active: false,
+      submittable: false,
     });
   });
 });

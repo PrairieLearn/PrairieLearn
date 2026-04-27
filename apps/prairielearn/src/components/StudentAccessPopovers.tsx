@@ -84,12 +84,11 @@ function StudentAccessTimelinePopoverContent({
   accessTimeline: AccessTimelineEntry[];
   displayTimezone: string;
 }) {
-  // Hide segments where submissions aren't allowed. Rendering them is
-  // misleading to students — e.g. an `active: false`, 0%-credit segment after
-  // the last deadline reads as "keep submitting for 0 credit" when submissions
-  // are actually forbidden. The resolver still emits these entries so other
-  // consumers (e.g. instructor views) can show the full picture.
-  const visibleEntries = accessTimeline.filter((entry) => entry.active);
+  // Hide segments where submissions aren't allowed. Rendering a 0%-credit
+  // after-last-deadline row reads as "keep submitting for 0 credit" when
+  // submissions are actually forbidden. The resolver still emits these entries
+  // so other consumers (e.g. instructor views) can show the full picture.
+  const visibleEntries = accessTimeline.filter((entry) => entry.submittable);
   return html`
     <table class="table" aria-label="Access details">
       <tr>
