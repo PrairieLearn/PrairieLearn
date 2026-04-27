@@ -1008,20 +1008,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         if a_tru_str == "":
             data["raw_submitted_answers"][name] = ""
         else:
-            correct_answers = [
-                a_tru_str,
-                f"{a_tru_str} + 0",
-            ]
-            if allow_complex:
-                correct_answers.append(f"2j + {a_tru_str} - 3j + j")
-            if allow_trig:
-                correct_answers.append(f"cos(0) * ( {a_tru_str} )")
+            correct_answers = [a_tru_str]
+            # Arithmetic-style variants below don't apply to sets/intervals.
+            if not allow_sets:
+                correct_answers.append(f"{a_tru_str} + 0")
+                if allow_complex:
+                    correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+                if allow_trig:
+                    correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
             data["raw_submitted_answers"][name] = random.choice(correct_answers)
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        if a_tru_str == "":
+        if a_tru_str == "" or allow_sets:
             data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
         else:
             data["raw_submitted_answers"][name] = (
