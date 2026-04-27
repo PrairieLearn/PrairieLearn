@@ -193,11 +193,11 @@ For making content appear in only some panels, or only during specific grading w
 
     The elements below are still supported for backwards compatibility but should not be used in new questions.
 
-| Element                                             | Use instead                                                                                                                                                        | Notes                                                       |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| [`pl-dropdown`](pl-dropdown.md)                     | [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"`, or [`pl-matching`](pl-matching.md) for multiple linked dropdowns sharing the same options | —                                                           |
-| [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md) | [`pl-drawing`](../pl-drawing/index.md)                                                                                                                             | —                                                           |
-| [`pl-variable-score`](pl-variable-score.md)         | (no replacement needed)                                                                                                                                            | All `v3` submission elements include score display options. |
+| Element                                             | Use instead                                                                                                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`pl-dropdown`](pl-dropdown.md)                     | [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"`, or [`pl-matching`](pl-matching.md) for multiple linked dropdowns sharing the same options |
+| [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md) | [`pl-drawing`](../pl-drawing/index.md)                                                                                                                             |
+| [`pl-variable-score`](pl-variable-score.md)         | Not needed, all submission elements include score display options. |
 
 <!-- markdownlint-disable-next-line MD033 -->
 <script>
