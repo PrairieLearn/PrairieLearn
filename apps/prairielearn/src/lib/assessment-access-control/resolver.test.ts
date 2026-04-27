@@ -2444,6 +2444,7 @@ describe('custom due credit', () => {
   });
 
   it('treats 0 credit with null due date as inactive indefinitely', () => {
+    // E.g., Practice assessment: students can submit but receive 0% credit indefinitely
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
