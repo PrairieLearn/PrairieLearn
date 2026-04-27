@@ -199,7 +199,7 @@ function DueDateInput({
                 placeholder="100"
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
-                  const parsed = raw === '' ? null : Number(raw);
+                  const parsed = raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
                   onChange({ ...value, credit: parsed });
                 }}
               />
