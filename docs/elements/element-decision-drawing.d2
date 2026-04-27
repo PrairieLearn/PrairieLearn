@@ -5,21 +5,18 @@ source: "Where does the drawing come from?" {
 }
 
 pl_image_capture: "pl-image-capture"
+pl_file_upload: "pl-file-upload"
 
-grading: "How should the drawing be graded?" {
+kind: "What kind of diagram?" {
   shape: diamond
 }
 pl_excalidraw: "pl-excalidraw"
-
-auto_kind: "What is being drawn?" {
-  shape: diamond
-}
 pl_sketch: "pl-sketch"
 pl_drawing: "pl-drawing"
 
 source -> pl_image_capture: "Photo of handwritten work"
-source -> grading: "Drawn in the browser"
-grading -> pl_excalidraw: "Manually graded"
-grading -> auto_kind: "Auto-graded"
-auto_kind -> pl_sketch: "Mathematical curves\n/ sketches"
-auto_kind -> pl_drawing: "Geometric shapes /\nFBD-style objects"
+source -> pl_file_upload: "Uploaded image\n(e.g., from external tools)"
+source -> kind: "Drawn in the browser"
+kind -> pl_excalidraw: "Freeform vector drawing"
+kind -> pl_sketch: "Mathematical curves\n/ sketches"
+kind -> pl_drawing: "Geometric shapes /\nFBD-style objects"

@@ -4,15 +4,17 @@ PrairieLearn [questions](../question/overview.md) are built from `pl-*` tags ins
 
 !!! tip
 
-    Already know which element you want? Jump to the [alphabetical reference](#reference) below.
+    Already know which element you want? Use the navigation menu on the side, or see the [alphabetical reference](#reference) below.
 
-Most questions only need a handful of elements: [`pl-question-panel`](pl-question-panel.md), [`pl-multiple-choice`](pl-multiple-choice.md), [`pl-number-input`](pl-number-input.md), [`pl-string-input`](pl-string-input.md), [`pl-code`](pl-code.md), [`pl-figure`](pl-figure.md), and [`pl-answer-panel`](pl-answer-panel.md).
+The elements you choose will depend on the type and complexity of your question. A simple question may consist of a question panel prompt (using [`pl-question-panel`](pl-question-panel.md)) followed by a single [submission element](#submission-elements). For more complex prompts, you may need to include [display elements](#display-elements) such as figures, code, and sectioning. To provide additional feedback to students and graders, [additional content can be displayed conditionally](#question-flow-and-feedback) in different panels and contexts.
 
 ## Submission elements
 
 Submission elements collect a response from the student. Within each subsection, elements are listed in roughly the order you should reach for them.
 
-### Selection (multiple choice, matching, ordering)
+![Top-level decision flowchart for submission elements](./element-decision-master.d2){layout="elk" pad="0" scale="1"}
+
+### Selection
 
 When students pick or arrange items from a fixed set.
 
@@ -45,6 +47,7 @@ When the response is a string, an essay, or a math expression.
 
 - [`pl-string-input`](pl-string-input.md): Fill in a string value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
 - [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-file-editor`](pl-file-editor.md): Provide an in-browser editor for longer-form code or raw text (also listed under [Code and files](#code-and-files)).
 - [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a symbolic expression such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-big-o-input`](pl-big-o-input.md): Fill in a symbolic value representing asymptotic complexity.
 
@@ -60,17 +63,20 @@ When the response is a drawing, diagram, or photo of handwritten work.
 - [`pl-image-capture`](pl-image-capture.md): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
 - [`pl-excalidraw`](pl-excalidraw.md): Draw a vector diagram using [Excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-sketch`](pl-sketch.md): Auto-gradable sketches of curves and other mathematical objects (e.g., points, asymptotes, polygons).
+- [`pl-file-upload`](pl-file-upload.md): Accept an image or document produced with an external tool (also listed under [Code and files](#code-and-files)).
 
 ??? note "Decision flowchart"
 
     ![Decision flowchart for drawing input elements](./element-decision-drawing.d2){layout="elk" pad="0" scale="1"}
 
-### Code & files
+### Code and files
 
 When the response is code or a file, written in the browser or uploaded from disk.
 
 - [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
 - [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
+
+For code that needs a richer environment (multiple files, a terminal, an IDE, or a build/run loop), use a [workspace](../workspaces/index.md) with the [`<pl-workspace>`](../workspaces/index.md) element to embed the workspace launcher in the question.
 
 ??? note "Decision flowchart"
 
@@ -82,11 +88,10 @@ Display elements render content to students — figures, code, data, files, and 
 
 ### Media & figures
 
-For showing images, plots, graphs, or downloadable/previewable files alongside the question.
+For showing images, plots, graphs, or downloadable files alongside the question.
 
 - [`pl-figure`](pl-figure.md): Embed an image file in the question.
 - [`pl-file-download`](pl-file-download.md): Enable file downloads for data-centric questions.
-- [`pl-file-preview`](pl-file-preview.md): Display a preview of submitted files.
 - [`pl-graph`](pl-graph.md): Display graphs using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 
 ### Code, data & variables
@@ -102,16 +107,15 @@ For showing pre-formatted code snippets, data frames, matrices, or Python variab
 
 ### Layout & content wrappers
 
-For wrapping, templating, or sanitizing content rather than rendering a specific data type.
+For wrapping or templating content rather than rendering a specific data type.
 
 - [`pl-card`](pl-card.md): Display content within a card-styled component.
 - [`pl-template`](pl-template.md): Display content from mustache templates.
 - [`pl-overlay`](pl-overlay.md): Layer elements on top of one another at specific positions — commonly used to place input fields over a [`pl-figure`](pl-figure.md) or [`pl-drawing`](../pl-drawing/index.md) for labeled-diagram questions.
-- [`pl-xss-safe`](pl-xss-safe.md): Remove potentially unsafe content from HTML code.
 
-## Panels & visibility
+## Question flow and feedback
 
-These elements control where and when content appears — for example, showing feedback only in the submission panel, hiding instructor-only feedback during manual grading.
+These elements determine what students see at each stage of the question lifecycle — the question prompt, the submitted answer, and any feedback shown after grading.
 
 ### Standard question panels
 
@@ -133,9 +137,13 @@ For making content appear in only some panels, or only during specific grading w
 - [`pl-hide-in-manual-grading`](pl-hide-in-manual-grading.md): Hide content in the manual grading page.
 - [`pl-manual-grading-only`](pl-manual-grading-only.md): Show content only during manual grading.
 
-### Hints & external feedback
+### Submission feedback
+
+For showing feedback about a student's submission — what they sent, hints to nudge them, and results from automated grading.
 
 - [`pl-hidden-hints`](pl-hidden-hints.md): Reveal hints progressively as a student submits more on the current variant.
+- [`pl-file-preview`](pl-file-preview.md): Display a preview of submitted files.
+- [`pl-xss-safe`](pl-xss-safe.md): Sanitize student-provided HTML before displaying it back to the student or grader.
 - [`pl-external-grader-results`](pl-external-grader-results.md): Display results from questions that are externally graded.
 
 ## Reference
@@ -197,7 +205,7 @@ For making content appear in only some panels, or only during specific grading w
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [`pl-dropdown`](pl-dropdown.md)                     | [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"`, or [`pl-matching`](pl-matching.md) for multiple linked dropdowns sharing the same options |
 | [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md) | [`pl-drawing`](../pl-drawing/index.md)                                                                                                                             |
-| [`pl-variable-score`](pl-variable-score.md)         | Not needed, all submission elements include score display options. |
+| [`pl-variable-score`](pl-variable-score.md)         | Not needed, all submission elements include score display options.                                                                                                 |
 
 <!-- markdownlint-disable-next-line MD033 -->
 <script>

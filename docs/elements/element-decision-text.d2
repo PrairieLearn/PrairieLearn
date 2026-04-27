@@ -5,7 +5,12 @@ kind: "What kind of text?" {
 }
 
 pl_string_input: "pl-string-input"
+
+long_form: "What kind of long-form input?" {
+  shape: diamond
+}
 pl_rich_text_editor: "pl-rich-text-editor"
+pl_file_editor: "pl-file-editor"
 
 symbolic: "What kind of expression?" {
   shape: diamond
@@ -14,7 +19,9 @@ pl_big_o_input: "pl-big-o-input"
 pl_symbolic_input: "pl-symbolic-input"
 
 kind -> pl_string_input: "Short-form\nplain text"
-kind -> pl_rich_text_editor: "Long-form\nessay / explanation"
+kind -> long_form: "Long-form\ntext or code"
 kind -> symbolic: "Math expression"
+long_form -> pl_rich_text_editor: "Formatted essay\n(headings, math, etc.)"
+long_form -> pl_file_editor: "Code or raw text"
 symbolic -> pl_big_o_input: "Big-O / asymptotic"
 symbolic -> pl_symbolic_input: "General algebra / calculus"
