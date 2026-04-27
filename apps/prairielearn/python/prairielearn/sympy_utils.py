@@ -193,7 +193,7 @@ class _SympyJsonStrPrinter(StrPrinter):
         return "{}"
 
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
-        start, end = self.doprint(expr.start), self.doprint(expr.end)
+        start, end = self._print(expr.start), self._print(expr.end)
         left = "(" if expr.left_open else "["
         right = ")" if expr.right_open else "]"
         return f"{left}{start}, {end}{right}"
@@ -900,9 +900,7 @@ def evaluate_with_source(
     )
 
     try:
-        ast_check_str(
-            code, parsed_locals_to_eval, allow_sets=allow_sets
-        )
+        ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
             normalized_expr, char_offsets, exc.as_type_error()

@@ -118,9 +118,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(
-        element, "allow-sets", ALLOW_SETS_DEFAULT
-    )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -243,9 +241,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(
-        element, "allow-sets", ALLOW_SETS_DEFAULT
-    )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -496,9 +492,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(
-        element, "allow-sets", ALLOW_SETS_DEFAULT
-    )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -616,20 +610,30 @@ def format_submission_for_sympy(
     if sub is None:
         return None, None
 
+    pattern = re.compile(
+        r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+    )
+    search_from = 0
     while True:
         # Find matches of |...| where:
         # when ignoring spaces, it either:
         # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
         # - is a single leter/number
-        match = re.search(
-            r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
-            sub,
-        )
+        match = pattern.search(sub, search_from)
         if not match:
             break
 
         content = match.group(0)[1:-1]  # Strip the bars
+        # When set notation is allowed, a comma inside the match means the
+        # pipes are a union operator pair around an interval or finite set
+        # (e.g. the middle pipes in ``[0,1] | (2,3) | [4,5]``), not an
+        # absolute value. Skip past the leading pipe and keep looking.
+        if allow_sets and "," in content:
+            search_from = match.start() + 1
+            continue
+
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+        search_from = 0
 
     if not allow_sets and "|" in sub:
         return (
@@ -830,9 +834,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(
-        element, "allow-sets", ALLOW_SETS_DEFAULT
-    )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -959,9 +961,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(
-        element, "allow-sets", ALLOW_SETS_DEFAULT
-    )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )

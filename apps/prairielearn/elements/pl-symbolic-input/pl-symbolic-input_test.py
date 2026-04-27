@@ -75,14 +75,15 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ("{1, 2} | {3}", "{1, 2} | {3}"),
         ("[1, 2] | [3, 4]", "[1, 2] | [3, 4]"),
         ("|x| | {1}", "abs(x) | {1}"),
+        ("[0,1] | (2,3) | [4,5]", "[0,1] | (2,3) | [4,5]"),
+        ("(0,1) | (2,3)", "(0,1) | (2,3)"),
+        ("{1} | (2,3) | [4,5]", "{1} | (2,3) | [4,5]"),
     ],
 )
 def test_format_submission_for_sympy_preserves_set_union(
     sub: str, expected: str
 ) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(
-        sub, allow_sets=True
-    )
+    out, error_msg = symbolic_input.format_submission_for_sympy(sub, allow_sets=True)
     assert (out, error_msg) == (expected, None)
 
 
