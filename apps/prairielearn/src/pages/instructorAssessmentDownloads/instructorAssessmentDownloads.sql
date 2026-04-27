@@ -11,38 +11,20 @@ WITH
           WHEN $highest_score THEN NULL
           ELSE ai.id
         END
-      ) (aset.name || ' ' || a.number) AS assessment_label,
-      u.id,
+      ) u.id,
       u.uid,
       u.uin,
       u.name,
       users_get_displayed_role (u.id, ci.id) AS role,
-      substring(
-        u.uid
-        FROM
-          '^[^@]+'
-      ) AS username,
       ai.score_perc,
       ai.points,
       ai.max_points,
       ai.number,
       ai.id AS assessment_instance_id,
       ai.open,
-      CASE
-        WHEN ai.open
-        AND ai.date_limit IS NOT NULL THEN greatest(
-          0,
-          floor(
-            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
-          )
-        )::text || ' min'
-        WHEN ai.open THEN 'Open'
-        ELSE 'Closed'
-      END AS time_remaining,
-      format_date_iso8601 (ai.date, ci.display_timezone) AS date_formatted,
-      format_interval (ai.duration) AS duration,
-      DATE_PART('epoch', ai.duration) AS duration_secs,
-      DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
+      ai.date_limit,
+      ai.date,
+      ai.duration,
       g.name AS group_name,
       teams_uid_list (g.id) AS uid_list
     FROM

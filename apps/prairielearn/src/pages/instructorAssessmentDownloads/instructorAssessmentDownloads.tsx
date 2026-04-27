@@ -7,7 +7,12 @@ import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
-import { formatDateISO } from '@prairielearn/formatter';
+import {
+  MINUTE_IN_MILLISECONDS,
+  SECOND_IN_MILLISECONDS,
+  formatDateISO,
+  formatIntervalMinutes,
+} from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -130,24 +135,20 @@ const ManualGradingSubmissionRowSchema = z.object({
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
 const AssessmentInstanceRowSchema = z.object({
-  assessment_label: z.string(),
   id: UserSchema.shape.id,
   uid: UserSchema.shape.uid.nullable(),
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema,
-  username: z.string().nullable(),
   score_perc: AssessmentInstanceSchema.shape.score_perc,
   points: AssessmentInstanceSchema.shape.points,
   max_points: AssessmentInstanceSchema.shape.max_points,
   number: AssessmentInstanceSchema.shape.number,
   assessment_instance_id: AssessmentInstanceSchema.shape.id,
   open: AssessmentInstanceSchema.shape.open,
-  time_remaining: z.string(),
-  date_formatted: z.string(),
-  duration: z.string().nullable(),
-  duration_secs: z.number().nullable(),
-  duration_mins: z.number().nullable(),
+  date_limit: AssessmentInstanceSchema.shape.date_limit,
+  date: AssessmentInstanceSchema.shape.date,
+  duration: AssessmentInstanceSchema.shape.duration,
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
@@ -165,7 +166,6 @@ const InstanceQuestionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema.nullable(),
-  assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   zone_number: z.number(),
   zone_title: z.string().nullable(),
@@ -457,7 +457,26 @@ async function sendInstancesCsv(
   );
 
   res.attachment(req.params.filename);
-  await pipeline(result.stream(100), stringifyWithColumns(columns), res);
+  await pipeline(
+    result.stream(100),
+    stringifyWithColumns(columns, (row: z.infer<typeof AssessmentInstanceRowSchema>) => ({
+      ...row,
+      assessment_label: `${res.locals.assessment_set.name} ${res.locals.assessment.number}`,
+      username: row.uid?.split('@')[0] ?? null,
+      date_formatted:
+        row.date == null
+          ? null
+          : formatDateISO(row.date, res.locals.course_instance.display_timezone),
+      time_remaining: row.open
+        ? row.date_limit == null
+          ? 'Open'
+          : formatIntervalMinutes(row.date_limit.getTime() - new Date().getTime())
+        : 'Closed',
+      duration_mins:
+        row.duration == null ? null : Math.round(row.duration / MINUTE_IN_MILLISECONDS),
+    })),
+    res,
+  );
 }
 
 router.get(
@@ -580,7 +599,8 @@ router.get(
             row.instance_question_created_at,
             res.locals.course_instance.display_timezone,
           ),
-          duration_seconds: row.duration == null ? null : Math.round(row.duration * 1000),
+          duration_seconds:
+            row.duration == null ? null : Math.round(row.duration / SECOND_IN_MILLISECONDS),
           qid: idsEqual(res.locals.course.id, row.question_course_id)
             ? row.qid
             : `@${row.course_sharing_name}/${row.qid}`,
