@@ -166,7 +166,7 @@ router.get(
                 assessmentToolDefaults={assessmentToolDefaults}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                  pageContext.authz_data.has_course_instance_permission_edit
                 }
                 canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
@@ -187,7 +187,7 @@ router.get(
                 assessmentNumber={pageContext.assessment.number}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                  pageContext.authz_data.has_course_instance_permission_edit
                 }
                 csrfToken={res.locals.__csrf_token}
                 switchViewUrl={toggleUrl}
