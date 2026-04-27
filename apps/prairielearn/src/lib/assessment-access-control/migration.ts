@@ -554,7 +554,7 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
   // view (regression from the grace-period behavior in issue #12579). For
   // PT-modified archetypes we should either omit `due` entirely or emit a shape
   // that keeps the date control inactive.
-  // Follow-up: https://github.com/PrairieLearn/PrairieLearn/pull/14725
+  // Follow-up: https://github.com/PrairieLearn/PrairieLearn/pull/14724
   const result: AccessControlJsonInput = {
     dateControl: {
       due: { date: null },
