@@ -4,11 +4,13 @@ import { handleTrpcError } from '../../lib/trpc.js';
 
 import { administratorCourseRequestsRouter } from './course-requests.js';
 import { administratorCoursesRouter } from './courses.js';
-import { createContext, t } from './trpc-init.js';
+import { createContext, t } from './init.js';
+import { administratorInstitutionsRouter } from './institutions.js';
 
 export const administratorRouter = t.router({
   courseRequests: administratorCourseRequestsRouter,
   courses: administratorCoursesRouter,
+  institutions: administratorInstitutionsRouter,
 });
 
 export type AdministratorRouter = typeof administratorRouter;

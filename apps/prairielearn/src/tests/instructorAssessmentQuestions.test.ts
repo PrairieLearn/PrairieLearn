@@ -10,7 +10,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { getOriginalHash } from '../lib/editors.js';
-import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -29,9 +28,7 @@ const assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW1', 'infoAssessme
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 describe('Editing assessment questions', () => {
-  // Capture original state to restore after tests
   let originalDevMode: boolean;
-  let wasFeatureEnabled: boolean;
 
   /**
    * Helper function to get CSRF token and calculate orig_hash for POST requests.
@@ -66,28 +63,16 @@ describe('Editing assessment questions', () => {
     await execa('git', ['push', 'origin', 'master'], execOptions);
     await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 
-    // Capture original state before modifying
     originalDevMode = config.devMode;
     config.devMode = true;
 
     await helperServer.before(courseLiveDir)();
 
     await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
-
-    // Check if feature was already enabled before enabling it
-    wasFeatureEnabled = await features.enabled('assessment-questions-editor');
-    // Enable the assessment-questions-editor feature flag for these tests
-    await features.enable('assessment-questions-editor');
   });
 
   afterAll(async () => {
-    // Restore original state
     config.devMode = originalDevMode;
-
-    // Only disable the feature if it wasn't enabled before these tests
-    if (!wasFeatureEnabled) {
-      await features.disable('assessment-questions-editor');
-    }
 
     await helperServer.after();
   });
@@ -506,7 +491,7 @@ describe('Editing assessment questions', () => {
     },
   );
 
-  test.sequential('add alternative group with multiple alternatives', async () => {
+  test.sequential('add alternative pool with multiple alternatives', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -548,7 +533,7 @@ describe('Editing assessment questions', () => {
     );
   });
 
-  test.sequential('verify alternative group was added', async () => {
+  test.sequential('verify alternative pool was added', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones.length, 1);
     assert.equal(assessmentInfo.zones[0].questions.length, 1);
@@ -565,7 +550,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[1].points, 15);
   });
 
-  test.sequential('modify alternative points in alternative group', async () => {
+  test.sequential('modify alternative points in alternative pool', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(

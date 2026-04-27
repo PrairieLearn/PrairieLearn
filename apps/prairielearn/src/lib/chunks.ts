@@ -188,7 +188,7 @@ const RawCourseChunkSchema = z.object({
   assessment_uuid: AssessmentSchema.shape.uuid,
   assessment_name: AssessmentSchema.shape.tid,
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
+  course_instance_name: CourseInstanceSchema.shape.short_name.nullable(),
 });
 
 interface CourseInstanceChunks {

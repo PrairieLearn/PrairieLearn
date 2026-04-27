@@ -4,26 +4,28 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
-import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
-const coursesAdminUrl = `${baseUrl}/administrator/courses`;
-
-const trpcCsrfToken = generatePrefixCsrfToken(
-  { url: '/pl/administrator/trpc', authn_user_id: '1' },
-  config.secretKey,
-);
-const trpcClient = createAdministratorTrpcClient({
-  csrfToken: trpcCsrfToken,
-  urlPrefix: baseUrl,
-});
+const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 
 describe('Course request note', { timeout: 60_000 }, function () {
+  let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
+
   beforeAll(helperServer.before());
+  beforeAll(() => {
+    trpcClient = createAdministratorTrpcClient({
+      csrfToken: generatePrefixCsrfToken(
+        { url: '/pl/administrator/trpc', authn_user_id: '1' },
+        config.secretKey,
+      ),
+      urlBase: siteUrl,
+    });
+  });
   afterAll(helperServer.after);
 
   let courseRequestId: string;
@@ -53,12 +55,12 @@ describe('Course request note', { timeout: 60_000 }, function () {
     });
 
     test.sequential('check note information', async () => {
-      const response = await helperClient.fetchCheerio(coursesAdminUrl);
+      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
       const textarea = response.$(`#course-request-note-${courseRequestId}`);
       assert.lengthOf(textarea, 1);
-      assert.equal((textarea.val() as string).trim(), note);
+      assert.equal(textarea.text().trim(), note);
     });
   });
 

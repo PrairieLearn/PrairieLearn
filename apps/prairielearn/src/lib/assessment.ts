@@ -41,6 +41,7 @@ export const InstanceLogSchema = z.object({
   instance_question_id: z.string().nullable(),
   variant_id: z.string().nullable(),
   variant_number: z.number().nullable(),
+  variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),

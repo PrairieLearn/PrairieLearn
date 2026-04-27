@@ -55,7 +55,7 @@ export function parsePointsListValue(v: string): number | number[] | string | un
 
 /**
  * Validates that at least one points field (auto points or manual points) is set.
- * When `parentValues` is provided (e.g. for alternatives inheriting from an alt group),
+ * When `parentValues` is provided (e.g. for alternatives inheriting from an alternative pool),
  * the parent's values also satisfy the requirement.
  * Returns an error message if all are undefined, or undefined if valid.
  */
@@ -152,7 +152,7 @@ export function parseCommentValue(
 
 /**
  * Assessment-level default values for advanced fields that cascade
- * down through zones, alternative groups, and questions.
+ * down through zones, alternative pools, and questions.
  */
 export interface AssessmentAdvancedDefaults {
   advanceScorePerc: number | undefined;

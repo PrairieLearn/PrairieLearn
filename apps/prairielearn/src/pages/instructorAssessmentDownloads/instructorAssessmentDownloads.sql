@@ -96,7 +96,10 @@ SELECT
   ai.number AS assessment_instance_number,
   z.number AS zone_number,
   z.title AS zone_title,
-  q.qid,
+  CASE
+    WHEN ci.course_id = q.course_id THEN q.qid
+    ELSE '@' || c.sharing_name || '/' || q.qid
+  END AS qid,
   iq.number AS instance_question_number,
   iq.points,
   iq.score_perc,
@@ -132,6 +135,7 @@ FROM
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
   JOIN zones AS z ON (z.id = ag.zone_id)
+  JOIN courses AS c ON (c.id = q.course_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
@@ -139,7 +143,7 @@ ORDER BY
   u.uin,
   group_name,
   ai.number,
-  q.qid,
+  qid,
   iq.number,
   iq.id;
 
@@ -166,11 +170,14 @@ WITH
   ),
   final_submissions AS (
     SELECT DISTINCT
-      ON (ai.id, q.qid) u.uid,
+      ON (ai.id, q.id) u.uid,
       u.uin,
       z.number AS zone_number,
       z.title AS zone_title,
-      q.qid,
+      CASE
+        WHEN v.course_id = q.course_id THEN q.qid
+        ELSE '@' || c.sharing_name || '/' || q.qid
+      END AS qid,
       iq.score_perc AS old_score_perc,
       iq.auto_points AS old_auto_points,
       iq.manual_points AS old_manual_points,
@@ -198,9 +205,10 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS z ON (z.id = ag.zone_id)
+      JOIN courses AS c ON (c.id = q.course_id)
     ORDER BY
       ai.id ASC,
-      q.qid ASC,
+      q.id ASC,
       s.date DESC
   )
 SELECT
@@ -225,7 +233,10 @@ WITH
       ai.number AS assessment_instance_number,
       z.number AS zone_number,
       z.title AS zone_title,
-      q.qid,
+      CASE
+        WHEN v.course_id = q.course_id THEN q.qid
+        ELSE '@' || c.sharing_name || '/' || q.qid
+      END AS qid,
       iq.number AS instance_question_number,
       iq.points,
       iq.score_perc,
@@ -269,7 +280,7 @@ WITH
                 JSONB_AGG(
                   JSONB_BUILD_OBJECT(
                     'description',
-                    rgi.description,
+                    ri.description,
                     'points',
                     rgi.points
                   )
@@ -279,6 +290,7 @@ WITH
             )
           FROM
             rubric_grading_items rgi
+            JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
           WHERE
             rgi.rubric_grading_id = rg.id
         )
@@ -335,6 +347,7 @@ WITH
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS z ON (z.id = ag.zone_id)
+      JOIN courses AS c ON (c.id = q.course_id)
     WHERE
       a.id = $assessment_id
   )
@@ -394,3 +407,29 @@ GROUP BY
 ORDER BY
   g.name,
   u.uid;
+
+-- BLOCK select_assessment_instance_max_points
+SELECT
+  max_points
+FROM
+  assessment_instances
+WHERE
+  assessment_id = $assessment_id
+  AND max_points IS NOT NULL
+LIMIT
+  1;
+
+-- BLOCK select_course_instance_users
+-- All enrolled users in the course instance. Used for Canvas matching, which
+-- is a course-level identity mapping and should not be restricted to users
+-- who happen to have instances for a particular assessment.
+SELECT
+  u.*,
+  users_get_displayed_role (u.id, $course_instance_id) AS role
+FROM
+  enrollments AS e
+  JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  e.course_instance_id = $course_instance_id
+ORDER BY
+  u.id;

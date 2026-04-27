@@ -24,6 +24,15 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK select_student_label_by_uuid
+SELECT
+  *
+FROM
+  student_labels
+WHERE
+  uuid = $uuid
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK delete_student_label
 DELETE FROM student_labels
 WHERE
@@ -38,7 +47,9 @@ FROM
   enrollments e
   JOIN student_label_enrollments sle ON e.id = sle.enrollment_id
 WHERE
-  sle.student_label_id = $student_label_id;
+  sle.student_label_id = $student_label_id
+ORDER BY
+  e.id;
 
 -- BLOCK select_student_labels_for_enrollment
 SELECT
