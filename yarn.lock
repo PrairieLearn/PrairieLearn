@@ -5381,6 +5381,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/question-conversion": "workspace:^"
     "@prairielearn/react": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
@@ -5651,7 +5652,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/question-conversion@workspace:packages/question-conversion":
+"@prairielearn/question-conversion@workspace:^, @prairielearn/question-conversion@workspace:packages/question-conversion":
   version: 0.0.0-use.local
   resolution: "@prairielearn/question-conversion@workspace:packages/question-conversion"
   dependencies:
