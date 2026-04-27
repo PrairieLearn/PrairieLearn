@@ -607,11 +607,7 @@ function UploadStep({
         Import quiz and question content from Canvas or other learning management systems. Upload a
         quiz export (<code>.zip</code>) or a full course export (<code>.imscc</code>) to get
         started. (Supports the QTI 1.2 interchange format.){' '}
-        <a
-          href="https://docs.prairielearn.com/importingContent/"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href="https://docs.prairielearn.com/importingContent/" target="_blank" rel="noreferrer">
           Learn more about importing content into PrairieLearn
         </a>
       </p>
