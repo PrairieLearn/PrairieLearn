@@ -32,14 +32,14 @@ describe('buildAccessTimeline', () => {
         credit: 100,
         startDate: new Date('2025-03-01T00:00:00Z'),
         endDate: new Date('2025-03-15T00:00:00Z'),
-        active: true,
+        current: true,
         submittable: true,
       },
       {
         credit: 0,
         startDate: new Date('2025-03-15T00:00:00Z'),
         endDate: null,
-        active: false,
+        current: false,
         submittable: false,
       },
     ]);
@@ -61,28 +61,28 @@ describe('buildAccessTimeline', () => {
       credit: 120,
       startDate: new Date('2025-03-01T00:00:00Z'),
       endDate: new Date('2025-03-08T00:00:00Z'),
-      active: false,
+      current: false,
       submittable: true,
     });
     expect(timeline[1]).toEqual({
       credit: 100,
       startDate: new Date('2025-03-08T00:00:00Z'),
       endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
+      current: true,
       submittable: true,
     });
     expect(timeline[2]).toEqual({
       credit: 50,
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: new Date('2025-03-22T00:00:00Z'),
-      active: false,
+      current: false,
       submittable: true,
     });
     expect(timeline[3]).toEqual({
       credit: 0,
       startDate: new Date('2025-03-22T00:00:00Z'),
       endDate: null,
-      active: false,
+      current: false,
       submittable: false,
     });
   });
@@ -112,7 +112,7 @@ describe('buildAccessTimeline', () => {
       credit: 25,
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: null,
-      active: true,
+      current: true,
       submittable: false,
     });
   });
@@ -130,11 +130,11 @@ describe('buildAccessTimeline', () => {
       credit: 0,
       startDate: null,
       endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
+      current: true,
       submittable: false,
     });
     expect(timeline[1].credit).toBe(100);
-    expect(timeline[1].active).toBe(false);
+    expect(timeline[1].current).toBe(false);
     expect(timeline[2].credit).toBe(0);
     expect(timeline[2].endDate).toBeNull();
   });
@@ -164,7 +164,7 @@ describe('buildAccessTimeline', () => {
       credit: 0,
       startDate: new Date('2025-03-15T00:00:00Z'),
       endDate: null,
-      active: true,
+      current: true,
       submittable: false,
     });
   });
@@ -184,7 +184,7 @@ describe('buildAccessTimeline', () => {
       credit: 0,
       startDate: null,
       endDate: new Date('2025-03-15T00:00:00Z'),
-      active: true,
+      current: true,
       submittable: false,
     });
     expect(timeline[1].credit).toBe(100);
@@ -193,7 +193,7 @@ describe('buildAccessTimeline', () => {
       credit: 10,
       startDate: new Date('2025-04-08T00:00:00Z'),
       endDate: null,
-      active: false,
+      current: false,
       submittable: false,
     });
   });

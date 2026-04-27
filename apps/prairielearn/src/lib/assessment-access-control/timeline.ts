@@ -20,7 +20,7 @@ export const AccessTimelineEntrySchema = z.object({
   startDate: z.date().nullable(),
   endDate: z.date().nullable(),
   /** True iff `date` falls within this segment — at most one entry per timeline. */
-  active: z.boolean(),
+  current: z.boolean(),
   /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
 });
@@ -107,7 +107,7 @@ export function buildAccessTimeline(
         credit: 100,
         startDate: releaseDate,
         endDate: null,
-        active: date >= releaseDate,
+        current: date >= releaseDate,
         submittable: true,
       },
     ];
@@ -120,7 +120,7 @@ export function buildAccessTimeline(
       credit: 0,
       startDate: null,
       endDate: releaseDate,
-      active: true,
+      current: true,
       submittable: false,
     });
   }
@@ -131,7 +131,7 @@ export function buildAccessTimeline(
       credit: deadline.credit,
       startDate: segmentStart,
       endDate: deadline.date,
-      active: date >= segmentStart && date < deadline.date,
+      current: date >= segmentStart && date < deadline.date,
       submittable: true,
     });
     segmentStart = deadline.date;
@@ -141,7 +141,7 @@ export function buildAccessTimeline(
     credit: dateControl.afterLastDeadline?.credit ?? 0,
     startDate: segmentStart,
     endDate: null,
-    active: date >= segmentStart,
+    current: date >= segmentStart,
     submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
   });
 
