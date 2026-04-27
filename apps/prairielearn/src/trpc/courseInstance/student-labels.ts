@@ -70,7 +70,7 @@ const list = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -96,7 +96,7 @@ const listDefinitions = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
