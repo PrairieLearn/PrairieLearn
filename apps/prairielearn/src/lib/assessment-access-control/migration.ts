@@ -407,7 +407,7 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
     result.dateControl = {};
-    if (releaseDate) result.dateControl.releaseDate = releaseDate;
+    if (releaseDate) result.dateControl.release = { date: releaseDate };
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
 
     if (credit > 0 && credit < 100 && creditRule.endDate) {
@@ -513,7 +513,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
   const result: AccessControlJsonInput = {
     dateControl: {},
   };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
+  if (releaseDate) result.dateControl!.release = { date: releaseDate };
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
   if (bonusRules.length > 0) {
@@ -552,7 +552,7 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
       dueDate: null,
     },
   };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
+  if (releaseDate) result.dateControl!.release = { date: releaseDate };
 
   return { result, errors: [], notes: [] };
 }
@@ -585,7 +585,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
   const result: AccessControlJsonInput = {
     dateControl: {},
   };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
+  if (releaseDate) result.dateControl!.release = { date: releaseDate };
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
   applyPracticeWindow(result, rules);
@@ -606,7 +606,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
       password: passwordRule.password!,
     },
   };
-  if (passwordRule.startDate) result.dateControl!.releaseDate = passwordRule.startDate;
+  if (passwordRule.startDate) result.dateControl!.release = { date: passwordRule.startDate };
   if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
 
   applyPracticeWindow(result, rules);
@@ -700,7 +700,7 @@ function migrateKnownAllowAccess(
     case 'no-op':
       return migrateNoOp(rules, modifiers);
     // TODO: revisit always-open migration. The modern format requires a
-    // releaseDate to grant access, so we can't express "100% credit forever"
+    // release.date to grant access, so we can't express "100% credit forever"
     // without one. For now, treat this as an error rather than silently
     // producing an empty result that the resolver interprets as "no access."
     case 'always-open':
@@ -782,8 +782,8 @@ function applyFallbackReleaseDate(
   result: AccessControlJsonInput,
   fallbackReleaseDate: string | undefined,
 ): void {
-  if (result.dateControl && !result.dateControl.releaseDate && fallbackReleaseDate) {
-    result.dateControl.releaseDate = fallbackReleaseDate;
+  if (result.dateControl && !result.dateControl.release && fallbackReleaseDate) {
+    result.dateControl.release = { date: fallbackReleaseDate };
   }
 }
 
