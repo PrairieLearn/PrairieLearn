@@ -8,9 +8,11 @@ import * as unzipper from 'unzipper';
 import { HttpStatusError } from '@prairielearn/error';
 import {
   type ConversionResult,
+  QTI12AssessmentParser,
   type QtiFileEntry,
   convert,
   findQtiFilesFromManifest,
+  parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -198,18 +200,19 @@ async function convertEntry(
     rubricsXml,
   };
 
-  // First pass to get the assessment title for building the question prefix.
-  let preview: ConversionResult;
+  // Parse the XML into IR to get the assessment title for the question prefix,
+  // then run the full conversion once with the correct prefix.
+  let title: string;
   try {
-    preview = await convert(xmlContent, baseOptions);
+    const ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
+    title = ir.title;
   } catch {
     return null;
   }
 
-  const assessmentSlug = slugify(preview.assessmentTitle);
+  const assessmentSlug = slugify(title);
   const questionPrefix = `imported/${assessmentSlug}`;
 
-  // Second pass with the correct question ID prefix.
   const result = await convert(xmlContent, {
     ...baseOptions,
     tags: ['imported'],
@@ -256,10 +259,6 @@ async function serializeConversionResult(
   };
 }
 
-/**
- * Replace HTML tags that reference skipped video files with commented-out
- * versions so the question doesn't contain broken links.
- */
 /**
  * Comment out any HTML tag that references a skipped video file via
  * `clientFilesQuestion/<filename>`. Matches self-closing tags and
