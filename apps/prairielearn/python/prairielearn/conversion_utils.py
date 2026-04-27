@@ -194,7 +194,9 @@ def to_json(
                 "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
-    elif isinstance(v, (sympy.Expr, sympy.Set)):
+    elif isinstance(v, sympy.Set):
+        return sympy_to_json(v, allow_sets=True)
+    elif isinstance(v, sympy.Expr):
         return sympy_to_json(v)
     elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
         s = [str(a) for a in v.free_symbols]
@@ -954,8 +956,7 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np
-        .array2string(A, formatter=formatter)
+        np.array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()
