@@ -671,28 +671,9 @@ function AssessmentQuestionsSection({
   const allDirNames = questions.map((q) => q.directoryName);
 
   return (
-    <details>
-      <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
-
-      <div className="d-flex gap-2 mb-2 mt-1 small">
-        <button
-          type="button"
-          className="btn btn-link btn-sm p-0"
-          onClick={() => onExpandAll(allDirNames)}
-        >
-          Expand all
-        </button>
-        <button
-          type="button"
-          className="btn btn-link btn-sm p-0"
-          onClick={() => onCollapseAll(allDirNames)}
-        >
-          Collapse all
-        </button>
-      </div>
-
+    <>
       {conflictCount > 0 && (
-        <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 mt-2 small">
+        <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 small">
           <i className="bi bi-exclamation-circle text-warning" aria-hidden="true" />
           <span className="flex-grow-1">
             {conflictCount} question{conflictCount !== 1 ? 's' : ''} conflict
@@ -715,7 +696,27 @@ function AssessmentQuestionsSection({
         </div>
       )}
 
-      <div className="d-flex flex-column gap-2 mt-2">
+      <details>
+        <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
+
+        <div className="d-flex gap-2 mb-2 mt-1 small">
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0"
+            onClick={() => onExpandAll(allDirNames)}
+          >
+            Expand all
+          </button>
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0"
+            onClick={() => onCollapseAll(allDirNames)}
+          >
+            Collapse all
+          </button>
+        </div>
+
+        <div className="d-flex flex-column gap-2 mt-2">
         {questions.map((q, qi) => (
           <QuestionReviewPanel
             key={q.directoryName}
@@ -727,8 +728,9 @@ function AssessmentQuestionsSection({
             onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
           />
         ))}
-      </div>
-    </details>
+        </div>
+      </details>
+    </>
   );
 }
 
