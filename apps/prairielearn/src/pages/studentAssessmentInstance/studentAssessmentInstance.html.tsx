@@ -15,7 +15,7 @@ import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
-} from '../../components/StudentAccessRulesPopover.js';
+} from '../../components/StudentAccessPopovers.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
