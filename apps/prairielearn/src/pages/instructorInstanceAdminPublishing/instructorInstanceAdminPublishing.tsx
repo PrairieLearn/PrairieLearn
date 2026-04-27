@@ -1,4 +1,3 @@
-import assert from 'assert';
 import * as path from 'path';
 
 import { Router } from 'express';
@@ -156,9 +155,6 @@ router.get(
       has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
       has_course_instance_permission_view: hasCourseInstancePermissionView,
     } = authzData;
-
-    assert(hasCourseInstancePermissionEdit !== undefined);
-    assert(hasCourseInstancePermissionView !== undefined);
 
     // Only fetch extensions if user has student data view permission
     const publishingExtensions = hasCourseInstancePermissionView

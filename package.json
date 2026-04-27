@@ -73,6 +73,7 @@
   "resolutions": {
     "@sa11y/common/axe-core": "^4",
     "@sa11y/format/axe-core": "^4",
+    "@typescript/native-preview": "7.0.0-dev.20260305.1",
     "markdownlint-cli2/smol-toml": "^1",
     "notebookjs/jsdom": "*",
     "typescript-cp/tar": "*"

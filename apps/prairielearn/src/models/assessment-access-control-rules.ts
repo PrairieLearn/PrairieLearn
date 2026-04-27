@@ -104,7 +104,7 @@ function dbBaseRowToAccessControlJson(
   const dateControl: AccessControlJson['dateControl'] = {};
 
   if (rule.date_control_release_date) {
-    dateControl.releaseDate = rule.date_control_release_date.toISOString();
+    dateControl.release = { date: rule.date_control_release_date.toISOString() };
   }
   if (rule.date_control_due_date_overridden) {
     dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;

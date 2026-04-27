@@ -9,7 +9,7 @@ import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-typ
  * as strings since they are stored as JSON strings in JSONB columns.
  */
 export interface RuntimeDateControl {
-  releaseDate?: Date | null;
+  release?: { date: Date };
   dueDate?: Date | null;
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
@@ -150,7 +150,7 @@ function mergeDateControl(
 
   const merged: RuntimeDateControl = { ...base };
   const ov = override;
-  if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
+  if (ov.release !== undefined) merged.release = ov.release;
   if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
@@ -238,7 +238,7 @@ function computeCredit(
   date: Date,
   authzMode: EnumMode,
 ): CreditResult {
-  if (!dateControl?.releaseDate) {
+  if (!dateControl?.release) {
     return {
       credit: 0,
       active: false,
@@ -249,7 +249,7 @@ function computeCredit(
     };
   }
 
-  const releaseDate = dateControl.releaseDate;
+  const releaseDate = dateControl.release.date;
   const dueDate = dateControl.dueDate ?? null;
 
   if (date < releaseDate) {
@@ -645,7 +645,7 @@ export function resolveAccessControl(
   const showBeforeRelease =
     (effectiveRule.beforeRelease?.listed ?? false) &&
     ptOutcome.action !== 'grant' &&
-    (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
+    (creditResult.beforeRelease || !effectiveRule.dateControl?.release);
 
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
@@ -658,7 +658,7 @@ export function resolveAccessControl(
   // access, so anything that produces `showBeforeRelease: true` must also set
   // `authorized: false`. This covers pre-release (`creditResult.beforeRelease`)
   // as well as the perpetually-listed case (`beforeRelease.listed` with no
-  // releaseDate configured).
+  // release configured).
   if (showBeforeRelease) {
     return {
       ...UNAUTHORIZED_RESULT,
@@ -670,7 +670,7 @@ export function resolveAccessControl(
 
   // A PT-gated rule has no at-home submission path unless dateControl
   // provides one. When PT continue'd (Public mode) and there is no
-  // dateControl releaseDate, the student can't take the assessment at home,
+  // dateControl release, the student can't take the assessment at home,
   // but they may still have a legitimate review-only path if top-level
   // `afterComplete` visibility has been unlocked (e.g., a scheduled at-home
   // release via `questions.visibleFromDate`). In that case, grant
@@ -679,7 +679,7 @@ export function resolveAccessControl(
   if (
     ptOutcome.action === 'continue' &&
     mainRuleInput.prairietestExams.length > 0 &&
-    !effectiveRule.dateControl?.releaseDate
+    !effectiveRule.dateControl?.release
   ) {
     if (!showClosedAssessment) {
       return {

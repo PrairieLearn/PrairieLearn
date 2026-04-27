@@ -503,7 +503,7 @@ function AddUsersModal({
                           <select
                             className="form-select form-select-sm"
                             value={instanceRoles[ci.id] ?? ''}
-                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                            aria-label={`Role for ${ci.short_name}`}
                             onChange={(e) =>
                               setInstanceRoles((prev) => ({ ...prev, [ci.id]: e.target.value }))
                             }
@@ -725,7 +725,7 @@ function BulkEditAccessModal({
                         <select
                           className="form-select form-select-sm"
                           value={instanceRoles[ci.id] ?? ''}
-                          aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                          aria-label={`Role for ${ci.short_name}`}
                           onChange={(e) =>
                             handleInstanceRoleChange(ci.id, e.target.value as InstanceRole | '')
                           }
@@ -1027,8 +1027,8 @@ function StaffTableInner({
             'None',
           {
             id: `ci_${ci.id}`,
-            header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
-            meta: { label: ci.short_name ?? `Instance ${ci.id}` },
+            header: () => <code>{ci.short_name}</code>,
+            meta: { label: ci.short_name },
             size: 120,
             enableGlobalFilter: false,
             enableSorting: false,

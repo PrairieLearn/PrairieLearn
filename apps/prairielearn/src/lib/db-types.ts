@@ -764,7 +764,7 @@ export const CourseInstanceSchema = z.object({
   self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
-  short_name: z.string().nullable(),
+  short_name: z.string(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
