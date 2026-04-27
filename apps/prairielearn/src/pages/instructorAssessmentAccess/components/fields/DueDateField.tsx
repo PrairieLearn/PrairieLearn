@@ -223,11 +223,12 @@ function DueDateInput({
       )}
       {value.credit !== null && value.credit > 100 && (
         <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          Date control is meant to reward earlier submissions. Consider using{' '}
+          Configuring a due date percentage above 100% is not recommended: it gives every on-time
+          student this bonus. If you intend students to exceed 100% by doing additional work, use{' '}
           <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
             bonus points
           </Alert.Link>{' '}
-          to make the assessment worth more.
+          instead. If you intend to reward early submissions, configure an early deadline.
         </Alert>
       )}
     </Form.Group>
