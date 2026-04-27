@@ -8,7 +8,7 @@ else
     ACTION=$1
 fi
 
-# Postgres is provided externally (e.g. a CI service container) — nothing to manage locally.
+# Postgres is provided externally; exit with no action.
 if [[ -n "$PGHOST" ]]; then
     exit 0
 fi

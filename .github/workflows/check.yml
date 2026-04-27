@@ -136,7 +136,6 @@ jobs:
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
       # We must migrate our database before we can typecheck the SQL.
-      # Postgres is provided as a service container on this job.
       - name: Run the SQL typechecker
         run: |
           yarn migrate

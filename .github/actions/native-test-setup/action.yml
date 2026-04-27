@@ -23,9 +23,6 @@ runs:
     #
     # We don't install `texlive` since it's a huge package and the test suite
     # doesn't require it.
-    #
-    # Postgres and Redis are provided as service containers on the calling job,
-    # so they aren't installed here.
     - name: Install OS packages
       shell: bash
       run: |

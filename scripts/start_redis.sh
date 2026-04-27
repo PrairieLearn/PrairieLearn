@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Redis is provided externally (e.g. a CI service container) — nothing to manage locally.
+# Redis is provided externally; exit with no action
 if [[ -n "$REDIS_HOST" ]]; then
     exit 0
 fi
