@@ -33,10 +33,9 @@ STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 
 SympyMapT = dict[str, sympy.Basic | complex]
-FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
-FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
+_FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
+_FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
-FrozenAssumptionsDictT = FrozenDict[str, dict[str, Any]]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
 A dictionary of assumptions for variables in the expression.
@@ -96,31 +95,31 @@ class LocalsForEval(TypedDict):
 
 
 class _Constants:
-    helpers: Final[FrozenSympyFunctionMapT] = FrozenDict({
+    helpers: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "Number": sympy.Number,
         "_Integer": sympy.Integer,
     })
 
-    variables: Final[FrozenSympyMapT] = FrozenDict({
+    variables: Final[_FrozenSympyMapT] = FrozenDict({
         "pi": sympy.pi,
         "e": sympy.E,
         "infty": sympy.oo,
     })
 
-    hidden_variables: Final[FrozenSympyMapT] = FrozenDict({
+    hidden_variables: Final[_FrozenSympyMapT] = FrozenDict({
         "_Exp1": sympy.E,
     })
 
-    complex_variables: Final[FrozenSympyMapT] = FrozenDict({
+    complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
         "i": sympy.I,
         "j": sympy.I,
     })
 
-    hidden_complex_variables: Final[FrozenSympyMapT] = FrozenDict({
+    hidden_complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
         "_ImaginaryUnit": sympy.I,
     })
 
-    functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+    functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "exp": sympy.exp,
         "log": sympy.log,
         "ln": sympy.log,
@@ -137,7 +136,7 @@ class _Constants:
         "Min": sympy.Min,
     })
 
-    trig_functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+    trig_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "cos": sympy.cos,
         "sin": sympy.sin,
         "tan": sympy.tan,
@@ -160,14 +159,14 @@ class _Constants:
         "asinh": sympy.asinh,
     })
 
-    set_functions: Final[FrozenSympyFunctionMapT] = FrozenDict({
+    set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "Interval": sympy.Interval,
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
         "Intersection": sympy.Intersection,
     })
 
-    set_operators: Final[FrozenSympyFunctionMapT] = FrozenDict({
+    set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "U": operator.or_,
         "cup": operator.or_,
         "∪": operator.or_,  # noqa: RUF001
@@ -192,7 +191,7 @@ class _SympyJsonStrPrinter(StrPrinter):
 
     def _print_Interval(self, expr: sympy.Interval) -> str:  # noqa: N802
         start, end = self.doprint(expr.start), self.doprint(expr.end)
-        left, right = "([" [not expr.left_open], ")]" [not expr.right_open]
+        left, right = "(["[not expr.left_open], ")]"[not expr.right_open]
         return f"{left}{start}, {end}{right}"
 
 
@@ -854,16 +853,16 @@ def evaluate_with_source(
     )
     if allow_set_notation:
         transformations = (
-            unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
-            set_literal_transformation,
-            set_operation_transformation,
-            interval_transformation,
+            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _set_literal_transformation,
+            _set_operation_transformation,
+            _interval_transformation,
             *transformations,
         )
     else:
         # check for open intervals
         transformations = (
-            _err_on_transform(interval_transformation, HasSetNotationError),
+            _err_on_transform(_interval_transformation, HasSetNotationError),
             *transformations,
         )
 
@@ -1442,7 +1441,7 @@ def get_items_list(items_string: str | None) -> list[str]:
     return list(map(str.strip, items_string.split(",")))
 
 
-def set_literal_transformation(
+def _set_literal_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
     """A SymPy token transformation that rewrites set literals to FiniteSet calls."""
@@ -1544,7 +1543,7 @@ def _err_on_transform(trans: TRANS, exc: type[BaseSympyError]) -> TRANS:
     return _raise_on_transform
 
 
-def interval_transformation(
+def _interval_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
     """A SymPy token transformation that interprets mathematical intervals like `(-inf, 0]` or `[pi/2, pi]`
@@ -1582,7 +1581,7 @@ def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | 
     return None
 
 
-def unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
+def _unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
     """Return a token transform that splits infix operator names from suffix digits.
 
     SymPy's tokenizer treats strings like ``U2`` or ``cup3`` as a single ``NAME``
@@ -1610,7 +1609,7 @@ def unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS
     return _infix_binop_unmangler
 
 
-def set_operation_transformation(
+def _set_operation_transformation(
     tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
 ) -> list[TOKEN]:
     """A SymPy token transformation that de-sugars set union/intersection.

@@ -224,6 +224,7 @@ convention = "google"
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
 "apps/prairielearn/**/*_test.py" = ["ANN", "D", "PLR0904"]
+"apps/prairielearn/python/test/**/*.py" = ["D"]
 "contrib/**/*.py" = ["ANN", "D", "DOC201"]
 "scripts/**/*.py" = ["D100", "DOC"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]

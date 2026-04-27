@@ -344,9 +344,7 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
     assert (
-        psu.json_to_sympy(
-            data["submitted_answers"]["test"], allow_set_notation=True
-        )
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_set_notation=True)
         == expected_expr
     )
 
@@ -383,9 +381,7 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert (
-        psu.json_to_sympy(
-            data["submitted_answers"]["test"], allow_set_notation=True
-        )
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_set_notation=True)
         == sympy.EmptySet
     )
 
