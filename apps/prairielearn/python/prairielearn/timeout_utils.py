@@ -91,7 +91,7 @@ class SignalTimeout:
 
     Parameters:
         seconds (float | int): duration to run the context manager block
-        swallow_exc (bool): ``False`` if you want to manage ``TimeoutException``
+        swallow_exc (bool): ``False`` if you want to manage ``TimeoutExceptionError``
             (or any other) in an outer ``try ... except`` structure. ``True`` (default)
             if you just want to check the execution of the block with the
             ``state`` attribute of the context manager.
