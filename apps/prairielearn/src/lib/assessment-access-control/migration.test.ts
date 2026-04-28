@@ -404,6 +404,46 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'lower-credit rule fully covered by higher-credit rule is dropped',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 80, startDate: '2024-01-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01', credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [
+          '1 late deadline dropped because the higher-credit due window covers the same period.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'lower-credit rule sharing endDate with higher-credit rule is dropped',
+      rules: [
+        { credit: 50, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-01-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01', credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [
+          '1 late deadline dropped because the higher-credit due window covers the same period.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'afterComplete for showClosedAssessment:false',
       rules: [
         {
@@ -865,6 +905,19 @@ describe('migrateAllowAccess', () => {
       rules: [
         { credit: 100, endDate: '2024-02-01' },
         { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {},
+        errors: ['Non-contiguous access windows are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'unclassified (gapped zero-credit practice windows)',
+      rules: [
+        { credit: 0, startDate: '2024-01-01', endDate: '2024-01-31' },
+        { credit: 0, startDate: '2024-04-01', endDate: '2024-04-30' },
       ],
       expected: {
         result: {},

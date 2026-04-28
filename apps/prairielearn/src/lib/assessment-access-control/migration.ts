@@ -125,7 +125,10 @@ export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAcc
 const MAX_CONTIGUOUS_GAP_MS = 90 * 1000; // 90 seconds
 
 function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
-  const accessRules = rules.filter((r) => (r.credit ?? 0) > 0);
+  // Include zero-credit (practice) rules — they also collapse into a single
+  // span during migration, so non-contiguous practice windows would silently
+  // grant access through the gap if not detected here.
+  const accessRules = rules.filter((r) => r.active !== false);
   if (accessRules.length === 0) return false;
   if (accessRules.some((r) => !r.startDate && !r.endDate)) return false;
 
@@ -458,18 +461,33 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
   const otherClosedRules = closedCreditRules.filter((r) => (r.credit ?? 0) !== dueDateCredit);
   const earlyRules: AssessmentAccessRuleJson[] = [];
   const lateRules: AssessmentAccessRuleJson[] = [];
+  let dominatedLateCount = 0;
 
   for (const rule of otherClosedRules) {
     const credit = rule.credit ?? 0;
     if (credit > 100 && credit > dueDateCredit) {
       earlyRules.push(rule);
     } else if (credit < 100 && credit < dueDateCredit) {
+      // Drop late rules whose window ends on or before the chosen due date —
+      // the higher-credit due-date rule already covers them at higher credit,
+      // so emitting a late deadline before dueDate would be redundant and
+      // would fail downstream date-ordering validation.
+      if (rule.endDate && dueDate && rule.endDate <= dueDate) {
+        dominatedLateCount++;
+        continue;
+      }
       lateRules.push(rule);
     } else {
       errors.push(
         `Cannot place ${credit}% credit rule as early or late deadline (due date credit is ${dueDateCredit}%).`,
       );
     }
+  }
+
+  if (dominatedLateCount > 0) {
+    notes.push(
+      `${dominatedLateCount} late deadline${dominatedLateCount === 1 ? '' : 's'} dropped because the higher-credit due window covers the same period.`,
+    );
   }
 
   if (earlyRules.length > 0) {
