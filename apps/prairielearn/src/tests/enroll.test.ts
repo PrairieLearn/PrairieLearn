@@ -696,6 +696,46 @@ describe('Self-enrollment institution restriction transitions', () => {
       assert.isNull(finalEnrollment);
     });
   });
+
+  it('shows instructor-focused error on instructor URL when user lacks instructor access', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+
+    await createInstitution('1', 'example.com', 'Example University');
+    await createInstitution('2', 'other.com', 'Other University');
+
+    await execute(
+      'UPDATE courses SET institution_id = $institution_id WHERE id = (SELECT course_id FROM course_instances WHERE id = $course_instance_id)',
+      {
+        institution_id: '2',
+        course_instance_id: '1',
+      },
+    );
+
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      restrictToInstitution: true,
+      selfEnrollmentUseEnrollmentCode: false,
+    });
+
+    const defaultInstitutionUser = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Default Institution Student',
+      uin: 'default1',
+      email: 'student@example.com',
+    });
+
+    await withUser(defaultInstitutionUser, async () => {
+      const response = await fetch(courseInstanceUrl + '/instructor/instance_admin/assessments');
+      assert.equal(response.status, 403);
+      const body = await response.text();
+      // The student-focused enrollment page must NOT be shown for instructor URLs.
+      assert.notInclude(body, 'Self-enrollment for this course is restricted');
+      assert.notInclude(body, 'Institution restriction');
+      // Instead, the instructor-access middleware should produce the error.
+      assert.include(body, 'Requires either course preview access or student data view access');
+    });
+  });
+
   it('allows user from different institution when restrictToInstitution is false', async () => {
     // Clean up any existing enrollments
     await deleteEnrollmentsInCourseInstance('1');

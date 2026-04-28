@@ -9,7 +9,8 @@ export default asyncHandler(async (req, res, next) => {
   // Skip on instructor URLs: enrollment is a student-side concern, and any
   // access denial here should be reported as a lack of instructor access by
   // the downstream `authzAuthnHasCoursePreviewOrInstanceView` middleware.
-  if (res.locals.viewType === 'instructor') {
+  // `req.path` is relative to the mount at `/pl/course_instance/:id`.
+  if (req.path === '/instructor' || req.path.startsWith('/instructor/')) {
     next();
     return;
   }
