@@ -63,7 +63,9 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
+          ${authz_data.has_course_permission_edit &&
+          !course.example_course &&
+          (rows.length > 0 || qtiImportEnabled)
             ? html`
                 <div class="d-flex gap-2 ms-auto">
                   ${qtiImportEnabled
@@ -71,21 +73,26 @@ export function InstructorAssessments({
                         <a
                           href="${urlPrefix}/instance_admin/qti_import"
                           class="btn btn-sm btn-outline-light"
+                          aria-label="Import content"
                         >
                           <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
                           <span class="d-none d-sm-inline">Import content</span>
                         </a>
                       `
                     : ''}
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-light"
-                    data-bs-toggle="modal"
-                    data-bs-target="#createAssessmentModal"
-                  >
-                    <i class="fa fa-plus" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Add assessment</span>
-                  </button>
+                  ${rows.length > 0
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-light"
+                          data-bs-toggle="modal"
+                          data-bs-target="#createAssessmentModal"
+                        >
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Add assessment</span>
+                        </button>
+                      `
+                    : ''}
                 </div>
               `
             : ''}
