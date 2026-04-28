@@ -153,6 +153,7 @@ class TestBigOInput:
             ("n*m", "(n**2)*m"),
             ("n*m", "n*(m**2)"),
             ("n+m", "n+m**2"),
+            ("n+m", "n+factorial(m)"),
             ("n+m", "n**2+m**2"),
             ("n", "n*m"),
         ],
@@ -169,7 +170,11 @@ class TestBigOInput:
             ("n*m", "n*m + n"),
             ("n*m", "n*m + m"),
             ("n*m", "n*m + log(n)"),
+            ("n*m", "n*m + log(m)"),
+            ("n+m", "n+m + log(n)"),
+            ("n+m", "n+m + log(m)"),
             ("n**2*m**3", "n**2*m**3 + n**2"),
+            ("n**2*m**3", "n**2*m**3 + m**3"),
             ("n**2*m**3", "n**2*m**3 + log(n)"),
         ],
     )
@@ -185,6 +190,7 @@ class TestBigOInput:
             ("n*m", "-n*m"),
             ("n+m", "n-m"),
             ("n*m**2", "-n*m**2"),
+            ("n**2+m", "-(n**2)+m"),
             ("n*log(m)", "n*log(2/m)"),
         ],
     )
@@ -201,6 +207,7 @@ class TestBigOInput:
             ("n+m", "2*n+m"),
             ("n+m", "n+2*m"),
             ("n*m**2", "2*n*m**2"),
+            ("n**2+m", "2*n**2+m"),
             ("n*log(m)", "2*n*log(m)"),
         ],
     )
