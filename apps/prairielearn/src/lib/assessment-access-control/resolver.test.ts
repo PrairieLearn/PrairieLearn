@@ -23,11 +23,17 @@ function toRuntime(json: AccessControlJson): RuntimeAccessControl {
   const { dateControl, afterComplete, ...rest } = json;
   const result: RuntimeAccessControl = { ...rest };
   if (dateControl) {
-    const { release, dueDate, ...dcRest } = dateControl;
+    const { release, due, ...dcRest } = dateControl;
     result.dateControl = {
       ...dcRest,
       release: release !== undefined ? { date: new Date(release.date) } : undefined,
-      dueDate: dueDate !== undefined ? (dueDate !== null ? new Date(dueDate) : null) : undefined,
+      due:
+        due !== undefined
+          ? {
+              date: due.date !== null ? new Date(due.date) : null,
+              ...(due.credit !== undefined ? { credit: due.credit } : {}),
+            }
+          : undefined,
     };
   }
   if (afterComplete) {
@@ -147,15 +153,15 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
 
   describe('main rule only, no date control', () => {
-    it('returns 0 credit when no dateControl configured', () => {
+    it('returns unauthorized when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -176,7 +182,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-04-01T00:00:00Z' },
-              dueDate: '2025-05-01T00:00:00Z',
+              due: { date: '2025-05-01T00:00:00Z' },
             },
           }),
         ],
@@ -194,7 +200,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-05-01T00:00:00Z',
+              due: { date: '2025-05-01T00:00:00Z' },
             },
           }),
         ],
@@ -215,7 +221,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
               lateDeadlines: [
                 { date: '2025-03-15T00:00:00Z', credit: 80 },
                 { date: '2025-03-20T00:00:00Z', credit: 50 },
@@ -237,7 +243,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
             },
           }),
         ],
@@ -251,7 +257,7 @@ describe('resolveAccessControl', () => {
       const rule = makeMainRule({
         dateControl: {
           release: { date: '2025-03-01T00:00:00Z' },
-          dueDate: '2025-03-10T00:00:00Z',
+          due: { date: '2025-03-10T00:00:00Z' },
           lateDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 0 }],
         },
       });
@@ -283,7 +289,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
               afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
           }),
@@ -301,7 +307,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
               afterLastDeadline: { allowSubmissions: false },
             },
           }),
@@ -319,7 +325,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
               afterLastDeadline: { credit: 25, allowSubmissions: true },
             },
           }),
@@ -343,7 +349,7 @@ describe('resolveAccessControl', () => {
             beforeRelease: { listed: true },
             dateControl: {
               release: { date: '2025-04-01T00:00:00Z' },
-              dueDate: '2025-05-01T00:00:00Z',
+              due: { date: '2025-05-01T00:00:00Z' },
             },
           }),
         ],
@@ -354,6 +360,7 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
+      expect(result.nextActiveDate).toEqual(new Date('2025-04-01T00:00:00Z'));
     });
 
     it('does not set showBeforeRelease after release', () => {
@@ -364,7 +371,7 @@ describe('resolveAccessControl', () => {
             beforeRelease: { listed: true },
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-05-01T00:00:00Z',
+              due: { date: '2025-05-01T00:00:00Z' },
             },
           }),
         ],
@@ -373,18 +380,19 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('handles dateControl without release as no date-based access (0 credit)', () => {
+    it('denies access when dateControl has no release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
           makeMainRule({
             dateControl: {
-              dueDate: '2025-01-01T00:00:00Z',
+              due: { date: '2025-01-01T00:00:00Z' },
             },
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -401,6 +409,24 @@ describe('resolveAccessControl', () => {
       });
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
+    });
+
+    it('propagates password and time limit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              password: 'secret',
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.password).toBe('secret');
+      expect(result.timeLimitMin).toBe(60);
     });
   });
 
@@ -432,7 +458,7 @@ describe('resolveAccessControl', () => {
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: earlyDate, credit: 110 }],
-              dueDate: '2025-03-20T00:00:00Z',
+              due: { date: '2025-03-20T00:00:00Z' },
             },
           }),
         ],
@@ -450,12 +476,12 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -472,11 +498,11 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-other'] },
           ),
         ],
@@ -493,11 +519,11 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -516,12 +542,12 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-1', 'label-2'] },
           ),
         ],
@@ -535,11 +561,11 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-other'] },
           ),
         ],
@@ -558,17 +584,17 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-06-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-07-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
@@ -585,17 +611,17 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-07-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
           makeOverrideRule(
             2,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-06-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -612,17 +638,17 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-06-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-other'] },
           ),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-07-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-07-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
@@ -639,17 +665,17 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-06-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
           makeOverrideRule(
             2,
-            { dateControl: { dueDate: '2025-08-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-08-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -668,12 +694,12 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-06-01T00:00:00Z' } } },
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
           makeOverrideRule(
@@ -699,14 +725,14 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
               password: 'secret123',
             },
           }),
           makeOverrideRule(
             1,
             // Only override dueDate, password should inherit from main
-            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -723,7 +749,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
               password: 'main-pass',
             },
           }),
@@ -874,7 +900,7 @@ describe('resolveAccessControl', () => {
         rule: toRuntime({
           dateControl: {
             release: { date: '2025-01-01T00:00:00Z' },
-            dueDate: '2025-02-01T00:00:00Z',
+            due: { date: '2025-02-01T00:00:00Z' },
             afterLastDeadline: { credit: 50, allowSubmissions: true },
           },
         }),
@@ -900,7 +926,7 @@ describe('resolveAccessControl', () => {
         rule: toRuntime({
           dateControl: {
             release: { date: '2025-02-01T00:00:00Z' },
-            dueDate: '2025-03-01T00:00:00Z',
+            due: { date: '2025-03-01T00:00:00Z' },
             afterLastDeadline: { credit: 0, allowSubmissions: false },
           },
           afterComplete: {
@@ -1306,7 +1332,7 @@ describe('resolveAccessControl', () => {
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
-                  dueDate: '2025-02-01T00:00:00Z',
+                  due: { date: '2025-02-01T00:00:00Z' },
                 },
               }),
               prairietestExams: [ptExam1],
@@ -1326,7 +1352,7 @@ describe('resolveAccessControl', () => {
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
-                  dueDate: '2025-02-01T00:00:00Z',
+                  due: { date: '2025-02-01T00:00:00Z' },
                 },
               }),
               prairietestExams: [ptExam1],
@@ -1350,7 +1376,7 @@ describe('resolveAccessControl', () => {
               ...makeMainRule({
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
-                  dueDate: '2025-02-01T00:00:00Z',
+                  due: { date: '2025-02-01T00:00:00Z' },
                 },
               }),
               prairietestExams: [ptExam1],
@@ -1375,7 +1401,7 @@ describe('resolveAccessControl', () => {
               ...makeMainRule({
                 dateControl: {
                   release: { date: '2025-06-01T00:00:00Z' },
-                  dueDate: '2025-07-01T00:00:00Z',
+                  due: { date: '2025-07-01T00:00:00Z' },
                 },
               }),
               prairietestExams: [ptExam1],
@@ -1453,7 +1479,7 @@ describe('resolveAccessControl', () => {
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
-                  dueDate: '2025-06-01T00:00:00Z',
+                  due: { date: '2025-06-01T00:00:00Z' },
                 },
               }),
               prairietestExams: [ptExam1],
@@ -1475,7 +1501,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
               durationMinutes: 60,
             },
           }),
@@ -1492,7 +1518,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-03-15T12:30:00Z',
+              due: { date: '2025-03-15T12:30:00Z' },
               durationMinutes: 60,
             },
           }),
@@ -1509,7 +1535,7 @@ describe('resolveAccessControl', () => {
         rules: [
           {
             rule: toRuntime({
-              dateControl: { durationMinutes: 60, dueDate: '2025-04-01T00:00:00Z' },
+              dateControl: { durationMinutes: 60, due: { date: '2025-04-01T00:00:00Z' } },
             }),
             number: 0,
             targetType: 'none',
@@ -1536,7 +1562,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              dueDate: '2025-03-15T12:00:20Z',
+              due: { date: '2025-03-15T12:00:20Z' },
               durationMinutes: 60,
             },
           }),
@@ -1552,7 +1578,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [
           makeMainRule({
-            dateControl: { dueDate: '2025-04-01T00:00:00Z' },
+            dateControl: { due: { date: '2025-04-01T00:00:00Z' } },
           }),
         ],
       });
@@ -1701,7 +1727,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
         ],
@@ -1716,7 +1742,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule({
             dateControl: {
-              dueDate: '2025-03-10T00:00:00Z',
+              due: { date: '2025-03-10T00:00:00Z' },
             },
           }),
         ],
@@ -1739,12 +1765,12 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-15T00:00:00Z' },
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-03-01T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-03-01T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -1765,7 +1791,7 @@ describe('resolveAccessControl', () => {
                 { date: '2025-03-01T00:00:00Z', credit: 120 },
                 { date: '2025-03-10T00:00:00Z', credit: 110 },
               ],
-              dueDate: '2025-03-20T00:00:00Z',
+              due: { date: '2025-03-20T00:00:00Z' },
             },
           }),
         ],
@@ -1781,7 +1807,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-15T00:00:00Z' },
-              dueDate: '2025-03-20T00:00:00Z',
+              due: { date: '2025-03-20T00:00:00Z' },
               lateDeadlines: [
                 { date: '2025-03-10T00:00:00Z', credit: 80 },
                 { date: '2025-03-25T00:00:00Z', credit: 50 },
@@ -1805,12 +1831,12 @@ describe('resolveAccessControl', () => {
                 { date: '2025-03-01T00:00:00Z', credit: 120 },
                 { date: '2025-03-02T00:00:00Z', credit: 110 },
               ],
-              dueDate: '2025-03-15T00:00:00Z',
+              due: { date: '2025-03-15T00:00:00Z' },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-02-15T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-02-15T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -1827,13 +1853,13 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
-              dueDate: '2025-03-20T00:00:00Z',
+              due: { date: '2025-03-20T00:00:00Z' },
               lateDeadlines: [{ date: '2025-03-25T00:00:00Z', credit: 80 }],
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { dueDate: '2025-03-30T00:00:00Z' } },
+            { dateControl: { due: { date: '2025-03-30T00:00:00Z' } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
@@ -1989,7 +2015,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             beforeRelease: { listed: true },
             dateControl: {
-              dueDate: '2025-04-01T00:00:00Z',
+              due: { date: '2025-04-01T00:00:00Z' },
             },
           }),
         ],
@@ -2005,7 +2031,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule({})],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
   });
@@ -2019,27 +2045,27 @@ describe('mergeRules', () => {
 
   it('preserves main dateControl fields not in override', () => {
     const result = mergeRules(
-      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } }),
-      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+      toRuntime({ dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'secret' } }),
+      toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('secret');
   });
 
   it('does not mutate main rule', () => {
     const main = toRuntime({
-      dateControl: { dueDate: '2025-04-01T00:00:00Z' },
+      dateControl: { due: { date: '2025-04-01T00:00:00Z' } },
     });
-    mergeRules(main, toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }));
-    expect(main.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
+    mergeRules(main, toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }));
+    expect(main.dateControl?.due?.date).toEqual(new Date('2025-04-01T00:00:00Z'));
   });
 
   it('sets dateControl from override when main has none', () => {
     const result = mergeRules(
       toRuntime({}),
-      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+      toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('sets afterComplete from override when main has none', () => {
@@ -2105,12 +2131,15 @@ describe('mergeRules', () => {
   it('inherits release from main when override does not set it', () => {
     const result = mergeRules(
       toRuntime({
-        dateControl: { release: { date: '2025-03-01T00:00:00Z' }, dueDate: '2025-04-01T00:00:00Z' },
+        dateControl: {
+          release: { date: '2025-03-01T00:00:00Z' },
+          due: { date: '2025-04-01T00:00:00Z' },
+        },
       }),
-      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+      toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
     expect(result.dateControl?.release?.date).toEqual(new Date('2025-03-01T00:00:00Z'));
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('inherits afterComplete from main when override has none', () => {
@@ -2123,10 +2152,10 @@ describe('mergeRules', () => {
 
   it('inherits dateControl sub-fields from main when override has none', () => {
     const result = mergeRules(
-      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } }),
+      toRuntime({ dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'secret' } }),
       toRuntime({}),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-04-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('secret');
   });
 
@@ -2160,28 +2189,28 @@ describe('mergeRules', () => {
 describe('cascadeOverrides', () => {
   it('merges dateControl sub-fields from base and next', () => {
     const result = cascadeOverrides(
-      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'pw1' } }),
-      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+      toRuntime({ dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'pw1' } }),
+      toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('pw1');
   });
 
   it('inherits all dateControl from base when next has none', () => {
     const result = cascadeOverrides(
-      toRuntime({ dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'pw1' } }),
+      toRuntime({ dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'pw1' } }),
       toRuntime({}),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-04-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-04-01T00:00:00Z'));
     expect(result.dateControl?.password).toBe('pw1');
   });
 
   it('sets dateControl from next when base has none', () => {
     const result = cascadeOverrides(
       toRuntime({}),
-      toRuntime({ dateControl: { dueDate: '2025-05-01T00:00:00Z' } }),
+      toRuntime({ dateControl: { due: { date: '2025-05-01T00:00:00Z' } } }),
     );
-    expect(result.dateControl?.dueDate).toEqual(new Date('2025-05-01T00:00:00Z'));
+    expect(result.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
   });
 
   it('merges afterComplete sub-fields', () => {
@@ -2284,5 +2313,239 @@ describe('formatDateShort', () => {
     expect(result).toMatch(/Sat/);
     expect(result).toMatch(/Mar/);
     expect(result).toMatch(/15/);
+  });
+});
+
+describe('custom due credit', () => {
+  it('applies custom due credit before the due date', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
+      date: new Date('2025-03-15T12:00:00Z'),
+    });
+    expect(result.credit).toBe(80);
+    expect(result.active).toBe(true);
+  });
+
+  it('caps late deadlines at the custom due credit', () => {
+    // Raw late credits [90, 70] with due credit 80 clamp to effective [80, 70]
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
+        }),
+      ],
+      date: new Date('2025-04-10T00:00:00Z'),
+    });
+    // Between due (80 effective) and first late (clamped to 80) — same bucket.
+    expect(result.credit).toBe(80);
+  });
+
+  it('applies second late deadline below custom due credit unchanged', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
+        }),
+      ],
+      date: new Date('2025-04-20T00:00:00Z'),
+    });
+    // Between first late (clamped to 80) and second late (70) → 70.
+    expect(result.credit).toBe(70);
+  });
+
+  it('floors early deadlines at the custom due credit when above 100', () => {
+    // Raw early credits [130, 110] with due credit 120 clamp to effective [130, 120]
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-01-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 120 },
+            earlyDeadlines: [
+              { date: '2025-02-01T00:00:00Z', credit: 130 },
+              { date: '2025-03-01T00:00:00Z', credit: 110 },
+            ],
+          },
+        }),
+      ],
+      date: new Date('2025-02-15T00:00:00Z'),
+    });
+    // Between first early (130) and second early (floored to 120) → 120.
+    expect(result.credit).toBe(120);
+  });
+
+  it('gives 0 credit after the due date with no late deadlines', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
+      date: new Date('2025-04-05T00:00:00Z'),
+    });
+    // No afterLastDeadline configured → defaults to 0 credit.
+    expect(result.credit).toBe(0);
+    expect(result.active).toBe(false);
+  });
+
+  it('defaults due credit to 100 when credit field is omitted', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z' },
+          },
+        }),
+      ],
+      date: new Date('2025-03-15T00:00:00Z'),
+    });
+    expect(result.credit).toBe(100);
+  });
+
+  it('applies custom due credit indefinitely when due date is null', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: null, credit: 50 },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.credit).toBe(50);
+    expect(result.active).toBe(true);
+    expect(result.creditDateString).toBe('50%');
+  });
+
+  it('treats 0 credit with null due date as active (submissions allowed for 0% credit)', () => {
+    // E.g., Practice assessment: students can submit but receive 0% credit indefinitely
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: null, credit: 0 },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.credit).toBe(0);
+    expect(result.active).toBe(true);
+    expect(result.creditDateString).toBe('None');
+  });
+
+  it('applies afterLastDeadline after early deadlines when no due date is set', () => {
+    const rules = [
+      makeMainRule({
+        dateControl: {
+          release: { date: '2025-01-01T00:00:00Z' },
+          earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+          afterLastDeadline: { credit: 50, allowSubmissions: true },
+        },
+      }),
+    ];
+
+    const before = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2025-01-15T00:00:00Z'),
+    });
+    expect(before.credit).toBe(120);
+    expect(before.active).toBe(true);
+
+    const after = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(after.credit).toBe(50);
+    expect(after.active).toBe(true);
+  });
+
+  it('shadows afterLastDeadline with indefinite due credit when due date is explicitly null', () => {
+    const result = resolveAccessControl({
+      ...baseInput,
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-01-01T00:00:00Z' },
+            due: { date: null },
+            earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+            afterLastDeadline: { credit: 50, allowSubmissions: true },
+          },
+        }),
+      ],
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(result.credit).toBe(100);
+    expect(result.active).toBe(true);
+  });
+
+  it('honors early deadlines with null due date, then applies default credit indefinitely', () => {
+    const rules = [
+      makeMainRule({
+        dateControl: {
+          release: { date: '2025-01-01T00:00:00Z' },
+          due: { date: null },
+          earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
+        },
+      }),
+    ];
+
+    const before = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2025-01-15T00:00:00Z'),
+    });
+    expect(before.credit).toBe(120);
+    expect(before.active).toBe(true);
+    expect(before.creditDateString).toMatch(/^120% until /);
+
+    const after = resolveAccessControl({
+      ...baseInput,
+      rules,
+      date: new Date('2030-01-01T00:00:00Z'),
+    });
+    expect(after.credit).toBe(100);
+    expect(after.active).toBe(true);
+    expect(after.creditDateString).toBe('100%');
   });
 });

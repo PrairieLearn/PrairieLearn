@@ -302,7 +302,7 @@ function InstructorAssessmentGroupsInner({
                 <GroupRow
                   key={row.group_id}
                   row={row}
-                  canEdit={pageContext.authz_data.has_course_instance_permission_edit ?? false}
+                  canEdit={pageContext.authz_data.has_course_instance_permission_edit}
                   onEdit={setEditingGroup}
                   onDelete={setDeletingGroup}
                 />

@@ -95,7 +95,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   self_enrollment_restrict_to_institution: true,
   self_enrollment_use_enrollment_code: false,
   share_source_publicly: false,
-  short_name: null,
+  short_name: 'Fall 2024',
   sync_errors: null,
   sync_job_sequence_id: null,
   sync_warnings: null,
@@ -113,7 +113,7 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
-  short_name: null,
+  short_name: 'Fall 2024',
 };
 
 const minimalStaffUser: z.input<typeof StaffUserSchema> = {

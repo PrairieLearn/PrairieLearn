@@ -6,7 +6,11 @@ import { resolveModernAssessmentAccessBatch } from '../../lib/assessment-access-
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
+import {
+  StudentAssessments,
+  type StudentAssessmentsRow,
+  StudentAssessmentsRowSchema,
+} from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -38,7 +42,7 @@ router.get(
       : null;
 
     const resolvedRows = rows
-      .map((row) => {
+      .map((row): StudentAssessmentsRow | null => {
         if (!row.modern_access_control) return row;
 
         const result = modernResults?.get(row.assessment_id);
@@ -51,6 +55,8 @@ router.get(
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,
           show_before_release: result.show_before_release,
+          will_release_at: result.next_active_time,
+          access_timeline: result.access_timeline,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
