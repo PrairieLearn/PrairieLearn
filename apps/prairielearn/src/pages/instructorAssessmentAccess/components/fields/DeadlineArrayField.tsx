@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
 import { useEffect, useRef } from 'react';
-import { Button, Form, InputGroup } from 'react-bootstrap';
+import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
@@ -299,6 +299,12 @@ function DeadlineArrayInput({
         </Button>
       </div>
 
+      {addEarlyDisabled && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-0">
+          Clear the custom value on due date credit to allow an early deadline.
+        </Alert>
+      )}
+
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
           <div className="d-flex gap-2 mb-1 flex-wrap align-items-start">
@@ -343,6 +349,7 @@ function DeadlineArrayInput({
                   placeholder="100"
                   min={isEarly ? '101' : '0'}
                   max={isEarly ? '200' : Math.min(99, dueCredit - 1)}
+                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),
