@@ -7,7 +7,7 @@ import { z } from 'zod';
  */
 export interface RuntimeDateControl {
   release?: { date: Date };
-  dueDate?: Date | null;
+  due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
   afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
@@ -34,14 +34,20 @@ interface Deadline {
 /**
  * Each returned entry is a point in time where credit changes: the credit
  * applies when the submission time is strictly less than `date`. The due
- * date is included as a 100%-credit deadline. Deadlines sharing a timestamp
- * are collapsed to one entry (insertion order early → due → late wins).
+ * date is included as a deadline with `dueCredit`. Deadlines sharing a
+ * timestamp are collapsed to one entry (insertion order early → due → late wins).
+ *
+ * Early-deadline credits are floored at `dueCredit` so the timeline never
+ * drops below the base credit before the due date. Late-deadline credits
+ * are capped at `dueCredit` so the timeline never rises above the base
+ * credit after the due date.
  */
 export function buildDeadlines(
   dateControl: RuntimeDateControl,
   releaseDate: Date,
   dueDate: Date | null,
 ): Deadline[] {
+  const dueCredit = dateControl.due?.credit ?? 100;
   const deadlines: Deadline[] = [];
 
   if (dateControl.earlyDeadlines) {
@@ -49,12 +55,12 @@ export function buildDeadlines(
       const entryDate = new Date(entry.date);
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate > dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
+      deadlines.push({ date: entryDate, credit: Math.max(entry.credit, dueCredit) });
     }
   }
 
   if (dueDate) {
-    deadlines.push({ date: dueDate, credit: 100 });
+    deadlines.push({ date: dueDate, credit: dueCredit });
   }
 
   if (dateControl.lateDeadlines) {
@@ -62,7 +68,7 @@ export function buildDeadlines(
       const entryDate = new Date(entry.date);
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate < dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
+      deadlines.push({ date: entryDate, credit: Math.min(entry.credit, dueCredit) });
     }
   }
 
@@ -95,7 +101,12 @@ export function buildAccessTimeline(
   if (!dateControl?.release) return [];
 
   const releaseDate = dateControl.release.date;
-  const dueDate = dateControl.dueDate ?? null;
+  const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
+  // `due` configured with `date: null` means the due-date credit applies
+  // indefinitely after release and shadows any afterLastDeadline. Mirrors
+  // the special-case branches in `computeCredit`.
+  const dueIsIndefinite = dateControl.due !== undefined && dueDate === null;
 
   if (dueDate && dueDate <= releaseDate) return [];
 
@@ -104,7 +115,7 @@ export function buildAccessTimeline(
   if (deadlines.length === 0) {
     return [
       {
-        credit: 100,
+        credit: dueIsIndefinite ? dueCredit : 100,
         startDate: releaseDate,
         endDate: null,
         current: date >= releaseDate,
@@ -137,13 +148,23 @@ export function buildAccessTimeline(
     segmentStart = deadline.date;
   }
 
-  segments.push({
-    credit: dateControl.afterLastDeadline?.credit ?? 0,
-    startDate: segmentStart,
-    endDate: null,
-    current: date >= segmentStart,
-    submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
-  });
+  if (dueIsIndefinite) {
+    segments.push({
+      credit: dueCredit,
+      startDate: segmentStart,
+      endDate: null,
+      current: date >= segmentStart,
+      submittable: true,
+    });
+  } else {
+    segments.push({
+      credit: dateControl.afterLastDeadline?.credit ?? 0,
+      startDate: segmentStart,
+      endDate: null,
+      current: date >= segmentStart,
+      submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
+    });
+  }
 
   return segments;
 }
