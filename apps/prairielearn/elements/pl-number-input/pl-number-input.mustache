@@ -177,7 +177,7 @@ Do not write any variables or other symbols. Scientific notation is accepted (e.
 {{#relabs}}<p>For credit, your answer must be
 {{#any_nonzero_tol}}accurate within the tolerance:
 {{#nonzero_rtol}}&plusmn;{{rtol_pct}}% of the correct answer (relative tolerance){{/nonzero_rtol}}
-{{#nonzero_atol}}{{#nonzero_rtol}}and also{{/nonzero_rtol}} within {{atol}} of the correct answer (absolute tolerance){{/nonzero_atol}}{{/any_nonzero_tol}}{{^any_nonzero_tol}}exact{{/any_nonzero_tol}}.
+{{#nonzero_atol}}{{#nonzero_rtol}}and also{{/nonzero_rtol}} within <code>{{atol}}</code> of the correct answer (absolute tolerance){{/nonzero_atol}}{{/any_nonzero_tol}}{{^any_nonzero_tol}}exact{{/any_nonzero_tol}}.
 </p>
 {{/relabs}}
 {{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digit{{#digits_plural}}s{{/digits_plural}} after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 &minus; {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
