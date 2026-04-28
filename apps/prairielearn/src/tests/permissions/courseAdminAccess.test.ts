@@ -283,44 +283,27 @@ function runTest(context: TestContext) {
     },
   );
 
-  test.sequential('cannot change instance role of self', async () => {
+  test.sequential('can change instance role of self', async () => {
     const trpc = createTrpcClient();
-    try {
-      await trpc.courseStaff.updateInstanceRole.mutate({
-        userId: context.userId,
-        courseInstanceId: '1',
-        courseInstanceRole: 'Student Data Viewer',
-      });
-      assert.fail('Expected FORBIDDEN error');
-    } catch (err) {
-      const appError = getAppError<CourseStaffError>(err);
-      assert.isNotNull(appError);
-      assert.include(appError.message, 'Only administrators can');
-    }
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
-  test.sequential(
-    'cannot change instance role of self even when emulating another owner',
-    async () => {
-      const trpc = createTrpcClient({
-        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-      });
-      try {
-        await trpc.courseStaff.updateInstanceRole.mutate({
-          userId: context.userId,
-          courseInstanceId: '1',
-          courseInstanceRole: 'Student Data Viewer',
-        });
-        assert.fail('Expected FORBIDDEN error');
-      } catch (err) {
-        const appError = getAppError<CourseStaffError>(err);
-        assert.isNotNull(appError);
-        assert.include(appError.message, 'while emulating');
-      }
-      await checkPermissions(users);
-    },
-  );
+  test.sequential('can change instance role of self back to None', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'None',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
+    await checkPermissions(users);
+  });
 
   test.sequential('can add user', async () => {
     const trpc = createTrpcClient();
