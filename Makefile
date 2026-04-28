@@ -120,10 +120,19 @@ lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
-# This is a separate target since the caches don't respect updates to plugins.
+# Separate target since the caches don't respect updates to plugins.
+# Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
+# pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
 lint-js-cached:
-	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
+	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
+	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
+	@yarn eslint --cache --cache-strategy content \
+		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
+		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn prettier \
+		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
+		"!apps/prairielearn/**/*.{ts,tsx}" \
+		--check --cache --cache-strategy content
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
@@ -195,9 +204,9 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2

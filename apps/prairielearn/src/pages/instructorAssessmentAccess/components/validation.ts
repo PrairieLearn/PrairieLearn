@@ -1,0 +1,130 @@
+import {
+  type AccessControlValidationIssue,
+  type AccessControlValidationRule,
+  validateGlobalCreditConsistencyIssues,
+  validateGlobalDateConsistencyIssues,
+  validateRuleDateOrderingIssues,
+  validateRuleStructuralDependencyIssues,
+} from '../../../lib/assessment-access-control/validation.js';
+
+import { type AccessControlFormData, formDataToJson } from './types.js';
+
+export type AccessControlFormFieldPath =
+  | 'mainRule.release.date'
+  | 'mainRule.due.date'
+  | 'mainRule.due.credit'
+  | `mainRule.earlyDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.credit`
+  | 'mainRule.afterLastDeadline.credit'
+  | 'mainRule.questionVisibility.visibleFromDate'
+  | 'mainRule.questionVisibility.visibleUntilDate'
+  | 'mainRule.scoreVisibility.visibleFromDate'
+  | `overrides.${number}.release.date`
+  | `overrides.${number}.due.date`
+  | `overrides.${number}.due.credit`
+  | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.credit`
+  | `overrides.${number}.afterLastDeadline.credit`
+  | `overrides.${number}.questionVisibility.visibleFromDate`
+  | `overrides.${number}.questionVisibility.visibleUntilDate`
+  | `overrides.${number}.scoreVisibility.visibleFromDate`;
+
+function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
+  return formDataToJson(formData).map((rule, index) => ({
+    rule,
+    targetType: index === 0 ? 'none' : (rule.ruleType ?? 'student_label'),
+    ruleIndex: index,
+  }));
+}
+
+function mapIssueToFormFieldPath(
+  issue: AccessControlValidationIssue,
+): AccessControlFormFieldPath | null {
+  const prefix: 'mainRule' | `overrides.${number}` =
+    issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
+
+  switch (issue.path[0]) {
+    case 'dateControl':
+      switch (issue.path[1]) {
+        case 'release':
+          return `${prefix}.release.date`;
+        case 'due':
+          return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
+        case 'earlyDeadlines':
+          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+        case 'lateDeadlines':
+          return issue.path[3] === 'credit'
+            ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+        case 'afterLastDeadline':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
+        default:
+          return null;
+      }
+    case 'afterComplete':
+      if (issue.path[1] === 'questions') {
+        switch (issue.path[2]) {
+          case 'visibleFromDate':
+            return `${prefix}.questionVisibility.visibleFromDate`;
+          case 'visibleUntilDate':
+            return `${prefix}.questionVisibility.visibleUntilDate`;
+          default:
+            return null;
+        }
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (issue.path[1] === 'score') {
+        switch (issue.path[2]) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          case 'visibleFromDate':
+            return `${prefix}.scoreVisibility.visibleFromDate`;
+          default:
+            return null;
+        }
+      }
+      return null;
+    default:
+      return null;
+  }
+}
+
+export function getGlobalDateValidationErrors(formData: AccessControlFormData): {
+  path: AccessControlFormFieldPath;
+  message: string;
+}[] {
+  const seenPaths = new Set<AccessControlFormFieldPath>();
+  const results: { path: AccessControlFormFieldPath; message: string }[] = [];
+
+  const validationRules = buildValidationRules(formData);
+
+  for (const issues of [
+    validateGlobalDateConsistencyIssues(validationRules),
+    validateGlobalCreditConsistencyIssues(validationRules),
+  ]) {
+    for (const issue of issues) {
+      const path = mapIssueToFormFieldPath(issue);
+      if (!path || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      results.push({ path, message: issue.message });
+    }
+  }
+
+  for (const validationRule of validationRules) {
+    for (const issues of [
+      validateRuleStructuralDependencyIssues(validationRule),
+      validateRuleDateOrderingIssues(validationRule),
+    ]) {
+      for (const issue of issues) {
+        const path = mapIssueToFormFieldPath(issue);
+        if (!path || seenPaths.has(path)) continue;
+        seenPaths.add(path);
+        results.push({ path, message: issue.message });
+      }
+    }
+  }
+
+  return results;
+}

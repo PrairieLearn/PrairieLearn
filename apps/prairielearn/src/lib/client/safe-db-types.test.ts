@@ -21,12 +21,17 @@ import {
   StaffTopicSchema,
   StaffUserSchema,
   StaffZoneSchema,
+  StudentAssessmentInstanceAuthzResultSchema,
   StudentAssessmentInstanceSchema__UNSAFE,
+  StudentAssessmentQuestionSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
+  StudentInstanceQuestionSchema,
+  StudentQuestionSchema,
   StudentUserSchema,
+  StudentZoneSchema,
 } from './safe-db-types.js';
 
 // Minimal valid data for each schema (with required fields only)
@@ -90,7 +95,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   self_enrollment_restrict_to_institution: true,
   self_enrollment_use_enrollment_code: false,
   share_source_publicly: false,
-  short_name: null,
+  short_name: 'Fall 2024',
   sync_errors: null,
   sync_job_sequence_id: null,
   sync_warnings: null,
@@ -108,7 +113,7 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
-  short_name: null,
+  short_name: 'Fall 2024',
 };
 
 const minimalStaffUser: z.input<typeof StaffUserSchema> = {
@@ -262,6 +267,16 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   user_id: null,
 };
 
+const minimalStudentAssessmentInstanceAuthzResult: z.input<
+  typeof StudentAssessmentInstanceAuthzResultSchema
+> = {
+  active: true,
+  authorized_edit: true,
+  credit_date_string: null,
+  password: 'secret',
+  show_closed_assessment: false,
+};
+
 const minimalStaffAssessmentSet: z.input<typeof StaffAssessmentSetSchema> = {
   abbreviation: 'HW',
   color: 'blue',
@@ -358,6 +373,7 @@ const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = 
 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
+  ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
   alternative_group_id: null,
@@ -526,6 +542,45 @@ const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
   title: null,
 };
 
+const minimalStudentZone: z.input<typeof StudentZoneSchema> = {
+  best_questions: null,
+  id: '6',
+  lockpoint: false,
+  max_points: null,
+  number: 1,
+  title: null,
+};
+
+const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSchema> = {
+  auto_points: null,
+  current_value: null,
+  highest_submission_score: null,
+  id: '1',
+  manual_points: null,
+  number_attempts: 0,
+  open: true,
+  points: 0,
+  points_list: null,
+  points_list_original: null,
+  requires_manual_grading: false,
+  score_perc: 0,
+  status: 'unanswered',
+};
+
+const minimalStudentAssessmentQuestion: z.input<typeof StudentAssessmentQuestionSchema> = {
+  allow_real_time_grading: true,
+  grade_rate_minutes: null,
+  init_points: null,
+  max_auto_points: null,
+  max_manual_points: null,
+  max_points: null,
+};
+
+const minimalStudentQuestion: z.input<typeof StudentQuestionSchema> = {
+  id: '8',
+  title: null,
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -614,6 +669,22 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalStudentAssessmentInstance);
   });
 
+  it('parses valid StudentAssessmentInstanceAuthzResult and strips password', () => {
+    const parsed = StudentAssessmentInstanceAuthzResultSchema.parse({
+      ...minimalStudentAssessmentInstanceAuthzResult,
+      extra: 123,
+    });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('password');
+    expect(parsed).toStrictEqual({
+      active: true,
+      authorized_edit: true,
+      credit_date_string: null,
+      has_password: true,
+      show_closed_assessment: false,
+    });
+  });
+
   it('parses valid StaffAssessmentSet and drops extra fields', () => {
     const parsed = StaffAssessmentSetSchema.parse({ ...minimalStaffAssessmentSet, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
@@ -684,5 +755,35 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffZoneSchema.parse({ ...minimalStaffZone, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffZone);
+  });
+
+  it('parses valid StudentZone and drops extra fields', () => {
+    const parsed = StudentZoneSchema.parse({ ...minimalStudentZone, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentZone);
+  });
+
+  it('parses valid StudentInstanceQuestion and drops extra fields', () => {
+    const parsed = StudentInstanceQuestionSchema.parse({
+      ...minimalStudentInstanceQuestion,
+      extra: 123,
+    });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentInstanceQuestion);
+  });
+
+  it('parses valid StudentAssessmentQuestion and drops extra fields', () => {
+    const parsed = StudentAssessmentQuestionSchema.parse({
+      ...minimalStudentAssessmentQuestion,
+      extra: 123,
+    });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentAssessmentQuestion);
+  });
+
+  it('parses valid StudentQuestion and drops extra fields', () => {
+    const parsed = StudentQuestionSchema.parse({ ...minimalStudentQuestion, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentQuestion);
   });
 });

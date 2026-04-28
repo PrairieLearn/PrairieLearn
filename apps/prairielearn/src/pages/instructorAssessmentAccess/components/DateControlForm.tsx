@@ -1,4 +1,4 @@
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -11,72 +11,76 @@ import { MainDurationField, OverrideDurationField } from './fields/DurationField
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
+import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
+  displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   title?: string;
   description?: string;
+  displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
-  const { register } = useFormContext<AccessControlFormData>();
+  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
     name: 'mainRule.dateControlEnabled',
   });
 
   return (
-    <>
-      <Card className="mb-4">
-        <Card.Header>
-          <Form.Check
-            type="checkbox"
-            id="mainRule-date-control-enabled"
-            label={title}
-            {...register('mainRule.dateControlEnabled')}
-            aria-describedby="mainRule-date-control-help"
-          />
-          <Form.Text id="mainRule-date-control-help" className="text-muted">
-            {description}
-          </Form.Text>
-        </Card.Header>
-        {dateControlEnabled ? (
-          <Card.Body>
-            <div className="mb-3">
-              <MainReleaseDateField />
-            </div>
-            <div className="mb-3">
-              <MainDeadlineArrayField type="early" />
-            </div>
-            <div className="mb-3">
-              <MainDueDateField />
-            </div>
-            <div className="mb-4">
-              <MainDeadlineArrayField type="late" />
-            </div>
-          </Card.Body>
-        ) : (
-          <Card.Body>
-            <p className="text-body-secondary mb-0">
-              Enable date control to configure release dates, due dates, and deadlines.
-            </p>
-          </Card.Body>
-        )}
-      </Card>
-
-      <div className="mb-3">
-        <MainAfterLastDeadlineField />
+    <div>
+      <div className="section-header mb-3">
+        <Form.Check
+          type="checkbox"
+          id="mainRule-date-control-enabled"
+          label={<strong>{title}</strong>}
+          {...register('mainRule.dateControlEnabled', {
+            onChange: (e) => {
+              if (e.target.checked && !getValues('mainRule.release.date')) {
+                setValue('mainRule.release.date', startOfDayDatetime(todayDate(displayTimezone)), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
+            },
+          })}
+          aria-describedby="mainRule-date-control-help"
+        />
+        <Form.Text id="mainRule-date-control-help" className="text-muted">
+          {description}
+        </Form.Text>
       </div>
-
-      <Row className="mb-3 gy-3">
-        <Col md={6}>
-          <MainDurationField />
-        </Col>
-        <Col md={6}>
-          <MainPasswordField />
-        </Col>
-      </Row>
-    </>
+      {dateControlEnabled ? (
+        <div className="d-flex flex-column gap-3">
+          <MainReleaseDateField displayTimezone={displayTimezone} />
+          <MainDeadlineArrayField type="early" displayTimezone={displayTimezone} />
+          <MainDueDateField
+            displayTimezone={displayTimezone}
+            assessmentId={assessmentId}
+            courseInstanceId={courseInstanceId}
+          />
+          <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
+          <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
+          <Row className="gy-3">
+            <Col md={6}>
+              <MainDurationField />
+            </Col>
+            <Col md={6}>
+              <MainPasswordField />
+            </Col>
+          </Row>
+        </div>
+      ) : (
+        <p className="text-body-secondary mt-2 mb-0">
+          Enable date control to configure release dates, due dates, and deadlines.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -84,36 +88,37 @@ export function OverrideDateControlForm({
   index,
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
+  displayTimezone,
+  assessmentId,
+  courseInstanceId,
 }: {
   index: number;
   title?: string;
   description?: string;
+  displayTimezone: string;
+  assessmentId: string;
+  courseInstanceId: string;
 }) {
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <div>{title}</div>
+    <div>
+      <div className="section-header mb-3">
+        <div>
+          <strong>{title}</strong>
+        </div>
         <Form.Text className="text-muted">{description}</Form.Text>
-      </Card.Header>
-      <Card.Body>
-        <div className="mb-3">
-          <OverrideReleaseDateField index={index} />
-        </div>
-        <div className="mb-3">
-          <OverrideDeadlineArrayField index={index} type="early" />
-        </div>
-        <div className="mb-3">
-          <OverrideDueDateField index={index} />
-        </div>
-        <div className="mb-4">
-          <OverrideDeadlineArrayField index={index} type="late" />
-        </div>
-
-        <div className="mb-3">
-          <OverrideAfterLastDeadlineField index={index} />
-        </div>
-
-        <Row className="mb-3 gy-3">
+      </div>
+      <div className="d-flex flex-column gap-3">
+        <OverrideReleaseDateField index={index} displayTimezone={displayTimezone} />
+        <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
+        <OverrideDueDateField
+          index={index}
+          displayTimezone={displayTimezone}
+          assessmentId={assessmentId}
+          courseInstanceId={courseInstanceId}
+        />
+        <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
+        <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
+        <Row className="gy-3">
           <Col md={6}>
             <OverrideDurationField index={index} />
           </Col>
@@ -121,7 +126,7 @@ export function OverrideDateControlForm({
             <OverridePasswordField index={index} />
           </Col>
         </Row>
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 }

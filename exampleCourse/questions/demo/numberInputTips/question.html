@@ -1,3 +1,7 @@
+{{! This question conditionally displays the inputs and instead renders the submission in raw text inputs. }}
+{{! This pattern is not recommended because you cannot see which inputs are correct or any associated feedback. }}
+{{! htmlmustache-disable pl-input-in-panel }}
+
 <pl-question-panel>
   <p>Suppose you define a random number in <code>server.py</code> using the following:</p>
   <pl-code language="python">a = random.uniform(1,10)</pl-code>

@@ -16,13 +16,14 @@ import { AccessControlForm } from './AccessControlForm.js';
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  origHash: string;
+  origHash: string | null;
   assessmentId: string;
   initialData: AccessControlJsonWithId[];
 }
 
 function AssessmentAccessControlInner({
   courseInstance,
+  assessmentId,
   origHash: initialOrigHash,
   initialData,
 }: AssessmentAccessControlProps) {
@@ -74,6 +75,7 @@ function AssessmentAccessControlInner({
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
+        assessmentId={assessmentId}
         initialData={initialData}
         isSaving={saveMutation.isPending}
         alert={alert}

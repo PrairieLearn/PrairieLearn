@@ -12,7 +12,7 @@ dependencies = [
   "coloraide==8.8.1",
   "faker==40.12.0",
   "jinja2==3.1.6",
-  "lxml==6.0.2",
+  "lxml==6.1.0",
   "matplotlib==3.10.8",
   "networkx==3.6.1",
   "nltk==3.9.4",
@@ -36,6 +36,7 @@ dependencies = [
   "scikit-learn==1.8.0",
   "scipy==1.17.1",
   "seaborn==0.13.2",
+  "sketchresponse==0.1.4",
   "statsmodels==0.14.6",
   "sympy==1.14.0",
   "text-unidecode==1.3",
@@ -46,7 +47,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "pandas-stubs==2.3.3.260113",
-  "pytest==9.0.2",
+  "pytest==9.0.3",
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.0",
   "pytest-repeat==0.9.4",
@@ -103,7 +104,7 @@ ignore = [
   # These rules provide little value to us
   "BLE",     # flake8-blind-except
   "COM",     # flake8-commas
-  "CPY001",  # missing-copyright-notice 
+  "CPY001",  # missing-copyright-notice
   "C901",    # mccabe (complexity checks)
   "ERA",     # eradicate (code in comments)
   "EM",      # flake8-errmsg
@@ -112,7 +113,7 @@ ignore = [
   "FIX",     # flake8-fixme
   "INP001",  # implicit-namespace-package
   "S",       # flake8-bandit (security rules)
-  "SLF001",  # private-member-access 
+  "SLF001",  # private-member-access
   "T201",    # flake8-print
   "T100",    # flake8-debugger
   "TD",      # flake8-todos
@@ -223,6 +224,8 @@ convention = "google"
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"apps/prairielearn/**/*_test.py" = ["ANN", "D", "PLR0904"]
+"apps/prairielearn/python/test/**/*.py" = ["D"]
 "contrib/**/*.py" = ["ANN", "D", "DOC201"]
 "scripts/**/*.py" = ["D100", "DOC"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
@@ -230,7 +233,6 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 

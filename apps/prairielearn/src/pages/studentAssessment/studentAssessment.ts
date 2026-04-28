@@ -8,7 +8,6 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
   GroupOperationError,
-  canUserAssignGroupRoles,
   createGroup,
   getGroupConfig,
   getGroupId,
@@ -17,6 +16,7 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';

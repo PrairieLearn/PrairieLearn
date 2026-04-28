@@ -238,6 +238,7 @@ const SKIP_ROUTES = [
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
   /\.json$/,
+  '/pl/request_course/check',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',

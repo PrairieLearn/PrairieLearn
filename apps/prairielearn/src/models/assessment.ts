@@ -48,6 +48,20 @@ export async function selectAssessmentByTid({
   );
 }
 
+export async function selectAssessmentByUuid({
+  course_instance_id,
+  uuid,
+}: {
+  course_instance_id: string;
+  uuid: string;
+}) {
+  return await queryRow(
+    sql.select_assessment_by_uuid,
+    { course_instance_id, uuid },
+    AssessmentSchema,
+  );
+}
+
 export async function selectAssessmentInfoForJob(assessment_id: string) {
   return await queryRow(
     sql.select_assessment_info_for_job,
@@ -172,4 +186,17 @@ export function selectAssessmentsCursor({
     { course_instance_id },
     AssessmentRowSchema,
   );
+}
+
+export async function selectAssessmentZonePointsRange({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<{ min: number; max: number }> {
+  const row = await queryRow(
+    sql.select_assessment_zone_points_range,
+    { assessment_id },
+    z.object({ min_total: z.coerce.number(), max_total: z.coerce.number() }),
+  );
+  return { min: row.min_total, max: row.max_total };
 }

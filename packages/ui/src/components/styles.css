@@ -101,6 +101,7 @@ body.pl-ui-no-user-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-bottom: var(--bs-border-width) solid var(--bs-border-color);
   flex-shrink: 0;
@@ -136,6 +137,16 @@ body.pl-ui-no-user-select {
 
 .pl-ui-split-pane:not([data-collapsed]) .pl-ui-split-pane__toggle {
   display: none;
+}
+
+/* ── StickyActionBar ─────────────────────────────────────────────────── */
+
+.pl-ui-sticky-action-bar {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--bs-body-bg);
+  border-top: var(--bs-border-width) solid var(--bs-border-color);
+  z-index: 1;
 }
 
 /* ── Narrow viewport overrides ────────────────────────────────────────── */
