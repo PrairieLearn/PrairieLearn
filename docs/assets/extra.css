@@ -161,3 +161,10 @@ code.doc-symbol-json::after {
 .muted {
   color: var(--md-default-fg-color--light);
 }
+
+/* Frame the onboarding screenshots in docs/getStarted.md so they don't blend
+   into the page background where their own background is white. */
+.md-typeset img[src*='getting-started/'] {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+}

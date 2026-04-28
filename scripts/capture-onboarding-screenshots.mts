@@ -218,7 +218,18 @@ async function captureCourseLanding(page: Page, courseUrl: string) {
   console.log('Course landing (Course instances tab)');
   await page.goto(courseUrl);
   await page.getByRole('heading', { name: 'Course instances' }).waitFor();
-  await shoot(page, '02-course-instances');
+  // Crop below whichever is taller: the main card or the sidebar's
+  // course-instance switcher (which sits below the page card here).
+  const contentBottom = await page.evaluate(() => {
+    const card = document.querySelector('.card');
+    const dropdown = document.querySelector('#course-instance-dropdown');
+    const cardBottom = card?.getBoundingClientRect().bottom ?? 0;
+    const dropdownBottom = dropdown?.getBoundingClientRect().bottom ?? 0;
+    return Math.ceil(Math.max(cardBottom, dropdownBottom));
+  });
+  await shoot(page, '02-course-instances', {
+    clip: { x: 0, y: 0, width: VIEWPORT.width, height: (contentBottom || 600) + 24 },
+  });
 }
 
 async function captureStaffPage(page: Page, courseUrl: string) {
@@ -318,7 +329,13 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await page.waitForURL(/\/file_edit\/.*question\.html/);
   await setAceEditorContent(page, QUESTION_HTML);
   await highlight(page.getByRole('button', { name: /Save and sync/ }));
-  await shoot(page, '10-question-editor');
+  const editorCardBottom = await page.evaluate(() => {
+    const card = document.querySelector('#file-editor-draft .card');
+    return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
+  });
+  await shoot(page, '10-question-editor', {
+    clip: { x: 0, y: 0, width: VIEWPORT.width, height: (editorCardBottom ?? 600) + 24 },
+  });
 
   await page.getByRole('button', { name: /Save and sync/ }).click();
   await page.waitForLoadState('networkidle');
