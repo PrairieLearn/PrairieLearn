@@ -6,6 +6,14 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 export default asyncHandler(async (req, res, next) => {
   // The user will already be denied access if they are impersonating another user that is not enrolled in the course instance.
 
+  // Skip on instructor URLs: enrollment is a student-side concern, and any
+  // access denial here should be reported as a lack of instructor access by
+  // the downstream `authzAuthnHasCoursePreviewOrInstanceView` middleware.
+  if (res.locals.viewType === 'instructor') {
+    next();
+    return;
+  }
+
   // Check if the user needs an enrollment code to access the course instance.
   const { course_instance: courseInstance } = extractPageContext(res.locals, {
     pageType: 'courseInstance',

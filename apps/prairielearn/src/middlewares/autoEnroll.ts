@@ -18,6 +18,14 @@ export default asyncHandler(async (req, res, next) => {
 
   // TODO: check if self-enrollment requires a secret link.
 
+  // Skip on instructor URLs: enrollment is a student-side concern, and any
+  // access denial here should be reported as a lack of instructor access by
+  // the downstream `authzAuthnHasCoursePreviewOrInstanceView` middleware.
+  if (res.locals.viewType === 'instructor') {
+    next();
+    return;
+  }
+
   const courseInstance: CourseInstance = res.locals.course_instance;
 
   // We select by user UID so that we can find invited/rejected enrollments as well
