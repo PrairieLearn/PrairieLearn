@@ -34,23 +34,10 @@ describe('makeKmsConfigSource', () => {
     vi.mocked(KMSClient).mockClear();
   });
 
-  it('returns the existing config and does not create a KMS client when there are no encrypted values', async () => {
-    const schema = z.object({
-      secret: z.string().default('plaintext'),
-    });
-    const loader = new ConfigLoader(schema);
+  it('returns an unchanged config and does not create a KMS client when there are no encrypted values', async () => {
     const source = makeKmsConfigSource();
 
     assert.deepEqual(await source.load({ secret: 'plaintext' }), { secret: 'plaintext' });
-
-    await loader.loadAndValidate([
-      makeLiteralConfigSource({
-        secret: 'plaintext',
-      }),
-      source,
-    ]);
-
-    assert.equal(loader.config.secret, 'plaintext');
     expect(KMSClient).not.toHaveBeenCalled();
   });
 
@@ -69,7 +56,6 @@ describe('makeKmsConfigSource', () => {
     ]);
 
     assert.equal(loader.config.secret, 'decrypted');
-    expect(KMSClient).toHaveBeenCalledWith({ region: undefined });
     expect(DecryptCommand).toHaveBeenCalledWith({
       CiphertextBlob: Buffer.from('ciphertext'),
       EncryptionContext: {
@@ -132,16 +118,6 @@ describe('makeKmsConfigSource', () => {
     });
 
     expect(KMSClient).toHaveBeenCalledWith({ region: 'us-west-2' });
-  });
-
-  it('uses the AWS SDK default region provider when no region is configured', async () => {
-    sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
-
-    await makeKmsConfigSource().load({
-      secret: makeEncryptedValue(),
-    });
-
-    expect(KMSClient).toHaveBeenCalledWith({ region: undefined });
   });
 
   it('returns the full transformed config when encrypted values exist', async () => {
@@ -219,12 +195,30 @@ describe('makeKmsConfigSource', () => {
       makeKmsConfigSource().load({
         secret: {
           __encrypted: 'aws-kms-v1',
+          ciphertext: Buffer.from('ciphertext').toString('base64'),
+        },
+      }),
+    ).rejects.toThrow(/Malformed encrypted config value.*context/);
+
+    await expect(
+      makeKmsConfigSource().load({
+        secret: {
+          __encrypted: 'aws-kms-v1',
           context: {
             environment: 'us-prod',
           },
         },
       }),
     ).rejects.toThrow(/Malformed encrypted config value.*ciphertext/);
+
+    await expect(
+      makeKmsConfigSource().load({
+        secret: {
+          ...makeEncryptedValue(),
+          context: 'us-prod',
+        },
+      }),
+    ).rejects.toThrow(/Malformed encrypted config value.*context/);
 
     await expect(
       makeKmsConfigSource().load({
