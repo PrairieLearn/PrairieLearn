@@ -248,7 +248,7 @@ async function captureStaffPage(page: Page, courseUrl: string) {
   await page.setViewportSize(VIEWPORT);
 }
 
-async function captureCreateInstanceModal(page: Page, courseUrl: string) {
+async function captureCreateInstanceModal(page: Page, courseUrl: string): Promise<string> {
   console.log('Create course instance modal (taller viewport)');
   await page.setViewportSize(TALL_VIEWPORT);
   await page.goto(courseUrl);
@@ -262,7 +262,10 @@ async function captureCreateInstanceModal(page: Page, courseUrl: string) {
   await dialog.getByRole('button', { name: 'Create' }).click();
   // Submission triggers a sync job → /pl/jobSequence/... → redirect to the new instance.
   await page.waitForURL(/\/course_instance\/\d+\b/, { timeout: 60_000 });
+  const instanceId = page.url().match(/\/course_instance\/(\d+)/)?.[1];
+  if (!instanceId) throw new Error(`Could not extract course instance id from ${page.url()}`);
   await page.setViewportSize(VIEWPORT);
+  return `${BASE_URL}/pl/course_instance/${instanceId}`;
 }
 
 async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
@@ -555,12 +558,10 @@ async function main() {
     await loadFromDisk(page);
 
     const courseUrl = await discoverCourseUrl(page);
-    // Seeded QA 101 / Sp15 course instance — used for the question/assessment flows.
-    const courseInstanceUrl = `${BASE_URL}/pl/course_instance/2`;
 
     await captureHome(page);
     await captureCourseLanding(page, courseUrl);
-    await captureCreateInstanceModal(page, courseUrl);
+    const courseInstanceUrl = await captureCreateInstanceModal(page, courseUrl);
     // Staff capture runs after course-instance capture so the Add users modal can grant
     // student-data access to the newly-created Fa25 instance.
     await captureStaffPage(page, courseUrl);
