@@ -645,6 +645,17 @@ function CreditBadge({ credit }: { credit: string }) {
   return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
 }
 
+function AllowsSubmissionsBadge({ allowsSubmissions }: { allowsSubmissions: boolean }) {
+  const className = allowsSubmissions
+    ? 'bg-success-subtle text-success-emphasis'
+    : 'bg-warning-subtle text-warning-emphasis';
+  return (
+    <span className={`badge rounded-pill fw-medium ${className}`}>
+      {allowsSubmissions ? 'Yes' : 'No'}
+    </span>
+  );
+}
+
 export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
@@ -777,7 +788,7 @@ export function PrairieTestExamsTable({
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              Mode
+              Allows submissions
             </th>
             <th
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
@@ -817,7 +828,7 @@ export function PrairieTestExamsTable({
                   )}
                 </td>
                 <td className="border-0 text-nowrap" style={tdStyle}>
-                  {exam.readOnly ? 'Read-only' : 'Submissions allowed'}
+                  <AllowsSubmissionsBadge allowsSubmissions={!exam.readOnly} />
                 </td>
                 <td className="border-0 text-nowrap" style={tdStyle}>
                   {getAfterCompleteLabel(exam)}
