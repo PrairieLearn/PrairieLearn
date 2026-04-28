@@ -264,7 +264,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": f"{rtol:g}",
                 "rtol_pct": f"{(rtol * 100):g}",
                 "nonzero_rtol": rtol != 0,
                 "atol": f"{atol:g}",

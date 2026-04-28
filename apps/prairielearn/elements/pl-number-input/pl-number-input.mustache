@@ -174,7 +174,7 @@ Answer with an ordinary real number. You may write the number using a decimal po
 {{/allow_complex}}
 Do not write any variables or other symbols. Scientific notation is accepted (e.g., <code>1.2e03</code>). Allowed range: between <code>-1e308</code> and <code>1e308</code> (i.e., a double-precision floating-point number){{#allow_complex}} for both real and imaginary part{{/allow_complex}}.
 </p>
-{{#relabs}}<p>For credit, your answer must be 
+{{#relabs}}<p>For credit, your answer must be
 {{#any_nonzero_tol}}accurate within the tolerance:
 {{#nonzero_rtol}}&plusmn;{{rtol_pct}}% of the correct answer (relative tolerance){{/nonzero_rtol}}
 {{#nonzero_atol}}{{#nonzero_rtol}}and also{{/nonzero_rtol}} within {{atol}} of the correct answer (absolute tolerance){{/nonzero_atol}}{{/any_nonzero_tol}}{{^any_nonzero_tol}}exact{{/any_nonzero_tol}}.
@@ -185,7 +185,7 @@ Do not write any variables or other symbols. Scientific notation is accepted (e.
 {{/format}}
 
 {{#shortformat}}
-{{#allow_complex}}complex{{/allow_complex}}{{^allow_complex}}real{{/allow_complex}} number {{#relabs}}{{#any_nonzero_tol}} (accurate within {{rtol_pct}}% and &plusmn;{{atol}}){{/any_nonzero_tol}}{{/relabs}}{{#sigfig}}({{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}){{/sigfig}}{{#decdig}}({{digits}} digit{{#digits_plural}}s{{/digits_plural}} after decimal){{/decdig}}
+{{#allow_complex}}complex{{/allow_complex}}{{^allow_complex}}real{{/allow_complex}} number {{#relabs}}{{#any_nonzero_tol}} (accurate within {{#nonzero_rtol}}&plusmn;{{rtol_pct}}%{{/nonzero_rtol}}{{#nonzero_atol}}{{#nonzero_rtol}} and {{/nonzero_rtol}}&plusmn;{{atol}}{{/nonzero_atol}}){{/any_nonzero_tol}}{{/relabs}}{{#sigfig}}({{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}){{/sigfig}}{{#decdig}}({{digits}} digit{{#digits_plural}}s{{/digits_plural}} after decimal){{/decdig}}
 {{/shortformat}}
 
 {{#format_error}}
