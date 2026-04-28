@@ -105,7 +105,7 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
  * - Removes rules with a `role` that is neither absent nor 'Student'.
  * - Strips `mode: 'Public'` (effectively a no-op for students).
  */
-function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => !r.uids)
     .filter((r) => r.role == null || r.role === 'Student')
@@ -150,6 +150,19 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   }
 
   return false;
+}
+
+function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (!firstCreditStartDate) return false;
+
+  return rules.some(
+    (r) =>
+      (r.credit ?? 0) === 0 &&
+      (r.active ?? true) &&
+      r.startDate != null &&
+      r.startDate < firstCreditStartDate,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -456,9 +469,11 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
 // Orthogonal concern extractors
 // ---------------------------------------------------------------------------
 
-function extractPassword(
-  rules: AssessmentAccessRuleJson[],
-): { password: string; remainingRules: AssessmentAccessRuleJson[] } | null {
+function extractPassword(rules: AssessmentAccessRuleJson[]): {
+  password: string;
+  remainingRules: AssessmentAccessRuleJson[];
+  passwordStartDate: string | undefined;
+} | null {
   const passwordRule = rules.find((r) => r.password);
   if (!passwordRule) return null;
 
@@ -478,7 +493,11 @@ function extractPassword(
     })
     .filter((r): r is AssessmentAccessRuleJson => r !== null);
 
-  return { password: passwordRule.password!, remainingRules };
+  return {
+    password: passwordRule.password!,
+    remainingRules,
+    passwordStartDate: passwordRule.startDate ?? undefined,
+  };
 }
 
 function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
@@ -524,6 +543,19 @@ export function migrateAllowAccess(
     return {
       result: {},
       errors: ['Non-contiguous access windows are not supported.'],
+      notes: [],
+      hasUidRules,
+    };
+  }
+
+  // The new access control system only supports practice (credit:0 windows)
+  // after the assessment closes, not before it opens.
+  if (hasPracticeBeforeRelease(schedulingRules)) {
+    return {
+      result: {},
+      errors: [
+        'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
+      ],
       notes: [],
       hasUidRules,
     };
@@ -581,6 +613,17 @@ export function migrateAllowAccess(
   if (pwExtract) {
     if (!result.dateControl) result.dateControl = {};
     result.dateControl.password = pwExtract.password;
+
+    // Don't let an earlier `active: false` visibility rule pull the release
+    // date back before the password rule's startDate — that would grant the
+    // password-gated credit window before the legacy password access opened.
+    if (
+      pwExtract.passwordStartDate &&
+      result.dateControl.release?.date &&
+      result.dateControl.release.date < pwExtract.passwordStartDate
+    ) {
+      result.dateControl.release = { date: pwExtract.passwordStartDate };
+    }
   }
 
   // Apply visibility.

@@ -578,10 +578,29 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: {
             password: 'password',
-            release: { date: '2021-10-20T14:00:00' },
+            release: { date: '2021-10-21T14:00:00' },
             due: { date: '2021-10-21T15:15:00' },
             durationMinutes: 55,
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'password-gated with earlier view-only rule keeps release at password startDate',
+      rules: [
+        { startDate: '2024-01-01', active: false },
+        { password: 'secret', startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'secret',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-06-01' },
           },
         },
         errors: [],
@@ -612,6 +631,21 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'practice before assessment opens',
+      rules: [
+        { credit: 0, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {},
+        errors: [
+          'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
+        ],
         notes: [],
         hasUidRules: false,
       },

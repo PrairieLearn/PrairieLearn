@@ -10,8 +10,8 @@ import * as path from 'path';
 import {
   migrateAllowAccess,
   normalizeRules,
-} from '../apps/prairielearn/dist/lib/assessment-access-control/migration.js';
-import type { AssessmentAccessRuleJson } from '../apps/prairielearn/dist/schemas/infoAssessment.js';
+} from '../apps/prairielearn/src/lib/assessment-access-control/migration.js';
+import type { AssessmentAccessRuleJson } from '../apps/prairielearn/src/schemas/infoAssessment.js';
 
 const REPOS_DIR = path.resolve(process.env.HOME!, 'git/python-upgrade-exploration/repos');
 const OUTPUT_FILE = path.resolve(new URL('.', import.meta.url).pathname, 'migration-report.html');
@@ -291,7 +291,6 @@ async function main() {
   const files = await findInfoAssessmentFiles(REPOS_DIR);
   console.log(`Found ${files.length} files`);
 
-  // We need to build the dist first for imports to work.
   // Group by (shape, outcome) where outcome = normalized errors/notes.
   const groupMap = new Map<string, OutcomeGroup>();
   let withAccess = 0;
