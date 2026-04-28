@@ -8,6 +8,6 @@ That takes you to the course request form. Fill it in with your institution, cou
 
 ![Course request form](./requestCourseForm.png)
 
-While you wait, this is also a good time to join the PrairieLearn Slack: [:fontawesome-brands-slack: https://prairielearn.com/slack](https://prairielearn.com/slack). The Slack is a great place to ask questions and get help from the PrairieLearn community.
+While you wait, this is also a good time to join the [PrairieLearn Slack](https://prairielearn.com/slack). This forum is a great place to ask questions and get help from the PrairieLearn community.
 
-When your request is approved, you'll be granted **Owner** access to a fresh course in PrairieLearn and a dedicated GitHub repository for its content. From there, jump to [Get started](../getStarted.md).
+When your request is approved, you'll be granted **Owner** access to a fresh course in PrairieLearn and a dedicated GitHub repository for its content. From there, jump to [Get started](../getting-started/index.md).

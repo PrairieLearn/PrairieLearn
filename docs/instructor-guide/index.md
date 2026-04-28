@@ -1,6 +1,6 @@
 # Instructor guide
 
-This section of the documentation is the reference for everything an instructor does in PrairieLearn. If you're brand-new, start with [Get started](../getStarted.md).
+This section of the documentation is the reference for everything an instructor does in PrairieLearn. If you're brand-new, start with [Get started](../getting-started/index.md).
 
 ## Returning each semester
 
@@ -10,14 +10,14 @@ If you've taught with PrairieLearn before, here is a quick checklist to get you 
 2. **Update dates** in the new instance: publishing dates and every `allowAccess` rule on assessment access rules.
 3. **Update your course staff** for the new term.
 
-## Configure each layer of your course
+## Configure the content of your course
 
-The four layers map to four reference docs:
+There are four major concepts you will need to configure in your course:
 
 - [Courses](../course/index.md) — course-wide settings: assessment sets, modules, topics, tags, course staff, sharing.
 - [Course instances](../courseInstance/index.md) — one term: publishing, self-enrollment, timezone, LMS, instance staff.
 - [Assessments](../assessment/overview.md) — one homework or exam: zones, points, access control, manual grading config.
-- [Questions](../question/overview.md) — the building blocks: `info.json`, `question.html`, `server.py`, elements, randomization.
+- [Questions](../question/overview.md) — the building blocks: elements, randomization, grading, resources, student interaction.
 
 !!! tip
 

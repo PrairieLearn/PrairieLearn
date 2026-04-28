@@ -1,5 +1,5 @@
 /**
- * Regenerates the screenshots embedded in `docs/getStarted.md`.
+ * Regenerates the screenshots embedded in `docs/getting-started/index.md`.
  *
  * This is a Playwright spec rather than a true test: it's gated on
  * `CAPTURE_SCREENSHOTS=1` so it's skipped in normal CI/local e2e runs and
