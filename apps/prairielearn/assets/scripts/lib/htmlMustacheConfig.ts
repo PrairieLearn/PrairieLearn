@@ -77,7 +77,6 @@ export const htmlMustacheConfig: Config = {
       selector: 'input, textarea, select',
       message: 'Prefer PrairieLearn input elements over raw HTML form inputs.',
       severity: 'warning',
-      exclude: ['apps/prairielearn/elements/**/*.mustache'],
     },
     {
       id: 'pl-prefer-pl-figure',
@@ -85,7 +84,6 @@ export const htmlMustacheConfig: Config = {
       message:
         'Prefer pl-figure over raw <img> tags. See https://docs.prairielearn.com/elements/pl-figure/.',
       severity: 'warning',
-      exclude: ['apps/prairielearn/elements/**/*.mustache'],
     },
     {
       id: 'pl-submission-only-in-wrong-panel',
