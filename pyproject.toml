@@ -104,7 +104,7 @@ ignore = [
   # These rules provide little value to us
   "BLE",     # flake8-blind-except
   "COM",     # flake8-commas
-  "CPY001",  # missing-copyright-notice 
+  "CPY001",  # missing-copyright-notice
   "C901",    # mccabe (complexity checks)
   "ERA",     # eradicate (code in comments)
   "EM",      # flake8-errmsg
@@ -113,7 +113,7 @@ ignore = [
   "FIX",     # flake8-fixme
   "INP001",  # implicit-namespace-package
   "S",       # flake8-bandit (security rules)
-  "SLF001",  # private-member-access 
+  "SLF001",  # private-member-access
   "T201",    # flake8-print
   "T100",    # flake8-debugger
   "TD",      # flake8-todos
@@ -224,6 +224,8 @@ convention = "google"
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"apps/prairielearn/**/*_test.py" = ["ANN", "D", "PLR0904"]
+"apps/prairielearn/python/test/**/*.py" = ["D"]
 "contrib/**/*.py" = ["ANN", "D", "DOC201"]
 "scripts/**/*.py" = ["D100", "DOC"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
@@ -231,7 +233,6 @@ convention = "google"
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 
