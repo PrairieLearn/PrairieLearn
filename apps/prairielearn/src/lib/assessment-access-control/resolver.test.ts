@@ -153,15 +153,15 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
 
   describe('main rule only, no date control', () => {
-    it('returns 0 credit when no dateControl configured', () => {
+    it('returns unauthorized when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -360,6 +360,7 @@ describe('resolveAccessControl', () => {
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
+      expect(result.nextActiveDate).toEqual(new Date('2025-04-01T00:00:00Z'));
     });
 
     it('does not set showBeforeRelease after release', () => {
@@ -379,7 +380,7 @@ describe('resolveAccessControl', () => {
       expect(result.showBeforeRelease).toBe(false);
     });
 
-    it('handles dateControl without release as no date-based access (0 credit)', () => {
+    it('denies access when dateControl has no release', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -391,6 +392,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -407,6 +409,24 @@ describe('resolveAccessControl', () => {
       });
       expect(result.credit).toBe(100);
       expect(result.active).toBe(true);
+    });
+
+    it('propagates password and time limit when after release date and no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              password: 'secret',
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.password).toBe('secret');
+      expect(result.timeLimitMin).toBe(60);
     });
   });
 
@@ -2011,7 +2031,7 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule({})],
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
     });
   });
@@ -2297,19 +2317,17 @@ describe('formatDateShort', () => {
 });
 
 describe('custom due credit', () => {
-  const baseRule = (overrides: AccessControlJson['dateControl'] = {}) =>
-    makeMainRule({
-      dateControl: {
-        release: { date: '2025-03-01T00:00:00Z' },
-        due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-        ...overrides,
-      },
-    });
-
   it('applies custom due credit before the due date', () => {
     const result = resolveAccessControl({
       ...baseInput,
-      rules: [baseRule()],
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
       date: new Date('2025-03-15T12:00:00Z'),
     });
     expect(result.credit).toBe(80);
@@ -2321,13 +2339,15 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        baseRule({
-          release: { date: '2025-03-01T00:00:00Z' },
-          due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-          lateDeadlines: [
-            { date: '2025-04-15T00:00:00Z', credit: 90 },
-            { date: '2025-04-30T00:00:00Z', credit: 70 },
-          ],
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
         }),
       ],
       date: new Date('2025-04-10T00:00:00Z'),
@@ -2340,13 +2360,15 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        baseRule({
-          release: { date: '2025-03-01T00:00:00Z' },
-          due: { date: '2025-04-01T00:00:00Z', credit: 80 },
-          lateDeadlines: [
-            { date: '2025-04-15T00:00:00Z', credit: 90 },
-            { date: '2025-04-30T00:00:00Z', credit: 70 },
-          ],
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+            lateDeadlines: [
+              { date: '2025-04-15T00:00:00Z', credit: 90 },
+              { date: '2025-04-30T00:00:00Z', credit: 70 },
+            ],
+          },
         }),
       ],
       date: new Date('2025-04-20T00:00:00Z'),
@@ -2380,7 +2402,14 @@ describe('custom due credit', () => {
   it('gives 0 credit after the due date with no late deadlines', () => {
     const result = resolveAccessControl({
       ...baseInput,
-      rules: [baseRule()],
+      rules: [
+        makeMainRule({
+          dateControl: {
+            release: { date: '2025-03-01T00:00:00Z' },
+            due: { date: '2025-04-01T00:00:00Z', credit: 80 },
+          },
+        }),
+      ],
       date: new Date('2025-04-05T00:00:00Z'),
     });
     // No afterLastDeadline configured → defaults to 0 credit.
@@ -2423,7 +2452,8 @@ describe('custom due credit', () => {
     expect(result.creditDateString).toBe('50%');
   });
 
-  it('treats 0 credit with null due date as inactive indefinitely', () => {
+  it('treats 0 credit with null due date as active (submissions allowed for 0% credit)', () => {
+    // E.g., Practice assessment: students can submit but receive 0% credit indefinitely
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
@@ -2438,7 +2468,7 @@ describe('custom due credit', () => {
     });
     expect(result.authorized).toBe(true);
     expect(result.credit).toBe(0);
-    expect(result.active).toBe(false);
+    expect(result.active).toBe(true);
     expect(result.creditDateString).toBe('None');
   });
 

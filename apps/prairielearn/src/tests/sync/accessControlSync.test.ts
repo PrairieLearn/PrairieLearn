@@ -223,13 +223,12 @@ describe('Access control syncing', () => {
         const rule: AccessControlJsonInput = {
           dateControl: {
             release: { date: '2024-03-14T00:01:00' },
-            // dueDate, durationMinutes, password, deadlines all omitted
+            due: { date: '2024-03-21T23:59:00' },
+            // durationMinutes, password, deadlines all omitted
           },
         };
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_due_overridden);
-        assert.isNull(row.date_control_due_date);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isNull(row.date_control_duration_minutes);
         assert.isFalse(row.date_control_password_overridden);
@@ -315,7 +314,7 @@ describe('Access control syncing', () => {
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
-        // Only dueDate was configured on the override
+        // Only due was configured on the override
         assert.isTrue(override.date_control_due_overridden);
         assert.isNotNull(override.date_control_due_date);
         // Everything else should be overridden=false (inherit from main)
@@ -1779,7 +1778,7 @@ describe('Access control syncing', () => {
         assert.isOk(override);
         const dc = override.rule.dateControl;
         assert.isOk(dc);
-        // Only dueDate was configured on the override
+        // Only due was configured on the override
         assert.deepEqual(dc.due?.date, plainDateTimeStringToDate('2024-04-01T23:59:00', timezone));
         // Fields from the main rule should NOT appear on the override's own JSON
         assert.isUndefined(dc.release);

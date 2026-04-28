@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { useState } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
@@ -46,6 +47,7 @@ function DueDateInput({
   courseInstanceId: string;
 }) {
   const effectiveCredit = value.credit ?? 100;
+  const [highCreditWarningDismissed, setHighCreditWarningDismissed] = useState(false);
 
   const getCreditPeriodText = () => {
     if (!value.date) return null;
@@ -171,7 +173,10 @@ function DueDateInput({
               variant="link"
               size="sm"
               className="p-0 align-baseline"
-              onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
+              onClick={() => {
+                setHighCreditWarningDismissed(false);
+                onChange({ ...value, customCredit: true, credit: 100 });
+              }}
             >
               Change
             </Button>
@@ -197,9 +202,10 @@ function DueDateInput({
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
                 value={value.credit ?? ''}
                 placeholder="100"
+                onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
-                  const parsed = raw === '' ? null : Number(raw);
+                  const parsed = raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
                   onChange({ ...value, credit: parsed });
                 }}
               />
@@ -221,13 +227,19 @@ function DueDateInput({
           {creditError}
         </Form.Text>
       )}
-      {value.credit !== null && value.credit > 100 && (
-        <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          Date control is meant to reward earlier submissions. Consider using{' '}
+      {value.credit !== null && value.credit > 100 && !highCreditWarningDismissed && (
+        <Alert
+          variant="secondary"
+          className="py-2 mt-2 mb-0"
+          dismissible
+          onClose={() => setHighCreditWarningDismissed(true)}
+        >
+          Configuring a due date percentage above 100% is not recommended: it gives every on-time
+          student this bonus. If you intend students to exceed 100% by doing additional work, use{' '}
           <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
             bonus points
           </Alert.Link>{' '}
-          to make the assessment worth more.
+          instead. If you intend to reward early submissions, configure an early deadline.
         </Alert>
       )}
     </Form.Group>
@@ -300,10 +312,10 @@ export function MainDueDateField({
   };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
-    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
   };
 
   return (
@@ -389,10 +401,10 @@ export function OverrideDueDateField({
   };
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
-    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
+    if (next.credit !== value.credit) creditCtrl.field.onChange(next.credit);
   };
 
   return (

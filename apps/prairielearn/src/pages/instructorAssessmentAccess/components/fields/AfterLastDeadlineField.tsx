@@ -195,6 +195,7 @@ function AfterLastDeadlineInput({
               max="200"
               placeholder="Credit percentage"
               isInvalid={!!creditError}
+              onWheel={({ currentTarget }) => currentTarget.blur()}
               {...register(creditFieldPath, {
                 shouldUnregister: true,
                 valueAsNumber: true,

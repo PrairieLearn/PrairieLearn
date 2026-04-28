@@ -588,7 +588,9 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
-  if (dc.lateDeadlines) {
+  // Skip when dueCredit === 0 — Constraint 4 in `validateRuleStructuralDependencyIssues`
+  // forbids late deadlines entirely in that case with a clearer message.
+  if (dc.lateDeadlines && dueCredit !== 0) {
     for (const d of dc.lateDeadlines) {
       if (d.credit < 0 || d.credit >= lateCreditCap) {
         errors.push(
@@ -647,6 +649,11 @@ export function validateRule(
   if (targetType === 'none') {
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
+    }
+    if (rule.dateControl && !rule.dateControl.due) {
+      errors.push(
+        'Due date configuration is required on the defaults when dateControl is specified.',
+      );
     }
   } else {
     if (rule.beforeRelease !== undefined) {

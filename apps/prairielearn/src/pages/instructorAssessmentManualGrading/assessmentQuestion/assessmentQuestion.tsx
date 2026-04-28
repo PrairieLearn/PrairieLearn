@@ -118,7 +118,7 @@ router.get(
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
-    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit;
     const search = getUrl(req).search;
 
     const trpcCsrfToken = generatePrefixCsrfToken(

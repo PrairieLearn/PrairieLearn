@@ -328,12 +328,20 @@ export function jsonToOverrideFormData(
  * number (including 100) is preserved — an explicit 100 is semantically
  * distinct from default because cross-rule validation (e.g. forbidding early
  * deadlines) treats any set credit as customized.
+ *
+ * `customCredit: true` with `credit: null` is a transient editing state that
+ * the form's per-field validator blocks at submit time; assert here so any
+ * future caller that bypasses the form fails loudly instead of silently
+ * coercing to "default credit".
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
-  return {
-    date: due.date,
-    ...(due.customCredit && due.credit !== null ? { credit: due.credit } : {}),
-  };
+  if (due.customCredit) {
+    if (due.credit === null) {
+      throw new Error('customCredit is true but credit is null');
+    }
+    return { date: due.date, credit: due.credit };
+  }
+  return { date: due.date };
 }
 
 function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
@@ -348,10 +356,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.release.date) output.dateControl.release = { date: rule.release.date };
-    // Emit `due` when either a date is set or credit is explicitly set.
-    if (rule.due.date || rule.due.customCredit) {
-      output.dateControl.due = buildDueJson(rule.due);
-    }
+    output.dateControl.due = buildDueJson(rule.due);
     if (rule.earlyDeadlines.length > 0) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }

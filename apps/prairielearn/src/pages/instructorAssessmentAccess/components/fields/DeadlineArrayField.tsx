@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
 import { useEffect, useRef } from 'react';
-import { Button, Form, InputGroup } from 'react-bootstrap';
+import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
@@ -17,6 +17,7 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   dueCredit,
+  customDueCreditSet,
   validationReleaseDate,
   validationDueDate,
   deadlines,
@@ -33,6 +34,8 @@ function DeadlineArrayInput({
   dueDate: string | null | undefined;
   /** Effective due-date credit (with default 100). Caps late-deadline credits. */
   dueCredit: number;
+  /** Effective `customCredit` flag on the due date. Used to block adding early deadlines. */
+  customDueCreditSet: boolean;
   validationReleaseDate?: string | null | undefined;
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
@@ -40,6 +43,10 @@ function DeadlineArrayInput({
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
+  const addEarlyDisabled = isEarly && customDueCreditSet;
+  const addEarlyDisabledTitle = addEarlyDisabled
+    ? 'Early deadlines are not allowed when custom due credit is set.'
+    : undefined;
 
   const {
     fields: deadlineFields,
@@ -188,8 +195,8 @@ function DeadlineArrayInput({
     } else if (dueCreditRef.current !== 0) {
       // Late credit must be < 100 AND < dueCredit. When dueCredit >= 100 the
       // tighter bound is 100; when dueCredit < 100 it's dueCredit itself.
-      // Skip when dueCredit === 0 — Constraint 4 flags the whole section
-      // as not-allowed, so a redundant per-field message would be noise.
+      // Skip when dueCredit === 0 — the validator forbids late deadlines
+      // entirely at 0% due credit, so a per-field error would be noise.
       const cap = Math.min(100, dueCreditRef.current);
       if (value < 0 || value >= cap) {
         return cap === 100
@@ -255,7 +262,11 @@ function DeadlineArrayInput({
     // Early deadlines are disallowed when a custom due credit is set, so the
     // early branch can assume dueCredit is the default 100 and start at 110.
     const defaultCredit =
-      previousCredit !== undefined ? previousCredit - 1 : isEarly ? 110 : dueCredit - 10;
+      previousCredit !== undefined
+        ? previousCredit - 1
+        : isEarly
+          ? 110
+          : Math.max(0, dueCredit - 10);
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 
@@ -269,6 +280,10 @@ function DeadlineArrayInput({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={<strong>{label}</strong>}
           checked={deadlineFields.length > 0}
+          disabled={addEarlyDisabled && deadlineFields.length === 0}
+          title={
+            addEarlyDisabled && deadlineFields.length === 0 ? addEarlyDisabledTitle : undefined
+          }
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               addDeadline();
@@ -277,10 +292,22 @@ function DeadlineArrayInput({
             }
           }}
         />
-        <Button size="sm" variant="outline-primary" onClick={addDeadline}>
+        <Button
+          size="sm"
+          variant="outline-primary"
+          disabled={addEarlyDisabled}
+          title={addEarlyDisabledTitle}
+          onClick={addDeadline}
+        >
           Add {isEarly ? 'early' : 'late'}
         </Button>
       </div>
+
+      {addEarlyDisabled && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-0">
+          Clear the custom value on due date credit to allow an early deadline.
+        </Alert>
+      )}
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
@@ -326,6 +353,7 @@ function DeadlineArrayInput({
                   placeholder="100"
                   min={isEarly ? '101' : '0'}
                   max={isEarly ? '200' : Math.min(99, dueCredit - 1)}
+                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),
@@ -406,6 +434,7 @@ export function MainDeadlineArrayField({
       releaseDate={releaseDate}
       dueDate={dueDate}
       dueCredit={dueCredit}
+      customDueCreditSet={due.customCredit}
       validationReleaseDate={releaseDate}
       validationDueDate={dueDate}
       deadlines={deadlines}
@@ -482,6 +511,7 @@ export function OverrideDeadlineArrayField({
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         dueCredit={effectiveDueCredit}
+        customDueCreditSet={effectiveDue.customCredit}
         validationReleaseDate={validationReleaseDate}
         validationDueDate={validationDueDate}
         deadlines={deadlines}
