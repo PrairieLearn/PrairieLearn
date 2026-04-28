@@ -334,25 +334,29 @@ export function InstructorFileEditor({
                         ></button>
                       </div>
                     </div>
-                    <div
-                      id="js-html-mustache-reformat-error"
-                      class="toast hide text-bg-danger border-0"
-                      role="alert"
-                      aria-live="assertive"
-                      aria-atomic="true"
-                    >
-                      <div class="d-flex">
-                        <div class="toast-body">
-                          Error reformatting file. Please check the syntax.
-                        </div>
-                        <button
-                          type="button"
-                          class="btn-close"
-                          data-bs-dismiss="toast"
-                          aria-label="Close"
-                        ></button>
-                      </div>
-                    </div>
+                    ${editorData.lintHtmlMustache
+                      ? html`
+                          <div
+                            id="js-html-mustache-reformat-error"
+                            class="toast hide text-bg-danger border-0"
+                            role="alert"
+                            aria-live="assertive"
+                            aria-atomic="true"
+                          >
+                            <div class="d-flex">
+                              <div class="toast-body">
+                                Error reformatting file. Please check the syntax.
+                              </div>
+                              <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"
+                              ></button>
+                            </div>
+                          </div>
+                        `
+                      : ''}
                   </div>
                 </div>
               </div>
