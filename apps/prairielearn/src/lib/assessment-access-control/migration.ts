@@ -299,9 +299,39 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
   const closedCreditRules = creditRules.filter((r) => r.endDate);
   const openEndedCreditRules = creditRules.filter((r) => !r.endDate);
 
-  // No credit rules at all.
+  // No positive credit rules. If there are credit:0 rules with dates, treat
+  // them as a credit-0 due window using `due.credit: 0`.
   if (creditRules.length === 0) {
-    return { dateControl: undefined, errors, notes };
+    const zeroCreditRules = rules.filter(
+      (r) => (r.credit ?? 0) === 0 && (r.active ?? true) && (r.startDate || r.endDate),
+    );
+    if (zeroCreditRules.length === 0) {
+      return { dateControl: undefined, errors, notes };
+    }
+
+    const startDates = zeroCreditRules
+      .map((r) => r.startDate)
+      .filter(Boolean)
+      .sort() as string[];
+    const endDates = zeroCreditRules
+      .map((r) => r.endDate)
+      .filter(Boolean)
+      .sort() as string[];
+
+    const releaseDate = startDates[0];
+    const dueDate = endDates.length > 0 ? endDates[endDates.length - 1] : null;
+
+    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {
+      due: { date: dueDate, credit: 0 },
+    };
+    if (releaseDate) dateControl.release = { date: releaseDate };
+
+    const timedRule = zeroCreditRules.find((r) => r.timeLimitMin);
+    if (timedRule?.timeLimitMin) {
+      dateControl.durationMinutes = timedRule.timeLimitMin;
+    }
+
+    return { dateControl, errors, notes };
   }
 
   // All credit rules are open-ended (no endDate).
@@ -478,7 +508,8 @@ export function migrateAllowAccess(
   const hasUidRules = rules.some((r) => r.uids);
   rules = normalizeRules(rules);
 
-  // --- Step 1: Extract orthogonal concerns ---
+  // Extract orthogonal concerns (PrairieTest exams, password) so the remaining
+  // schedulingRules contain only credit/date/visibility fields.
   let schedulingRules = rules;
 
   const ptExtract = extractPrairieTest(schedulingRules);
@@ -487,7 +518,8 @@ export function migrateAllowAccess(
   const pwExtract = extractPassword(schedulingRules);
   if (pwExtract) schedulingRules = pwExtract.remainingRules;
 
-  // --- Step 2: Precondition check ---
+  // Reject non-contiguous access windows; the unified credit timeline assumes
+  // a single contiguous span.
   if (hasAccessGaps(schedulingRules)) {
     return {
       result: {},
@@ -497,21 +529,9 @@ export function migrateAllowAccess(
     };
   }
 
-  // --- Step 3: Check for practice-only (credit:0 with dates, no credit rules) ---
+  // Reject mode-only rules (e.g. `{ mode: 'Exam' }` with no dates and no
+  // PrairieTest extraction). These have no analogue in the new schema.
   const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
-  const hasPracticeRules = schedulingRules.some(
-    (r) => (r.credit ?? 0) === 0 && (r.active ?? true) && (r.startDate || r.endDate),
-  );
-  if (!hasCreditRules && hasPracticeRules) {
-    return {
-      result: {},
-      errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
-      notes: [],
-      hasUidRules,
-    };
-  }
-
-  // --- Step 4: Check for mode-only ---
   const hasModeOnly =
     !hasCreditRules &&
     schedulingRules.some((r) => r.mode) &&
@@ -533,14 +553,16 @@ export function migrateAllowAccess(
     };
   }
 
-  // --- Step 5: Build credit timeline ---
+  // Build the unified dateControl (release, due, deadlines, afterLastDeadline,
+  // duration) from the remaining credit/date rules.
   const { dateControl, errors, notes } = buildCreditTimeline(schedulingRules);
 
   if (errors.length > 0) {
     return { result: {}, errors, notes, hasUidRules };
   }
 
-  // --- Step 6: Assemble result ---
+  // Assemble the final result by merging dateControl with the extracted
+  // password/PrairieTest pieces and applying visibility.
   const result: AccessControlJsonInput = {};
 
   if (dateControl) {
@@ -569,7 +591,8 @@ export function migrateAllowAccess(
     result.integrations = ptExtract.integrations;
   }
 
-  // --- Step 7: No-op note ---
+  // If nothing produced a dateControl, password, or PrairieTest config, the
+  // rules collapse to a no-op (unless they were intentionally hidden).
   if (!dateControl && !ptExtract && !pwExtract) {
     const isHidden = schedulingRules.some((r) => (r.active ?? true) === false);
     if (!isHidden) {

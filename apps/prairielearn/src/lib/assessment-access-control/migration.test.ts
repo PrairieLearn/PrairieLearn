@@ -144,7 +144,6 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
-    // TODO: handle this case better.
     {
       name: 'always-open',
       rules: [{ credit: 100 }],
@@ -169,8 +168,13 @@ describe('migrateAllowAccess', () => {
       name: 'practice-only (credit 0 with dates)',
       rules: [{ credit: 0, startDate: '2021-10-13T00:00:00', endDate: '2022-01-18T23:59:59' }],
       expected: {
-        result: {},
-        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        result: {
+          dateControl: {
+            release: { date: '2021-10-13T00:00:00' },
+            due: { date: '2022-01-18T23:59:59', credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -179,8 +183,13 @@ describe('migrateAllowAccess', () => {
       name: 'practice-only (implicit credit 0 with startDate only)',
       rules: [{ startDate: '2000-01-01T12:00:00' }],
       expected: {
-        result: {},
-        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        result: {
+          dateControl: {
+            release: { date: '2000-01-01T12:00:00' },
+            due: { date: null, credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -592,11 +601,17 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'password-gated with explicit credit:0 preserved as practice-only error',
+      name: 'password-gated with explicit credit:0 becomes credit-0 due window',
       rules: [{ password: 'secret', credit: 0, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-        result: {},
-        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        result: {
+          dateControl: {
+            password: 'secret',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01', credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
