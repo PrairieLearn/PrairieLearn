@@ -528,9 +528,29 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
   password: string;
   remainingRules: AssessmentAccessRuleJson[];
   passwordStartDate: string | undefined;
+  notes: string[];
 } | null {
-  const passwordRule = rules.find((r) => r.password);
-  if (!passwordRule) return null;
+  const passwordRules = rules.filter((r) => r.password);
+  if (passwordRules.length === 0) return null;
+
+  const distinctPasswords = Array.from(new Set(passwordRules.map((r) => r.password!)));
+  const password = distinctPasswords[0];
+
+  const notes: string[] = [];
+  if (distinctPasswords.length > 1) {
+    notes.push(
+      'Multiple distinct passwords were used in legacy access rules; only the first password was kept in the migrated configuration.',
+    );
+  }
+
+  // Use the earliest startDate among rules using the kept password, so the
+  // release date can't be pulled before any window the password originally
+  // gated.
+  const passwordStartDate = passwordRules
+    .filter((r) => r.password === password)
+    .map((r) => r.startDate)
+    .filter((d): d is string => !!d)
+    .sort()[0];
 
   // Strip the password from rules. Keep the rule itself for credit/date
   // processing. Password rules without explicit credit (credit omitted) but
@@ -549,9 +569,10 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
     .filter((r): r is AssessmentAccessRuleJson => r !== null);
 
   return {
-    password: passwordRule.password!,
+    password,
     remainingRules,
-    passwordStartDate: passwordRule.startDate ?? undefined,
+    passwordStartDate,
+    notes,
   };
 }
 
@@ -611,7 +632,10 @@ export function migrateAllowAccess(
   }
 
   const pwExtract = extractPassword(schedulingRules);
-  if (pwExtract) schedulingRules = pwExtract.remainingRules;
+  if (pwExtract) {
+    schedulingRules = pwExtract.remainingRules;
+    notes.push(...pwExtract.notes);
+  }
 
   // Reject non-contiguous access windows; the unified credit timeline assumes
   // a single contiguous span.

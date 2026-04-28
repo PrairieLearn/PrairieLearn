@@ -792,6 +792,47 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'multiple distinct passwords keeps the first and emits a note',
+      rules: [
+        { password: 'first', credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { password: 'second', credit: 50, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'first',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ credit: 50, date: '2024-04-01' }],
+          },
+        },
+        errors: [],
+        notes: [
+          'Multiple distinct passwords were used in legacy access rules; only the first password was kept in the migrated configuration.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'multiple rules sharing the same password do not emit a distinct-password note',
+      rules: [
+        { password: 'shared', credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { password: 'shared', credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'shared',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-04-01' },
+          },
+        },
+        errors: [],
+        notes: ['2 100% credit windows collapsed into single span: 2024-02-01 to 2024-04-01'],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'practice before assessment opens',
       rules: [
         { credit: 0, startDate: '2024-01-01', endDate: '2024-02-01' },
