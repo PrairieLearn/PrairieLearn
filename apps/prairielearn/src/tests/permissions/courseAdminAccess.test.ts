@@ -386,6 +386,28 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
+  test.sequential('can bulk edit own instance role', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [
+        { courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' },
+      ],
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test.sequential('can bulk edit own instance role back to None', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
+    await checkPermissions(users);
+  });
+
   test.sequential('can add back course instance permission', async () => {
     const trpc = createTrpcClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
