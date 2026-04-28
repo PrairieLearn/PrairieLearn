@@ -262,6 +262,148 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'closed and open-ended at the same non-100 credit collapse to always-open at that credit',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 50, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null, credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'open-ended credit higher than due-date credit promotes credit to higher value',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 80, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null, credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'open-ended at 100% collapses non-full closed window to always-open at 100%',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 100, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'non-monotonic credit (100% -> 80% -> 100% open) is rejected',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { credit: 100, startDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {},
+        errors: ['Credit must be non-increasing over time.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'non-monotonic credit (50% closed then 100% open from later date) is rejected',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {},
+        errors: ['Credit must be non-increasing over time.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'early deadline preserved when full-credit closed meets full-credit open-ended',
+      rules: [
+        { credit: 110, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            earlyDeadlines: [{ date: '2024-02-01', credit: 110 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 100 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'late deadline preserved when no open-ended rule exists to trigger simplification',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ date: '2024-04-01', credit: 80 }],
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'late deadline preserved when open-ended credit is lower than due-date credit',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { credit: 50, startDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ date: '2024-04-01', credit: 80 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'afterComplete for showClosedAssessment:false',
       rules: [
         {
@@ -538,6 +680,20 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'prairietest rule with password emits a warning note',
+      rules: [{ examUuid: 'exam-1', credit: 100, password: 'discarded' }],
+      expected: {
+        result: {
+          integrations: { prairieTest: { exams: [{ examUuid: 'exam-1' }] } },
+        },
+        errors: [],
+        notes: [
+          'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'mode-gated hides-closed modifier',
       rules: [
         {
@@ -691,7 +847,7 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
-        notes: ['2 100% credit windows collapsed into single span: 2024-02-01 to 2024-02-01'],
+        notes: [],
         hasUidRules: false,
       },
     },
@@ -712,8 +868,8 @@ describe('migrateAllowAccess', () => {
         result: {},
         errors: [],
         notes: [
-          'An empty accessControl list signifies that no access is granted.',
           'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+          'An empty accessControl list signifies that no access is granted.',
         ],
         hasUidRules: true,
       },

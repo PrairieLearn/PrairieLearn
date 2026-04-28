@@ -152,6 +152,46 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
   return false;
 }
 
+function hasNonMonotonicCredit(rules: AssessmentAccessRuleJson[]): boolean {
+  const creditRules = rules.filter((r) => (r.credit ?? 0) > 0);
+  if (creditRules.length === 0) return false;
+
+  const dates = new Set<string>();
+  for (const r of creditRules) {
+    if (r.startDate) dates.add(r.startDate);
+    if (r.endDate) dates.add(r.endDate);
+  }
+  const sortedDates = Array.from(dates).sort();
+
+  // Build half-open intervals across the timeline. `null` represents -∞ for
+  // `start` and +∞ for `end`. A rule with no startDate is active from -∞,
+  // and a rule with no endDate is active until +∞.
+  const intervals: { start: string | null; end: string | null }[] = [
+    { start: null, end: sortedDates[0] ?? null },
+  ];
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    intervals.push({ start: sortedDates[i], end: sortedDates[i + 1] });
+  }
+  if (sortedDates.length > 0) {
+    intervals.push({ start: sortedDates[sortedDates.length - 1], end: null });
+  }
+
+  let prev = -1;
+  for (const { start, end } of intervals) {
+    let maxCredit = 0;
+    for (const r of creditRules) {
+      if (r.startDate && (start === null || r.startDate > start)) continue;
+      if (r.endDate && (end === null || r.endDate < end)) continue;
+      maxCredit = Math.max(maxCredit, r.credit ?? 0);
+    }
+    if (maxCredit === 0) continue;
+    if (prev >= 0 && maxCredit > prev) return true;
+    prev = maxCredit;
+  }
+
+  return false;
+}
+
 function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   const firstCreditStartDate = findFirstCreditStartDate(rules);
   if (!firstCreditStartDate) return false;
@@ -279,9 +319,15 @@ function normalizeCreditDeadlines(
 // ---------------------------------------------------------------------------
 
 /**
- * If afterLastDeadline grants credit >= dueDateCredit, the dueDate is
- * meaningless — credit continues at the same or higher level forever.
- * Collapse to due.date: null (always open from release).
+ * If afterLastDeadline grants credit >= dueDateCredit and there are no
+ * early/late deadlines describing intermediate credit windows, the dueDate
+ * is meaningless — credit continues at the same or higher level forever.
+ * Collapse to `due: { date: null }` (always open from release), preserving
+ * the open-ended credit so we don't silently upgrade a non-100% rule to 100%.
+ *
+ * When early or late deadlines exist, skip the collapse so we don't drop
+ * those windows on the floor (the dueDate carries them; collapsing erases
+ * the structure they hang off of).
  */
 function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
@@ -289,12 +335,14 @@ function simplifyTimeline(
 ): void {
   if (
     dateControl.afterLastDeadline &&
+    !dateControl.earlyDeadlines?.length &&
+    !dateControl.lateDeadlines?.length &&
     (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
   ) {
-    dateControl.due = { date: null };
+    const collapseCredit = dateControl.afterLastDeadline.credit ?? 0;
+    dateControl.due =
+      collapseCredit === 100 ? { date: null } : { date: null, credit: collapseCredit };
     delete dateControl.afterLastDeadline;
-    delete dateControl.earlyDeadlines;
-    delete dateControl.lateDeadlines;
   }
 }
 
@@ -383,17 +431,18 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     .sort() as string[];
   const dueDate = dueDateEndDates[dueDateEndDates.length - 1];
 
-  // Count all credit rules at the dueDate level (closed + open-ended) for
-  // the collapse note.
-  const allDueDateLevelRules = creditRules.filter((r) => (r.credit ?? 0) === dueDateCredit);
-  if (allDueDateLevelRules.length > 1) {
-    const startDates = allDueDateLevelRules
+  // Note when multiple closed rules at dueDateCredit collapse into a single
+  // span. Open-ended rules at the same credit don't count — they become
+  // `afterLastDeadline`, not part of the collapsed dueDate window. Defer
+  // pushing the note until after simplifyTimeline; if the timeline collapses
+  // to always-open the "single span" wording would mislead.
+  let pendingCollapseNote: string | null = null;
+  if (dueDateRules.length > 1) {
+    const startDates = dueDateRules
       .map((r) => r.startDate)
       .filter(Boolean)
       .sort() as string[];
-    notes.push(
-      `${allDueDateLevelRules.length} ${dueDateCredit}% credit windows collapsed into single span: ${startDates[0] ?? '(open)'} to ${dueDate}`,
-    );
+    pendingCollapseNote = `${dueDateRules.length} ${dueDateCredit}% credit windows collapsed into single span: ${startDates[0] ?? '(open)'} to ${dueDate}`;
   }
 
   // --- Build dateControl ---
@@ -456,6 +505,12 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
 
   simplifyTimeline(dateControl, dueDateCredit);
 
+  // Only emit the collapse note if a concrete due date survived the
+  // simplification; otherwise the "single span" wording would mislead.
+  if (pendingCollapseNote && dateControl.due?.date != null) {
+    notes.push(pendingCollapseNote);
+  }
+
   // --- Duration ---
   const timedRule = creditRules.find((r) => r.timeLimitMin);
   if (timedRule?.timeLimitMin) {
@@ -503,6 +558,7 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
 function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   integrations: AccessControlJsonInput['integrations'];
   remainingRules: AssessmentAccessRuleJson[];
+  notes: string[];
 } | null {
   const examRules = rules.filter((r) => r.examUuid);
   if (examRules.length === 0) return null;
@@ -510,9 +566,17 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
   const remainingRules = rules.filter((r) => !r.examUuid);
 
+  const notes: string[] = [];
+  if (examRules.some((r) => r.password)) {
+    notes.push(
+      'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',
+    );
+  }
+
   return {
     integrations: { prairieTest: { exams } },
     remainingRules,
+    notes,
   };
 }
 
@@ -527,12 +591,24 @@ export function migrateAllowAccess(
   const hasUidRules = rules.some((r) => r.uids);
   rules = normalizeRules(rules);
 
+  // Collect notes from the start so they're consistent across all return
+  // paths, including early returns for unsupported configurations.
+  const notes: string[] = [];
+  if (hasUidRules) {
+    notes.push(
+      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+    );
+  }
+
   // Extract orthogonal concerns (PrairieTest exams, password) so the remaining
   // schedulingRules contain only credit/date/visibility fields.
   let schedulingRules = rules;
 
   const ptExtract = extractPrairieTest(schedulingRules);
-  if (ptExtract) schedulingRules = ptExtract.remainingRules;
+  if (ptExtract) {
+    schedulingRules = ptExtract.remainingRules;
+    notes.push(...ptExtract.notes);
+  }
 
   const pwExtract = extractPassword(schedulingRules);
   if (pwExtract) schedulingRules = pwExtract.remainingRules;
@@ -543,7 +619,19 @@ export function migrateAllowAccess(
     return {
       result: {},
       errors: ['Non-contiguous access windows are not supported.'],
-      notes: [],
+      notes,
+      hasUidRules,
+    };
+  }
+
+  // The new schema represents credit as a single non-increasing timeline. If
+  // the legacy rules grant a higher max credit at a later point than at an
+  // earlier point, no clean translation exists.
+  if (hasNonMonotonicCredit(schedulingRules)) {
+    return {
+      result: {},
+      errors: ['Credit must be non-increasing over time.'],
+      notes,
       hasUidRules,
     };
   }
@@ -556,7 +644,7 @@ export function migrateAllowAccess(
       errors: [
         'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
       ],
-      notes: [],
+      notes,
       hasUidRules,
     };
   }
@@ -580,14 +668,15 @@ export function migrateAllowAccess(
     return {
       result: {},
       errors: ['Mode-only access rules are not supported.'],
-      notes: [],
+      notes,
       hasUidRules,
     };
   }
 
   // Build the unified dateControl (release, due, deadlines, afterLastDeadline,
   // duration) from the remaining credit/date rules.
-  const { dateControl, errors, notes } = buildCreditTimeline(schedulingRules);
+  const { dateControl, errors, notes: builderNotes } = buildCreditTimeline(schedulingRules);
+  notes.push(...builderNotes);
 
   if (errors.length > 0) {
     return { result: {}, errors, notes, hasUidRules };
@@ -641,12 +730,6 @@ export function migrateAllowAccess(
     if (!isHidden) {
       notes.push('An empty accessControl list signifies that no access is granted.');
     }
-  }
-
-  if (hasUidRules) {
-    notes.push(
-      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
-    );
   }
 
   // Apply fallback release date when the migration produced a dateControl
