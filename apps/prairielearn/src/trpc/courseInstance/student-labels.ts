@@ -214,7 +214,10 @@ const upsert = t.procedure
           course,
           courseInstanceId: course_instance.id,
           labelName: existingLabel.name,
-          transform: (labels) => labels.map((l) => (l === existingLabel.name ? name : l)),
+          // Dedupe in case an assessment already had an orphaned entry for the new name.
+          transform: (labels) => [
+            ...new Set(labels.map((l) => (l === existingLabel.name ? name : l))),
+          ],
           locals,
         })
       : [];
