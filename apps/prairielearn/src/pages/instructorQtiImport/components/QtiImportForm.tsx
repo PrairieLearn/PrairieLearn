@@ -238,16 +238,13 @@ export function QtiImportForm({
       const allocatedDirs = new Set(existingDirs);
 
       const payload = {
-        assessments: includedAssessments.map(({ result, override }) => ({
-          directoryName: result.assessment.directoryName,
-          infoJson: {
-            ...result.assessment.infoJson,
-            title: override.title,
-            type: override.type,
-            set: override.set,
-            number: override.number,
-          } as Record<string, unknown>,
-          questions: result.questions
+        assessments: includedAssessments.map(({ result, override }) => {
+          // Build a mapping from original question directory → final directory
+          // so we can rewrite zone question IDs to match.
+          const qidMap = new Map<string, string>();
+          const includedQuestionDirs = new Set<string>();
+
+          const questions = result.questions
             .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
             .map((q) => {
               const qOverride = questionOverrides.get(q.directoryName);
@@ -256,6 +253,8 @@ export function QtiImportForm({
                 dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
               }
               allocatedDirs.add(dirName);
+              qidMap.set(q.directoryName, dirName);
+              includedQuestionDirs.add(dirName);
               return {
                 directoryName: dirName,
                 infoJson: {
@@ -265,14 +264,51 @@ export function QtiImportForm({
                     topic: qOverride.topic,
                     tags: qOverride.tags,
                   }),
-                } as unknown as Record<string, unknown>,
+                },
                 questionHtml: q.questionHtml,
                 serverPy: q.serverPy,
                 clientFiles: q.clientFiles,
               };
-            }),
-        })),
+            });
+
+          // Rewrite assessment zones to reference the final directory names
+          // and filter out excluded questions.
+          const zones = result.assessment.infoJson.zones
+            .map((zone) => ({
+              ...zone,
+              questions: zone.questions
+                .map((zq) => ({
+                  ...zq,
+                  id: qidMap.get(zq.id) ?? zq.id,
+                }))
+                .filter((zq) => includedQuestionDirs.has(zq.id)),
+            }))
+            .filter((zone) => zone.questions.length > 0);
+
+          return {
+            directoryName: result.assessment.directoryName,
+            infoJson: {
+              ...result.assessment.infoJson,
+              title: override.title,
+              type: override.type,
+              set: override.set,
+              number: override.number,
+              zones,
+            },
+            questions,
+          };
+        }),
       };
+
+      const payloadJson = JSON.stringify(payload);
+      const payloadBytes = new TextEncoder().encode(payloadJson).length;
+      const MAX_PAYLOAD_BYTES = 5 * 1024 * 1024;
+      if (payloadBytes > MAX_PAYLOAD_BYTES) {
+        throw new Error(
+          `The import payload is too large (${(payloadBytes / (1024 * 1024)).toFixed(1)} MB). ` +
+            'Try importing fewer assessments at once, or remove large image assets from the export before importing.',
+        );
+      }
 
       await trpcClient.qtiImport.create.mutate(payload);
       window.location.href = `${urlPrefix}/instance_admin/assessments`;
