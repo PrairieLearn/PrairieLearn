@@ -5395,7 +5395,6 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.13.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -7804,9 +7803,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^0.9.3":
-  version: 0.9.3
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.9.3"
+"@reteps/tree-sitter-htmlmustache@npm:^0.7.3":
+  version: 0.7.3
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.7.3"
   dependencies:
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
@@ -7816,20 +7815,17 @@ __metadata:
   peerDependencies:
     node-addon-api: ^8.2.2
     node-gyp-build: ^4.8.2
-    prettier: ^3.0.0
     tree-sitter: ^0.25.0
   peerDependenciesMeta:
     node-addon-api:
       optional: true
     node-gyp-build:
       optional: true
-    prettier:
-      optional: true
     tree-sitter:
       optional: true
   bin:
     htmlmustache: cli/out/main.js
-  checksum: 10c0/e38bb19d24098ca3097205453d48320b2daad9fcf09b4cc62355e7900c907581013d2107a69bbeea07f4abc9c23816c0934b762f2331354c8f72d8abe7b6090f
+  checksum: 10c0/049ea83dde7335fcf026a7b731685edfb8bb3758f37548fdbcb6fb47ea4ecda8b4262e628a3fd7c309f8026066e4ee23910af3749fb4dc2ddb38c436a7b88c0a
   languageName: node
   linkType: hard
 
@@ -19406,7 +19402,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.7.3"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.1.2"
