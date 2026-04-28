@@ -1,36 +1,31 @@
-#!/usr/bin/env node
-
 /**
- * Regenerates the screenshots embedded in `docs/getStarted.md` by driving the
- * tutorial flow against a running PrairieLearn dev server.
+ * Regenerates the screenshots embedded in `docs/getStarted.md`.
  *
- * Usage:
- *   yarn dev                                                # in another terminal
- *   tsx scripts/capture-onboarding-screenshots.mts          # default flags
- *   tsx scripts/capture-onboarding-screenshots.mts --keep   # don't reset testCourse/
+ * This is a Playwright spec rather than a true test: it's gated on
+ * `CAPTURE_SCREENSHOTS=1` so it's skipped in normal CI/local e2e runs and
+ * runs only when the docs need refreshing. Running it as a spec lets it
+ * reuse the e2e worker server, dev DB, writable testCourse copy, and `page`
+ * fixture instead of redefining all of that.
  *
- * testCourse/ is `git restore`d before and after each run so prior runs don't
- * pollute disk state. Pass --keep to bypass; the script refuses to run if
- * testCourse/ has staged changes.
- *
- * Prerequisites: dev server reachable at $BASE_URL (default http://localhost:3000)
- * with the seeded QA 101 / XC 101 courses on the home page.
+ * Usage: `yarn capture-onboarding-screenshots`
  */
 
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import { type Browser, type Locator, type Page, chromium } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
-const OUT_DIR = path.resolve(REPO_ROOT, process.env.OUT_DIR ?? 'docs/getting-started');
+import * as sqldb from '@prairielearn/postgres';
+
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
+
+import { test } from './fixtures.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const OUT_DIR = path.resolve(REPOSITORY_ROOT_PATH, process.env.OUT_DIR ?? 'docs/getting-started');
 const VIEWPORT = { width: 1440, height: 900 };
 const TALL_VIEWPORT = { width: 1440, height: 1300 };
-
-const KEEP_CHANGES = process.argv.includes('--keep');
 
 const QUESTION_HTML = `<pl-question-panel>
   <p>What is the area of a rectangle that has sides 4 and 5?</p>
@@ -53,37 +48,6 @@ interface AceWindow {
   ace: { edit: (el: HTMLElement) => AceEditor };
 }
 
-function restoreTestCourse() {
-  execSync('git restore testCourse/', { cwd: REPO_ROOT, stdio: 'inherit' });
-  execSync('git clean -fd testCourse/', { cwd: REPO_ROOT, stdio: 'inherit' });
-}
-
-function ensureCleanTestCourse() {
-  if (KEEP_CHANGES) return;
-
-  const status = execSync('git status --porcelain testCourse/', {
-    cwd: REPO_ROOT,
-    encoding: 'utf-8',
-  });
-  const stagedChanges = status
-    .split('\n')
-    .filter(Boolean)
-    .filter((line) => line[0] !== ' ' && line[0] !== '?');
-  if (stagedChanges.length > 0) {
-    throw new Error(
-      `Refusing to run: testCourse/ has staged changes:\n${stagedChanges.join('\n')}\n` +
-        'Commit or stash them first, or pass --keep to skip the reset.',
-    );
-  }
-
-  restoreTestCourse();
-}
-
-async function loadFromDisk(page: Page) {
-  await page.goto(`${BASE_URL}/pl/loadFromDisk`);
-  await page.waitForLoadState('networkidle');
-}
-
 let shotCount = 0;
 interface ShootOpts {
   filePath?: string;
@@ -91,21 +55,31 @@ interface ShootOpts {
   locator?: Locator;
 }
 
-// Called before highlight() and shoot() so layout measurements match the DOM that
-// ends up in the screenshot. The init script in main() also hides the banner, but
-// explicit removal here guards against MutationObserver timing.
-async function hideDevModeBanner(page: Page) {
+/**
+ * Strip dev-mode artifacts from the DOM right before we measure or screenshot.
+ * CSS can't match by text content for the home banner, and the navbar dropdown
+ * items are only visible when opened, so we strip per-shot.
+ */
+async function stripDevModeArtifacts(page: Page) {
   await page.evaluate(() => {
-    document.querySelectorAll('.card-header h2, .card-header').forEach((el) => {
-      if ((el.textContent ?? '').trim() === 'Development Mode') {
+    document.querySelectorAll('.card-header').forEach((el) => {
+      const heading = el.querySelector('h2');
+      if (heading?.textContent.trim() === 'Development Mode') {
         el.closest('.card')?.remove();
       }
     });
+    document.querySelector('#navbar-load-from-disk')?.remove();
+    const adminToggle = document.querySelector('#navbar-administrator-toggle');
+    if (adminToggle) {
+      const divider = adminToggle.nextElementSibling;
+      if (divider?.classList.contains('dropdown-divider')) divider.remove();
+      adminToggle.remove();
+    }
   });
 }
 
 async function shoot(page: Page, name: string, opts: ShootOpts = {}) {
-  await hideDevModeBanner(page);
+  await stripDevModeArtifacts(page);
   const filePath = opts.filePath ?? path.join(OUT_DIR, `${name}.png`);
   if (opts.locator) {
     await opts.locator.screenshot({ path: filePath });
@@ -119,17 +93,18 @@ async function shoot(page: Page, name: string, opts: ShootOpts = {}) {
   console.log(`  ✔ ${name}.png`);
 }
 
-// Renders a fixed-position overlay on `<body>` with a high z-index so it isn't clipped
-// by `overflow: hidden` ancestors (dropdowns, side panels).
+/**
+ * Fixed-position overlay on `<body>` with a high z-index so it isn't clipped by
+ * `overflow: hidden` ancestors (dropdowns, side panels).
+ */
 async function highlight(locator: Locator, opts?: { offset?: number }) {
   const offset = opts?.offset ?? 6;
-  await hideDevModeBanner(locator.page());
+  await stripDevModeArtifacts(locator.page());
   await locator.first().evaluate((el, off) => {
     const rect = (el as HTMLElement).getBoundingClientRect();
     const borderWidth = 3;
     const viewportWidth = document.documentElement.clientWidth;
     const viewportHeight = document.documentElement.clientHeight;
-    // Clamp to the viewport so the box isn't cut off at screen edges.
     const top = Math.max(borderWidth, rect.top - off);
     const left = Math.max(borderWidth, rect.left - off);
     const right = Math.min(viewportWidth - borderWidth, rect.right + off);
@@ -189,22 +164,21 @@ async function getAceEditorContent(page: Page): Promise<string> {
 }
 
 async function discoverCourseUrl(page: Page): Promise<string> {
-  await page.goto(BASE_URL);
+  await page.goto('/');
   const link = page.getByRole('link', { name: /QA 101/ }).first();
   const href = await link.getAttribute('href');
   if (!href) throw new Error('Could not find QA 101 course link on home page');
-  return new URL(href, BASE_URL).toString();
+  return new URL(href, page.url()).toString();
 }
 
 async function captureHome(page: Page) {
   console.log('Home page');
-  await page.goto(BASE_URL);
+  await page.goto('/');
   await page.getByRole('heading', { name: 'PrairieLearn Homepage' }).waitFor();
   await highlight(page.getByRole('link', { name: /QA 101: Test Course/i }));
-  // Crop to the top nav + the "Courses with instructor access" panel.
   const panelBottom = await page.evaluate(() => {
     const link = Array.from(document.querySelectorAll('a')).find((a) =>
-      /QA 101: Test Course/i.test(a.textContent ?? ''),
+      /QA 101: Test Course/i.test(a.textContent),
     );
     const card = link?.closest('.card');
     return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
@@ -218,8 +192,6 @@ async function captureCourseLanding(page: Page, courseUrl: string) {
   console.log('Course landing (Course instances tab)');
   await page.goto(courseUrl);
   await page.getByRole('heading', { name: 'Course instances' }).waitFor();
-  // Crop below whichever is taller: the main card or the sidebar's
-  // course-instance switcher (which sits below the page card here).
   const contentBottom = await page.evaluate(() => {
     const card = document.querySelector('.card');
     const dropdown = document.querySelector('#course-instance-dropdown');
@@ -237,12 +209,10 @@ async function captureStaffPage(page: Page, courseUrl: string) {
   const courseId = courseUrl.match(/\/course\/(\d+)/)?.[1];
   if (!courseId) throw new Error(`Could not extract course id from ${courseUrl}`);
 
-  // Taller viewport so the modal (multiple per-course-instance role selects) isn't clipped.
   await page.setViewportSize(TALL_VIEWPORT);
-  await page.goto(`${BASE_URL}/pl/course/${courseId}/course_admin/staff`);
+  await page.goto(`/pl/course/${courseId}/course_admin/staff`);
   await page.getByRole('button', { name: /Add users/ }).waitFor();
 
-  // Screenshot the filled-in modal so the doc shows how to grant the described permissions.
   await page.getByRole('button', { name: /Add users/ }).click();
   const dialog = await waitForModalShown(page);
   await dialog.getByLabel('UIDs:').fill('ta@example.com');
@@ -252,8 +222,6 @@ async function captureStaffPage(page: Page, courseUrl: string) {
   await highlight(dialog.getByLabel('Role for Fa25'));
   await shoot(page, '03-staff');
 
-  // Dismiss without submitting — no later step depends on the TA existing, and skipping
-  // submission keeps the script idempotent across re-runs.
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'hidden' });
   await page.setViewportSize(VIEWPORT);
@@ -269,22 +237,18 @@ async function captureCreateInstanceModal(page: Page, courseUrl: string): Promis
   await dialog.getByLabel('Long name').fill('Fall 2025');
   await dialog.getByLabel('Short name').fill('Fa25');
   await shoot(page, '04-create-course-instance');
-  // Actually create the instance — subsequent steps (e.g. staff capture) reference it.
   await dialog.getByRole('button', { name: 'Create' }).click();
-  // Submission triggers a sync job → /pl/jobSequence/... → redirect to the new instance.
   await page.waitForURL(/\/course_instance\/\d+\b/, { timeout: 60_000 });
   const instanceId = page.url().match(/\/course_instance\/(\d+)/)?.[1];
   if (!instanceId) throw new Error(`Could not extract course instance id from ${page.url()}`);
   await page.setViewportSize(VIEWPORT);
-  return `${BASE_URL}/pl/course_instance/${instanceId}`;
+  return `/pl/course_instance/${instanceId}`;
 }
 
 async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   console.log('Question flow (questions list, create, edit, preview)');
-  // 06: Questions list (before creating rectangle-area).
   await page.goto(`${courseInstanceUrl}/instructor/course_admin/questions`);
   await page.getByRole('heading', { name: 'Questions' }).waitFor();
-  // The questions table is hydrated client-side; wait for the toolbar's create link.
   const addQuestion = page
     .locator('a[href$="/questions/create"], button[name*="add" i]')
     .filter({ hasText: /Add question/i })
@@ -293,7 +257,6 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await highlight(addQuestion);
   await shoot(page, '06-questions');
 
-  // 07: Create question form, filled with rectangle-area + Empty question.
   await page.goto(`${courseInstanceUrl}/instructor/course_admin/questions/create`);
   await page.getByLabel('Title').fill('Find the area of a rectangle');
   await page.getByLabel('Question identifier (QID)').fill('rectangle-area');
@@ -303,7 +266,6 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await highlight(page.getByRole('button', { name: /Create question/ }));
   await shoot(page, '07-create-question');
 
-  // 09: Files tab — crop to the file-list card.
   await page.getByRole('button', { name: /Create question/ }).click();
   await page.waitForURL(/\/question\/\d+/);
   await page.getByRole('link', { name: 'Files', exact: true }).click();
@@ -312,7 +274,7 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await highlight(page.locator('a[href*="file_edit"][href$="question.html"]'));
   const filesCardBottom = await page.evaluate(() => {
     const cell = Array.from(document.querySelectorAll('td, a')).find(
-      (el) => (el.textContent ?? '').trim() === 'question.html',
+      (el) => el.textContent.trim() === 'question.html',
     );
     const card = cell?.closest('.card');
     return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
@@ -321,7 +283,6 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
     clip: { x: 0, y: 0, width: VIEWPORT.width, height: (filesCardBottom ?? 600) + 24 },
   });
 
-  // 10: question.html editor with the MC code pasted in.
   await page
     .getByRole('link', { name: 'Edit' })
     .and(page.locator('a[href*="file_edit"][href$="question.html"]'))
@@ -340,27 +301,21 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await page.getByRole('button', { name: /Save and sync/ }).click();
   await page.waitForLoadState('networkidle');
 
-  // 08: Preview with a graded correct answer. pl-multiple-choice shuffles options and
-  // prefixes them with "(a)", "(b)", etc., so we match the radio by trailing value.
   await page.getByRole('link', { name: 'Preview' }).click();
   await page.waitForURL(/\/preview\b/);
   await page.getByRole('button', { name: /Save & Grade/ }).waitFor();
   await page.getByRole('radio', { name: /\b20\b/ }).check();
   await page.getByRole('button', { name: /Save & Grade/ }).click();
-  // SubmissionPanel.tsx renders a "100%" badge for a correct answer; the prose
-  // "Correct!" doesn't appear in the DOM.
   await page.getByText(/100%/).first().waitFor();
   await shoot(page, '08-question-preview');
 }
 
 async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   console.log('Assessment flow (list, create, edit, access, settings)');
-  // 05: Assessments list.
   await page.goto(`${courseInstanceUrl}/instructor/instance_admin/assessments`);
   await page.getByRole('heading', { name: 'Assessments' }).waitFor();
   await shoot(page, '05-assessments');
 
-  // 17: Create assessment modal.
   await page.getByRole('button', { name: 'Add assessment' }).click();
   const dialog = await waitForModalShown(page);
   await dialog.getByText('Create assessment').waitFor();
@@ -369,14 +324,10 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   await shoot(page, '17-create-assessment');
 
   await page.getByRole('button', { name: 'Create', exact: true }).click();
-  // Creating an assessment triggers a sync job; Playwright sees a brief /pl/jobSequence/ URL
-  // before redirecting to the assessment, so wait for the assessment URL specifically.
   await page.waitForURL(/\/assessment\/\d+\b/, { timeout: 60_000 });
   const assessmentId = page.url().match(/\/assessment\/(\d+)/)?.[1];
   if (!assessmentId) throw new Error(`Could not extract assessment id from ${page.url()}`);
 
-  // 21: Question picker. A fresh assessment has no zones, so click "Add zone" first to
-  // create Zone 1, then "Add question" to open the picker.
   await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`);
   await page.waitForURL(/\/assessment\/\d+\/questions$/);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
@@ -392,14 +343,12 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   await pickerEntry.waitFor();
   await highlight(pickerEntry);
   await shoot(page, '21-question-picker');
-  // Add the question (so 19 below shows the populated zone) and exit picker.
   await pickerEntry.click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
 
-  // 19: Edit mode showing rectangle-area in Zone 1 — crop to the zone card.
   const zoneCardBottom = await page.evaluate(() => {
     const heading = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).find((h) =>
-      /Zone\s*1/i.test(h.textContent ?? ''),
+      /Zone\s*1/i.test(h.textContent),
     );
     const card = heading?.closest('.card');
     return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
@@ -412,7 +361,6 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   await page.waitForLoadState('networkidle');
   await editAssessmentJsonViaUI(page, courseInstanceUrl, assessmentId);
 
-  // 12: Access tab — crop to the access-rules card.
   await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`);
   await page.getByRole('heading', { name: /Access/ }).waitFor();
   const accessCardBottom = await page.evaluate(() => {
@@ -425,7 +373,6 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   });
 }
 
-/** Add an `allowAccess` block to infoAssessment.json by driving the in-browser file editor. */
 async function editAssessmentJsonViaUI(
   page: Page,
   courseInstanceUrl: string,
@@ -451,21 +398,17 @@ async function editAssessmentJsonViaUI(
 
 async function captureStudentView(page: Page) {
   console.log('Student view (menu, assessment, question)');
-  // 13: Open the user dropdown (we're on the assessment access page from the prior step).
   await page.getByRole('button', { name: /Dev User/ }).click();
   await page.getByText('Student view without access restrictions').waitFor();
   await highlight(page.getByRole('link', { name: /Student view without access restrictions/ }));
   await shoot(page, '13-student-view-menu');
 
-  // 14: Student view of the assessment — highlight the staff-only "Regenerate" affordance
-  // so readers know to use it after editing.
   await page.getByRole('link', { name: /Student view without access restrictions/ }).click();
   await page.waitForURL(/\/assessment(_instance)?\//);
   await page.getByRole('heading', { name: /homework1|Geometric properties/i }).waitFor();
   await highlight(page.getByRole('button', { name: /Regenerate.*assessment instance/i }));
   await shoot(page, '14-student-assessment');
 
-  // 15: Student view of the rectangle-area question.
   await page
     .getByRole('link', { name: /rectangle-area|Find the area/i })
     .first()
@@ -484,121 +427,80 @@ async function capturePublishing(page: Page, courseInstanceUrl: string) {
   await shoot(page, '16-publishing');
 }
 
-async function captureExampleCourse(page: Page) {
-  console.log('Example course (XC 101) questions');
-  await page.goto(BASE_URL);
-  await page
-    .getByRole('link', { name: /XC 101/ })
-    .first()
-    .click();
-  await page.waitForURL(/\/course\/\d+\/course_admin/);
-  const courseId = page.url().match(/\/course\/(\d+)/)?.[1];
-  if (!courseId) throw new Error('Could not find XC 101 course id');
-  await page.goto(`${BASE_URL}/pl/course/${courseId}/course_admin/questions`);
-  await page.getByRole('heading', { name: 'Questions' }).waitFor();
-  await shoot(page, '18-example-course-questions');
-}
-
 async function captureRequestCourse(page: Page) {
   console.log('Request course (dropdown + form page)');
-  await page.goto(BASE_URL);
+  await page.goto('/');
   await page.getByRole('button', { name: /Dev User/ }).click();
   const menu = page.locator('.dropdown-menu.show').first();
   await menu.waitFor({ state: 'visible' });
   const courseRequestsLink = menu.getByRole('link', { name: /Course Requests/ });
   await courseRequestsLink.waitFor();
   await highlight(courseRequestsLink);
-  // Clip to the top of the page so the screenshot focuses on the nav + dropdown.
   const menuBox = await menu.boundingBox();
   const clipHeight = menuBox ? Math.ceil(menuBox.y + menuBox.height + 16) : 400;
   await shoot(page, 'requestCourseDropdown', {
-    filePath: path.join(REPO_ROOT, 'docs/requestCourse/requestCourseDropdown.png'),
+    filePath: path.join(REPOSITORY_ROOT_PATH, 'docs/requestCourse/requestCourseDropdown.png'),
     clip: { x: 0, y: 0, width: VIEWPORT.width, height: clipHeight },
   });
 
-  await page.goto(`${BASE_URL}/pl/request_course`);
+  await page.goto('/pl/request_course');
   await page.waitForLoadState('networkidle');
   await shoot(page, 'requestCourseForm', {
-    filePath: path.join(REPO_ROOT, 'docs/requestCourse/requestCourseForm.png'),
+    filePath: path.join(REPOSITORY_ROOT_PATH, 'docs/requestCourse/requestCourseForm.png'),
   });
 }
 
-async function main() {
-  console.log(`Capturing onboarding screenshots → ${path.relative(REPO_ROOT, OUT_DIR)}/`);
-  console.log(`Base URL: ${BASE_URL}`);
-  console.log(`Reset testCourse/: ${KEEP_CHANGES ? 'no (--keep)' : 'yes'}`);
-  console.log();
+async function disableAdminAccess(page: Page) {
+  await page.goto('/');
+  const userNav = page.locator('#username-nav');
+  await userNav.waitFor();
+  if ((await userNav.getAttribute('data-access-as-administrator')) !== 'true') return;
 
-  if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
+  await page.getByRole('button', { name: /Dev User/ }).click();
+  const toggle = page.locator('#navbar-administrator-toggle');
+  await toggle.waitFor({ state: 'visible' });
+  await toggle.click();
+  await page.waitForLoadState('networkidle');
 
-  ensureCleanTestCourse();
+  if ((await userNav.getAttribute('data-access-as-administrator')) === 'true') {
+    throw new Error('Clicked admin toggle but access_as_administrator is still true.');
+  }
+  console.log('  ✔ Administrator access disabled');
+}
 
-  let browser: Browser | undefined;
-  try {
-    browser = await chromium.launch();
-    const context = await browser.newContext({
-      viewport: VIEWPORT,
-      reducedMotion: 'reduce',
-    });
-    const page = await context.newPage();
-    // Per-navigation overrides: disable CSS animations (so modals don't render mid-fade)
-    // and hide the dev-mode banner (the docs are written for production users).
-    await page.addInitScript(() => {
-      const style = document.createElement('style');
-      style.textContent = `*, *::before, *::after {
-        transition: none !important;
-        animation: none !important;
-      }`;
-      document.documentElement.append(style);
+test.describe('Onboarding screenshots', () => {
+  test.skip(
+    !process.env.CAPTURE_SCREENSHOTS,
+    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/getting-started/*.png.',
+  );
+  test('capture all', async ({ page, courseInstance: _courseInstance }) => {
+    test.setTimeout(300_000);
+    console.log(
+      `Capturing onboarding screenshots → ${path.relative(REPOSITORY_ROOT_PATH, OUT_DIR)}/`,
+    );
 
-      const hideBanner = () => {
-        document.querySelectorAll('.card-header h2, .card-header').forEach((el) => {
-          if ((el.textContent ?? '').trim() === 'Development Mode') {
-            el.closest('.card')?.remove();
-          }
-        });
-      };
-      const start = () => {
-        hideBanner();
-        new MutationObserver(hideBanner).observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-      };
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', start, { once: true });
-      } else {
-        start();
-      }
-    });
+    await page.setViewportSize(VIEWPORT);
+    if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
-    await loadFromDisk(page);
+    // The dev user is auto-promoted to admin (first user) but lacks course
+    // permissions. Grant Owner so the home/course pages render production-equivalent
+    // (no admin override required) once we disable admin access below.
+    await sqldb.execute(sql.grant_dev_user_owner_on_all_courses);
+
+    await disableAdminAccess(page);
 
     const courseUrl = await discoverCourseUrl(page);
 
     await captureHome(page);
     await captureCourseLanding(page, courseUrl);
     const courseInstanceUrl = await captureCreateInstanceModal(page, courseUrl);
-    // Staff capture runs after course-instance capture so the Add users modal can grant
-    // student-data access to the newly-created Fa25 instance.
     await captureStaffPage(page, courseUrl);
     await captureQuestionFlow(page, courseInstanceUrl);
     await captureAssessmentFlow(page, courseInstanceUrl);
     await captureStudentView(page);
     await capturePublishing(page, courseInstanceUrl);
-    await captureExampleCourse(page);
     await captureRequestCourse(page);
 
-    console.log();
     console.log(`✅ Captured ${shotCount} screenshots`);
-  } finally {
-    if (browser) await browser.close();
-    if (!KEEP_CHANGES) restoreTestCourse();
-  }
-}
-
-main().catch((err) => {
-  console.error('\n❌ Capture failed:');
-  console.error(err);
-  process.exit(1);
+  });
 });

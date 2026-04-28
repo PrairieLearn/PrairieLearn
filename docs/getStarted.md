@@ -159,8 +159,6 @@ Save and preview. Click **New variant** to see the values change. Each student n
 
     PrairieLearn ships with [**XC 101: Example Course**](https://us.prairielearn.com/pl/course/108/), which has 200+ ready-to-copy questions covering every element and grading style.
 
-    ![Example course (XC 101) Questions list with hundreds of templates](getting-started/18-example-course-questions.png)
-
     To copy one into your course:
 
     1. Open [XC 101](https://us.prairielearn.com/pl/course/108/) and find a question (the **Course instance → SectionA** has assessments that group questions by topic, e.g. "Question gallery for PL elements").
