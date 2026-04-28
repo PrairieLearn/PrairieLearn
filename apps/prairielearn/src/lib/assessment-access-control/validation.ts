@@ -615,9 +615,12 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   const afterCredit =
     dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
   if (afterCredit != null) {
-    // Determine the preceding credit in the timeline.
+    // Determine the preceding credit in the timeline: last late deadline,
+    // then due date (dueCredit), then last early deadline.
     const precedingCredit =
-      dc.lateDeadlines?.at(-1)?.credit ?? (dc.due?.date != null ? dueCredit : undefined);
+      dc.lateDeadlines?.at(-1)?.credit ??
+      (dc.due?.date != null ? dueCredit : undefined) ??
+      dc.earlyDeadlines?.at(-1)?.credit;
 
     if (precedingCredit != null && afterCredit > precedingCredit) {
       errors.push(
