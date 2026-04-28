@@ -42,9 +42,7 @@ export const multipleDropdownsHandler: TransformHandler<QTI12ParsedItem> = {
     // If no blank has a correct answer, the question can't be auto-graded.
     const gradingMethod = correctMap.size === 0 ? ('Manual' as const) : undefined;
     if (gradingMethod === 'Manual') {
-      warnings.push(
-        `No correct answers for any blank; emitting as a manually-graded question.`,
-      );
+      warnings.push('No correct answers for any blank; emitting as a manually-graded question.');
     }
 
     return {

@@ -36,9 +36,7 @@ export const fillInBlanksHandler: TransformHandler<QTI12ParsedItem> = {
     // surface as Manual so the question still appears, with a warning.
     const allMissing = blanks.length > 0 && blanks.every((b) => !b.correctText);
     if (allMissing) {
-      warnings.push(
-        `No correct answers for any blank; emitting as a manually-graded question.`,
-      );
+      warnings.push('No correct answers for any blank; emitting as a manually-graded question.');
     }
 
     return {

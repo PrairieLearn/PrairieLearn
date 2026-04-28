@@ -20,13 +20,11 @@ export const shortAnswerHandler: TransformHandler<QTI12ParsedItem> = {
     } else if (fromFeedback != null && fromFeedback !== '') {
       correctAnswer = fromFeedback;
       warnings.push(
-        `No correct answer in <respcondition>; falling back to general_fb feedback text. Review the answer in info.json.`,
+        'No correct answer in <respcondition>; falling back to general_fb feedback text. Review the answer in info.json.',
       );
     } else {
       gradingMethod = 'Manual';
-      warnings.push(
-        `No correct answer; emitting as a manually-graded question.`,
-      );
+      warnings.push('No correct answer; emitting as a manually-graded question.');
     }
 
     const trimmed = correctAnswer.trim();

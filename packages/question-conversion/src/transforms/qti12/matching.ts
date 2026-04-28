@@ -33,9 +33,7 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
       }
       const statementHtml = lid.materialText ?? '';
       if (!statementHtml) {
-        warnings.push(
-          `Statement "${lid.ident}" has no display text. Review the source QTI.`,
-        );
+        warnings.push(`Statement "${lid.ident}" has no display text. Review the source QTI.`);
       }
       if (!optionHtml) {
         warnings.push(
@@ -49,7 +47,7 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
     const allMissing = pairs.length > 0 && pairs.every((p) => !p.optionHtml);
     if (allMissing) {
       warnings.push(
-        `No correct matches for any statement; emitting as a manually-graded question.`,
+        'No correct matches for any statement; emitting as a manually-graded question.',
       );
     }
 

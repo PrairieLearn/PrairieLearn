@@ -25,7 +25,7 @@ export const multipleChoiceHandler: TransformHandler<QTI12ParsedItem> = {
         body: { type: 'multiple-choice', choices },
         gradingMethod: 'Manual',
         warnings: [
-          `No correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+          'No correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.',
         ],
       };
     }
