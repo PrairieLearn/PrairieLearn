@@ -294,7 +294,20 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential('can change instance role of self back to None', async () => {
+  test.sequential('can change instance role of self when emulating another owner', async () => {
+    const trpc = createTrpcClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    });
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test.sequential('can revert own instance role after emulation test', async () => {
     const trpc = createTrpcClient();
     await trpc.courseStaff.updateInstanceRole.mutate({
       userId: context.userId,
@@ -366,6 +379,26 @@ function runTest(context: TestContext) {
       courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
     });
     updatePermissions(users, 'staff03@example.com', 'None', null);
+    await checkPermissions(users);
+  });
+
+  test.sequential('can bulk edit own instance role', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' }],
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test.sequential('can bulk edit own instance role back to None', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
     await checkPermissions(users);
   });
 
