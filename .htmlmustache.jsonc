@@ -10,6 +10,13 @@
     // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
     "testCourse/questions/addVectors/question.html"
   ],
+  "printWidth": 100,
+  "noBreakDelimiters": [
+    { "start": "$", "end": "$" },
+    { "start": "$$", "end": "$$" },
+    { "start": "\\(", "end": "\\)" },
+    { "start": "\\[", "end": "\\]" }
+  ],
   "rules": {
     "preferMustacheComments": "warning",
     "unrecognizedHtmlTags": "warning"
@@ -162,20 +169,12 @@
       "selector": ":is(pl-3pointrod, pl-4pointrod, pl-arc, pl-arc-dimensions, pl-arc-vector, pl-axes, pl-battery, pl-capacitor, pl-circle, pl-clamped, pl-coil, pl-collar-rod, pl-controlled-curved-line, pl-controlled-line, pl-coordinates, pl-dimensions, pl-distributed-load, pl-double-headed-vector, pl-fixed-pin, pl-graph-line, pl-inductor, pl-line, pl-paired-vector, pl-point, pl-polygon, pl-pulley, pl-rectangle, pl-resistor, pl-rod, pl-roller, pl-spring, pl-switch, pl-text, pl-triangle, pl-vector):not(pl-drawing pl-3pointrod):not(pl-drawing pl-4pointrod):not(pl-drawing pl-arc):not(pl-drawing pl-arc-dimensions):not(pl-drawing pl-arc-vector):not(pl-drawing pl-axes):not(pl-drawing pl-battery):not(pl-drawing pl-capacitor):not(pl-drawing pl-circle):not(pl-drawing pl-clamped):not(pl-drawing pl-coil):not(pl-drawing pl-collar-rod):not(pl-drawing pl-controlled-curved-line):not(pl-drawing pl-controlled-line):not(pl-drawing pl-coordinates):not(pl-drawing pl-dimensions):not(pl-drawing pl-distributed-load):not(pl-drawing pl-double-headed-vector):not(pl-drawing pl-fixed-pin):not(pl-drawing pl-graph-line):not(pl-drawing pl-inductor):not(pl-drawing pl-line):not(pl-drawing pl-paired-vector):not(pl-drawing pl-point):not(pl-drawing pl-polygon):not(pl-drawing pl-pulley):not(pl-drawing pl-rectangle):not(pl-drawing pl-resistor):not(pl-drawing pl-rod):not(pl-drawing pl-roller):not(pl-drawing pl-spring):not(pl-drawing pl-switch):not(pl-drawing pl-text):not(pl-drawing pl-triangle):not(pl-drawing pl-vector)",
       "message": "pl-drawing shape element must be nested inside pl-drawing."
     },
-    // TODO: Requires more work to implement.
-    // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
     {
+      // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
       "id": "pl-input-in-panel",
       "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)",
       "message": "Input elements must not be nested inside pl-question-panel, pl-answer-panel, or pl-submission-panel. Place them as siblings of the panel instead."
     }
-  ],
-  "printWidth": 100,
-  "noBreakDelimiters": [
-    { "start": "$", "end": "$" },
-    { "start": "$$", "end": "$$" },
-    { "start": "\\(", "end": "\\)" },
-    { "start": "\\[", "end": "\\]" }
   ],
   "customTags": [
     {
@@ -333,7 +332,7 @@
     { "name": "pl-sketch-initial" },
     { "name": "pl-sketch-solution" },
     { "name": "pl-sketch-tool" },
-    // Non-PL custom elements
+    // Non-PL custom elements (don't copy to htmlMustacheConfig.ts)
     { "name": "clickable-image" },
     { "name": "course-element" },
     { "name": "extendable-element" },
