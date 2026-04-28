@@ -41,4 +41,8 @@ export interface UploadResponse {
   existingQuestionDirs: string[];
   /** Access rule properties that were stripped from the imported assessments. */
   strippedAccessRules: StrippedAccessRules;
+  /** Assessment set names defined in the course's infoCourse.json. */
+  assessmentSetNames: string[];
+  /** Existing (set, number) pairs in this course instance, for deduplication. */
+  existingAssessmentLabels: { set: string; number: string }[];
 }

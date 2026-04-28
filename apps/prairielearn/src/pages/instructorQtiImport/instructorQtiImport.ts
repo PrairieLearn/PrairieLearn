@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -13,6 +13,7 @@ import {
   QTI12AssessmentParser,
   type QtiFileEntry,
   findQtiFilesFromManifest,
+  findQtiXmlFiles,
   parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
@@ -23,6 +24,8 @@ import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
+import { selectAssessments } from '../../models/assessment.js';
 
 import { InstructorQtiImport } from './instructorQtiImport.html.js';
 import type {
@@ -163,10 +166,20 @@ router.post(
         // Questions directory may not exist yet.
       }
 
+      const [assessmentSets, assessmentRows] = await Promise.all([
+        selectAssessmentSetsForCourse(res.locals.course.id),
+        selectAssessments({ course_instance_id: res.locals.course_instance.id }),
+      ]);
+
       const response: UploadResponse = {
         results,
         existingQuestionDirs,
         strippedAccessRules: stripped,
+        assessmentSetNames: assessmentSets.map((s) => s.name),
+        existingAssessmentLabels: assessmentRows.map((r) => ({
+          set: r.assessment_set.name,
+          number: r.number,
+        })),
       };
 
       res.json(response);
@@ -265,7 +278,7 @@ async function serializeConversionResult(
  * `clientFilesQuestion/<filename>`. Matches self-closing tags and
  * open/close pairs regardless of tag name.
  */
-function commentOutVideoReferences(html: string, skippedVideos: string[]): string {
+export function commentOutVideoReferences(html: string, skippedVideos: string[]): string {
   let result = html;
   for (const videoFile of skippedVideos) {
     const escaped = videoFile.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -310,7 +323,7 @@ function isVideoFile(filename: string): boolean {
 }
 
 /** Convert a Map<string, Buffer|string> to Record<string, string> (base64-encoded). */
-async function serializeClientFiles(
+export async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
 ): Promise<{ files: Record<string, string>; skippedVideos: string[] }> {
@@ -336,32 +349,6 @@ async function serializeClientFiles(
     }
   }
   return { files, skippedVideos };
-}
-
-const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
-
-/** Heuristic fallback: find QTI XML files by scanning directories. */
-async function findQtiXmlFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir);
-
-  const directXml = entries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
-  if (directXml) {
-    return [path.join(dir, directXml)];
-  }
-
-  const xmlFiles: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(dir, entry);
-    const entryStat = await stat(entryPath);
-    if (entryStat.isDirectory()) {
-      const subEntries = await readdir(entryPath);
-      const xml = subEntries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
-      if (xml) {
-        xmlFiles.push(path.join(entryPath, xml));
-      }
-    }
-  }
-  return xmlFiles;
 }
 
 export default router;

@@ -50,6 +50,10 @@ export type {
 } from './types/pl-output.js';
 
 // Course export utilities
-export { detectCourseExport, findQtiFilesFromManifest } from './utils/course-export.js';
+export {
+  detectCourseExport,
+  findQtiFilesFromManifest,
+  findQtiXmlFiles,
+} from './utils/course-export.js';
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';

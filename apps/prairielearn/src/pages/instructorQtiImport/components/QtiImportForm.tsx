@@ -32,7 +32,7 @@ const PL_ELEMENT_TYPE_MAP: Record<string, string> = {
   'pl-file-upload': 'File upload',
 };
 
-const DEFAULT_ASSESSMENT_SETS = [
+const FALLBACK_ASSESSMENT_SETS = [
   'Homework',
   'Quiz',
   'Practice Quiz',
@@ -89,6 +89,7 @@ interface QuestionOverrides {
 
 function deduplicateAssessmentNumbers(
   results: SerializedConversionResult[],
+  existingLabels: { set: string; number: string }[],
 ): AssessmentOverrides[] {
   const overrides: AssessmentOverrides[] = results.map((r) => ({
     title: r.assessment.infoJson.title,
@@ -98,7 +99,14 @@ function deduplicateAssessmentNumbers(
     included: r.questions.length > 0,
   }));
 
+  // Seed with existing (set, number) pairs so imports don't collide.
   const usedBySet = new Map<string, Set<string>>();
+  for (const { set, number } of existingLabels) {
+    const used = usedBySet.get(set) ?? new Set<string>();
+    used.add(number);
+    usedBySet.set(set, used);
+  }
+
   for (const o of overrides) {
     const used = usedBySet.get(o.set) ?? new Set<string>();
     if (used.has(o.number)) {
@@ -171,6 +179,7 @@ export function QtiImportForm({
   const [questionOverrides, setQuestionOverrides] = useState<Map<string, QuestionOverrides>>(
     new Map(),
   );
+  const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
@@ -214,7 +223,10 @@ export function QtiImportForm({
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
       setResults(data.results);
-      setOverrides(deduplicateAssessmentNumbers(data.results));
+      if (data.assessmentSetNames.length > 0) {
+        setAssessmentSetNames(data.assessmentSetNames);
+      }
+      setOverrides(deduplicateAssessmentNumbers(data.results, data.existingAssessmentLabels));
       setQuestionOverrides(buildInitialQuestionOverrides(data.results, dirs));
       setStep('review');
     } catch (err) {
@@ -345,22 +357,6 @@ export function QtiImportForm({
     });
   };
 
-  const expandAllQuestions = (dirNames: string[]) => {
-    setExpandedQuestions((prev) => {
-      const next = new Set(prev);
-      for (const d of dirNames) next.add(d);
-      return next;
-    });
-  };
-
-  const collapseAllQuestions = (dirNames: string[]) => {
-    setExpandedQuestions((prev) => {
-      const next = new Set(prev);
-      for (const d of dirNames) next.delete(d);
-      return next;
-    });
-  };
-
   const includedCount = overrides.filter((o) => o.included).length;
 
   const resetAll = () => {
@@ -457,7 +453,7 @@ export function QtiImportForm({
                           value={overrides[i].set}
                           onChange={(e) => updateOverride(i, { set: e.target.value })}
                         >
-                          {DEFAULT_ASSESSMENT_SETS.map((s) => (
+                          {assessmentSetNames.map((s) => (
                             <option key={s} value={s}>
                               {s}
                             </option>
@@ -482,8 +478,7 @@ export function QtiImportForm({
                       questionOverrides={questionOverrides}
                       expandedQuestions={expandedQuestions}
                       onToggleExpand={toggleExpandedQuestion}
-                      onExpandAll={expandAllQuestions}
-                      onCollapseAll={collapseAllQuestions}
+                      onSetExpanded={setExpandedQuestions}
                       onUpdateOverride={updateQuestionOverride}
                     />
                   </Card.Body>
@@ -697,16 +692,14 @@ function AssessmentQuestionsSection({
   questionOverrides,
   expandedQuestions,
   onToggleExpand,
-  onExpandAll,
-  onCollapseAll,
+  onSetExpanded,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
   questionOverrides: Map<string, QuestionOverrides>;
   expandedQuestions: Set<string>;
   onToggleExpand: (dirName: string) => void;
-  onExpandAll: (dirNames: string[]) => void;
-  onCollapseAll: (dirNames: string[]) => void;
+  onSetExpanded: React.Dispatch<React.SetStateAction<Set<string>>>;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
 }) {
   const conflictingQuestions = questions.filter(
@@ -755,14 +748,20 @@ function AssessmentQuestionsSection({
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() => onExpandAll(allDirNames)}
+            onClick={() => onSetExpanded((prev) => new Set([...prev, ...allDirNames]))}
           >
             Expand all
           </button>
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() => onCollapseAll(allDirNames)}
+            onClick={() =>
+              onSetExpanded((prev) => {
+                const next = new Set(prev);
+                for (const d of allDirNames) next.delete(d);
+                return next;
+              })
+            }
           >
             Collapse all
           </button>

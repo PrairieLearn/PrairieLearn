@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { logger } from '@prairielearn/logger';
@@ -206,4 +206,34 @@ function parseManifestTitle(xml: string): CourseExportInfo | null {
   const match = /<(?:\w+:)?string(?:\s[^>]*)?>([^<]+)<\/(?:\w+:)?string>/i.exec(xml);
   const title = match?.[1]?.trim();
   return title ? { title } : null;
+}
+
+const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
+
+/**
+ * Heuristic fallback for finding QTI XML files when no manifest is present.
+ * Scans the directory and one level of subdirectories for XML files that
+ * aren't known non-QTI files.
+ */
+export async function findQtiXmlFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir);
+
+  const directXml = entries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+  if (directXml) {
+    return [path.join(dir, directXml)];
+  }
+
+  const xmlFiles: string[] = [];
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry);
+    const entryStat = await stat(entryPath);
+    if (entryStat.isDirectory()) {
+      const subEntries = await readdir(entryPath);
+      const xml = subEntries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+      if (xml) {
+        xmlFiles.push(path.join(entryPath, xml));
+      }
+    }
+  }
+  return xmlFiles;
 }
