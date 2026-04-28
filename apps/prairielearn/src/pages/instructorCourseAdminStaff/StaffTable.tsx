@@ -260,14 +260,13 @@ function CoursePermissionCell({
   );
 }
 
+// Only course owners can access this page, so instance roles are always editable.
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
-  canChangeInstanceRole,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstanceAuthz;
-  canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => cir.id === courseInstance.id,
@@ -286,21 +285,6 @@ function CourseInstanceAccessCell({
     },
   });
   const appError = getAppError<CourseStaffError>(mutation.error);
-
-  if (!canChangeInstanceRole) {
-    return (
-      <span
-        className={clsx(
-          'btn btn-sm disabled',
-          `bg-${instanceRoleColor(currentRole)}-subtle`,
-          `text-${instanceRoleColor(currentRole)}-emphasis`,
-        )}
-        style={{ width: 90 }}
-      >
-        {INSTANCE_ROLE_LABELS[currentRole]}
-      </span>
-    );
-  }
 
   return (
     <OverlayTrigger
@@ -1043,11 +1027,6 @@ function StaffTableInner({
                 <CourseInstanceAccessCell
                   courseUser={info.row.original}
                   courseInstance={ci}
-                  canChangeInstanceRole={
-                    (info.row.original.user.id !== authnUserId &&
-                      info.row.original.user.id !== userId) ||
-                    isAdministrator
-                  }
                 />
               </div>
             ),
