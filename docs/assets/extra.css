@@ -162,27 +162,9 @@ code.doc-symbol-json::after {
   color: var(--md-default-fg-color--light);
 }
 
-/* Frame the numbered onboarding screenshots referenced from
-   docs/getting-started/index.md (e.g. `01-home.png`) so they don't blend into
-   the page background where their own background is white. */
-.md-typeset img[src^='01-'],
-.md-typeset img[src^='02-'],
-.md-typeset img[src^='03-'],
-.md-typeset img[src^='04-'],
-.md-typeset img[src^='05-'],
-.md-typeset img[src^='06-'],
-.md-typeset img[src^='07-'],
-.md-typeset img[src^='08-'],
-.md-typeset img[src^='09-'],
-.md-typeset img[src^='10-'],
-.md-typeset img[src^='12-'],
-.md-typeset img[src^='13-'],
-.md-typeset img[src^='14-'],
-.md-typeset img[src^='15-'],
-.md-typeset img[src^='16-'],
-.md-typeset img[src^='17-'],
-.md-typeset img[src^='19-'],
-.md-typeset img[src^='21-'] {
+/* Frame onboarding screenshots so they don't blend into the page background
+   where their own background is white. */
+.md-typeset img[src^='screenshots/'] {
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 8px;
 }

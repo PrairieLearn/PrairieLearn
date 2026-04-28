@@ -14,11 +14,11 @@ Before you start, you need a PrairieLearn course space. If you don't have one ye
 
 Sign in at [https://us.prairielearn.com](https://us.prairielearn.com) (or your institution's PrairieLearn instance). Your course appears under **Courses with instructor access** on the home page.
 
-![PrairieLearn home page with the courses panel](01-home.png)
+![PrairieLearn home page with the courses panel](screenshots/01-home.png)
 
 Click the course name to open it. You will land on the **Course instances** page.
 
-![Course landing page showing the Course instances tab and sidebar](02-course-instances.png)
+![Course landing page showing the Course instances tab and sidebar](screenshots/02-course-instances.png)
 
 The sidebar splits into two scopes:
 
@@ -29,7 +29,7 @@ The sidebar splits into two scopes:
 
 A course instance is one offering of the course — for example, "Fall 2025." From **Course instances**, click **Add course instance**.
 
-![Create course instance dialog](04-create-course-instance.png)
+![Create course instance dialog](screenshots/04-create-course-instance.png)
 
 Fill in:
 
@@ -49,7 +49,7 @@ Click **Create**. You're now inside the new course instance.
 
 If you have TAs or co-instructors, invite them now. Go to **Staff** in the **Course** sidebar.
 
-![Staff page with Add users button](03-staff.png)
+![Staff page with Add users button](screenshots/03-staff.png)
 
 Click **Add users** and invite by UID (typically an email-like identification). Then specify the access provided to your staff.
 
@@ -69,17 +69,17 @@ See [course staff](../course/index.md#course-staff) for the full breakdown and r
 
 In the **Course** sidebar, click **Questions**.
 
-![Questions list — a populated course; yours will start empty](06-questions.png)
+![Questions list — a populated course; yours will start empty](screenshots/06-questions.png)
 
 (Yours will be empty — the screenshot shows a populated course so you can see the layout.) Click **Add question**.
 
-![Add question form with template tabs and a list of basic question templates](07-create-question.png)
+![Add question form with template tabs and a list of basic question templates](screenshots/07-create-question.png)
 
 For this tutorial: name it `Find the area of a rectangle`, set the **QID** to `rectangle-area`, choose **Empty question**, and then click **Create question**.
 
 You will land on the question's **Files** tab.
 
-![Files tab for a question showing README.md, info.json, question.html, server.py](09-question-files.png)
+![Files tab for a question showing README.md, info.json, question.html, server.py](screenshots/09-question-files.png)
 
 Click **Edit** next to `question.html` and replace the contents with:
 
@@ -99,11 +99,11 @@ Click **Edit** next to `question.html` and replace the contents with:
 
 [`pl-multiple-choice`](../elements/pl-multiple-choice.md) is one of PrairieLearn's [submission elements](../elements/index.md#submission-elements) — the inputs students interact with. The [element catalog](../elements/index.md) lists every element you can use here.
 
-![Browser file editor for question.html with syntax highlighting and a Save and sync button](10-question-editor.png)
+![Browser file editor for question.html with syntax highlighting and a Save and sync button](screenshots/10-question-editor.png)
 
 Click **Save and sync**, then click the **Preview** tab.
 
-![Question preview after answering 20 and clicking Save & Grade; the submission panel shows a Correct! badge and the staff information sidebar is visible](08-question-preview.png)
+![Question preview after answering 20 and clicking Save & Grade; the submission panel shows a Correct! badge and the staff information sidebar is visible](screenshots/08-question-preview.png)
 
 Select an option and click **Save & Grade**.
 
@@ -167,11 +167,11 @@ Save and preview. Click **New variant** to see the values change. Each student n
 
 Switch to your course instance (sidebar → **Course instance**) and click **Assessments**.
 
-![Assessments list with Add assessment button](05-assessments.png)
+![Assessments list with Add assessment button](screenshots/05-assessments.png)
 
 Click **Add assessment**.
 
-![Create assessment dialog with Title, Short name, Type (Homework/Exam), Set fields](17-create-assessment.png)
+![Create assessment dialog with Title, Short name, Type (Homework/Exam), Set fields](screenshots/17-create-assessment.png)
 
 Fill in:
 
@@ -186,11 +186,11 @@ Click **Create**. You land on the assessment with empty zones.
 
 Go to the assessment's **Questions** tab and click **Edit**. Click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
 
-![Question picker with rectangle-area searched and the result highlighted](21-question-picker.png)
+![Question picker with rectangle-area searched and the result highlighted](screenshots/21-question-picker.png)
 
 After clicking the result, the question is added to the zone:
 
-![Assessment Questions tab in edit mode with rectangle-area in the zone](19-assessment-edit-mode.png)
+![Assessment Questions tab in edit mode with rectangle-area in the zone](screenshots/19-assessment-edit-mode.png)
 
 Set the point value if you want, then click **Save and sync**.
 
@@ -212,7 +212,7 @@ Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` bloc
 
 Click **Save and sync**. The **Access** tab summarizes the rules:
 
-![Assessment Access tab showing the access rule table](12-assessment-access.png)
+![Assessment Access tab showing the access rule table](screenshots/12-assessment-access.png)
 
 For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [assessment access control](../assessment/accessControl.md).
 
@@ -220,11 +220,11 @@ For late credit, time limits, per-student exceptions, exam mode, and PrairieTest
 
 Before sharing anything with students, dry-run the assessment yourself. Open the user menu (top right) and pick **Student view without access restrictions**.
 
-![Dev User dropdown showing Staff view, Student view, Student view without access restrictions](13-student-view-menu.png)
+![Dev User dropdown showing Staff view, Student view, Student view without access restrictions](screenshots/13-student-view-menu.png)
 
 You see exactly what a student sees, plus a yellow **Regenerate your assessment instance** banner only staff can see:
 
-![Student view of an assessment with question list and points; the Regenerate your assessment instance banner is highlighted](14-student-assessment.png)
+![Student view of an assessment with question list and points; the Regenerate your assessment instance banner is highlighted](screenshots/14-student-assessment.png)
 
 !!! warning "Regenerate after editing"
 
@@ -232,7 +232,7 @@ You see exactly what a student sees, plus a yellow **Regenerate your assessment 
 
 Click into a question to see how it renders for a student:
 
-![Student view of a single question with Save & Grade and Save only buttons](15-student-question.png)
+![Student view of a single question with Save & Grade and Save only buttons](screenshots/15-student-question.png)
 
 Switch back to staff view from the same dropdown when you're done.
 
@@ -240,7 +240,7 @@ Switch back to staff view from the same dropdown when you're done.
 
 Go to **Instance settings → Publishing**.
 
-![Publishing settings with Unpublished/Scheduled/Published radio buttons, end date, and Extensions section](16-publishing.png)
+![Publishing settings with Unpublished/Scheduled/Published radio buttons, end date, and Extensions section](screenshots/16-publishing.png)
 
 Pick **Published** to make the course instance available to students, and then hit **Save**. You can read more about publishing in the [course instance documentation](../courseInstance/index.md#publishing-controls).
 

@@ -23,7 +23,10 @@ import { test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const OUT_DIR = path.resolve(REPOSITORY_ROOT_PATH, process.env.OUT_DIR ?? 'docs/getting-started');
+const OUT_DIR = path.resolve(
+  REPOSITORY_ROOT_PATH,
+  process.env.OUT_DIR ?? 'docs/getting-started/screenshots',
+);
 const VIEWPORT = { width: 1440, height: 900 };
 const TALL_VIEWPORT = { width: 1440, height: 1300 };
 
@@ -163,14 +166,6 @@ async function getAceEditorContent(page: Page): Promise<string> {
   });
 }
 
-async function discoverCourseUrl(page: Page): Promise<string> {
-  await page.goto('/');
-  const link = page.getByRole('link', { name: /QA 101/ }).first();
-  const href = await link.getAttribute('href');
-  if (!href) throw new Error('Could not find QA 101 course link on home page');
-  return new URL(href, page.url()).toString();
-}
-
 async function captureHome(page: Page) {
   console.log('Home page');
   await page.goto('/');
@@ -206,11 +201,8 @@ async function captureCourseLanding(page: Page, courseUrl: string) {
 
 async function captureStaffPage(page: Page, courseUrl: string) {
   console.log('Staff page (Add users modal with Fa25 → Student data editor)');
-  const courseId = courseUrl.match(/\/course\/(\d+)/)?.[1];
-  if (!courseId) throw new Error(`Could not extract course id from ${courseUrl}`);
-
   await page.setViewportSize(TALL_VIEWPORT);
-  await page.goto(`/pl/course/${courseId}/course_admin/staff`);
+  await page.goto(`${courseUrl}/course_admin/staff`);
   await page.getByRole('button', { name: /Add users/ }).waitFor();
 
   await page.getByRole('button', { name: /Add users/ }).click();
@@ -471,9 +463,9 @@ async function disableAdminAccess(page: Page) {
 test.describe('Onboarding screenshots', () => {
   test.skip(
     !process.env.CAPTURE_SCREENSHOTS,
-    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/getting-started/*.png.',
+    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/getting-started/screenshots/*.png.',
   );
-  test('capture all', async ({ page, courseInstance: _courseInstance }) => {
+  test('capture all', async ({ page, courseInstance }) => {
     test.setTimeout(300_000);
     console.log(
       `Capturing onboarding screenshots → ${path.relative(REPOSITORY_ROOT_PATH, OUT_DIR)}/`,
@@ -489,7 +481,7 @@ test.describe('Onboarding screenshots', () => {
 
     await disableAdminAccess(page);
 
-    const courseUrl = await discoverCourseUrl(page);
+    const courseUrl = `/pl/course/${courseInstance.course_id}`;
 
     await captureHome(page);
     await captureCourseLanding(page, courseUrl);
