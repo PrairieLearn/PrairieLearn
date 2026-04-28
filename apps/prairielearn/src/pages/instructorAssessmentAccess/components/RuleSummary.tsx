@@ -721,6 +721,12 @@ const tdStyle = {
   paddingBottom: '0.5rem',
 };
 
+function getAfterCompleteLabel(exam: MainRuleData['prairieTestExams'][number]): string {
+  if (!exam.afterCompleteQuestionsHidden) return 'Show questions and score';
+  if (!exam.afterCompleteScoreHidden) return 'Hide questions, show score';
+  return 'Hide questions and score';
+}
+
 export function PrairieTestExamsTable({
   exams,
   initialMetadata,
@@ -765,7 +771,19 @@ export function PrairieTestExamsTable({
               style={thStyle}
             >
               <i className="bi bi-pc-display me-1" aria-hidden="true" />
-              PrairieTest exam
+              PrairieTest exams
+            </th>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
+              Mode
+            </th>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
+              After completion
             </th>
           </tr>
         </thead>
@@ -797,6 +815,12 @@ export function PrairieTestExamsTable({
                   ) : (
                     <span className="text-body-secondary">Unknown exam</span>
                   )}
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  {exam.readOnly ? 'Read-only' : 'Submissions allowed'}
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  {getAfterCompleteLabel(exam)}
                 </td>
               </tr>
             );
