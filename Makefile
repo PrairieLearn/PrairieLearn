@@ -204,9 +204,9 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2

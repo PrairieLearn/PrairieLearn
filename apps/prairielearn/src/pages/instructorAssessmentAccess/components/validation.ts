@@ -1,6 +1,7 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
@@ -10,16 +11,22 @@ import { type AccessControlFormData, formDataToJson } from './types.js';
 
 export type AccessControlFormFieldPath =
   | 'mainRule.release.date'
-  | 'mainRule.dueDate'
+  | 'mainRule.due.date'
+  | 'mainRule.due.credit'
   | `mainRule.earlyDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.date`
+  | `mainRule.lateDeadlines.${number}.credit`
+  | 'mainRule.afterLastDeadline.credit'
   | 'mainRule.questionVisibility.visibleFromDate'
   | 'mainRule.questionVisibility.visibleUntilDate'
   | 'mainRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.release.date`
-  | `overrides.${number}.dueDate`
+  | `overrides.${number}.due.date`
+  | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.credit`
+  | `overrides.${number}.afterLastDeadline.credit`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
   | `overrides.${number}.scoreVisibility.visibleFromDate`;
@@ -43,12 +50,17 @@ function mapIssueToFormFieldPath(
       switch (issue.path[1]) {
         case 'release':
           return `${prefix}.release.date`;
-        case 'dueDate':
-          return `${prefix}.dueDate`;
+        case 'due':
+          return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
           return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
-          return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+        case 'afterLastDeadline':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
         default:
           return null;
       }
@@ -88,11 +100,16 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
 
   const validationRules = buildValidationRules(formData);
 
-  for (const issue of validateGlobalDateConsistencyIssues(validationRules)) {
-    const path = mapIssueToFormFieldPath(issue);
-    if (!path || seenPaths.has(path)) continue;
-    seenPaths.add(path);
-    results.push({ path, message: issue.message });
+  for (const issues of [
+    validateGlobalDateConsistencyIssues(validationRules),
+    validateGlobalCreditConsistencyIssues(validationRules),
+  ]) {
+    for (const issue of issues) {
+      const path = mapIssueToFormFieldPath(issue);
+      if (!path || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      results.push({ path, message: issue.message });
+    }
   }
 
   for (const validationRule of validationRules) {

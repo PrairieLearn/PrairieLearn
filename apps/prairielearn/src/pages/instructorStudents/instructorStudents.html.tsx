@@ -39,7 +39,7 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
-import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -91,7 +91,7 @@ function ManageEnrollmentsDropdown({
   onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   onInvite: () => void;
   onSync: () => void;
 }) {
@@ -184,7 +184,7 @@ function ManageEnrollmentsDropdown({
 }
 
 interface StudentsCardProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
@@ -916,7 +916,7 @@ export const InstructorStudents = ({
   trpcCsrfToken,
   origHash,
 }: {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
   isDevMode: boolean;
