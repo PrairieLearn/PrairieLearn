@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1023.0",
+    "@aws-sdk/client-kms": "^3.1023.0",
     "@aws-sdk/client-secrets-manager": "^3.1023.0",
     "@prairielearn/aws-imds": "workspace:^",
     "es-toolkit": "^1.45.1",
