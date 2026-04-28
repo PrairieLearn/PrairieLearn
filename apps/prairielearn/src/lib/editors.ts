@@ -2493,7 +2493,7 @@ type PrepareJsonFileEditorResult =
   | {
       success: true;
       editor: FileModifyEditor;
-      /** Hash of the scoped section after the (pending) write. */
+      /** Hash of the scoped section after the write. */
       newHash: string;
     }
   | { success: false; reason: 'conflict' };
@@ -2501,11 +2501,23 @@ type PrepareJsonFileEditorResult =
 type SaveJsonFileResult =
   | {
       success: true;
-      /** Hash of the scoped section after the write, or full-file hash when no scope is provided. */
+      /** Hash of the scoped section after the write. */
       newHash: string;
     }
   | { success: false; reason: 'conflict' }
   | { success: false; reason: 'sync_failed'; jobSequenceId: string };
+
+interface JsonFileEdit<T extends Record<string, unknown>> {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  conflictCheck: {
+    origHash: string | null;
+    /** The section of the JSON file to hash for conflict detection. */
+    scope: (jsonContents: T) => object | object[];
+  };
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+}
 
 /**
  * Prepares a `FileModifyEditor` for a JSON file edit: reads the file, runs
@@ -2520,16 +2532,7 @@ export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
   conflictCheck,
   locals,
   container,
-}: {
-  applyChanges: (jsonContents: T) => T;
-  jsonPath: string;
-  conflictCheck: {
-    origHash: string | null;
-    scope: (jsonContents: T) => unknown;
-  };
-  locals: { authz_data: AuthzData; course: Course; user: User };
-  container: { rootPath: string; invalidRootPaths: string[] };
-}): Promise<PrepareJsonFileEditorResult> {
+}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult> {
   // Read file once for conflict check, content modification, and TOCTOU hash.
   const rawContents = await fs.readFile(jsonPath, 'utf8');
   const fullFileHash = computeFileContentHash(rawContents);
@@ -2560,7 +2563,7 @@ export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
 }
 
 export async function saveJsonFile<T extends Record<string, unknown>>(
-  args: Parameters<typeof prepareJsonFileEditor<T>>[0],
+  args: JsonFileEdit<T>,
 ): Promise<SaveJsonFileResult> {
   const prepared = await prepareJsonFileEditor(args);
   if (!prepared.success) return prepared;
