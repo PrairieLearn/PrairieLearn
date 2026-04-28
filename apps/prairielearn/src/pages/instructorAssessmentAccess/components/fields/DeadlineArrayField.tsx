@@ -262,7 +262,11 @@ function DeadlineArrayInput({
     // Early deadlines are disallowed when a custom due credit is set, so the
     // early branch can assume dueCredit is the default 100 and start at 110.
     const defaultCredit =
-      previousCredit !== undefined ? previousCredit - 1 : isEarly ? 110 : dueCredit - 10;
+      previousCredit !== undefined
+        ? previousCredit - 1
+        : isEarly
+          ? 110
+          : Math.max(0, dueCredit - 10);
     appendDeadline({ date: defaultDate, credit: defaultCredit });
   };
 

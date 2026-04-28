@@ -588,7 +588,9 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
     }
   }
 
-  if (dc.lateDeadlines) {
+  // Skip when dueCredit === 0 — Constraint 4 in `validateRuleStructuralDependencyIssues`
+  // forbids late deadlines entirely in that case with a clearer message.
+  if (dc.lateDeadlines && dueCredit !== 0) {
     for (const d of dc.lateDeadlines) {
       if (d.credit < 0 || d.credit >= lateCreditCap) {
         errors.push(
