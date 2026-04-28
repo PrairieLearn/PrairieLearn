@@ -200,7 +200,7 @@ After clicking the result, the question is added to the zone:
 
 Set the point value if you want, then click **Save and sync**.
 
-## 8. Configure access rules
+## 8. Configure assessment access rules
 
 Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` block:
 
@@ -220,7 +220,7 @@ Click **Save and sync**. The **Access** tab summarizes the rules:
 
 ![Assessment Access tab showing the access rule table](getting-started/12-assessment-access.png)
 
-For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [Access control](assessment/accessControl.md).
+For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [assessment access control](assessment/accessControl.md).
 
 ## 9. Preview as a student
 
