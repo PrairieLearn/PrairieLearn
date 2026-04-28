@@ -18,7 +18,7 @@ vi.mock('@aws-sdk/client-kms', () => ({
 function makeEncryptedValue(ciphertext = Buffer.from('ciphertext').toString('base64')) {
   return {
     __encrypted: 'aws-kms-v1',
-    kmsKey: 'alias/service-config/us-prod',
+    key: 'alias/service-config/us-prod',
     ciphertext,
     context: {
       environment: 'us-prod',
@@ -93,7 +93,7 @@ describe('makeKmsConfigSource', () => {
     await makeKmsConfigSource().load({
       secret: {
         ...makeEncryptedValue(),
-        kmsKey: 42,
+        key: 42,
         description: {
           text: 'metadata is not used by runtime decryption',
         },
