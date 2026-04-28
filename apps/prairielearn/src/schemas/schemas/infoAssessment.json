@@ -104,7 +104,7 @@
       "type": "boolean"
     },
     "honorCode": {
-      "description": "Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.",
+      "description": "Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.",
       "type": "string"
     },
     "groupWork": {
