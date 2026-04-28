@@ -6,7 +6,7 @@ If you're brand-new to PrairieLearn, consider reading the [Concepts](concepts/in
 
 !!! tip "Course content is stored in a Git repository"
 
-    PrairieLearn is unique in that **all of your course content lives in a Git repository**. This means that course configuration files can be managed as files on disk, which can be beneficial for larger course staffs. See [Editing and syncing](sync.md) and [local installation](installing.md) for more information.
+    PrairieLearn stores all of your course content in a **Git repository**. This means that course configuration files (questions, assessments, course staff, etc.) can be managed as files on disk, which can be beneficial for larger course staffs. See [editing and syncing](sync.md) and [local installation](installing.md) for more information.
 
 Before you start, you need a PrairieLearn course space. If you don't have one yet, [request a course](requestCourse/index.md). When approved, you'll receive a GitHub repository for your course content and Owner permissions on the course in PrairieLearn.
 
@@ -22,8 +22,8 @@ Click the course name to open it. You land on the **Course instances** page.
 
 The sidebar splits into two scopes:
 
-- **COURSE** (top): everything that lives across all terms — questions, course-wide settings, the question bank, course staff.
-- **COURSE INSTANCE** (bottom): one term's offering — assessments, gradebook, students, LMS connections.
+- **Course** (top): everything that lives across all terms — questions, course-wide settings, the question bank, course staff.
+- **Course instance** (bottom): one term's offering — assessments, gradebook, students, LMS connections.
 
 !!! tip
 
@@ -51,11 +51,11 @@ Click **Create**. You're now inside the new course instance.
 
 ## 3. Add your course staff
 
-If you have TAs or co-instructors, invite them now. Go to **Staff** in the COURSE sidebar.
+If you have TAs or co-instructors, invite them now. Go to **Staff** in the **Course** sidebar.
 
 ![Staff page with Add users button](getting-started/03-staff.png)
 
-Click **Add users** and invite by UID (typically email). There are two levels of access to content:
+Click **Add users** and invite by UID (typically email). There are two levels of roles you can give to course staff:
 
 Course roles (content authoring):
 
@@ -71,7 +71,7 @@ See [course staff](course/index.md#course-staff) for the full breakdown and reco
 
 ## 4. Build your first question
 
-Switch back to the COURSE scope and click **Questions**.
+Switch back to the **Course** scope and click **Questions**.
 
 ![Questions list — a populated course; yours will start empty](getting-started/06-questions.png)
 
@@ -171,7 +171,7 @@ Save and preview. Click **New variant** to see the values change. Each student n
 
 ## 6. Create your first assessment
 
-Switch to your course instance (sidebar → COURSE INSTANCE) and click **Assessments**.
+Switch to your course instance (sidebar → **Course instance**) and click **Assessments**.
 
 ![Assessments list with Add assessment button](getting-started/05-assessments.png)
 
@@ -190,9 +190,7 @@ Click **Create**. You land on the assessment with empty zones.
 
 ## 7. Add questions to the assessment
 
-Go to the assessment's **Questions** tab and click **Edit**. The list switches to edit mode where you can add zones, drop in questions by QID, set point values, and reorder — all without touching JSON.
-
-Click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
+Go to the assessment's **Questions** tab and click **Edit**. Click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
 
 ![Question picker with rectangle-area searched and the result highlighted](getting-started/21-question-picker.png)
 
@@ -241,11 +239,6 @@ You see exactly what a student sees, plus a yellow **Regenerate your assessment 
 Click into a question to see how it renders for a student:
 
 ![Student view of a single question with Save & Grade and Save only buttons](getting-started/15-student-question.png)
-
-Two view modes to know:
-
-- **Student view** — same access rules as a real student. Use this to verify dates and credit are correct.
-- **Student view without access restrictions** — bypasses dates and the publishing setting. Use this when you're still building.
 
 Switch back to staff view from the same dropdown when you're done.
 
