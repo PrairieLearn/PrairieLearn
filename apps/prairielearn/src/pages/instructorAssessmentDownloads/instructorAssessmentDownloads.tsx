@@ -623,8 +623,7 @@ router.get(
             row.instance_question_created_at!,
             res.locals.course_instance.display_timezone,
           ),
-          duration_seconds:
-            row.duration == null ? null : Math.round(row.duration / SECOND_IN_MILLISECONDS),
+          duration_seconds: row.duration == null ? null : row.duration / SECOND_IN_MILLISECONDS,
           qid: qidWithSharingName(res.locals, row),
         })),
         res,
