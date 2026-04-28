@@ -519,15 +519,15 @@ export function OverrideDeadlineArrayField({
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
   const validationDueDate = dueOverridden ? overrideDue.date : undefined;
 
-  // See MainDeadlineArrayField: late deadlines need a due date to anchor.
-  if (!isEarly && !isOverridden && deadlines.length === 0 && !effectiveDueDate) return null;
-
   const { fields, append, remove, replace } = useFieldArray<
     AccessControlFormData,
     typeof fieldArrayName
   >({
     name: fieldArrayName,
   });
+
+  // See MainDeadlineArrayField: late deadlines need a due date to anchor.
+  if (!isEarly && !isOverridden && deadlines.length === 0 && !effectiveDueDate) return null;
 
   const nextDeadline = () =>
     computeNextDeadline({
