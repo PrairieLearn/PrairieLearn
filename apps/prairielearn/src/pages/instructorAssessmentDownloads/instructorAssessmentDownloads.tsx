@@ -497,8 +497,7 @@ async function sendInstancesCsv(
           ? 'Open'
           : `${Math.floor(Math.max(0, (row.date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS))} mins`
         : 'Closed',
-      duration_mins:
-        row.duration == null ? null : Math.round(row.duration / MINUTE_IN_MILLISECONDS),
+      duration_mins: row.duration == null ? null : row.duration / MINUTE_IN_MILLISECONDS,
     })),
     res,
   );
