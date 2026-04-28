@@ -203,6 +203,46 @@ test.describe('QTI Import', () => {
     await expect(page.getByRole('button', { name: 'Create 0 assessments' })).toBeDisabled();
   });
 
+  test('shows conflict UI when importing questions that already exist', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('qti-content-import');
+
+    const zipPath = path.join(testCoursePath, 'qti-conflict-fixture.zip');
+    await buildQtiZip(zipPath);
+
+    // First import: create the questions
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
+    );
+    await page.waitForSelector('.js-hydrated-component');
+    await page.getByLabel('Export file').setInputFiles(zipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+    await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Create 1 assessment' }).click();
+    await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
+
+    // Second import: same zip again — should trigger conflict
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
+    );
+    await page.waitForSelector('.js-hydrated-component');
+    await page.getByLabel('Export file').setInputFiles(zipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+    await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
+
+    // The conflict bar appears inside the assessment card body.
+    // It says "N question(s) conflict(s) with existing questions".
+    await expect(page.getByText(/conflicts? with existing questions/)).toBeVisible();
+
+    // The "Overwrite all" / "Rename all" bulk buttons are visible
+    await expect(page.getByRole('button', { name: 'Overwrite all' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Rename all' })).toBeVisible();
+  });
+
   test('can start over from the review step', async ({
     page,
     courseInstance,

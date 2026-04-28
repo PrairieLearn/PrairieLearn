@@ -401,9 +401,6 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/ai_generate_editor/:question_id',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
 
-  // Feature-flagged pages that return 403 without the flag enabled.
-  '/pl/course_instance/:course_instance_id/instructor/instance_admin/qti_import',
-
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
@@ -467,6 +464,7 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
+    await features.enable('qti-content-import');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
