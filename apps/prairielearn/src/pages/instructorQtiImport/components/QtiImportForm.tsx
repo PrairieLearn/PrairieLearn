@@ -439,7 +439,7 @@ export function QtiImportForm({
                       </div>
                     </div>
 
-                    <NonRubricWarnings warnings={result.warnings} />
+                    <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
 
                     <AssessmentQuestionsSection
                       questions={result.questions}
@@ -488,19 +488,35 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
-function NonRubricWarnings({ warnings }: { warnings: SerializedConversionResult['warnings'] }) {
+function NonRubricWarnings({
+  warnings,
+  questions,
+}: {
+  warnings: SerializedConversionResult['warnings'];
+  questions: SerializedQuestionOutput[];
+}) {
   const filtered = warnings.filter((w) => !isRubricWarning(w.message));
   if (filtered.length === 0) return null;
+
+  const questionBySourceId = new Map(
+    questions.map((q, i) => [q.sourceId, { title: q.infoJson.title, number: i + 1 }]),
+  );
 
   return (
     <Alert variant="warning" className="mb-3">
       <strong>Warnings:</strong>
       <ul className="mb-0 mt-1">
-        {filtered.map((w) => (
-          <li key={`${w.questionId}-${w.message}`}>
-            [{w.questionId}] {w.message}
-          </li>
-        ))}
+        {filtered.map((w) => {
+          const q = questionBySourceId.get(w.questionId);
+          const prefix = q
+            ? `For question "${q.title}" (#${q.number})`
+            : `For question "${w.questionId}"`;
+          return (
+            <li key={`${w.questionId}-${w.message}`}>
+              {prefix}: {w.message}
+            </li>
+          );
+        })}
       </ul>
     </Alert>
   );
