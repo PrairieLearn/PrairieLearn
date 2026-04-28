@@ -165,9 +165,9 @@ export function InstructorFileEditor({
                   : ''}
                 ${editorData.lintHtmlMustache
                   ? html`
-                      <button type="button" class="btn btn-light btn-sm js-beautify-html-mustache">
+                      <button type="button" class="btn btn-light btn-sm js-reformat-html-mustache">
                         <i class="fas fa-paintbrush" aria-hidden="true"></i>
-                        Beautify
+                        Reformat
                       </button>
                     `
                   : ''}
@@ -335,7 +335,7 @@ export function InstructorFileEditor({
                       </div>
                     </div>
                     <div
-                      id="js-html-mustache-beautify-error"
+                      id="js-html-mustache-reformat-error"
                       class="toast hide text-bg-danger border-0"
                       role="alert"
                       aria-live="assertive"
@@ -343,7 +343,7 @@ export function InstructorFileEditor({
                     >
                       <div class="d-flex">
                         <div class="toast-body">
-                          Error beautifying file. Please check the syntax.
+                          Error reformatting file. Please check the syntax.
                         </div>
                         <button
                           type="button"

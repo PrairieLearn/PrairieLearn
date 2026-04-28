@@ -6,6 +6,6 @@ document.addEventListener('pl:html-mustache-linter-attach', ((e: Event) => {
   const event = e as CustomEvent<{ editor: ace.Ace.Editor }>;
   attachHtmlMustacheLinter({
     editor: event.detail.editor,
-    beautifyButton: document.querySelector<HTMLButtonElement>('.js-beautify-html-mustache'),
+    reformatButton: document.querySelector<HTMLButtonElement>('.js-reformat-html-mustache'),
   });
 }) as EventListener);

@@ -47,35 +47,22 @@ function diagnosticsToAnnotations(diagnostics: Diagnostic[]): ace.Ace.Annotation
 
 /**
  * Lints on every edit (debounced) and renders diagnostics as Ace annotations.
- * Wires up the Beautify button (if present) to format the editor contents.
+ * Wires up the Reformat button (if present) to format the editor contents.
  */
 export function attachHtmlMustacheLinter({
   editor,
-  beautifyButton,
+  reformatButton,
 }: {
   editor: ace.Ace.Editor;
-  beautifyButton: HTMLButtonElement | null;
+  reformatButton: HTMLButtonElement | null;
 }): void {
   let debounceTimer: number | undefined;
 
   async function runLint() {
     try {
       const linter = await getLinter();
-      const value = editor.getValue();
-      const diagnostics = linter.lint(value, htmlMustacheConfig);
+      const diagnostics = linter.lint(editor.getValue(), htmlMustacheConfig);
       editor.getSession().setAnnotations(diagnosticsToAnnotations(diagnostics));
-      if (beautifyButton) {
-        const hasErrors = diagnostics.some((d) => d.severity === 'error');
-        let alreadyFormatted = false;
-        if (!hasErrors) {
-          try {
-            alreadyFormatted = (await linter.format(value, htmlMustacheConfig)) === value;
-          } catch {
-            // If format fails, fall through and let the button stay enabled.
-          }
-        }
-        beautifyButton.disabled = hasErrors || alreadyFormatted;
-      }
     } catch (err) {
       console.error('htmlmustache lint failed', err);
     }
@@ -87,11 +74,11 @@ export function attachHtmlMustacheLinter({
   });
   void runLint();
 
-  if (beautifyButton) {
-    window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-beautify-error', {
+  if (reformatButton) {
+    window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-reformat-error', {
       delay: 5000,
     });
-    beautifyButton.addEventListener('click', async () => {
+    reformatButton.addEventListener('click', async () => {
       try {
         const linter = await getLinter();
         const cursor = editor.getCursorPosition();
@@ -101,8 +88,8 @@ export function attachHtmlMustacheLinter({
         editor.moveCursorToPosition(cursor);
         editor.focus();
       } catch (err) {
-        console.error('htmlmustache beautify failed', err);
-        window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-beautify-error').show();
+        console.error('htmlmustache reformat failed', err);
+        window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-reformat-error').show();
       }
     });
   }
