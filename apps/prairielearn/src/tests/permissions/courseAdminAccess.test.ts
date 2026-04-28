@@ -300,27 +300,29 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test.sequential(
-    'cannot change instance role of self even when emulating another owner',
-    async () => {
-      const trpc = createTrpcClient({
-        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-      });
-      try {
-        await trpc.courseStaff.updateInstanceRole.mutate({
-          userId: context.userId,
-          courseInstanceId: '1',
-          courseInstanceRole: 'Student Data Viewer',
-        });
-        assert.fail('Expected FORBIDDEN error');
-      } catch (err) {
-        const appError = getAppError<CourseStaffError>(err);
-        assert.isNotNull(appError);
-        assert.include(appError.message, 'while emulating');
-      }
-      await checkPermissions(users);
-    },
-  );
+  test.sequential('can change instance role of self when emulating another owner', async () => {
+    const trpc = createTrpcClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    });
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test.sequential('can revert own instance role after emulation test', async () => {
+    const trpc = createTrpcClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'None',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
+    await checkPermissions(users);
+  });
 
   test.sequential('can add user', async () => {
     const trpc = createTrpcClient();
@@ -390,9 +392,7 @@ function runTest(context: TestContext) {
     const trpc = createTrpcClient();
     await trpc.courseStaff.bulkEditAccess.mutate({
       userIds: [context.userId],
-      courseInstanceChanges: [
-        { courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' },
-      ],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' }],
     });
     updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
     await checkPermissions(users);

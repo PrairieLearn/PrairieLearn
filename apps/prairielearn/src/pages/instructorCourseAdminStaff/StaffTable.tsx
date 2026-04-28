@@ -260,7 +260,7 @@ function CoursePermissionCell({
   );
 }
 
-// Only course owners can access this page, so instance roles are always editable.
+/** Only course owners can access this page, so instance roles are always editable. */
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
@@ -1024,10 +1024,7 @@ function StaffTableInner({
             },
             cell: (info) => (
               <div className="text-center">
-                <CourseInstanceAccessCell
-                  courseUser={info.row.original}
-                  courseInstance={ci}
-                />
+                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
               </div>
             ),
           },
