@@ -1043,11 +1043,7 @@ function StaffTableInner({
                 <CourseInstanceAccessCell
                   courseUser={info.row.original}
                   courseInstance={ci}
-                  canChangeInstanceRole={
-                    (info.row.original.user.id !== authnUserId &&
-                      info.row.original.user.id !== userId) ||
-                    isAdministrator
-                  }
+                  canChangeInstanceRole={true}
                 />
               </div>
             ),
