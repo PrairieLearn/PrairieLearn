@@ -16,6 +16,7 @@ import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
   selectAccessControlRules,
+  selectPrairieTestExamMetadataByUuids,
   syncEnrollmentAccessControl,
 } from '../../models/assessment-access-control-rules.js';
 import { lockAssessment } from '../../models/assessment.js';
@@ -89,6 +90,14 @@ const studentLabels = t.procedure
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
     return labels.map((label) => StaffStudentLabelSchema.parse(label));
+  });
+
+const prairieTestExamMetadata = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .input(z.object({ examUuids: z.array(z.string().uuid()) }))
+  .query(async (opts) => {
+    return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
 
 function formJsonToEnrollmentRuleData(
@@ -301,5 +310,6 @@ export const accessControlRouter = t.router({
   students,
   validateUids,
   studentLabels,
+  prairieTestExamMetadata,
   saveAllRules,
 });

@@ -66,6 +66,8 @@ export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
 interface PrairieTestExam {
   examUuid: string;
   readOnly?: boolean;
+  afterCompleteQuestionsHidden: boolean;
+  afterCompleteScoreHidden: boolean;
 }
 
 export interface EnrollmentTarget {
@@ -187,7 +189,12 @@ export function jsonToMainRuleFormData(
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
+    prairieTestExams: (json.integrations?.prairieTest?.exams ?? []).map((e) => ({
+      examUuid: e.examUuid,
+      readOnly: e.readOnly,
+      afterCompleteQuestionsHidden: e.afterComplete?.questions?.hidden ?? false,
+      afterCompleteScoreHidden: e.afterComplete?.score?.hidden ?? false,
+    })),
     questionVisibility: {
       hidden: ac?.questions?.hidden ?? true,
       visibleFromDate:
@@ -373,7 +380,20 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.prairieTestExams.length > 0) {
     output.integrations = {
       prairieTest: {
-        exams: rule.prairieTestExams,
+        exams: rule.prairieTestExams.map((e) => {
+          const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+          if (e.afterCompleteQuestionsHidden) {
+            afterComplete.questions = { hidden: true };
+          }
+          if (e.afterCompleteScoreHidden) {
+            afterComplete.score = { hidden: true };
+          }
+          return {
+            examUuid: e.examUuid,
+            readOnly: e.readOnly,
+            ...(Object.keys(afterComplete).length > 0 && { afterComplete }),
+          };
+        }),
       },
     };
   }

@@ -1,10 +1,13 @@
 import { Temporal } from '@js-temporal/polyfill';
-import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { type ReactNode, useMemo } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -15,6 +18,8 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RuleData = MainRuleData | OverrideData;
 
@@ -216,24 +221,6 @@ export function generateRuleSummary(
         error,
       });
     }
-  }
-
-  if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const mainErrors = formErrors as FieldErrors<MainRuleData> | undefined;
-    const examErrors: string[] = [];
-    for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
-      if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
-    }
-    const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
-    items.push({
-      key: 'prairietest',
-      icon: 'bi-pc-display',
-      text: error
-        ? 'Missing PrairieTest exam UUID'
-        : `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
-      error,
-    });
   }
 
   const isMain = isMainRuleData(rule);
@@ -733,6 +720,92 @@ const tdStyle = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
+
+export function PrairieTestExamsTable({
+  exams,
+  initialMetadata,
+  ptHost,
+  formErrors,
+}: {
+  exams: MainRuleData['prairieTestExams'];
+  initialMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
+  formErrors?: FieldErrors<MainRuleData>;
+}) {
+  const trpc = useTRPC();
+
+  const validExamUuids = useMemo(
+    () =>
+      Array.from(new Set(exams.map((e) => e.examUuid).filter((u) => UUID_PATTERN.test(u)))).sort(),
+    [exams],
+  );
+
+  // Re-fetches when the set of valid UUIDs changes, but not while the user is
+  // mid-edit on an invalid UUID. Falls back to the server-rendered initial
+  // metadata until the first query result lands.
+  const { data: metadata = initialMetadata } = useQuery({
+    ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
+    enabled: validExamUuids.length > 0,
+  });
+
+  if (exams.length === 0) return null;
+
+  const metadataByUuid = new Map(metadata.map((m) => [m.examUuid, m]));
+
+  return (
+    <div
+      className="border rounded overflow-hidden"
+      style={{ borderColor: 'var(--bs-border-color)' }}
+    >
+      <table className="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
+              style={thStyle}
+            >
+              <i className="bi bi-pc-display me-1" aria-hidden="true" />
+              PrairieTest exam
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {exams.map((exam, index) => {
+            const meta = metadataByUuid.get(exam.examUuid);
+            const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
+            const examLink =
+              meta?.ptCourseId && meta.ptExamId
+                ? `${ptHost}/pt/course/${meta.ptCourseId}/staff/exam/${meta.ptExamId}`
+                : null;
+            const examName =
+              meta?.ptCourseName && meta.ptExamName
+                ? `${meta.ptCourseName}: ${meta.ptExamName}`
+                : null;
+
+            return (
+              <tr key={exam.examUuid || `exam-${index}`}>
+                <td className="border-0" style={{ ...tdStyle, paddingLeft: '1rem' }}>
+                  {uuidError ? (
+                    <span className="text-danger">
+                      <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                      {uuidError}
+                    </span>
+                  ) : examName && examLink ? (
+                    <a href={examLink} target="_blank" rel="noopener noreferrer">
+                      {examName}
+                    </a>
+                  ) : (
+                    <span className="text-body-secondary">Unknown exam</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function OverrideRuleSummaryCard({
   rule,
