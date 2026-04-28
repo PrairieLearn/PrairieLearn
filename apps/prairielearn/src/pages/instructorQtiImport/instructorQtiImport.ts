@@ -6,11 +6,12 @@ import * as tmp from 'tmp-promise';
 import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { contains } from '@prairielearn/path-utils';
 import {
   type ConversionResult,
+  PLEmitter,
   QTI12AssessmentParser,
   type QtiFileEntry,
-  convert,
   findQtiFilesFromManifest,
   parseAssessment,
   slugify,
@@ -200,20 +201,20 @@ async function convertEntry(
     rubricsXml,
   };
 
-  // Parse the XML into IR to get the assessment title for the question prefix,
-  // then run the full conversion once with the correct prefix.
-  let title: string;
+  // Parse once into IR, derive the title for the question prefix,
+  // then emit from the already-parsed IR.
+  let ir;
   try {
-    const ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
-    title = ir.title;
+    ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
   } catch {
     return null;
   }
 
-  const assessmentSlug = slugify(title);
+  const assessmentSlug = slugify(ir.title);
   const questionPrefix = `imported/${assessmentSlug}`;
 
-  const result = await convert(xmlContent, {
+  const emitter = new PLEmitter();
+  const result = emitter.emit(ir, {
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: questionPrefix,
@@ -324,8 +325,10 @@ async function serializeClientFiles(
       files[name] = content.toString('base64');
     } else {
       // Content is a relative path to a file in web_resources.
+      const resolved = path.resolve(webResourcesDir, content);
+      if (!contains(webResourcesDir, resolved)) continue;
       try {
-        const fileContent = await readFile(path.join(webResourcesDir, content));
+        const fileContent = await readFile(resolved);
         files[name] = fileContent.toString('base64');
       } catch {
         // File not found; skip.

@@ -2582,6 +2582,14 @@ export class QtiImportEditor extends Editor {
           });
         }
 
+        // Clear managed files before writing so that stale artifacts
+        // (e.g. a previous server.py or old clientFilesQuestion entries)
+        // don't persist when overwriting an existing question.
+        if (await fs.pathExists(qDir)) {
+          await fs.remove(path.join(qDir, 'server.py')).catch(() => {});
+          await fs.remove(path.join(qDir, 'clientFilesQuestion')).catch(() => {});
+        }
+
         const qInfoJson = { ...question.infoJson };
         if (shareSourcePublicly) {
           qInfoJson.sharePublicly = true;
@@ -2599,7 +2607,20 @@ export class QtiImportEditor extends Editor {
           const cfDir = path.join(qDir, 'clientFilesQuestion');
           for (const [name, base64Content] of Object.entries(question.clientFiles)) {
             const filePath = path.join(cfDir, name);
-            if (!contains(cfDir, filePath)) continue;
+            if (!contains(cfDir, filePath)) {
+              throw new AugmentedError('Invalid client file path', {
+                info: html`
+                  <p>The client file path</p>
+                  <div class="container">
+                    <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                  </div>
+                  <p>must be inside the clientFilesQuestion directory</p>
+                  <div class="container">
+                    <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                  </div>
+                `,
+              });
+            }
             await fs.outputFile(filePath, Buffer.from(base64Content, 'base64'));
           }
         }
