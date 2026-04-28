@@ -202,7 +202,7 @@ nav:
       - getting-started/index.md
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Quick start': 'getStarted.md'
+      - 'Get started': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'

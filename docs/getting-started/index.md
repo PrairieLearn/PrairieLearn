@@ -1,11 +1,9 @@
-# Getting Started
+# Getting started
 
 Welcome to PrairieLearn! Check out the following pages to get started:
 
-- [Request a course space](../requestCourse/index.md): get access to your own course on PrairieLearn.
+1. [**Request a course space**](../requestCourse/index.md) — get instructor access to your own course on [PrairieLearn](https://us.prairielearn.com).
+2. [**Concepts**](../concepts/index.md) — what a course, course instance, assessment, and question are, and how they fit together.
+3. [**Get started**](../getStarted.md) — end-to-end tutorial: from your first login to students completing an assessment, with a pre-launch checklist.
 
-- [Fundamental concepts](../concepts/index.md): gain a high-level understanding of how PrairieLearn works.
-
-- [Quick start](../getStarted.md): learn how to use and navigate the PrairieLearn interface.
-
-Next, check out the [instructor guide](../instructor-guide/index.md) for more details on how to use PrairieLearn.
+When you're ready to dig deeper, head to the [instructor guide](../instructor-guide/index.md) for reference material on every PrairieLearn feature.

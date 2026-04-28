@@ -1,225 +1,264 @@
-# Create content in the browser
+# Get started
 
-Now that you have access to your course in [https://us.prairielearn.com](https://us.prairielearn.com), it is time to start creating course content.
+This guide walks you through the process of creating your first course instance and assessment in the browser.
 
-This is a view of your course home page (or a similar variation, depending on when your course was originally created):
+If you're brand-new to PrairieLearn, consider reading the [Concepts](concepts/index.md) page first — this guide assumes you know what a course, course instance, assessment, and question are.
 
-![Screenshot of the menu bar for the course home page](start-guide/homepage.png)
+!!! tip "Course content is stored in a Git repository"
 
-This tutorial will show you how to create:
+    PrairieLearn is unique in that **all of your course content lives in a Git repository**. This means that course configuration files can be managed as files on disk, which can be beneficial for larger course staffs. See [Editing and syncing](sync.md) and [local installation](installing.md) for more information.
 
-- [a course instance](#creating-a-course-instance)
-- [simple questions from scratch](#creating-questions-from-scratch)
-- [questions using templates from inside your course](#start-a-new-question-from-an-existing-one-inside-your-own-course)
-- [questions using templates from outside courses](#start-a-new-question-from-an-existing-one-outside-your-own-course)
-- [assessments](#creating-a-new-assessment)
+Before you start, you need a PrairieLearn course space. If you don't have one yet, [request a course](requestCourse/index.md). When approved, you'll receive a GitHub repository for your course content and Owner permissions on the course in PrairieLearn.
 
-## Creating a course instance
+## 1. Open your course
 
-A course instance corresponds to a single offering of a course, such as "Fall 2024", or possibly "Fall 2024, Section M". Follow the steps below to create a new course instance:
+Sign in at [https://us.prairielearn.com](https://us.prairielearn.com) (or your institution's PrairieLearn instance). Your course appears under **Courses with instructor access** on the home page.
 
-- Navigate to the "Course instances" page of your course.
+![PrairieLearn home page with the courses panel](getting-started/01-home.png)
 
-- Click the "Add course instance" button.
+Click the course name to open it. You land on the **Course instances** page.
 
-- Configure the long name, short name, publishing settings, and other desired options for your new course instance.
+![Course landing page showing the Course instances tab and sidebar](getting-started/02-course-instances.png)
 
-- Click "Create" to create the course instance.
+The sidebar splits into two scopes:
 
-## Creating questions from scratch
+- **COURSE** (top): everything that lives across all terms — questions, course-wide settings, the question bank, course staff.
+- **COURSE INSTANCE** (bottom): one term's offering — assessments, gradebook, students, LMS connections.
 
-### Add a new question
+!!! tip
 
-- Navigate to the "Questions" page of your course.
+    The course is the question bank and staff list; each course instance reuses that question bank for one specific semester.
 
-- Click the "Add question" button.
+## 2. Create a course instance
 
-- Configure the title and QID for your new question:
-  - For the sake of this tutorial, use "Find the area of a rectangle" as the title and `rectangle-area` as the QID.
-  - You can opt to start from a PrairieLearn template or start from scratch with an empty question. Select "Empty question" for this tutorial.
+A course instance is one offering of the course — for example, "Fall 2025." From **Course instances**, click **Add course instance**.
 
-- Click "Create question".
+![Create course instance dialog](getting-started/04-create-course-instance.png)
 
-You're now ready to build your question.
+Fill in:
 
-### Change the content of the question
+- **Long name** — what students see (e.g., `Fall 2025`).
+- **Short name** — a directory-safe identifier (e.g., `Fa25`). No spaces.
+- **Publishing settings** — leave **Unpublished** while you build. You'll publish in step 10.
+- **Self-enrollment settings** — leave the defaults if you'll share an enrollment link with students; uncheck if you'll add students manually or via LMS. See [enrollment controls](courseInstance/index.md#enrollment-controls) for the full set of options.
+- **Course instance permissions** — pick **Student data editor** if you want to view/edit grades from this course instance. (You can change this later from the Staff tab.)
 
-To provide a simple example, here we first create a question without any randomization, by modifying the [`question.html` file](question/overview.md#html-questionhtml).
+Click **Create**. You're now inside the new course instance.
 
-- Navigate to the "Files" tab of your new question.
+!!! tip "Reusing a previous semester"
 
-- Click the "Edit" button next to `question.html`.
+    To clone a previous instance with all its assessments, open that instance, go to **Instance settings → Settings**, and scroll to **Make a copy of this course instance**. You'll edit dates and any new assessments, but the structure is preserved.
 
-- Modify the content of the file. You may want to start by copying this simple example:
+## 3. Add your course staff
 
-  ```html title="question.html"
-  <pl-question-panel>
-    <p>What is the area of a rectangle that has sides 4 and 5?</p>
-  </pl-question-panel>
+If you have TAs or co-instructors, invite them now. Go to **Staff** in the COURSE sidebar.
 
-  <pl-multiple-choice answers-name="area">
-    <pl-answer correct="true">20</pl-answer>
-    <pl-answer correct="false">10</pl-answer>
-    <pl-answer correct="false">9</pl-answer>
-    <pl-answer correct="false">18</pl-answer>
-    <pl-answer correct="false">40</pl-answer>
-  </pl-multiple-choice>
-  ```
+![Staff page with Add users button](getting-started/03-staff.png)
 
-- Click "Save and sync".
+Click **Add users** and invite by UID (typically email). There are two levels of access to content:
 
-- Navigate to the "Preview" tab to see your question. Try it out!
+Course roles (content authoring):
 
-Note that this question does not use any server-side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
+- **Editor** — can edit questions and assessments and trigger syncs. Most TAs and co-instructors get this.
+- **Viewer** — read-only access to course content. Useful for observers.
 
-## Start a new question from an existing one _inside_ your own course
+Course instance roles (student data access):
 
-- From the "Questions" page of your course, select the question you want to copy. As an example, we will use the question with QID `rectangle-area`.
+- **Student data editor** — can view and edit student data on this course instance (grades, manual grading).
+- **Student data viewer** — can view student data on this course instance.
 
-- Navigate to the "Settings" tab of your question.
+See [course staff](course/index.md#course-staff) for the full breakdown and recommended roles.
 
-- Click the "Make a copy of this question" button, then click "Submit" to make a copy of the question inside your own course. You are now viewing the copy of the question.
+## 4. Build your first question
 
-- Update the title and QID of the question. For the sake of this tutorial, change the QID to `rectangle-area-randomized` and the title to "Find the area of a rectangle (randomized)".
+Switch back to the COURSE scope and click **Questions**.
 
-- Click "Save".
+![Questions list — a populated course; yours will start empty](getting-started/06-questions.png)
 
-### Change the content of the question
+(Yours will be empty — the screenshot shows a populated course so you can see the layout.) Click **Add question**.
 
-We will add randomization to the previous question, using the [`server.py` file](question/overview.md#custom-generation-and-grading-serverpy)
+![Add question form with template tabs and a list of basic question templates](getting-started/07-create-question.png)
 
-- Navigate to the "Files" tab of your new question.
+For this tutorial: name it `Find the area of a rectangle`, set the **QID** to `rectangle-area`, choose **Empty question**, click **Create question**.
 
-- Click the "Edit" button next to `server.py`. Here is where you can define the question variables, and add randomization. Here is how we can modify the original area example:
+You land on the question's **Files** tab.
 
-  ```python title="server.py"
-  import random
+![Files tab for a question showing README.md, info.json, question.html, server.py](getting-started/09-question-files.png)
 
-  def generate(data):
-      # define the sides of the rectangle as random integers
-      a = random.randint(2,5)
-      b = random.randint(11,19)
+Click **Edit** next to `question.html` and replace the contents with:
 
-      # store the sides in the dictionary "params"
-      data["params"]["a"] = a
-      data["params"]["b"] = b
+```html title="question.html"
+<pl-question-panel>
+  <p>What is the area of a rectangle that has sides 4 and 5?</p>
+</pl-question-panel>
 
-      # define some typical distractors
-      data["params"]["distractor1"] = (a*b)/2
-      data["params"]["distractor2"] = 2*(a*b)
-      data["params"]["distractor3"] = 2*(a+b)
-      data["params"]["distractor4"] = (a+b)
+<pl-multiple-choice answers-name="area">
+  <pl-answer correct="true">20</pl-answer>
+  <pl-answer correct="false">10</pl-answer>
+  <pl-answer correct="false">9</pl-answer>
+  <pl-answer correct="false">18</pl-answer>
+  <pl-answer correct="false">40</pl-answer>
+</pl-multiple-choice>
+```
 
-      # define the correct answer
-      data["params"]["truearea"] = a*b
-  ```
+[`pl-multiple-choice`](elements/pl-multiple-choice.md) is one of PrairieLearn's [submission elements](elements/index.md#submission-elements) — the inputs students interact with. The [element catalog](elements/index.md) lists every element you can use here.
 
-- Click "Save and sync".
+![Browser file editor for question.html with syntax highlighting and a Save and sync button](getting-started/10-question-editor.png)
 
-- Navigate to the "Files" tab again.
+Click **Save and sync**, then click the **Preview** tab.
 
-- Click the "Edit" button next to `question.html` and enter the following contents:
+![Question preview after answering 20 and clicking Save & Grade; the submission panel shows a Correct! badge and the staff information sidebar is visible](getting-started/08-question-preview.png)
 
-  ```html title="question.html"
-  <pl-question-panel>
-    <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
-  </pl-question-panel>
+Try answering and click **Save & Grade**. The orange **Staff information** sidebar is staff-only — students don't see it.
 
-  <pl-multiple-choice answers-name="area">
-    <pl-answer correct="true">{{params.truearea}}</pl-answer>
-    <pl-answer correct="false">{{params.distractor1}}</pl-answer>
-    <pl-answer correct="false">{{params.distractor2}}</pl-answer>
-    <pl-answer correct="false">{{params.distractor3}}</pl-answer>
-    <pl-answer correct="false">{{params.distractor4}}</pl-answer>
-  </pl-multiple-choice>
-  ```
+!!! warning "Randomization is recommended"
 
-- Click "Save and sync".
+    This question doesn't randomize -- every variant students see is the same. We recommend that all auto-graded questions are randomized.
 
-- Navigate to the "Preview" tab to see your question. Try different variants and see how the variables change!
+## 5. Add randomization with `server.py`
 
-## Start a new question from an existing one _outside_ your own course
+A question's [`server.py`](question/server.md) generates random parameters per student and (optionally) custom-grades responses. Go back to **Files** and edit `server.py`:
 
-### Copying questions from the example course (XC 101)
+```python title="server.py"
+import random
 
-You should also have access to the example course ("XC 101"). In the navigation sidebar, use the dropdown to navigate to the example course.
+def generate(data):
+    a = random.randint(2, 5)
+    b = random.randint(11, 19)
 
-You can look over all questions on the "Questions" tab. Or you can select the course instance `SectionA` where some of the questions are organized by assessment. For example, "Question gallery for PL elements" will have a collection of examples for each PrairieLearn element. If you are interested in code autograders, you can check "Questions using external auto-graders".
+    data["params"]["a"] = a
+    data["params"]["b"] = b
 
-Once you find a question that you want to use as template, you can follow these steps:
+    data["params"]["distractor1"] = (a * b) / 2
+    data["params"]["distractor2"] = 2 * (a * b)
+    data["params"]["distractor3"] = 2 * (a + b)
+    data["params"]["distractor4"] = a + b
 
-- Navigate to the question's "Settings" tab.
+    data["params"]["truearea"] = a * b
+```
 
-- Click the "Make a copy of this question" button. Select your course and click "Submit".
+Replace `question.html` with the templated version:
 
-You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
+```html title="question.html"
+<pl-question-panel>
+  <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
+</pl-question-panel>
 
-## Creating a new assessment
+<pl-multiple-choice answers-name="area">
+  <pl-answer correct="true">{{params.truearea}}</pl-answer>
+  <pl-answer correct="false">{{params.distractor1}}</pl-answer>
+  <pl-answer correct="false">{{params.distractor2}}</pl-answer>
+  <pl-answer correct="false">{{params.distractor3}}</pl-answer>
+  <pl-answer correct="false">{{params.distractor4}}</pl-answer>
+</pl-multiple-choice>
+```
 
-Before you create an assessment, make sure you are in the desired course instance.
+Save and preview. Click **New variant** to see the values change. Each student now gets a different version of this question.
 
-- Navigate to the "Assessments" page of your course instance.
+!!! tip "Don't write every question from scratch"
 
-- Click the "Add assessment" button.
+    PrairieLearn ships with [**XC 101: Example Course**](https://us.prairielearn.com/pl/course/108/), which has 200+ ready-to-copy questions covering every element and grading style.
 
-- Configure the basic options for your new assessment:
-  - For the sake of this tutorial, use "Geometric properties and applications" as the title and `homework1` as the short name.
-  - The [assessment type](assessment/configuration.md#assessment-types) controls the behavior of the assessment. For this tutorial, select `Homework`.
-  - The assessment set is used to organize assessments within the course instance. PrairieLearn has some standardized sets (e.g. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets). For this tutorial, select `Homework`.
+    ![Example course (XC 101) Questions list with hundreds of templates](getting-started/18-example-course-questions.png)
 
-- Click "Create".
+    To copy one into your course:
 
-We're now ready to configure the content and access settings of the assessment.
+    1. Open [XC 101](https://us.prairielearn.com/pl/course/108/) and find a question (the **Course instance → SectionA** has assessments that group questions by topic, e.g. "Question gallery for PL elements").
+    2. Open the question's **Preview** tab and click **Copy question** in the top-right.
+    3. Pick your course as the destination and submit.
 
-- Navigate to the "Files" tab of your new assessment.
+    You're now editing a copy inside your own course. Rename the QID and tweak as needed.
 
-- Click the "Edit" button next to `infoAssessment.json`.
+## 6. Create your first assessment
 
-- The `allowAccess` section controls when the assessment is available. Read the [assessment access control documentation](assessment/accessControl.md) to learn about the different configurations available. In this example, we will use:
+Switch to your course instance (sidebar → COURSE INSTANCE) and click **Assessments**.
 
-  ```json title="infoAssessment.json"
-  {
-    "allowAccess": [
-      {
-        "startDate": "2025-09-01T20:00:00",
-        "endDate": "2025-09-06T20:00:00",
-        "credit": 100
-      }
-    ]
-  }
-  ```
+![Assessments list with Add assessment button](getting-started/05-assessments.png)
 
-- The `zones` section configures the questions that appear on the assessment. We will add the two questions that we just created:
+Click **Add assessment**.
 
-  ```json title="infoAssessment.json"
-  {
-    "zones": [
-      {
-        "questions": [
-          { "id": "rectangle-area", "points": 1, "maxPoints": 5 },
-          { "id": "rectangle-area-randomized", "points": 1, "maxPoints": 1 }
-        ]
-      }
-    ]
-  }
-  ```
+![Create assessment dialog with Title, Short name, Type (Homework/Exam), Set fields](getting-started/17-create-assessment.png)
 
-- Click "Save and sync".
+Fill in:
 
-## Check how a student will see the assessment
+- **Title** — student-visible (e.g., `Geometric properties and applications`).
+- **Short name** — directory identifier (e.g., `homework1`).
+- **Type** — **Homework** for formative practice with unlimited retries; **Exam** for graded assessments with limited attempts. ([Detailed comparison.](assessment/configuration.md#assessment-types))
+- **Set** — pick from `Homework`, `Quiz`, `Exam`, etc. The set is purely organizational; it doesn't change behavior.
 
-Follow these steps to preview an assessment as a student:
+Click **Create**. You land on the assessment with empty zones.
 
-- From the course instance's "Assessments" page, switch to student view by using the dropdown menu next to your name on the top menu and select "Student view without access restrictions". This action will take you to the Student Assessment page.
+## 7. Add questions to the assessment
 
-- Select the desired assessment (in our example, "Geometric properties and applications").
+Go to the assessment's **Questions** tab and click **Edit**. The list switches to edit mode where you can add zones, drop in questions by QID, set point values, and reorder — all without touching JSON.
 
-- Browse through the questions included in the assessment. Submit answers and observe how the points are updated in the assessment overview page.
+Click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
 
-When using "Student view without access restrictions", you have access to all assessments, regardless of their start and end dates. If you want to have a preview of only the assessments available to the students at the current time, you should select "Student view" from the dropdown menu.
+![Question picker with rectangle-area searched and the result highlighted](getting-started/21-question-picker.png)
 
-Learn more:
+After clicking the result, the question is added to the zone:
 
-- [Different ways to set up an assessment](assessment/overview.md)
+![Assessment Questions tab in edit mode with rectangle-area in the zone](getting-started/19-assessment-edit-mode.png)
 
-- [Detailed list of PrairieLearn elements](./elements/index.md)
+Set the point value if you want, then click **Save and sync**.
+
+## 8. Configure access rules
+
+Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` block:
+
+```json title="infoAssessment.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2025-09-01T20:00:00",
+      "endDate": "2025-09-06T20:00:00",
+      "credit": 100
+    }
+  ]
+}
+```
+
+Click **Save and sync**. The **Access** tab summarizes the rules:
+
+![Assessment Access tab showing the access rule table](getting-started/12-assessment-access.png)
+
+For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [Access control](assessment/accessControl.md).
+
+## 9. Preview as a student
+
+Before sharing anything with students, dry-run the assessment yourself. Open the **Dev User** menu (top right) and pick **Student view without access restrictions**.
+
+![Dev User dropdown showing Staff view, Student view, Student view without access restrictions](getting-started/13-student-view-menu.png)
+
+You see exactly what a student sees, plus a yellow **Regenerate your assessment instance** banner only staff can see:
+
+![Student view of an assessment with question list and points; the Regenerate your assessment instance banner is highlighted](getting-started/14-student-assessment.png)
+
+!!! warning "Regenerate after editing"
+
+    Whenever you change an assessment's questions, points, or zones, your existing dry-run instance is **stale** — it was built from the old configuration. Click **Regenerate your assessment instance** to discard it and pick up your edits. Students don't have this option — if a real student needs a fresh instance after you've made changes, staff must regenerate it for them.
+
+Click into a question to see how it renders for a student:
+
+![Student view of a single question with Save & Grade and Save only buttons](getting-started/15-student-question.png)
+
+Two view modes to know:
+
+- **Student view** — same access rules as a real student. Use this to verify dates and credit are correct.
+- **Student view without access restrictions** — bypasses dates and the publishing setting. Use this when you're still building.
+
+Switch back to staff view from the same dropdown when you're done.
+
+## 10. Publish and enroll students
+
+Go to **Instance settings → Publishing**.
+
+![Publishing settings with Unpublished/Scheduled/Published radio buttons, end date, and Extensions section](getting-started/16-publishing.png)
+
+Pick **Published** to make the course instance available to students, and then hit **Save**. You can read more about publishing in the [course instance documentation](courseInstance/index.md#publishing-controls).
+
+To get students in, you can share the enrollment link from **Instance settings → Self-enrollment**. Students click the link and enroll themselves. See [enrollment controls](courseInstance/index.md#enrollment-controls) for codes, institution restrictions, and disabling self-enrollment after a deadline.
+
+## Next steps
+
+You now have a working course instance with a published assessment :partying_face:. From here, head to the [instructor guide](instructor-guide/index.md) for reference material on every PrairieLearn feature.

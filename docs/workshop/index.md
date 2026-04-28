@@ -1,5 +1,9 @@
 # PrairieLearn Workshop
 
+!!! warning "Outdated content"
+
+    This workshop was last offered in Summer 2020. UI screenshots, element options, and recommended workflows have changed since then. Use it for conceptual orientation, but cross-check specifics against the current docs (start with [Get started](../getStarted.md)).
+
 In this training course, we will provide an introduction to the following topics:
 
 - how to create questions and assessments
