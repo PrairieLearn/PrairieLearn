@@ -165,7 +165,7 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
  * 0 credit. Skips if `afterLastDeadline` is already set (e.g. from
  * open-ended credit rules in declining-credit).
  *
- * Uses `dateControl.dueDate` as the effective deadline when
+ * Uses `dateControl.due.date` as the effective deadline when
  * `findLastCreditEndDate` returns nothing (e.g. password-gated rules where
  * credit is implicit).
  */
@@ -175,7 +175,7 @@ function applyPracticeWindow(
 ): void {
   if (!result.dateControl || result.dateControl.afterLastDeadline) return;
 
-  const lastDeadline = findLastCreditEndDate(rules) ?? result.dateControl.dueDate ?? undefined;
+  const lastDeadline = findLastCreditEndDate(rules) ?? result.dateControl.due?.date ?? undefined;
   if (!lastDeadline) return;
 
   const hasPracticeWindow = rules.some(
@@ -411,19 +411,21 @@ function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
 
     if (credit > 0 && credit < 100 && creditRule.endDate) {
-      // Reduced credit: no full-credit period exists, so omit dueDate.
+      // Reduced credit: no full-credit period exists, so omit due.
       // The late deadline is the sole timeline entry.
       result.dateControl.lateDeadlines = [{ date: creditRule.endDate, credit }];
     } else if (credit > 100 && creditRule.endDate) {
-      // Bonus credit: no full-credit period exists, so omit dueDate.
-      // The early deadline is the sole timeline entry.
+      // Bonus credit: no full-credit period exists. Emit an explicit null
+      // due date to satisfy the "defaults must configure due" requirement;
+      // the early deadline is the sole timeline entry.
+      result.dateControl.due = { date: null };
       result.dateControl.earlyDeadlines = [{ date: creditRule.endDate, credit }];
     } else if (creditRule.endDate) {
-      // Full credit (100%): set dueDate normally.
-      result.dateControl.dueDate = creditRule.endDate;
+      // Full credit (100%): set due normally.
+      result.dateControl.due = { date: creditRule.endDate };
     } else if (credit === 100) {
       // Full credit with no endDate: open forever from release.
-      result.dateControl.dueDate = null;
+      result.dateControl.due = { date: null };
     }
   }
 
@@ -499,8 +501,8 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
     (r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100,
   );
 
-  // Only derive dueDate from full-credit rules. When there are no full-credit
-  // rules (e.g. bonus + reduced only), omitting dueDate avoids placing deadline
+  // Only derive due date from full-credit rules. When there are no full-credit
+  // rules (e.g. bonus + reduced only), omitting due avoids placing deadline
   // entries at the due-date boundary where the resolver would filter them out.
   const fullEndDates = fullRules
     .map((r) => r.endDate)
@@ -514,7 +516,7 @@ function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
     dateControl: {},
   };
   if (releaseDate) result.dateControl!.release = { date: releaseDate };
-  if (dueDate) result.dateControl!.dueDate = dueDate;
+  if (dueDate) result.dateControl!.due = { date: dueDate };
 
   if (bonusRules.length > 0) {
     const { deadlines, notes: deadlineNotes } = normalizeCreditDeadlines(bonusRules, 'early');
@@ -547,9 +549,17 @@ function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
   const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
   const releaseDate = allDates.sort()[0];
 
+  // TODO: when the `prairietest` modifier is set, this shape grants 100% credit
+  // indefinitely at the date-control layer, which conflicts with PT gating:
+  // `active=true` makes `assessmentClosed=false`, so PT's "no reservation"
+  // branch denies access instead of continuing through to the closed-assessment
+  // view (regression from the grace-period behavior in issue #12579). For
+  // PT-modified archetypes we should either omit `due` entirely or emit a shape
+  // that keeps the date control inactive.
+  // Follow-up: https://github.com/PrairieLearn/PrairieLearn/pull/14724
   const result: AccessControlJsonInput = {
     dateControl: {
-      dueDate: null,
+      due: { date: null },
     },
   };
   if (releaseDate) result.dateControl!.release = { date: releaseDate };
@@ -586,7 +596,7 @@ function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
     dateControl: {},
   };
   if (releaseDate) result.dateControl!.release = { date: releaseDate };
-  if (dueDate) result.dateControl!.dueDate = dueDate;
+  if (dueDate) result.dateControl!.due = { date: dueDate };
 
   applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
@@ -607,7 +617,7 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
     },
   };
   if (passwordRule.startDate) result.dateControl!.release = { date: passwordRule.startDate };
-  if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
+  if (passwordRule.endDate) result.dateControl!.due = { date: passwordRule.endDate };
 
   applyPracticeWindow(result, rules);
   applyVisibilityMigration(result, rules);
@@ -661,7 +671,7 @@ function migrateAlwaysOpen(rules: AssessmentAccessRuleJson[]): {
 
   const result: AccessControlJsonInput = {
     dateControl: {
-      dueDate: null,
+      due: { date: null },
     },
   };
 
