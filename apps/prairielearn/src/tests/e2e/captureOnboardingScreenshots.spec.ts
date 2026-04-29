@@ -444,18 +444,19 @@ async function captureRequestCourse(page: Page) {
 
 async function disableAdminAccess(page: Page) {
   await page.goto('/');
+  await page.context().addCookies([
+    { name: 'pl_access_as_administrator', value: 'inactive', url: page.url() },
+    { name: 'pl2_access_as_administrator', value: 'inactive', url: page.url() },
+    { name: 'pl_requested_data_changed', value: 'true', url: page.url() },
+    { name: 'pl2_requested_data_changed', value: 'true', url: page.url() },
+  ]);
+  await page.reload({ waitUntil: 'networkidle' });
+
   const userNav = page.locator('#username-nav');
   await userNav.waitFor();
-  if ((await userNav.getAttribute('data-access-as-administrator')) !== 'true') return;
-
-  await page.getByRole('button', { name: /Dev User/ }).click();
-  const toggle = page.locator('#navbar-administrator-toggle');
-  await toggle.waitFor({ state: 'visible' });
-  await toggle.click();
-  await page.waitForLoadState('networkidle');
 
   if ((await userNav.getAttribute('data-access-as-administrator')) === 'true') {
-    throw new Error('Clicked admin toggle but access_as_administrator is still true.');
+    throw new Error('Set admin access cookie inactive but access_as_administrator is still true.');
   }
   console.log('  ✔ Administrator access disabled');
 }
