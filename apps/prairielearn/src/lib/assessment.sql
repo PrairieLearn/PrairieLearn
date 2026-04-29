@@ -1532,7 +1532,6 @@ SELECT
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
   NULL AS client_fingerprint_number,
-  format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   qd.student_question_number,
   qd.instructor_question_number
 FROM

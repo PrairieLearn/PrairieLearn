@@ -4,7 +4,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { formatDateISO } from '@prairielearn/formatter';
+import { formatDate, formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -188,6 +188,7 @@ router.get(
     res.status(200).send(
       logs.map((log) => ({
         ...log,
+        formatted_date: formatDate(log.event_date, res.locals.course_instance.display_timezone),
         date_iso8601: formatDateISO(log.event_date, res.locals.course_instance.display_timezone),
       })),
     );
