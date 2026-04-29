@@ -135,7 +135,7 @@ function InstructorAssessmentGroupsInner({
   const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
   const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
   const canEditCourseInstance =
-    (authz_data.has_course_instance_permission_edit ?? false) && !course.example_course;
+    authz_data.has_course_instance_permission_edit && !course.example_course;
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);

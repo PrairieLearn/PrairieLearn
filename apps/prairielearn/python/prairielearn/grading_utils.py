@@ -15,7 +15,7 @@ from numpy.typing import ArrayLike
 from typing_extensions import assert_never
 
 from prairielearn.question_utils import QuestionData
-from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
+from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
@@ -242,7 +242,7 @@ def grade_answer_parameterized(
     feedback_content: str | None = None
 
     if timeout is not None:
-        with ThreadingTimeout(timeout) as ctx:
+        with SignalTimeout(timeout) as ctx:
             result, feedback_content = grade_function(submitted_answer)
         timed_out = ctx.state == TimeoutState.TIMED_OUT
     else:

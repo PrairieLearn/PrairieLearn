@@ -43,8 +43,8 @@ Below is a complete skeleton showing all available fields. All fields are option
     {
       "beforeRelease": { "listed": true },
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59",
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" },
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
         "lateDeadlines": [{ "date": "2025-02-22T23:59:59", "credit": 80 }],
         "afterLastDeadline": {
@@ -74,7 +74,7 @@ Below is a complete skeleton showing all available fields. All fields are option
     {
       "labels": ["Extended time"],
       "dateControl": {
-        "dueDate": "2025-02-22T23:59:59",
+        "due": { "date": "2025-02-22T23:59:59" },
         "durationMinutes": 90
       }
     }
@@ -88,15 +88,31 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field               | Type    | Description                                                                                                  |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                    |
-| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                           |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%). |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%). |
-| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                |
-| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                 |
-| `password`          | string  | Proctor password required to start the assessment.                                                           |
+| Field               | Type    | Description                                                                                                                       |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not visible to students before this date.                                    |
+| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional `credit` (0–200, default 100). See [`due`](#due) below. |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _on or before_ the due date offering bonus credit (e.g., 110%).                      |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _on or after_ the due date offering reduced credit (e.g., 80%).                      |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                                     |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                                      |
+| `password`          | string  | Proctor password required to start the assessment.                                                                                |
+
+#### `due`
+
+| Field    | Type    | Default | Description                                                                                                                                |
+| -------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `date`   | string  |         | ISO datetime of the due date, or `null` to keep the assessment open indefinitely (the `credit` value below applies forever after release). |
+| `credit` | integer | `100`   | Credit percentage at the due date (0–200). Omit to use the default of 100%.                                                                |
+
+A custom `credit` constrains what other deadlines may do:
+
+- **Early deadlines are not allowed when `credit` is set.** Early deadlines layer bonus credit on top of a 100% baseline; if you want a different baseline, set `credit` directly and don't use early deadlines.
+- **Late deadlines must be strictly less than `credit`.** A late deadline ≥ `credit` would be silently clamped, so it's rejected at validation time. Late deadlines are also disallowed when `credit` is `0`.
+- **`afterLastDeadline.credit` may not exceed `credit`** for the same reason.
+- **`credit` above 100%** is accepted but discouraged: it gives every on-time student a flat bonus. If you want to reward early submissions, use an early deadline; if you want students to exceed 100% by doing additional work, use [bonus points](configuration.md#assessment-points).
+
+When `date: null` is set, the `credit` applies indefinitely after release (and after early deadlines, if any), and any `afterLastDeadline` configuration is ignored — there is no "after the last deadline" because the due credit never expires.
 
 #### `afterLastDeadline`
 
@@ -114,17 +130,20 @@ When overriding `afterLastDeadline`, `credit` may be omitted. If omitted, the de
 The credit a student receives depends on when they submit relative to the configured deadlines. All deadlines (early, due, and late) are sorted chronologically into a timeline:
 
 ```text
-earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
+earlyDeadline (110%)    due.date (100%)    lateDeadline (80%)
       |                      |                   |
 ------+----------------------+-------------------+-------
 110% credit             100% credit          80% credit    → afterLastDeadline
 ```
 
-- **Before `releaseDate`**: The assessment is not visible (unless `beforeRelease.listed` is `true`, in which case the title is shown but the assessment cannot be opened).
-- **Between `releaseDate` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
+- **Before `release.date`**: The assessment is not visible (unless `beforeRelease.listed` is `true`, in which case the title is shown but the assessment cannot be opened).
+- **Between `release.date` and the first deadline**: Credit is the first entry's value (the highest credit in the timeline).
 - **Between each pair of deadlines**: Credit is the later deadline's value.
 - **After the last deadline**: Credit is `afterLastDeadline.credit` (default 0%).
-- **No `dateControl` or no `releaseDate`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
+- **When `due.date` is `null`**: `due.credit` (default 100%) applies indefinitely after release. Any `afterLastDeadline` is ignored.
+- **No `dateControl` or no `release`**: The assessment is listed on the Assessments page but students cannot start it or submit answers.
+
+Early-deadline credits are floored at the due-date credit, and late-deadline credits are capped at it — so a single resolved rule can never drop below the due credit before the due date or rise above it afterwards.
 
 ### `integrations`
 
@@ -246,14 +265,14 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59"
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" }
       }
     },
     {
       "labels": ["Extended time"],
       "dateControl": {
-        "dueDate": "2025-02-22T23:59:59"
+        "due": { "date": "2025-02-22T23:59:59" }
       }
     }
   ]
@@ -261,7 +280,7 @@ Not all fields behave the same way during cascading:
 ```
 
 - **All students**: due Feb 15.
-- **Students with "Extended time" label**: due Feb 22. The override replaces `dueDate` but inherits `releaseDate` from the defaults.
+- **Students with "Extended time" label**: due Feb 22. The override replaces `due` but inherits `release` from the defaults.
 
 #### Example 2: Two label overrides stacking
 
@@ -270,15 +289,15 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59",
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" },
         "durationMinutes": 60
       }
     },
     {
       "labels": ["Section B"],
       "dateControl": {
-        "dueDate": "2025-02-20T23:59:59"
+        "due": { "date": "2025-02-20T23:59:59" }
       }
     },
     {
@@ -291,12 +310,12 @@ Not all fields behave the same way during cascading:
 }
 ```
 
-| Student                     | Due date | Duration | Explanation                                                                            |
-| --------------------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
-| Default                     | Feb 15   | 60 min   | No overrides matched                                                                   |
-| Section B only              | Feb 20   | 60 min   | Section B override replaces `dueDate`; `durationMinutes` inherited from defaults       |
-| Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `dueDate` inherited from defaults   |
-| Section B AND Extended time | Feb 20   | 90 min   | Both overrides cascade: Section B sets `dueDate`, Extended time sets `durationMinutes` |
+| Student                     | Due date | Duration | Explanation                                                                        |
+| --------------------------- | -------- | -------- | ---------------------------------------------------------------------------------- |
+| Default                     | Feb 15   | 60 min   | No overrides matched                                                               |
+| Section B only              | Feb 20   | 60 min   | Section B override replaces `due`; `durationMinutes` inherited from defaults       |
+| Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `due` inherited from defaults   |
+| Section B AND Extended time | Feb 20   | 90 min   | Both overrides cascade: Section B sets `due`, Extended time sets `durationMinutes` |
 
 ## Examples
 
@@ -307,8 +326,8 @@ Not all fields behave the same way during cascading:
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59"
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" }
       }
     }
   ]
@@ -324,8 +343,8 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59",
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" },
         "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
         "lateDeadlines": [
           { "date": "2025-02-22T23:59:59", "credit": 80 },
@@ -357,8 +376,8 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-03-10T09:00:00",
-        "dueDate": "2025-03-10T11:00:00",
+        "release": { "date": "2025-03-10T09:00:00" },
+        "due": { "date": "2025-03-10T11:00:00" },
         "durationMinutes": 90,
         "password": "exam2025"
       },
@@ -434,8 +453,8 @@ This is useful when real-time grading is disabled for the exam: since students n
   "accessControl": [
     {
       "dateControl": {
-        "releaseDate": "2025-01-15T00:00:01",
-        "dueDate": "2025-02-15T23:59:59",
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59" },
         "durationMinutes": 60
       },
       "afterComplete": {
@@ -445,7 +464,7 @@ This is useful when real-time grading is disabled for the exam: since students n
     {
       "labels": ["Extended time"],
       "dateControl": {
-        "dueDate": "2025-02-22T23:59:59",
+        "due": { "date": "2025-02-22T23:59:59" },
         "durationMinutes": 90
       }
     }
@@ -491,8 +510,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
-            "dueDate": "2025-02-15T23:59:59"
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" }
           }
         }
       ]
@@ -532,8 +551,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
-            "dueDate": "2025-02-15T23:59:59",
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" },
             "earlyDeadlines": [
               { "date": "2025-02-01T23:59:59", "credit": 110 }
             ],
@@ -570,8 +589,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-03-10T09:00:00",
-            "dueDate": "2025-03-10T11:00:00",
+            "release": { "date": "2025-03-10T09:00:00" },
+            "due": { "date": "2025-03-10T11:00:00" },
             "durationMinutes": 90
           }
         }
@@ -636,8 +655,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-03-10T09:00:00",
-            "dueDate": "2025-03-10T11:00:00",
+            "release": { "date": "2025-03-10T09:00:00" },
+            "due": { "date": "2025-03-10T11:00:00" },
             "password": "mysecret"
           }
         }
@@ -673,8 +692,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
-            "dueDate": "2025-02-15T23:59:59"
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" }
           },
           "afterComplete": {
             "questions": { "hidden": true }
@@ -712,8 +731,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
-            "dueDate": "2025-02-15T23:59:59"
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" }
           },
           "afterComplete": {
             "score": { "hidden": true }
@@ -744,15 +763,15 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "1970-01-01T00:00:00",
-            "dueDate": "2099-12-31T23:59:59"
+            "release": { "date": "1970-01-01T00:00:00" },
+            "due": { "date": "2099-12-31T23:59:59" }
           }
         }
       ]
     }
     ```
 
-    A `releaseDate` in the past and a `dueDate` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but students cannot start it or submit answers.
+    A `release.date` in the past and a `due.date` far in the future ensures the assessment is always open with 100% credit. Without a `dateControl`, the assessment is listed but students cannot start it or submit answers.
 
 ### View-only after close
 
@@ -781,8 +800,8 @@ Below are common legacy patterns and their modern equivalents.
       "accessControl": [
         {
           "dateControl": {
-            "releaseDate": "2025-01-15T00:00:01",
-            "dueDate": "2025-02-15T23:59:59",
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" },
             "afterLastDeadline": {
               "allowSubmissions": true,
               "credit": 0

@@ -9,7 +9,7 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   cascadeRoleRenamesToZones,
   normalizeGroupSettings,
@@ -206,7 +206,7 @@ const enableGroupWork = t.procedure
     const assessmentDir = path.join(
       ctx.course.path,
       'courseInstances',
-      ctx.course_instance.short_name!,
+      ctx.course_instance.short_name,
       'assessments',
       ctx.assessment.tid!,
     );
@@ -224,7 +224,7 @@ const enableGroupWork = t.procedure
       jsonPath: assessmentPath,
       conflictCheck: {
         origHash,
-        scope: (json) => json.groups ?? null,
+        scope: (json) => json.groups ?? {},
       },
       locals: {
         authz_data: ctx.authz_data,
@@ -340,7 +340,7 @@ const updateGroupConfig = t.procedure
     const assessmentDir = path.join(
       ctx.course.path,
       'courseInstances',
-      ctx.course_instance.short_name!,
+      ctx.course_instance.short_name,
       'assessments',
       ctx.assessment.tid!,
     );
@@ -369,7 +369,7 @@ const updateGroupConfig = t.procedure
       jsonPath: assessmentPath,
       conflictCheck: {
         origHash,
-        scope: (json) => json.groups ?? null,
+        scope: (json) => json.groups ?? {},
       },
       locals: {
         authz_data: ctx.authz_data,
@@ -408,7 +408,7 @@ const disableGroupWork = t.procedure
     const assessmentDir = path.join(
       ctx.course.path,
       'courseInstances',
-      ctx.course_instance.short_name!,
+      ctx.course_instance.short_name,
       'assessments',
       ctx.assessment.tid!,
     );
@@ -426,7 +426,7 @@ const disableGroupWork = t.procedure
       jsonPath: assessmentPath,
       conflictCheck: {
         origHash,
-        scope: (json) => json.groups ?? null,
+        scope: (json) => json.groups ?? {},
       },
       locals: {
         authz_data: ctx.authz_data,

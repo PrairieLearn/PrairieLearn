@@ -18,50 +18,67 @@ import {
 } from './db-types.js';
 
 /**
- * This schema isn't used to directly validate the authz data that ends up in
- * `res.locals.authz_data`. This (and the branded version below) only exist for
+ * These schemas aren't used to directly validate the authz data that ends up in
+ * `res.locals.authz_data`. They (and the branded versions below) only exist for
  * the sake of "page context" functions and types.
  */
-const RawPageAuthzDataSchema = z.object({
-  // TODO: split this into "course" and "course instance" variants with the
-  // correct properties for each case.
+
+/** Course-level authz data (always available on course+ pages). */
+const RawCoursePageAuthzDataSchema = z.object({
   authn_user: RawStaffUserSchema,
   authn_is_administrator: z.boolean(),
-  authn_has_course_permission_preview: z.boolean().optional(),
-  authn_has_course_permission_view: z.boolean().optional(),
-  authn_has_course_permission_edit: z.boolean().optional(),
-  authn_has_course_permission_own: z.boolean().optional(),
-  authn_course_role: EnumCourseRoleSchema.optional(),
-  authn_course_instance_role: EnumCourseInstanceRoleSchema.optional(),
+  authn_has_course_permission_preview: z.boolean(),
+  authn_has_course_permission_view: z.boolean(),
+  authn_has_course_permission_edit: z.boolean(),
+  authn_has_course_permission_own: z.boolean(),
+  authn_course_role: EnumCourseRoleSchema,
   authn_mode: z.string().optional(),
-  authn_has_student_access: z.boolean().optional(),
-  authn_has_student_access_with_enrollment: z.boolean().optional(),
-  authn_has_course_instance_permission_view: z.boolean().optional(),
-  authn_has_course_instance_permission_edit: z.boolean().optional(),
 
-  // Authz data
   user: RawStaffUserSchema,
   is_administrator: z.boolean(),
   has_course_permission_preview: z.boolean(),
   has_course_permission_view: z.boolean(),
   has_course_permission_edit: z.boolean(),
   has_course_permission_own: z.boolean(),
-  course_role: EnumCourseRoleSchema.optional(),
-  course_instance_role: EnumCourseInstanceRoleSchema.optional(),
+  course_role: EnumCourseRoleSchema,
   mode: EnumModeSchema.optional(),
-  has_student_access: z.boolean().optional(),
-  has_student_access_with_enrollment: z.boolean().optional(),
-  has_course_instance_permission_view: z.boolean().optional(),
-  has_course_instance_permission_edit: z.boolean().optional(),
 });
-export type RawPageAuthzData = z.infer<typeof RawPageAuthzDataSchema>;
 
-export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
+/** Course instance authz data (extends course, all CI properties required). */
+const RawCourseInstancePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend({
+  authn_course_instance_role: EnumCourseInstanceRoleSchema,
+  authn_has_course_instance_permission_view: z.boolean(),
+  authn_has_course_instance_permission_edit: z.boolean(),
+  authn_has_student_access: z.boolean(),
+  authn_has_student_access_with_enrollment: z.boolean(),
+
+  course_instance_role: EnumCourseInstanceRoleSchema,
+  has_course_instance_permission_view: z.boolean(),
+  has_course_instance_permission_edit: z.boolean(),
+  has_student_access: z.boolean(),
+  has_student_access_with_enrollment: z.boolean(),
+});
+
+export type RawPageAuthzData =
+  | z.infer<typeof RawCoursePageAuthzDataSchema>
+  | z.infer<typeof RawCourseInstancePageAuthzDataSchema>;
+
+export const CoursePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend({
   user: StaffUserSchema,
   authn_user: StaffUserSchema,
-}).brand<'PageAuthzData'>();
-export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
-type PageAuthzDataInput = z.input<typeof PageAuthzDataSchema>;
+}).brand<'CoursePageAuthzData'>();
+export type CoursePageAuthzData = z.infer<typeof CoursePageAuthzDataSchema>;
+
+export const CourseInstancePageAuthzDataSchema = RawCourseInstancePageAuthzDataSchema.extend({
+  user: StaffUserSchema,
+  authn_user: StaffUserSchema,
+}).brand<'CourseInstancePageAuthzData'>();
+export type CourseInstancePageAuthzData = z.infer<typeof CourseInstancePageAuthzDataSchema>;
+
+// `PageAuthzData` is a union type only; there is no Zod schema for it. To
+// validate raw `res.locals.authz_data`, parse with `CoursePageAuthzDataSchema`
+// or `CourseInstancePageAuthzDataSchema` directly.
+export type PageAuthzData = CoursePageAuthzData | CourseInstancePageAuthzData;
 
 export interface DangerousSystemAuthzData {
   authn_user: {
@@ -164,32 +181,33 @@ export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
     return requiredRole.includes('System');
   }
 
-  /* Student course instance roles */
-  if (
-    requiredRole.includes('Student') &&
-    authzData.has_student_access &&
-    // If the user is an instructor, and the requiredRole is student, this should fail.
-    // We want to prevent instructors from calling functions that are only meant for students.
-    //
-    // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
-    authzData.course_instance_role === 'None'
-  ) {
-    return true;
-  }
+  /* Course instance roles (student + instructor) */
+  if ('has_course_instance_permission_view' in authzData) {
+    if (
+      requiredRole.includes('Student') &&
+      authzData.has_student_access &&
+      // If the user is an instructor, and the requiredRole is student, this should fail.
+      // We want to prevent instructors from calling functions that are only meant for students.
+      //
+      // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
+      authzData.course_instance_role === 'None'
+    ) {
+      return true;
+    }
 
-  /* Instructor course instance roles */
-  if (
-    requiredRole.includes('Student Data Viewer') &&
-    authzData.has_course_instance_permission_view
-  ) {
-    return true;
-  }
+    if (
+      requiredRole.includes('Student Data Viewer') &&
+      authzData.has_course_instance_permission_view
+    ) {
+      return true;
+    }
 
-  if (
-    requiredRole.includes('Student Data Editor') &&
-    authzData.has_course_instance_permission_edit
-  ) {
-    return true;
+    if (
+      requiredRole.includes('Student Data Editor') &&
+      authzData.has_course_instance_permission_edit
+    ) {
+      return true;
+    }
   }
 
   /* Course roles */
@@ -308,7 +326,7 @@ export function makePageAuthzData({
   authzData: PlainAuthzData;
   is_administrator: boolean;
 }): PageAuthzData {
-  const input: PageAuthzDataInput = {
+  const base = {
     ...authzData,
     is_administrator,
 
@@ -323,14 +341,15 @@ export function makePageAuthzData({
   };
 
   if (authzData.course_instance_role != null) {
-    Object.assign(input, {
+    return CourseInstancePageAuthzDataSchema.parse({
+      ...base,
       authn_course_instance_role: authzData.course_instance_role,
       authn_has_course_instance_permission_view: authzData.has_course_instance_permission_view,
       authn_has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
       authn_has_student_access: authzData.has_student_access,
       authn_has_student_access_with_enrollment: authzData.has_student_access_with_enrollment,
-    } satisfies Partial<PageAuthzDataInput>);
+    });
   }
 
-  return PageAuthzDataSchema.parse(input);
+  return CoursePageAuthzDataSchema.parse(base);
 }

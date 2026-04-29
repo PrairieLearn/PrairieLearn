@@ -3,20 +3,12 @@ import assert from 'node:assert';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
-/**
- * Runtime version of date control fields. Top-level date columns use `Date`
- * objects (they come from the database as Date). Deadline entry dates remain
- * as strings since they are stored as JSON strings in JSONB columns.
- */
-export interface RuntimeDateControl {
-  releaseDate?: Date | null;
-  dueDate?: Date | null;
-  earlyDeadlines?: { date: string; credit: number }[] | null;
-  lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
-  durationMinutes?: number | null;
-  password?: string | null;
-}
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+  buildDeadlines,
+} from './timeline.js';
 
 export interface RuntimeAfterComplete {
   questions?: {
@@ -101,6 +93,17 @@ export interface AccessControlResolverResult {
    * raw `beforeRelease.listed` config input.
    */
   showBeforeRelease: boolean;
+  /**
+   * Timeline of credit segments for display. Each entry represents a
+   * contiguous period where a specific credit percentage applies.
+   * Raw data — formatting is a UI concern.
+   */
+  accessTimeline: AccessTimelineEntry[];
+  /**
+   * The next date when the assessment becomes active (e.g. the release date
+   * when before release). Null when already active or no future open date.
+   */
+  nextActiveDate: Date | null;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -114,6 +117,8 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   showBeforeRelease: false,
+  accessTimeline: [],
+  nextActiveDate: null,
 };
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
@@ -150,8 +155,11 @@ function mergeDateControl(
 
   const merged: RuntimeDateControl = { ...base };
   const ov = override;
-  if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
-  if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
+  if (ov.release !== undefined) merged.release = ov.release;
+  // `due` replaces atomically: an override either inherits the entire object or
+  // supplies its own. We never merge `date` and `credit` independently because
+  // a custom-credit override with an unset date (or vice versa) is incoherent.
+  if (ov.due !== undefined) merged.due = ov.due;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
   if (ov.afterLastDeadline !== undefined) {
@@ -238,7 +246,7 @@ function computeCredit(
   date: Date,
   authzMode: EnumMode,
 ): CreditResult {
-  if (!dateControl?.releaseDate) {
+  if (!dateControl?.release) {
     return {
       credit: 0,
       active: false,
@@ -249,8 +257,9 @@ function computeCredit(
     };
   }
 
-  const releaseDate = dateControl.releaseDate;
-  const dueDate = dateControl.dueDate ?? null;
+  const releaseDate = dateControl.release.date;
+  const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
 
   if (date < releaseDate) {
     return {
@@ -275,52 +284,33 @@ function computeCredit(
     };
   }
 
-  // Build timeline segments: each entry is [deadline, creditBefore]
-  // The credit value represents what you get if you submit BEFORE this deadline.
-  const timeline: { date: Date; credit: number }[] = [];
-
-  if (dateControl.earlyDeadlines) {
-    for (const entry of dateControl.earlyDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out early deadlines before release date or after due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate > dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  if (dueDate) {
-    timeline.push({ date: dueDate, credit: 100 });
-  }
-
-  if (dateControl.lateDeadlines) {
-    for (const entry of dateControl.lateDeadlines) {
-      const entryDate = new Date(entry.date);
-      // Filter out late deadlines before release date or before due date.
-      if (entryDate <= releaseDate) continue;
-      if (dueDate && entryDate < dueDate) continue;
-      timeline.push({ date: entryDate, credit: entry.credit });
-    }
-  }
-
-  timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
 
   // No due date or deadlines means 100% credit anytime after the release date.
-  if (timeline.length === 0) {
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
+  if (deadlines.length === 0) {
+    if (dateControl.due && dueDate === null) {
+      return {
+        credit: dueCredit,
+        active: true,
+        beforeRelease: false,
+        nextDeadlineDate: null,
+        password: dateControl.password ?? null,
+        timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+      };
+    }
     return {
       credit: 100,
       active: true,
       beforeRelease: false,
       nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
     };
   }
 
-  // Before the first deadline, the credit is the first entry's credit value.
-  // After each deadline, the credit becomes the next entry's credit value.
-  // After the last deadline, use afterLastDeadline settings.
-  for (const entry of timeline) {
+  for (const entry of deadlines) {
     if (date < entry.date) {
       const credit = entry.credit;
       const nextDeadline = entry.date;
@@ -341,8 +331,21 @@ function computeCredit(
   }
 
   // We are past the last deadline.
-  // If there are no deadlines after filtering (only due date was present and we're past it),
-  // or if afterLastDeadline is not configured, use defaults.
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
+  // This shadows afterLastDeadline — an explicit `due` with null date is the
+  // author's way of saying "this credit applies forever after all deadlines".
+  if (dateControl.due && dueDate === null) {
+    return {
+      credit: dueCredit,
+      active: true,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    };
+  }
+
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
   assert(!afterLast || afterLast.allowSubmissions !== undefined);
@@ -527,6 +530,8 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
+      nextActiveDate: null,
     };
   }
 
@@ -645,7 +650,7 @@ export function resolveAccessControl(
   const showBeforeRelease =
     (effectiveRule.beforeRelease?.listed ?? false) &&
     ptOutcome.action !== 'grant' &&
-    (creditResult.beforeRelease || !effectiveRule.dateControl?.releaseDate);
+    (creditResult.beforeRelease || !effectiveRule.dateControl?.release);
 
   // If the assessment is before its release date and showBeforeRelease is false,
   // the student should not see or access it at all.
@@ -658,19 +663,20 @@ export function resolveAccessControl(
   // access, so anything that produces `showBeforeRelease: true` must also set
   // `authorized: false`. This covers pre-release (`creditResult.beforeRelease`)
   // as well as the perpetually-listed case (`beforeRelease.listed` with no
-  // releaseDate configured).
+  // release configured).
   if (showBeforeRelease) {
     return {
       ...UNAUTHORIZED_RESULT,
       showClosedAssessment,
       showClosedAssessmentScore,
       showBeforeRelease: true,
+      nextActiveDate: creditResult.nextDeadlineDate,
     };
   }
 
   // A PT-gated rule has no at-home submission path unless dateControl
   // provides one. When PT continue'd (Public mode) and there is no
-  // dateControl releaseDate, the student can't take the assessment at home,
+  // dateControl release, the student can't take the assessment at home,
   // but they may still have a legitimate review-only path if top-level
   // `afterComplete` visibility has been unlocked (e.g., a scheduled at-home
   // release via `questions.visibleFromDate`). In that case, grant
@@ -679,7 +685,7 @@ export function resolveAccessControl(
   if (
     ptOutcome.action === 'continue' &&
     mainRuleInput.prairietestExams.length > 0 &&
-    !effectiveRule.dateControl?.releaseDate
+    !effectiveRule.dateControl?.release
   ) {
     if (!showClosedAssessment) {
       return {
@@ -699,7 +705,17 @@ export function resolveAccessControl(
       showClosedAssessmentScore,
       examAccessEnd: null,
       showBeforeRelease: false,
+      accessTimeline: [],
+      nextActiveDate: null,
     };
+  }
+
+  // No access path: no release date and no PT exams configured. The
+  // listed-only and PT review-only paths above have already returned for the
+  // cases where they apply, so reaching here means the rule has no way to
+  // grant access.
+  if (!effectiveRule.dateControl?.release && mainRuleInput.prairietestExams.length === 0) {
+    return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 
   const creditDateString = formatCreditDateString(
@@ -708,6 +724,8 @@ export function resolveAccessControl(
     creditResult.nextDeadlineDate,
     displayTimezone,
   );
+
+  const accessTimeline = buildAccessTimeline(effectiveRule.dateControl, date);
 
   return {
     authorized: true,
@@ -720,5 +738,7 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     showBeforeRelease,
+    accessTimeline,
+    nextActiveDate: null,
   };
 }

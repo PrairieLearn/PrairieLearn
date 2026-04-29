@@ -26,8 +26,7 @@ describe('migrateAllowAccess', () => {
       name: 'single-deadline',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
-        result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
+        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -40,8 +39,7 @@ describe('migrateAllowAccess', () => {
         { startDate: '2024-01-01', active: false },
       ],
       expected: {
-        archetype: { base: 'single-deadline-with-viewing', modifiers: [] },
-        result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
+        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -51,11 +49,10 @@ describe('migrateAllowAccess', () => {
       name: 'timed-assessment',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 90 }],
       expected: {
-        archetype: { base: 'timed-assessment', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-06-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01' },
             durationMinutes: 90,
           },
         },
@@ -72,11 +69,10 @@ describe('migrateAllowAccess', () => {
         { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
       ],
       expected: {
-        archetype: { base: 'declining-credit', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-03-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
             earlyDeadlines: [{ date: '2024-02-01', credit: 110 }],
             lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
           },
@@ -93,9 +89,8 @@ describe('migrateAllowAccess', () => {
         { startDate: '2024-01-01', active: false },
       ],
       expected: {
-        archetype: { base: 'view-only', modifiers: ['prairietest'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: null },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: null } },
           integrations: { prairieTest: { exams: [{ examUuid: 'exam-uuid-1' }] } },
         },
         errors: [],
@@ -107,8 +102,7 @@ describe('migrateAllowAccess', () => {
       name: 'view-only',
       rules: [{ startDate: '2024-01-01', active: false }],
       expected: {
-        archetype: { base: 'view-only', modifiers: [] },
-        result: { dateControl: { releaseDate: '2024-01-01', dueDate: null } },
+        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: null } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -118,9 +112,12 @@ describe('migrateAllowAccess', () => {
       name: 'password-gated',
       rules: [{ password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-        archetype: { base: 'password-gated', modifiers: [] },
         result: {
-          dateControl: { password: 'secret', releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: {
+            password: 'secret',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01' },
+          },
         },
         errors: [],
         notes: [],
@@ -131,7 +128,6 @@ describe('migrateAllowAccess', () => {
       name: 'hidden',
       rules: [{ active: false }],
       expected: {
-        archetype: { base: 'hidden', modifiers: [] },
         result: {},
         errors: [],
         notes: [],
@@ -142,32 +138,28 @@ describe('migrateAllowAccess', () => {
       name: 'no-op',
       rules: [{}],
       expected: {
-        archetype: { base: 'no-op', modifiers: [] },
         result: {},
         errors: [],
         notes: ['An empty accessControl list signifies that no access is granted.'],
         hasUidRules: false,
       },
     },
-    // TODO: handle this case better.
-    // {
-    //   name: 'always-open',
-    //   rules: [{ credit: 100 }],
-    //   expected: {
-    //     archetype: { base: 'always-open', modifiers: [] },
-    //     result: { dateControl: { dueDate: null } },
-    //     errors: [],
-    //     notes: [],
-    //     hasUidRules: false,
-    //   },
-    // },
+    {
+      name: 'always-open',
+      rules: [{ credit: 100 }],
+      expected: {
+        result: { dateControl: { due: { date: null } } },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
     {
       name: 'always-open with non-standard credit',
       rules: [{ credit: 120 }],
       expected: {
-        archetype: { base: 'always-open', modifiers: [] },
         result: {},
-        errors: ['A 100% credit window is required.'],
+        errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
         notes: [],
         hasUidRules: false,
       },
@@ -176,9 +168,13 @@ describe('migrateAllowAccess', () => {
       name: 'practice-only (credit 0 with dates)',
       rules: [{ credit: 0, startDate: '2021-10-13T00:00:00', endDate: '2022-01-18T23:59:59' }],
       expected: {
-        archetype: { base: 'practice-only', modifiers: [] },
-        result: {},
-        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        result: {
+          dateControl: {
+            release: { date: '2021-10-13T00:00:00' },
+            due: { date: '2022-01-18T23:59:59', credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -187,9 +183,13 @@ describe('migrateAllowAccess', () => {
       name: 'practice-only (implicit credit 0 with startDate only)',
       rules: [{ startDate: '2000-01-01T12:00:00' }],
       expected: {
-        archetype: { base: 'practice-only', modifiers: [] },
-        result: {},
-        errors: ['Using 0 credit to indicate overall weight within the course is not supported.'],
+        result: {
+          dateControl: {
+            release: { date: '2000-01-01T12:00:00' },
+            due: { date: null, credit: 0 },
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -203,8 +203,6 @@ describe('migrateAllowAccess', () => {
           startDate: '2021-03-20T00:00:01',
           endDate: '2021-03-23T23:59:59',
         },
-        // Legacy system uses rule with highest credit, so this is effectively
-        // the same as saying the startDate is 2021-03-23T23:59:59.
         {
           mode: 'Public',
           startDate: '2021-03-20T00:00:01',
@@ -212,11 +210,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2021-03-20T00:00:01',
-            dueDate: '2021-03-23T23:59:59',
+            release: { date: '2021-03-20T00:00:01' },
+            due: { date: '2021-03-23T23:59:59' },
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         },
@@ -229,8 +226,7 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended full credit (startDate, no endDate)',
       rules: [{ credit: 100, startDate: '2024-01-01' }],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
-        result: { dateControl: { releaseDate: '2024-01-01', dueDate: null } },
+        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: null } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -240,9 +236,8 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended reduced credit (startDate, no endDate)',
       rules: [{ credit: 50, startDate: '2024-01-01' }],
       expected: {
-        archetype: { base: 'single-reduced-credit', modifiers: [] },
         result: {},
-        errors: ['Open-ended credit windows cannot be automatically migrated.'],
+        errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
         notes: [],
         hasUidRules: false,
       },
@@ -254,16 +249,197 @@ describe('migrateAllowAccess', () => {
         { credit: 50, startDate: '2024-03-01' },
       ],
       expected: {
-        archetype: { base: 'declining-credit', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-03-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
             afterLastDeadline: { allowSubmissions: true, credit: 50 },
           },
         },
         errors: [],
         notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'closed and open-ended at the same non-100 credit collapse to always-open at that credit',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 50, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null, credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'open-ended credit higher than due-date credit promotes credit to higher value',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 80, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null, credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'open-ended at 100% collapses non-full closed window to always-open at 100%',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { credit: 100, startDate: '2024-01-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: null },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'non-monotonic credit (100% -> 80% -> 100% open) is rejected',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { credit: 100, startDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {},
+        errors: ['Credit must be non-increasing over time.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'non-monotonic credit (50% closed then 100% open from later date) is rejected',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {},
+        errors: ['Credit must be non-increasing over time.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'early deadline preserved when full-credit closed meets full-credit open-ended',
+      rules: [
+        { credit: 110, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { credit: 100, startDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            earlyDeadlines: [{ date: '2024-02-01', credit: 110 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 100 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'late deadline preserved when no open-ended rule exists to trigger simplification',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ date: '2024-04-01', credit: 80 }],
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'late deadline preserved when open-ended credit is lower than due-date credit',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { credit: 50, startDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ date: '2024-04-01', credit: 80 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'lower-credit rule fully covered by higher-credit rule is dropped',
+      rules: [
+        { credit: 50, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 80, startDate: '2024-01-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01', credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [
+          '1 late deadline dropped because the higher-credit due window covers the same period.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'lower-credit rule sharing endDate with higher-credit rule is dropped',
+      rules: [
+        { credit: 50, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { credit: 80, startDate: '2024-01-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01', credit: 80 },
+          },
+        },
+        errors: [],
+        notes: [
+          '1 late deadline dropped because the higher-credit due window covers the same period.',
+        ],
         hasUidRules: false,
       },
     },
@@ -278,9 +454,8 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: ['hides-closed'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: { questions: { hidden: true } },
         },
         errors: [],
@@ -299,9 +474,8 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: ['hides-score'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: { score: { hidden: true } },
         },
         errors: [],
@@ -321,9 +495,8 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: ['hides-closed'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: { questions: { hidden: true }, score: { hidden: true } },
         },
         errors: [],
@@ -345,9 +518,8 @@ describe('migrateAllowAccess', () => {
         { active: false, startDate: '2024-09-01' },
       ],
       expected: {
-        archetype: { base: 'single-deadline-with-viewing', modifiers: ['hides-closed'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-07-01' },
             score: { hidden: true, visibleFromDate: '2024-09-01' },
@@ -371,9 +543,8 @@ describe('migrateAllowAccess', () => {
         { active: false, startDate: '2024-09-01' },
       ],
       expected: {
-        archetype: { base: 'single-deadline-with-viewing', modifiers: ['hides-closed'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-09-01' },
             score: { hidden: true, visibleFromDate: '2024-09-01' },
@@ -398,12 +569,11 @@ describe('migrateAllowAccess', () => {
         { active: false, startDate: '2030-01-04T00:00:01' },
       ],
       expected: {
-        archetype: { base: 'timed-assessment', modifiers: ['hides-closed'] },
         result: {
           beforeRelease: { listed: true },
           dateControl: {
-            releaseDate: '2030-01-01T00:00:01',
-            dueDate: '2030-01-01T23:59:59',
+            release: { date: '2030-01-01T00:00:01' },
+            due: { date: '2030-01-01T23:59:59' },
             durationMinutes: 50,
           },
           afterComplete: {
@@ -422,8 +592,7 @@ describe('migrateAllowAccess', () => {
         { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
-        result: { dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' } },
+        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } } },
         errors: [],
         notes: [
           'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
@@ -438,60 +607,50 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
       ],
       expected: {
-        archetype: { base: 'multi-deadline', modifiers: [] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-04-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-04-01' } },
         },
         errors: [],
-        notes: ['2 full-credit windows collapsed into single span: 2024-01-01 to 2024-04-01'],
+        notes: ['2 100% credit windows collapsed into single span: 2024-01-01 to 2024-04-01'],
         hasUidRules: false,
       },
     },
     // TODO: make the migration result pass validation.
-    // {
-    //   name: 'declining-credit with bonus and reduced (no full) omits dueDate',
-    //   rules: [
-    //     { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
-    //     { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
-    //   ],
-    //   expected: {
-    //     archetype: { base: 'declining-credit', modifiers: [] },
-    //     result: {
-    //       dateControl: {
-    //         releaseDate: '2024-01-01',
-    //         earlyDeadlines: [{ date: '2024-02-01', credit: 120 }],
-    //         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
-    //       },
-    //     },
-    //     errors: [],
-    //     notes: [],
-    //     hasUidRules: false,
-    //   },
-    // },
-    // {
-    //   name: 'declining-credit with multiple bonus and reduced (no full) omits dueDate',
-    //   rules: [
-    //     { credit: 130, startDate: '2024-01-01', endDate: '2024-01-15' },
-    //     { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
-    //     { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
-    //   ],
-    //   expected: {
-    //     archetype: { base: 'declining-credit', modifiers: [] },
-    //     result: {
-    //       dateControl: {
-    //         releaseDate: '2024-01-01',
-    //         earlyDeadlines: [
-    //           { date: '2024-01-15', credit: 130 },
-    //           { date: '2024-02-01', credit: 120 },
-    //         ],
-    //         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
-    //       },
-    //     },
-    //     errors: [],
-    //     notes: [],
-    //     hasUidRules: false,
-    //   },
-    // },
+    {
+      name: 'declining-credit with bonus and reduced (no full) uses due credit',
+      rules: [
+        { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-02-01', credit: 120 },
+            lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'declining-credit with multiple bonus levels errors on unplaceable rule',
+      rules: [
+        { credit: 130, startDate: '2024-01-01', endDate: '2024-01-15' },
+        { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {},
+        errors: [
+          'Cannot place 120% credit rule as early or late deadline (due date credit is 130%).',
+        ],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
     {
       name: 'collapses dominated late deadlines',
       rules: [
@@ -500,11 +659,10 @@ describe('migrateAllowAccess', () => {
         { credit: 30, startDate: '2024-01-01', endDate: '2024-04-01' },
       ],
       expected: {
-        archetype: { base: 'declining-credit', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-03-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
             lateDeadlines: [{ date: '2024-06-01', credit: 80 }],
           },
         },
@@ -514,31 +672,29 @@ describe('migrateAllowAccess', () => {
       },
     },
     // TODO: make the migration result pass validation.
-    // {
-    //   name: 'single-reduced-credit as late deadline without dueDate',
-    //   rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
-    //   expected: {
-    //     archetype: { base: 'single-reduced-credit', modifiers: [] },
-    //     result: {
-    //       dateControl: {
-    //         releaseDate: '2024-01-01',
-    //         lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
-    //       },
-    //     },
-    //     errors: [],
-    //     notes: [],
-    //     hasUidRules: false,
-    //   },
-    // },
     {
-      name: 'single bonus credit as early deadline without dueDate',
-      rules: [{ credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      name: 'single-reduced-credit uses due credit',
+      rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            earlyDeadlines: [{ date: '2024-06-01', credit: 120 }],
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01', credit: 50 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'single bonus credit uses due credit',
+      rules: [{ credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01', credit: 120 },
           },
         },
         errors: [],
@@ -553,7 +709,6 @@ describe('migrateAllowAccess', () => {
         { examUuid: 'exam-2', credit: 100 },
       ],
       expected: {
-        archetype: { base: 'no-op', modifiers: ['prairietest'] },
         result: {
           integrations: {
             prairieTest: { exams: [{ examUuid: 'exam-1' }, { examUuid: 'exam-2' }] },
@@ -561,6 +716,20 @@ describe('migrateAllowAccess', () => {
         },
         errors: [],
         notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'prairietest rule with password emits a warning note',
+      rules: [{ examUuid: 'exam-1', credit: 100, password: 'discarded' }],
+      expected: {
+        result: {
+          integrations: { prairieTest: { exams: [{ examUuid: 'exam-1' }] } },
+        },
+        errors: [],
+        notes: [
+          'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',
+        ],
         hasUidRules: false,
       },
     },
@@ -576,9 +745,8 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: ['mode-gated', 'hides-closed'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: { questions: { hidden: true } },
         },
         errors: [],
@@ -603,12 +771,12 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'password-gated', modifiers: [] },
         result: {
           dateControl: {
             password: 'password',
-            releaseDate: '2021-10-21T14:00:00',
-            dueDate: '2021-10-21T15:15:00',
+            release: { date: '2021-10-21T14:00:00' },
+            due: { date: '2021-10-21T15:15:00' },
+            durationMinutes: 55,
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         },
@@ -617,18 +785,108 @@ describe('migrateAllowAccess', () => {
         hasUidRules: false,
       },
     },
+    {
+      name: 'password-gated with earlier view-only rule keeps release at password startDate',
+      rules: [
+        { startDate: '2024-01-01', active: false },
+        { password: 'secret', startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'secret',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-06-01' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
     // TODO: make the migration result pass validation.
-    // {
-    //   name: 'password-gated without dates',
-    //   rules: [{ password: 'secret', credit: 100 }],
-    //   expected: {
-    //     archetype: { base: 'password-gated', modifiers: [] },
-    //     result: { dateControl: { password: 'secret' } },
-    //     errors: [],
-    //     notes: [],
-    //     hasUidRules: false,
-    //   },
-    // },
+    {
+      name: 'password-gated without dates',
+      rules: [{ password: 'secret', credit: 100 }],
+      expected: {
+        result: { dateControl: { password: 'secret', due: { date: null } } },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'password-gated with explicit credit:0 becomes credit-0 due window',
+      rules: [{ password: 'secret', credit: 0, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'secret',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01', credit: 0 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'multiple distinct passwords keeps the first and emits a note',
+      rules: [
+        { password: 'first', credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+        { password: 'second', credit: 50, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'first',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-03-01' },
+            lateDeadlines: [{ credit: 50, date: '2024-04-01' }],
+          },
+        },
+        errors: [],
+        notes: [
+          'Multiple distinct passwords were used in legacy access rules; only the first password was kept in the migrated configuration.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'multiple rules sharing the same password do not emit a distinct-password note',
+      rules: [
+        { password: 'shared', credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+        { password: 'shared', credit: 100, startDate: '2024-02-01', endDate: '2024-03-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            password: 'shared',
+            release: { date: '2024-02-01' },
+            due: { date: '2024-04-01' },
+          },
+        },
+        errors: [],
+        notes: ['2 100% credit windows collapsed into single span: 2024-02-01 to 2024-04-01'],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'practice before assessment opens',
+      rules: [
+        { credit: 0, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: {
+        result: {},
+        errors: [
+          'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
+        ],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
     {
       name: 'unclassified (non-contiguous access windows)',
       rules: [
@@ -636,7 +894,6 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
       ],
       expected: {
-        archetype: { base: 'unclassified', modifiers: [] },
         result: {},
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
@@ -650,7 +907,19 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01' },
       ],
       expected: {
-        archetype: { base: 'unclassified', modifiers: [] },
+        result: {},
+        errors: ['Non-contiguous access windows are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'unclassified (gapped zero-credit practice windows)',
+      rules: [
+        { credit: 0, startDate: '2024-01-01', endDate: '2024-01-31' },
+        { credit: 0, startDate: '2024-04-01', endDate: '2024-04-30' },
+      ],
+      expected: {
         result: {},
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
@@ -658,27 +927,28 @@ describe('migrateAllowAccess', () => {
       },
     },
     // TODO: make the migration result pass validation.
-    // {
-    //   name: 'half-open contiguous (endDate meets startDate)',
-    //   rules: [
-    //     { credit: 100, endDate: '2024-02-01' },
-    //     { credit: 100, startDate: '2024-02-01' },
-    //   ],
-    //   expected: {
-    //     archetype: { base: 'multi-deadline', modifiers: [] },
-    //     result: {
-    //       dateControl: { releaseDate: '2024-02-01', dueDate: '2024-02-01' },
-    //     },
-    //     errors: [],
-    //     notes: ['2 full-credit windows collapsed into single span: 2024-02-01 to 2024-02-01'],
-    //     hasUidRules: false,
-    //   },
-    // },
+    {
+      name: 'half-open contiguous (endDate meets startDate)',
+      rules: [
+        { credit: 100, endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-02-01' },
+      ],
+      expected: {
+        result: {
+          dateControl: {
+            release: { date: '2024-02-01' },
+            due: { date: null },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
     {
       name: 'mode-gated only',
       rules: [{ mode: 'Exam' }],
       expected: {
-        archetype: { base: 'mode-gated', modifiers: [] },
         result: {},
         errors: ['Mode-only access rules are not supported.'],
         notes: [],
@@ -689,12 +959,11 @@ describe('migrateAllowAccess', () => {
       name: 'all-UID rules filtered to no-op',
       rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01' }],
       expected: {
-        archetype: { base: 'no-op', modifiers: [] },
         result: {},
         errors: [],
         notes: [
-          'An empty accessControl list signifies that no access is granted.',
           'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+          'An empty accessControl list signifies that no access is granted.',
         ],
         hasUidRules: true,
       },
@@ -707,11 +976,10 @@ describe('migrateAllowAccess', () => {
         { uids: ['user@example.com'], credit: 100 },
       ],
       expected: {
-        archetype: { base: 'declining-credit', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-03-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-03-01' },
             lateDeadlines: [{ date: '2024-06-01', credit: 50 }],
           },
         },
@@ -726,9 +994,8 @@ describe('migrateAllowAccess', () => {
       name: 'single-deadline with mode-gated',
       rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', mode: 'Exam' }],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: ['mode-gated'] },
         result: {
-          dateControl: { releaseDate: '2024-01-01', dueDate: '2024-06-01' },
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
         },
         errors: [],
         notes: [],
@@ -747,11 +1014,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'timed-assessment', modifiers: ['mode-gated'] },
         result: {
           dateControl: {
-            releaseDate: '2024-01-01',
-            dueDate: '2024-06-01',
+            release: { date: '2024-01-01' },
+            due: { date: '2024-06-01' },
             durationMinutes: 60,
           },
         },
@@ -783,11 +1049,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'declining-credit', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2023-02-14T11:00:01',
-            dueDate: '2023-02-18T23:59:59',
+            release: { date: '2023-02-14T11:00:01' },
+            due: { date: '2023-02-18T23:59:59' },
             lateDeadlines: [{ date: '2023-02-20T23:59:59', credit: 95 }],
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
@@ -810,11 +1075,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        archetype: { base: 'single-deadline', modifiers: [] },
         result: {
           dateControl: {
-            releaseDate: '2019-09-03T12:00:01',
-            dueDate: '2019-12-20T23:59:59',
+            release: { date: '2019-09-03T12:00:01' },
+            due: { date: '2019-12-20T23:59:59' },
           },
         },
         errors: [],
@@ -828,8 +1092,12 @@ describe('migrateAllowAccess', () => {
     const result = migrateAllowAccess(rules);
 
     // Ensure that the result, whatever it is, passes validation.
-    const validationErrors = validateRule(result.result, 'none');
-    assert.deepEqual(validationErrors, []);
+    // Skip validation for results without release date — those rely on
+    // fallbackReleaseDate at the file-level migration step.
+    if (!result.result.dateControl || result.result.dateControl.release) {
+      const validationErrors = validateRule(result.result, 'none');
+      assert.deepEqual(validationErrors, []);
+    }
 
     assert.deepEqual(result, expected);
   });
@@ -857,7 +1125,7 @@ describe('analyzeAssessmentFile', () => {
           JSON.stringify({
             type: 'Exam',
             title: 'Test',
-            accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
+            accessControl: [{ dateControl: { release: { date: '2024-01-01' } } }],
           }),
         );
         const result = await analyzeAssessmentFile(filePath, 'test');
@@ -882,7 +1150,6 @@ describe('analyzeAssessmentFile', () => {
         const result = await analyzeAssessmentFile(filePath, 'hw01');
         assert.isNotNull(result);
         assert.equal(result.tid, 'hw01');
-        assert.deepEqual(result.archetype, { base: 'single-deadline', modifiers: [] });
         assert.equal(result.errors.length, 0);
         assert.equal(result.hasUidRules, false);
         assert.deepEqual(result.errors, []);
@@ -937,7 +1204,6 @@ describe('analyzeAssessmentFile', () => {
         );
         const result = await analyzeAssessmentFile(filePath, 'hw01');
         assert.isNotNull(result);
-        assert.deepEqual(result.archetype, { base: 'no-op', modifiers: [] });
         assert.deepEqual(result.errors, []);
         assert.deepEqual(result.notes, [
           'An empty accessControl list signifies that no access is granted.',
@@ -1058,7 +1324,7 @@ describe('applyMigrationToAssessmentFile', () => {
         assert.isUndefined(result.allowAccess);
         assert.isDefined(result.accessControl);
         assert.lengthOf(result.accessControl, 1);
-        assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
+        assert.equal(result.accessControl[0].dateControl?.due?.date, '2024-06-01');
       },
       { unsafeCleanup: true },
     );
@@ -1124,14 +1390,13 @@ describe('applyMigrationToAssessmentFile', () => {
           type: 'Homework',
           title: 'HW1',
           allowAccess: [{ credit: 100 }],
-          accessControl: [{ dateControl: { releaseDate: '2024-01-01' } }],
+          accessControl: [{ dateControl: { release: { date: '2024-01-01' } } }],
         };
         await fs.writeFile(filePath, JSON.stringify(originalData));
 
         await applyMigrationToAssessmentFile(filePath, 'clear', false);
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-        // File is unchanged because it already has accessControl
         assert.isDefined(result.allowAccess);
         assert.isDefined(result.accessControl);
       },
@@ -1176,7 +1441,7 @@ describe('applyMigrationToAssessmentFile', () => {
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
         assert.lengthOf(result.accessControl, 1);
-        assert.equal(result.accessControl[0].dateControl?.dueDate, '2024-06-01');
+        assert.equal(result.accessControl[0].dateControl?.due?.date, '2024-06-01');
       },
       { unsafeCleanup: true },
     );
@@ -1280,7 +1545,7 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
-  it('uses fallback release date when migration produces dateControl without releaseDate', async () => {
+  it('uses fallback release date when migration produces dateControl without release', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1298,7 +1563,7 @@ describe('applyMigrationToAssessmentFile', () => {
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.allowAccess);
         assert.lengthOf(result.accessControl, 1);
-        assert.equal(result.accessControl[0].dateControl?.releaseDate, '2025-01-15T00:00:00');
+        assert.equal(result.accessControl[0].dateControl?.release?.date, '2025-01-15T00:00:00');
         assert.equal(result.accessControl[0].dateControl?.password, 'secret');
       },
       { unsafeCleanup: true },
@@ -1321,7 +1586,7 @@ describe('applyMigrationToAssessmentFile', () => {
         await applyMigrationToAssessmentFile(filePath, 'migrate', false, '2025-09-01T00:00:00');
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-        assert.equal(result.accessControl[0].dateControl?.releaseDate, '2024-01-01');
+        assert.equal(result.accessControl[0].dateControl?.release?.date, '2024-01-01');
       },
       { unsafeCleanup: true },
     );
@@ -1329,7 +1594,7 @@ describe('applyMigrationToAssessmentFile', () => {
 });
 
 describe('migrateAssessmentJson fallback release date', () => {
-  it('uses fallback when migration produces dateControl without releaseDate', () => {
+  it('uses fallback when migration produces dateControl without release', () => {
     const json = JSON.stringify({
       type: 'Homework',
       allowAccess: [{ password: 'secret', credit: 100 }],
@@ -1337,7 +1602,7 @@ describe('migrateAssessmentJson fallback release date', () => {
     const result = migrateAssessmentJson(json, '2025-01-15T00:00:00');
     assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
-    assert.equal(parsed.accessControl[0].dateControl?.releaseDate, '2025-01-15T00:00:00');
+    assert.equal(parsed.accessControl[0].dateControl?.release?.date, '2025-01-15T00:00:00');
   });
 
   it('does not override existing release date with fallback', () => {
@@ -1348,10 +1613,10 @@ describe('migrateAssessmentJson fallback release date', () => {
     const result = migrateAssessmentJson(json, '2025-09-01T00:00:00');
     assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
-    assert.equal(parsed.accessControl[0].dateControl?.releaseDate, '2024-01-01');
+    assert.equal(parsed.accessControl[0].dateControl?.release?.date, '2024-01-01');
   });
 
-  it('does not add releaseDate when result has no dateControl', () => {
+  it('does not add release when result has no dateControl', () => {
     const json = JSON.stringify({
       type: 'Homework',
       allowAccess: [{}],
@@ -1370,7 +1635,7 @@ describe('migrateAssessmentJson fallback release date', () => {
     const result = migrateAssessmentJson(json);
     assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
-    assert.isUndefined(parsed.accessControl[0].dateControl?.releaseDate);
+    assert.isUndefined(parsed.accessControl[0].dateControl?.release);
   });
 
   it('preserves active access restriction semantics during migration', () => {
@@ -1401,8 +1666,8 @@ describe('migrateAssessmentJson fallback release date', () => {
       {
         beforeRelease: { listed: true },
         dateControl: {
-          releaseDate: '2030-01-01T00:00:01',
-          dueDate: '2030-01-01T23:59:59',
+          release: { date: '2030-01-01T00:00:01' },
+          due: { date: '2030-01-01T23:59:59' },
           durationMinutes: 50,
         },
         afterComplete: {

@@ -35,7 +35,7 @@ function getAssessmentPath(
   return path.join(
     resLocals.course.path,
     'courseInstances',
-    resLocals.course_instance.short_name!,
+    resLocals.course_instance.short_name,
     'assessments',
     resLocals.assessment.tid!,
     'infoAssessment.json',
@@ -89,7 +89,7 @@ router.get(
     let groupSettingsDefaults: GroupSettingsFormValues | null = null;
     try {
       const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
-      origHash = computeStableHash(rawJson.groups ?? null);
+      origHash = computeStableHash(rawJson.groups ?? {});
       groupSettingsDefaults = normalizeGroupSettings(rawJson);
     } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
