@@ -154,7 +154,7 @@ function PersonalAccessTokensCard({
                 <span className="new-access-token">{token}</span>
                 <button
                   type="button"
-                  className="ms-2 btn btn-sm btn-outline-secondary btn-copy"
+                  className="ms-2 btn btn-sm btn-outline-success btn-copy"
                   data-clipboard-text={token}
                   aria-label="Copy token to clipboard"
                 >
