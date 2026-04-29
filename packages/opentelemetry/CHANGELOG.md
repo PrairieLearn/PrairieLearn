@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 4.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.4
 
 ### Patch Changes
