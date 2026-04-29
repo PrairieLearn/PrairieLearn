@@ -432,9 +432,10 @@ export function MainAfterCompleteForm({
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
+  const due = useWatch<AccessControlFormData, 'mainRule.due'>({
+    name: 'mainRule.due',
   });
+  const dueDate = due.date;
   const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });
@@ -555,7 +556,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
-          headerContent={<strong>Question visibility</strong>}
           onOverride={() => {
             qvField.onChange({ ...mainQV });
             addQvOverride();
@@ -577,7 +577,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
-          headerContent={<strong>Score visibility</strong>}
           onOverride={() => {
             svField.onChange({ ...mainSV });
             addSvOverride();

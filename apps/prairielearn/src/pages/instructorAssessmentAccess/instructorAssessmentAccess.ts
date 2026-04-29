@@ -16,8 +16,8 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash } from '../../lib/editorUtil.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { computeScopedJsonHash, getOriginalHash } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -45,7 +45,7 @@ function getAssessmentPath(
   return path.join(
     resLocals.course.path,
     'courseInstances',
-    resLocals.course_instance.short_name!,
+    resLocals.course_instance.short_name,
     'assessments',
     resLocals.assessment.tid!,
     'infoAssessment.json',
