@@ -218,9 +218,9 @@ const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
 export async function findQtiXmlFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir);
 
-  const directXml = entries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
-  if (directXml) {
-    return [path.join(dir, directXml)];
+  const directXmls = entries.filter((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+  if (directXmls.length > 0) {
+    return directXmls.map((f) => path.join(dir, f));
   }
 
   const xmlFiles: string[] = [];
