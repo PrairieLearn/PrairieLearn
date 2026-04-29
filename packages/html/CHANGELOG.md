@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 5.0.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 5.0.2
 
 ### Patch Changes

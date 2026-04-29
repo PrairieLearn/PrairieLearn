@@ -1,5 +1,15 @@
 # @prairielearn/compiled-assets
 
+## 4.1.3
+
+### Patch Changes
+
+- d482019: Mark `fs/promises` and `module` as external in browser bundles to work around issues with `web-tree-sitter`.
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
 ## 4.1.2
 
 ### Patch Changes
