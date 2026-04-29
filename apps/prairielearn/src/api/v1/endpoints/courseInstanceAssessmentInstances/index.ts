@@ -186,10 +186,10 @@ router.get(
 
     const logs = await assessment.selectAssessmentInstanceLog(assessmentInstanceId, true);
     res.status(200).send(
-      logs.map((log) => ({
-        ...log,
-        formatted_date: formatDate(log.event_date, res.locals.course_instance.display_timezone),
-        date_iso8601: formatDateISO(log.event_date, res.locals.course_instance.display_timezone),
+      logs.map((entry) => ({
+        ...entry,
+        formatted_date: formatDate(entry.event_date, res.locals.course_instance.display_timezone),
+        date_iso8601: formatDateISO(entry.event_date, res.locals.course_instance.display_timezone),
       })),
     );
   }),
