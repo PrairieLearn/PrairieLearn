@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { stat as fsStat, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -9,6 +9,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { contains } from '@prairielearn/path-utils';
 import {
   type ConversionResult,
+  type ConversionWarning,
   PLEmitter,
   QTI12AssessmentParser,
   type QtiFileEntry,
@@ -125,10 +126,12 @@ router.post(
         // Not present in quiz-only exports.
       }
 
-      // Convert each assessment.
+      // Convert each assessment, deduplicating slugs so that same-titled
+      // assessments (e.g. two "Quiz 1") don't collide on question prefixes.
+      const usedSlugs = new Set<string>();
       const results: SerializedConversionResult[] = [];
       for (const entry of entries) {
-        const result = await convertEntry(entry, rubricsXml);
+        const result = await convertEntry(entry, rubricsXml, usedSlugs);
         if (result) {
           results.push(result);
         }
@@ -192,10 +195,14 @@ router.post(
 /** Convert a single QTI assessment entry to a serialized result. */
 async function convertEntry(
   entry: QtiFileEntry,
-  rubricsXml?: string,
+  rubricsXml: string | undefined,
+  usedSlugs: Set<string>,
 ): Promise<SerializedConversionResult | null> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
-  const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
+
+  // Resolve web_resources: check inside assessmentDir first (root-level
+  // exports), then fall back to the parent directory (Canvas course exports).
+  const webResourcesDir = await resolveWebResourcesDir(entry.assessmentDir);
 
   // Read assessment_meta.xml if present.
   let assessmentMetaXml: string | undefined;
@@ -223,7 +230,15 @@ async function convertEntry(
     return null;
   }
 
-  const assessmentSlug = slugify(ir.title);
+  // Deduplicate slugs so same-titled assessments don't collide.
+  let assessmentSlug = slugify(ir.title);
+  if (usedSlugs.has(assessmentSlug)) {
+    let suffix = 2;
+    while (usedSlugs.has(`${assessmentSlug}-${suffix}`)) suffix++;
+    assessmentSlug = `${assessmentSlug}-${suffix}`;
+  }
+  usedSlugs.add(assessmentSlug);
+
   const questionPrefix = `imported/${assessmentSlug}`;
 
   const emitter = new PLEmitter();
@@ -236,40 +251,66 @@ async function convertEntry(
   return serializeConversionResult(result, questionPrefix, webResourcesDir);
 }
 
+/** Resolve the web_resources directory, checking assessmentDir first. */
+async function resolveWebResourcesDir(assessmentDir: string): Promise<string> {
+  const local = path.join(assessmentDir, 'web_resources');
+  try {
+    const s = await fsStat(local);
+    if (s.isDirectory()) return local;
+  } catch {
+    // Not present at this level.
+  }
+  return path.join(assessmentDir, '..', 'web_resources');
+}
+
 /** Serialize a ConversionResult for JSON transport. */
 async function serializeConversionResult(
   result: ConversionResult,
   questionPrefix: string,
   webResourcesDir: string,
 ): Promise<SerializedConversionResult> {
+  const extraWarnings: ConversionWarning[] = [];
+
+  const questions = await Promise.all(
+    result.questions.map(async (q) => {
+      // The converter emits local directory names (e.g. "q1"), but on disk
+      // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
+      // This must match the IDs used in the assessment zones.
+      const { files, skippedVideos, missingFiles } = await serializeClientFiles(
+        q.clientFiles,
+        webResourcesDir,
+      );
+      if (missingFiles.length > 0) {
+        extraWarnings.push({
+          questionId: `${questionPrefix}/${q.directoryName}`,
+          message: `Missing asset file(s): ${missingFiles.join(', ')}`,
+          level: 'warn',
+        });
+      }
+      const questionHtml =
+        skippedVideos.length > 0
+          ? commentOutVideoReferences(q.questionHtml, skippedVideos)
+          : q.questionHtml;
+      return {
+        directoryName: `${questionPrefix}/${q.directoryName}`,
+        sourceId: q.sourceId,
+        infoJson: q.infoJson,
+        questionHtml,
+        serverPy: q.serverPy,
+        clientFiles: files,
+        skippedVideos,
+      };
+    }),
+  );
+
   return {
     assessmentTitle: result.assessmentTitle,
     assessment: {
       directoryName: result.assessment.directoryName,
       infoJson: result.assessment.infoJson,
     },
-    questions: await Promise.all(
-      result.questions.map(async (q) => {
-        // The converter emits local directory names (e.g. "q1"), but on disk
-        // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
-        // This must match the IDs used in the assessment zones.
-        const { files, skippedVideos } = await serializeClientFiles(q.clientFiles, webResourcesDir);
-        const questionHtml =
-          skippedVideos.length > 0
-            ? commentOutVideoReferences(q.questionHtml, skippedVideos)
-            : q.questionHtml;
-        return {
-          directoryName: `${questionPrefix}/${q.directoryName}`,
-          sourceId: q.sourceId,
-          infoJson: q.infoJson,
-          questionHtml,
-          serverPy: q.serverPy,
-          clientFiles: files,
-          skippedVideos,
-        };
-      }),
-    ),
-    warnings: result.warnings,
+    questions,
+    warnings: [...result.warnings, ...extraWarnings],
   };
 }
 
@@ -326,9 +367,10 @@ function isVideoFile(filename: string): boolean {
 export async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
-): Promise<{ files: Record<string, string>; skippedVideos: string[] }> {
+): Promise<{ files: Record<string, string>; skippedVideos: string[]; missingFiles: string[] }> {
   const files: Record<string, string> = {};
   const skippedVideos: string[] = [];
+  const missingFiles: string[] = [];
   for (const [name, content] of clientFiles) {
     if (isVideoFile(name)) {
       skippedVideos.push(name);
@@ -339,16 +381,19 @@ export async function serializeClientFiles(
     } else {
       // Content is a relative path to a file in web_resources.
       const resolved = path.resolve(webResourcesDir, content);
-      if (!contains(webResourcesDir, resolved)) continue;
+      if (!contains(webResourcesDir, resolved)) {
+        missingFiles.push(name);
+        continue;
+      }
       try {
         const fileContent = await readFile(resolved);
         files[name] = fileContent.toString('base64');
       } catch {
-        // File not found; skip.
+        missingFiles.push(name);
       }
     }
   }
-  return { files, skippedVideos };
+  return { files, skippedVideos, missingFiles };
 }
 
 export default router;

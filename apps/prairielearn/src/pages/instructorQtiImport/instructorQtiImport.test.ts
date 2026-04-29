@@ -82,23 +82,25 @@ describe('serializeClientFiles', () => {
     }
   });
 
-  it('skips string paths that escape web_resources directory', async () => {
+  it('reports string paths that escape web_resources directory', async () => {
     const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
     try {
       const files = new Map<string, Buffer | string>([['evil.txt', '../../etc/passwd']]);
-      const { files: result } = await serializeClientFiles(files, tempDir);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
       expect(result).not.toHaveProperty('evil.txt');
+      expect(missingFiles).toEqual(['evil.txt']);
     } finally {
       await cleanup();
     }
   });
 
-  it('skips files that do not exist', async () => {
+  it('reports files that do not exist', async () => {
     const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
     try {
       const files = new Map<string, Buffer | string>([['missing.png', 'nonexistent.png']]);
-      const { files: result } = await serializeClientFiles(files, tempDir);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
       expect(result).not.toHaveProperty('missing.png');
+      expect(missingFiles).toEqual(['missing.png']);
     } finally {
       await cleanup();
     }
