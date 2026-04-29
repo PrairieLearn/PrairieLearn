@@ -43,7 +43,9 @@ def generate(data):
 
 ### Flexible correct answers using regular expressions, `correct-answer-format="regex"`
 
-By `correct-answer-format="regex"`, the whole correct answer is specified as a [Python regular expression](https://docs.python.org/3/library/re.html). This is a whole-answer match, not a substring match, equivalent to surrounding the answer pattern with `^(` ... `)$` (that is, the student's response is compared using Python's `re.fullmatch()`). Matching is case-sensitive or -insensitive depending on the value of the `ignore-case` attribute.
+By `correct-answer-format="regex"`, the whole correct answer is specified as an extended regular expression. This is a whole-answer match, not a substring match, equivalent to surrounding the answer pattern with `^(` ... `)$` (that is, the student's response is compared using Python's `re.fullmatch()`). Matching is case-sensitive or -insensitive depending on the value of the `ignore-case` attribute.
+
+The pattern is an extended regular expression, with metacharacters `.`, `{`, `}`, `[`,`]`, `(`, `)`, `^`, `$`, `|`, `*`, `+`, `?`, and `\`. All other characters mean themselves literally. See the documentation for [Python regular expressions](https://docs.python.org/3/library/re.html).
 
 Example.---To accept either `N`, or `nitrogen`, or any case variant thereof, but reject `Nitrate`:
 
@@ -60,15 +62,17 @@ Example.---To accept either `N`, or `nitrogen`, or any case variant thereof, but
 
 Note (1) use of `ignore-case="true"` to accept `n`, `Nitrogen`, etc.; (2) `remove-leading-trailing="true"`; and (3) `correct-answer-text` for the answer panel substituting there for the regular expression itself.
 
-Usage notes.---The `ignore-case` attribute enables Python's `re.IGNORECASE` in matching the pattern. There is no access to any other Python flags as such, as these behaviors can be coded into the regular expression itself. Examples: `(?x)` to enable comments and to ignore whitespace (equivalent to `re.VERBOSE`); `(?s)` to match any character including newline with `.` (equivalent to `re.DOTALL`); `(?m)` to allow for matching `^` and `$` within the response (equivalent to `re.MULTILINE`); etc.
+Usage notes.---The `ignore-case` attribute enables Python's `re.IGNORECASE` in matching the pattern. 
+Other matching behaviors can be coded into the regular expression; for example, `(?x)` to enable comments and to ignore whitespace (equivalent to `re.VERBOSE`), `(?s)` to match any character including newline with `.` (equivalent to `re.DOTALL`), `(?m)` to allow for matching `^` and `$` within the response (equivalent to `re.MULTILINE`), etc. 
 
-Limitations.---As matching is whole-string, you need to include `.*` inside your pattern if you want to match a substring. The metacharacters of regular expressions (`.`, `$`, etc.) must be escaped as `\.`, `\$`, etc., if you wish to match them literally.
 
-Bugs.---If the regular expression is invalid, the student's response is always graded as incorrect.
+Limitations.---As matching is whole-string, you need to include `.*` inside your pattern if you want to match a substring. If you want to match a literal `^` or `$`, you need to escape them as `\.`, `\$`, even though these metacharacters are useless within your pattern unless it contains `(?m)`. There is no access to Python flags as such beyond `re.IGNORECASE`. This mode's behavior does not change for `multiline="true"`. There is no access to Python flags as such beyond `re.IGNORECASE`. This mode's behavior does not change for `multiline="true"`.
+
+Bugs.---If the regular expression is invalid, the student's response is always graded as incorrect. This mode assumes that you know how to correctly write extended regular expressions.
 
 ### Simple answer-panel override using `correct-answer-text`
 
-By default, the answer panel prints the contents of `correct-answer` as given. The attribute `correct-answer-text` provides a simple override (simpler than adjusting `<pl-answer-panel>`). This is useful, for example, in conjunction with a regular-expression answer to print a human-friendly key answer, as in the example above.
+By default, the answer panel prints the contents of `correct-answer` as given. The attribute `correct-answer-text` provides a simple override (simpler than adjusting `<pl-answer-panel>`). This is useful, for example, in conjunction with a regular-expression answer to print a human-friendly key answer, as in the example.
 
 ## Using multiline inputs
 
@@ -79,6 +83,7 @@ Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line bre
 ## Example implementations
 
 - [element/stringInput]
+- [template/string-input/regex]
 
 ## See also
 
@@ -89,3 +94,4 @@ Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line bre
 ______________________________________________________________________
 
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
+[template/string-input/regex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/template/string-input/regex

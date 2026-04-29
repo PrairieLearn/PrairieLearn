@@ -1,14 +1,14 @@
 <pl-question-panel>
-  <p>What is the typically most-limiting plant nutrient in agriculture?</p>
+  <p>Name one of the three most-limiting plant nutrients in agriculture.</p>
 </pl-question-panel>
 <pl-string-input
   answers-name="macronutrient"
-  correct-answer="N|nitrogen"
+  correct-answer="(?x) N(itrogen)? | P(hosphorous)? | K | potassium # (?x) verbose regex"
   correct-answer-format="regex"
   remove-leading-trailing="true"
   ignore-case="true"
   aria-label="Answer">
 </pl-string-input>
 <pl-answer-panel>
-Either <code>N</code> or <code>nitrogen</code>, leading and training whitespace accepted.
+Any of: <code>nitrogen</code>, <code>phosphorous</code>, <code>potassium</code>, or abbreviations. Leading and training whitespace allowed.
 </pl-answer-panel>
