@@ -441,7 +441,12 @@ export function resolveAccessControl(
   return {
     authorized: true,
     credit,
-    creditDateString: formatCreditDateString(credit, submittable, nextDeadlineDate, displayTimezone),
+    creditDateString: formatCreditDateString(
+      credit,
+      submittable,
+      nextDeadlineDate,
+      displayTimezone,
+    ),
     timeLimitMin: computeTimeLimitMin(
       rule.dateControl?.durationMinutes,
       nextDeadlineDate,
