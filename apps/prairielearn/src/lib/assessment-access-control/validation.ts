@@ -615,9 +615,12 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
   const afterCredit =
     dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
   if (afterCredit != null) {
-    // Determine the preceding credit in the timeline.
+    // Determine the preceding credit in the timeline: last late deadline,
+    // then due date (dueCredit), then last early deadline.
     const precedingCredit =
-      dc.lateDeadlines?.at(-1)?.credit ?? (dc.due?.date != null ? dueCredit : undefined);
+      dc.lateDeadlines?.at(-1)?.credit ??
+      (dc.due?.date != null ? dueCredit : undefined) ??
+      dc.earlyDeadlines?.at(-1)?.credit;
 
     if (precedingCredit != null && afterCredit > precedingCredit) {
       errors.push(
@@ -793,8 +796,8 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule has no `labels` property (applies to everyone)
-  const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
+  // A main rule is identified by the absence of a `labels` key.
+  const mainRules = rules.filter((rule) => rule.labels == null);
 
   if (mainRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
@@ -805,8 +808,7 @@ export function validateAccessControlRules({
   } else {
     // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
     const firstRule = rules[0];
-    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleMain) {
+    if (firstRule.labels != null) {
       errors.push('The defaults must be the first element in the array.');
     }
   }

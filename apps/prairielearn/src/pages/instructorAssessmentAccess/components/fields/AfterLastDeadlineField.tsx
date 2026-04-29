@@ -160,11 +160,7 @@ function AfterLastDeadlineInput({
 
   return (
     <Form.Group>
-      <div>
-        <strong>After last deadline</strong>
-        <br />
-        <small className="text-muted">{getLastDeadlineText()}</small>
-      </div>
+      <small className="text-muted d-block">{getLastDeadlineText()}</small>
       <div className="mb-2 mt-2">
         <RichSelect
           items={AFTER_LAST_DEADLINE_ITEMS}
@@ -242,11 +238,14 @@ export function MainAfterLastDeadlineField({ displayTimezone }: { displayTimezon
   });
 
   return (
-    <AfterLastDeadlineInput
-      value={field.value}
-      displayTimezone={displayTimezone}
-      onChange={field.onChange}
-    />
+    <div>
+      <strong className="d-block mb-2">After last deadline</strong>
+      <AfterLastDeadlineInput
+        value={field.value}
+        displayTimezone={displayTimezone}
+        onChange={field.onChange}
+      />
+    </div>
   );
 }
 

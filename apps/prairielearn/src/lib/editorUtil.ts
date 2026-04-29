@@ -1,19 +1,49 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import fs from 'fs-extra';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import type { AuthzData } from './authz-data-lib.js';
 import { b64EncodeUnicode } from './base64-util.js';
-import type { Course, User } from './db-types.js';
 import { type FileDetails, type FileMetadata, FileType } from './editorUtil.shared.js';
-import { FileModifyEditor, computeFileContentHash } from './editors.js';
 import { computeStableHash } from './json.js';
-import { formatJsonWithPrettier } from './prettier.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export function computeFileContentHash(contents: string): string {
+  return sha256(b64EncodeUnicode(contents)).toString();
+}
+
+export async function getOriginalHash(filePath: string) {
+  try {
+    return computeFileContentHash(await fs.readFile(filePath, 'utf8'));
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/**
+ * Returns true if `relPath` (relative to the course root) is a `question.html`
+ * file inside a v3 question's directory, as determined by reading the sibling
+ * `info.json`.
+ */
+export async function isV3QuestionHtmlFile(coursePath: string, relPath: string): Promise<boolean> {
+  const components = path.normalize(relPath).split(path.posix.sep);
+  if (components.length < 3) return false;
+  if (components[0] !== 'questions') return false;
+  if (components.at(-1) !== 'question.html') return false;
+
+  const infoPath = path.join(coursePath, ...components.slice(0, -1), 'info.json');
+  try {
+    const info = await fs.readJson(infoPath);
+    return info?.type === 'v3';
+  } catch {
+    return false;
+  }
+}
 
 export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
@@ -104,15 +134,6 @@ export async function getFileMetadataForPath(
   };
 }
 
-type SaveJsonFileResult =
-  | {
-      success: true;
-      /** Hash of the scoped section after the write, or full-file hash when no scope is provided. */
-      newHash: string;
-    }
-  | { success: false; reason: 'conflict' }
-  | { success: false; reason: 'sync_failed'; jobSequenceId: string };
-
 /**
  * Computes a stable hash of a scoped section of a JSON file. The generic type
  * parameter should be the Zod input type for the file's schema so that the
@@ -131,56 +152,4 @@ export async function computeScopedJsonHash<T extends Record<string, unknown>>(
     if (err.code === 'ENOENT') return null;
     throw err;
   }
-}
-
-export async function saveJsonFile<T extends Record<string, unknown>>({
-  applyChanges,
-  jsonPath,
-  conflictCheck,
-  locals,
-  container,
-}: {
-  applyChanges: (jsonContents: T) => T;
-  jsonPath: string;
-  conflictCheck: {
-    origHash: string | null;
-    scope: (jsonContents: T) => unknown;
-  };
-  locals: { authz_data: AuthzData; course: Course; user: User };
-  container: { rootPath: string; invalidRootPaths: string[] };
-}): Promise<SaveJsonFileResult> {
-  // Read file once for conflict check, content modification, and TOCTOU hash.
-  const rawContents = await fs.readFile(jsonPath, 'utf8');
-  const fullFileHash = computeFileContentHash(rawContents);
-  const jsonContents = JSON.parse(rawContents) as T;
-
-  // Scoped conflict detection: hash only the section being edited.
-  if (conflictCheck.origHash) {
-    const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
-    if (currentHash !== conflictCheck.origHash) {
-      return { success: false, reason: 'conflict' };
-    }
-  }
-
-  const modifiedJsonContents = applyChanges(jsonContents);
-  const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
-
-  // Use the full-file hash for FileModifyEditor's TOCTOU safety net.
-  const editor = new FileModifyEditor({
-    locals,
-    container,
-    filePath: jsonPath,
-    editContents: b64EncodeUnicode(formattedJson),
-    origHash: fullFileHash,
-  });
-
-  const serverJob = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
-  }
-
-  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
-  return { success: true, newHash };
 }
