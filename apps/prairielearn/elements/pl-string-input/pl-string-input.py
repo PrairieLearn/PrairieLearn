@@ -1,5 +1,6 @@
 import html
 import random
+import re
 from enum import Enum
 from typing import Any
 
@@ -42,6 +43,8 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 MULTILINE_DEFAULT = False
+CORRECT_ANSWER_FORMAT_DEFAULT = "exact"
+CORRECT_ANSWER_TEXT_DEFAULT = None
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -68,6 +71,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-score",
         "multiline",
         "escape-unicode",
+        "correct-answer-format",
+        "correct-answer-text",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -286,6 +291,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Get string case sensitivity option
     ignore_case = pl.get_boolean_attrib(element, "ignore-case", IGNORE_CASE_DEFAULT)
 
+    # Get correct-answer-format option (exact or regex)
+    correct_answer_format = pl.get_string_attrib(
+        element, "correct-answer-format", CORRECT_ANSWER_FORMAT_DEFAULT
+    )
+
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
@@ -318,6 +328,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if ignore_case:
             a_sub_str = a_sub_str.lower()
             a_tru_str = a_tru_str.lower()
+
+        # If using regex format, use re.fullmatch instead of string equality
+        if correct_answer_format == "regex":
+            flags = 0
+            if ignore_case:
+                flags |= re.IGNORECASE
+            try:
+                matched = re.fullmatch(a_tru_str, a_sub_str, flags=flags) is not None
+            except re.error:
+                # Invalid regex pattern in correct answer
+                return False, None
+            return matched, None
 
         return a_tru_str == a_sub_str, None
 
