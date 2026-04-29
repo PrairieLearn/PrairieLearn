@@ -203,7 +203,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
             return ""
-        
+
         # If correct-answer-text is provided, use it for display instead of
         # the raw correct answer (useful when correct-answer is a regex)
         correct_answer_text = pl.get_string_attrib(
