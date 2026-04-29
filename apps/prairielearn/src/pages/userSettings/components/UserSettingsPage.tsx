@@ -152,6 +152,14 @@ function PersonalAccessTokensCard({
             {newAccessTokens.map((token) => (
               <div key={token} className="alert alert-success mb-0 new-access-token" role="alert">
                 {token}
+                <button
+                  type="button"
+                  className="ms-2 btn btn-sm btn-outline-secondary btn-copy"
+                  data-clipboard-text={token}
+                  aria-label="Copy token to clipboard"
+                >
+                  <i className="far fa-clipboard" />
+                </button>
               </div>
             ))}
           </div>
