@@ -63,8 +63,11 @@ function buildDateControl(
     dateControl.release = { date: rule.date_control_release_date };
   }
 
-  if (rule.date_control_due_date_overridden) {
-    dateControl.dueDate = rule.date_control_due_date;
+  if (rule.date_control_due_overridden) {
+    dateControl.due = {
+      date: rule.date_control_due_date,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
+    };
   }
 
   if (rule.date_control_duration_minutes_overridden) {

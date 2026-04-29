@@ -85,7 +85,7 @@ function prepareRuleRow(
   const isMainRule = ruleNumber === JSON_RULE_START;
 
   const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
-  const dueDateField = mapField(dateControl.dueDate);
+  const dueField = mapField(dateControl.due);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
@@ -108,8 +108,9 @@ function prepareRuleRow(
     before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
     date_control_release_date: dateControl.release?.date ?? null,
-    date_control_due_date_overridden: dueDateField.overridden,
-    date_control_due_date: dueDateField.value,
+    date_control_due_overridden: dueField.overridden,
+    date_control_due_date: dueField.value?.date ?? null,
+    date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
     date_control_after_last_deadline_allow_submissions:
