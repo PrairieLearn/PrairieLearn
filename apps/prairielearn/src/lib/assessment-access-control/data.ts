@@ -104,17 +104,6 @@ function buildDateControl(
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
 }
 
-function buildExamAfterComplete(
-  questionsHidden: boolean,
-  scoreHidden: boolean,
-): { questions?: { hidden: true }; score?: { hidden: true } } | undefined {
-  if (!questionsHidden && !scoreHidden) return undefined;
-  const result: { questions?: { hidden: true }; score?: { hidden: true } } = {};
-  if (questionsHidden) result.questions = { hidden: true };
-  if (scoreHidden) result.score = { hidden: true };
-  return result;
-}
-
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
   const afterComplete: RuntimeAfterComplete = {};
 
@@ -150,28 +139,13 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const afterComplete = buildAfterComplete(rule);
   if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
-  // Integrations are only on main rules (number 0)
-  const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
-  const prairietestExams = prairietestExamsRaw.map((e) => ({
+  // PrairieTest integrations are only on main rules (number 0).
+  const prairietestExams = (!isOverride(rule) ? (row.prairietest_exams ?? []) : []).map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
     questionsHidden: e.after_complete_questions_hidden,
     scoreHidden: e.after_complete_score_hidden,
   }));
-  if (prairietestExams.length > 0) {
-    runtimeRule.integrations = {
-      prairieTest: {
-        exams: prairietestExams.map((e) => {
-          const afterComplete = buildExamAfterComplete(e.questionsHidden, e.scoreHidden);
-          return {
-            examUuid: e.uuid,
-            readOnly: e.readOnly,
-            ...(afterComplete !== undefined ? { afterComplete } : {}),
-          };
-        }),
-      },
-    };
-  }
 
   return {
     rule: runtimeRule,
