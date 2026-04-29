@@ -3,10 +3,22 @@ import { z } from 'zod';
 
 import type { ConfigSource } from '../types.js';
 
+const MetadataSchema = z
+  .object({
+    key: z.string().optional(),
+    description: z.string().optional(),
+  })
+  .strict();
+
 const EncryptedValueSchema = z.object({
   __encrypted: z.literal('aws-kms-v1'),
   ciphertext: z.string(),
-  context: z.record(z.string(), z.string()),
+  context: z
+    .object({
+      environment: z.string(),
+    })
+    .strict(),
+  metadata: MetadataSchema.optional(),
 });
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

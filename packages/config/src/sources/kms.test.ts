@@ -18,12 +18,14 @@ vi.mock('@aws-sdk/client-kms', () => ({
 function makeEncryptedValue(ciphertext = Buffer.from('ciphertext').toString('base64')) {
   return {
     __encrypted: 'aws-kms-v1',
-    key: 'alias/service-config/us-prod',
     ciphertext,
     context: {
       environment: 'us-prod',
     },
-    description: 'prairietest postgresql password',
+    metadata: {
+      key: 'alias/service-config/us-prod',
+      description: 'prairietest postgresql password',
+    },
   };
 }
 
@@ -64,40 +66,16 @@ describe('makeKmsConfigSource', () => {
     });
   });
 
-  it('passes custom encryption context through to KMS', async () => {
-    sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
-    const encryptedValue = {
-      ...makeEncryptedValue(),
-      context: {
-        deployment: 'self-hosted',
-        purpose: 'config',
-      },
-    };
-
-    await makeKmsConfigSource().load({
-      secret: encryptedValue,
-    });
-
-    expect(DecryptCommand).toHaveBeenCalledWith({
-      CiphertextBlob: Buffer.from('ciphertext'),
-      EncryptionContext: {
-        deployment: 'self-hosted',
-        purpose: 'config',
-      },
-    });
-  });
-
-  it('ignores metadata fields when decrypting', async () => {
+  it('does not pass metadata to KMS when decrypting', async () => {
     sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
 
     await makeKmsConfigSource().load({
       secret: {
         ...makeEncryptedValue(),
-        key: 42,
-        description: {
-          text: 'metadata is not used by runtime decryption',
+        metadata: {
+          key: 'alias/service-config/us-prod',
+          description: 'metadata is not used by runtime decryption',
         },
-        owner: ['course-staff'],
       },
     });
 
@@ -230,6 +208,29 @@ describe('makeKmsConfigSource', () => {
         },
       }),
     ).rejects.toThrow(/Malformed encrypted config value.*context\.environment/);
+
+    await expect(
+      makeKmsConfigSource().load({
+        secret: {
+          ...makeEncryptedValue(),
+          context: {
+            environment: 'us-prod',
+            purpose: 'config',
+          },
+        },
+      }),
+    ).rejects.toThrow(/Malformed encrypted config value.*purpose/);
+
+    await expect(
+      makeKmsConfigSource().load({
+        secret: {
+          ...makeEncryptedValue(),
+          metadata: {
+            key: 42,
+          },
+        },
+      }),
+    ).rejects.toThrow(/Malformed encrypted config value.*metadata\.key/);
 
     await expect(
       makeKmsConfigSource().load({
