@@ -87,6 +87,28 @@ describe('makeKmsConfigSource', () => {
     });
   });
 
+  it('passes encryption context through to KMS without requiring PrairieLearn-specific keys', async () => {
+    sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
+
+    await makeKmsConfigSource().load({
+      secret: {
+        ...makeEncryptedValue(),
+        context: {
+          deployment: 'self-hosted',
+          purpose: 'config',
+        },
+      },
+    });
+
+    expect(DecryptCommand).toHaveBeenCalledWith({
+      CiphertextBlob: Buffer.from('ciphertext'),
+      EncryptionContext: {
+        deployment: 'self-hosted',
+        purpose: 'config',
+      },
+    });
+  });
+
   it('uses awsRegion from existing config', async () => {
     sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
 
@@ -208,18 +230,6 @@ describe('makeKmsConfigSource', () => {
         },
       }),
     ).rejects.toThrow(/Malformed encrypted config value.*context\.environment/);
-
-    await expect(
-      makeKmsConfigSource().load({
-        secret: {
-          ...makeEncryptedValue(),
-          context: {
-            environment: 'us-prod',
-            purpose: 'config',
-          },
-        },
-      }),
-    ).rejects.toThrow(/Malformed encrypted config value.*purpose/);
 
     await expect(
       makeKmsConfigSource().load({

@@ -13,11 +13,7 @@ const MetadataSchema = z
 const EncryptedValueSchema = z.object({
   __encrypted: z.literal('aws-kms-v1'),
   ciphertext: z.string(),
-  context: z
-    .object({
-      environment: z.string(),
-    })
-    .strict(),
+  context: z.record(z.string(), z.string()),
   metadata: MetadataSchema.optional(),
 });
 
