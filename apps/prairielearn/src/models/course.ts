@@ -30,7 +30,7 @@ const CourseWithPermissionsSchema = z.object({
   course: CourseSchema,
   course_role: EnumCourseRoleSchema,
 });
-export type CourseWithPermissions = Course & {
+type CourseWithPermissions = Course & {
   permissions_course: {
     course_role: EnumCourseRole;
     has_course_permission_own: boolean;
