@@ -66,7 +66,7 @@ Encrypted config values use this JSON object shape:
 ```json
 {
   "__encrypted": "aws-kms-v1",
-  "ciphertext": "standard padded base64-encoded KMS CiphertextBlob",
+  "ciphertext": "base64-encoded KMS CiphertextBlob",
   "context": {
     "environment": "us-prod"
   },
@@ -77,4 +77,4 @@ Encrypted config values use this JSON object shape:
 }
 ```
 
-The required runtime fields are `__encrypted`, `ciphertext`, and `context`. `ciphertext` must be standard padded base64, and `context` is passed to KMS as the exact encryption context with all values as strings. `metadata` is optional review/debug information; the example above shows recommended fields, but runtime decryption ignores metadata instead of trusting, validating, or passing it to KMS. KMS infers the key from the ciphertext during decrypt. Decrypted plaintext must be valid UTF-8 and is returned as a string.
+The required runtime fields are `__encrypted`, `ciphertext`, and `context`. `ciphertext` is base64-decoded and passed to KMS as the `CiphertextBlob`, and `context` is passed to KMS as the exact encryption context with all values as strings. `metadata` is optional review/debug information; the example above shows recommended fields, but runtime decryption ignores metadata instead of trusting, validating, or passing it to KMS. KMS infers the key from the ciphertext during decrypt. Decrypted plaintext must be valid UTF-8 and is returned as a string.

@@ -247,13 +247,7 @@ describe('makeKmsConfigSource', () => {
     ).rejects.toThrow(/Malformed encrypted config value.*__encrypted.*aws-kms-v1/);
   });
 
-  it('throws on invalid ciphertext and decrypt results', async () => {
-    await expect(
-      makeKmsConfigSource().load({
-        secret: makeEncryptedValue('not base64'),
-      }),
-    ).rejects.toThrow(/Invalid base64 ciphertext/);
-
+  it('throws on invalid decrypt results', async () => {
     sendMock.mockResolvedValueOnce({});
     await expect(
       makeKmsConfigSource().load({
