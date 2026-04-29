@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type ChangeEvent, useEffect, useRef } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import {
   get,
@@ -195,7 +195,7 @@ export function PrairieTestControlForm() {
               label="Read-only mode"
               defaultChecked={false}
               {...register(`mainRule.prairieTestExams.${index}.readOnly`, {
-                onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                onChange: (e: ChangeEvent<HTMLInputElement>) => {
                   if (e.target.checked) {
                     setValue(
                       `mainRule.prairieTestExams.${index}.afterCompleteQuestionsHidden`,

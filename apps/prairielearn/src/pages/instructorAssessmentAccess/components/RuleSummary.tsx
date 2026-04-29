@@ -816,7 +816,9 @@ export function PrairieTestExamsTable({
                 : null;
 
             return (
-              <tr key={exam.examUuid || `exam-${index}`}>
+              // We don't use UUID as they might be duplicated in the list.
+              // eslint-disable-next-line @eslint-react/no-array-index-key
+              <tr key={`${index}`}>
                 <td className="border-0" style={{ ...tdStyle, paddingLeft: '1rem' }}>
                   {uuidError ? (
                     <span className="text-danger">
