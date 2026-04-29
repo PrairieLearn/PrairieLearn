@@ -1,6 +1,6 @@
 # `pl-string-input` element
 
-Fill in the blank field that allows for **string** value input.
+Fill-in-the-blank field that allows for **string**-value input, exact or pattern (regular expression).
 
 ## Sample element
 
@@ -25,9 +25,9 @@ def generate(data):
 | `answers-name`            | string                  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.      |
 | `aria-label`              | string                  | —               | An accessible label for the element.                                                                                                                                      |
 | `correct-answer`          | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
-| `correct-answer-format`   | `"exact"` or `"regex"`  | `"exact"`       | If `"regex"`, the correct answer is treated as a Python regular expression and matched using `re.fullmatch()`. The `ignore-case` attribute, if `true`, also enables `re.IGNORECASE`. Other flags can be enabled inline (e.g., `(?x)` for verbose, `(?s)` for dotall). |
-| `correct-answer-text`     | string                  | —               | If provided, this text is shown in the answer panel instead of the raw correct answer. Useful when `correct-answer-format="regex"` to display a human-readable form of the regex pattern.                                                                            |
-| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled.                                                                                           |                                                                                   
+| `correct-answer-format`   | `"exact"` or `"regex"`  | `"exact"`       | If `"regex"`, `correct-answer` is interpreted as a whole-string regular-expression pattern, otherwise as a literal-string pattern. Inherits behavior of `ignore-case`.    |
+| `correct-answer-text`     | string                  | —               | A text string printed in the answer panel in place of the contents of `correct-answer`. Useful to provide a human-readable answer when `correct-answer-format="regex"`.   |
+| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled.                                                                                           |
 | `ignore-case`             | boolean                 | false           | Whether to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                            |
 | `initial-value`           | string                  | —               | Initial value is added to the text box the first time it is rendered.                                                                                                     |
 | `label`                   | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
@@ -41,25 +41,32 @@ def generate(data):
 | `suffix`                  | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                         |
 | `weight`                  | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                      |
 
-## Using regex matching
+### Flexible correct answers using regular expressions, `correct-answer-format="regex"`
 
-Setting `correct-answer-format="regex"` allows the correct answer to be specified as a Python regular expression. The student's answer is graded using `re.fullmatch()`, which requires the entire submitted answer to match the pattern.
+By `correct-answer-format="regex"`, the whole correct answer is specified as a [Python regular expression](https://docs.python.org/3/library/re.html).  This this is a whole-answer match, not a substring match (the student's response is compared using Python's `re.fullmatch()`), equivalent to surrounding the answer pattern with `^(` ... `)$`.
 
-For example, the following question accepts either `N` or `nitrogen` (or, with `ignore-case="true"`, `n`, `Nitrogen`, `NITROGEN`, etc.):
+Example.—To accept either `N` or `nitrogen`, or any case variant thereof, but not `Nitrate`:
+
 ```html title="question.html"
 <pl-string-input
     answers-name="element"
     correct-answer="N|nitrogen"
     correct-answer-format="regex"
-    correct-answer-text="N or nitrogen"
+    remove-leading-trailing="true"
+    correct-answer-text="Either 'N' or 'nitrogen'."
     ignore-case="true">
 </pl-string-input>
 ```
-By default, the regex pattern itself is shown in the answer panel. To display a more student-friendly form, use the `correct-answer-text` attribute as in the example above.
 
-The `ignore-case` attribute enables `re.IGNORECASE` for the pattern. Other regex flags can be enabled inline using Python's regex syntax: `(?x)` for `re.VERBOSE`, `(?s)` for `re.DOTALL`, `(?m)` for `re.MULTILINE`, etc.
+Note (1) use of `ignore-case="true"` to accept `n`, `Nitrogen`, etc.; (2) `remove-leading-trailing="true"` to allow for `  N`, etc.; and (3) `correct-answer-text` for the answer panel, i.e., instead of printing the regular expression itself.
 
-If the regex pattern is invalid, the student's answer is graded as incorrect.
+Usage notes.—The `ignore-case` attribute enables Python's `re.IGNORECASE` in matching the pattern. There is no access to any other Python flags as such as these behaviors can be coded into the regular expression itself. Examples: `(?x)` to enable comments and to ignore whitespace (equivalent to `re.VERBOSE`); `(?s)` to match any character including newline with `.` (equivalent to `re.DOTALL`); `(?m)` to use `^` and `$` to match lines within the response (equivalent to `re.MULTILINE`); etc.
+
+Limitations.—If the regular expression is invalid, the student's response is always graded as incorrect. There is no substring-matching mode; use `.*` inside your pattern for this behavior. The metacharacters of regular expressions (`.`, `$`, etc.) must be escaped as `\.`, `\$`, etc., if you wish to match them literally.
+
+### Answer-panel override using `correct-answer-text`
+
+By default, the answer panel prints the contents of `correct-answer` as given. The attribute `correct-answer-text` provides a simple override. This is useful, for example, in conjunction with a regular-expression answer to print a human-friendly key answer, as in the example above.
 
 ## Using multiline inputs
 
