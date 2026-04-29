@@ -2,10 +2,11 @@ import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-function DurationInput({
+function DurationDetails({
   value,
   onChange,
   idPrefix,
@@ -17,14 +18,7 @@ function DurationInput({
   error?: string;
 }) {
   return (
-    <Form.Group>
-      <Form.Check
-        type="checkbox"
-        id={`${idPrefix}-time-limit-enabled`}
-        label={<strong>Time limit</strong>}
-        checked={value !== null}
-        onChange={({ currentTarget }) => onChange(currentTarget.checked ? 60 : null)}
-      />
+    <>
       {value !== null && (
         <>
           <InputGroup className="mt-2">
@@ -65,13 +59,35 @@ function DurationInput({
               : 'Add a time limit to the assessment.'}
         </Form.Text>
       )}
-    </Form.Group>
+    </>
   );
 }
 
 function validateDuration(value: number | null): string | true {
   if (value !== null && value < 1) return 'Duration must be at least 1 minute';
   return true;
+}
+
+function DurationToggle({
+  value,
+  onChange,
+  idPrefix,
+  showLabel,
+}: {
+  value: number | null;
+  onChange: (value: number | null) => void;
+  idPrefix: string;
+  showLabel?: boolean;
+}) {
+  return (
+    <ToggleTitle
+      id={`${idPrefix}-time-limit-enabled`}
+      label="Time limit"
+      checked={value !== null}
+      showLabel={showLabel}
+      onChange={(checked) => onChange(checked ? 60 : null)}
+    />
+  );
 }
 
 export function MainDurationField() {
@@ -84,12 +100,15 @@ export function MainDurationField() {
   });
 
   return (
-    <DurationInput
-      value={field.value}
-      idPrefix="mainRule"
-      error={error?.message}
-      onChange={field.onChange}
-    />
+    <Form.Group>
+      <DurationToggle value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <DurationDetails
+        value={field.value}
+        idPrefix="mainRule"
+        error={error?.message}
+        onChange={field.onChange}
+      />
+    </Form.Group>
   );
 }
 
@@ -112,13 +131,21 @@ export function OverrideDurationField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Time limit"
+      headerToggle={
+        <DurationToggle
+          value={field.value}
+          idPrefix={`overrides-${index}`}
+          showLabel={false}
+          onChange={field.onChange}
+        />
+      }
       onOverride={() => {
         field.onChange(mainValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
-      <DurationInput
+      <DurationDetails
         value={field.value}
         idPrefix={`overrides-${index}`}
         error={error?.message}

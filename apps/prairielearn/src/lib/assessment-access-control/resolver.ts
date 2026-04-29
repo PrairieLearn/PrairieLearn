@@ -156,7 +156,10 @@ function mergeDateControl(
   const merged: RuntimeDateControl = { ...base };
   const ov = override;
   if (ov.release !== undefined) merged.release = ov.release;
-  if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
+  // `due` replaces atomically: an override either inherits the entire object or
+  // supplies its own. We never merge `date` and `credit` independently because
+  // a custom-credit override with an unset date (or vice versa) is incoherent.
+  if (ov.due !== undefined) merged.due = ov.due;
   if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
   if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
   if (ov.afterLastDeadline !== undefined) {
@@ -255,7 +258,8 @@ function computeCredit(
   }
 
   const releaseDate = dateControl.release.date;
-  const dueDate = dateControl.dueDate ?? null;
+  const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
 
   if (date < releaseDate) {
     return {
@@ -283,7 +287,19 @@ function computeCredit(
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
 
   // No due date or deadlines means 100% credit anytime after the release date.
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
   if (deadlines.length === 0) {
+    if (dateControl.due && dueDate === null) {
+      return {
+        credit: dueCredit,
+        active: true,
+        beforeRelease: false,
+        nextDeadlineDate: null,
+        password: dateControl.password ?? null,
+        timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+      };
+    }
     return {
       credit: 100,
       active: true,
@@ -315,8 +331,21 @@ function computeCredit(
   }
 
   // We are past the last deadline.
-  // If there are no deadlines after filtering (only due date was present and we're past it),
-  // or if afterLastDeadline is not configured, use defaults.
+  // When `due` is configured with no date, the due-date credit applies indefinitely
+  // after release (and, when early deadlines exist, after the last early deadline).
+  // This shadows afterLastDeadline — an explicit `due` with null date is the
+  // author's way of saying "this credit applies forever after all deadlines".
+  if (dateControl.due && dueDate === null) {
+    return {
+      credit: dueCredit,
+      active: true,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: dateControl.password ?? null,
+      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
+    };
+  }
+
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
   assert(!afterLast || afterLast.allowSubmissions !== undefined);

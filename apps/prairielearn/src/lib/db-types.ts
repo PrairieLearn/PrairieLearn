@@ -237,8 +237,9 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
-  date_control_due_date_overridden: z.boolean(),
+  date_control_due_overridden: z.boolean(),
   date_control_duration_minutes: z.number().nullable(),
   date_control_duration_minutes_overridden: z.boolean(),
   date_control_early_deadlines_overridden: z.boolean(),
