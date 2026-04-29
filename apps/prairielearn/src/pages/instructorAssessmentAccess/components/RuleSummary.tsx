@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
@@ -746,11 +746,14 @@ export function PrairieTestExamsTable({
 }) {
   const trpc = useTRPC();
 
-  const validExamUuids = useMemo(
-    () =>
-      Array.from(new Set(exams.map((e) => e.examUuid).filter((u) => UUID_PATTERN.test(u)))).sort(),
-    [exams],
-  );
+  const validExamUuids = Array.from(
+    new Set(
+      exams
+        .map((e) => e.examUuid)
+        .filter((u) => UUID_PATTERN.test(u))
+        .map((u) => u.toLowerCase()),
+    ),
+  ).sort();
 
   // Re-fetches when the set of valid UUIDs changes, but not while the user is
   // mid-edit on an invalid UUID. Falls back to the server-rendered initial
@@ -762,7 +765,7 @@ export function PrairieTestExamsTable({
 
   if (exams.length === 0) return null;
 
-  const metadataByUuid = new Map(metadata.map((m) => [m.examUuid, m]));
+  const metadataByUuid = new Map(metadata.map((m) => [m.examUuid.toLowerCase(), m]));
 
   return (
     <div
@@ -801,7 +804,7 @@ export function PrairieTestExamsTable({
         </thead>
         <tbody>
           {exams.map((exam, index) => {
-            const meta = metadataByUuid.get(exam.examUuid);
+            const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
             const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
             const examLink =
               meta?.ptCourseId && meta.ptExamId
