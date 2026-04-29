@@ -1,192 +1,92 @@
-import { z } from 'zod';
-
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
-import { Hydrate } from '@prairielearn/react/server';
-
-import { GitHubButton } from '../../components/GitHubButton.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { compiledStylesheetTag } from '../../lib/assets.js';
-import {
-  StaffCourseInstanceSchema,
-  StaffQuestionSchema,
-  StaffTagSchema,
-  StaffTopicSchema,
+import type {
+  StaffCourseInstance,
+  StaffQuestion,
+  StaffTag,
+  StaffTopic,
 } from '../../lib/client/safe-db-types.js';
-import { type Tag, type Topic } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { encodePath } from '../../lib/uri-util.js';
-import { type CourseWithPermissions } from '../../models/course.js';
 
-import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
 import { QuestionSettingsForm } from './components/QuestionSettingsForm.js';
-import { QuestionSharing } from './components/QuestionSharing.js';
-import { QuestionTestsForm } from './components/QuestionTestsForm.js';
-import {
-  EditableCourseSchema,
-  type SelectedAssessments,
-  SelectedAssessmentsSchema,
-  type SharingSetRow,
+import type {
+  EditableCourse,
+  SelectedAssessments,
+  SharingSetRow,
 } from './instructorQuestionSettings.types.js';
 
 export function InstructorQuestionSettings({
-  resLocals,
+  question,
+  topic,
+  courseInstance,
+  courseId,
+  csrfToken,
+  questionGHLink,
   questionTestPath,
   questionTestCsrfToken,
-  questionGHLink,
   questionTags,
   qids,
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
   editableCourses,
-  infoPath,
   origHash,
   canEdit,
+  canCopy,
+  hasCoursePermissionView,
+  isFreeformQuestion,
+  isExternalGrading,
   courseTopics,
   courseTags,
 }: {
-  resLocals: ResLocalsForPage<'instructor-question'>;
+  question: StaffQuestion;
+  topic: StaffTopic;
+  courseInstance: StaffCourseInstance | null;
+  courseId: string;
+  csrfToken: string;
+  questionGHLink: string | null;
   questionTestPath: string;
   questionTestCsrfToken: string;
-  questionGHLink: string | null;
-  questionTags: Tag[];
+  questionTags: StaffTag[];
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[] | undefined;
-  editableCourses: CourseWithPermissions[];
-  infoPath: string;
+  sharingSetsIn: SharingSetRow[];
+  editableCourses: EditableCourse[];
   origHash: string;
   canEdit: boolean;
-  courseTopics: Topic[];
-  courseTags: Tag[];
+  canCopy: boolean;
+  hasCoursePermissionView: boolean;
+  isFreeformQuestion: boolean;
+  isExternalGrading: boolean;
+  courseTopics: StaffTopic[];
+  courseTags: StaffTag[];
 }) {
-  const courseInstance = StaffCourseInstanceSchema.nullish().parse(resLocals.course_instance);
+  const showTestsSection = isFreeformQuestion && !isExternalGrading && hasCoursePermissionView;
 
-  const canCopy =
-    editableCourses.length > 0 &&
-    resLocals.authz_data.has_course_permission_view &&
-    resLocals.question.course_id === resLocals.course.id;
-
-  const showFooter = canCopy || canEdit;
-
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Settings',
-    headContent: [compiledStylesheetTag('instructorQuestionSettings.css')],
-    navContext: {
-      type: 'instructor',
-      page: 'question',
-      subPage: 'settings',
-    },
-    options: {
-      pageNote: resLocals.question.qid!,
-    },
-    content: html`
-      <div class="card mb-4">
-        <div
-          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
-        >
-          <h1>Question Settings</h1>
-          ${renderHtml(<GitHubButton gitHubLink={questionGHLink} />)}
-        </div>
-        <div class="card-body">
-          ${renderHtml(
-            <Hydrate>
-              <QuestionSettingsForm
-                question={StaffQuestionSchema.parse(resLocals.question)}
-                topic={StaffTopicSchema.parse(resLocals.topic)}
-                courseTopics={z.array(StaffTopicSchema).parse(courseTopics)}
-                courseTags={z.array(StaffTagSchema).parse(courseTags)}
-                questionTags={z.array(StaffTagSchema).parse(questionTags)}
-                qids={qids}
-                origHash={origHash}
-                csrfToken={resLocals.__csrf_token}
-                canEdit={canEdit}
-                courseInstance={courseInstance}
-                assessmentsWithQuestion={assessmentsWithQuestion}
-              />
-            </Hydrate>,
-          )}
-          ${sharingEnabled
-            ? html`
-                <hr />
-                <div>
-                  <h2 class="h4">Sharing</h2>
-                  <div data-testid="shared-with">
-                    ${renderHtml(
-                      <QuestionSharing
-                        sharePublicly={resLocals.question.share_publicly}
-                        shareSourcePublicly={resLocals.question.share_source_publicly}
-                        sharingSetsIn={sharingSetsIn ?? []}
-                      />,
-                    )}
-                  </div>
-                </div>
-              `
-            : ''}
-          ${resLocals.question.type === 'Freeform' &&
-          resLocals.question.grading_method !== 'External' &&
-          resLocals.authz_data.has_course_permission_view
-            ? html`
-                <hr />
-                <div>
-                  <h2 class="h4">Tests</h2>
-                  <div>
-                    ${renderHtml(
-                      <QuestionTestsForm
-                        questionTestPath={questionTestPath}
-                        csrfToken={questionTestCsrfToken}
-                      />,
-                    )}
-                  </div>
-                </div>
-              `
-            : ''}
-          ${resLocals.authz_data.has_course_permission_view
-            ? canEdit
-              ? html`
-                  <hr />
-                  <a
-                    data-testid="edit-question-configuration-link"
-                    href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_edit/${encodePath(infoPath)}"
-                    >Edit question configuration</a
-                  >
-                  in <code>info.json</code>
-                `
-              : html`
-                  <hr />
-                  <a
-                    href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_view/${encodePath(infoPath)}"
-                  >
-                    View question configuration
-                  </a>
-                  in <code>info.json</code>
-                `
-            : ''}
-        </div>
-        ${showFooter
-          ? renderHtml(
-              // TODO: Pass full course/question objects when the whole page is hydrated.
-              <Hydrate>
-                <QuestionSettingsCardFooter
-                  canEdit={canEdit}
-                  canCopy={canCopy}
-                  editableCourses={z.array(EditableCourseSchema).parse(editableCourses)}
-                  courseId={resLocals.course.id}
-                  qid={resLocals.question.qid!}
-                  assessmentsWithQuestion={z
-                    .array(SelectedAssessmentsSchema)
-                    .parse(assessmentsWithQuestion)}
-                  csrfToken={resLocals.__csrf_token}
-                />
-              </Hydrate>,
-            )
-          : ''}
-      </div>
-    `,
-  });
+  return (
+    <div className="d-flex flex-column gap-3">
+      <QuestionSettingsForm
+        question={question}
+        topic={topic}
+        courseTopics={courseTopics}
+        courseTags={courseTags}
+        questionTags={questionTags}
+        qids={qids}
+        origHash={origHash}
+        csrfToken={csrfToken}
+        canEdit={canEdit}
+        canCopy={canCopy}
+        editableCourses={editableCourses}
+        courseId={courseId}
+        questionGHLink={questionGHLink}
+        courseInstance={courseInstance}
+        assessmentsWithQuestion={assessmentsWithQuestion}
+        sharingEnabled={sharingEnabled}
+        sharingSetsIn={sharingSetsIn}
+        showTestsSection={showTestsSection}
+        questionTestPath={questionTestPath}
+        questionTestCsrfToken={questionTestCsrfToken}
+      />
+    </div>
+  );
 }
+
+InstructorQuestionSettings.displayName = 'InstructorQuestionSettings';

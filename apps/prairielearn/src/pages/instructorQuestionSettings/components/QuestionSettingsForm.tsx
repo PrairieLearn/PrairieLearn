@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
 
 import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
+import { StickySaveBar } from '../../../components/StickySaveBar.js';
 import { TagBadge } from '../../../components/TagBadge.js';
 import { TagDescription } from '../../../components/TagDescription.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
@@ -19,12 +20,17 @@ import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { coerceToNumber } from '../../instructorAssessmentQuestions/utils/formHelpers.js';
 import type {
+  EditableCourse,
   PreferenceField,
   QuestionSettingsFormValues,
   SelectedAssessments,
+  SharingSetRow,
 } from '../instructorQuestionSettings.types.js';
 
 import { PreferencesTable } from './PreferencesTable.js';
+import { QuestionSettingsCardFooter } from './QuestionSettingsCardFooter.js';
+import { QuestionSharing } from './QuestionSharing.js';
+import { QuestionTestsForm } from './QuestionTestsForm.js';
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -88,6 +94,15 @@ export const QuestionSettingsForm = ({
   origHash,
   csrfToken,
   canEdit,
+  canCopy,
+  editableCourses,
+  courseId,
+  questionGHLink,
+  sharingEnabled,
+  sharingSetsIn,
+  showTestsSection,
+  questionTestPath,
+  questionTestCsrfToken,
 }: {
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
@@ -100,6 +115,15 @@ export const QuestionSettingsForm = ({
   origHash: string;
   csrfToken: string;
   canEdit: boolean;
+  canCopy: boolean;
+  editableCourses: EditableCourse[];
+  courseId: string;
+  questionGHLink: string | null;
+  sharingEnabled: boolean;
+  sharingSetsIn: SharingSetRow[];
+  showTestsSection: boolean;
+  questionTestPath: string;
+  questionTestCsrfToken: string;
 }) => {
   // `handleSubmit` runs after react-hook-form processes the submit event, so use a
   // stable ref rather than depending on `event.currentTarget` here.
@@ -157,7 +181,8 @@ export const QuestionSettingsForm = ({
     setValue,
     clearErrors,
     control,
-    formState: { errors, isDirty },
+    reset,
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -211,670 +236,725 @@ export const QuestionSettingsForm = ({
   });
 
   return (
-    <form
-      ref={formRef}
-      name="edit-question-settings-form"
-      method="POST"
-      onSubmit={handleFormSubmit}
-    >
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="update_question" />
-      <input type="hidden" name="orig_hash" value={origHash} />
+    <>
+      <form
+        ref={formRef}
+        name="edit-question-settings-form"
+        id="edit-question-settings-form"
+        method="POST"
+        className="d-flex flex-column gap-3"
+        onSubmit={handleFormSubmit}
+      >
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <input type="hidden" name="__action" value="update_question" />
+        <input type="hidden" name="orig_hash" value={origHash} />
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="qid">
-          QID
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control font-monospace', errors.qid && 'is-invalid')}
-          id="qid"
-          disabled={!canEdit}
-          aria-invalid={!!errors.qid || undefined}
-          defaultValue={defaultValues.qid}
-          aria-errormessage={errors.qid ? 'qid-error' : undefined}
-          {...register('qid', {
-            required: 'QID is required',
-            validate: {
-              shortName: (value) => {
-                const result = validateShortName(value, defaultValues.qid);
-                return result.valid || result.message;
-              },
-              duplicate: (value) => {
-                if (otherQids.has(value)) {
-                  return 'This QID is already in use';
-                }
-                return true;
-              },
-            },
-          })}
-        />
-        {errors.qid && (
-          <div id="qid-error" className="invalid-feedback">
-            {errors.qid.message}
-          </div>
-        )}
-        <small className="form-text text-muted">
-          <QuestionShortNameDescription />
-        </small>
-      </div>
-
-      <div className="mb-3">
-        <h2 className="h4">General</h2>
-        <label className="form-label" htmlFor="title">
-          Title
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="title"
-          disabled={!canEdit}
-          defaultValue={defaultValues.title}
-          {...register('title')}
-        />
-        <small className="form-text text-muted">
-          The title of the question (e.g., "Add two numbers").
-        </small>
-      </div>
-
-      <div className="table-responsive card mb-3 overflow-visible">
-        <table
-          className="table two-column-description"
-          aria-label="Question topic, tags, and assessments"
-        >
-          <tbody>
-            <tr>
-              <th className="align-middle">
-                <label id="topic-label" htmlFor="topic">
-                  Topic
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">General</h2>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="qid">
+                  QID
                 </label>
-              </th>
-              <td>
-                {canEdit ? (
-                  <ComboBox
-                    id="topic"
-                    name="topic"
-                    items={topicItems}
-                    value={selectedTopic}
-                    placeholder="Select a topic"
-                    aria-labelledby="topic-label"
-                    renderItem={(item) => (
-                      <div className="preferences-combobox-item">
-                        <TopicBadge topic={item.data!} />
-                        {item.data!.description && (
-                          <div>
-                            <small className="text-muted">
-                              <TopicDescription topic={item.data!} />
-                            </small>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    onChange={(value) => setValue('topic', value ?? '', { shouldDirty: true })}
-                  />
-                ) : currentTopicData ? (
+                <input
+                  type="text"
+                  className={clsx('form-control font-monospace', errors.qid && 'is-invalid')}
+                  id="qid"
+                  disabled={!canEdit}
+                  aria-invalid={!!errors.qid || undefined}
+                  defaultValue={defaultValues.qid}
+                  aria-errormessage={errors.qid ? 'qid-error' : undefined}
+                  {...register('qid', {
+                    required: 'QID is required',
+                    validate: {
+                      shortName: (value) => {
+                        const result = validateShortName(value, defaultValues.qid);
+                        return result.valid || result.message;
+                      },
+                      duplicate: (value) => {
+                        if (otherQids.has(value)) {
+                          return 'This QID is already in use';
+                        }
+                        return true;
+                      },
+                    },
+                  })}
+                />
+                {errors.qid && (
+                  <div id="qid-error" className="invalid-feedback">
+                    {errors.qid.message}
+                  </div>
+                )}
+                <small className="form-text text-muted">
+                  <QuestionShortNameDescription />
+                </small>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small className="form-text text-muted">
+                  The title of the question (e.g., "Add two numbers").
+                </small>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" id="topic-label" htmlFor="topic">
+                Topic
+              </label>
+              {canEdit ? (
+                <ComboBox
+                  id="topic"
+                  name="topic"
+                  items={topicItems}
+                  value={selectedTopic}
+                  placeholder="Select a topic"
+                  aria-labelledby="topic-label"
+                  renderItem={(item) => (
+                    <div className="preferences-combobox-item">
+                      <TopicBadge topic={item.data!} />
+                      {item.data!.description && (
+                        <div>
+                          <small className="text-muted">
+                            <TopicDescription topic={item.data!} />
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  onChange={(value) => setValue('topic', value ?? '', { shouldDirty: true })}
+                />
+              ) : currentTopicData ? (
+                <div>
                   <TopicBadge topic={currentTopicData} />
-                ) : null}
-              </td>
-            </tr>
-            <tr>
-              <th className="align-middle">
-                <label id="tags-label" htmlFor="tags">
-                  Tags
-                </label>
-              </th>
-              <td>
-                {canEdit ? (
-                  <TagPicker
-                    id="tags"
-                    name="tags"
-                    items={tagItems}
-                    value={selectedTags}
-                    placeholder="Select tags"
-                    aria-labelledby="tags-label"
-                    renderItem={(item) => (
-                      <div className="preferences-combobox-item">
-                        <TagBadge tag={item.data!} />
-                        {!item.data!.implicit && item.data!.description && (
-                          <div>
-                            <small className="text-muted">
-                              <TagDescription tag={item.data!} />
-                            </small>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    renderTagContent={(data) => data.name}
-                    tagClassName={(data) => `badge color-${data.color}`}
-                    onChange={(value) => setValue('tags', value, { shouldDirty: true })}
-                  />
-                ) : (
-                  currentTagsData.map((tag) => (
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" id="tags-label" htmlFor="tags">
+                Tags
+              </label>
+              {canEdit ? (
+                <TagPicker
+                  id="tags"
+                  name="tags"
+                  items={tagItems}
+                  value={selectedTags}
+                  placeholder="Select tags"
+                  aria-labelledby="tags-label"
+                  renderItem={(item) => (
+                    <div className="preferences-combobox-item">
+                      <TagBadge tag={item.data!} />
+                      {!item.data!.implicit && item.data!.description && (
+                        <div>
+                          <small className="text-muted">
+                            <TagDescription tag={item.data!} />
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  renderTagContent={(data) => data.name}
+                  tagClassName={(data) => `badge color-${data.color}`}
+                  onChange={(value) => setValue('tags', value, { shouldDirty: true })}
+                />
+              ) : (
+                <div>
+                  {currentTagsData.map((tag) => (
                     <span key={tag.name} className="me-1">
                       <TagBadge tag={tag} />
                     </span>
-                  ))
-                )}
-              </td>
-            </tr>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {courseInstance && (
-              <tr>
-                <th className="align-middle">Assessments</th>
-                <td>
-                  <AssessmentBadges
-                    assessmentsWithQuestion={assessmentsWithQuestion}
-                    courseInstanceId={courseInstance.id}
-                  />
-                </td>
-              </tr>
+              <div className="mb-0">
+                <p className="form-label mb-1">Assessments</p>
+                <AssessmentBadges
+                  assessmentsWithQuestion={assessmentsWithQuestion}
+                  courseInstanceId={courseInstance.id}
+                />
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mb-3">
-        <label className="form-label" htmlFor="grading_method">
-          Grading method
-        </label>
-        <select
-          className="form-select"
-          id="grading_method"
-          disabled={!canEdit}
-          defaultValue={defaultValues.grading_method}
-          {...register('grading_method')}
-        >
-          <option value="Internal">Internal</option>
-          <option value="External">External</option>
-          <option value="Manual">Manual</option>
-        </select>
-        <small className="form-text text-muted">The grading method used for this question.</small>
-      </div>
-
-      <div className="mb-3 form-check">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="single_variant"
-          disabled={!canEdit}
-          defaultChecked={defaultValues.single_variant}
-          {...register('single_variant')}
-        />
-        <label className="form-check-label" htmlFor="single_variant">
-          Single variant
-        </label>
-        <div className="small text-muted">
-          If enabled, students will only be able to try a single variant of this question on any
-          given assessment.
-        </div>
-      </div>
-
-      <div className="mb-3 form-check">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="show_correct_answer"
-          disabled={!canEdit}
-          defaultChecked={defaultValues.show_correct_answer}
-          {...register('show_correct_answer')}
-        />
-        <label className="form-check-label" htmlFor="show_correct_answer">
-          Show correct answer
-        </label>
-        <div className="small text-muted">
-          If enabled, the correct answer panel will be shown after all submission attempts have been
-          exhausted.
-        </div>
-      </div>
-
-      <div className="mb-3 form-check">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="partial_credit"
-          disabled={!canEdit}
-          defaultChecked={defaultValues.partial_credit}
-          {...register('partial_credit')}
-        />
-        <label className="form-check-label" htmlFor="partial_credit">
-          Partial credit
-        </label>
-        <div className="small text-muted">
-          If enabled, the question will award partial points for fractional scores. For example, if
-          only some elements on the page are correct, the student receives a proportional score.
-          When disabled, the question awards only 0% or 100%.
-        </div>
-      </div>
-
-      <PreferencesTable
-        control={control}
-        canEdit={canEdit}
-        register={register}
-        watch={watch}
-        setValue={setValue}
-        clearErrors={clearErrors}
-        errors={errors.preferences}
-      />
-
-      <div className="mb-3">
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            id="workspaceEnabled"
-            checked={workspaceEnabled}
-            disabled={!canEdit}
-            onChange={() => {
-              if (workspaceEnabled) {
-                clearErrors([
-                  'workspace_image',
-                  'workspace_port',
-                  'workspace_home',
-                  'workspace_environment',
-                ]);
-              }
-              setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
-            }}
+          </div>
+          <QuestionSettingsCardFooter
+            canEdit={canEdit}
+            canCopy={canCopy}
+            editableCourses={editableCourses}
+            courseId={courseId}
+            qid={defaultValues.qid}
+            assessmentsWithQuestion={assessmentsWithQuestion}
+            csrfToken={csrfToken}
+            questionGHLink={questionGHLink}
           />
-          <label className="form-check-label h4 mb-0" htmlFor="workspaceEnabled">
-            Workspace
-          </label>
         </div>
-        <small className="text-muted ps-4">
-          Configure a{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
-            remote development environment
-          </a>{' '}
-          for students.
-        </small>
-        {workspaceEnabled && (
-          <div className="mt-3 ps-4" id="workspace-options">
+
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Question behavior</h2>
             <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_image">
-                Image
+              <label className="form-label" htmlFor="grading_method">
+                Grading method
               </label>
-              <input
-                type="text"
-                className={clsx('form-control', errors.workspace_image && 'is-invalid')}
-                id="workspace_image"
+              <select
+                className="form-select"
+                id="grading_method"
                 disabled={!canEdit}
-                aria-invalid={!!errors.workspace_image || undefined}
-                defaultValue={defaultValues.workspace_image}
-                aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
-                {...register('workspace_image', {
-                  required: 'Image is required for workspace',
-                })}
-              />
-              {errors.workspace_image && (
-                <div id="workspace_image-error" className="invalid-feedback">
-                  {errors.workspace_image.message}
-                </div>
-              )}
+                defaultValue={defaultValues.grading_method}
+                {...register('grading_method')}
+              >
+                <option value="Internal">Internal</option>
+                <option value="External">External</option>
+                <option value="Manual">Manual</option>
+              </select>
               <small className="form-text text-muted">
-                The Docker image that will be used to serve this workspace. Only images from the
-                Dockerhub registry are supported.
+                The grading method used for this question.
               </small>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_port">
-                Port
-              </label>
-              <input
-                type="number"
-                className={clsx('form-control', errors.workspace_port && 'is-invalid')}
-                id="workspace_port"
-                disabled={!canEdit}
-                aria-invalid={!!errors.workspace_port || undefined}
-                defaultValue={defaultValues.workspace_port}
-                aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
-                // Disable default behavior of incrementing/decrementing the value when scrolling
-                onWheel={(e) => e.currentTarget.blur()}
-                {...register('workspace_port', {
-                  required: 'Port is required for workspace',
-                })}
-              />
-              {errors.workspace_port && (
-                <div id="workspace_port-error" className="invalid-feedback">
-                  {errors.workspace_port.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                The port number used in the Docker image.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_home">
-                Home
-              </label>
-              <input
-                type="text"
-                className={clsx('form-control', errors.workspace_home && 'is-invalid')}
-                id="workspace_home"
-                disabled={!canEdit}
-                aria-invalid={!!errors.workspace_home || undefined}
-                defaultValue={defaultValues.workspace_home}
-                aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
-                {...register('workspace_home', {
-                  required: 'Home is required for workspace',
-                })}
-              />
-              {errors.workspace_home && (
-                <div id="workspace_home-error" className="invalid-feedback">
-                  {errors.workspace_home.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                The home directory of the workspace container.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_graded_files">
-                Graded files
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="workspace_graded_files"
-                disabled={!canEdit}
-                defaultValue={defaultValues.workspace_graded_files}
-                {...register('workspace_graded_files')}
-              />
-              <small className="form-text text-muted">
-                The list of files or directories that will be copied out of the workspace container
-                when saving a submission. You may enter multiple files or directories, separated by
-                commas.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_args">
-                Arguments
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="workspace_args"
-                disabled={!canEdit}
-                defaultValue={defaultValues.workspace_args}
-                {...register('workspace_args')}
-              />
-              <small className="form-text text-muted">
-                Command line arguments to pass to the Docker container. Multiple arguments should be
-                separated by spaces and escaped as necessary using the same format as a typical
-                shell.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="workspace_environment">
-                Environment
-              </label>
-              <textarea
-                className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
-                id="workspace_environment"
-                disabled={!canEdit}
-                aria-invalid={!!errors.workspace_environment || undefined}
-                defaultValue={defaultValues.workspace_environment}
-                aria-errormessage={
-                  errors.workspace_environment ? 'workspace_environment-error' : undefined
-                }
-                {...register('workspace_environment', {
-                  validate: validateJsonObject,
-                })}
-              />
-              {errors.workspace_environment && (
-                <div id="workspace_environment-error" className="invalid-feedback">
-                  {errors.workspace_environment.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                Environment variables to set inside the workspace container. Variables must be
-                specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
-              </small>
-            </div>
-
-            <div className="mb-3 form-check">
+            <div className="form-check mb-3">
               <input
                 className="form-check-input"
                 type="checkbox"
-                id="workspace_enable_networking"
+                id="single_variant"
                 disabled={!canEdit}
-                defaultChecked={defaultValues.workspace_enable_networking}
-                {...register('workspace_enable_networking')}
+                defaultChecked={defaultValues.single_variant}
+                {...register('single_variant')}
               />
-              <label className="form-check-label" htmlFor="workspace_enable_networking">
-                Enable networking
+              <label className="form-check-label" htmlFor="single_variant">
+                Single variant
               </label>
               <div className="small text-muted">
-                Whether the workspace should have network access. Access is disabled by default.
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
               </div>
             </div>
 
-            <div className="mb-3 form-check">
+            <div className="form-check mb-3">
               <input
                 className="form-check-input"
                 type="checkbox"
-                id="workspace_rewrite_url"
+                id="show_correct_answer"
                 disabled={!canEdit}
-                defaultChecked={defaultValues.workspace_rewrite_url}
-                {...register('workspace_rewrite_url')}
+                defaultChecked={defaultValues.show_correct_answer}
+                {...register('show_correct_answer')}
               />
-              <label className="form-check-label" htmlFor="workspace_rewrite_url">
-                Rewrite URL
+              <label className="form-check-label" htmlFor="show_correct_answer">
+                Show correct answer
               </label>
               <div className="small text-muted">
-                If enabled, the URL will be rewritten such that the workspace container will see all
-                requests as originating from "/".
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
+            </div>
+
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="partial_credit"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.partial_credit}
+                {...register('partial_credit')}
+              />
+              <label className="form-check-label" htmlFor="partial_credit">
+                Partial credit
+              </label>
+              <div className="small text-muted">
+                If enabled, the question will award partial points for fractional scores. For
+                example, if only some elements on the page are correct, the student receives a
+                proportional score. When disabled, the question awards only 0% or 100%.
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="mb-3">
-        {/* If the grading method is external, you must specify external grading options */}
-        {isExternalGrading ? (
-          <h4 className="mb-0">External grading</h4>
-        ) : (
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="externalGradingEnabled"
-              disabled={!canEdit}
-              defaultChecked={defaultValues.external_grading_enabled}
-              {...register('external_grading_enabled')}
+        <PreferencesTable
+          control={control}
+          canEdit={canEdit}
+          register={register}
+          watch={watch}
+          setValue={setValue}
+          clearErrors={clearErrors}
+          errors={errors.preferences}
+        />
+
+        <div className="card">
+          <div className="card-body">
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="workspaceEnabled"
+                checked={workspaceEnabled}
+                disabled={!canEdit}
+                onChange={() => {
+                  if (workspaceEnabled) {
+                    clearErrors([
+                      'workspace_image',
+                      'workspace_port',
+                      'workspace_home',
+                      'workspace_environment',
+                    ]);
+                  }
+                  setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
+                }}
+              />
+              <label className="form-check-label h5 card-title mb-0" htmlFor="workspaceEnabled">
+                Workspace
+              </label>
+            </div>
+            <small className="text-muted ps-4 d-block mt-1">
+              Configure a{' '}
+              <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
+                remote development environment
+              </a>{' '}
+              for students.
+            </small>
+            {workspaceEnabled && (
+              <div className="mt-3 ps-4" id="workspace-options">
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_image">
+                    Image
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.workspace_image && 'is-invalid')}
+                    id="workspace_image"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_image || undefined}
+                    defaultValue={defaultValues.workspace_image}
+                    aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
+                    {...register('workspace_image', {
+                      required: 'Image is required for workspace',
+                    })}
+                  />
+                  {errors.workspace_image && (
+                    <div id="workspace_image-error" className="invalid-feedback">
+                      {errors.workspace_image.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The Docker image that will be used to serve this workspace. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_port">
+                    Port
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    className={clsx('form-control', errors.workspace_port && 'is-invalid')}
+                    id="workspace_port"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_port || undefined}
+                    defaultValue={defaultValues.workspace_port}
+                    aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
+                    // Disable default behavior of incrementing/decrementing the value when scrolling
+                    onWheel={(e) => e.currentTarget.blur()}
+                    {...register('workspace_port', {
+                      required: 'Port is required for workspace',
+                      validate: (value) => {
+                        if (value === '') return true;
+                        const n = Number(value);
+                        if (!Number.isInteger(n)) return 'Port must be an integer';
+                        return true;
+                      },
+                    })}
+                  />
+                  {errors.workspace_port && (
+                    <div id="workspace_port-error" className="invalid-feedback">
+                      {errors.workspace_port.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The port number used in the Docker image.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_home">
+                    Home
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.workspace_home && 'is-invalid')}
+                    id="workspace_home"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_home || undefined}
+                    defaultValue={defaultValues.workspace_home}
+                    aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
+                    {...register('workspace_home', {
+                      required: 'Home is required for workspace',
+                    })}
+                  />
+                  {errors.workspace_home && (
+                    <div id="workspace_home-error" className="invalid-feedback">
+                      {errors.workspace_home.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The home directory of the workspace container.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_graded_files">
+                    Graded files
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="workspace_graded_files"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.workspace_graded_files}
+                    {...register('workspace_graded_files')}
+                  />
+                  <small className="form-text text-muted">
+                    The list of files or directories that will be copied out of the workspace
+                    container when saving a submission. You may enter multiple files or directories,
+                    separated by commas.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_args">
+                    Arguments
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="workspace_args"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.workspace_args}
+                    {...register('workspace_args')}
+                  />
+                  <small className="form-text text-muted">
+                    Command line arguments to pass to the Docker container. Multiple arguments
+                    should be separated by spaces and escaped as necessary using the same format as
+                    a typical shell.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_environment">
+                    Environment
+                  </label>
+                  <textarea
+                    className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
+                    id="workspace_environment"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_environment || undefined}
+                    defaultValue={defaultValues.workspace_environment}
+                    aria-errormessage={
+                      errors.workspace_environment ? 'workspace_environment-error' : undefined
+                    }
+                    {...register('workspace_environment', {
+                      validate: validateJsonObject,
+                    })}
+                  />
+                  {errors.workspace_environment && (
+                    <div id="workspace_environment-error" className="invalid-feedback">
+                      {errors.workspace_environment.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    Environment variables to set inside the workspace container. Variables must be
+                    specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+                  </small>
+                </div>
+
+                <div className="mb-3 form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="workspace_enable_networking"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.workspace_enable_networking}
+                    {...register('workspace_enable_networking')}
+                  />
+                  <label className="form-check-label" htmlFor="workspace_enable_networking">
+                    Enable networking
+                  </label>
+                  <div className="small text-muted">
+                    Whether the workspace should have network access. Access is disabled by default.
+                  </div>
+                </div>
+
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="workspace_rewrite_url"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.workspace_rewrite_url}
+                    {...register('workspace_rewrite_url')}
+                  />
+                  <label className="form-check-label" htmlFor="workspace_rewrite_url">
+                    Rewrite URL
+                  </label>
+                  <div className="small text-muted">
+                    If enabled, the URL will be rewritten such that the workspace container will see
+                    all requests as originating from "/".
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            {isExternalGrading ? (
+              <h2 className="h5 card-title mb-0">External grading</h2>
+            ) : (
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="externalGradingEnabled"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.external_grading_enabled}
+                  {...register('external_grading_enabled')}
+                />
+                <label
+                  className="form-check-label h5 card-title mb-0"
+                  htmlFor="externalGradingEnabled"
+                >
+                  External grading
+                </label>
+              </div>
+            )}
+            <small className={clsx('text-muted d-block mt-1', !isExternalGrading && 'ps-4')}>
+              Configure{' '}
+              <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
+                grading using a Docker container
+              </a>
+              .
+            </small>
+            {(isExternalGrading || externalGradingEnabled) && (
+              <div
+                className={clsx('mt-3', !isExternalGrading && 'ps-4')}
+                id="external-grading-options"
+              >
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_image">
+                    Image
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
+                    id="external_grading_image"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_image || undefined}
+                    defaultValue={defaultValues.external_grading_image}
+                    aria-errormessage={
+                      errors.external_grading_image ? 'external_grading_image-error' : undefined
+                    }
+                    {...register('external_grading_image', {
+                      required: 'Image is required for external grading',
+                    })}
+                  />
+                  {errors.external_grading_image && (
+                    <div id="external_grading_image-error" className="invalid-feedback">
+                      {errors.external_grading_image.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The Docker image that will be used to grade this question. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_entrypoint">
+                    Entrypoint
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="external_grading_entrypoint"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.external_grading_entrypoint}
+                    {...register('external_grading_entrypoint')}
+                  />
+                  <small className="form-text text-muted">
+                    Program or command to run as the entrypoint to your grader. If not provided, the
+                    default entrypoint for the image will be used.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_files">
+                    Server files
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="external_grading_files"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.external_grading_files}
+                    {...register('external_grading_files')}
+                  />
+                  <small className="form-text text-muted">
+                    The list of files or directories that will be copied from{' '}
+                    <code>course/serverFilesCourse</code> into the grading job. You may enter
+                    multiple files or directories, separated by commas.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_timeout">
+                    Timeout
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    className={clsx(
+                      'form-control',
+                      errors.external_grading_timeout && 'is-invalid',
+                    )}
+                    id="external_grading_timeout"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_timeout || undefined}
+                    defaultValue={defaultValues.external_grading_timeout}
+                    aria-errormessage={
+                      errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
+                    }
+                    // Disable default behavior of incrementing/decrementing the value when scrolling
+                    onWheel={(e) => e.currentTarget.blur()}
+                    {...register('external_grading_timeout', {
+                      setValueAs: coerceToNumber,
+                      min: {
+                        value: 0,
+                        message: 'Timeout must be at least 0 seconds',
+                      },
+                      validate: (value) => {
+                        if (value == null) return true;
+                        if (!Number.isInteger(value)) return 'Timeout must be an integer';
+                        return true;
+                      },
+                    })}
+                  />
+                  {errors.external_grading_timeout && (
+                    <div id="external_grading_timeout-error" className="invalid-feedback">
+                      {errors.external_grading_timeout.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The number of seconds after which the grading job will timeout.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_environment">
+                    Environment
+                  </label>
+                  <textarea
+                    className={clsx(
+                      'form-control',
+                      errors.external_grading_environment && 'is-invalid',
+                    )}
+                    id="external_grading_environment"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_environment || undefined}
+                    defaultValue={defaultValues.external_grading_environment}
+                    aria-errormessage={
+                      errors.external_grading_environment
+                        ? 'external_grading_environment-error'
+                        : undefined
+                    }
+                    {...register('external_grading_environment', {
+                      validate: validateJsonObject,
+                    })}
+                  />
+                  {errors.external_grading_environment && (
+                    <div id="external_grading_environment-error" className="invalid-feedback">
+                      {errors.external_grading_environment.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    Environment variables to set inside the grading container. Variables must be
+                    specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+                  </small>
+                </div>
+
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enable_networking"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.external_grading_enable_networking}
+                    {...register('external_grading_enable_networking')}
+                  />
+                  <label className="form-check-label" htmlFor="external_grading_enable_networking">
+                    Enable networking
+                  </label>
+                  <div className="small text-muted">
+                    Whether the grading containers should have network access. Access is disabled by
+                    default.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
+
+      {sharingEnabled && (
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Sharing</h2>
+            <div data-testid="shared-with">
+              <QuestionSharing
+                sharePublicly={question.share_publicly}
+                shareSourcePublicly={question.share_source_publicly}
+                sharingSetsIn={sharingSetsIn}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTestsSection && (
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Tests</h2>
+            <QuestionTestsForm
+              questionTestPath={questionTestPath}
+              csrfToken={questionTestCsrfToken}
             />
-            <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
-              External grading
-            </label>
           </div>
-        )}
-        <small className={clsx('text-muted', !isExternalGrading && 'ps-4')}>
-          Configure{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
-            grading using a Docker container
-          </a>
-          .
-        </small>
-        {(isExternalGrading || externalGradingEnabled) && (
-          <div className={clsx('mt-3', !isExternalGrading && 'ps-4')} id="external-grading-options">
-            <div className="mb-3">
-              <label className="form-label" htmlFor="external_grading_image">
-                Image
-              </label>
-              <input
-                type="text"
-                className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
-                id="external_grading_image"
-                disabled={!canEdit}
-                aria-invalid={!!errors.external_grading_image || undefined}
-                defaultValue={defaultValues.external_grading_image}
-                aria-errormessage={
-                  errors.external_grading_image ? 'external_grading_image-error' : undefined
-                }
-                {...register('external_grading_image', {
-                  required: 'Image is required for external grading',
-                })}
-              />
-              {errors.external_grading_image && (
-                <div id="external_grading_image-error" className="invalid-feedback">
-                  {errors.external_grading_image.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                The Docker image that will be used to grade this question. Only images from the
-                Dockerhub registry are supported.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="external_grading_entrypoint">
-                Entrypoint
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="external_grading_entrypoint"
-                disabled={!canEdit}
-                defaultValue={defaultValues.external_grading_entrypoint}
-                {...register('external_grading_entrypoint')}
-              />
-              <small className="form-text text-muted">
-                Program or command to run as the entrypoint to your grader. If not provided, the
-                default entrypoint for the image will be used.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="external_grading_files">
-                Server files
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="external_grading_files"
-                disabled={!canEdit}
-                defaultValue={defaultValues.external_grading_files}
-                {...register('external_grading_files')}
-              />
-              <small className="form-text text-muted">
-                The list of files or directories that will be copied from{' '}
-                <code>course/serverFilesCourse</code> into the grading job. You may enter multiple
-                files or directories, separated by commas.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="external_grading_timeout">
-                Timeout
-              </label>
-              <input
-                type="number"
-                className={clsx('form-control', errors.external_grading_timeout && 'is-invalid')}
-                id="external_grading_timeout"
-                disabled={!canEdit}
-                aria-invalid={!!errors.external_grading_timeout || undefined}
-                defaultValue={defaultValues.external_grading_timeout}
-                aria-errormessage={
-                  errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
-                }
-                // Disable default behavior of incrementing/decrementing the value when scrolling
-                onWheel={(e) => e.currentTarget.blur()}
-                {...register('external_grading_timeout', {
-                  setValueAs: coerceToNumber,
-                  min: {
-                    value: 0,
-                    message: 'Timeout must be at least 0 seconds',
-                  },
-                })}
-              />
-              {errors.external_grading_timeout && (
-                <div id="external_grading_timeout-error" className="invalid-feedback">
-                  {errors.external_grading_timeout.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                The number of seconds after which the grading job will timeout.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="external_grading_environment">
-                Environment
-              </label>
-              <textarea
-                className={clsx(
-                  'form-control',
-                  errors.external_grading_environment && 'is-invalid',
-                )}
-                id="external_grading_environment"
-                disabled={!canEdit}
-                aria-invalid={!!errors.external_grading_environment || undefined}
-                defaultValue={defaultValues.external_grading_environment}
-                aria-errormessage={
-                  errors.external_grading_environment
-                    ? 'external_grading_environment-error'
-                    : undefined
-                }
-                {...register('external_grading_environment', {
-                  validate: validateJsonObject,
-                })}
-              />
-              {errors.external_grading_environment && (
-                <div id="external_grading_environment-error" className="invalid-feedback">
-                  {errors.external_grading_environment.message}
-                </div>
-              )}
-              <small className="form-text text-muted">
-                Environment variables to set inside the grading container. Variables must be
-                specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
-              </small>
-            </div>
-
-            <div className="mb-3 form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="external_grading_enable_networking"
-                disabled={!canEdit}
-                defaultChecked={defaultValues.external_grading_enable_networking}
-                {...register('external_grading_enable_networking')}
-              />
-              <label className="form-check-label" htmlFor="external_grading_enable_networking">
-                Enable networking
-              </label>
-              <div className="small text-muted">
-                Whether the grading containers should have network access. Access is disabled by
-                default.
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {canEdit && (
-        <>
-          <button
-            id="save-button"
-            type="submit"
-            className="btn btn-primary mb-2"
-            disabled={!isDirty}
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary mb-2 ms-2"
-            onClick={() => window.location.reload()}
-          >
-            Cancel
-          </button>
-        </>
+        <StickySaveBar
+          isDirty={isDirty}
+          isSubmitting={isSubmitting}
+          saveLabel="Save and sync"
+          formId="edit-question-settings-form"
+          onCancel={() => reset()}
+        />
       )}
-    </form>
+    </>
   );
 };
 

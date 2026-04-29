@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
+import { GitHubButton } from '../../../components/GitHubButton.js';
 import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.types.js';
 
 function CopyQuestionPopover({
@@ -57,15 +58,17 @@ function DeleteQuestionModal({
   csrfToken,
   show,
   onHide,
+  onExited,
 }: {
   qid: string;
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
   show: boolean;
   onHide: () => void;
+  onExited: () => void;
 }) {
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>Delete question</Modal.Title>
       </Modal.Header>
@@ -124,6 +127,7 @@ export function QuestionSettingsCardFooter({
   qid,
   assessmentsWithQuestion,
   csrfToken,
+  questionGHLink,
 }: {
   canEdit: boolean;
   canCopy: boolean;
@@ -132,53 +136,66 @@ export function QuestionSettingsCardFooter({
   qid: string;
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
+  questionGHLink: string | null;
 }) {
   const [showCopyPopover, setShowCopyPopover] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deleteModalState = useModalState();
+
+  const showActions = canCopy || canEdit;
 
   return (
-    <div className="card-footer d-flex flex-wrap gap-2">
-      {canCopy && (
-        <OverlayTrigger
-          trigger="click"
-          placement="auto"
-          show={showCopyPopover}
-          popover={{
-            props: { id: 'copyQuestionPopover' },
-            header: 'Copy this question',
-            body: (
-              <CopyQuestionPopover
-                editableCourses={editableCourses}
-                courseId={courseId}
+    <div className="card-footer d-flex flex-wrap align-items-center gap-2">
+      <GitHubButton gitHubLink={questionGHLink} />
+      {showActions && (
+        <div className="ms-auto d-flex flex-wrap gap-2">
+          {canCopy && (
+            <OverlayTrigger
+              trigger="click"
+              placement="auto"
+              show={showCopyPopover}
+              popover={{
+                props: { id: 'copyQuestionPopover' },
+                header: 'Copy this question',
+                body: (
+                  <CopyQuestionPopover
+                    editableCourses={editableCourses}
+                    courseId={courseId}
+                    csrfToken={csrfToken}
+                    onCancel={() => setShowCopyPopover(false)}
+                  />
+                ),
+              }}
+              onToggle={setShowCopyPopover}
+            >
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                id="copyQuestionButton"
+              >
+                <i className="bi bi-copy me-1" aria-hidden="true" /> Copy
+              </button>
+            </OverlayTrigger>
+          )}
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => deleteModalState.showWithData(null)}
+              >
+                <i className="bi bi-trash me-1" aria-hidden="true" /> Delete
+              </button>
+              <DeleteQuestionModal
+                qid={qid}
+                assessmentsWithQuestion={assessmentsWithQuestion}
                 csrfToken={csrfToken}
-                onCancel={() => setShowCopyPopover(false)}
+                show={deleteModalState.show}
+                onHide={deleteModalState.hide}
+                onExited={deleteModalState.onExited}
               />
-            ),
-          }}
-          onToggle={setShowCopyPopover}
-        >
-          <button type="button" className="btn btn-sm btn-primary" id="copyQuestionButton">
-            <i className="fa fa-clone" aria-hidden="true" /> Make a copy of this question
-          </button>
-        </OverlayTrigger>
-      )}
-      {canEdit && (
-        <>
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            onClick={() => setShowDeleteModal(true)}
-          >
-            <i className="fa fa-times" aria-hidden="true" /> Delete this question
-          </button>
-          <DeleteQuestionModal
-            qid={qid}
-            assessmentsWithQuestion={assessmentsWithQuestion}
-            csrfToken={csrfToken}
-            show={showDeleteModal}
-            onHide={() => setShowDeleteModal(false)}
-          />
-        </>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

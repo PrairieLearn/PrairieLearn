@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
+import { StickySaveBar } from '../../components/StickySaveBar.js';
 import { getAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
@@ -997,59 +998,20 @@ function InstructorAssessmentSettingsInner({
         </div>
 
         {canEdit && (
-          <div className="position-sticky bottom-0 z-3 bg-body border-top">
-            {saveMutation.isSuccess && (
-              <Alert
-                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
-                variant="success"
-                dismissible
-                onClose={() => saveMutation.reset()}
-              >
-                Assessment updated successfully.
-              </Alert>
-            )}
-            {appError && (
-              <Alert
-                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
-                variant="danger"
-                dismissible
-                onClose={() => saveMutation.reset()}
-              >
-                {appError.message}
-              </Alert>
-            )}
-            <div
-              className={clsx(
-                'container align-items-center justify-content-between gap-2 py-3',
-                isDirty ? 'd-flex' : 'd-none',
-              )}
-            >
-              <div className="small text-muted">You have unsaved changes</div>
-              <div className="d-flex gap-2">
-                <button
-                  id="cancel-button"
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  disabled={isSubmitting || saveMutation.isPending}
-                  onClick={() => {
-                    reset();
-                    setUseCustomMaxPoints(getValues('max_points') !== '');
-                    saveMutation.reset();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  id="save-button"
-                  type="submit"
-                  className="btn btn-sm btn-primary"
-                  disabled={isSubmitting || saveMutation.isPending}
-                >
-                  {saveMutation.isPending ? 'Saving...' : 'Save and sync'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <StickySaveBar
+            isDirty={isDirty}
+            isSubmitting={isSubmitting || saveMutation.isPending}
+            successMessage={saveMutation.isSuccess ? 'Assessment updated successfully.' : null}
+            errorMessage={appError?.message}
+            saveLabel="Save and sync"
+            onDismissSuccess={() => saveMutation.reset()}
+            onDismissError={() => saveMutation.reset()}
+            onCancel={() => {
+              reset();
+              setUseCustomMaxPoints(getValues('max_points') !== '');
+              saveMutation.reset();
+            }}
+          />
         )}
       </form>
     </>
