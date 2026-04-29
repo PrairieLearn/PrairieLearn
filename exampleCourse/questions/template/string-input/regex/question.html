@@ -1,12 +1,14 @@
 <pl-question-panel>
-  <p>What is the chemical symbol or name for nitrogen?</p>
-  <p>You can answer either <code>N</code> or <code>nitrogen</code>.</p>
+  <p>What is the typically most-limiting plant nutrient in agriculture?</p>
 </pl-question-panel>
 <pl-string-input
-  answers-name="answer"
+  answers-name="macronutrient"
   correct-answer="N|nitrogen"
   correct-answer-format="regex"
-  correct-answer-text="N or nitrogen"
+  remove-leading-trailing="true"
   ignore-case="true"
   aria-label="Answer">
 </pl-string-input>
+<pl-answer-panel>
+Either <code>N</code> or <code>nitrogen</code>, leading and training whitespace accepted.
+</pl-answer-panel>
