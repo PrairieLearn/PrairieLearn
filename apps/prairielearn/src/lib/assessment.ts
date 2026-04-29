@@ -47,7 +47,6 @@ export const InstanceLogSchema = z.object({
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
   formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
