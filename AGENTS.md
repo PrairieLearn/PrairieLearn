@@ -173,6 +173,7 @@ When writing tests:
 - In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
+- To enable a feature flag for a test you can use `withConfig({ features: { 'feature-name': true } }, async () => { ... })`.
 
 ### Rendering HTML
 
@@ -203,6 +204,8 @@ Elements (similar to React components, used to build interactive questions) are 
 When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
 
 When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
+
+When changing attributes on an element exposed to AI question generation (any element in `SUPPORTED_ELEMENTS` in `apps/prairielearn/src/ee/lib/validateHTML.ts`), see the [`ai-html-validator` skill](./.agents/skills/ai-html-validator/SKILL.md) for the validator and documentation files that must be kept in sync.
 
 ### Testing
 

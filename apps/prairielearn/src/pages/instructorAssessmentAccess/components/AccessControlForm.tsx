@@ -35,12 +35,14 @@ export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
   courseInstance,
+  assessmentId,
   isSaving = false,
   alert,
 }: {
   initialData?: AccessControlJsonWithId[];
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  assessmentId: string;
   isSaving?: boolean;
   alert?: ReactNode;
 }) {
@@ -69,7 +71,7 @@ export function AccessControlForm({
     setError,
     watch,
     reset,
-    formState: { isDirty, isValid },
+    formState: { isDirty, isValid, errors },
   } = methods;
 
   const {
@@ -86,7 +88,8 @@ export function AccessControlForm({
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
   // Sync cross-field date validation errors into react-hook-form as manual errors,
-  // and clear them when the underlying issues are resolved.
+  // and clear them when the underlying issues are resolved. Depends on `errors`
+  // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
     for (const error of getGlobalDateValidationErrors(watchedData)) {
@@ -103,11 +106,9 @@ export function AccessControlForm({
       const nextMessage = nextManualErrors.get(path);
 
       if (nextMessage) {
-        if (fieldState.error?.type !== 'manual') {
-          if (!fieldState.error) {
-            setError(path, { type: 'manual', message: nextMessage });
-          }
-        } else if (fieldState.error.message !== nextMessage) {
+        if (!fieldState.error) {
+          setError(path, { type: 'manual', message: nextMessage });
+        } else if (fieldState.error.type === 'manual' && fieldState.error.message !== nextMessage) {
           setError(path, { type: 'manual', message: nextMessage });
         }
       } else if (fieldState.error?.type === 'manual') {
@@ -116,7 +117,7 @@ export function AccessControlForm({
     }
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData]);
+  }, [clearErrors, getFieldState, setError, watchedData, errors]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
@@ -224,7 +225,11 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'main' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm displayTimezone={displayTimezone} />
+        <MainRuleForm
+          displayTimezone={displayTimezone}
+          assessmentId={assessmentId}
+          courseInstanceId={courseInstance.id}
+        />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -237,7 +242,12 @@ export function AccessControlForm({
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
             />
-            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
+            <OverrideRuleContent
+              index={selectedRule.index}
+              displayTimezone={displayTimezone}
+              assessmentId={assessmentId}
+              courseInstanceId={courseInstance.id}
+            />
           </div>
         );
       })()

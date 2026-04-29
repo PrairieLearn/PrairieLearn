@@ -22,7 +22,7 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { getFileMetadataForPath } from '../../lib/editorUtil.js';
+import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -110,14 +110,16 @@ router.get(
 
       const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
       const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
+      const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
 
       const editorData: FileEditorData = {
         fileName: path.basename(relPath),
         normalizedFileName: path.normalize(relPath),
-        aceMode: getModeForPath(relPath).mode,
+        aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
         diskContents: encodedContents,
         diskHash: getHash(encodedContents),
         fileMetadata,
+        lintHtmlMustache,
       };
 
       const draftEdit = await readDraftEdit({

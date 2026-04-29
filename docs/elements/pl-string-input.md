@@ -1,6 +1,6 @@
 # `pl-string-input` element
 
-Fill in the blank field that allows for **string** value input.
+Fill-in-the-blank field that allows for **string**-value input, exact or pattern (regular expression).
 
 ## Sample element
 
@@ -19,47 +19,56 @@ def generate(data):
 
 ## Customizations
 
-| Attribute                 | Type                    | Default         | Description                                                                                                                                                               |
+| Attribute | Type | Default | Description |
 | ------------------------- | ----------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allow-blank`             | boolean                 | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                 |
-| `answers-name`            | string                  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.      |
-| `aria-label`              | string                  | —               | An accessible label for the element.                                                                                                                                      |
-| `correct-answer`          | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
-| `correct-answer-format`   | `"exact"` or `"regex"`  | `"exact"`       | If `"regex"`, the correct answer is treated as a Python regular expression and matched using `re.fullmatch()`. The `ignore-case` attribute, if `true`, also enables `re.IGNORECASE`. Other flags can be enabled inline (e.g., `(?x)` for verbose, `(?s)` for dotall). |
-| `correct-answer-text`     | string                  | —               | If provided, this text is shown in the answer panel instead of the raw correct answer. Useful when `correct-answer-format="regex"` to display a human-readable form of the regex pattern.                                                                            |
-| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled.                                                                                           |                                                                                   
-| `ignore-case`             | boolean                 | false           | Whether to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                            |
-| `initial-value`           | string                  | —               | Initial value is added to the text box the first time it is rendered.                                                                                                     |
-| `label`                   | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
-| `multiline`               | boolean                 | false           | Whether to allow for multiline input using a `textarea` display.                                                                                                          |
-| `normalize-to-ascii`      | boolean                 | false           | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
-| `placeholder`             | string                  | —               | Hint displayed inside the input box describing the expected type of input.                                                                                                |
-| `remove-leading-trailing` | boolean                 | See description | Whether to remove leading and trailing blank spaces from the input string. Defaults to `true` if `multiline` is enabled, otherwise `false`.                               |
-| `remove-spaces`           | boolean                 | false           | Whether to remove blank spaces from the input string.                                                                                                                     |
-| `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
-| `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                   |
-| `suffix`                  | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                         |
-| `weight`                  | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                      |
+| `allow-blank` | boolean | false | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format). |
+| `answers-name` | string | — | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `aria-label` | string | — | An accessible label for the element. |
+| `correct-answer` | string | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. |
+| `correct-answer-format` | `"exact"` or `"regex"` | `"exact"` | If `"regex"`, `correct-answer` is interpreted as a whole-string regular-expression pattern, otherwise as a literal-string pattern. Inherits behavior of `ignore-case`. |
+| `correct-answer-text` | string | — | A text string printed in the answer panel in place of the contents of `correct-answer`. Useful to provide a human-readable answer when `correct-answer-format="regex"`. |
+| `display` | `"block"` or `"inline"` | `"inline"` | How to display the input field. Default is `"block"` if `multiline` is enabled. |
+| `ignore-case` | boolean | false | Whether to enforce case sensitivity (e.g. "hello" != "HELLO"). |
+| `initial-value` | string | — | Initial value is added to the text box the first time it is rendered. |
+| `label` | string | — | A prefix to display before the input box (e.g., `label="$x =$"`). |
+| `multiline` | boolean | false | Whether to allow for multiline input using a `textarea` display. |
+| `normalize-to-ascii` | boolean | false | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
+| `placeholder` | string | — | Hint displayed inside the input box describing the expected type of input. |
+| `remove-leading-trailing` | boolean | See description | Whether to remove leading and trailing blank spaces from the input string. Defaults to `true` if `multiline` is enabled, otherwise `false`. |
+| `remove-spaces` | boolean | false | Whether to remove blank spaces from the input string. |
+| `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters. |
+| `size` | integer | 35 | Width of the input box. |
+| `suffix` | string | — | A suffix to display after the input box (e.g., `suffix="items"`). |
+| `weight` | integer | 1 | Weight to use when computing a weighted average score over elements. |
 
-## Using regex matching
+### Flexible correct answers using regular expressions, `correct-answer-format="regex"`
 
-Setting `correct-answer-format="regex"` allows the correct answer to be specified as a Python regular expression. The student's answer is graded using `re.fullmatch()`, which requires the entire submitted answer to match the pattern.
+By `correct-answer-format="regex"`, the whole correct answer is specified as a [Python regular expression](https://docs.python.org/3/library/re.html). This is a whole-answer match, not a substring match, equivalent to surrounding the answer pattern with `^(` ... `)$` (that is, the student's response is compared using Python's `re.fullmatch()`). Matching is case-sensitive or -insensitive depending on the value of the `ignore-case` attribute.
 
-For example, the following question accepts either `N` or `nitrogen` (or, with `ignore-case="true"`, `n`, `Nitrogen`, `NITROGEN`, etc.):
+Example.---To accept either `N`, or `nitrogen`, or any case variant thereof, but reject `Nitrate`:
+
 ```html title="question.html"
 <pl-string-input
     answers-name="element"
     correct-answer="N|nitrogen"
     correct-answer-format="regex"
-    correct-answer-text="N or nitrogen"
+    remove-leading-trailing="true"
+    correct-answer-text="Either 'N' or 'nitrogen'."
     ignore-case="true">
 </pl-string-input>
 ```
-By default, the regex pattern itself is shown in the answer panel. To display a more student-friendly form, use the `correct-answer-text` attribute as in the example above.
 
-The `ignore-case` attribute enables `re.IGNORECASE` for the pattern. Other regex flags can be enabled inline using Python's regex syntax: `(?x)` for `re.VERBOSE`, `(?s)` for `re.DOTALL`, `(?m)` for `re.MULTILINE`, etc.
+Note (1) use of `ignore-case="true"` to accept `n`, `Nitrogen`, etc.; (2) `remove-leading-trailing="true"`; and (3) `correct-answer-text` for the answer panel substituting there for the regular expression itself.
 
-If the regex pattern is invalid, the student's answer is graded as incorrect.
+Usage notes.---The `ignore-case` attribute enables Python's `re.IGNORECASE` in matching the pattern. There is no access to any other Python flags as such, as these behaviors can be coded into the regular expression itself. Examples: `(?x)` to enable comments and to ignore whitespace (equivalent to `re.VERBOSE`); `(?s)` to match any character including newline with `.` (equivalent to `re.DOTALL`); `(?m)` to allow for matching `^` and `$` within the response (equivalent to `re.MULTILINE`); etc.
+
+Limitations.---As matching is whole-string, you need to include `.*` inside your pattern if you want to match a substring. The metacharacters of regular expressions (`.`, `$`, etc.) must be escaped as `\.`, `\$`, etc., if you wish to match them literally.
+
+Bugs.---If the regular expression is invalid, the student's response is always graded as incorrect.
+
+### Simple answer-panel override using `correct-answer-text`
+
+By default, the answer panel prints the contents of `correct-answer` as given. The attribute `correct-answer-text` provides a simple override (simpler than adjusting `<pl-answer-panel>`). This is useful, for example, in conjunction with a regular-expression answer to print a human-friendly key answer, as in the example above.
 
 ## Using multiline inputs
 
@@ -77,6 +86,6 @@ Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line bre
 - [`pl-integer-input` for integer input](pl-integer-input.md)
 - [`pl-number-input` for numeric input](pl-number-input.md)
 
----
+______________________________________________________________________
 
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput

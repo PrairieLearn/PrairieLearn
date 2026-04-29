@@ -142,6 +142,7 @@ def to_json(
     | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
     | complex ndarray | `complex_ndarray` | |
     | `sympy.Expr` | `sympy` | any scalar SymPy expression |
+    | `sympy.Set` | `sympy` | SymPy sets such as `FiniteSet` and `Interval` |
     | `sympy.Matrix` | `sympy_matrix` | |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
@@ -193,6 +194,8 @@ def to_json(
                 "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
+    elif isinstance(v, sympy.Set):
+        return sympy_to_json(v, allow_sets=True)
     elif isinstance(v, sympy.Expr):
         return sympy_to_json(v)
     elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):

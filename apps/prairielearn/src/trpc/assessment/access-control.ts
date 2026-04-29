@@ -11,7 +11,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -100,8 +100,9 @@ function formJsonToEnrollmentRuleData(
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
     releaseDate: dc?.release?.date ?? null,
-    dueDateOverridden: dc?.dueDate !== undefined,
-    dueDate: dc?.dueDate ?? null,
+    dueOverridden: dc?.due !== undefined,
+    dueDate: dc?.due?.date ?? null,
+    dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
@@ -216,7 +217,7 @@ const saveAllRules = t.procedure
     const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
-      opts.ctx.course_instance.short_name!,
+      opts.ctx.course_instance.short_name,
       'assessments',
       opts.ctx.assessment.tid!,
     );

@@ -141,7 +141,6 @@ export function OverrideReleaseDateField({
     <FieldWrapper
       isOverridden={isOverridden}
       label="Release"
-      headerContent={<strong>Release</strong>}
       onOverride={() => {
         field.onChange(mainValue || todayLocalDatetime(displayTimezone));
         addOverride();

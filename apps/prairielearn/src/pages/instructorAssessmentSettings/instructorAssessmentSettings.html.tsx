@@ -961,8 +961,9 @@ function InstructorAssessmentSettingsInner({
                       />
                       <small id="honor-code-help" className="form-text text-muted">
                         Custom honor code text shown to students before starting the exam. Supports
-                        Markdown formatting. Use <code>{'{{user_name}}'}</code> to include the
-                        student's name. Leave blank for the default honor code.
+                        Markdown formatting; HTML is not supported. Use{' '}
+                        <code>{'{{user_name}}'}</code> to include the student's name. Leave blank
+                        for the default honor code.
                       </small>
                     </div>
                   )}
