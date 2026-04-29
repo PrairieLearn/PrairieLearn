@@ -2552,21 +2552,18 @@ export class QtiImportEditor extends Editor {
       // Config may not exist yet or may be malformed; default to not sharing.
     }
 
-    const pathsToAdd: string[] = [];
+    const questionsBaseDir = path.join(this.course.path, 'questions');
+    const assessmentsBaseDir = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'assessments',
+    );
 
+    // Pre-validate all paths before writing anything to avoid partial state.
     for (const assessment of this.assessments) {
-      const questionsBaseDir = path.join(this.course.path, 'questions');
-      const assessmentsBaseDir = path.join(
-        this.course.path,
-        'courseInstances',
-        this.course_instance.short_name,
-        'assessments',
-      );
-
-      // Write each question
       for (const question of assessment.questions) {
         const qDir = path.join(questionsBaseDir, question.directoryName);
-
         if (!contains(questionsBaseDir, qDir)) {
           throw new AugmentedError('Invalid question folder path', {
             info: html`
@@ -2581,6 +2578,50 @@ export class QtiImportEditor extends Editor {
             `,
           });
         }
+        if (Object.keys(question.clientFiles).length > 0) {
+          const cfDir = path.join(qDir, 'clientFilesQuestion');
+          for (const name of Object.keys(question.clientFiles)) {
+            const filePath = path.join(cfDir, name);
+            if (!contains(cfDir, filePath)) {
+              throw new AugmentedError('Invalid client file path', {
+                info: html`
+                  <p>The client file path</p>
+                  <div class="container">
+                    <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                  </div>
+                  <p>must be inside the clientFilesQuestion directory</p>
+                  <div class="container">
+                    <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                  </div>
+                `,
+              });
+            }
+          }
+        }
+      }
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+      if (!contains(assessmentsBaseDir, assessmentDir)) {
+        throw new AugmentedError('Invalid assessment folder path', {
+          info: html`
+            <p>The assessment folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentDir}</pre>
+            </div>
+            <p>must be inside the assessments directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+    }
+
+    const pathsToAdd: string[] = [];
+
+    for (const assessment of this.assessments) {
+      // Write each question (paths already validated above).
+      for (const question of assessment.questions) {
+        const qDir = path.join(questionsBaseDir, question.directoryName);
 
         // Clear managed files before writing so that stale artifacts
         // (e.g. a previous server.py or old clientFilesQuestion entries)
@@ -2606,46 +2647,15 @@ export class QtiImportEditor extends Editor {
         if (Object.keys(question.clientFiles).length > 0) {
           const cfDir = path.join(qDir, 'clientFilesQuestion');
           for (const [name, base64Content] of Object.entries(question.clientFiles)) {
-            const filePath = path.join(cfDir, name);
-            if (!contains(cfDir, filePath)) {
-              throw new AugmentedError('Invalid client file path', {
-                info: html`
-                  <p>The client file path</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
-                  </div>
-                  <p>must be inside the clientFilesQuestion directory</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
-                  </div>
-                `,
-              });
-            }
-            await fs.outputFile(filePath, Buffer.from(base64Content, 'base64'));
+            await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
           }
         }
 
         pathsToAdd.push(qDir);
       }
 
-      // Write the assessment
+      // Write the assessment (path already validated above).
       const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
-
-      if (!contains(assessmentsBaseDir, assessmentDir)) {
-        throw new AugmentedError('Invalid assessment folder path', {
-          info: html`
-            <p>The assessment folder path</p>
-            <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${assessmentDir}</pre>
-            </div>
-            <p>must be inside the assessments directory</p>
-            <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${assessmentsBaseDir}</pre>
-            </div>
-          `,
-        });
-      }
-
       const aInfoJson = { ...assessment.infoJson };
       if (shareSourcePublicly) {
         aInfoJson.shareSourcePublicly = true;
