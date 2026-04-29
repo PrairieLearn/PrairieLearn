@@ -66,15 +66,18 @@ describe('makeKmsConfigSource', () => {
     });
   });
 
-  it('does not pass metadata to KMS when decrypting', async () => {
+  it('ignores metadata when decrypting', async () => {
     sendMock.mockResolvedValue({ Plaintext: new TextEncoder().encode('decrypted') });
 
     await makeKmsConfigSource().load({
       secret: {
         ...makeEncryptedValue(),
         metadata: {
-          key: 'alias/service-config/us-prod',
-          description: 'metadata is not used by runtime decryption',
+          key: 42,
+          description: {
+            text: 'metadata is not used by runtime decryption',
+          },
+          owner: ['course-staff'],
         },
       },
     });
@@ -230,17 +233,6 @@ describe('makeKmsConfigSource', () => {
         },
       }),
     ).rejects.toThrow(/Malformed encrypted config value.*context\.environment/);
-
-    await expect(
-      makeKmsConfigSource().load({
-        secret: {
-          ...makeEncryptedValue(),
-          metadata: {
-            key: 42,
-          },
-        },
-      }),
-    ).rejects.toThrow(/Malformed encrypted config value.*metadata\.key/);
 
     await expect(
       makeKmsConfigSource().load({

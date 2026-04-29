@@ -77,4 +77,4 @@ Encrypted config values use this JSON object shape:
 }
 ```
 
-The required runtime fields are `__encrypted`, `ciphertext`, and `context`. `ciphertext` must be standard padded base64, and `context` is passed to KMS as the exact encryption context with all values as strings. `metadata` is optional review/debug information with known optional string fields `key` and `description`; KMS infers the key from the ciphertext during decrypt, and runtime decryption ignores metadata instead of trusting, validating against the ciphertext, or passing it to KMS. Decrypted plaintext must be valid UTF-8 and is returned as a string.
+The required runtime fields are `__encrypted`, `ciphertext`, and `context`. `ciphertext` must be standard padded base64, and `context` is passed to KMS as the exact encryption context with all values as strings. `metadata` is optional review/debug information; the example above shows recommended fields, but runtime decryption ignores metadata instead of trusting, validating, or passing it to KMS. KMS infers the key from the ciphertext during decrypt. Decrypted plaintext must be valid UTF-8 and is returned as a string.
