@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
@@ -14,7 +15,6 @@ import type {
   AccessControlRuleInput,
   EnrollmentContext,
   PrairieTestReservation,
-  MainRuleBody,
   RuntimeAfterComplete,
 } from './resolver.js';
 import type { RuntimeDateControl } from './timeline.js';
@@ -123,44 +123,48 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule = row.access_control_rule;
-  const runtimeRule: MainRuleBody = { prairieTestExams: [] };
-
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
-  if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
-
   const afterComplete = buildAfterComplete(rule);
-  if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
-  if (rule.target_type === 'enrollment') {
-    return {
-      targetType: 'enrollment',
-      number: rule.number,
-      rule: runtimeRule,
-      enrollmentIds: row.enrollment_ids,
-    };
-  }
-  if (rule.target_type === 'student_label') {
-    return {
-      targetType: 'student_label',
-      number: rule.number,
-      rule: runtimeRule,
-      studentLabelIds: row.student_label_ids,
-    };
-  }
-
-  // Main rule: only this variant carries `beforeRelease` and PrairieTest integrations.
-  runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
-  runtimeRule.prairieTestExams = (row.prairietest_exams ?? []).map((e) => ({
-    uuid: e.uuid,
-    readOnly: e.read_only,
-    questionsHidden: e.after_complete_questions_hidden,
-    scoreHidden: e.after_complete_score_hidden,
-  }));
-  return {
-    targetType: 'none',
-    number: 0,
-    rule: runtimeRule,
+  const ruleBody = {
+    ...(dateControl && { dateControl }),
+    ...(afterComplete && { afterComplete }),
   };
+
+  switch (rule.target_type) {
+    case 'enrollment':
+      return {
+        targetType: 'enrollment',
+        number: rule.number,
+        rule: ruleBody,
+        enrollmentIds: row.enrollment_ids,
+      };
+    case 'student_label':
+      return {
+        targetType: 'student_label',
+        number: rule.number,
+        rule: ruleBody,
+        studentLabelIds: row.student_label_ids,
+      };
+    case 'none':
+      return {
+        targetType: 'none',
+        number: 0,
+        rule: {
+          ...ruleBody,
+          // Only the main rule carries `beforeRelease` and PrairieTest integrations.
+          beforeRelease: { listed: rule.before_release_listed ?? false },
+          prairieTestExams: (row.prairietest_exams ?? []).map((e) => ({
+            uuid: e.uuid,
+            readOnly: e.read_only,
+            questionsHidden: e.after_complete_questions_hidden,
+            scoreHidden: e.after_complete_score_hidden,
+          })),
+        },
+      };
+    default:
+      assertNever(rule.target_type);
+  }
 }
 
 export async function selectAccessControlRulesForAssessment(

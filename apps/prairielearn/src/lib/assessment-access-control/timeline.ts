@@ -94,20 +94,11 @@ function buildDeadlines(
   return deduped;
 }
 
-interface AccessSegment {
-  /** `null` denotes the pre-release segment. */
-  startDate: Date | null;
-  /** `null` denotes the open-ended segment after the last deadline. */
-  endDate: Date | null;
-  credit: number;
-  /** Whether submissions are allowed during this segment. */
-  submittable: boolean;
-}
-
 /**
- * Builds a contiguous, ordered set of access segments covering the entire
- * timeline. Returns `[]` when the date control has no usable access path
- * (no release configured, or due date on/before release date). Otherwise:
+ * Builds a contiguous, ordered timeline of credit segments covering the entire
+ * timeline, tagging the segment containing `date` with `current: true`.
+ * Returns `[]` when the date control has no usable access path (no release
+ * configured, or due date on/before release date). Otherwise:
  *
  * - Index 0 is always the pre-release segment `[null, releaseDate)`.
  * - Middle segments are bounded by adjacent deadlines.
@@ -115,8 +106,14 @@ interface AccessSegment {
  *   on `afterLastDeadline`, except when `due: { date: null }` is set —
  *   that "indefinite due" case shadows `afterLastDeadline` and applies
  *   `dueCredit` (default 100%) forever, with submissions allowed.
+ *
+ * The pre-release segment is always emitted; the student popover filters
+ * non-submittable entries client-side.
  */
-function buildSegments(dateControl: RuntimeDateControl | undefined): AccessSegment[] {
+export function buildAccessTimeline(
+  dateControl: RuntimeDateControl | undefined,
+  date: Date,
+): AccessTimelineEntry[] {
   if (!dateControl?.release) return [];
 
   const releaseDate = dateControl.release.date;
@@ -126,55 +123,58 @@ function buildSegments(dateControl: RuntimeDateControl | undefined): AccessSegme
 
   if (dueDate && dueDate <= releaseDate) return [];
 
+  const isCurrent = (startDate: Date | null, endDate: Date | null) =>
+    (startDate === null || date >= startDate) && (endDate === null || date < endDate);
+
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
-  const segments: AccessSegment[] = [
-    { startDate: null, endDate: releaseDate, credit: 0, submittable: false },
+  const entries: AccessTimelineEntry[] = [
+    {
+      startDate: null,
+      endDate: releaseDate,
+      credit: 0,
+      current: isCurrent(null, releaseDate),
+      submittable: false,
+    },
   ];
 
   let segStart = releaseDate;
   for (const deadline of deadlines) {
-    segments.push({
+    entries.push({
       startDate: segStart,
       endDate: deadline.date,
       credit: deadline.credit,
+      current: isCurrent(segStart, deadline.date),
       submittable: true,
     });
     segStart = deadline.date;
   }
 
   if (dueIsIndefinite) {
-    segments.push({ startDate: segStart, endDate: null, credit: dueCredit, submittable: true });
+    entries.push({
+      startDate: segStart,
+      endDate: null,
+      credit: dueCredit,
+      current: isCurrent(segStart, null),
+      submittable: true,
+    });
   } else if (deadlines.length === 0) {
-    segments.push({ startDate: segStart, endDate: null, credit: 100, submittable: true });
+    entries.push({
+      startDate: segStart,
+      endDate: null,
+      credit: 100,
+      current: isCurrent(segStart, null),
+      submittable: true,
+    });
   } else {
-    segments.push({
+    entries.push({
       startDate: segStart,
       endDate: null,
       credit: dateControl.afterLastDeadline?.credit ?? 0,
+      current: isCurrent(segStart, null),
       submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
     });
   }
 
-  return segments;
-}
-
-/**
- * Builds the timeline of credit segments for `dateControl`, tagging the
- * segment that contains `date` with `current: true`. The pre-release segment
- * is always emitted; the student popover filters non-submittable entries
- * client-side. Returns `[]` when the date control has no usable access path.
- */
-export function buildAccessTimeline(
-  dateControl: RuntimeDateControl | undefined,
-  date: Date,
-): AccessTimelineEntry[] {
-  return buildSegments(dateControl).map((s) => ({
-    credit: s.credit,
-    startDate: s.startDate,
-    endDate: s.endDate,
-    current:
-      (s.startDate === null || date >= s.startDate) && (s.endDate === null || date < s.endDate),
-    submittable: s.submittable,
-  }));
+  return entries;
 }
 
