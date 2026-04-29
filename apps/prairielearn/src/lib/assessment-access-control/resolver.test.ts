@@ -1919,6 +1919,81 @@ describe('resolveAccessControl', () => {
       ).toMatchObject({ credit: 50, active: true });
     });
   });
+
+  // Regression: deny / coming-soon returns previously dropped the precomputed
+  // `accessTimeline` by spreading `UNAUTHORIZED_RESULT` (whose timeline is `[]`)
+  // without re-spreading the timeline. The student popover then rendered an
+  // empty schedule on pre-release and Exam-mode-deny pages.
+  describe('accessTimeline preservation on deny returns', () => {
+    const dcRule = makeMainRule({
+      dateControl: {
+        release: { date: '2025-04-01T00:00:00Z' },
+        due: { date: '2025-05-01T00:00:00Z' },
+      },
+    });
+
+    it('preserves accessTimeline on pre-release deny', () => {
+      const result = runCase({
+        name: 'pre-release deny',
+        rules: [dcRule],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {},
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.accessTimeline.length).toBeGreaterThan(0);
+      expect(result.accessTimeline.find((e) => e.current)).toMatchObject({
+        startDate: null,
+        endDate: new Date('2025-04-01T00:00:00Z'),
+      });
+    });
+
+    it('preserves accessTimeline on coming-soon (beforeRelease.listed) return', () => {
+      const result = runCase({
+        name: 'coming-soon',
+        rules: [
+          makeMainRule({
+            beforeRelease: { listed: true },
+            dateControl: {
+              release: { date: '2025-04-01T00:00:00Z' },
+              due: { date: '2025-05-01T00:00:00Z' },
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {},
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.showBeforeRelease).toBe(true);
+      expect(result.accessTimeline.length).toBeGreaterThan(0);
+      expect(result.accessTimeline.find((e) => e.current)).toMatchObject({
+        startDate: null,
+        endDate: new Date('2025-04-01T00:00:00Z'),
+      });
+    });
+
+    it('preserves accessTimeline on Exam-mode deny without matching reservation', () => {
+      const result = runCase({
+        name: 'Exam-mode deny',
+        rules: [
+          makeMainRule(
+            {
+              dateControl: {
+                release: { date: '2025-04-01T00:00:00Z' },
+                due: { date: '2025-05-01T00:00:00Z' },
+              },
+            },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
+          ),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        authzMode: 'Exam',
+        reservations: [],
+        expect: {},
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.accessTimeline.length).toBeGreaterThan(0);
+    });
+  });
 });
 
 describe('mergeRules', () => {

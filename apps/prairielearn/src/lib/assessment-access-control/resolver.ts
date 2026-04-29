@@ -376,6 +376,12 @@ export function resolveAccessControl(
 
   const visibility = computeTopLevelVisibility(rule.afterComplete, date);
   const accessTimeline = buildAccessTimeline(rule.dateControl, date);
+  // Used by deny / coming-soon returns. PT-granted paths keep `grantedDefaults`
+  // separately so `examVisibility` isn't shadowed by top-level `visibility`.
+  const denyDefaults = {
+    ...visibility,
+    accessTimeline,
+  };
   const grantedDefaults = {
     showBeforeRelease: false,
     accessTimeline,
@@ -391,7 +397,7 @@ export function resolveAccessControl(
     const matched = rule.prairieTestExams.find((exam) =>
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
     );
-    if (!matched) return { ...UNAUTHORIZED_RESULT, ...visibility };
+    if (!matched) return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
 
     const reservation = prairieTestReservations.find((r) => r.examUuid === matched.uuid)!;
     const examVisibility = computePrairieTestVisibility(matched);
@@ -418,22 +424,22 @@ export function resolveAccessControl(
   if (listed && (beforeRelease || !hasRelease)) {
     return {
       ...UNAUTHORIZED_RESULT,
-      ...visibility,
+      ...denyDefaults,
       showBeforeRelease: true,
       nextActiveDate: nextDeadlineDate,
     };
   }
 
   if (beforeRelease) {
-    return { ...UNAUTHORIZED_RESULT, ...visibility };
+    return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
   }
 
   if (!hasRelease) {
     // PT-gated rule with no DC: review-only path when visibility has unlocked.
     if (rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
-      return { ...UNAUTHORIZED_RESULT, authorized: true, ...visibility };
+      return { ...UNAUTHORIZED_RESULT, authorized: true, ...denyDefaults };
     }
-    return { ...UNAUTHORIZED_RESULT, ...visibility };
+    return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
   }
 
   const credit = current?.credit ?? 0;
