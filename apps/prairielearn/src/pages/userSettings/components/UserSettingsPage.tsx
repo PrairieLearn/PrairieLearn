@@ -150,8 +150,8 @@ function PersonalAccessTokensCard({
               later.
             </div>
             {newAccessTokens.map((token) => (
-              <div key={token} className="alert alert-success mb-0 new-access-token" role="alert">
-                {token}
+              <div key={token} className="alert alert-success mb-0" role="alert">
+                <span className="new-access-token">{token}</span>
                 <button
                   type="button"
                   className="ms-2 btn btn-sm btn-outline-secondary btn-copy"
