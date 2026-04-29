@@ -66,7 +66,7 @@ Usage notes.---The `ignore-case` attribute enables Python's `re.IGNORECASE` in m
 Other matching behaviors can be coded into the regular expression; for example, `(?x)` to enable comments and to ignore whitespace (equivalent to `re.VERBOSE`), `(?s)` to match any character including newline with `.` (equivalent to `re.DOTALL`), `(?m)` to allow for matching `^` and `$` within the response (equivalent to `re.MULTILINE`), etc. 
 
 
-Limitations.---As matching is whole-string, you need to include `.*` inside your pattern if you want to match a substring. If you want to match a literal `^` or `$`, you need to escape them as `\.`, `\$`, even though these metacharacters are useless within your pattern unless it contains `(?m)`. There is no access to Python flags as such beyond `re.IGNORECASE`. This mode's behavior does not change for `multiline="true"`. There is no access to Python flags as such beyond `re.IGNORECASE`. This mode's behavior does not change for `multiline="true"`.
+Limitations.---As matching is whole-string, you need to include `.*` inside your pattern if you want to match a substring. If you want to match a literal `^` or `$`, you need to escape them as `\.`, `\$`, even though these metacharacters are useless within your pattern unless it contains `(?m)`. This mode's behavior does not change for `multiline="true"`. There is no access to Python flags as such beyond `re.IGNORECASE`. 
 
 Bugs.---If the regular expression is invalid, the student's response is always graded as incorrect. This mode assumes that you know how to correctly write extended regular expressions.
 
