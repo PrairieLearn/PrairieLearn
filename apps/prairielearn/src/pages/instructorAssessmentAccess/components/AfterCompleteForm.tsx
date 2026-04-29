@@ -555,7 +555,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
-          headerContent={<strong>Question visibility</strong>}
           onOverride={() => {
             qvField.onChange({ ...mainQV });
             addQvOverride();
@@ -577,7 +576,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
-          headerContent={<strong>Score visibility</strong>}
           onOverride={() => {
             svField.onChange({ ...mainSV });
             addSvOverride();

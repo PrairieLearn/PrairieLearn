@@ -411,7 +411,6 @@ export function OverrideDueDateField({
     <FieldWrapper
       isOverridden={isOverridden}
       label="Due date"
-      headerContent={<strong>Due date</strong>}
       onOverride={() => {
         dateCtrl.field.onChange(mainValue.date);
         creditCtrl.field.onChange(mainValue.credit);
