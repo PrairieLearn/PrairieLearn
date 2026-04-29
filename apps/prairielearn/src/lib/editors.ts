@@ -2618,8 +2618,8 @@ export class QtiImportEditor extends Editor {
         // (e.g. a previous server.py or old clientFilesQuestion entries)
         // don't persist when overwriting an existing question.
         if (await fs.pathExists(qDir)) {
-          await fs.remove(path.join(qDir, 'server.py')).catch(() => {});
-          await fs.remove(path.join(qDir, 'clientFilesQuestion')).catch(() => {});
+          await fs.remove(path.join(qDir, 'server.py'));
+          await fs.remove(path.join(qDir, 'clientFilesQuestion'));
         }
 
         const qInfoJson = { ...question.infoJson };

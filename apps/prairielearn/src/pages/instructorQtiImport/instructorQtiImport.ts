@@ -30,6 +30,7 @@ import { selectAssessments } from '../../models/assessment.js';
 
 import { InstructorQtiImport } from './instructorQtiImport.html.js';
 import type {
+  ParseWarning,
   SerializedConversionResult,
   StrippedAccessRules,
   UploadResponse,
@@ -130,9 +131,12 @@ router.post(
       // assessments (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
       const results: SerializedConversionResult[] = [];
+      const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
         const result = await convertEntry(entry, rubricsXml, usedSlugs);
-        if (result) {
+        if ('filename' in result) {
+          parseWarnings.push(result);
+        } else {
           results.push(result);
         }
       }
@@ -176,6 +180,7 @@ router.post(
 
       const response: UploadResponse = {
         results,
+        parseWarnings,
         existingQuestionDirs,
         strippedAccessRules: stripped,
         assessmentSetNames: assessmentSets.map((s) => s.name),
@@ -197,7 +202,7 @@ async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
-): Promise<SerializedConversionResult | null> {
+): Promise<SerializedConversionResult | ParseWarning> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
   // Resolve web_resources: check inside assessmentDir first (root-level
@@ -226,8 +231,11 @@ async function convertEntry(
   let ir;
   try {
     ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
-  } catch {
-    return null;
+  } catch (err) {
+    return {
+      filename: path.basename(entry.qtiPath),
+      message: err instanceof Error ? err.message : String(err),
+    };
   }
 
   // Deduplicate slugs so same-titled assessments don't collide.

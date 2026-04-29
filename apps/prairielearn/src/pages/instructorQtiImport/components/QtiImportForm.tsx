@@ -11,6 +11,7 @@ hljs.registerLanguage('python', hljsPython);
 
 import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 import type {
+  ParseWarning,
   SerializedConversionResult,
   SerializedQuestionOutput,
   StrippedAccessRules,
@@ -176,6 +177,7 @@ export function QtiImportForm({
   const [overrides, setOverrides] = useState<AssessmentOverrides[]>([]);
   const [existingDirs, setExistingDirs] = useState<Set<string>>(new Set());
   const [strippedRules, setStrippedRules] = useState<StrippedAccessRules | null>(null);
+  const [parseWarnings, setParseWarnings] = useState<ParseWarning[]>([]);
   const [questionOverrides, setQuestionOverrides] = useState<Map<string, QuestionOverrides>>(
     new Map(),
   );
@@ -215,13 +217,20 @@ export function QtiImportForm({
 
       const data: UploadResponse = await response.json();
 
-      if (data.results.length === 0) {
+      if (data.results.length === 0 && data.parseWarnings.length === 0) {
         throw new Error('No assessments found in the uploaded file');
+      }
+
+      if (data.results.length === 0 && data.parseWarnings.length > 0) {
+        throw new Error(
+          `All assessments failed to parse:\n${data.parseWarnings.map((w) => `  ${w.filename}: ${w.message}`).join('\n')}`,
+        );
       }
 
       const dirs = new Set(data.existingQuestionDirs);
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
+      setParseWarnings(data.parseWarnings);
       setResults(data.results);
       if (data.assessmentSetNames.length > 0) {
         setAssessmentSetNames(data.assessmentSetNames);
@@ -385,7 +394,11 @@ export function QtiImportForm({
 
         {step === 'review' && (
           <>
-            <ImportSummary results={results} strippedAccessRules={strippedRules} />
+            <ImportSummary
+              results={results}
+              strippedAccessRules={strippedRules}
+              parseWarnings={parseWarnings}
+            />
 
             <p className="text-muted">
               Review the assessments and questions below, then confirm to create them in your
@@ -556,9 +569,11 @@ function NonRubricWarnings({
 function ImportSummary({
   results,
   strippedAccessRules,
+  parseWarnings,
 }: {
   results: SerializedConversionResult[];
   strippedAccessRules: StrippedAccessRules | null;
+  parseWarnings: ParseWarning[];
 }) {
   const totalQuestions = results.reduce((sum, r) => sum + r.questions.length, 0);
   const totalAssets = results.reduce(
@@ -591,6 +606,9 @@ function ImportSummary({
     );
   }
   notImportedItems.push(...uniqueUnsupported);
+  for (const pw of parseWarnings) {
+    notImportedItems.push(`${pw.filename}: ${pw.message}`);
+  }
 
   const hasNotImported = notImportedItems.length > 0;
 

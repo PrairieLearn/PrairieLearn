@@ -34,9 +34,19 @@ export interface StrippedAccessRules {
   hasDates: boolean;
 }
 
+/** A warning for a QTI entry that failed to parse. */
+export interface ParseWarning {
+  /** Identifier for the entry that failed (e.g. the QTI XML filename). */
+  filename: string;
+  /** The error message from the parser. */
+  message: string;
+}
+
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
   results: SerializedConversionResult[];
+  /** QTI entries that failed to parse, surfaced as warnings. */
+  parseWarnings: ParseWarning[];
   /** Directory names of questions that already exist in the course. */
   existingQuestionDirs: string[];
   /** Access rule properties that were stripped from the imported assessments. */
