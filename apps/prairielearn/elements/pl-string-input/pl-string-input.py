@@ -203,18 +203,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
             return ""
+        
+        # If correct-answer-text is provided, use it for display instead of
+        # the raw correct answer (useful when correct-answer is a regex)
+        correct_answer_text = pl.get_string_attrib(
+            element, "correct-answer-text", CORRECT_ANSWER_TEXT_DEFAULT
+        )
+        display_answer = correct_answer_text if correct_answer_text is not None else str(a_tru)
 
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": a_tru,
+            "a_tru": display_answer,
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
             display.value: True,
             # Some users were putting numbers into the correct answer. For
             # backwards compatibility, always convert the answer to a string.
-            "escaped_correct_answer": html.escape(pl.escape_unicode_string(str(a_tru))),
+            "escaped_correct_answer": html.escape(pl.escape_unicode_string(display_answer)),
         }
 
         return chevron.render(template, html_params).strip()
