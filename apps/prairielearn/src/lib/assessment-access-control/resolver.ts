@@ -26,20 +26,20 @@ export interface PrairieTestExam {
 }
 
 /**
- * The merge-able body of an access control rule. Mirrors the JSON shape with
+ * The full body of a main access control rule. Mirrors the JSON shape with
  * dates parsed to `Date`. `beforeRelease` and `prairieTestExams` are only
  * meaningful on the main rule; the override variants of `AccessControlRuleInput`
  * use `OverrideRuleBody` (this type with those fields omitted) so an override
  * can't statically declare flags the resolver only honors on the main rule.
  */
-export interface RuntimeAccessControl {
+export interface MainRuleBody {
   beforeRelease?: { listed?: boolean };
   prairieTestExams: PrairieTestExam[];
   dateControl?: RuntimeDateControl;
   afterComplete?: RuntimeAfterComplete;
 }
 
-type OverrideRuleBody = Omit<RuntimeAccessControl, 'beforeRelease' | 'prairieTestExams'>;
+type OverrideRuleBody = Omit<MainRuleBody, 'beforeRelease' | 'prairieTestExams'>;
 
 /**
  * Discriminated by `targetType`. The main rule (`'none'`, always `number: 0`)
@@ -52,7 +52,7 @@ export type AccessControlRuleInput =
   | {
       targetType: 'none';
       number: 0;
-      rule: RuntimeAccessControl;
+      rule: MainRuleBody;
     }
   | {
       targetType: 'enrollment';
@@ -232,7 +232,7 @@ export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
   enrollment: EnrollmentContext | null,
-): RuntimeAccessControl | null {
+): MainRuleBody | null {
   const main = rules.find((r): r is MainRule => r.targetType === 'none');
   if (!main) return null;
 

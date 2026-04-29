@@ -11,7 +11,7 @@ import {
   type OverrideRule,
   type PrairieTestExam,
   type PrairieTestReservation,
-  type RuntimeAccessControl,
+  type MainRuleBody,
   formatDateShort,
   mergeRules,
   resolveAccessControl,
@@ -19,12 +19,12 @@ import {
 } from './resolver.js';
 
 /**
- * Converts an `AccessControlJson` (string dates) to `RuntimeAccessControl`
+ * Converts an `AccessControlJson` (string dates) to `MainRuleBody`
  * (Date dates) for use in tests. Only the fields the resolver consumes are
  * carried over.
  */
-function toRuntime(json: AccessControlJson): RuntimeAccessControl {
-  const result: RuntimeAccessControl = { prairieTestExams: [] };
+function toRuntime(json: AccessControlJson): MainRuleBody {
+  const result: MainRuleBody = { prairieTestExams: [] };
   if (json.beforeRelease) result.beforeRelease = json.beforeRelease;
   if (json.dateControl) {
     const { release, due, ...dcRest } = json.dateControl;
@@ -1937,7 +1937,7 @@ describe('mergeRules', () => {
     name: string;
     main: AccessControlJson;
     override: AccessControlJson;
-    check: (result: RuntimeAccessControl) => void;
+    check: (result: MainRuleBody) => void;
   }
 
   it.each<MergeCase>([

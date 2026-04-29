@@ -14,7 +14,7 @@ import type {
   AccessControlRuleInput,
   EnrollmentContext,
   PrairieTestReservation,
-  RuntimeAccessControl,
+  MainRuleBody,
   RuntimeAfterComplete,
 } from './resolver.js';
 import type { RuntimeDateControl } from './timeline.js';
@@ -123,7 +123,7 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule = row.access_control_rule;
-  const runtimeRule: RuntimeAccessControl = { prairieTestExams: [] };
+  const runtimeRule: MainRuleBody = { prairieTestExams: [] };
 
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
   if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
