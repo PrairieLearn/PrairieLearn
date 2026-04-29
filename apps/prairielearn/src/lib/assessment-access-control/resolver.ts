@@ -1,3 +1,5 @@
+import { run } from '@prairielearn/run';
+
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 import {
@@ -26,27 +28,25 @@ export interface PrairieTestExam {
 }
 
 /**
- * The full body of a main access control rule. Mirrors the JSON shape with
- * dates parsed to `Date`. `beforeRelease` and `prairieTestExams` are only
- * meaningful on the main rule; the override variants of `AccessControlRuleInput`
- * use `OverrideRuleBody` (this type with those fields omitted) so an override
- * can't statically declare flags the resolver only honors on the main rule.
+ * Fields that override-targeted rules can set. Mirrors the JSON shape with
+ * dates parsed to `Date`. `MainRuleBody` extends this with main-rule-only
+ * fields, so an override can't statically declare flags the resolver only
+ * honors on the main rule.
  */
-export interface MainRuleBody {
-  beforeRelease?: { listed?: boolean };
-  prairieTestExams: PrairieTestExam[];
+interface OverrideRuleBody {
   dateControl?: RuntimeDateControl;
   afterComplete?: RuntimeAfterComplete;
 }
 
-type OverrideRuleBody = Omit<MainRuleBody, 'beforeRelease' | 'prairieTestExams'>;
+export interface MainRuleBody extends OverrideRuleBody {
+  beforeRelease?: { listed?: boolean };
+  prairieTestExams: PrairieTestExam[];
+}
 
 /**
  * Discriminated by `targetType`. The main rule (`'none'`, always `number: 0`)
  * carries the full rule body. Override variants (`'enrollment'`, `'student_label'`)
  * carry the narrower `OverrideRuleBody` plus their targeting ids.
- *
- * Helper aliases `MainRule` / `OverrideRule` are exported for narrowing.
  */
 export type AccessControlRuleInput =
   | {
@@ -113,14 +113,11 @@ export interface AccessControlResolverResult {
    * or there is no release date configured. The second case is intentional —
    * an instructor can set `beforeRelease.listed: true` without any dateControl
    * to list every assessment a student will take over the term, perpetually
-   * "coming soon" until the instructor later adds dates. Distinct from the
-   * raw `beforeRelease.listed` config input.
+   * "coming soon" until the instructor later adds dates.
    */
   showBeforeRelease: boolean;
   /**
-   * Timeline of credit segments for display. Each entry represents a
-   * contiguous period where a specific credit percentage applies.
-   * Raw data — formatting is a UI concern.
+   * Timeline of credit segments for display. Raw data — formatting is a UI concern.
    */
   accessTimeline: AccessTimelineEntry[];
   /**
@@ -181,39 +178,27 @@ function isStaff(courseRole: EnumCourseRole, courseInstanceRole: EnumCourseInsta
   );
 }
 
-/** Returns a copy of `obj` with explicitly-undefined keys stripped. */
-function definedKeys<T extends object>(obj: T): Partial<T> {
-  const result: Partial<T> = {};
-  for (const key of Object.keys(obj) as (keyof T)[]) {
-    if (obj[key] !== undefined) result[key] = obj[key];
-  }
-  return result;
-}
-
-/**
- * Field-by-field merge: defined keys on `override` replace `base`; undefined
- * keys preserve `base`. Returns `base` (same reference) when `override` is
- * absent, and `override` when `base` is absent.
- */
+/** Defined keys on `override` replace `base`; undefined keys preserve `base`. */
 function mergeDefined<T extends object>(
   base: T | undefined,
   override: T | undefined,
 ): T | undefined {
   if (!base) return override;
   if (!override) return base;
-  return { ...base, ...definedKeys(override) };
+  const result: T = { ...base };
+  for (const key of Object.keys(override) as (keyof T)[]) {
+    if (override[key] !== undefined) result[key] = override[key];
+  }
+  return result;
 }
 
 /**
- * Combines a rule body with an override body. Used both for the main +
- * cascaded-override merge and for cascading multiple overrides:
- *
- * - `dateControl` and `afterComplete` merge per top-level key. `due` replaces
- *   as a unit (date + credit move together) since a custom-credit override
- *   with an unset date — or vice versa — is incoherent.
- * - Main-rule-only fields (`beforeRelease`, `prairieTestExams`) carry through
- *   from `a` unchanged: `OverrideRuleBody` strips them at the type level so
- *   `b` cannot declare them.
+ * Folds an override body onto a base. `dateControl` and `afterComplete` merge
+ * per top-level key. `due` replaces as a unit (date + credit move together)
+ * since a custom-credit override with an unset date — or vice versa — is
+ * incoherent. Main-rule-only fields (`beforeRelease`, `prairieTestExams`)
+ * carry through from `a`: `OverrideRuleBody` strips them at the type level so
+ * `b` cannot declare them.
  */
 export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody | null): T {
   if (!b) return a;
@@ -228,6 +213,9 @@ export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody
  * Picks and merges the effective rule for a student: the main rule with all
  * matching overrides cascaded on top. Override matching uses the enrollment's
  * id and student-label memberships; without an enrollment, no override matches.
+ *
+ * Overrides apply student_label first (broader) then enrollment (more specific,
+ * wins in cascade); within each type, lower `number` first.
  */
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
@@ -235,31 +223,29 @@ function pickEffectiveRule(
 ): MainRuleBody | null {
   const main = rules.find((r): r is MainRule => r.targetType === 'none');
   if (!main) return null;
+  if (!enrollment) return main.rule;
 
-  // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
-  const overrides = rules
-    .filter((r): r is OverrideRule => r.targetType !== 'none')
+  const matchingOverrides = rules
+    .filter((r): r is OverrideRule =>
+      run(() => {
+        if (r.targetType === 'enrollment') {
+          return r.enrollmentIds.includes(enrollment.enrollmentId);
+        }
+        if (r.targetType === 'student_label') {
+          return r.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
+        }
+        return false;
+      }),
+    )
     .sort((a, b) => {
-      const typeOrder = (t: OverrideRule['targetType']) => (t === 'student_label' ? 0 : 1);
-      const diff = typeOrder(a.targetType) - typeOrder(b.targetType);
-      if (diff !== 0) return diff;
+      if (a.targetType !== b.targetType) return a.targetType === 'student_label' ? -1 : 1;
       return a.number - b.number;
     });
 
-  let cascaded: OverrideRuleBody | null = null;
-  if (enrollment) {
-    for (const override of overrides) {
-      const matches =
-        override.targetType === 'enrollment'
-          ? override.enrollmentIds.includes(enrollment.enrollmentId)
-          : override.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
-      if (matches) {
-        cascaded = cascaded ? mergeRules(cascaded, override.rule) : override.rule;
-      }
-    }
-  }
-
-  return mergeRules(main.rule, cascaded);
+  return matchingOverrides.reduce<MainRuleBody>(
+    (acc, override) => mergeRules(acc, override.rule),
+    main.rule,
+  );
 }
 
 interface Visibility {
@@ -268,16 +254,13 @@ interface Visibility {
 }
 
 /**
- * `questions.hidden` defaults to `true` (hidden) in Public mode. This is
- * intentional for exam security: an async exam run over several days would
- * be compromised if first-session students saw questions and answers
- * immediately on leaving Exam mode.
+ * `questions.hidden` defaults to `true` for exam security (an async exam over
+ * several days breaks if early students see answers immediately on leaving
+ * Exam mode).
  *
- * Per-rule validation forbids `questions.hidden: false` alongside
- * `score.hidden: true`, but `mergeAfterComplete` picks `questions` and `score`
- * sub-objects independently — a main rule's visible-questions merged with an
- * override's hidden-score can produce that forbidden pair. We clamp here so
- * every downstream caller sees a consistent state.
+ * Per-rule validation forbids `questions.hidden: false` + `score.hidden: true`,
+ * but merging picks `questions` and `score` independently and can produce that
+ * pair from valid inputs. Clamp here so downstream sees a consistent state.
  */
 function computeTopLevelVisibility(
   afterComplete: RuntimeAfterComplete | undefined,
@@ -389,7 +372,7 @@ export function resolveAccessControl(
   if (isStaff(courseRole, courseInstanceRole)) return STAFF_OVERRIDE_RESULT;
 
   const rule = pickEffectiveRule(rules, enrollment);
-  if (!rule) return { ...UNAUTHORIZED_RESULT };
+  if (!rule) return UNAUTHORIZED_RESULT;
 
   const visibility = computeTopLevelVisibility(rule.afterComplete, date);
   const accessTimeline = buildAccessTimeline(rule.dateControl, date);
@@ -399,18 +382,11 @@ export function resolveAccessControl(
     nextActiveDate: null,
   };
 
-  /**
-   * Exam mode: the only access path is a matching PrairieTest reservation.
-   * - With a match: grant 100% credit, `active` derived from `readOnly`,
-   *   visibility from the matched exam's per-exam config.
-   * - Without a match: deny, but still propagate top-level visibility so the
-   *   gradebook can render closed-assessment rows correctly during the post-
-   *   reservation grace period (issue #12579).
-   *
-   * `dateControl` is intentionally ignored for the access decision — being in
-   * Exam mode without a matching reservation shouldn't grant access regardless
-   * of date windows. The DC is still consulted for the access timeline.
-   */
+  // In Exam mode, the only access path is a matching PrairieTest reservation;
+  // `dateControl` is intentionally ignored for the access decision (still
+  // consulted for the timeline). Without a match, we deny but propagate
+  // top-level visibility so the gradebook renders correctly during the post-
+  // reservation grace period (issue #12579).
   if (authzMode === 'Exam') {
     const matched = rule.prairieTestExams.find((exam) =>
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
@@ -433,15 +409,6 @@ export function resolveAccessControl(
     };
   }
 
-  /**
-   * Public mode paths:
-   * 1. Listed-only "coming soon": `beforeRelease.listed` is true and we're
-   *    either pre-release or have no release configured. Deny but signal listing.
-   * 2. Pre-release without a listing flag: deny outright.
-   * 3. No release configured: only path is PT review-only (granted iff the rule
-   *    is PT-gated AND top-level afterComplete has unlocked questions).
-   * 4. Otherwise: grant via the date control.
-   */
   const current = accessTimeline.find((e) => e.current);
   const beforeRelease = current?.startDate === null;
   const nextDeadlineDate = current?.endDate ?? null;

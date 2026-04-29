@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
 /**
- * In-memory representation of date control fields. Mirrors the JSON schema
- * shape with strings for top-level date fields swapped to `Date` (they come
- * from the database as Date). Deadline entry dates stay as strings since
- * they're stored as JSON strings inside JSONB columns.
+ * In-memory representation of date control fields. Top-level date fields are
+ * `Date`; deadline entry dates stay as strings since they're stored as JSON
+ * strings inside JSONB columns.
  */
 export interface RuntimeDateControl {
   release?: { date: Date };
@@ -33,15 +32,14 @@ interface Deadline {
 }
 
 /**
- * Each returned entry is a point in time where credit changes: the credit
- * applies when the submission time is strictly less than `date`. The due
- * date is included as a deadline with `dueCredit`. Deadlines sharing a
- * timestamp are collapsed to one entry (insertion order early → due → late wins).
+ * Each returned entry is a point where credit changes: the credit applies for
+ * submissions strictly before `date`. The due date is included as a deadline
+ * with `dueCredit`. Deadlines sharing a timestamp are collapsed to one
+ * (insertion order early → due → late wins).
  *
- * Early-deadline credits are floored at `dueCredit` so the timeline never
- * drops below the base credit before the due date. Late-deadline credits
- * are capped at `dueCredit` so the timeline never rises above the base
- * credit after the due date.
+ * Early-deadline credits are floored at `dueCredit` and late-deadline credits
+ * are capped at `dueCredit`, so the timeline never crosses the base credit on
+ * the wrong side of the due date.
  */
 function buildDeadlines(
   dateControl: RuntimeDateControl,
@@ -95,10 +93,10 @@ function buildDeadlines(
 }
 
 /**
- * Builds a contiguous, ordered timeline of credit segments covering the entire
- * timeline, tagging the segment containing `date` with `current: true`.
- * Returns `[]` when the date control has no usable access path (no release
- * configured, or due date on/before release date). Otherwise:
+ * Builds a contiguous, ordered timeline of credit segments, tagging the
+ * segment containing `date` with `current: true`. Returns `[]` when the date
+ * control has no usable access path (no release configured, or due date
+ * on/before release date). Otherwise:
  *
  * - Index 0 is always the pre-release segment `[null, releaseDate)`.
  * - Middle segments are bounded by adjacent deadlines.
@@ -106,9 +104,6 @@ function buildDeadlines(
  *   on `afterLastDeadline`, except when `due: { date: null }` is set —
  *   that "indefinite due" case shadows `afterLastDeadline` and applies
  *   `dueCredit` (default 100%) forever, with submissions allowed.
- *
- * The pre-release segment is always emitted; the student popover filters
- * non-submittable entries client-side.
  */
 export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
