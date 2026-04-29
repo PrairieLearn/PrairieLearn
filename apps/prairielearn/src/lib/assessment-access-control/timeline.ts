@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 /**
- * Runtime version of date control fields. Top-level date columns use `Date`
- * objects (they come from the database as Date). Deadline entry dates remain
- * as strings since they are stored as JSON strings in JSONB columns.
+ * In-memory representation of date control fields. Mirrors the JSON schema
+ * shape with strings for top-level date fields swapped to `Date` (they come
+ * from the database as Date). Deadline entry dates stay as strings since
+ * they're stored as JSON strings inside JSONB columns.
  */
 export interface RuntimeDateControl {
   release?: { date: Date };
@@ -100,7 +101,7 @@ interface AccessSegment {
   endDate: Date | null;
   credit: number;
   /** Whether submissions are allowed during this segment. */
-  active: boolean;
+  submittable: boolean;
 }
 
 /**
@@ -110,7 +111,7 @@ interface AccessSegment {
  *
  * - Index 0 is always the pre-release segment `[null, releaseDate)`.
  * - Middle segments are bounded by adjacent deadlines.
- * - The final segment is `[lastDeadline, null)`. Its credit/active depend
+ * - The final segment is `[lastDeadline, null)`. Its credit/submittable depend
  *   on `afterLastDeadline`, except when `due: { date: null }` is set —
  *   that "indefinite due" case shadows `afterLastDeadline` and applies
  *   `dueCredit` (default 100%) forever, with submissions allowed.
@@ -127,7 +128,7 @@ function buildSegments(dateControl: RuntimeDateControl | undefined): AccessSegme
 
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
   const segments: AccessSegment[] = [
-    { startDate: null, endDate: releaseDate, credit: 0, active: false },
+    { startDate: null, endDate: releaseDate, credit: 0, submittable: false },
   ];
 
   let segStart = releaseDate;
@@ -136,92 +137,44 @@ function buildSegments(dateControl: RuntimeDateControl | undefined): AccessSegme
       startDate: segStart,
       endDate: deadline.date,
       credit: deadline.credit,
-      active: true,
+      submittable: true,
     });
     segStart = deadline.date;
   }
 
   if (dueIsIndefinite) {
-    segments.push({ startDate: segStart, endDate: null, credit: dueCredit, active: true });
+    segments.push({ startDate: segStart, endDate: null, credit: dueCredit, submittable: true });
   } else if (deadlines.length === 0) {
-    segments.push({ startDate: segStart, endDate: null, credit: 100, active: true });
+    segments.push({ startDate: segStart, endDate: null, credit: 100, submittable: true });
   } else {
     segments.push({
       startDate: segStart,
       endDate: null,
       credit: dateControl.afterLastDeadline?.credit ?? 0,
-      active: dateControl.afterLastDeadline?.allowSubmissions === true,
+      submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
     });
   }
 
   return segments;
 }
 
-function findSegment(segments: AccessSegment[], date: Date): AccessSegment | null {
-  for (const s of segments) {
-    const afterStart = s.startDate === null || date >= s.startDate;
-    const beforeEnd = s.endDate === null || date < s.endDate;
-    if (afterStart && beforeEnd) return s;
-  }
-  return null;
-}
-
-export interface CreditAtDate {
-  credit: number;
-  active: boolean;
-  beforeRelease: boolean;
-  /** End of the segment containing `date`, or `null` if the segment is open-ended. */
-  nextDeadlineDate: Date | null;
-}
-
 /**
- * Resolves the credit/active state at a specific `date` against a date control.
- * Returns a no-access result (`credit: 0, active: false, beforeRelease: false`)
- * when the date control has no usable path.
- */
-export function computeCreditAt(
-  dateControl: RuntimeDateControl | undefined,
-  date: Date,
-): CreditAtDate {
-  const segments = buildSegments(dateControl);
-  if (segments.length === 0) {
-    return { credit: 0, active: false, beforeRelease: false, nextDeadlineDate: null };
-  }
-  const segment = findSegment(segments, date);
-  if (!segment) {
-    return { credit: 0, active: false, beforeRelease: false, nextDeadlineDate: null };
-  }
-  return {
-    credit: segment.credit,
-    active: segment.active,
-    beforeRelease: segment.startDate === null,
-    nextDeadlineDate: segment.endDate,
-  };
-}
-
-/**
- * Builds the timeline for student-facing display. Same segments as
- * `computeCreditAt`, but with `current` and `submittable` markers and with
- * the pre-release segment dropped once we're past release.
+ * Builds the timeline of credit segments for `dateControl`, tagging the
+ * segment that contains `date` with `current: true`. The pre-release segment
+ * is always emitted; the student popover filters non-submittable entries
+ * client-side. Returns `[]` when the date control has no usable access path.
  */
 export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
   date: Date,
 ): AccessTimelineEntry[] {
-  const segments = buildSegments(dateControl);
-  const result: AccessTimelineEntry[] = [];
-  for (const s of segments) {
-    // Drop the pre-release segment once we're past release.
-    if (s.startDate === null && s.endDate !== null && date >= s.endDate) continue;
-    const inSegment =
-      (s.startDate === null || date >= s.startDate) && (s.endDate === null || date < s.endDate);
-    result.push({
-      credit: s.credit,
-      startDate: s.startDate,
-      endDate: s.endDate,
-      current: inSegment,
-      submittable: s.startDate === null ? false : s.active,
-    });
-  }
-  return result;
+  return buildSegments(dateControl).map((s) => ({
+    credit: s.credit,
+    startDate: s.startDate,
+    endDate: s.endDate,
+    current:
+      (s.startDate === null || date >= s.startDate) && (s.endDate === null || date < s.endDate),
+    submittable: s.submittable,
+  }));
 }
+

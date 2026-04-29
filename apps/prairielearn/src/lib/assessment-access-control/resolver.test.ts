@@ -7,9 +7,11 @@ import {
   type AccessControlResolverResult,
   type AccessControlRuleInput,
   type EnrollmentContext,
+  type MainRule,
+  type OverrideRule,
+  type PrairieTestExam,
   type PrairieTestReservation,
   type RuntimeAccessControl,
-  cascadeOverrides,
   formatDateShort,
   mergeRules,
   resolveAccessControl,
@@ -22,7 +24,7 @@ import {
  * carried over.
  */
 function toRuntime(json: AccessControlJson): RuntimeAccessControl {
-  const result: RuntimeAccessControl = {};
+  const result: RuntimeAccessControl = { prairieTestExams: [] };
   if (json.beforeRelease) result.beforeRelease = json.beforeRelease;
   if (json.dateControl) {
     const { release, due, ...dcRest } = json.dateControl;
@@ -69,7 +71,7 @@ function ptExam(
     questionsHidden?: boolean;
     scoreHidden?: boolean;
   } = {},
-): AccessControlRuleInput['prairietestExams'][number] {
+): PrairieTestExam {
   return {
     uuid,
     readOnly: opts.readOnly ?? false,
@@ -80,31 +82,39 @@ function ptExam(
 
 function makeMainRule(
   rule: AccessControlJson = {},
-  opts: Partial<Omit<AccessControlRuleInput, 'rule' | 'number'>> = {},
-): AccessControlRuleInput {
+  opts: { prairieTestExams?: PrairieTestExam[] } = {},
+): MainRule {
+  const runtimeRule = toRuntime(rule);
+  if (opts.prairieTestExams !== undefined) runtimeRule.prairieTestExams = opts.prairieTestExams;
   return {
-    rule: toRuntime(rule),
-    number: 0,
     targetType: 'none',
-    enrollmentIds: [],
-    studentLabelIds: [],
-    prairietestExams: opts.prairietestExams ?? [],
-    ...opts,
+    number: 0,
+    rule: runtimeRule,
   };
 }
 
 function makeOverrideRule(
   number: number,
   rule: AccessControlJson,
-  opts: Partial<Omit<AccessControlRuleInput, 'rule' | 'number'>> = {},
-): AccessControlRuleInput {
+  opts: {
+    targetType?: 'enrollment' | 'student_label';
+    enrollmentIds?: string[];
+    studentLabelIds?: string[];
+  } = {},
+): OverrideRule {
+  if (opts.targetType === 'student_label') {
+    return {
+      targetType: 'student_label',
+      number,
+      rule: toRuntime(rule),
+      studentLabelIds: opts.studentLabelIds ?? [],
+    };
+  }
   return {
-    rule: toRuntime(rule),
+    targetType: 'enrollment',
     number,
-    targetType: opts.targetType ?? 'enrollment',
+    rule: toRuntime(rule),
     enrollmentIds: opts.enrollmentIds ?? [],
-    studentLabelIds: opts.studentLabelIds ?? [],
-    prairietestExams: opts.prairietestExams ?? [],
   };
 }
 
@@ -744,7 +754,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('PrairieTest integration', () => {
-    const ptMainRule = makeMainRule({}, { prairietestExams: [ptExam('exam-uuid-1')] });
+    const ptMainRule = makeMainRule({}, { prairieTestExams: [ptExam('exam-uuid-1')] });
     const validReservation: PrairieTestReservation = {
       examUuid: 'exam-uuid-1',
       accessEnd: new Date('2025-03-15T14:00:00Z'),
@@ -798,7 +808,7 @@ describe('resolveAccessControl', () => {
       {
         name: 'readOnly exam: authorized but inactive',
         rules: [
-          makeMainRule({}, { prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })] }),
+          makeMainRule({}, { prairieTestExams: [ptExam('exam-uuid-1', { readOnly: true })] }),
         ],
         authzMode: 'Exam',
         reservations: [validReservation],
@@ -816,7 +826,7 @@ describe('resolveAccessControl', () => {
           makeMainRule(
             {},
             {
-              prairietestExams: [ptExam('exam-uuid-1'), ptExam('exam-uuid-3', { readOnly: true })],
+              prairieTestExams: [ptExam('exam-uuid-1'), ptExam('exam-uuid-3', { readOnly: true })],
             },
           ),
         ],
@@ -835,7 +845,7 @@ describe('resolveAccessControl', () => {
                 afterLastDeadline: { credit: 50, allowSubmissions: true },
               },
             },
-            { prairietestExams: [ptExam('exam-uuid-1')] },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
           ),
         ],
         authzMode: 'Exam',
@@ -864,7 +874,7 @@ describe('resolveAccessControl', () => {
           },
         },
         // readOnly so students can't submit during the PT reservation.
-        { prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })] },
+        { prairieTestExams: [ptExam('exam-uuid-1', { readOnly: true })] },
       );
 
       it.each<ResolveCase>([
@@ -911,7 +921,7 @@ describe('resolveAccessControl', () => {
       it.each<ResolveCase>([
         {
           name: 'active reservation, no PT-level afterComplete: everything visible',
-          rules: [makeMainRule({}, { prairietestExams: [ptExam('pt-exam-1')] })],
+          rules: [makeMainRule({}, { prairieTestExams: [ptExam('pt-exam-1')] })],
           authzMode: 'Exam',
           reservations: [ptRes],
           expect: {
@@ -926,7 +936,7 @@ describe('resolveAccessControl', () => {
           rules: [
             makeMainRule(
               {},
-              { prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true })] },
+              { prairieTestExams: [ptExam('pt-exam-1', { questionsHidden: true })] },
             ),
           ],
           authzMode: 'Exam',
@@ -939,7 +949,7 @@ describe('resolveAccessControl', () => {
             makeMainRule(
               {},
               {
-                prairietestExams: [
+                prairieTestExams: [
                   ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true }),
                 ],
               },
@@ -952,7 +962,7 @@ describe('resolveAccessControl', () => {
         {
           name: 'readOnly reservation: non-active grant, everything visible',
           rules: [
-            makeMainRule({}, { prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] }),
+            makeMainRule({}, { prairieTestExams: [ptExam('pt-exam-1', { readOnly: true })] }),
           ],
           authzMode: 'Exam',
           reservations: [ptRes],
@@ -971,7 +981,7 @@ describe('resolveAccessControl', () => {
           rules: [
             makeMainRule(
               { afterComplete: { questions: { hidden: true }, score: { hidden: true } } },
-              { prairietestExams: [ptExam('pt-exam-1')] },
+              { prairieTestExams: [ptExam('pt-exam-1')] },
             ),
           ],
           authzMode: 'Exam',
@@ -983,7 +993,7 @@ describe('resolveAccessControl', () => {
           rules: [
             makeMainRule(
               { afterComplete: { questions: { hidden: true }, score: { hidden: true } } },
-              { prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] },
+              { prairieTestExams: [ptExam('pt-exam-1', { readOnly: true })] },
             ),
           ],
           authzMode: 'Exam',
@@ -1009,7 +1019,7 @@ describe('resolveAccessControl', () => {
             },
           },
           {
-            prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
+            prairieTestExams: [ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true })],
           },
         );
 
@@ -1091,7 +1101,7 @@ describe('resolveAccessControl', () => {
       describe('real-time grading during exam, hidden after', () => {
         const rule = makeMainRule(
           { afterComplete: { questions: { hidden: true }, score: { hidden: true } } },
-          { prairietestExams: [ptExam('pt-exam-1')] },
+          { prairieTestExams: [ptExam('pt-exam-1')] },
         );
 
         it.each<ResolveCase>([
@@ -1131,7 +1141,7 @@ describe('resolveAccessControl', () => {
           {
             name: 'readOnly reservation allows reviewing closed assessment',
             rules: [
-              makeMainRule({}, { prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] }),
+              makeMainRule({}, { prairieTestExams: [ptExam('pt-exam-1', { readOnly: true })] }),
             ],
             authzMode: 'Exam',
             reservations: [ptRes],
@@ -1149,7 +1159,7 @@ describe('resolveAccessControl', () => {
             rules: [
               makeMainRule(
                 { afterComplete: { questions: { hidden: true }, score: { hidden: true } } },
-                { prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] },
+                { prairieTestExams: [ptExam('pt-exam-1', { readOnly: true })] },
               ),
             ],
             authzMode: 'Public',
@@ -1176,7 +1186,7 @@ describe('resolveAccessControl', () => {
         {
           name: 'Public mode with beforeRelease.listed: lists as coming soon',
           rules: [
-            makeMainRule({ beforeRelease: { listed: true } }, { prairietestExams: [ptExam1] }),
+            makeMainRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           expect: {
             authorized: false,
@@ -1188,7 +1198,7 @@ describe('resolveAccessControl', () => {
         {
           name: 'Exam mode without matching reservation: not listed, not authorized',
           rules: [
-            makeMainRule({ beforeRelease: { listed: true } }, { prairietestExams: [ptExam1] }),
+            makeMainRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') }],
@@ -1207,7 +1217,7 @@ describe('resolveAccessControl', () => {
                   due: { date: '2025-02-01T00:00:00Z' },
                 },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Public',
@@ -1224,7 +1234,7 @@ describe('resolveAccessControl', () => {
                   due: { date: '2025-02-01T00:00:00Z' },
                 },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Exam',
@@ -1241,7 +1251,7 @@ describe('resolveAccessControl', () => {
                   due: { date: '2025-02-01T00:00:00Z' },
                 },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Exam',
@@ -1258,7 +1268,7 @@ describe('resolveAccessControl', () => {
                   due: { date: '2025-07-01T00:00:00Z' },
                 },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Exam',
@@ -1275,7 +1285,7 @@ describe('resolveAccessControl', () => {
                 beforeRelease: { listed: true },
                 dateControl: { release: { date: '2025-04-01T00:00:00Z' } },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Public',
@@ -1288,7 +1298,7 @@ describe('resolveAccessControl', () => {
           // already make showBeforeRelease false via the release-date clause.
           name: 'active PT grant suppresses showBeforeRelease',
           rules: [
-            makeMainRule({ beforeRelease: { listed: true } }, { prairietestExams: [ptExam1] }),
+            makeMainRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           authzMode: 'Exam',
           reservations: [{ examUuid: ptExam1.uuid, accessEnd: new Date('2025-04-01T00:00:00Z') }],
@@ -1312,7 +1322,7 @@ describe('resolveAccessControl', () => {
                   due: { date: '2025-06-01T00:00:00Z' },
                 },
               },
-              { prairietestExams: [ptExam1] },
+              { prairieTestExams: [ptExam1] },
             ),
           ],
           authzMode: 'Exam',
@@ -1359,7 +1369,7 @@ describe('resolveAccessControl', () => {
         rules: [
           makeMainRule(
             { dateControl: { durationMinutes: 60, due: { date: '2025-04-01T00:00:00Z' } } },
-            { prairietestExams: [ptExam('exam-uuid-1')] },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
           ),
         ],
         authzMode: 'Exam',
@@ -2019,67 +2029,8 @@ describe('mergeRules', () => {
       override: { dateControl: { afterLastDeadline: { allowSubmissions: false } } },
       check: (r) => expect(r.dateControl?.afterLastDeadline).toEqual({ allowSubmissions: false }),
     },
-    {
-      name: 'ignores beforeRelease on overrides',
-      main: { beforeRelease: { listed: false } },
-      override: { beforeRelease: { listed: true } },
-      check: (r) => expect(r.beforeRelease?.listed).toBe(false),
-    },
   ])('$name', ({ main, override, check }) => {
     check(mergeRules(toRuntime(main), toRuntime(override)));
-  });
-});
-
-describe('cascadeOverrides', () => {
-  interface CascadeCase {
-    name: string;
-    base: AccessControlJson;
-    next: AccessControlJson;
-    check: (result: RuntimeAccessControl) => void;
-  }
-
-  it.each<CascadeCase>([
-    {
-      name: 'merges dateControl sub-fields from base and next',
-      base: { dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'pw1' } },
-      next: { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
-      check: (r) => {
-        expect(r.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z'));
-        expect(r.dateControl?.password).toBe('pw1');
-      },
-    },
-    {
-      name: 'inherits all dateControl from base when next has none',
-      base: { dateControl: { due: { date: '2025-04-01T00:00:00Z' }, password: 'pw1' } },
-      next: {},
-      check: (r) => {
-        expect(r.dateControl?.due?.date).toEqual(new Date('2025-04-01T00:00:00Z'));
-        expect(r.dateControl?.password).toBe('pw1');
-      },
-    },
-    {
-      name: 'sets dateControl from next when base has none',
-      base: {},
-      next: { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
-      check: (r) => expect(r.dateControl?.due?.date).toEqual(new Date('2025-05-01T00:00:00Z')),
-    },
-    {
-      name: 'merges afterComplete sub-fields',
-      base: { afterComplete: { questions: { hidden: true }, score: { hidden: true } } },
-      next: { afterComplete: { questions: { hidden: false } } },
-      check: (r) => {
-        expect(r.afterComplete?.questions?.hidden).toBe(false);
-        expect(r.afterComplete?.score?.hidden).toBe(true);
-      },
-    },
-    {
-      name: 'does not carry beforeRelease through cascaded overrides',
-      base: { beforeRelease: { listed: true } },
-      next: {},
-      check: (r) => expect(r.beforeRelease).toBeUndefined(),
-    },
-  ])('$name', ({ base, next, check }) => {
-    check(cascadeOverrides(toRuntime(base), toRuntime(next)));
   });
 });
 

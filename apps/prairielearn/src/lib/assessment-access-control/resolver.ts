@@ -2,10 +2,8 @@ import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-typ
 
 import {
   type AccessTimelineEntry,
-  type CreditAtDate,
   type RuntimeDateControl,
   buildAccessTimeline,
-  computeCreditAt,
 } from './timeline.js';
 
 export interface RuntimeAfterComplete {
@@ -20,18 +18,6 @@ export interface RuntimeAfterComplete {
   };
 }
 
-/**
- * Runtime representation of an access control rule. Only carries the fields
- * the resolver actually consumes (`beforeRelease`, `dateControl`, `afterComplete`);
- * other JSON fields like `labels` or `integrations` are surfaced separately on
- * `AccessControlRuleInput` rather than threaded through this shape.
- */
-export interface RuntimeAccessControl {
-  beforeRelease?: { listed?: boolean };
-  dateControl?: RuntimeDateControl;
-  afterComplete?: RuntimeAfterComplete;
-}
-
 export interface PrairieTestExam {
   uuid: string;
   readOnly: boolean;
@@ -39,14 +25,50 @@ export interface PrairieTestExam {
   scoreHidden: boolean;
 }
 
-export interface AccessControlRuleInput {
-  rule: RuntimeAccessControl;
-  number: number;
-  targetType: 'none' | 'enrollment' | 'student_label';
-  enrollmentIds: string[];
-  studentLabelIds: string[];
-  prairietestExams: PrairieTestExam[];
+/**
+ * The merge-able body of an access control rule. Mirrors the JSON shape with
+ * dates parsed to `Date`. `beforeRelease` and `prairieTestExams` are only
+ * meaningful on the main rule; the override variants of `AccessControlRuleInput`
+ * use `OverrideRuleBody` (this type with those fields omitted) so an override
+ * can't statically declare flags the resolver only honors on the main rule.
+ */
+export interface RuntimeAccessControl {
+  beforeRelease?: { listed?: boolean };
+  prairieTestExams: PrairieTestExam[];
+  dateControl?: RuntimeDateControl;
+  afterComplete?: RuntimeAfterComplete;
 }
+
+type OverrideRuleBody = Omit<RuntimeAccessControl, 'beforeRelease' | 'prairieTestExams'>;
+
+/**
+ * Discriminated by `targetType`. The main rule (`'none'`, always `number: 0`)
+ * carries the full rule body. Override variants (`'enrollment'`, `'student_label'`)
+ * carry the narrower `OverrideRuleBody` plus their targeting ids.
+ *
+ * Helper aliases `MainRule` / `OverrideRule` are exported for narrowing.
+ */
+export type AccessControlRuleInput =
+  | {
+      targetType: 'none';
+      number: 0;
+      rule: RuntimeAccessControl;
+    }
+  | {
+      targetType: 'enrollment';
+      number: number;
+      rule: OverrideRuleBody;
+      enrollmentIds: string[];
+    }
+  | {
+      targetType: 'student_label';
+      number: number;
+      rule: OverrideRuleBody;
+      studentLabelIds: string[];
+    };
+
+export type MainRule = Extract<AccessControlRuleInput, { targetType: 'none' }>;
+export type OverrideRule = Exclude<AccessControlRuleInput, { targetType: 'none' }>;
 
 export interface EnrollmentContext {
   enrollmentId: string;
@@ -159,76 +181,47 @@ function isStaff(courseRole: EnumCourseRole, courseInstanceRole: EnumCourseInsta
   );
 }
 
-function mergeDateControl(
-  base: RuntimeDateControl | undefined,
-  override: RuntimeDateControl | undefined,
-): RuntimeDateControl | undefined {
-  if (!base && !override) return undefined;
-  if (!base) return override;
-  if (!override) return { ...base };
-
-  const merged: RuntimeDateControl = { ...base };
-  if (override.release !== undefined) merged.release = override.release;
-  // `due` replaces atomically: an override either inherits the entire object or
-  // supplies its own. We never merge `date` and `credit` independently because
-  // a custom-credit override with an unset date (or vice versa) is incoherent.
-  if (override.due !== undefined) merged.due = override.due;
-  if (override.earlyDeadlines !== undefined) merged.earlyDeadlines = override.earlyDeadlines;
-  if (override.lateDeadlines !== undefined) merged.lateDeadlines = override.lateDeadlines;
-  if (override.afterLastDeadline !== undefined)
-    merged.afterLastDeadline = override.afterLastDeadline;
-  if (override.durationMinutes !== undefined) merged.durationMinutes = override.durationMinutes;
-  if (override.password !== undefined) merged.password = override.password;
-  return merged;
-}
-
-function mergeAfterComplete(
-  base: RuntimeAfterComplete | undefined,
-  override: RuntimeAfterComplete | undefined,
-): RuntimeAfterComplete | undefined {
-  if (!base && !override) return undefined;
-  if (!base) return override;
-  if (!override) return { ...base };
-
-  return {
-    questions: override.questions !== undefined ? override.questions : base.questions,
-    score: override.score !== undefined ? override.score : base.score,
-  };
-}
-
-export function mergeRules(
-  main: RuntimeAccessControl,
-  override: RuntimeAccessControl | null,
-): RuntimeAccessControl {
-  if (!override) return main;
-
-  const merged: RuntimeAccessControl = {};
-
-  // beforeRelease is only configurable on the main rule.
-  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
-
-  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
-  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
-
-  return merged;
+/** Returns a copy of `obj` with explicitly-undefined keys stripped. */
+function definedKeys<T extends object>(obj: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const key of Object.keys(obj) as (keyof T)[]) {
+    if (obj[key] !== undefined) result[key] = obj[key];
+  }
+  return result;
 }
 
 /**
- * Cascades two override rules where the second wins.
+ * Field-by-field merge: defined keys on `override` replace `base`; undefined
+ * keys preserve `base`. Returns `base` (same reference) when `override` is
+ * absent, and `override` when `base` is absent.
  */
-export function cascadeOverrides(
-  base: RuntimeAccessControl,
-  next: RuntimeAccessControl,
-): RuntimeAccessControl {
-  return {
-    dateControl: mergeDateControl(base.dateControl, next.dateControl),
-    afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
-  };
+function mergeDefined<T extends object>(
+  base: T | undefined,
+  override: T | undefined,
+): T | undefined {
+  if (!base) return override;
+  if (!override) return base;
+  return { ...base, ...definedKeys(override) };
 }
 
-interface EffectiveRule {
-  rule: RuntimeAccessControl;
-  prairieTestExams: PrairieTestExam[];
+/**
+ * Combines a rule body with an override body. Used both for the main +
+ * cascaded-override merge and for cascading multiple overrides:
+ *
+ * - `dateControl` and `afterComplete` merge per top-level key. `due` replaces
+ *   as a unit (date + credit move together) since a custom-credit override
+ *   with an unset date — or vice versa — is incoherent.
+ * - Main-rule-only fields (`beforeRelease`, `prairieTestExams`) carry through
+ *   from `a` unchanged: `OverrideRuleBody` strips them at the type level so
+ *   `b` cannot declare them.
+ */
+export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody | null): T {
+  if (!b) return a;
+  return {
+    ...a,
+    dateControl: mergeDefined(a.dateControl, b.dateControl),
+    afterComplete: mergeDefined(a.afterComplete, b.afterComplete),
+  };
 }
 
 /**
@@ -239,35 +232,34 @@ interface EffectiveRule {
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
   enrollment: EnrollmentContext | null,
-): EffectiveRule | null {
-  const main = rules.find((r) => r.number === 0 && r.targetType === 'none');
+): RuntimeAccessControl | null {
+  const main = rules.find((r): r is MainRule => r.targetType === 'none');
   if (!main) return null;
 
   // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
   const overrides = rules
-    .filter((r) => r.number !== 0)
+    .filter((r): r is OverrideRule => r.targetType !== 'none')
     .sort((a, b) => {
-      const typeOrder = (t: string) => (t === 'student_label' ? 0 : 1);
+      const typeOrder = (t: OverrideRule['targetType']) => (t === 'student_label' ? 0 : 1);
       const diff = typeOrder(a.targetType) - typeOrder(b.targetType);
       if (diff !== 0) return diff;
       return a.number - b.number;
     });
 
-  let cascaded: RuntimeAccessControl | null = null;
+  let cascaded: OverrideRuleBody | null = null;
   if (enrollment) {
     for (const override of overrides) {
       const matches =
         override.targetType === 'enrollment'
           ? override.enrollmentIds.includes(enrollment.enrollmentId)
-          : override.targetType === 'student_label' &&
-            override.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
+          : override.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
       if (matches) {
-        cascaded = cascaded ? cascadeOverrides(cascaded, override.rule) : override.rule;
+        cascaded = cascaded ? mergeRules(cascaded, override.rule) : override.rule;
       }
     }
   }
 
-  return { rule: mergeRules(main.rule, cascaded), prairieTestExams: main.prairietestExams };
+  return mergeRules(main.rule, cascaded);
 }
 
 interface Visibility {
@@ -380,124 +372,6 @@ function computeTimeLimitMin(
   return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
 }
 
-/**
- * Exam-mode resolution.
- *
- * In Exam mode, the only access path is a matching PrairieTest reservation.
- * - With a match: grant 100% credit, with `active` derived from `readOnly`,
- *   and visibility from the matched exam's per-exam config.
- * - Without a match: deny, but still propagate top-level visibility so the
- *   gradebook can render closed-assessment rows correctly during the post-
- *   reservation grace period (issue #12579).
- *
- * `dateControl` is intentionally ignored for the access decision — being in
- * Exam mode without a matching reservation shouldn't grant access regardless
- * of date windows. The DC is still consulted for the access timeline.
- */
-function resolveExamMode(
-  effective: EffectiveRule,
-  reservations: PrairieTestReservation[],
-  topLevelVisibility: Visibility,
-  date: Date,
-  displayTimezone: string,
-): AccessControlResolverResult {
-  const matched = effective.prairieTestExams.find((exam) =>
-    reservations.some((r) => r.examUuid === exam.uuid),
-  );
-  if (!matched) {
-    return { ...UNAUTHORIZED_RESULT, ...topLevelVisibility };
-  }
-
-  const reservation = reservations.find((r) => r.examUuid === matched.uuid)!;
-  const visibility = computePrairieTestVisibility(matched);
-  const active = !matched.readOnly;
-
-  return {
-    authorized: true,
-    credit: 100,
-    creditDateString: formatCreditDateString(100, active, null, displayTimezone),
-    timeLimitMin: null,
-    password: null,
-    active,
-    ...visibility,
-    examAccessEnd: reservation.accessEnd,
-    showBeforeRelease: false,
-    accessTimeline: buildAccessTimeline(effective.rule.dateControl, date),
-    nextActiveDate: null,
-  };
-}
-
-/**
- * Public-mode resolution. The path is:
- *
- * 1. Listed-only "coming soon": `beforeRelease.listed` is true and we're either
- *    pre-release or have no release configured. Deny access but signal listing.
- * 2. Pre-release without a listing flag: deny outright.
- * 3. No release configured: only path is PT review-only (granted iff the rule
- *    is PT-gated AND top-level afterComplete has unlocked questions).
- * 4. Otherwise: grant via the date control.
- */
-function resolvePublicMode(
-  effective: EffectiveRule,
-  visibility: Visibility,
-  date: Date,
-  displayTimezone: string,
-  authzMode: EnumMode,
-): AccessControlResolverResult {
-  const credit = computeCreditAt(effective.rule.dateControl, date);
-  const hasRelease = !!effective.rule.dateControl?.release;
-  const listed = effective.rule.beforeRelease?.listed ?? false;
-
-  if (listed && (credit.beforeRelease || !hasRelease)) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      ...visibility,
-      showBeforeRelease: true,
-      nextActiveDate: credit.nextDeadlineDate,
-    };
-  }
-
-  if (credit.beforeRelease) {
-    return { ...UNAUTHORIZED_RESULT, ...visibility };
-  }
-
-  if (!hasRelease) {
-    // PT-gated rule with no DC: review-only path when visibility has unlocked.
-    if (effective.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
-      return {
-        ...UNAUTHORIZED_RESULT,
-        authorized: true,
-        ...visibility,
-      };
-    }
-    return { ...UNAUTHORIZED_RESULT, ...visibility };
-  }
-
-  return {
-    authorized: true,
-    credit: credit.credit,
-    creditDateString: formatCreditDateString(
-      credit.credit,
-      credit.active,
-      credit.nextDeadlineDate,
-      displayTimezone,
-    ),
-    timeLimitMin: computeTimeLimitMin(
-      effective.rule.dateControl?.durationMinutes,
-      credit.nextDeadlineDate,
-      date,
-      authzMode,
-    ),
-    password: effective.rule.dateControl?.password ?? null,
-    active: credit.active,
-    ...visibility,
-    examAccessEnd: null,
-    showBeforeRelease: false,
-    accessTimeline: buildAccessTimeline(effective.rule.dateControl, date),
-    nextActiveDate: null,
-  };
-}
-
 export function resolveAccessControl(
   input: AccessControlResolverInput,
 ): AccessControlResolverResult {
@@ -514,16 +388,103 @@ export function resolveAccessControl(
 
   if (isStaff(courseRole, courseInstanceRole)) return STAFF_OVERRIDE_RESULT;
 
-  const effective = pickEffectiveRule(rules, enrollment);
-  if (!effective) return { ...UNAUTHORIZED_RESULT };
+  const rule = pickEffectiveRule(rules, enrollment);
+  if (!rule) return { ...UNAUTHORIZED_RESULT };
 
-  const visibility = computeTopLevelVisibility(effective.rule.afterComplete, date);
+  const visibility = computeTopLevelVisibility(rule.afterComplete, date);
+  const accessTimeline = buildAccessTimeline(rule.dateControl, date);
+  const grantedDefaults = {
+    showBeforeRelease: false,
+    accessTimeline,
+    nextActiveDate: null,
+  };
 
+  /**
+   * Exam mode: the only access path is a matching PrairieTest reservation.
+   * - With a match: grant 100% credit, `active` derived from `readOnly`,
+   *   visibility from the matched exam's per-exam config.
+   * - Without a match: deny, but still propagate top-level visibility so the
+   *   gradebook can render closed-assessment rows correctly during the post-
+   *   reservation grace period (issue #12579).
+   *
+   * `dateControl` is intentionally ignored for the access decision — being in
+   * Exam mode without a matching reservation shouldn't grant access regardless
+   * of date windows. The DC is still consulted for the access timeline.
+   */
   if (authzMode === 'Exam') {
-    return resolveExamMode(effective, prairieTestReservations, visibility, date, displayTimezone);
-  }
-  return resolvePublicMode(effective, visibility, date, displayTimezone, authzMode);
-}
+    const matched = rule.prairieTestExams.find((exam) =>
+      prairieTestReservations.some((r) => r.examUuid === exam.uuid),
+    );
+    if (!matched) return { ...UNAUTHORIZED_RESULT, ...visibility };
 
-// Re-export for tests that exercise the timeline credit logic directly.
-export type { CreditAtDate };
+    const reservation = prairieTestReservations.find((r) => r.examUuid === matched.uuid)!;
+    const examVisibility = computePrairieTestVisibility(matched);
+    const active = !matched.readOnly;
+    return {
+      authorized: true,
+      credit: 100,
+      creditDateString: formatCreditDateString(100, active, null, displayTimezone),
+      timeLimitMin: null,
+      password: null,
+      active,
+      ...examVisibility,
+      examAccessEnd: reservation.accessEnd,
+      ...grantedDefaults,
+    };
+  }
+
+  /**
+   * Public mode paths:
+   * 1. Listed-only "coming soon": `beforeRelease.listed` is true and we're
+   *    either pre-release or have no release configured. Deny but signal listing.
+   * 2. Pre-release without a listing flag: deny outright.
+   * 3. No release configured: only path is PT review-only (granted iff the rule
+   *    is PT-gated AND top-level afterComplete has unlocked questions).
+   * 4. Otherwise: grant via the date control.
+   */
+  const current = accessTimeline.find((e) => e.current);
+  const beforeRelease = current?.startDate === null;
+  const nextDeadlineDate = current?.endDate ?? null;
+  const hasRelease = !!rule.dateControl?.release;
+  const listed = rule.beforeRelease?.listed ?? false;
+
+  if (listed && (beforeRelease || !hasRelease)) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      ...visibility,
+      showBeforeRelease: true,
+      nextActiveDate: nextDeadlineDate,
+    };
+  }
+
+  if (beforeRelease) {
+    return { ...UNAUTHORIZED_RESULT, ...visibility };
+  }
+
+  if (!hasRelease) {
+    // PT-gated rule with no DC: review-only path when visibility has unlocked.
+    if (rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
+      return { ...UNAUTHORIZED_RESULT, authorized: true, ...visibility };
+    }
+    return { ...UNAUTHORIZED_RESULT, ...visibility };
+  }
+
+  const credit = current?.credit ?? 0;
+  const submittable = current?.submittable ?? false;
+  return {
+    authorized: true,
+    credit,
+    creditDateString: formatCreditDateString(credit, submittable, nextDeadlineDate, displayTimezone),
+    timeLimitMin: computeTimeLimitMin(
+      rule.dateControl?.durationMinutes,
+      nextDeadlineDate,
+      date,
+      authzMode,
+    ),
+    password: rule.dateControl?.password ?? null,
+    active: submittable,
+    ...visibility,
+    examAccessEnd: null,
+    ...grantedDefaults,
+  };
+}

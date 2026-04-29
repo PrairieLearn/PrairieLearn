@@ -46,10 +46,6 @@ const AccessControlRuleRowSchema = z.object({
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
-function isOverride(rule: AssessmentAccessControlRule): boolean {
-  return rule.target_type !== 'none';
-}
-
 function buildDateControl(
   rule: AssessmentAccessControlRule,
   earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
@@ -126,12 +122,8 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
-  const runtimeRule: RuntimeAccessControl = {};
   const rule = row.access_control_rule;
-
-  if (!isOverride(rule)) {
-    runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
-  }
+  const runtimeRule: RuntimeAccessControl = { prairieTestExams: [] };
 
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
   if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
@@ -139,21 +131,35 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const afterComplete = buildAfterComplete(rule);
   if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
-  // PrairieTest integrations are only on main rules (number 0).
-  const prairietestExams = (!isOverride(rule) ? (row.prairietest_exams ?? []) : []).map((e) => ({
+  if (rule.target_type === 'enrollment') {
+    return {
+      targetType: 'enrollment',
+      number: rule.number,
+      rule: runtimeRule,
+      enrollmentIds: row.enrollment_ids,
+    };
+  }
+  if (rule.target_type === 'student_label') {
+    return {
+      targetType: 'student_label',
+      number: rule.number,
+      rule: runtimeRule,
+      studentLabelIds: row.student_label_ids,
+    };
+  }
+
+  // Main rule: only this variant carries `beforeRelease` and PrairieTest integrations.
+  runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
+  runtimeRule.prairieTestExams = (row.prairietest_exams ?? []).map((e) => ({
     uuid: e.uuid,
     readOnly: e.read_only,
     questionsHidden: e.after_complete_questions_hidden,
     scoreHidden: e.after_complete_score_hidden,
   }));
-
   return {
+    targetType: 'none',
+    number: 0,
     rule: runtimeRule,
-    number: rule.number,
-    targetType: rule.target_type,
-    enrollmentIds: row.enrollment_ids,
-    studentLabelIds: row.student_label_ids,
-    prairietestExams,
   };
 }
 
