@@ -645,14 +645,15 @@ function CreditBadge({ credit }: { credit: string }) {
   return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
 }
 
-function AllowsSubmissionsBadge({ allowsSubmissions }: { allowsSubmissions: boolean }) {
-  const className = allowsSubmissions
+function YesNoBadge({ value }: { value: boolean | null }) {
+  if (value === null) {
+    return <span className="text-body-secondary">—</span>;
+  }
+  const className = value
     ? 'bg-success-subtle text-success-emphasis'
     : 'bg-warning-subtle text-warning-emphasis';
   return (
-    <span className={`badge rounded-pill fw-medium ${className}`}>
-      {allowsSubmissions ? 'Yes' : 'No'}
-    </span>
+    <span className={`badge rounded-pill fw-medium ${className}`}>{value ? 'Yes' : 'No'}</span>
   );
 }
 
@@ -732,12 +733,6 @@ const tdStyle = {
   paddingBottom: '0.5rem',
 };
 
-function getAfterCompleteLabel(exam: MainRuleData['prairieTestExams'][number]): string {
-  if (!exam.afterCompleteQuestionsHidden) return 'Show questions and score';
-  if (!exam.afterCompleteScoreHidden) return 'Hide questions, show score';
-  return 'Hide questions and score';
-}
-
 export function PrairieTestExamsTable({
   exams,
   initialMetadata,
@@ -794,7 +789,13 @@ export function PrairieTestExamsTable({
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              After completion
+              Show score
+            </th>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
+              Show questions
             </th>
           </tr>
         </thead>
@@ -828,10 +829,13 @@ export function PrairieTestExamsTable({
                   )}
                 </td>
                 <td className="border-0 text-nowrap" style={tdStyle}>
-                  <AllowsSubmissionsBadge allowsSubmissions={!exam.readOnly} />
+                  <YesNoBadge value={!exam.readOnly} />
                 </td>
                 <td className="border-0 text-nowrap" style={tdStyle}>
-                  {getAfterCompleteLabel(exam)}
+                  <YesNoBadge value={exam.readOnly ? null : !exam.afterCompleteScoreHidden} />
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  <YesNoBadge value={exam.readOnly ? null : !exam.afterCompleteQuestionsHidden} />
                 </td>
               </tr>
             );
