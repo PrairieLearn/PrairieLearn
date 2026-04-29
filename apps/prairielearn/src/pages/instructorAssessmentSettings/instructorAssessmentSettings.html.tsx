@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Alert, Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { useModalState } from '@prairielearn/ui';
+
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
@@ -193,6 +195,142 @@ export function InstructorAssessmentSettings({
 
 InstructorAssessmentSettings.displayName = 'InstructorAssessmentSettings';
 
+function suggestCopyShortName(sourceTid: string, tidSet: Set<string>): string {
+  const stripped = sourceTid.match(/^(.*)_copy[0-9]*$/)?.[1] ?? sourceTid;
+  let candidate = `${stripped}_copy`;
+  let counter = 2;
+  while (tidSet.has(candidate)) {
+    candidate = `${stripped}_copy${counter}`;
+    counter++;
+  }
+  return candidate;
+}
+
+function CopyAssessmentModal({
+  show,
+  onHide,
+  onExited,
+  assessment,
+  tidSet,
+  urlPrefix,
+}: {
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
+  assessment: StaffAssessment;
+  tidSet: Set<string>;
+  urlPrefix: string;
+}) {
+  const trpc = useTRPC();
+  const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
+  const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
+
+  const defaultAid = suggestCopyShortName(assessment.tid ?? 'assessment', tidSet);
+  const defaultTitle = assessment.title ? `${assessment.title} (copy)` : '';
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<{ aid: string; title: string }>({
+    mode: 'onSubmit',
+    defaultValues: { aid: defaultAid, title: defaultTitle },
+  });
+
+  const handleExited = () => {
+    copyMutation.reset();
+    reset({ aid: defaultAid, title: defaultTitle });
+    onExited();
+  };
+
+  const onSubmit = handleSubmit((data) => {
+    copyMutation.mutate(data, {
+      onSuccess: (result) => {
+        window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
+      },
+    });
+  });
+
+  return (
+    <Modal show={show} onHide={onHide} onExited={handleExited}>
+      <Modal.Header closeButton>
+        <Modal.Title>Copy assessment</Modal.Title>
+      </Modal.Header>
+      <form onSubmit={onSubmit}>
+        <Modal.Body>
+          {copyError && (
+            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
+              {copyError.message}
+            </Alert>
+          )}
+          <p className="text-muted small mb-3">
+            Copying <code>{assessment.tid}</code>.
+          </p>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="copy-assessment-title">
+              Title
+            </label>
+            <input
+              id="copy-assessment-title"
+              type="text"
+              className={clsx('form-control', errors.title && 'is-invalid')}
+              aria-invalid={errors.title ? 'true' : 'false'}
+              {...(errors.title ? { 'aria-errormessage': 'copy-assessment-title-error' } : {})}
+              defaultValue={defaultTitle}
+              {...register('title', { required: 'Title is required' })}
+            />
+            {errors.title && (
+              <div id="copy-assessment-title-error" className="invalid-feedback">
+                {errors.title.message}
+              </div>
+            )}
+          </div>
+          <div className="mb-0">
+            <label className="form-label" htmlFor="copy-assessment-aid">
+              Short name
+            </label>
+            <input
+              id="copy-assessment-aid"
+              type="text"
+              className={clsx('form-control font-monospace', errors.aid && 'is-invalid')}
+              aria-describedby="copy-assessment-aid-help"
+              aria-invalid={errors.aid ? 'true' : 'false'}
+              {...(errors.aid ? { 'aria-errormessage': 'copy-assessment-aid-error' } : {})}
+              defaultValue={defaultAid}
+              {...register('aid', {
+                required: 'Short name is required',
+                validate: (value) => {
+                  const result = validateShortName(value);
+                  if (!result.valid) return result.message;
+                  if (tidSet.has(value)) return 'This ID is already in use';
+                  return true;
+                },
+              })}
+            />
+            {errors.aid && (
+              <div id="copy-assessment-aid-error" className="invalid-feedback">
+                {errors.aid.message}
+              </div>
+            )}
+            <small id="copy-assessment-aid-help" className="form-text text-muted">
+              <AssessmentShortNameDescription />
+            </small>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" disabled={copyMutation.isPending} onClick={onHide}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={copyMutation.isPending}>
+            {copyMutation.isPending ? 'Copying...' : 'Copy assessment'}
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
 function InstructorAssessmentSettingsInner({
   urlPrefix,
   canEdit,
@@ -210,8 +348,8 @@ function InstructorAssessmentSettingsInner({
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const copyModalState = useModalState<true>();
+  const deleteModalState = useModalState<true>();
 
   const tidSet = new Set(tids);
 
@@ -261,11 +399,9 @@ function InstructorAssessmentSettingsInner({
   const [useCustomMaxPoints, setUseCustomMaxPoints] = useState(assessment.max_points != null);
 
   const saveMutation = useMutation(trpc.assessmentSettings.updateAssessment.mutationOptions());
-  const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
   const deleteMutation = useMutation(trpc.assessmentSettings.deleteAssessment.mutationOptions());
 
   const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(saveMutation.error);
-  const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
   const deleteError = getAppError<AssessmentSettingsError['DeleteAssessment']>(
     deleteMutation.error,
   );
@@ -312,41 +448,23 @@ function InstructorAssessmentSettingsInner({
 
   return (
     <>
-      <Modal show={showCopyModal} onHide={() => setShowCopyModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Copy assessment</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {copyError && (
-            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
-              {copyError.message}
-            </Alert>
-          )}
-          <p>
-            Are you sure you want to copy the assessment <b>{assessment.tid}</b>?
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCopyModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={copyMutation.isPending}
-            onClick={() =>
-              copyMutation.mutate(undefined, {
-                onSuccess: (result) => {
-                  window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
-                },
-              })
-            }
-          >
-            {copyMutation.isPending ? 'Copying...' : 'Copy'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <CopyAssessmentModal
+        show={copyModalState.show}
+        assessment={assessment}
+        tidSet={tidSet}
+        urlPrefix={urlPrefix}
+        onHide={copyModalState.onHide}
+        onExited={copyModalState.onExited}
+      />
 
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+      <Modal
+        show={deleteModalState.show}
+        onHide={deleteModalState.onHide}
+        onExited={() => {
+          deleteMutation.reset();
+          deleteModalState.onExited();
+        }}
+      >
         <Modal.Header closeButton>
           <Modal.Title>Delete</Modal.Title>
         </Modal.Header>
@@ -361,7 +479,7 @@ function InstructorAssessmentSettingsInner({
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          <Button variant="secondary" onClick={deleteModalState.onHide}>
             Cancel
           </Button>
           <Button
@@ -381,6 +499,31 @@ function InstructorAssessmentSettingsInner({
       </Modal>
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
+        <div className="bg-light border-bottom px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+          {canEdit && (
+            <>
+              <Button
+                size="sm"
+                variant="outline-primary"
+                onClick={() => copyModalState.showWithData(true)}
+              >
+                <i className="bi bi-copy me-1" aria-hidden="true" />
+                Make a copy of this assessment
+              </Button>
+              <Button
+                size="sm"
+                variant="outline-danger"
+                onClick={() => deleteModalState.showWithData(true)}
+              >
+                <i className="bi bi-trash me-1" aria-hidden="true" />
+                Delete this assessment
+              </Button>
+            </>
+          )}
+          <div className="ms-auto">
+            <GitHubButton gitHubLink={currentGHLink} />
+          </div>
+        </div>
         <div className="container d-flex flex-column gap-3 py-3">
           <div className="card">
             <div className="card-body">
@@ -557,27 +700,6 @@ function InstructorAssessmentSettingsInner({
                 />
               ) : (
                 <p className="form-text text-muted">This assessment is not being shared.</p>
-              )}
-            </div>
-            <div className="card-footer d-flex flex-wrap align-items-center gap-2">
-              <GitHubButton gitHubLink={currentGHLink} />
-              {canEdit && (
-                <div className="ms-auto d-flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline-secondary"
-                    onClick={() => setShowCopyModal(true)}
-                  >
-                    <i className="bi bi-copy" aria-hidden="true" /> Copy
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline-danger"
-                    onClick={() => setShowDeleteModal(true)}
-                  >
-                    <i className="bi bi-trash" aria-hidden="true" /> Delete
-                  </Button>
-                </div>
               )}
             </div>
           </div>

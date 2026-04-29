@@ -473,11 +473,16 @@ function validateQidNesting(newQid: string, existingQids: string[], skipQid?: st
 export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
+  private tid_new?: string;
+  private title_new?: string;
 
   public readonly uuid: string;
 
   constructor(
-    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }>,
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
+      tid_new?: string;
+      title_new?: string;
+    },
   ) {
     const { course_instance, assessment } = params.locals;
 
@@ -488,6 +493,8 @@ export class AssessmentCopyEditor extends Editor {
 
     this.assessment = assessment;
     this.course_instance = course_instance;
+    this.tid_new = params.tid_new;
+    this.title_new = params.title_new;
 
     this.uuid = crypto.randomUUID();
   }
@@ -504,22 +511,29 @@ export class AssessmentCopyEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
-    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    let tid: string;
+    let assessmentTitle: string;
+    if (this.tid_new !== undefined && this.title_new !== undefined) {
+      tid = this.tid_new;
+      assessmentTitle = this.title_new;
+    } else {
+      debug('Get all existing long names');
+      const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+      const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
-    debug('Get all existing short names');
-    const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+      debug('Get all existing short names');
+      const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
-    debug('Generate TID and Title');
-    const names = getNamesForCopy(
-      this.assessment.tid,
-      oldNamesShort,
-      this.assessment.title,
-      oldNamesLong,
-    );
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+      debug('Generate TID and Title');
+      const names = getNamesForCopy(
+        this.assessment.tid,
+        oldNamesShort,
+        this.assessment.title,
+        oldNamesLong,
+      );
+      tid = names.shortName;
+      assessmentTitle = names.longName;
+    }
     const assessmentPath = path.join(assessmentsPath, tid);
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
