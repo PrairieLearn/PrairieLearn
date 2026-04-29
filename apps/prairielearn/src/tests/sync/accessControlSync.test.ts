@@ -9,10 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
-import type {
-  MainRule,
-  OverrideRule,
-} from '../../lib/assessment-access-control/resolver.js';
+import type { MainRule, OverrideRule } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
@@ -1880,7 +1877,7 @@ describe('Access control syncing', () => {
         let rules = await selectAccessControlRulesForAssessment(assessment);
         let main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.equal(main.rule.prairieTestExams?.length ?? 0, 1);
+        assert.equal(main.rule.prairieTestExams.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
         await syncRulesAndRead([makeAccessControlRule()], { courseDir });
@@ -1888,7 +1885,7 @@ describe('Access control syncing', () => {
         rules = await selectAccessControlRulesForAssessment(assessment);
         main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.equal(main.rule.prairieTestExams?.length ?? 0, 0);
+        assert.equal(main.rule.prairieTestExams.length, 0);
       }));
   });
 });
