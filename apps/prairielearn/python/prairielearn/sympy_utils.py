@@ -196,7 +196,7 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # noqa: ARG002, N802
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # noqa: ARG002, N802
         return "{}"
 
     def _print_Interval(self, i: sympy.Interval) -> str:  # noqa: N802
