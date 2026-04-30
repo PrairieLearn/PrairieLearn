@@ -2552,6 +2552,9 @@ export class QtiImportEditor extends Editor {
     );
 
     // Pre-validate all paths before writing anything to avoid partial state.
+    const existingQids = await discoverInfoDirs(questionsBaseDir, 'info.json');
+    const importedQids: string[] = [];
+
     for (const assessment of this.assessments) {
       for (const question of assessment.questions) {
         const qDir = path.join(questionsBaseDir, question.directoryName);
@@ -2569,6 +2572,10 @@ export class QtiImportEditor extends Editor {
             `,
           });
         }
+        // Validate that the new QID doesn't nest inside (or contain) an existing question.
+        validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
+        importedQids.push(question.directoryName);
+
         if (Object.keys(question.clientFiles).length > 0) {
           const cfDir = path.join(qDir, 'clientFilesQuestion');
           for (const name of Object.keys(question.clientFiles)) {

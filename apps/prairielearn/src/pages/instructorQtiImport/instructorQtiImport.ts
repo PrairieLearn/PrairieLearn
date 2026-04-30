@@ -102,8 +102,12 @@ router.post(
     const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
     try {
       // Extract the archive to the temp directory.
-      const directory = await unzipper.Open.buffer(file.buffer);
-      await directory.extract({ path: tempDir });
+      try {
+        const directory = await unzipper.Open.buffer(file.buffer);
+        await directory.extract({ path: tempDir });
+      } catch {
+        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
+      }
 
       // Find QTI assessment files.
       const manifestEntries = await findQtiFilesFromManifest(tempDir);

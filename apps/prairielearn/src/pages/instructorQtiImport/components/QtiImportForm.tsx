@@ -298,11 +298,11 @@ export function QtiImportForm({
             .map((zone) => ({
               ...zone,
               questions: zone.questions
-                .map((zq) => ({
-                  ...zq,
-                  id: qidMap.get(zq.id) ?? zq.id,
-                }))
-                .filter((zq) => includedQuestionDirs.has(zq.id)),
+                .map((zq) => {
+                  const id = qidMap.get(zq.id) ?? zq.id;
+                  return includedQuestionDirs.has(id) ? { ...zq, id } : null;
+                })
+                .filter((zq): zq is NonNullable<typeof zq> => zq !== null),
             }))
             .filter((zone) => zone.questions.length > 0);
 
