@@ -650,11 +650,6 @@ export function validateRule(
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
-    if (rule.dateControl && !rule.dateControl.due) {
-      errors.push(
-        'Due date configuration is required on the defaults when dateControl is specified.',
-      );
-    }
   } else {
     if (rule.beforeRelease !== undefined) {
       errors.push('beforeRelease can only be specified on the defaults.');

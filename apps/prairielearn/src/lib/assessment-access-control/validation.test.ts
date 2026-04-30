@@ -1434,21 +1434,6 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject main-rule dateControl without due configuration', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        release: { date: '2024-03-14T00:01:00' },
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.includes(
-        'Due date configuration is required on the defaults when dateControl is specified.',
-      ),
-    );
-  });
-
   it('should reject after-complete dates without any deadline', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
