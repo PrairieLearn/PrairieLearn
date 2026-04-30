@@ -298,7 +298,7 @@ export function MainDueDateField({
     },
   });
 
-  const { setValue } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues } = useFormContext<AccessControlFormData>();
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {
@@ -318,6 +318,27 @@ export function MainDueDateField({
       if (next.date === null) {
         setValue('mainRule.lateDeadlines', [], { shouldDirty: true, shouldValidate: true });
         setValue('mainRule.afterLastDeadline', null, { shouldDirty: true, shouldValidate: true });
+        // Wipe late deadlines / after-last-deadline on overrides that don't
+        // have their own due date, since those values would otherwise be
+        // stranded with no effective due date to anchor them.
+        const { overrides } = getValues();
+        overrides.forEach((override, i) => {
+          const overrideHasOwnDueDate =
+            override.overriddenFields.includes('due') && override.due.date != null;
+          if (overrideHasOwnDueDate) return;
+          setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
+          setValue(
+            `overrides.${i}.afterLastDeadline`,
+            { allowSubmissions: false },
+            { shouldDirty: true },
+          );
+          const cleared = override.overriddenFields.filter(
+            (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',
+          );
+          if (cleared.length !== override.overriddenFields.length) {
+            setValue(`overrides.${i}.overriddenFields`, cleared, { shouldDirty: true });
+          }
+        });
       }
     }
     if (next.customCredit !== value.customCredit) {
@@ -402,13 +423,34 @@ export function OverrideDueDateField({
     },
   });
 
+  const { setValue, getValues } = useFormContext<AccessControlFormData>();
+
   const value: DueValue = {
     date: dateCtrl.field.value,
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
   const handleChange = (next: DueValue) => {
-    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
+    if (next.date !== value.date) {
+      dateCtrl.field.onChange(next.date);
+      if (next.date === null) {
+        setValue(`overrides.${index}.lateDeadlines`, [], {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        setValue(
+          `overrides.${index}.afterLastDeadline`,
+          { allowSubmissions: false },
+          { shouldDirty: true, shouldValidate: true },
+        );
+        const currentOverridden = getValues(`overrides.${index}.overriddenFields`);
+        setValue(
+          `overrides.${index}.overriddenFields`,
+          currentOverridden.filter((f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline'),
+          { shouldDirty: true },
+        );
+      }
+    }
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
