@@ -456,9 +456,7 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
-        notes: [
-          '1 late deadline dropped because the higher-credit due window covers the same period.',
-        ],
+        notes: ['1 credit window dropped because higher-credit rules cover the same period.'],
         hasUidRules: false,
       },
     },
@@ -476,9 +474,7 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
-        notes: [
-          '1 late deadline dropped because the higher-credit due window covers the same period.',
-        ],
+        notes: ['1 credit window dropped because higher-credit rules cover the same period.'],
         hasUidRules: false,
       },
     },
@@ -730,7 +726,7 @@ describe('migrateAllowAccess', () => {
           },
         },
         errors: [],
-        notes: ['1 late deadline collapsed because higher-credit rules cover the same period.'],
+        notes: ['1 credit window dropped because higher-credit rules cover the same period.'],
         hasUidRules: false,
       },
     },
@@ -992,6 +988,24 @@ describe('migrateAllowAccess', () => {
           'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
         ],
         notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'bonus-credit window extending past full-credit window dominates as the due',
+      rules: [
+        { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },
+        { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-06-01T00:00:00' },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00', credit: 110 },
+          },
+        },
+        errors: [],
+        notes: ['1 credit window dropped because higher-credit rules cover the same period.'],
         hasUidRules: false,
       },
     },

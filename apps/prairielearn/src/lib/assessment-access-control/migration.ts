@@ -15,10 +15,15 @@ import * as path from 'path';
 
 import { assertNever } from '@prairielearn/utils';
 
-import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJsonInput,
+  AccessControlJsonSchema,
+} from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
+
+import { validateAccessControlRules } from './validation.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,6 +83,22 @@ function findLastCreditEndDate(rules: AssessmentAccessRuleJson[]): string | unde
     .filter(Boolean)
     .sort() as string[];
   return endDates[endDates.length - 1];
+}
+
+/**
+ * Returns true when `outer`'s [start, end] window fully covers `inner`'s.
+ * Both rules must be closed (have an endDate). A missing startDate on `outer`
+ * means -∞; a missing startDate on `inner` makes coverage impossible unless
+ * `outer` is also unbounded on the start side.
+ */
+function ruleCovers(outer: AssessmentAccessRuleJson, inner: AssessmentAccessRuleJson): boolean {
+  if (!outer.endDate || !inner.endDate) return false;
+  if (outer.endDate < inner.endDate) return false;
+  if (outer.startDate) {
+    if (!inner.startDate) return false;
+    if (outer.startDate > inner.startDate) return false;
+  }
+  return true;
 }
 
 function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined {
@@ -362,8 +383,27 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
   const notes: string[] = [];
 
   const creditRules = getCreditRules(rules);
-  const closedCreditRules = creditRules.filter((r) => r.endDate);
+  const allClosedCreditRules = creditRules.filter((r) => r.endDate);
   const openEndedCreditRules = creditRules.filter((r) => !r.endDate);
+
+  // Drop closed rules whose window is fully covered by a strictly-higher-credit
+  // closed rule.
+  const dominatedRules = new Set<AssessmentAccessRuleJson>();
+  for (const rule of allClosedCreditRules) {
+    for (const other of allClosedCreditRules) {
+      if (other === rule) continue;
+      if ((other.credit ?? 0) > (rule.credit ?? 0) && ruleCovers(other, rule)) {
+        dominatedRules.add(rule);
+        break;
+      }
+    }
+  }
+  if (dominatedRules.size > 0) {
+    notes.push(
+      `${dominatedRules.size} credit window${dominatedRules.size === 1 ? '' : 's'} dropped because higher-credit rules cover the same period.`,
+    );
+  }
+  const closedCreditRules = allClosedCreditRules.filter((r) => !dominatedRules.has(r));
 
   // No positive credit rules. If there are credit:0 rules with dates, treat
   // them as a credit-0 due window using `due.credit: 0`.
@@ -804,6 +844,26 @@ export function migrateAllowAccess(
   // without a release date (e.g. password-only or always-open rules).
   if (accessControl.dateControl && !accessControl.dateControl.release) {
     accessControl.dateControl.release = { date: fallbackReleaseDate };
+  }
+
+  // Run the assembled config through the same validators that sync uses.
+  // We shouldn't be creating invalid configurations, so this acts as a safety check.
+  const schemaResult = AccessControlJsonSchema.safeParse(accessControl);
+  if (!schemaResult.success) {
+    return {
+      accessControl: {},
+      errors: schemaResult.error.issues.map((issue) =>
+        issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
+      ),
+      notes,
+      hasUidRules,
+    };
+  }
+  const { errors: validationErrors } = validateAccessControlRules({
+    rules: [accessControl],
+  });
+  if (validationErrors.length > 0) {
+    return { accessControl: {}, errors: validationErrors, notes, hasUidRules };
   }
 
   return { accessControl, errors: [], notes, hasUidRules };
