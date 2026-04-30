@@ -1670,7 +1670,7 @@ describe('afterComplete cross-field validation', () => {
   function makeRule(json: AccessControlJsonInput, ruleIndex: number, isMain: boolean) {
     return {
       rule: AccessControlJsonSchema.parse(json),
-      targetType: (isMain ? 'none' : 'student_label'),
+      targetType: isMain ? 'none' : 'student_label',
       ruleIndex,
     };
   }
@@ -1799,9 +1799,9 @@ describe('afterComplete cross-field validation', () => {
     ]);
     const overrideIssue = issues.find((issue) => issue.ruleIndex === 1);
     assert.isDefined(overrideIssue);
-    assert.deepEqual(overrideIssue?.path, ['afterComplete', 'questions']);
+    assert.deepEqual(overrideIssue.path, ['afterComplete', 'questions']);
     assert.match(
-      overrideIssue?.message ?? '',
+      overrideIssue.message,
       /Show score date must be on or before the show questions date/,
     );
   });
@@ -1831,7 +1831,7 @@ describe('afterComplete cross-field validation', () => {
     const overrideIssue = issues.find((issue) => issue.ruleIndex === 1);
     assert.isDefined(overrideIssue);
     assert.match(
-      overrideIssue?.message ?? '',
+      overrideIssue.message,
       /Show score date must be on or before the show questions date/,
     );
   });
@@ -1921,7 +1921,7 @@ describe('afterComplete cross-field validation', () => {
     const overrideIssue = issues.find((i) => i.ruleIndex === 1);
     assert.isDefined(overrideIssue);
     assert.match(
-      overrideIssue?.message ?? '',
+      overrideIssue.message,
       /Show score date must be on or before the show questions date/,
     );
   });
@@ -2006,7 +2006,7 @@ describe('afterComplete cross-field validation', () => {
     const overrideIssue = issues.find((i) => i.ruleIndex === 1);
     assert.isDefined(overrideIssue);
     assert.match(
-      overrideIssue?.message ?? '',
+      overrideIssue.message,
       /Show score date must be on or before the show questions date/,
     );
   });
@@ -2025,10 +2025,7 @@ describe('afterComplete cross-field validation', () => {
     ]);
     const overrideIssue = issues.find((i) => i.ruleIndex === 1);
     assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue?.message ?? '',
-      /Score cannot be hidden while questions are visible/,
-    );
+    assert.match(overrideIssue.message, /Score cannot be hidden while questions are visible/);
   });
 
   it('rejects override that flips score to hidden-forever while inheriting visible questions', () => {
@@ -2045,10 +2042,7 @@ describe('afterComplete cross-field validation', () => {
     ]);
     const overrideIssue = issues.find((i) => i.ruleIndex === 1);
     assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue?.message ?? '',
-      /Score cannot be hidden while questions are visible/,
-    );
+    assert.match(overrideIssue.message, /Score cannot be hidden while questions are visible/);
   });
 
   it('accepts override that hides questions forever, inheriting any score state', () => {
@@ -2103,10 +2097,7 @@ describe('afterComplete cross-field validation', () => {
     ]);
     const overrideIssue = issues.find((i) => i.ruleIndex === 1);
     assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue?.message ?? '',
-      /Score must become visible by the time questions do/,
-    );
+    assert.match(overrideIssue.message, /Score must become visible by the time questions do/);
   });
 
   it('reports issues independently across multiple conflicting overrides', () => {
