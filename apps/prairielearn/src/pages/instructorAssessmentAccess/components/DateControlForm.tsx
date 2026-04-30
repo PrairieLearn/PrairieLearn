@@ -32,6 +32,15 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
+  const dueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
+    name: 'mainRule.due.date',
+  });
+
+  const afterLastDeadline = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
+    name: 'mainRule.afterLastDeadline',
+  });
+  const showAfterLastDeadline = dueDate != null || !!afterLastDeadline?.allowSubmissions;
+
   return (
     <div>
       <div className="section-header mb-3">
@@ -65,7 +74,9 @@ export function MainDateControlForm({
             courseInstanceId={courseInstanceId}
           />
           <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-          <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
+          {showAfterLastDeadline && (
+            <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
+          )}
           <Row className="gy-3">
             <Col md={6}>
               <MainDurationField />

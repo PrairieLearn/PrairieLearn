@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Form, InputGroup } from 'react-bootstrap';
+import { Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
   get,
@@ -77,13 +77,11 @@ function AfterLastDeadlineInput({
   onChange,
   overrideIndex,
   displayTimezone,
-  showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
   overrideIndex?: number;
   displayTimezone: string;
-  showNoDueDateWarning?: boolean;
 }) {
   const isOverride = overrideIndex != null;
   const creditFieldPath = isOverride
@@ -108,7 +106,7 @@ function AfterLastDeadlineInput({
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
   // Watch dep fields so this component re-renders when they change,
-  // keeping display values (last-deadline text, warnings) up to date.
+  // keeping display values (last-deadline text) up to date.
   useWatch<AccessControlFormData>({ name: creditDeps });
   const {
     dueDate,
@@ -142,8 +140,6 @@ function AfterLastDeadlineInput({
     return 'This will take effect after the last deadline';
   };
 
-  const hasLastDeadline = !!dueDate || lateDeadlines.length > 0;
-
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
       case 'no_submissions':
@@ -158,6 +154,8 @@ function AfterLastDeadlineInput({
     }
   };
 
+  const noDueDateError = dueDate == null && mode !== 'no_submissions';
+
   return (
     <Form.Group>
       <small className="text-muted d-block">{getLastDeadlineText()}</small>
@@ -171,12 +169,11 @@ function AfterLastDeadlineInput({
           onChange={handleModeChange}
         />
       </div>
-      {showNoDueDateWarning && !hasLastDeadline && mode !== 'no_submissions' && (
-        <Alert variant="warning" className="py-2 mb-2">
-          This setting will have no effect because there is no due date set.
-        </Alert>
+      {noDueDateError && (
+        <Form.Text className="text-danger d-block" role="alert">
+          After last deadline requires a due date
+        </Form.Text>
       )}
-
       {mode === 'partial_credit' && (
         <div className="mt-2">
           <InputGroup>
@@ -283,7 +280,6 @@ export function OverrideAfterLastDeadlineField({
         value={field.value}
         overrideIndex={index}
         displayTimezone={displayTimezone}
-        showNoDueDateWarning={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

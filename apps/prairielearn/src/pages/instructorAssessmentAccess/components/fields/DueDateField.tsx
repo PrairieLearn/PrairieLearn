@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -294,9 +294,25 @@ export function MainDueDateField({
   const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
     name: 'mainRule.due.date',
     rules: {
-      validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
+      validate: (value, formValues) => {
+        const error = validateDueDate(value, releaseDate, displayTimezone);
+        if (error) return error;
+        if (value === null && formValues.mainRule.afterLastDeadline?.allowSubmissions) {
+          return 'Remove the after last deadline configuration before removing the due date';
+        }
+        return true;
+      },
     },
   });
+
+  const { trigger } = useFormContext<AccessControlFormData>();
+  const afterLastDeadlineAllowSubmissions = useWatch<
+    AccessControlFormData,
+    'mainRule.afterLastDeadline.allowSubmissions'
+  >({ name: 'mainRule.afterLastDeadline.allowSubmissions' });
+  useEffect(() => {
+    void trigger('mainRule.due.date');
+  }, [trigger, afterLastDeadlineAllowSubmissions]);
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {
