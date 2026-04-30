@@ -6,6 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { MainAfterCompleteForm } from './AfterCompleteForm.js';
 import { MainDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
+import { useHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
 import type { AccessControlFormData } from './types.js';
 
 const beforeReleasePopoverConfig = {
@@ -30,6 +31,7 @@ export function MainRuleForm({
   courseInstanceId: string;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
+  const hasCompletionMechanism = useHasCompletionMechanism();
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -64,7 +66,7 @@ export function MainRuleForm({
           Students can see the assessment title before release
         </Form.Text>
       </div>
-      <MainAfterCompleteForm displayTimezone={displayTimezone} />
+      {hasCompletionMechanism && <MainAfterCompleteForm displayTimezone={displayTimezone} />}
     </div>
   );
 }

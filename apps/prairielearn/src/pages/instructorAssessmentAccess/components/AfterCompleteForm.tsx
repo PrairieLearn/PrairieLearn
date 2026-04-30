@@ -5,12 +5,10 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import {
-  type AccessControlFormData,
-  type QuestionVisibilityValue,
-  type ScoreVisibilityValue,
-  isNonDefaultQuestionVisibility,
-  isNonDefaultScoreVisibility,
+import type {
+  AccessControlFormData,
+  QuestionVisibilityValue,
+  ScoreVisibilityValue,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -445,20 +443,8 @@ export function MainAfterCompleteForm({
   const hasCompletionMechanism =
     hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
 
-  const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
-  const svNonDefault = isNonDefaultScoreVisibility(svField.value);
-  const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
-
   return (
     <AfterCompleteCard title={title}>
-      {showNoCompletionWarning && (
-        <Col xs={12}>
-          <Alert variant="warning" className="py-2 mb-0">
-            These settings will have no effect because there is no way for the assessment to be
-            completed.
-          </Alert>
-        </Col>
-      )}
       <Col md={6}>
         <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
           Question visibility
