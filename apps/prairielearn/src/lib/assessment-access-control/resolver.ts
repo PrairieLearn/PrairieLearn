@@ -382,17 +382,6 @@ export function resolveAccessControl(
 
   const visibility = computeTopLevelVisibility(rule.afterComplete, date);
   const accessTimeline = buildAccessTimeline(rule.dateControl, date);
-  // Used by deny / coming-soon returns. PT-granted paths keep `grantedDefaults`
-  // separately so `examVisibility` isn't shadowed by top-level `visibility`.
-  const denyDefaults = {
-    ...visibility,
-    accessTimeline,
-  };
-  const grantedDefaults = {
-    showBeforeRelease: false,
-    accessTimeline,
-    nextActiveDate: null,
-  };
 
   // In Exam mode, the only access path is a matching PrairieTest reservation;
   // `dateControl` is intentionally ignored for the access decision (still
@@ -403,7 +392,9 @@ export function resolveAccessControl(
     const matched = rule.prairieTestExams.find((exam) =>
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
     );
-    if (!matched) return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
+    if (!matched) {
+      return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
+    }
 
     const reservation = prairieTestReservations.find((r) => r.examUuid === matched.uuid)!;
     const examVisibility = computePrairieTestVisibility(matched);
@@ -417,7 +408,9 @@ export function resolveAccessControl(
       submittable,
       ...examVisibility,
       examAccessEnd: reservation.accessEnd,
-      ...grantedDefaults,
+      showBeforeRelease: false,
+      accessTimeline,
+      nextActiveDate: null,
     };
   }
 
@@ -430,13 +423,19 @@ export function resolveAccessControl(
   // PT-gated rule with no DC release: review-only path when visibility has
   // unlocked. We ignore `beforeRelease.listed` here.
   if (!hasRelease && rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
-    return { ...UNAUTHORIZED_RESULT, authorized: true, ...denyDefaults };
+    return {
+      ...UNAUTHORIZED_RESULT,
+      authorized: true,
+      ...visibility,
+      accessTimeline,
+    };
   }
 
   if (beforeRelease || !hasRelease) {
     return {
       ...UNAUTHORIZED_RESULT,
-      ...denyDefaults,
+      ...visibility,
+      accessTimeline,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: nextDeadlineDate,
     };
@@ -463,6 +462,8 @@ export function resolveAccessControl(
     submittable,
     ...visibility,
     examAccessEnd: null,
-    ...grantedDefaults,
+    showBeforeRelease: false,
+    accessTimeline,
+    nextActiveDate: null,
   };
 }
