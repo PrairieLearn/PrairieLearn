@@ -209,30 +209,29 @@ export function InstanceQuestion({
       </div>
       ${aiGradingInfo
         ? html`
-            <div class="alert alert-info" role="alert">
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <i class="bi bi-stars fs-5" aria-hidden="true"></i>
-                <strong>Submission graded by AI</strong>
+            <style>
+              .review-ai-grading-alert {
+                container-type: inline-size;
+                container-name: review-ai-grading-alert;
+              }
+              @container review-ai-grading-alert (max-width: 700px) {
+                .review-ai-grading-alert .review-ai-grading-dot {
+                  display: none;
+                }
+              }
+            </style>
+            <div class="alert alert-info review-ai-grading-alert" role="alert">
+              <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-1">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-stars fs-5" aria-hidden="true"></i>
+                  <strong>Review AI grading</strong>
+                </div>
+                <div class="d-flex flex-wrap column-gap-2">
+                  <span>Ensure the grading aligns with your expectations</span>
+                  <span aria-hidden="true" class="review-ai-grading-dot">·</span>
+                  <span>Edit the rubric for future AI grading runs</span>
+                </div>
               </div>
-              <ul class="mb-0 ps-4">
-                <li>
-                  Review the AI's grading in
-                  <a href="#grading-panel" class="alert-link">the grading panel</a>.
-                </li>
-                <li>
-                  View its explanation in
-                  <a href="#ai-grading-explanation" class="alert-link"
-                    >the AI grading explanation section</a
-                  >.
-                </li>
-                <li>
-                  <a href="#rubric-editor" class="alert-link js-show-rubric-settings-button"
-                    >Adjust the rubric</a
-                  >
-                  to better align with your needs.
-                </li>
-                <li>Adjust grades if desired.</li>
-              </ul>
             </div>
           `
         : ''}

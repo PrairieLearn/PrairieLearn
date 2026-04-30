@@ -47,7 +47,7 @@ export function RubricInputSection({
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
-        class="js-adjust-points-enable btn btn-sm btn-link ${rubric_grading?.adjust_points ||
+        class="js-adjust-points-enable btn btn-sm btn-link text-decoration-none ${rubric_grading?.adjust_points ||
         disable
           ? 'd-none'
           : ''}"
@@ -137,8 +137,11 @@ function RubricItems({
       </div>
       ${!disable
         ? html`
-            <button type="button" class="btn btn-sm btn-link p-0 js-show-rubric-settings-button">
-              Edit rubric
+            <button
+              type="button"
+              class="btn btn-sm btn-link p-0 text-decoration-none js-show-rubric-settings-button"
+            >
+              <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit rubric
             </button>
           `
         : ''}

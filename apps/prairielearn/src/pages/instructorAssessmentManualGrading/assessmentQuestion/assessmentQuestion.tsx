@@ -298,7 +298,10 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        res.redirect(req.originalUrl);
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: res.locals.assessment_question,
+        });
+        res.json({ rubric_data });
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }

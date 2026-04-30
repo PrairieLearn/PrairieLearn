@@ -227,21 +227,32 @@ export function GradingPanel({
               </li>
             `
           : ''}
+        ${gradedByAi || gradedByHumanName
+          ? html`
+              <li class="list-group-item">
+                <div class="d-flex align-items-center flex-wrap gap-1">
+                  <span>Graded by:</span>
+                  ${gradedByAi
+                    ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
+                    : ''}
+                  ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
+                  ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
+                  ${gradedByAi
+                    ? html`<a
+                        href="#ai-grading-explanation"
+                        class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
+                      >
+                        <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
+                      </a>`
+                    : ''}
+                </div>
+                ${gradedByAi && gradedByHumanName
+                  ? html`<div class="text-muted small">Human grading always takes priority</div>`
+                  : ''}
+              </li>
+            `
+          : ''}
         <li class="list-group-item">
-          <div class="mb-2">
-            <div class="d-flex align-items-center flex-wrap gap-1">
-              <span>Graded by:</span>
-              ${gradedByAi
-                ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
-                : ''}
-              ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
-              ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
-              ${!gradedByAi && !gradedByHumanName ? html`<span>Not yet graded</span>` : ''}
-            </div>
-            ${gradedByAi && gradedByHumanName
-              ? html`<div class="text-muted small">Human grading always takes priority</div>`
-              : ''}
-          </div>
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
@@ -423,6 +434,9 @@ ${submission.feedback?.manual}</textarea
                     value="add_manual_grade"
                   >
                     Grade
+                  </button>
+                  <button id="ai-grade-button" type="button" class="btn btn-primary ms-1">
+                    <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
                   </button>
                 `
               : ''}

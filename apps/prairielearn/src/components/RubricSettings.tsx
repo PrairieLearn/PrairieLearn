@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Modal, Overlay, Popover } from 'react-bootstrap';
+import { Modal, Overlay, Popover, Spinner } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
@@ -107,6 +107,15 @@ export function RubricSettings({
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showSuccessMessage = (msg: string) => {
+    if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    setSuccessMessage(msg);
+    successTimeoutRef.current = setTimeout(() => setSuccessMessage(null), 3000);
+  };
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
@@ -156,6 +165,39 @@ export function RubricSettings({
     }
     return warnings;
   }, [totalPositive, totalNegative, maxPoints, minPoints]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (replaceAutoPoints !== defaultReplaceAutoPointsRef.current) return true;
+    if (startingPoints !== defaultStartingPointsRef.current) return true;
+    if (minPoints !== defaultMinPointsRef.current) return true;
+    if (maxExtraPoints !== defaultMaxExtraPointsRef.current) return true;
+    if (graderGuidelines !== defaultGraderGuidelinesRef.current) return true;
+    if (tagForGrading) return true;
+    const defaults = defaultRubricItemsRef.current;
+    if (rubricItems.length !== defaults.length) return true;
+    return rubricItems.some((item, i) => {
+      const a = item.rubric_item;
+      const b = defaults[i].rubric_item;
+      return (
+        a.id !== b.id ||
+        a.points !== b.points ||
+        a.description !== b.description ||
+        a.explanation !== b.explanation ||
+        a.grader_note !== b.grader_note ||
+        a.always_show_to_students !== b.always_show_to_students
+      );
+    });
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [
+    rubricItems,
+    replaceAutoPoints,
+    startingPoints,
+    minPoints,
+    maxExtraPoints,
+    graderGuidelines,
+    tagForGrading,
+    modifiedAt,
+  ]);
 
   // Handlers
   const addRubricItemRow = () => {
@@ -398,137 +440,152 @@ export function RubricSettings({
       return;
     }
 
-    const payload = {
-      __csrf_token: csrfToken,
-      __action: 'modify_rubric_settings',
-      use_rubric,
-      modified_at: modifiedAt?.toISOString() ?? '',
-      replace_auto_points: replaceAutoPoints,
-      starting_points: startingPoints,
-      min_points: minPoints,
-      max_extra_points: maxExtraPoints,
-      grader_guidelines: graderGuidelines,
-      rubric_items: rubricItems.map((it, idx) => ({
-        id: it.rubric_item.id,
-        order: idx,
-        points: it.rubric_item.points,
-        description: it.rubric_item.description,
-        explanation: it.rubric_item.explanation,
-        grader_note: it.rubric_item.grader_note,
-        always_show_to_students: it.rubric_item.always_show_to_students,
-      })),
-      tag_for_manual_grading: tagForGrading,
-    };
+    setIsSaving(true);
+    setSuccessMessage(null);
+    try {
+      const payload = {
+        __csrf_token: csrfToken,
+        __action: 'modify_rubric_settings',
+        use_rubric,
+        modified_at: modifiedAt?.toISOString() ?? '',
+        replace_auto_points: replaceAutoPoints,
+        starting_points: startingPoints,
+        min_points: minPoints,
+        max_extra_points: maxExtraPoints,
+        grader_guidelines: graderGuidelines,
+        rubric_items: rubricItems.map((it, idx) => ({
+          id: it.rubric_item.id,
+          order: idx,
+          points: it.rubric_item.points,
+          description: it.rubric_item.description,
+          explanation: it.rubric_item.explanation,
+          grader_note: it.rubric_item.grader_note,
+          always_show_to_students: it.rubric_item.always_show_to_students,
+        })),
+        tag_for_manual_grading: tagForGrading,
+      };
 
-    const res = await fetch(window.location.pathname, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      let data: { err: any };
-      try {
-        data = (await res.json()) ?? {};
-      } catch {
-        data = { err: `Error: ${res.statusText}` };
-      }
-      if (data.err) {
-        return setSettingsError(data.err);
-      }
-    }
-    // Need to handle response separated for assessment question and instance question pages
-    const contentType = res.headers.get('content-type') || '';
-
-    if (contentType.includes('application/json')) {
-      const data = await res.json();
-
-      if (data.submissionPanel && data.submissionId) {
-        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
-        if (oldSubmission) {
-          const newSubmission = parseHTMLElement(document, data.submissionPanel);
-          oldSubmission.replaceWith(newSubmission);
-          executeScripts(newSubmission);
-          await window.mathjaxTypeset([newSubmission]);
+      const res = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        let data: { err: any };
+        try {
+          data = (await res.json()) ?? {};
+        } catch {
+          data = { err: `Error: ${res.statusText}` };
+        }
+        if (data.err) {
+          setSettingsError(data.err);
+          return;
         }
       }
+      // Need to handle response separated for assessment question and instance question pages
+      const contentType = res.headers.get('content-type') || '';
 
-      if (data.gradingPanel) {
-        const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-        if (!gradingPanel) return;
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
 
-        const oldRubricForm = gradingPanel.querySelector<HTMLFormElement>(
-          'form[name="manual-grading-form"]',
-        );
-        if (!oldRubricForm) return;
+        if (data.submissionPanel && data.submissionId) {
+          const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+          if (oldSubmission) {
+            const newSubmission = parseHTMLElement(document, data.submissionPanel);
+            oldSubmission.replaceWith(newSubmission);
+            executeScripts(newSubmission);
+            await window.mathjaxTypeset([newSubmission]);
+          }
+        }
 
-        // Save values in grading rubric so they can be re-applied once the form is re-created.
-        const rubricFormData = Array.from(new FormData(oldRubricForm).entries());
-        // The CSRF token of the returned panels is not valid for the current form (it uses a
-        // different URL), so save the old value to be used in future requests.
-        const oldCsrfToken =
-          oldRubricForm.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
+        if (data.gradingPanel) {
+          const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
+          if (!gradingPanel) return;
 
-        gradingPanel.innerHTML = data.gradingPanel;
+          const oldRubricForm = gradingPanel.querySelector<HTMLFormElement>(
+            'form[name="manual-grading-form"]',
+          );
+          if (!oldRubricForm) return;
 
-        // Restore any values that had been set before the settings were configured.
-        const newRubricForm = gradingPanel.querySelector<HTMLFormElement>(
-          'form[name="manual-grading-form"]',
-        );
-        if (!newRubricForm) return;
+          // Save values in grading rubric so they can be re-applied once the form is re-created.
+          const rubricFormData = Array.from(new FormData(oldRubricForm).entries());
+          // The CSRF token of the returned panels is not valid for the current form (it uses a
+          // different URL), so save the old value to be used in future requests.
+          const oldCsrfToken =
+            oldRubricForm.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
 
-        newRubricForm
-          .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
-          .forEach((input) => {
-            input.checked = false;
-          });
-        rubricFormData.forEach(([item_name, item_value]) => {
+          gradingPanel.innerHTML = data.gradingPanel;
+
+          // Restore any values that had been set before the settings were configured.
+          const newRubricForm = gradingPanel.querySelector<HTMLFormElement>(
+            'form[name="manual-grading-form"]',
+          );
+          if (!newRubricForm) return;
+
           newRubricForm
-            .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
+            .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
             .forEach((input) => {
-              if (input.name === 'modified_at') {
-                // Do not reset modified_at, as the rubric settings may have changed it
-              } else if (input.type !== 'checkbox' && !(item_value instanceof File)) {
-                input.value = item_value;
-              } else if (input instanceof HTMLInputElement && input.value === item_value) {
-                input.checked = true;
-              }
+              input.checked = false;
             });
-        });
-        document.querySelectorAll<HTMLInputElement>('input[name=__csrf_token]').forEach((input) => {
-          input.value = oldCsrfToken;
-        });
-        window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset([gradingPanel]);
+          rubricFormData.forEach(([item_name, item_value]) => {
+            newRubricForm
+              .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
+              .forEach((input) => {
+                if (input.name === 'modified_at') {
+                  // Do not reset modified_at, as the rubric settings may have changed it
+                } else if (input.type !== 'checkbox' && !(item_value instanceof File)) {
+                  input.value = item_value;
+                } else if (input instanceof HTMLInputElement && input.value === item_value) {
+                  input.checked = true;
+                }
+              });
+          });
+          document
+            .querySelectorAll<HTMLInputElement>('input[name=__csrf_token]')
+            .forEach((input) => {
+              input.value = oldCsrfToken;
+            });
+          window.resetInstructorGradingPanel();
+          await window.mathjaxTypeset([gradingPanel]);
+        }
+
+        // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
+        // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
+        // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
+        const rubricData = data.rubric_data as RubricData | null;
+        const rubric = rubricData?.rubric ?? null;
+        const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
+        const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
+        const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
+          ...item,
+          disagreement_count:
+            item.rubric_item.id in rubricItemsWithDisagreementCount
+              ? rubricItemsWithDisagreementCount[item.rubric_item.id]
+              : null,
+        }));
+
+        defaultRubricItemsRef.current = rubricItemDataMerged;
+        defaultReplaceAutoPointsRef.current =
+          rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+        defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
+        defaultMinPointsRef.current = rubric?.min_points ?? 0;
+        defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
+        defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
+        setWasUsingRubric(Boolean(rubric));
+        setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
+        onCancel();
+        showSuccessMessage(use_rubric ? 'Rubric saved' : 'Rubric deleted');
+      } else {
+        window.location.replace(res.url);
       }
-
-      // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
-      // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
-      // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
-      const rubricData = data.rubric_data as RubricData | null;
-      const rubric = rubricData?.rubric ?? null;
-      const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
-      const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
-      const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
-        ...item,
-        disagreement_count:
-          item.rubric_item.id in rubricItemsWithDisagreementCount
-            ? rubricItemsWithDisagreementCount[item.rubric_item.id]
-            : null,
-      }));
-
-      defaultRubricItemsRef.current = rubricItemDataMerged;
-      defaultReplaceAutoPointsRef.current =
-        rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
-      defaultMinPointsRef.current = rubric?.min_points ?? 0;
-      defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
-      defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
-      setWasUsingRubric(Boolean(rubric));
-      setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
-      onCancel();
-    } else {
-      window.location.replace(res.url);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleDiscardChanges = () => {
+    onCancel();
+    showSuccessMessage('Changes discarded');
   };
 
   return (
@@ -815,6 +872,22 @@ export function RubricSettings({
             />
           </div>
         ))}
+        {successMessage && (
+          <div
+            key={successMessage}
+            className="alert alert-success alert-dismissible fade show"
+            role="alert"
+          >
+            <i className="bi bi-check-circle-fill me-1" aria-hidden="true" />
+            {successMessage}
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Close"
+              onClick={() => setSuccessMessage(null)}
+            />
+          </div>
+        )}
         <div className="mb-3 gap-1 d-flex">
           {hasCourseInstancePermissionEdit && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
@@ -967,21 +1040,39 @@ export function RubricSettings({
           </button>
         </div>
         {hasCourseInstancePermissionEdit && (
-          <div className="text-end">
+          <div className="d-flex justify-content-end align-items-center flex-wrap gap-2">
             {wasUsingRubric && (
               <button
                 type="button"
-                className="btn btn-link btn-sm me-auto text-danger"
+                className="btn btn-link btn-sm text-danger"
+                disabled={isSaving}
                 onClick={() => submitSettings(false)}
               >
                 Delete rubric
               </button>
             )}
-            <button type="button" className="btn btn-secondary me-2" onClick={onCancel}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={isSaving || !hasUnsavedChanges}
+              onClick={handleDiscardChanges}
+            >
               Discard changes
             </button>
-            <button type="button" className="btn btn-primary" onClick={() => submitSettings(true)}>
-              Save
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={isSaving || !hasUnsavedChanges}
+              onClick={() => submitSettings(true)}
+            >
+              {isSaving ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Saving…
+                </>
+              ) : (
+                'Save'
+              )}
             </button>
           </div>
         )}
