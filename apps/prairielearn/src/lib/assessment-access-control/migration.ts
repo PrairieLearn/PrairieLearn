@@ -262,7 +262,7 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
   ) {
     result.questions.visibleFromDate = scoreFrom;
     notes.push(
-      `Questions reveal date pushed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
+      `Questions reveal date changed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
     );
   }
 

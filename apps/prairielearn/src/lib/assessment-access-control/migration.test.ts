@@ -527,7 +527,7 @@ describe('migrateAllowAccess', () => {
         },
         errors: [],
         notes: [
-          'Questions reveal date pushed from 2024-07-01 to 2024-09-01 so questions do not become visible while the score is still hidden.',
+          'Questions reveal date changed from 2024-07-01 to 2024-09-01 so questions do not become visible while the score is still hidden.',
         ],
         hasUidRules: false,
       },
