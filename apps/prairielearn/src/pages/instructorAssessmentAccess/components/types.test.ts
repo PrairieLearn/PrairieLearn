@@ -104,7 +104,7 @@ describe('formDataToJson', () => {
     });
   });
 
-  it('emits an explicit null due date for default rules when date control is enabled', () => {
+  it('omits `due` on default rules when there is no due date and no custom credit', () => {
     const result = formDataToJson({
       defaultRule: {
         ...defaultRuleFixture,
@@ -113,7 +113,19 @@ describe('formDataToJson', () => {
       overrides: [],
     });
 
-    expect(result[0].dateControl?.due).toEqual({ date: null });
+    expect(result[0].dateControl?.due).toBeUndefined();
+  });
+
+  it('emits an explicit null due date on default rules with custom credit', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        due: { date: null, credit: 80, customCredit: true },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.due).toEqual({ date: null, credit: 80 });
   });
 
   it('omits dateControl when no date fields are overridden', () => {
