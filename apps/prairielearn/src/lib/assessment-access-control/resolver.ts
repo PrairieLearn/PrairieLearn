@@ -399,7 +399,14 @@ export function resolveAccessControl(
       return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
     }
 
-    const reservation = prairieTestReservations.find((r) => r.examUuid === matched.uuid)!;
+    const reservations = prairieTestReservations.filter((r) => r.examUuid === matched.uuid);
+    // Sanity check, this should never happen.
+    if (reservations.length !== 1) {
+      throw new Error(
+        `Expected exactly 1 PrairieTest reservation for exam ${matched.uuid}, found ${reservations.length}`,
+      );
+    }
+    const reservation = reservations[0];
     const examVisibility = computePrairieTestVisibility(matched);
     const submittable = !matched.readOnly;
     return {
@@ -417,52 +424,62 @@ export function resolveAccessControl(
     };
   }
 
-  const current = accessTimeline.find((e) => e.current);
-  const beforeRelease = current?.startDate === null;
-  const nextDeadlineDate = current?.endDate ?? null;
   const hasRelease = !!rule.dateControl?.release;
   const shouldShowBeforeRelease = rule.beforeRelease?.listed ?? false;
 
-  // PT-gated rule with no DC release: review-only path when visibility has
-  // unlocked. We ignore `beforeRelease.listed` here.
-  if (!hasRelease && rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      authorized: true,
-      ...visibility,
-      accessTimeline,
-    };
-  }
-
-  if (beforeRelease || !hasRelease) {
+  // No DC release configured: either PT-gated (review-only once visibility
+  // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
+  if (!hasRelease) {
+    if (rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
+      return {
+        ...UNAUTHORIZED_RESULT,
+        authorized: true,
+        ...visibility,
+        accessTimeline,
+      };
+    }
     return {
       ...UNAUTHORIZED_RESULT,
       ...visibility,
       accessTimeline,
       showBeforeRelease: shouldShowBeforeRelease,
-      nextActiveDate: nextDeadlineDate,
+      nextActiveDate: null,
+    };
+  }
+  // `hasRelease` is true, so `current` is defined unless we have a degenerate window where due ≤ release.
+  // Treat degenerate windows as fully unauthorized.
+  const current = accessTimeline.find((e) => e.current);
+  if (!current) {
+    return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
+  }
+
+  if (current.startDate === null) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      ...visibility,
+      accessTimeline,
+      showBeforeRelease: shouldShowBeforeRelease,
+      nextActiveDate: current.endDate,
     };
   }
 
-  const credit = current?.credit ?? 0;
-  const submittable = current?.submittable ?? false;
   return {
     authorized: true,
-    credit,
+    credit: current.credit,
     creditDateString: formatCreditDateString(
-      credit,
-      submittable,
-      nextDeadlineDate,
+      current.credit,
+      current.submittable,
+      current.endDate,
       displayTimezone,
     ),
     timeLimitMin: computeTimeLimitMin(
       rule.dateControl?.durationMinutes,
-      nextDeadlineDate,
+      current.endDate,
       date,
       authzMode,
     ),
     password: rule.dateControl?.password ?? null,
-    submittable,
+    submittable: current.submittable,
     ...visibility,
     examAccessEnd: null,
     showBeforeRelease: false,
