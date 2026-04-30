@@ -741,7 +741,7 @@ export function validateRule(
     rule.afterComplete.score.visibleFromDate === undefined
   ) {
     errors.push(
-      'afterComplete.questions.visibleFromDate requires afterComplete.score.visibleFromDate when score.hidden: true (questions cannot become visible while score remains hidden).',
+      'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
     );
   }
 
