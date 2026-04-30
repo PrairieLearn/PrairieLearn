@@ -1,5 +1,3 @@
-import { run } from '@prairielearn/run';
-
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 import {
@@ -44,16 +42,18 @@ export interface MainRuleBody extends OverrideRuleBody {
 }
 
 /**
- * Discriminated by `targetType`. The main rule (`'none'`, always `number: 0`)
- * carries the full rule body. Override variants (`'enrollment'`, `'student_label'`)
- * carry the narrower `OverrideRuleBody` plus their targeting ids.
+ * The main rule (`'none'`, always `number: 0`) carries the full rule body.
  */
-export type AccessControlRuleInput =
-  | {
-      targetType: 'none';
-      number: 0;
-      rule: MainRuleBody;
-    }
+export interface MainRule {
+  targetType: 'none';
+  number: 0;
+  rule: MainRuleBody;
+}
+
+/**
+ * Override variants carry the narrower `OverrideRuleBody` plus their targeting ids.
+ */
+export type OverrideRule =
   | {
       targetType: 'enrollment';
       number: number;
@@ -67,8 +67,7 @@ export type AccessControlRuleInput =
       studentLabelIds: string[];
     };
 
-export type MainRule = Extract<AccessControlRuleInput, { targetType: 'none' }>;
-export type OverrideRule = Exclude<AccessControlRuleInput, { targetType: 'none' }>;
+export type AccessControlRuleInput = MainRule | OverrideRule;
 
 export interface EnrollmentContext {
   enrollmentId: string;
@@ -215,13 +214,20 @@ export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody
   };
 }
 
+function matchesOverride(override: OverrideRule, enrollment: EnrollmentContext): boolean {
+  if (override.targetType === 'enrollment') {
+    return override.enrollmentIds.includes(enrollment.enrollmentId);
+  }
+  return override.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
+}
+
 /**
  * Picks and merges the effective rule for a student: the main rule with all
- * matching overrides cascaded on top. Override matching uses the enrollment's
- * id and student-label memberships; without an enrollment, no override matches.
+ * matching overrides cascaded on top. Without an enrollment, no override matches.
  *
- * Overrides apply student_label first (broader) then enrollment (more specific,
- * wins in cascade); within each type, lower `number` first.
+ * Cascade order: `student_label` overrides apply first (broader), then
+ * `enrollment` overrides (more specific, win); within each type, lower `number`
+ * applies first.
  */
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
@@ -231,24 +237,14 @@ function pickEffectiveRule(
   if (!main) return null;
   if (!enrollment) return main.rule;
 
-  const matchingOverrides = rules
-    .filter((r): r is OverrideRule =>
-      run(() => {
-        if (r.targetType === 'enrollment') {
-          return r.enrollmentIds.includes(enrollment.enrollmentId);
-        }
-        if (r.targetType === 'student_label') {
-          return r.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
-        }
-        return false;
-      }),
-    )
-    .sort((a, b) => {
-      if (a.targetType !== b.targetType) return a.targetType === 'student_label' ? -1 : 1;
-      return a.number - b.number;
-    });
+  const overrides = rules.filter((r): r is OverrideRule => r.targetType !== 'none');
+  const matching = overrides.filter((r) => matchesOverride(r, enrollment));
+  matching.sort((a, b) => {
+    if (a.targetType !== b.targetType) return a.targetType === 'student_label' ? -1 : 1;
+    return a.number - b.number;
+  });
 
-  return matchingOverrides.reduce<MainRuleBody>(
+  return matching.reduce<MainRuleBody>(
     (acc, override) => mergeRules(acc, override.rule),
     main.rule,
   );
