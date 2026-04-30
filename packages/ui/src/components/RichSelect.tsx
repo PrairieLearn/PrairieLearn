@@ -18,6 +18,7 @@ export interface RichSelectProps<T extends string = string> {
   id?: string;
   placeholder?: string;
   errorMessage?: string;
+  isInvalid?: boolean;
   'aria-label'?: string;
   'aria-labelledby'?: string;
   minWidth?: number;
@@ -31,18 +32,20 @@ export function RichSelect<T extends string = string>({
   id,
   placeholder,
   errorMessage,
+  isInvalid: isInvalidProp,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   minWidth,
 }: RichSelectProps<T>) {
   const selectedLabel = items.find((item) => item.value === value)?.label;
   const listItems = items.map((item) => ({ ...item, id: item.value }));
+  const isInvalid = isInvalidProp || !!errorMessage;
 
   return (
     <Select
       selectedKey={value}
       isDisabled={disabled}
-      isInvalid={!!errorMessage}
+      isInvalid={isInvalid}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledby}
       onSelectionChange={(key) => onChange(key as T)}
@@ -53,7 +56,7 @@ export function RichSelect<T extends string = string>({
             className={clsx(
               'form-select text-start',
               isOpen && 'border-primary shadow-sm',
-              errorMessage && 'is-invalid',
+              isInvalid && 'is-invalid',
             )}
             id={id}
           >

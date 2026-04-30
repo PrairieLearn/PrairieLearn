@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { get, useController, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -78,6 +79,15 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
 
 const DATE_REQUIRED_MESSAGE = 'Date is required';
 
+const DATE_PICKER_REQUIRED_PX = 320;
+
+function ensureRoomForDatePicker(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  if (window.innerHeight - rect.bottom < DATE_PICKER_REQUIRED_PX) {
+    el.scrollIntoView({ block: 'center' });
+  }
+}
+
 function isDateFieldEmpty(value: string | undefined): boolean {
   return value !== undefined && !value;
 }
@@ -97,6 +107,7 @@ function QuestionVisibilityInput({
   hasCompletionMechanism = true,
   visibleFromDateError,
   visibleUntilDateError,
+  hasCrossFieldError = false,
   displayTimezone,
 }: {
   value: QuestionVisibilityValue;
@@ -106,6 +117,7 @@ function QuestionVisibilityInput({
   hasCompletionMechanism?: boolean;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
+  hasCrossFieldError?: boolean;
   displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
@@ -149,6 +161,7 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
+          isInvalid={hasCrossFieldError}
           onChange={handleModeChange}
         />
       </div>
@@ -171,6 +184,7 @@ function QuestionVisibilityInput({
                     ? `${idPrefix}-show-questions-between-start-error`
                     : undefined
                 }
+                onPointerDown={({ currentTarget }) => ensureRoomForDatePicker(currentTarget)}
                 onChange={({ currentTarget }) =>
                   onChange({
                     hidden: true,
@@ -204,6 +218,7 @@ function QuestionVisibilityInput({
                     ? `${idPrefix}-hide-questions-between-end-error`
                     : undefined
                 }
+                onPointerDown={({ currentTarget }) => ensureRoomForDatePicker(currentTarget)}
                 onChange={({ currentTarget }) =>
                   onChange({
                     hidden: true,
@@ -237,6 +252,7 @@ function QuestionVisibilityInput({
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-questions-date-error` : undefined
             }
+            onPointerDown={({ currentTarget }) => ensureRoomForDatePicker(currentTarget)}
             onChange={({ currentTarget }) =>
               onChange({ hidden: true, visibleFromDate: currentTarget.value })
             }
@@ -270,17 +286,41 @@ function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
   return true;
 }
 
+function getScoreCrossFieldError(
+  score: ScoreVisibilityValue,
+  questions: QuestionVisibilityValue,
+): string | undefined {
+  if (score.hidden && !questions.hidden) {
+    return 'Score cannot be hidden while questions are visible. Choose "Show score after completion" or hide questions too.';
+  }
+  if (!questions.hidden || questions.visibleFromDate === undefined) return undefined;
+  if (!score.hidden) return undefined;
+  if (score.visibleFromDate === undefined) {
+    return 'Score must become visible by the time questions do. Choose "Show score after completion" or "Hide score until date" with a date on or before the questions show date.';
+  }
+  if (
+    !isDateFieldEmpty(score.visibleFromDate) &&
+    !isDateFieldEmpty(questions.visibleFromDate) &&
+    new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()
+  ) {
+    return 'Show score date must be on or before the show questions date.';
+  }
+  return undefined;
+}
+
 function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
   visibleFromDateError,
+  hasCrossFieldError = false,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
   visibleFromDateError?: string;
+  hasCrossFieldError?: boolean;
   displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
@@ -302,7 +342,8 @@ function ScoreVisibilityInput({
   };
 
   const visibleFromDateEmpty = isDateFieldEmpty(value.visibleFromDate);
-  const visibleFromDateInvalid = visibleFromDateEmpty || !!visibleFromDateError;
+  const visibleFromDateInvalid =
+    visibleFromDateEmpty || !!visibleFromDateError || hasCrossFieldError;
 
   return (
     <Form.Group>
@@ -313,6 +354,7 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
+          isInvalid={hasCrossFieldError}
           onChange={handleModeChange}
         />
       </div>
@@ -329,11 +371,12 @@ function ScoreVisibilityInput({
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-score-date-error` : undefined
             }
+            onPointerDown={({ currentTarget }) => ensureRoomForDatePicker(currentTarget)}
             onChange={({ currentTarget }) =>
               onChange({ hidden: true, visibleFromDate: currentTarget.value })
             }
           />
-          {visibleFromDateInvalid && (
+          {visibleFromDateInvalid && !hasCrossFieldError && (
             <Form.Control.Feedback type="invalid" id={`${idPrefix}-show-score-date-error`}>
               {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
             </Form.Control.Feedback>
@@ -369,9 +412,11 @@ const infoPopoverConfig = {
 
 function AfterCompleteCard({
   title = 'After completion',
+  crossFieldError,
   children,
 }: {
   title?: string;
+  crossFieldError?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -391,6 +436,11 @@ function AfterCompleteCard({
           </OverlayTrigger>
         </div>
       </div>
+      {crossFieldError && (
+        <div role="alert" className="text-danger small mb-3">
+          {crossFieldError}
+        </div>
+      )}
       <Row className="gy-3">{children}</Row>
     </div>
   );
@@ -410,8 +460,21 @@ export function MainAfterCompleteForm({
 
   const { field: svField } = useController<AccessControlFormData, 'mainRule.scoreVisibility'>({
     name: 'mainRule.scoreVisibility',
-    rules: { validate: validateScoreVisibility },
+    rules: {
+      validate: (value, formValues) => {
+        const local = validateScoreVisibility(value);
+        if (local !== true) return local;
+        return getScoreCrossFieldError(value, formValues.mainRule.questionVisibility) ?? true;
+      },
+    },
   });
+
+  const { trigger } = useFormContext<AccessControlFormData>();
+  useEffect(() => {
+    void trigger('mainRule.scoreVisibility');
+  }, [qvField.value, trigger]);
+
+  const scoreCrossFieldError = getScoreCrossFieldError(svField.value, qvField.value);
 
   const { errors } = useFormState<AccessControlFormData>();
   const qvVisibleFromError: string | undefined = get(
@@ -450,7 +513,7 @@ export function MainAfterCompleteForm({
   const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} crossFieldError={scoreCrossFieldError}>
       {showNoCompletionWarning && (
         <Col xs={12}>
           <Alert variant="warning" className="py-2 mb-0">
@@ -470,6 +533,7 @@ export function MainAfterCompleteForm({
           hasCompletionMechanism={hasCompletionMechanism}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
+          hasCrossFieldError={!!scoreCrossFieldError}
           displayTimezone={displayTimezone}
           onChange={qvField.onChange}
         />
@@ -482,6 +546,7 @@ export function MainAfterCompleteForm({
           value={svField.value}
           idPrefix="mainRule"
           visibleFromDateError={svVisibleFromError}
+          hasCrossFieldError={!!scoreCrossFieldError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
         />
@@ -536,8 +601,23 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: {
+      validate: (value, formValues) => {
+        const local = validateScoreVisibility(value);
+        if (local !== true) return local;
+        return (
+          getScoreCrossFieldError(value, formValues.overrides[index].questionVisibility) ?? true
+        );
+      },
+    },
   });
+
+  const { trigger } = useFormContext<AccessControlFormData>();
+  useEffect(() => {
+    void trigger(`overrides.${index}.scoreVisibility`);
+  }, [qvField.value, index, trigger]);
+
+  const scoreCrossFieldError = getScoreCrossFieldError(svField.value, qvField.value);
 
   const {
     isOverridden: qvOverridden,
@@ -551,7 +631,7 @@ export function OverrideAfterCompleteForm({
   } = useOverrideField(index, 'scoreVisibility');
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} crossFieldError={scoreCrossFieldError}>
       <Col md={6}>
         <FieldWrapper
           isOverridden={qvOverridden}
@@ -568,6 +648,7 @@ export function OverrideAfterCompleteForm({
             hasPrairieTest={hasPrairieTest}
             visibleFromDateError={qvVisibleFromError}
             visibleUntilDateError={visibleUntilDateError}
+            hasCrossFieldError={!!scoreCrossFieldError}
             displayTimezone={displayTimezone}
             onChange={qvField.onChange}
           />
@@ -587,6 +668,7 @@ export function OverrideAfterCompleteForm({
             value={svField.value}
             idPrefix={`overrides-${index}`}
             visibleFromDateError={svVisibleFromError}
+            hasCrossFieldError={!!scoreCrossFieldError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}
           />
