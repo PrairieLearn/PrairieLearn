@@ -143,7 +143,8 @@ interface ResolveCase {
   courseInstanceRole?: AccessControlResolverInput['courseInstanceRole'];
   enrollment?: EnrollmentContext | null;
   reservations?: PrairieTestReservation[];
-  expect: Partial<AccessControlResolverResult>;
+  expect: Partial<AccessControlResolverResult> &
+    Pick<AccessControlResolverResult, 'authorized' | 'submittable'>;
 }
 
 function runCase(c: ResolveCase): AccessControlResolverResult {
@@ -187,22 +188,22 @@ describe('resolveAccessControl', () => {
       {
         name: 'Editor course role',
         courseRole: 'Editor',
-        expect: { authorized: true, creditDateString: '100% (Staff override)' },
+        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
       },
       {
         name: 'Owner course role',
         courseRole: 'Owner',
-        expect: { authorized: true, creditDateString: '100% (Staff override)' },
+        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
       },
       {
         name: 'Student Data Viewer instance role',
         courseInstanceRole: 'Student Data Viewer',
-        expect: { authorized: true, creditDateString: '100% (Staff override)' },
+        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
       },
       {
         name: 'Student Data Editor instance role',
         courseInstanceRole: 'Student Data Editor',
-        expect: { authorized: true, creditDateString: '100% (Staff override)' },
+        expect: { authorized: true, submittable: true, creditDateString: '100% (Staff override)' },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -224,7 +225,7 @@ describe('resolveAccessControl', () => {
       {
         name: 'no rules at all: unauthorized with creditDateString=None',
         rules: [],
-        expect: { authorized: false, credit: 0, creditDateString: 'None' },
+        expect: { authorized: false, submittable: false, credit: 0, creditDateString: 'None' },
       },
       {
         name: 'before release date: unauthorized, nextActiveDate is release date',
@@ -268,7 +269,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
       {
         name: 'dateControl with no release: unauthorized, nextActiveDate=null',
@@ -280,7 +281,7 @@ describe('resolveAccessControl', () => {
         name: 'after release date with no deadlines: 100% credit',
         rules: [makeMainRule({ dateControl: { release: { date: '2025-03-01T00:00:00Z' } } })],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 100, submittable: true },
+        expect: { authorized: true, credit: 100, submittable: true },
       },
       {
         name: 'propagates password and time limit when no deadlines',
@@ -294,7 +295,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { password: 'secret', timeLimitMin: 60 },
+        expect: { authorized: true, submittable: true, password: 'secret', timeLimitMin: 60 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -345,13 +346,13 @@ describe('resolveAccessControl', () => {
         name: '0% credit late deadline: active during the late window',
         rules: [zeroCreditLateRule],
         date: new Date('2025-03-12T00:00:00Z'),
-        expect: { credit: 0, submittable: true },
+        expect: { authorized: true, credit: 0, submittable: true },
       },
       {
         name: '0% credit late deadline: inactive after the late window',
         rules: [zeroCreditLateRule],
         date: new Date('2025-03-16T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -372,7 +373,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 25, submittable: true },
+        expect: { authorized: true, credit: 25, submittable: true },
       },
       {
         name: 'allowSubmissions=false: inactive with 0 credit',
@@ -386,7 +387,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
       {
         name: 'override disabling submissions clears inherited credit',
@@ -405,7 +406,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -447,7 +448,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { showBeforeRelease: false },
+        expect: { authorized: true, submittable: true, showBeforeRelease: false },
       },
       {
         // Supported use case: instructor lists every assessment a student will
@@ -474,7 +475,7 @@ describe('resolveAccessControl', () => {
       {
         name: 'no beforeRelease and no dateControl',
         rules: [makeMainRule({})],
-        expect: { authorized: false, showBeforeRelease: false },
+        expect: { authorized: false, submittable: false, showBeforeRelease: false },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -487,19 +488,19 @@ describe('resolveAccessControl', () => {
         name: 'before early deadline: 110%',
         date: new Date('2025-03-05T00:00:00Z'),
         earlyDate: '2025-03-10T00:00:00Z',
-        expect: { credit: 110 },
+        expect: { authorized: true, submittable: true, credit: 110 },
       },
       {
         name: 'after early deadline but before due date: 100%',
         date: new Date('2025-03-12T00:00:00Z'),
         earlyDate: '2025-03-10T00:00:00Z',
-        expect: { credit: 100 },
+        expect: { authorized: true, submittable: true, credit: 100 },
       },
       {
         name: 'before early deadline equal to due date: 110%',
         date: new Date('2025-03-12T00:00:00Z'),
         earlyDate: '2025-03-20T00:00:00Z',
-        expect: { credit: 110 },
+        expect: { authorized: true, submittable: true, credit: 110 },
       },
     ])('$name', ({ earlyDate, ...c }) => {
       expect(
@@ -539,7 +540,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { credit: 100, submittable: true },
+        expect: { authorized: true, credit: 100, submittable: true },
       },
       {
         name: 'enrollment override does not match → main rule applies (past due)',
@@ -553,7 +554,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
       {
         name: 'no enrollment context → enrollment override skipped',
@@ -567,7 +568,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0 },
       },
       {
         name: 'student_label override matches via label intersection',
@@ -580,7 +581,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
-        expect: { credit: 100 },
+        expect: { authorized: true, submittable: true, credit: 100 },
       },
       {
         name: 'student_label override does not match (no intersection)',
@@ -594,7 +595,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -626,7 +627,11 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        expect: { creditDateString: expect.stringContaining('May 31') },
+        expect: {
+          authorized: true,
+          submittable: true,
+          creditDateString: expect.stringContaining('May 31'),
+        },
       },
       {
         name: 'enrollment override wins even when student_label has lower number and is listed first',
@@ -643,7 +648,11 @@ describe('resolveAccessControl', () => {
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
-        expect: { creditDateString: expect.stringContaining('May 31') },
+        expect: {
+          authorized: true,
+          submittable: true,
+          creditDateString: expect.stringContaining('May 31'),
+        },
       },
       {
         // Only student_label matches → due Jul 1 UTC = Jun 30 CDT
@@ -661,7 +670,11 @@ describe('resolveAccessControl', () => {
             { targetType: 'student_label', studentLabelIds: ['label-1'] },
           ),
         ],
-        expect: { creditDateString: expect.stringContaining('Jun 30') },
+        expect: {
+          authorized: true,
+          submittable: true,
+          creditDateString: expect.stringContaining('Jun 30'),
+        },
       },
       {
         // Both apply via cascading; later number wins (Aug 1 UTC = Jul 31 CDT)
@@ -680,7 +693,11 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { creditDateString: expect.stringContaining('Jul 31') },
+        expect: {
+          authorized: true,
+          submittable: true,
+          creditDateString: expect.stringContaining('Jul 31'),
+        },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -710,6 +727,8 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
+          authorized: true,
+          submittable: true,
           password: 'override-pw',
           // Due Jun 1 UTC = May 31 CDT
           creditDateString: expect.stringContaining('May 31'),
@@ -732,7 +751,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { password: 'secret123', credit: 100 },
+        expect: { authorized: true, submittable: true, password: 'secret123', credit: 100 },
       },
       {
         name: 'override can override password',
@@ -751,7 +770,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-        expect: { password: 'override-pass' },
+        expect: { authorized: true, submittable: true, password: 'override-pass' },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1633,7 +1652,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-03-20T00:00:00Z'),
-        expect: { credit: 0, submittable: false },
+        expect: { authorized: false, credit: 0, submittable: false },
       },
       {
         name: 'early deadline before release is ignored',
