@@ -419,27 +419,21 @@ export function resolveAccessControl(
   const beforeRelease = current?.startDate === null;
   const nextDeadlineDate = current?.endDate ?? null;
   const hasRelease = !!rule.dateControl?.release;
-  const listed = rule.beforeRelease?.listed ?? false;
+  const shouldShowBeforeRelease = rule.beforeRelease?.listed ?? false;
 
-  if (listed && (beforeRelease || !hasRelease)) {
+  // PT-gated rule with no DC release: review-only path when visibility has
+  // unlocked. We ignore `beforeRelease.listed` here.
+  if (!hasRelease && rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
+    return { ...UNAUTHORIZED_RESULT, authorized: true, ...denyDefaults };
+  }
+
+  if (beforeRelease || !hasRelease) {
     return {
       ...UNAUTHORIZED_RESULT,
       ...denyDefaults,
-      showBeforeRelease: true,
+      showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: nextDeadlineDate,
     };
-  }
-
-  if (beforeRelease) {
-    return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
-  }
-
-  if (!hasRelease) {
-    // PT-gated rule with no DC: review-only path when visibility has unlocked.
-    if (rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
-      return { ...UNAUTHORIZED_RESULT, authorized: true, ...denyDefaults };
-    }
-    return { ...UNAUTHORIZED_RESULT, ...denyDefaults };
   }
 
   const credit = current?.credit ?? 0;
