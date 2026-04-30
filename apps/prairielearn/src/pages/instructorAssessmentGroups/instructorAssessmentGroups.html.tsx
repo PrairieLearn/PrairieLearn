@@ -13,17 +13,23 @@ import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
 import { GroupSettingsCard } from './components/GroupSettingsCard.js';
+import { GroupWorkInstancesWarning } from './components/GroupWorkInstancesWarning.js';
 import { GroupsCard } from './components/GroupsCard.js';
+import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
 
 function NoGroupConfigCard({
   origHash,
   canEdit,
   hasPreservedConfig,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
   onEnable,
 }: {
   origHash: string | null;
   canEdit: boolean;
   hasPreservedConfig: boolean;
+  hasAssessmentInstances: boolean;
+  assessmentStudentsUrl: string;
   onEnable: (result: {
     origHash: string;
     groupConfig: StaffGroupConfig;
@@ -56,11 +62,18 @@ function NoGroupConfigCard({
           <i className="bi bi-people fs-1 mb-2" />
           <h2 className="h5">{heading}</h2>
           <div className="text-muted">{description}</div>
+          {canEdit && hasAssessmentInstances && (
+            <GroupWorkInstancesWarning
+              action="enabling"
+              assessmentStudentsUrl={assessmentStudentsUrl}
+              className="mt-3 mb-0"
+            />
+          )}
           {canEdit && (
             <button
               type="button"
               className="btn btn-outline-primary mt-3"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || hasAssessmentInstances}
               onClick={() => mutation.mutate({ origHash }, { onSuccess: onEnable })}
             >
               {buttonLabel}
@@ -82,6 +95,8 @@ interface InstructorAssessmentGroupsProps {
   isDevMode: boolean;
   origHash: string | null;
   groupSettingsDefaults: GroupSettingsFormValues | null;
+  hasAssessmentInstances: boolean;
+  assessmentStudentsUrl: string;
 }
 
 export function InstructorAssessmentGroups({
@@ -94,6 +109,8 @@ export function InstructorAssessmentGroups({
   isDevMode,
   origHash,
   groupSettingsDefaults,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -115,6 +132,8 @@ export function InstructorAssessmentGroups({
           notAssigned={notAssigned}
           origHash={origHash}
           groupSettingsDefaults={groupSettingsDefaults}
+          hasAssessmentInstances={hasAssessmentInstances}
+          assessmentStudentsUrl={assessmentStudentsUrl}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -131,6 +150,8 @@ function InstructorAssessmentGroupsInner({
   notAssigned,
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
   const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
@@ -152,6 +173,8 @@ function InstructorAssessmentGroupsInner({
         origHash={origHash}
         canEdit={canEditCourse}
         hasPreservedConfig={groupSettingsDefaults != null}
+        hasAssessmentInstances={hasAssessmentInstances}
+        assessmentStudentsUrl={assessmentStudentsUrl}
         onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
           setOrigHash(newHash);
           setGroupConfigInfo(groupConfig);
@@ -173,11 +196,6 @@ function InstructorAssessmentGroupsInner({
           setGroupMin(min ?? 2);
           setGroupMax(max ?? 4);
         }}
-        onDisable={({ origHash: newHash, groupSettingsDefaults: newDefaults }) => {
-          setOrigHash(newHash);
-          setGroupSettingsDefaults(newDefaults);
-          setGroupConfigInfo(undefined);
-        }}
       />
       <GroupsCard
         groupsCsvFilename={groupsCsvFilename}
@@ -191,6 +209,18 @@ function InstructorAssessmentGroupsInner({
         groupMin={groupMin}
         groupMax={groupMax}
       />
+      {canEditCourse && (
+        <ManageGroupWorkCard
+          origHash={origHash}
+          hasAssessmentInstances={hasAssessmentInstances}
+          assessmentStudentsUrl={assessmentStudentsUrl}
+          onDisable={({ origHash: newHash, groupSettingsDefaults: newDefaults }) => {
+            setOrigHash(newHash);
+            setGroupSettingsDefaults(newDefaults);
+            setGroupConfigInfo(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, useState } from 'react';
-import { Alert, Button, Modal } from 'react-bootstrap';
+import { Alert, Modal } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
@@ -25,50 +25,12 @@ function HelpTooltip({ body, id, ariaLabel }: { body: string; id: string; ariaLa
     <OverlayTrigger placement="top" tooltip={{ body, props: { id } }}>
       <button
         type="button"
-        className="btn btn-xs btn-ghost p-0 align-baseline"
+        className="btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle"
         aria-label={ariaLabel}
       >
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />
       </button>
     </OverlayTrigger>
-  );
-}
-
-function DisableGroupWorkModal({
-  show,
-  onHide,
-  onConfirm,
-  isPending,
-}: {
-  show: boolean;
-  onHide: () => void;
-  onConfirm: () => void;
-  isPending: boolean;
-}) {
-  return (
-    <Modal show={show} onHide={onHide}>
-      <Modal.Header closeButton>
-        <Modal.Title>Disable group work</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <p className="mb-2">
-          Students will no longer be able to access this assessment as a group. Existing groups will
-          stop receiving credit until group work is re-enabled.
-        </p>
-        <p className="mb-0 text-muted small">
-          The current group configuration will be preserved and restored if you re-enable group work
-          later.
-        </p>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" disabled={isPending} onClick={onHide}>
-          Cancel
-        </Button>
-        <Button variant="danger" disabled={isPending} onClick={onConfirm}>
-          Disable group work
-        </Button>
-      </Modal.Footer>
-    </Modal>
   );
 }
 
@@ -128,7 +90,6 @@ export function GroupSettingsCard({
   canEdit,
   onOrigHashChange,
   onGroupSizeSaved,
-  onDisable,
 }: {
   groupConfigInfo: StaffGroupConfig;
   groupSettingsDefaults: GroupSettingsFormValues | null;
@@ -136,20 +97,11 @@ export function GroupSettingsCard({
   canEdit: boolean;
   onOrigHashChange: (hash: string | null) => void;
   onGroupSizeSaved: (min: number | null, max: number | null) => void;
-  onDisable: (result: {
-    origHash: string;
-    groupSettingsDefaults: GroupSettingsFormValues | null;
-  }) => void;
 }) {
   const [showRecommendedRolesModal, setShowRecommendedRolesModal] = useState(false);
-  const [showDisableModal, setShowDisableModal] = useState(false);
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.updateGroupConfig.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['UpdateGroupConfig']>(mutation.error);
-  const disableMutation = useMutation(trpc.assessmentGroups.disableGroupWork.mutationOptions());
-  const disableAppError = getAppError<AssessmentGroupsError['DisableGroupWork']>(
-    disableMutation.error,
-  );
 
   const {
     register,
@@ -164,9 +116,9 @@ export function GroupSettingsCard({
     mode: 'onChange',
     defaultValues: {
       studentPermissions: groupSettingsDefaults?.studentPermissions ?? {
-        canCreateGroup: false,
-        canJoinGroup: false,
-        canLeaveGroup: false,
+        canCreateGroup: true,
+        canJoinGroup: true,
+        canLeaveGroup: true,
         canNameGroup: true,
       },
       minMembers: groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? null,
@@ -179,6 +131,7 @@ export function GroupSettingsCard({
 
   const watchedMin = watch('minMembers');
   const watchedRoles = watch('roles');
+  const watchedCanCreateGroup = watch('studentPermissions.canCreateGroup');
 
   const formLevelRoleErrors = run(() => {
     if (watchedRoles.length === 0) return [];
@@ -188,7 +141,7 @@ export function GroupSettingsCard({
     );
     if (!hasAssigner) {
       errors.push(
-        'When custom roles are defined, at least one role with "Can assign roles" enabled must have a minimum of 1 member.',
+        'No roles with the "Can assign roles" permission have a minimum member count of 1 or more.',
       );
     }
     if (!watchedRoles.some((r) => r.canView)) {
@@ -267,22 +220,6 @@ export function GroupSettingsCard({
           setShowRecommendedRolesModal(false);
         }}
       />
-      <DisableGroupWorkModal
-        show={showDisableModal}
-        isPending={disableMutation.isPending}
-        onHide={() => setShowDisableModal(false)}
-        onConfirm={() =>
-          disableMutation.mutate(
-            { origHash },
-            {
-              onSuccess: (result) => {
-                setShowDisableModal(false);
-                onDisable(result);
-              },
-            },
-          )
-        }
-      />
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="card-body">
           <h5 className="mb-1">Group settings</h5>
@@ -292,11 +229,6 @@ export function GroupSettingsCard({
           {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
               {appError.message}
-            </Alert>
-          )}
-          {disableAppError && (
-            <Alert variant="danger" dismissible onClose={() => disableMutation.reset()}>
-              {disableAppError.message}
             </Alert>
           )}
           {mutation.isSuccess && !isDirty && (
@@ -313,8 +245,16 @@ export function GroupSettingsCard({
                   type="checkbox"
                   className="form-check-input"
                   id="studentPermissions-canCreateGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canCreateGroup ?? false}
-                  {...register('studentPermissions.canCreateGroup')}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canCreateGroup ?? true}
+                  {...register('studentPermissions.canCreateGroup', {
+                    onChange: (e) => {
+                      if (!e.target.checked) {
+                        setValue('studentPermissions.canNameGroup', false, {
+                          shouldDirty: true,
+                        });
+                      }
+                    },
+                  })}
                 />
                 <label htmlFor="studentPermissions-canCreateGroup" className="form-check-label">
                   Can create group
@@ -326,8 +266,26 @@ export function GroupSettingsCard({
                 <input
                   type="checkbox"
                   className="form-check-input"
+                  id="studentPermissions-canNameGroup"
+                  disabled={!watchedCanCreateGroup}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canNameGroup ?? true}
+                  {...register('studentPermissions.canNameGroup')}
+                />
+                <label htmlFor="studentPermissions-canNameGroup" className="form-check-label">
+                  Can name group
+                </label>
+                <div className="text-muted small">
+                  Allow students to choose a group name when creating a group. If set to false, a
+                  default name will be used.
+                </div>
+              </div>
+
+              <div className="form-check mb-2">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
                   id="studentPermissions-canJoinGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canJoinGroup ?? false}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canJoinGroup ?? true}
                   {...register('studentPermissions.canJoinGroup')}
                 />
                 <label htmlFor="studentPermissions-canJoinGroup" className="form-check-label">
@@ -343,30 +301,13 @@ export function GroupSettingsCard({
                   type="checkbox"
                   className="form-check-input"
                   id="studentPermissions-canLeaveGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canLeaveGroup ?? false}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canLeaveGroup ?? true}
                   {...register('studentPermissions.canLeaveGroup')}
                 />
                 <label htmlFor="studentPermissions-canLeaveGroup" className="form-check-label">
                   Can leave group
                 </label>
                 <div className="text-muted small">Allow students to leave groups.</div>
-              </div>
-
-              <div className="form-check mb-2">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id="studentPermissions-canNameGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canNameGroup ?? true}
-                  {...register('studentPermissions.canNameGroup')}
-                />
-                <label htmlFor="studentPermissions-canNameGroup" className="form-check-label">
-                  Can name group
-                </label>
-                <div className="text-muted small">
-                  Allow students to choose a group name when creating a group. If set to false, a
-                  default name will be used.
-                </div>
               </div>
             </div>
 
@@ -455,7 +396,7 @@ export function GroupSettingsCard({
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => append(makeRole({ canAssignRoles: true }))}
+                  onClick={() => append(makeRole({ canAssignRoles: true, minAssignees: 1 }))}
                 >
                   <i className="bi bi-plus-lg" aria-hidden="true" /> Add role
                 </button>
@@ -520,7 +461,7 @@ export function GroupSettingsCard({
                   <tbody>
                     {fields.length === 0 ? (
                       <tr className="text-center text-muted">
-                        <td colSpan={7}>
+                        <td colSpan={7} className="py-3">
                           <div>
                             <i className="bi bi-person-badge me-2" aria-hidden="true" />
                             No roles configured
@@ -763,34 +704,24 @@ export function GroupSettingsCard({
           </fieldset>
         </div>
         {canEdit && (
-          <div className="card-footer d-flex flex-wrap align-items-center gap-2">
-            <Button
-              variant="outline-danger"
-              size="sm"
-              disabled={disableMutation.isPending}
-              onClick={() => setShowDisableModal(true)}
+          <div className="card-footer d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              disabled={!isDirty}
+              onClick={() => reset()}
             >
-              Disable group work
-            </Button>
-            <div className="ms-auto d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                disabled={!isDirty}
-                onClick={() => reset()}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={
-                  !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
-                }
-              >
-                Save and sync
-              </button>
-            </div>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={
+                !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
+              }
+            >
+              Save and sync
+            </button>
           </div>
         )}
       </form>

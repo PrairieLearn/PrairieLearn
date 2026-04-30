@@ -1,6 +1,11 @@
-import type { AssessmentJsonInput, GroupsJsonInput } from '../schemas/infoAssessment.js';
+import type {
+  AssessmentJson,
+  AssessmentJsonInput,
+  GroupsJson,
+  GroupsJsonInput,
+} from '../schemas/infoAssessment.js';
 
-const LEGACY_GROUP_KEYS = [
+const LEGACY_GROUP_KEYS = new Set<keyof AssessmentJsonInput>([
   'groupWork',
   'groupMaxSize',
   'groupMinSize',
@@ -11,12 +16,47 @@ const LEGACY_GROUP_KEYS = [
   'studentGroupChooseName',
   'canView',
   'canSubmit',
-] as const satisfies readonly (keyof AssessmentJsonInput)[];
+]);
 
-export function stripLegacyGroupKeys(json: AssessmentJsonInput): void {
-  for (const key of LEGACY_GROUP_KEYS) {
-    delete json[key];
-  }
+export function stripLegacyGroupKeys(json: AssessmentJsonInput): AssessmentJsonInput {
+  return Object.fromEntries(
+    Object.entries(json).filter(
+      ([key]) => !LEGACY_GROUP_KEYS.has(key as keyof AssessmentJsonInput),
+    ),
+  ) as AssessmentJsonInput;
+}
+
+/**
+ * Converts legacy top-level group properties on an assessment into the unified
+ * `groups` config shape. Used by sync code so downstream logic only has to
+ * handle one representation regardless of how the assessment was authored.
+ */
+export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
+  const canAssignRoles = assessment.groupRoles
+    .filter((role) => role.canAssignRoles)
+    .map((role) => role.name);
+
+  return {
+    enabled: assessment.groupWork,
+    minMembers: assessment.groupMinSize,
+    maxMembers: assessment.groupMaxSize,
+    roles: assessment.groupRoles.map((role) => ({
+      name: role.name,
+      minMembers: role.minimum,
+      maxMembers: role.maximum,
+    })),
+    studentPermissions: {
+      canCreateGroup: assessment.studentGroupCreate,
+      canJoinGroup: assessment.studentGroupJoin,
+      canLeaveGroup: assessment.studentGroupLeave,
+      canNameGroup: assessment.studentGroupChooseName,
+    },
+    rolePermissions: {
+      canAssignRoles,
+      canView: assessment.canView,
+      canSubmit: assessment.canSubmit,
+    },
+  };
 }
 
 export function serializeGroupSettings(
@@ -147,21 +187,34 @@ export function normalizeGroupSettings(json: AssessmentJsonInput): GroupSettings
     const rp = json.groups.rolePermissions ?? {};
     return {
       studentPermissions: {
-        canCreateGroup: json.groups.studentPermissions?.canCreateGroup ?? false,
-        canJoinGroup: json.groups.studentPermissions?.canJoinGroup ?? false,
-        canLeaveGroup: json.groups.studentPermissions?.canLeaveGroup ?? false,
-        canNameGroup: json.groups.studentPermissions?.canNameGroup ?? true,
+        canCreateGroup: json.groups.studentPermissions?.canCreateGroup ?? true,
+        canJoinGroup: json.groups.studentPermissions?.canJoinGroup ?? true,
+        canLeaveGroup: json.groups.studentPermissions?.canLeaveGroup ?? true,
+        canNameGroup:
+          (json.groups.studentPermissions?.canCreateGroup ?? true) &&
+          (json.groups.studentPermissions?.canNameGroup ?? true),
       },
       minMembers: json.groups.minMembers ?? null,
       maxMembers: json.groups.maxMembers ?? null,
+      // `canView` / `canSubmit` semantics:
+      //   - undefined: all roles can view/submit
+      //   - []: treated as "all roles" for backward compatibility with hand-edited
+      //     legacy configs that used an empty array to mean "no restriction". The
+      //     UI canonicalizes this on save by omitting the key when all roles are
+      //     selected (see `serializeGroupSettings`).
+      //   - ['Role A', ...]: only the listed roles
       roles: (json.groups.roles ?? []).map((role) => ({
         name: role.name,
         origName: role.name,
         minAssignees: role.minMembers ?? null,
         maxAssignees: role.maxMembers ?? null,
         canAssignRoles: rp.canAssignRoles?.includes(role.name) ?? false,
-        canView: rp.canView === undefined || rp.canView.includes(role.name),
-        canSubmit: rp.canSubmit === undefined || rp.canSubmit.includes(role.name),
+        canView:
+          rp.canView === undefined || rp.canView.length === 0 || rp.canView.includes(role.name),
+        canSubmit:
+          rp.canSubmit === undefined ||
+          rp.canSubmit.length === 0 ||
+          rp.canSubmit.includes(role.name),
       })),
     };
   }
@@ -170,10 +223,10 @@ export function normalizeGroupSettings(json: AssessmentJsonInput): GroupSettings
 
   return {
     studentPermissions: {
-      canCreateGroup: json.studentGroupCreate ?? false,
-      canJoinGroup: json.studentGroupJoin ?? false,
-      canLeaveGroup: json.studentGroupLeave ?? false,
-      canNameGroup: json.studentGroupChooseName ?? true,
+      canCreateGroup: json.studentGroupCreate ?? true,
+      canJoinGroup: json.studentGroupJoin ?? true,
+      canLeaveGroup: json.studentGroupLeave ?? true,
+      canNameGroup: (json.studentGroupCreate ?? true) && (json.studentGroupChooseName ?? true),
     },
     minMembers: json.groupMinSize ?? null,
     maxMembers: json.groupMaxSize ?? null,

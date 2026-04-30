@@ -23,15 +23,30 @@ describe('normalizeGroupSettings', () => {
 
       assert.deepEqual(result, {
         studentPermissions: {
-          canCreateGroup: false,
-          canJoinGroup: false,
-          canLeaveGroup: false,
+          canCreateGroup: true,
+          canJoinGroup: true,
+          canLeaveGroup: true,
           canNameGroup: true,
         },
         minMembers: null,
         maxMembers: null,
         roles: [],
       });
+    });
+
+    it('forces canNameGroup off when canCreateGroup is off', () => {
+      const result = normalizeGroupSettings({
+        groups: {
+          enabled: true,
+          studentPermissions: {
+            canCreateGroup: false,
+            canNameGroup: true,
+          },
+        },
+      } as unknown as AssessmentJsonInput);
+
+      assert.equal(result?.studentPermissions.canCreateGroup, false);
+      assert.equal(result?.studentPermissions.canNameGroup, false);
     });
 
     it('normalizes studentPermissions', () => {
@@ -128,7 +143,7 @@ describe('normalizeGroupSettings', () => {
       assert.equal(result!.roles[0].canAssignRoles, false);
     });
 
-    it('treats empty canView/canSubmit arrays as no-role-permitted', () => {
+    it('treats empty canView/canSubmit arrays as all-roles-permitted (legacy compat)', () => {
       const result = normalizeGroupSettings({
         groups: {
           enabled: true,
@@ -140,8 +155,8 @@ describe('normalizeGroupSettings', () => {
         },
       } as unknown as AssessmentJsonInput);
 
-      assert.equal(result!.roles[0].canView, false);
-      assert.equal(result!.roles[0].canSubmit, false);
+      assert.equal(result!.roles[0].canView, true);
+      assert.equal(result!.roles[0].canSubmit, true);
     });
   });
 
@@ -153,9 +168,9 @@ describe('normalizeGroupSettings', () => {
 
       assert.deepEqual(result, {
         studentPermissions: {
-          canCreateGroup: false,
-          canJoinGroup: false,
-          canLeaveGroup: false,
+          canCreateGroup: true,
+          canJoinGroup: true,
+          canLeaveGroup: true,
           canNameGroup: true,
         },
         minMembers: null,

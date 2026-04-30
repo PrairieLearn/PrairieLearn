@@ -218,8 +218,8 @@ const enableGroupWork = t.procedure
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: true })
           : { enabled: true };
-        stripLegacyGroupKeys(json);
-        return json;
+        const stripped = stripLegacyGroupKeys(json);
+        return stripped;
       },
       jsonPath: assessmentPath,
       conflictCheck: {
@@ -363,8 +363,8 @@ const updateGroupConfig = t.procedure
           },
           { enabled: true },
         );
-        stripLegacyGroupKeys(json);
-        return json;
+        const stripped = stripLegacyGroupKeys(json);
+        return stripped;
       },
       jsonPath: assessmentPath,
       conflictCheck: {
@@ -420,8 +420,8 @@ const disableGroupWork = t.procedure
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: false })
           : { enabled: false };
-        stripLegacyGroupKeys(json);
-        return json;
+        const stripped = stripLegacyGroupKeys(json);
+        return stripped;
       },
       jsonPath: assessmentPath,
       conflictCheck: {
@@ -466,7 +466,7 @@ const randomizeGroups = t.procedure
   .input(
     z.object({
       min_group_size: z.number().int().min(1),
-      max_group_size: z.number().int().min(2),
+      max_group_size: z.number().int().min(1),
     }),
   )
   .mutation(async ({ input, ctx }) => {

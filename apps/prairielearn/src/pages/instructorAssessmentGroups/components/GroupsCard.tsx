@@ -735,6 +735,8 @@ export function GroupsCard({
                 {run(() => {
                   const unassignedCount = notAssigned?.length ?? 0;
                   const assignedCount = groups?.reduce((sum, g) => sum + g.size, 0) ?? 0;
+                  const totalStudents = unassignedCount + assignedCount;
+                  if (totalStudents === 0) return 'No students enrolled';
                   if (unassignedCount === 0) return 'All students are assigned';
                   if (assignedCount === 0) {
                     return `${unassignedCount} student${unassignedCount === 1 ? '' : 's'} unassigned`;
@@ -753,7 +755,7 @@ export function GroupsCard({
                   <i className="bi bi-plus-lg" aria-hidden="true" /> Add group
                 </button>
               )}
-              <DropdownButton as={ButtonGroup} title="Actions" variant="light">
+              <DropdownButton as={ButtonGroup} title="Actions" variant="outline-secondary">
                 <Dropdown.Item
                   as="button"
                   type="button"
@@ -830,15 +832,24 @@ export function GroupsCard({
                 </tr>
               </thead>
               <tbody>
-                {groups?.map((row) => (
-                  <GroupRow
-                    key={row.group_id}
-                    row={row}
-                    canEdit={canEdit}
-                    onEdit={editModal.showWithData}
-                    onDelete={deleteModal.showWithData}
-                  />
-                ))}
+                {groups && groups.length > 0 ? (
+                  groups.map((row) => (
+                    <GroupRow
+                      key={row.group_id}
+                      row={row}
+                      canEdit={canEdit}
+                      onEdit={editModal.showWithData}
+                      onDelete={deleteModal.showWithData}
+                    />
+                  ))
+                ) : (
+                  <tr className="text-center text-muted">
+                    <td colSpan={canEdit ? 4 : 3} className="py-4">
+                      <i className="bi bi-people me-2" aria-hidden="true" />
+                      No groups created
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
