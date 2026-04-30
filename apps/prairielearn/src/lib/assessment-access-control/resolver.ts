@@ -357,6 +357,13 @@ function computeTimeLimitMin(
   return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
 }
 
+/**
+ * This function is the core of the modern access control system.
+ *
+ * Given a set of rules, an enrollment, and a date, it returns the access control result.
+ *
+ * Returns an object that roughly corresponds to the legacy `authz_assessment` sproc.
+ */
 export function resolveAccessControl(
   input: AccessControlResolverInput,
 ): AccessControlResolverResult {
