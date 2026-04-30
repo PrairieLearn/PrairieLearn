@@ -11,19 +11,16 @@ function PasswordToggle({
   value,
   onChange,
   idPrefix,
-  showLabel,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
-  showLabel?: boolean;
 }) {
   return (
     <ToggleTitle
       id={`${idPrefix}-password-enabled`}
       label="Password"
       checked={value !== null}
-      showLabel={showLabel}
       onChange={(checked) => onChange(checked ? '' : null)}
     />
   );
@@ -119,7 +116,6 @@ export function OverridePasswordField({ index }: { index: number }) {
         <PasswordToggle
           value={field.value}
           idPrefix={`overrides-${index}`}
-          showLabel={false}
           onChange={field.onChange}
         />
       }
