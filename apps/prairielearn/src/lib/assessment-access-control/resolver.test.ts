@@ -227,7 +227,7 @@ describe('resolveAccessControl', () => {
         expect: { authorized: false, credit: 0, creditDateString: 'None' },
       },
       {
-        name: 'before release date: unauthorized',
+        name: 'before release date: unauthorized, nextActiveDate is release date',
         rules: [
           makeMainRule({
             dateControl: {
@@ -237,7 +237,12 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, credit: 0, active: false },
+        expect: {
+          authorized: false,
+          credit: 0,
+          active: false,
+          nextActiveDate: new Date('2025-04-01T00:00:00Z'),
+        },
       },
       {
         name: 'between release and due date: 100% credit',
@@ -266,10 +271,10 @@ describe('resolveAccessControl', () => {
         expect: { credit: 0, active: false },
       },
       {
-        name: 'dateControl with no release: unauthorized',
+        name: 'dateControl with no release: unauthorized, nextActiveDate=null',
         rules: [makeMainRule({ dateControl: { due: { date: '2025-01-01T00:00:00Z' } } })],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, credit: 0, active: false },
+        expect: { authorized: false, credit: 0, active: false, nextActiveDate: null },
       },
       {
         name: 'after release date with no deadlines: 100% credit',
@@ -1327,6 +1332,59 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Exam',
           expect: { authorized: false, showBeforeRelease: false, active: false },
+        },
+        {
+          // Review-only access wins over `beforeRelease.listed`: a student
+          // who finished the exam should be able to review their work even
+          // if the listing flag was left set on the rule.
+          name: 'PT review-only wins over beforeRelease.listed when visibility is unlocked',
+          rules: [
+            makeMainRule(
+              {
+                beforeRelease: { listed: true },
+                afterComplete: { questions: { hidden: false }, score: { hidden: false } },
+              },
+              { prairieTestExams: [ptExam1] },
+            ),
+          ],
+          authzMode: 'Public',
+          reservations: [],
+          expect: {
+            authorized: true,
+            active: false,
+            showBeforeRelease: false,
+            showClosedAssessment: true,
+            showClosedAssessmentScore: true,
+          },
+        },
+        {
+          // Same priority via the deferred-release pattern: instructor uses
+          // `visibleFromDate` to schedule at-home review and leaves
+          // `beforeRelease.listed` set. After the visible date, students
+          // get review-only access, not the coming-soon listing.
+          name: 'visibleFromDate unlock + beforeRelease.listed: review-only wins after date',
+          rules: [
+            makeMainRule(
+              {
+                beforeRelease: { listed: true },
+                afterComplete: {
+                  questions: { hidden: true, visibleFromDate: '2025-04-01T00:00:00Z' },
+                  score: { hidden: true, visibleFromDate: '2025-04-01T00:00:00Z' },
+                },
+              },
+              { prairieTestExams: [ptExam1] },
+            ),
+          ],
+          authzMode: 'Public',
+          date: new Date('2025-04-02T00:00:00Z'),
+          reservations: [],
+          expect: {
+            authorized: true,
+            active: false,
+            showBeforeRelease: false,
+            showClosedAssessment: true,
+            showClosedAssessmentScore: true,
+          },
         },
       ])('$name', (c) => {
         expect(runCase(c)).toMatchObject(c.expect);
