@@ -84,6 +84,17 @@ function makeMainRule(
   rule: AccessControlJson = {},
   opts: { prairieTestExams?: PrairieTestExam[] } = {},
 ): MainRule {
+  // Validation requires both `release` and `due` on the main rule when
+  // `dateControl` is specified. Mirror that here so test fixtures match what
+  // production rules look like; use `due: { date: null }` for indefinite due.
+  if (rule.dateControl) {
+    if (!rule.dateControl.release) {
+      throw new Error('makeMainRule: dateControl requires release');
+    }
+    if (!rule.dateControl.due) {
+      throw new Error('makeMainRule: dateControl requires due (use { date: null } for indefinite)');
+    }
+  }
   const runtimeRule = toRuntime(rule);
   if (opts.prairieTestExams !== undefined) runtimeRule.prairieTestExams = opts.prairieTestExams;
   return {
@@ -545,7 +556,12 @@ describe('resolveAccessControl', () => {
       {
         name: 'enrollment override does not match → main rule applies (past due)',
         rules: [
-          makeMainRule({ dateControl: { due: { date: '2025-03-10T00:00:00Z' } } }),
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+            },
+          }),
           makeOverrideRule(
             1,
             { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
@@ -554,12 +570,17 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false },
       },
       {
         name: 'no enrollment context → enrollment override skipped',
         rules: [
-          makeMainRule({ dateControl: { due: { date: '2025-03-10T00:00:00Z' } } }),
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+            },
+          }),
           makeOverrideRule(
             1,
             { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
@@ -568,7 +589,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0 },
       },
       {
         name: 'student_label override matches via label intersection',
@@ -586,7 +607,12 @@ describe('resolveAccessControl', () => {
       {
         name: 'student_label override does not match (no intersection)',
         rules: [
-          makeMainRule({ dateControl: { due: { date: '2025-03-10T00:00:00Z' } } }),
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+            },
+          }),
           makeOverrideRule(
             1,
             { dateControl: { due: { date: '2025-05-01T00:00:00Z' } } },
@@ -595,7 +621,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1301,7 +1327,13 @@ describe('resolveAccessControl', () => {
             ),
           ],
           authzMode: 'Public',
-          expect: { authorized: true, submittable: false, showBeforeRelease: false },
+          expect: {
+            authorized: true,
+            submittable: false,
+            credit: 0,
+            creditDateString: 'None',
+            showBeforeRelease: false,
+          },
         },
         {
           name: 'past due in Exam mode without matching reservation: denied',
@@ -1526,8 +1558,15 @@ describe('resolveAccessControl', () => {
       },
       {
         name: 'returns null when no durationMinutes',
-        rules: [makeMainRule({ dateControl: { due: { date: '2025-04-01T00:00:00Z' } } })],
-        expect: { authorized: false, submittable: false, timeLimitMin: null },
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+            },
+          }),
+        ],
+        expect: { authorized: true, submittable: true, timeLimitMin: null },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1775,100 +1814,6 @@ describe('resolveAccessControl', () => {
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
-    });
-  });
-
-  describe('migrated non-100% credit rules (no dueDate)', () => {
-    it.each<ResolveCase>([
-      {
-        // Migrated from: { credit: 50, startDate: ..., endDate: '2025-04-01' }
-        name: 'reduced credit before late deadline',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
-            },
-          }),
-        ],
-        date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 50, submittable: true },
-      },
-      {
-        name: '0 credit after late deadline',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
-            },
-          }),
-        ],
-        date: new Date('2025-04-15T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false },
-      },
-      {
-        // Migrated from: { credit: 120, startDate: ..., endDate: '2025-04-01' }
-        name: 'bonus credit before early deadline',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
-            },
-          }),
-        ],
-        date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: true, credit: 120, submittable: true },
-      },
-      {
-        name: '0 credit after early deadline',
-        rules: [
-          makeMainRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
-            },
-          }),
-        ],
-        date: new Date('2025-04-15T00:00:00Z'),
-        expect: { authorized: true, credit: 0, submittable: false },
-      },
-    ])('$name', (c) => {
-      expect(runCase(c)).toMatchObject(c.expect);
-    });
-
-    // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
-    // Walks the same rule across multiple dates so kept as a single it().
-    it('resolves bonus+reduced declining credit without dueDate', () => {
-      const rule = makeMainRule({
-        dateControl: {
-          release: { date: '2025-03-01T00:00:00Z' },
-          earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
-          lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
-        },
-      });
-      expect(
-        resolveAccessControl({
-          ...baseInput,
-          rules: [rule],
-          date: new Date('2025-03-05T00:00:00Z'),
-        }).credit,
-      ).toBe(120);
-      expect(
-        resolveAccessControl({
-          ...baseInput,
-          rules: [rule],
-          date: new Date('2025-03-15T00:00:00Z'),
-        }).credit,
-      ).toBe(50);
-      expect(
-        resolveAccessControl({
-          ...baseInput,
-          rules: [rule],
-          date: new Date('2025-04-15T00:00:00Z'),
-        }).credit,
-      ).toBe(0);
     });
   });
 
