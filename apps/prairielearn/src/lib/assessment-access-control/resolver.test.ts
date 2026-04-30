@@ -231,7 +231,7 @@ describe('resolveAccessControl', () => {
     it.each<ResolveCase>([
       {
         name: 'no dateControl: unauthorized',
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: { authorized: false, credit: 0, submittable: false, nextActiveDate: null },
       },
       {
         name: 'no rules at all: unauthorized with creditDateString=None',
@@ -283,14 +283,15 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, credit: 0, submittable: false },
       },
       {
-        name: 'dateControl with no release: unauthorized, nextActiveDate=null',
-        rules: [makeMainRule({ dateControl: { due: { date: '2025-01-01T00:00:00Z' } } })],
-        date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false, nextActiveDate: null },
-      },
-      {
-        name: 'after release date with no deadlines: 100% credit',
-        rules: [makeMainRule({ dateControl: { release: { date: '2025-03-01T00:00:00Z' } } })],
+        name: 'after release date with indefinite due: 100% credit forever',
+        rules: [
+          makeMainRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: null },
+            },
+          }),
+        ],
         date: new Date('2025-03-15T00:00:00Z'),
         expect: { authorized: true, credit: 100, submittable: true },
       },
@@ -300,6 +301,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: null },
               password: 'secret',
               durationMinutes: 60,
             },
@@ -472,16 +474,6 @@ describe('resolveAccessControl', () => {
           submittable: false,
           showClosedAssessment: false,
         },
-      },
-      {
-        name: 'beforeRelease.listed with dateControl missing release',
-        rules: [
-          makeMainRule({
-            beforeRelease: { listed: true },
-            dateControl: { due: { date: '2025-04-01T00:00:00Z' } },
-          }),
-        ],
-        expect: { authorized: false, showBeforeRelease: true, submittable: false },
       },
       {
         name: 'no beforeRelease and no dateControl',
@@ -1395,7 +1387,10 @@ describe('resolveAccessControl', () => {
             makeMainRule(
               {
                 beforeRelease: { listed: true },
-                dateControl: { release: { date: '2025-04-01T00:00:00Z' } },
+                dateControl: {
+                  release: { date: '2025-04-01T00:00:00Z' },
+                  due: { date: '2025-05-01T00:00:00Z' },
+                },
               },
               { prairieTestExams: [ptExam1] },
             ),
@@ -1533,7 +1528,13 @@ describe('resolveAccessControl', () => {
         name: 'returns null in Exam mode',
         rules: [
           makeMainRule(
-            { dateControl: { durationMinutes: 60, due: { date: '2025-04-01T00:00:00Z' } } },
+            {
+              dateControl: {
+                release: { date: '2025-01-01T00:00:00Z' },
+                due: { date: '2025-04-01T00:00:00Z' },
+                durationMinutes: 60,
+              },
+            },
             { prairieTestExams: [ptExam('exam-uuid-1')] },
           ),
         ],
@@ -1688,12 +1689,6 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        name: 'shows None when no credit',
-        rules: [makeMainRule({ dateControl: { due: { date: '2025-03-10T00:00:00Z' } } })],
-        date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, creditDateString: 'None' },
-      },
-      {
         name: 'shows None when no dateControl configured',
         expect: { authorized: false, submittable: false, creditDateString: 'None' },
       },
@@ -1805,6 +1800,7 @@ describe('resolveAccessControl', () => {
           makeMainRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: null },
               afterLastDeadline: { credit: 50, allowSubmissions: true },
             },
           }),
@@ -1986,25 +1982,6 @@ describe('resolveAccessControl', () => {
       expect(after).toMatchObject({ credit: 100, submittable: true, creditDateString: '100%' });
     });
 
-    // Walks one rule across two dates; kept as a single it() since the two
-    // phases share configuration.
-    it('applies afterLastDeadline after early deadlines when no due date is set', () => {
-      const rules = [
-        makeMainRule({
-          dateControl: {
-            release: { date: '2025-01-01T00:00:00Z' },
-            earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
-            afterLastDeadline: { credit: 50, allowSubmissions: true },
-          },
-        }),
-      ];
-      expect(
-        resolveAccessControl({ ...baseInput, rules, date: new Date('2025-01-15T00:00:00Z') }),
-      ).toMatchObject({ credit: 120, submittable: true });
-      expect(
-        resolveAccessControl({ ...baseInput, rules, date: new Date('2030-01-01T00:00:00Z') }),
-      ).toMatchObject({ credit: 50, submittable: true });
-    });
   });
 
   // Regression: deny / coming-soon returns previously dropped the precomputed
