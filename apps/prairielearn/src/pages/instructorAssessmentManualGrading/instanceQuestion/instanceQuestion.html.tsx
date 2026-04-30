@@ -207,6 +207,35 @@ export function InstanceQuestion({
           />,
         )}
       </div>
+      ${aiGradingInfo
+        ? html`
+            <div class="alert alert-info" role="alert">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-stars fs-5" aria-hidden="true"></i>
+                <strong>Submission graded by AI</strong>
+              </div>
+              <ul class="mb-0 ps-4">
+                <li>
+                  Review the AI's grading in
+                  <a href="#grading-panel" class="alert-link">the grading panel</a>.
+                </li>
+                <li>
+                  View its explanation in
+                  <a href="#ai-grading-explanation" class="alert-link"
+                    >the AI grading explanation section</a
+                  >.
+                </li>
+                <li>
+                  <a href="#rubric-editor" class="alert-link js-show-rubric-settings-button"
+                    >Adjust the rubric</a
+                  >
+                  to better align with your needs.
+                </li>
+                <li>Adjust grades if desired.</li>
+              </ul>
+            </div>
+          `
+        : ''}
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,
@@ -228,7 +257,7 @@ export function InstanceQuestion({
         </div>
 
         <div class="col-lg-4 col-12">
-          <div class="card mb-4 border-info">
+          <div id="grading-panel" class="card mb-4 border-info">
             <div class="card-header bg-info">
               <div>Grading</div>
             </div>

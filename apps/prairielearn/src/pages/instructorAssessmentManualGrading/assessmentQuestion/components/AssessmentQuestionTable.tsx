@@ -97,10 +97,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
+  emptyHint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
+  emptyHint?: string;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -108,6 +110,11 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
+      {numToGrade === 0 && emptyHint && (
+        <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
+          {emptyHint}
+        </div>
+      )}
     </Dropdown.Item>
   );
 }
@@ -733,6 +740,7 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
+                      emptyHint="Use the checkboxes on the left to select submissions. Shift-click to select a range."
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'selected',

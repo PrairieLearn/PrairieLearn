@@ -132,6 +132,8 @@ export function createColumns({
           <div className="d-flex align-items-center gap-2">
             <a
               href={`${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${row.instance_question.id}`}
+              target="_blank"
+              rel="noreferrer"
             >
               Instance {info.getValue() + 1}
             </a>
@@ -421,34 +423,51 @@ export function createColumns({
       cell: (info) => {
         const row = info.row.original;
         const rowId = row.instance_question.id;
+        const isOutdated =
+          row.instance_question.ai_grading_status === 'OutdatedRubric' ||
+          row.instance_question.requires_manual_grading;
+        const outdatedLabel = isOutdated ? (
+          <div className="text-muted small mt-1">Outdated</div>
+        ) : null;
         if (row.instance_question.point_difference === null) {
           return '—';
         }
 
         if (row.instance_question.rubric_difference === null) {
           if (!row.instance_question.point_difference) {
-            return <i className="bi bi-check-square-fill text-success" />;
+            return (
+              <div>
+                <i className="bi bi-check-square-fill text-success" />
+                {outdatedLabel}
+              </div>
+            );
           } else {
             const prefix = row.instance_question.point_difference < 0 ? '' : '+';
             return (
-              <span className="text-danger">
-                <i className="bi bi-x-square-fill" /> {prefix}
-                {formatPoints(row.instance_question.point_difference)}
-              </span>
+              <div>
+                <span className="text-danger">
+                  <i className="bi bi-x-square-fill" /> {prefix}
+                  {formatPoints(row.instance_question.point_difference)}
+                </span>
+                {outdatedLabel}
+              </div>
             );
           }
         }
 
         if (row.instance_question.rubric_difference.length === 0) {
           return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'AI and human grading are in agreement',
-                props: { id: `ai-agreement-${rowId}-agreement-tooltip` },
-              }}
-            >
-              <i className="bi bi-check-square-fill text-success" />
-            </OverlayTrigger>
+            <div>
+              <OverlayTrigger
+                tooltip={{
+                  body: 'AI and human grading are in agreement',
+                  props: { id: `ai-agreement-${rowId}-agreement-tooltip` },
+                }}
+              >
+                <i className="bi bi-check-square-fill text-success" />
+              </OverlayTrigger>
+              {outdatedLabel}
+            </div>
           );
         }
 
@@ -478,6 +497,7 @@ export function createColumns({
                 <span>{item.description}</span>
               </div>
             ))}
+            {outdatedLabel}
           </div>
         );
       },

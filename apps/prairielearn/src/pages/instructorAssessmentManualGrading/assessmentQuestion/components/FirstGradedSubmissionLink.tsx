@@ -21,15 +21,24 @@ export function ReviewSubmissionsAlert({
 
   return (
     <Alert variant="info" className="mb-3">
-      <i className="bi bi-info-circle-fill me-2" aria-hidden="true" />
-      <a
-        href={`${manualGradingUrlPrefix}/instance_question/${data.instance_question_id}`}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Review your submissions
-      </a>
-      .
+      <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+          <i className="bi bi-stars fs-5" aria-hidden="true" />
+          <strong>
+            <a
+              href={`${manualGradingUrlPrefix}/instance_question/${data.instance_question_id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="alert-link"
+            >
+              Review your submissions
+            </a>
+          </strong>
+        </div>
+        <span className="small text-body-secondary">
+          Ensure you're satisfied with the AI gradings.
+        </span>
+      </div>
     </Alert>
   );
 }
