@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 
@@ -155,13 +155,15 @@ function DueDateInput({
             value={value.date}
             onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
-          {!dateError && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
+          {dateError && (
+            <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger" role="alert">
+              {dateError}
+            </Form.Text>
+          )}
+          {!dateError && value.date && (
+            <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>
+          )}
         </>
-      )}
-      {dateError && (
-        <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger d-block" role="alert">
-          {dateError}
-        </Form.Text>
       )}
       <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
         {!value.customCredit ? (
@@ -292,25 +294,11 @@ export function MainDueDateField({
   const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
     name: 'mainRule.due.date',
     rules: {
-      validate: (value, formValues) => {
-        const error = validateDueDate(value, releaseDate, displayTimezone);
-        if (error) return error;
-        if (value === null && formValues.mainRule.afterLastDeadline?.allowSubmissions) {
-          return 'Remove the after last deadline configuration before removing the due date';
-        }
-        return true;
-      },
+      validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
     },
   });
 
-  const { trigger } = useFormContext<AccessControlFormData>();
-  const afterLastDeadlineAllowSubmissions = useWatch<
-    AccessControlFormData,
-    'mainRule.afterLastDeadline.allowSubmissions'
-  >({ name: 'mainRule.afterLastDeadline.allowSubmissions' });
-  useEffect(() => {
-    void trigger('mainRule.due.date');
-  }, [trigger, afterLastDeadlineAllowSubmissions]);
+  const { setValue } = useFormContext<AccessControlFormData>();
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {
@@ -325,7 +313,13 @@ export function MainDueDateField({
     customCredit: customCreditCtrl.field.value,
   };
   const handleChange = (next: DueValue) => {
-    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
+    if (next.date !== value.date) {
+      dateCtrl.field.onChange(next.date);
+      if (next.date === null) {
+        setValue('mainRule.lateDeadlines', [], { shouldDirty: true, shouldValidate: true });
+        setValue('mainRule.afterLastDeadline', null, { shouldDirty: true, shouldValidate: true });
+      }
+    }
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
