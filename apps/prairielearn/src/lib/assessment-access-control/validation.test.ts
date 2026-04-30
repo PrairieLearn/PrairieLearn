@@ -1434,8 +1434,11 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject after-complete dates without any deadline', () => {
+  it('should reject after-complete dates when dateControl exists but has no deadlines', () => {
     const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+      },
       afterComplete: {
         questions: {
           hidden: true,
@@ -1646,6 +1649,176 @@ describe('afterComplete hidden/visibility validation', () => {
     const errors = validateRule(rule, 'none');
     assert.isTrue(
       errors.some((e) => e.includes('afterComplete.score cannot have visibleFromDate')),
+    );
+  });
+});
+
+describe('afterComplete requires dateControl or PrairieTest', () => {
+  it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
+    const errors = validateRule(
+      AccessControlJsonSchema.parse({
+        afterComplete: {
+          questions: { hidden: false },
+        },
+      }),
+      'none',
+    );
+    assert.isTrue(
+      errors.includes('After-complete settings require date control or PrairieTest exams.'),
+    );
+  });
+
+  it('rejects afterComplete with score hidden on main rule without dateControl or PrairieTest', () => {
+    const errors = validateRule(
+      AccessControlJsonSchema.parse({
+        afterComplete: {
+          score: { hidden: true },
+        },
+      }),
+      'none',
+    );
+    assert.isTrue(
+      errors.includes('After-complete settings require date control or PrairieTest exams.'),
+    );
+  });
+
+  it('accepts afterComplete on main rule with dateControl', () => {
+    const errors = validateRule(
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+        afterComplete: {
+          questions: { hidden: false },
+        },
+      }),
+      'none',
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  it('accepts afterComplete on main rule with PrairieTest', () => {
+    const errors = validateRule(
+      AccessControlJsonSchema.parse({
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+          },
+        },
+        afterComplete: {
+          questions: { hidden: true },
+          score: { hidden: true },
+        },
+      }),
+      'none',
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  it('does not apply constraint to overrides (handled by global check)', () => {
+    const errors = validateRule(
+      AccessControlJsonSchema.parse({
+        afterComplete: {
+          questions: { hidden: false },
+        },
+      }),
+      'student_label',
+    );
+    assert.isFalse(
+      errors.includes('After-complete settings require date control or PrairieTest exams.'),
+    );
+  });
+});
+
+describe('Global afterComplete override validation', () => {
+  it('rejects afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(
+      result.errors.includes(
+        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
+      ),
+    );
+  });
+
+  it('accepts afterComplete on overrides when main rule has dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(
+      result.errors.includes(
+        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
+      ),
+    );
+  });
+
+  it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          integrations: {
+            prairieTest: {
+              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(
+      result.errors.includes(
+        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
+      ),
+    );
+  });
+
+  it('accepts afterComplete on overrides when an override has dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(
+      result.errors.includes(
+        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
+      ),
     );
   });
 });

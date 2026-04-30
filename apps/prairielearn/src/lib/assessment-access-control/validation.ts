@@ -160,12 +160,15 @@ export function validateRuleStructuralDependencyIssues(
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
   // Only enforced on the main rule — overrides may inherit deadlines.
+  // Skipped when dateControl is absent entirely — Constraint 5 handles that
+  // case with a broader message.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
   const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
   if (
     validationRule.targetType === 'none' &&
     ac &&
+    dc &&
     !hasAnyDeadline(rule) &&
     !hasPrairieTest &&
     !hasDuration
@@ -650,6 +653,17 @@ export function validateRule(
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
+
+    // Constraint 5: afterComplete requires dateControl or PrairieTest exams.
+    // Without a timeline or exam integration there is no completion event,
+    // so after-complete settings are meaningless.
+    if (
+      rule.afterComplete &&
+      !rule.dateControl &&
+      (rule.integrations?.prairieTest?.exams ?? []).length === 0
+    ) {
+      errors.push('After-complete settings require date control or PrairieTest exams.');
+    }
   } else {
     if (rule.beforeRelease !== undefined) {
       errors.push('beforeRelease can only be specified on the defaults.');
@@ -855,6 +869,25 @@ export function validateAccessControlRules({
       ruleIndex: validationRules.length,
     });
     errors.push(...validateRule(rule, 'enrollment'));
+  }
+
+  // Global constraint: afterComplete on overrides requires at least one rule
+  // to provide a completion mechanism (dateControl on any rule, or PrairieTest
+  // exams on the main rule). Without any timeline, there is no completion event
+  // for the override's settings to trigger on.
+  const anyRuleHasDateControl = validationRules.some((vr) => vr.rule.dateControl != null);
+  const mainRuleHasPrairieTest = validationRules.some(
+    (vr) => vr.targetType === 'none' && (vr.rule.integrations?.prairieTest?.exams ?? []).length > 0,
+  );
+  if (!anyRuleHasDateControl && !mainRuleHasPrairieTest) {
+    for (const vr of validationRules) {
+      if (vr.targetType !== 'none' && vr.rule.afterComplete) {
+        errors.push(
+          'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
+        );
+        break;
+      }
+    }
   }
 
   errors.push(
