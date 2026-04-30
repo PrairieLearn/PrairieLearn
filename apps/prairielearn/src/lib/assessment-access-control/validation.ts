@@ -734,6 +734,30 @@ export function validateRule(
     errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
   }
 
+  if (
+    rule.afterComplete?.questions?.hidden === true &&
+    rule.afterComplete.questions.visibleFromDate !== undefined &&
+    rule.afterComplete.score?.hidden === true &&
+    rule.afterComplete.score.visibleFromDate === undefined
+  ) {
+    errors.push(
+      'afterComplete.questions.visibleFromDate requires afterComplete.score.visibleFromDate when score.hidden: true (questions cannot become visible while score remains hidden).',
+    );
+  }
+
+  if (
+    rule.afterComplete?.questions?.hidden === true &&
+    rule.afterComplete.questions.visibleFromDate !== undefined &&
+    rule.afterComplete.score?.hidden === true &&
+    rule.afterComplete.score.visibleFromDate !== undefined &&
+    new Date(rule.afterComplete.score.visibleFromDate).getTime() >
+      new Date(rule.afterComplete.questions.visibleFromDate).getTime()
+  ) {
+    errors.push(
+      'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).',
+    );
+  }
+
   errors.push(
     ...validateRuleStructuralDependencyIssues({
       rule,
