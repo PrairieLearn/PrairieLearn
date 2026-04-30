@@ -492,11 +492,15 @@ function overrideToJson(
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  const hasCompletionMechanism =
+  const mainHasCompletionMechanism =
     formData.mainRule.dateControlEnabled || formData.mainRule.prairieTestExams.length > 0;
+  const anyOverrideHasDateControl = formData.overrides.some((o) =>
+    DATE_CONTROL_FIELD_NAMES.some((f) => o.overriddenFields.includes(f)),
+  );
+  const overrideHasCompletionMechanism = mainHasCompletionMechanism || anyOverrideHasDateControl;
   return [
     mainRuleToJson(formData.mainRule),
-    ...formData.overrides.map((o) => overrideToJson(o, hasCompletionMechanism)),
+    ...formData.overrides.map((o) => overrideToJson(o, overrideHasCompletionMechanism)),
   ];
 }
 

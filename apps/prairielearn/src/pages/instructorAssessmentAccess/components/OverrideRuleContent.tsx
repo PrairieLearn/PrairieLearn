@@ -13,7 +13,7 @@ export function OverrideRuleContent({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const hasCompletionMechanism = useHasCompletionMechanism();
+  const hasCompletionMechanism = useHasCompletionMechanism('override');
 
   return (
     <div className="d-flex flex-column gap-3">
