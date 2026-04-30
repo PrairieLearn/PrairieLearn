@@ -149,7 +149,7 @@ BEGIN
     ON CONFLICT (assessment_access_control_rule_id, date) DO UPDATE SET
         credit = EXCLUDED.credit;
 
-    -- Upsert PrairieTest exams (main rules only).
+    -- Upsert PrairieTest exams (default rules only).
     INSERT INTO assessment_access_control_prairietest_exams (
         assessment_access_control_rule_id,
         uuid,

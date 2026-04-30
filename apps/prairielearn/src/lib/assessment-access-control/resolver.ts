@@ -187,18 +187,18 @@ function mergeAfterComplete(
 }
 
 export function mergeRules(
-  main: RuntimeAccessControl,
+  defaultRule: RuntimeAccessControl,
   override: RuntimeAccessControl | null,
 ): RuntimeAccessControl {
-  if (!override) return main;
+  if (!override) return defaultRule;
 
   const merged: RuntimeAccessControl = {};
 
-  // beforeRelease is only configurable on the main rule.
-  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
+  // beforeRelease is only configurable on the default rule.
+  if (defaultRule.beforeRelease !== undefined) merged.beforeRelease = defaultRule.beforeRelease;
 
-  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
-  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
+  merged.dateControl = mergeDateControl(defaultRule.dateControl, override.dateControl);
+  merged.afterComplete = mergeAfterComplete(defaultRule.afterComplete, override.afterComplete);
 
   return merged;
 }
@@ -535,8 +535,8 @@ export function resolveAccessControl(
     };
   }
 
-  const mainRuleInput = rules.find((r) => r.number === 0 && r.targetType === 'none');
-  if (!mainRuleInput) {
+  const defaultRuleInput = rules.find((r) => r.number === 0 && r.targetType === 'none');
+  if (!defaultRuleInput) {
     return { ...UNAUTHORIZED_RESULT };
   }
 
@@ -567,14 +567,14 @@ export function resolveAccessControl(
     }
   }
 
-  // Cascade all matched overrides, then merge with main rule.
+  // Cascade all matched overrides, then merge with default rule.
   let cascadedOverride: RuntimeAccessControl | null = null;
   for (const override of matchedOverrides) {
     cascadedOverride = cascadedOverride
       ? cascadeOverrides(cascadedOverride, override.rule)
       : override.rule;
   }
-  const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
+  const effectiveRule = mergeRules(defaultRuleInput.rule, cascadedOverride);
 
   let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
 
@@ -605,7 +605,7 @@ export function resolveAccessControl(
   // showing questions (with their submitted answers) while hiding the
   // score. Per-rule validation catches this within a single rule, but
   // `mergeAfterComplete` picks `questions` and `score` sub-objects
-  // independently, so a main rule with `questions.hidden: false` merged
+  // independently, so a default rule with `questions.hidden: false` merged
   // with an override that sets `score.hidden: true` can produce the
   // invalid combination. Clamp here so every downstream return carries a
   // consistent state.
@@ -617,7 +617,7 @@ export function resolveAccessControl(
   // the resolver linear: it either denies early, grants PT credit overrides,
   // or continues with the normal date-control-based result.
   const ptOutcome = resolvePrairieTestAccess({
-    prairieTestExams: mainRuleInput.prairietestExams,
+    prairieTestExams: defaultRuleInput.prairietestExams,
     prairieTestReservations,
     authzMode,
   });
@@ -684,7 +684,7 @@ export function resolveAccessControl(
   // review-only page. Otherwise deny outright.
   if (
     ptOutcome.action === 'continue' &&
-    mainRuleInput.prairietestExams.length > 0 &&
+    defaultRuleInput.prairietestExams.length > 0 &&
     !effectiveRule.dateControl?.release
   ) {
     if (!showClosedAssessment) {
@@ -714,7 +714,7 @@ export function resolveAccessControl(
   // listed-only and PT review-only paths above have already returned for the
   // cases where they apply, so reaching here means the rule has no way to
   // grant access.
-  if (!effectiveRule.dateControl?.release && mainRuleInput.prairietestExams.length === 0) {
+  if (!effectiveRule.dateControl?.release && defaultRuleInput.prairietestExams.length === 0) {
     return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
   }
 

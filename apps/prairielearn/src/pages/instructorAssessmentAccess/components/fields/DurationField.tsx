@@ -90,21 +90,21 @@ function DurationToggle({
   );
 }
 
-export function MainDurationField() {
+export function DefaultDurationField() {
   const {
     field,
     fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  } = useController<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
     rules: { validate: validateDuration },
   });
 
   return (
     <Form.Group>
-      <DurationToggle value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <DurationToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
       <DurationDetails
         value={field.value}
-        idPrefix="mainRule"
+        idPrefix="defaultRule"
         error={error?.message}
         onChange={field.onChange}
       />
@@ -113,8 +113,8 @@ export function MainDurationField() {
 }
 
 export function OverrideDurationField({ index }: { index: number }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
   });
 
   const {
@@ -140,7 +140,7 @@ export function OverrideDurationField({ index }: { index: number }) {
         />
       }
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}

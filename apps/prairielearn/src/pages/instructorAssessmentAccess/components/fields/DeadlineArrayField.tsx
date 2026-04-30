@@ -21,8 +21,8 @@ import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { endOfDayDatetime } from '../utils/dateUtils.js';
 
 type DeadlineArrayFieldName =
-  | 'mainRule.earlyDeadlines'
-  | 'mainRule.lateDeadlines'
+  | 'defaultRule.earlyDeadlines'
+  | 'defaultRule.lateDeadlines'
   | `overrides.${number}.earlyDeadlines`
   | `overrides.${number}.lateDeadlines`;
 
@@ -417,7 +417,7 @@ function DeadlineArrayInput({
   );
 }
 
-export function MainDeadlineArrayField({
+export function DefaultDeadlineArrayField({
   type,
   displayTimezone,
 }: {
@@ -425,14 +425,14 @@ export function MainDeadlineArrayField({
   displayTimezone: string;
 }) {
   const isEarly = type === 'early';
-  const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
+  const fieldName = isEarly ? 'defaultRule.earlyDeadlines' : 'defaultRule.lateDeadlines';
 
-  const releaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
-  const due = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
 
   const deadlines = useWatch<AccessControlFormData, typeof fieldName>({
@@ -455,7 +455,7 @@ export function MainDeadlineArrayField({
     <DeadlineArrayInput
       type={type}
       fieldArrayName={fieldName}
-      idPrefix="mainRule"
+      idPrefix="defaultRule"
       releaseDate={releaseDate}
       dueDate={dueDate}
       dueCredit={dueCredit}
@@ -488,19 +488,19 @@ export function OverrideDeadlineArrayField({
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
 
-  const mainDeadlines = useWatch<AccessControlFormData, `mainRule.${typeof fieldPath}`>({
-    name: `mainRule.${fieldPath}`,
+  const defaultRuleDeadlines = useWatch<AccessControlFormData, `defaultRule.${typeof fieldPath}`>({
+    name: `defaultRule.${fieldPath}`,
   });
 
   const deadlines = useWatch<AccessControlFormData, typeof fieldArrayName>({
     name: fieldArrayName,
   });
 
-  const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const defaultRuleReleaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
-  const mainDue = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const defaultRuleDue = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'release');
@@ -512,8 +512,8 @@ export function OverrideDeadlineArrayField({
     name: `overrides.${index}.due`,
   });
 
-  const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
-  const effectiveDue = dueOverridden ? overrideDue : mainDue;
+  const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : defaultRuleReleaseDate;
+  const effectiveDue = dueOverridden ? overrideDue : defaultRuleDue;
   const effectiveDueDate = effectiveDue.date;
   const effectiveDueCredit = effectiveDue.credit ?? 100;
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
@@ -526,7 +526,7 @@ export function OverrideDeadlineArrayField({
     name: fieldArrayName,
   });
 
-  // See MainDeadlineArrayField: late deadlines need a due date to anchor.
+  // See DefaultDeadlineArrayField: late deadlines need a due date to anchor.
   if (!isEarly && !isOverridden && deadlines.length === 0 && !effectiveDueDate) return null;
 
   const nextDeadline = () =>
@@ -571,7 +571,7 @@ export function OverrideDeadlineArrayField({
         </Button>
       }
       onOverride={() => {
-        const copied = mainDeadlines.map((d) => ({ ...d }));
+        const copied = defaultRuleDeadlines.map((d) => ({ ...d }));
         replace(copied);
         addOverride();
       }}

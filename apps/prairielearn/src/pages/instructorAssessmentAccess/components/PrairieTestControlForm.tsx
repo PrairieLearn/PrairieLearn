@@ -11,14 +11,14 @@ export function PrairieTestControlForm() {
     fields: examFields,
     append: appendExam,
     remove: removeExam,
-  } = useFieldArray<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  } = useFieldArray<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
 
   const { errors } = useFormState();
 
-  const watchedExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const watchedExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
   const examsRef = useRef(watchedExams);
   examsRef.current = watchedExams;
@@ -30,11 +30,11 @@ export function PrairieTestControlForm() {
   // IntegrationsSection) show errors immediately and duplicate detection
   // re-runs after add/remove/edit.
   useEffect(() => {
-    void trigger('mainRule.prairieTestExams');
+    void trigger('defaultRule.prairieTestExams');
   }, [examFields.length, watchedExamUuids, trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
-    return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;
+    return get(errors, `defaultRule.prairieTestExams.${index}.examUuid`)?.message;
   };
 
   return (
@@ -45,19 +45,19 @@ export function PrairieTestControlForm() {
           className="mb-3 border rounded p-3"
           style={{ borderColor: 'var(--bs-border-color)' }}
         >
-          <Form.Group className="mb-3" controlId={`mainRule-exam-uuid-${index}`}>
+          <Form.Group className="mb-3" controlId={`defaultRule-exam-uuid-${index}`}>
             <Form.Label>Exam UUID</Form.Label>
             <Form.Control
               type="text"
               isInvalid={!!getExamUuidError(index)}
               aria-invalid={!!getExamUuidError(index)}
               aria-errormessage={
-                getExamUuidError(index) ? `mainRule-exam-uuid-${index}-error` : undefined
+                getExamUuidError(index) ? `defaultRule-exam-uuid-${index}-error` : undefined
               }
-              aria-describedby={`mainRule-exam-uuid-${index}-help`}
+              aria-describedby={`defaultRule-exam-uuid-${index}-help`}
               defaultValue=""
               placeholder="e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c"
-              {...register(`mainRule.prairieTestExams.${index}.examUuid`, {
+              {...register(`defaultRule.prairieTestExams.${index}.examUuid`, {
                 required: 'Exam UUID is required',
                 pattern: {
                   value: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
@@ -76,14 +76,14 @@ export function PrairieTestControlForm() {
             />
             {getExamUuidError(index) && (
               <Form.Text
-                id={`mainRule-exam-uuid-${index}-error`}
+                id={`defaultRule-exam-uuid-${index}-error`}
                 className="text-danger d-block"
                 role="alert"
               >
                 {getExamUuidError(index)}
               </Form.Text>
             )}
-            <Form.Text id={`mainRule-exam-uuid-${index}-help`} className="text-muted">
+            <Form.Text id={`defaultRule-exam-uuid-${index}-help`} className="text-muted">
               You can find this UUID in the PrairieTest exam settings
             </Form.Text>
           </Form.Group>
@@ -91,13 +91,13 @@ export function PrairieTestControlForm() {
             <Form.Group>
               <Form.Check
                 type="checkbox"
-                id={`mainRule-exam-readonly-${index}`}
+                id={`defaultRule-exam-readonly-${index}`}
                 label="Read-only mode"
                 defaultChecked={false}
-                {...register(`mainRule.prairieTestExams.${index}.readOnly`)}
-                aria-describedby={`mainRule-exam-readonly-${index}-help`}
+                {...register(`defaultRule.prairieTestExams.${index}.readOnly`)}
+                aria-describedby={`defaultRule-exam-readonly-${index}-help`}
               />
-              <Form.Text id={`mainRule-exam-readonly-${index}-help`} className="text-muted">
+              <Form.Text id={`defaultRule-exam-readonly-${index}-help`} className="text-muted">
                 Students can view but not submit answers
               </Form.Text>
             </Form.Group>
@@ -119,7 +119,7 @@ export function PrairieTestControlForm() {
         onClick={() => {
           appendExam({ examUuid: '', readOnly: false });
           // Trigger validation so the empty UUID error shows immediately.
-          void trigger('mainRule.prairieTestExams');
+          void trigger('defaultRule.prairieTestExams');
         }}
       >
         <i className="bi bi-plus-circle me-1" aria-hidden="true" />

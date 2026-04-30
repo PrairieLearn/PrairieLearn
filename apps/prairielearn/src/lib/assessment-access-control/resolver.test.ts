@@ -76,7 +76,7 @@ function ptExam(
   };
 }
 
-function makeMainRule(rule: AccessControlJson = {}): AccessControlRuleInput {
+function makeDefaultRule(rule: AccessControlJson = {}): AccessControlRuleInput {
   return {
     rule: toRuntime(rule),
     number: 0,
@@ -108,7 +108,7 @@ const defaultEnrollment: EnrollmentContext = {
 };
 
 const baseInput: AccessControlResolverInput = {
-  rules: [makeMainRule()],
+  rules: [makeDefaultRule()],
   enrollment: defaultEnrollment,
   date: new Date('2025-03-15T12:00:00Z'),
   displayTimezone: 'America/Chicago',
@@ -158,7 +158,7 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('main rule only, no date control', () => {
+  describe('default rule only, no date control', () => {
     it('returns unauthorized when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
       expect(result.authorized).toBe(false);
@@ -166,7 +166,7 @@ describe('resolveAccessControl', () => {
       expect(result.active).toBe(false);
     });
 
-    it('returns unauthorized when no main rule exists', () => {
+    it('returns unauthorized when no default rule exists', () => {
       const result = resolveAccessControl({ ...baseInput, rules: [] });
       expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
@@ -174,12 +174,12 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('main rule with date control', () => {
+  describe('default rule with date control', () => {
     it('denies access before release date when beforeRelease.listed is false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-04-01T00:00:00Z' },
               due: { date: '2025-05-01T00:00:00Z' },
@@ -197,7 +197,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-05-01T00:00:00Z' },
@@ -218,7 +218,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
@@ -240,7 +240,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
@@ -254,7 +254,7 @@ describe('resolveAccessControl', () => {
     });
 
     it('handles late deadline with 0% credit', () => {
-      const rule = makeMainRule({
+      const rule = makeDefaultRule({
         dateControl: {
           release: { date: '2025-03-01T00:00:00Z' },
           due: { date: '2025-03-10T00:00:00Z' },
@@ -286,7 +286,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
@@ -304,7 +304,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
@@ -322,7 +322,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
@@ -345,7 +345,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             beforeRelease: { listed: true },
             dateControl: {
               release: { date: '2025-04-01T00:00:00Z' },
@@ -367,7 +367,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             beforeRelease: { listed: true },
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
@@ -384,7 +384,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               due: { date: '2025-01-01T00:00:00Z' },
             },
@@ -401,7 +401,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: { release: { date: '2025-03-01T00:00:00Z' } },
           }),
         ],
@@ -415,7 +415,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               password: 'secret',
@@ -454,7 +454,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: earlyDate, credit: 110 }],
@@ -473,7 +473,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -497,7 +497,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
@@ -509,7 +509,7 @@ describe('resolveAccessControl', () => {
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
       });
-      // No override match, so main rule's due date (March 10) applies, we're past it
+      // No override match, so default rule's due date (March 10) applies, we're past it
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -518,7 +518,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
@@ -539,7 +539,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -560,7 +560,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: { due: { date: '2025-03-10T00:00:00Z' } },
           }),
           makeOverrideRule(
@@ -581,7 +581,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -608,7 +608,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -635,7 +635,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -662,7 +662,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -691,7 +691,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -722,7 +722,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -746,7 +746,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -766,7 +766,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('PrairieTest integration', () => {
-    const prairieTestMainRule: AccessControlRuleInput = {
+    const prairieTestDefaultRule: AccessControlRuleInput = {
       rule: {},
       number: 0,
       targetType: 'none',
@@ -783,7 +783,7 @@ describe('resolveAccessControl', () => {
     it('grants access with valid exam reservation and full credit', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [prairieTestMainRule],
+        rules: [prairieTestDefaultRule],
         authzMode: 'Exam',
         prairieTestReservations: [validReservation],
       });
@@ -799,7 +799,7 @@ describe('resolveAccessControl', () => {
       // denied.
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [prairieTestMainRule],
+        rules: [prairieTestDefaultRule],
         authzMode: 'Public',
         prairieTestReservations: [validReservation],
       });
@@ -812,7 +812,7 @@ describe('resolveAccessControl', () => {
     it('denies access when reservation UUID does not match', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [prairieTestMainRule],
+        rules: [prairieTestDefaultRule],
         authzMode: 'Exam',
         prairieTestReservations: [
           {
@@ -827,7 +827,7 @@ describe('resolveAccessControl', () => {
     it('denies access when no reservation exists', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [prairieTestMainRule],
+        rules: [prairieTestDefaultRule],
         authzMode: 'Exam',
         prairieTestReservations: [],
       });
@@ -841,7 +841,7 @@ describe('resolveAccessControl', () => {
       };
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [prairieTestMainRule],
+        rules: [prairieTestDefaultRule],
         authzMode: 'Exam',
         prairieTestReservations: [wrongReservation, validReservation],
       });
@@ -851,7 +851,7 @@ describe('resolveAccessControl', () => {
 
     it('sets active to false for readOnly exam', () => {
       const readOnlyRule: AccessControlRuleInput = {
-        ...prairieTestMainRule,
+        ...prairieTestDefaultRule,
         prairietestExams: [ptExam('exam-uuid-1', { readOnly: true })],
       };
       const result = resolveAccessControl({
@@ -868,7 +868,7 @@ describe('resolveAccessControl', () => {
     it('denies access for non-exam rule when in PrairieTest exam mode', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule()],
+        rules: [makeDefaultRule()],
         authzMode: 'Exam',
       });
       expect(result.authorized).toBe(false);
@@ -876,7 +876,7 @@ describe('resolveAccessControl', () => {
 
     it('uses readOnly flag from matched exam when multiple exams are configured', () => {
       const multiExamRule: AccessControlRuleInput = {
-        ...prairieTestMainRule,
+        ...prairieTestDefaultRule,
         prairietestExams: [ptExam('exam-uuid-1'), ptExam('exam-uuid-3', { readOnly: true })],
       };
       const reservation: PrairieTestReservation = {
@@ -896,7 +896,7 @@ describe('resolveAccessControl', () => {
 
     it('overrides date-control credit with 100% when PT reservation matches', () => {
       const ruleWithDateControl: AccessControlRuleInput = {
-        ...prairieTestMainRule,
+        ...prairieTestDefaultRule,
         rule: toRuntime({
           dateControl: {
             release: { date: '2025-01-01T00:00:00Z' },
@@ -922,7 +922,7 @@ describe('resolveAccessControl', () => {
     // during a PT reservation via a readOnly exam config.
     describe('cheat sheet hack workflow', () => {
       const cheatSheetRule: AccessControlRuleInput = {
-        ...prairieTestMainRule,
+        ...prairieTestDefaultRule,
         rule: toRuntime({
           dateControl: {
             release: { date: '2025-02-01T00:00:00Z' },
@@ -1000,7 +1000,7 @@ describe('resolveAccessControl', () => {
           const result = resolveAccessControl({
             ...baseInput,
             authzMode: 'Exam',
-            rules: [{ ...makeMainRule(), prairietestExams: [ptExam('pt-exam-1')] }],
+            rules: [{ ...makeDefaultRule(), prairietestExams: [ptExam('pt-exam-1')] }],
             prairieTestReservations: [validReservation],
           });
           expect(result.authorized).toBe(true);
@@ -1015,7 +1015,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             rules: [
               {
-                ...makeMainRule(),
+                ...makeDefaultRule(),
                 prairietestExams: [ptExam('pt-exam-1', { questionsHidden: true })],
               },
             ],
@@ -1031,7 +1031,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             rules: [
               {
-                ...makeMainRule(),
+                ...makeDefaultRule(),
                 prairietestExams: [
                   ptExam('pt-exam-1', { questionsHidden: true, scoreHidden: true }),
                 ],
@@ -1050,7 +1050,7 @@ describe('resolveAccessControl', () => {
             ...baseInput,
             authzMode: 'Exam',
             rules: [
-              { ...makeMainRule(), prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] },
+              { ...makeDefaultRule(), prairietestExams: [ptExam('pt-exam-1', { readOnly: true })] },
             ],
             prairieTestReservations: [validReservation],
           });
@@ -1071,7 +1071,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             rules: [
               {
-                ...makeMainRule({
+                ...makeDefaultRule({
                   afterComplete: {
                     questions: { hidden: true },
                     score: { hidden: true },
@@ -1092,7 +1092,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             rules: [
               {
-                ...makeMainRule({
+                ...makeDefaultRule({
                   afterComplete: { questions: { hidden: true }, score: { hidden: true } },
                 }),
                 prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
@@ -1113,7 +1113,7 @@ describe('resolveAccessControl', () => {
       describe('deferred at-home release (grading disabled during exam)', () => {
         const atHomeVisibleDate = '2025-04-01T00:00:00Z';
         const ruleWithDeferredRelease = {
-          ...makeMainRule({
+          ...makeDefaultRule({
             afterComplete: {
               questions: { hidden: true, visibleFromDate: atHomeVisibleDate },
               score: { hidden: true, visibleFromDate: atHomeVisibleDate },
@@ -1203,7 +1203,7 @@ describe('resolveAccessControl', () => {
       // and they can never see their work again.
       describe('real-time grading during exam, hidden after', () => {
         const ruleWithBothVisibleInExamMode = {
-          ...makeMainRule({
+          ...makeDefaultRule({
             afterComplete: { questions: { hidden: true }, score: { hidden: true } },
           }),
           prairietestExams: [ptExam('pt-exam-1')],
@@ -1250,7 +1250,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Exam',
             rules: [
               {
-                ...makeMainRule(),
+                ...makeDefaultRule(),
                 prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
               },
             ],
@@ -1268,7 +1268,7 @@ describe('resolveAccessControl', () => {
             authzMode: 'Public',
             rules: [
               {
-                ...makeMainRule({
+                ...makeDefaultRule({
                   afterComplete: { questions: { hidden: true }, score: { hidden: true } },
                 }),
                 prairietestExams: [ptExam('pt-exam-1', { readOnly: true })],
@@ -1295,7 +1295,10 @@ describe('resolveAccessControl', () => {
         const result = resolveAccessControl({
           ...baseInput,
           rules: [
-            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
+            {
+              ...makeDefaultRule({ beforeRelease: { listed: true } }),
+              prairietestExams: [ptExam1],
+            },
           ],
         });
         expect(result.authorized).toBe(false);
@@ -1309,7 +1312,10 @@ describe('resolveAccessControl', () => {
           ...baseInput,
           authzMode: 'Exam',
           rules: [
-            { ...makeMainRule({ beforeRelease: { listed: true } }), prairietestExams: [ptExam1] },
+            {
+              ...makeDefaultRule({ beforeRelease: { listed: true } }),
+              prairietestExams: [ptExam1],
+            },
           ],
           prairieTestReservations: [
             { examUuid: 'other-exam', accessEnd: new Date('2025-04-01T00:00:00Z') },
@@ -1328,7 +1334,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Public',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
@@ -1348,7 +1354,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
@@ -1373,7 +1379,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
                   due: { date: '2025-02-01T00:00:00Z' },
@@ -1398,7 +1404,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 dateControl: {
                   release: { date: '2025-06-01T00:00:00Z' },
                   due: { date: '2025-07-01T00:00:00Z' },
@@ -1428,7 +1434,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Public',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 beforeRelease: { listed: true },
                 dateControl: { release: { date: '2025-04-01T00:00:00Z' } },
               }),
@@ -1453,7 +1459,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           rules: [
             {
-              ...makeMainRule({ beforeRelease: { listed: true } }),
+              ...makeDefaultRule({ beforeRelease: { listed: true } }),
               prairietestExams: [ptExam1],
             },
           ],
@@ -1475,7 +1481,7 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           rules: [
             {
-              ...makeMainRule({
+              ...makeDefaultRule({
                 beforeRelease: { listed: true },
                 dateControl: {
                   release: { date: '2025-01-01T00:00:00Z' },
@@ -1498,7 +1504,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -1515,7 +1521,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-03-15T12:30:00Z' },
@@ -1559,7 +1565,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-03-15T12:00:20Z' },
@@ -1577,7 +1583,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: { due: { date: '2025-04-01T00:00:00Z' } },
           }),
         ],
@@ -1590,7 +1596,7 @@ describe('resolveAccessControl', () => {
     it('hides questions by default when questions.hidden is not set', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({})],
+        rules: [makeDefaultRule({})],
       });
       expect(result.showClosedAssessment).toBe(false);
     });
@@ -1599,7 +1605,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: { questions: { hidden: false } },
           }),
         ],
@@ -1610,7 +1616,7 @@ describe('resolveAccessControl', () => {
     it('still shows score by default when afterComplete is undefined', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({})],
+        rules: [makeDefaultRule({})],
       });
       expect(result.showClosedAssessmentScore).toBe(true);
     });
@@ -1619,7 +1625,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: { questions: { hidden: true } },
           }),
         ],
@@ -1631,7 +1637,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: {
               questions: {
                 hidden: true,
@@ -1649,7 +1655,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: {
               questions: {
                 hidden: true,
@@ -1668,7 +1674,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: { score: { hidden: true } },
           }),
         ],
@@ -1680,7 +1686,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: {
               score: {
                 hidden: true,
@@ -1697,14 +1703,14 @@ describe('resolveAccessControl', () => {
     it('hides questions when a merged main + override produces visible-questions + hidden-score', () => {
       // Per-rule validation forbids `score.hidden: true` alongside
       // `questions.hidden: false` on a single rule, but merging is independent
-      // per sub-object: a main rule that only sets `questions` combined with
+      // per sub-object: a default rule that only sets `questions` combined with
       // an override that only sets `score` can yield the forbidden pair.
       // The resolver must clamp to "hide questions" rather than show answers
       // without a score.
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             afterComplete: { questions: { hidden: false } },
           }),
           makeOverrideRule(
@@ -1724,7 +1730,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -1740,7 +1746,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               due: { date: '2025-03-10T00:00:00Z' },
             },
@@ -1762,7 +1768,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-15T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
@@ -1784,7 +1790,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-03T00:00:00Z' },
               earlyDeadlines: [
@@ -1804,7 +1810,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-15T00:00:00Z' },
               due: { date: '2025-03-20T00:00:00Z' },
@@ -1824,7 +1830,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               earlyDeadlines: [
@@ -1850,7 +1856,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-03-20T00:00:00Z' },
@@ -1873,7 +1879,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               afterLastDeadline: { credit: 50, allowSubmissions: true },
@@ -1894,7 +1900,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
@@ -1911,7 +1917,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               lateDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 50 }],
@@ -1929,7 +1935,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
@@ -1946,7 +1952,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               earlyDeadlines: [{ date: '2025-04-01T00:00:00Z', credit: 120 }],
@@ -1961,7 +1967,7 @@ describe('resolveAccessControl', () => {
 
     it('resolves bonus+reduced declining credit without dueDate', () => {
       // Migrated from: [{ credit: 120, endDate: '2025-03-10' }, { credit: 50, endDate: '2025-04-01' }]
-      const rule = makeMainRule({
+      const rule = makeDefaultRule({
         dateControl: {
           release: { date: '2025-03-01T00:00:00Z' },
           earlyDeadlines: [{ date: '2025-03-10T00:00:00Z', credit: 120 }],
@@ -1996,7 +2002,7 @@ describe('resolveAccessControl', () => {
     it('shows before release when beforeRelease.listed set without dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({ beforeRelease: { listed: true } })],
+        rules: [makeDefaultRule({ beforeRelease: { listed: true } })],
       });
       // Supported use case: instructor lists every assessment a student will
       // take over the term, perpetually "coming soon" until dates are added.
@@ -2012,7 +2018,7 @@ describe('resolveAccessControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
-          makeMainRule({
+          makeDefaultRule({
             beforeRelease: { listed: true },
             dateControl: {
               due: { date: '2025-04-01T00:00:00Z' },
@@ -2029,7 +2035,7 @@ describe('resolveAccessControl', () => {
     it('does not show before release without beforeRelease.listed and no dateControl', () => {
       const result = resolveAccessControl({
         ...baseInput,
-        rules: [makeMainRule({})],
+        rules: [makeDefaultRule({})],
       });
       expect(result.authorized).toBe(false);
       expect(result.showBeforeRelease).toBe(false);
@@ -2038,7 +2044,7 @@ describe('resolveAccessControl', () => {
 });
 
 describe('mergeRules', () => {
-  it('returns main rule when override is null', () => {
+  it('returns default rule when override is null', () => {
     const main = toRuntime({ beforeRelease: { listed: true } });
     expect(mergeRules(main, null)).toEqual(main);
   });
@@ -2052,7 +2058,7 @@ describe('mergeRules', () => {
     expect(result.dateControl?.password).toBe('secret');
   });
 
-  it('does not mutate main rule', () => {
+  it('does not mutate default rule', () => {
     const main = toRuntime({
       dateControl: { due: { date: '2025-04-01T00:00:00Z' } },
     });
@@ -2087,7 +2093,7 @@ describe('mergeRules', () => {
     expect(result.afterComplete?.score?.hidden).toBe(true);
   });
 
-  it('allows override to clear main rule after-complete dates', () => {
+  it('allows override to clear default rule after-complete dates', () => {
     const result = mergeRules(
       toRuntime({
         afterComplete: {
@@ -2321,7 +2327,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z', credit: 80 },
@@ -2339,7 +2345,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z', credit: 80 },
@@ -2360,7 +2366,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z', credit: 80 },
@@ -2382,7 +2388,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-01-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z', credit: 120 },
@@ -2403,7 +2409,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z', credit: 80 },
@@ -2421,7 +2427,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: '2025-04-01T00:00:00Z' },
@@ -2437,7 +2443,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: null, credit: 50 },
@@ -2457,7 +2463,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-03-01T00:00:00Z' },
             due: { date: null, credit: 0 },
@@ -2474,7 +2480,7 @@ describe('custom due credit', () => {
 
   it('applies afterLastDeadline after early deadlines when no due date is set', () => {
     const rules = [
-      makeMainRule({
+      makeDefaultRule({
         dateControl: {
           release: { date: '2025-01-01T00:00:00Z' },
           earlyDeadlines: [{ date: '2025-02-01T00:00:00Z', credit: 120 }],
@@ -2504,7 +2510,7 @@ describe('custom due credit', () => {
     const result = resolveAccessControl({
       ...baseInput,
       rules: [
-        makeMainRule({
+        makeDefaultRule({
           dateControl: {
             release: { date: '2025-01-01T00:00:00Z' },
             due: { date: null },
@@ -2521,7 +2527,7 @@ describe('custom due credit', () => {
 
   it('honors early deadlines with null due date, then applies default credit indefinitely', () => {
     const rules = [
-      makeMainRule({
+      makeDefaultRule({
         dateControl: {
           release: { date: '2025-01-01T00:00:00Z' },
           due: { date: null },
