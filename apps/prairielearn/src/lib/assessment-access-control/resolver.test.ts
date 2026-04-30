@@ -1981,7 +1981,6 @@ describe('resolveAccessControl', () => {
       });
       expect(after).toMatchObject({ credit: 100, submittable: true, creditDateString: '100%' });
     });
-
   });
 
   // Regression: deny / coming-soon returns previously dropped the precomputed
