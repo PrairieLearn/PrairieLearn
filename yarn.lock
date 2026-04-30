@@ -521,6 +521,53 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-kms@npm:^3.1023.0":
+  version: 3.1024.0
+  resolution: "@aws-sdk/client-kms@npm:3.1024.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": "npm:5.2.0"
+    "@aws-crypto/sha256-js": "npm:5.2.0"
+    "@aws-sdk/core": "npm:^3.973.26"
+    "@aws-sdk/credential-provider-node": "npm:^3.972.29"
+    "@aws-sdk/middleware-host-header": "npm:^3.972.8"
+    "@aws-sdk/middleware-logger": "npm:^3.972.8"
+    "@aws-sdk/middleware-recursion-detection": "npm:^3.972.9"
+    "@aws-sdk/middleware-user-agent": "npm:^3.972.28"
+    "@aws-sdk/region-config-resolver": "npm:^3.972.10"
+    "@aws-sdk/types": "npm:^3.973.6"
+    "@aws-sdk/util-endpoints": "npm:^3.996.5"
+    "@aws-sdk/util-user-agent-browser": "npm:^3.972.8"
+    "@aws-sdk/util-user-agent-node": "npm:^3.973.14"
+    "@smithy/config-resolver": "npm:^4.4.13"
+    "@smithy/core": "npm:^3.23.13"
+    "@smithy/fetch-http-handler": "npm:^5.3.15"
+    "@smithy/hash-node": "npm:^4.2.12"
+    "@smithy/invalid-dependency": "npm:^4.2.12"
+    "@smithy/middleware-content-length": "npm:^4.2.12"
+    "@smithy/middleware-endpoint": "npm:^4.4.28"
+    "@smithy/middleware-retry": "npm:^4.4.46"
+    "@smithy/middleware-serde": "npm:^4.2.16"
+    "@smithy/middleware-stack": "npm:^4.2.12"
+    "@smithy/node-config-provider": "npm:^4.3.12"
+    "@smithy/node-http-handler": "npm:^4.5.1"
+    "@smithy/protocol-http": "npm:^5.3.12"
+    "@smithy/smithy-client": "npm:^4.12.8"
+    "@smithy/types": "npm:^4.13.1"
+    "@smithy/url-parser": "npm:^4.2.12"
+    "@smithy/util-base64": "npm:^4.3.2"
+    "@smithy/util-body-length-browser": "npm:^4.2.2"
+    "@smithy/util-body-length-node": "npm:^4.2.3"
+    "@smithy/util-defaults-mode-browser": "npm:^4.3.44"
+    "@smithy/util-defaults-mode-node": "npm:^4.2.48"
+    "@smithy/util-endpoints": "npm:^3.3.3"
+    "@smithy/util-middleware": "npm:^4.2.12"
+    "@smithy/util-retry": "npm:^4.2.13"
+    "@smithy/util-utf8": "npm:^4.2.2"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/b9ff49a38ce107d5351fd115f2cad98e8ca520502c315638ccfcc3dba690a0d03c5652f87ebf70e0b7706ddfa4c7aadbc5c82a32b1e58d86675f779945b109e7
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-s3@npm:^3.1023.0":
   version: 3.1024.0
   resolution: "@aws-sdk/client-s3@npm:3.1024.0"
@@ -4875,6 +4922,7 @@ __metadata:
   resolution: "@prairielearn/config@workspace:packages/config"
   dependencies:
     "@aws-sdk/client-ec2": "npm:^3.1023.0"
+    "@aws-sdk/client-kms": "npm:^3.1023.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.1023.0"
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
@@ -5395,6 +5443,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.13.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -7803,9 +7852,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^0.7.3":
-  version: 0.7.3
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.7.3"
+"@reteps/tree-sitter-htmlmustache@npm:^0.9.3":
+  version: 0.9.3
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.9.3"
   dependencies:
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
@@ -7815,17 +7864,20 @@ __metadata:
   peerDependencies:
     node-addon-api: ^8.2.2
     node-gyp-build: ^4.8.2
+    prettier: ^3.0.0
     tree-sitter: ^0.25.0
   peerDependenciesMeta:
     node-addon-api:
       optional: true
     node-gyp-build:
       optional: true
+    prettier:
+      optional: true
     tree-sitter:
       optional: true
   bin:
     htmlmustache: cli/out/main.js
-  checksum: 10c0/049ea83dde7335fcf026a7b731685edfb8bb3758f37548fdbcb6fb47ea4ecda8b4262e628a3fd7c309f8026066e4ee23910af3749fb4dc2ddb38c436a7b88c0a
+  checksum: 10c0/e38bb19d24098ca3097205453d48320b2daad9fcf09b4cc62355e7900c907581013d2107a69bbeea07f4abc9c23816c0934b762f2331354c8f72d8abe7b6090f
   languageName: node
   linkType: hard
 
@@ -19402,7 +19454,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.7.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.1.2"
