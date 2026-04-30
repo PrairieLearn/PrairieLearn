@@ -92,12 +92,18 @@ export interface AccessControlResolverInput {
 }
 
 export interface AccessControlResolverResult {
+  /** Whether the student is authorized to access the assessment. */
   authorized: boolean;
   credit: number | null;
   creditDateString: string | null;
   timeLimitMin: number | null;
   password: string | null;
-  active: boolean;
+  /**
+   * Whether the student can currently submit work.
+   * `authorized: true, submittable: false` is the review-only state.
+   * Translates to the legacy `authz_result.active` field.
+   */
+  submittable: boolean;
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
   /**
@@ -133,7 +139,7 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   creditDateString: 'None',
   timeLimitMin: null,
   password: null,
-  active: false,
+  submittable: false,
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
   examAccessEnd: null,
@@ -148,7 +154,7 @@ const STAFF_OVERRIDE_RESULT: AccessControlResolverResult = {
   creditDateString: '100% (Staff override)',
   timeLimitMin: null,
   password: null,
-  active: true,
+  submittable: true,
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
   examAccessEnd: null,
@@ -329,11 +335,11 @@ export function formatDateShort(date: Date, timezone: string): string {
 
 function formatCreditDateString(
   credit: number,
-  active: boolean,
+  submittable: boolean,
   nextDeadlineDate: Date | null,
   displayTimezone: string,
 ): string {
-  if (credit <= 0 || !active) return 'None';
+  if (credit <= 0 || !submittable) return 'None';
   if (nextDeadlineDate) {
     return `${credit}% until ${formatDateShort(nextDeadlineDate, displayTimezone)}`;
   }
@@ -401,14 +407,14 @@ export function resolveAccessControl(
 
     const reservation = prairieTestReservations.find((r) => r.examUuid === matched.uuid)!;
     const examVisibility = computePrairieTestVisibility(matched);
-    const active = !matched.readOnly;
+    const submittable = !matched.readOnly;
     return {
       authorized: true,
       credit: 100,
-      creditDateString: formatCreditDateString(100, active, null, displayTimezone),
+      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
       timeLimitMin: null,
       password: null,
-      active,
+      submittable,
       ...examVisibility,
       examAccessEnd: reservation.accessEnd,
       ...grantedDefaults,
@@ -454,7 +460,7 @@ export function resolveAccessControl(
       authzMode,
     ),
     password: rule.dateControl?.password ?? null,
-    active: submittable,
+    submittable,
     ...visibility,
     examAccessEnd: null,
     ...grantedDefaults,
