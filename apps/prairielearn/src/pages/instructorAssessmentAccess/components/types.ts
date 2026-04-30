@@ -384,13 +384,16 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false).
+  // (questions.hidden: true, score.hidden: false) AND there is a
+  // completion mechanism (dateControl or PrairieTest). Without one,
+  // after-complete settings are meaningless and would fail validation.
+  const hasCompletionMechanism = rule.dateControlEnabled || rule.prairieTestExams.length > 0;
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
@@ -414,7 +417,10 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   return output;
 }
 
-function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
+function overrideToJson(
+  rule: OverrideData,
+  hasCompletionMechanism: boolean,
+): AccessControlJsonWithId {
   // Override rules always emit a `labels` array (possibly empty); only main
   // rules omit the key. An empty array means the rule targets zero students
   // (e.g. every label it used to reference was deleted) and is still a
@@ -454,7 +460,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     if (of.has('password')) output.dateControl.password = rule.password;
   }
 
-  if (of.has('questionVisibility') || of.has('scoreVisibility')) {
+  if (hasCompletionMechanism && (of.has('questionVisibility') || of.has('scoreVisibility'))) {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
       const qv = rule.questionVisibility;
@@ -486,7 +492,12 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map((o) => overrideToJson(o))];
+  const hasCompletionMechanism =
+    formData.mainRule.dateControlEnabled || formData.mainRule.prairieTestExams.length > 0;
+  return [
+    mainRuleToJson(formData.mainRule),
+    ...formData.overrides.map((o) => overrideToJson(o, hasCompletionMechanism)),
+  ];
 }
 
 export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
