@@ -110,7 +110,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
 
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
-    ) -> Generator[tuple[int, str], None, None]:
+    ) -> Generator[tuple[int, str]]:
         """
         Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
         Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"

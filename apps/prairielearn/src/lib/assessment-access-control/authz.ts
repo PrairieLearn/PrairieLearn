@@ -48,7 +48,9 @@ function resolverResultToAuthzAssessment(
     credit_date_string: result.creditDateString,
     time_limit_min: result.timeLimitMin,
     password: result.password,
-    active: result.active,
+    // The resolver uses `submittable` (can the student submit work?
+    // the legacy field name is `active`, we map it to the legacy name.
+    active: result.submittable,
     show_closed_assessment: result.showClosedAssessment,
     show_closed_assessment_score: result.showClosedAssessmentScore,
     exam_access_end: result.examAccessEnd,
