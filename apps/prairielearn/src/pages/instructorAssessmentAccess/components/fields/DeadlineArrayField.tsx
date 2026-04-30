@@ -578,8 +578,8 @@ export function OverrideDeadlineArrayField({
     >
       {fields.length === 0 && (
         <Alert variant="info" className="py-2 mb-0">
-          With no {type} deadlines set, this override clears any {type} deadlines inherited from
-          the defaults or earlier overrides. Click "Remove override" to inherit them instead.
+          With no {type} deadlines set, this override clears any {type} deadlines inherited from the
+          defaults or earlier overrides. Click "Remove override" to inherit them instead.
         </Alert>
       )}
       <DeadlineArrayInput
