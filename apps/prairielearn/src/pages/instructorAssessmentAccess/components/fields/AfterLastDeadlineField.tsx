@@ -154,7 +154,10 @@ function AfterLastDeadlineInput({
     }
   };
 
-  const noDueDateError = dueDate == null && mode !== 'no_submissions';
+  const noDueDateError =
+    dueDate == null && mode !== 'no_submissions'
+      ? 'After last deadline requires a due date'
+      : undefined;
 
   return (
     <Form.Group>
@@ -166,14 +169,10 @@ function AfterLastDeadlineInput({
           aria-label="After last deadline"
           id={`${idPrefix}-after-deadline-mode`}
           minWidth={300}
+          errorMessage={noDueDateError}
           onChange={handleModeChange}
         />
       </div>
-      {noDueDateError && (
-        <Form.Text className="text-danger d-block" role="alert">
-          After last deadline requires a due date
-        </Form.Text>
-      )}
       {mode === 'partial_credit' && (
         <div className="mt-2">
           <InputGroup>

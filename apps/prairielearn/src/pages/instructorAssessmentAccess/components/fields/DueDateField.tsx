@@ -155,15 +155,13 @@ function DueDateInput({
             value={value.date}
             onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
-          {dateError && (
-            <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger" role="alert">
-              {dateError}
-            </Form.Text>
-          )}
-          {!dateError && value.date && (
-            <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>
-          )}
+          {!dateError && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
         </>
+      )}
+      {dateError && (
+        <Form.Text id={`${idPrefix}-due-date-error`} className="text-danger d-block" role="alert">
+          {dateError}
+        </Form.Text>
       )}
       <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
         {!value.customCredit ? (
