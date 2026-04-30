@@ -28,6 +28,7 @@ export type AccessControlIssuePath =
   | ['dateControl', 'lateDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'credit']
   | ['dateControl', 'afterLastDeadline', 'credit']
+  | ['afterComplete', 'questions']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
   | ['afterComplete', 'score', 'visibleFromDate'];
@@ -529,6 +530,73 @@ export function validateGlobalCreditConsistencyIssues(
         ['dateControl', 'afterLastDeadline', 'credit'],
         `After-last-deadline credit (${afterLastDeadline.credit}%) must not exceed the maximum possible due-date credit (${maxDueCredit}%).`,
       );
+    }
+  }
+
+  return issues;
+}
+
+interface EffectiveAfterCompleteQuestions {
+  hidden: boolean;
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
+}
+interface EffectiveAfterCompleteScore {
+  hidden: boolean;
+  visibleFromDate?: string;
+}
+
+function resolveEffectiveAfterComplete(
+  rule: AccessControlJson,
+  mainRule: AccessControlJson | undefined,
+): { questions: EffectiveAfterCompleteQuestions; score: EffectiveAfterCompleteScore } {
+  const ruleAc = rule.afterComplete;
+  const mainAc = mainRule?.afterComplete;
+  // Defaults: questions hidden, score visible. An override that doesn't
+  // include questions/score inherits the main rule's effective value.
+  const questions = ruleAc?.questions ?? mainAc?.questions ?? { hidden: true };
+  const score = ruleAc?.score ?? mainAc?.score ?? { hidden: false };
+  return { questions, score };
+}
+
+function getAfterCompleteCrossFieldMessage(
+  questions: EffectiveAfterCompleteQuestions,
+  score: EffectiveAfterCompleteScore,
+): string | null {
+  if (score.hidden && !questions.hidden) {
+    return 'Score cannot be hidden while questions are visible. Choose "Show score after completion" or hide questions too.';
+  }
+  if (!questions.hidden || questions.visibleFromDate === undefined) return null;
+  if (!score.hidden) return null;
+  if (score.visibleFromDate === undefined) {
+    return 'Score must become visible by the time questions do. Choose "Show score after completion" or "Hide score until date" with a date on or before the questions show date.';
+  }
+  if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
+    return 'Show score date must be on or before the show questions date.';
+  }
+  return null;
+}
+
+/**
+ * Cross-field afterComplete validation. Checks that the effective
+ * questions/score visibility is internally consistent, including for overrides
+ * that only override one of the two fields (the inherited side is resolved
+ * against the main rule). The error is reported on the questions field; the
+ * score field is treated as the trailing dependency in the relationship.
+ */
+export function validateAfterCompleteCrossFieldIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const mainRule = validationRules.find((vr) => vr.targetType === 'none')?.rule;
+
+  for (const validationRule of validationRules) {
+    const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, mainRule);
+    const message = getAfterCompleteCrossFieldMessage(questions, score);
+    if (message) {
+      pushIssue(issues, validationRule, ['afterComplete', 'questions'], message);
     }
   }
 

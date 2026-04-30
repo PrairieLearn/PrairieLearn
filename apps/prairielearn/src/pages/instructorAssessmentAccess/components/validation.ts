@@ -1,6 +1,7 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateAfterCompleteCrossFieldIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateRuleDateOrderingIssues,
@@ -17,6 +18,7 @@ export type AccessControlFormFieldPath =
   | `mainRule.lateDeadlines.${number}.date`
   | `mainRule.lateDeadlines.${number}.credit`
   | 'mainRule.afterLastDeadline.credit'
+  | 'mainRule.questionVisibility'
   | 'mainRule.questionVisibility.visibleFromDate'
   | 'mainRule.questionVisibility.visibleUntilDate'
   | 'mainRule.scoreVisibility.visibleFromDate'
@@ -27,6 +29,7 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
+  | `overrides.${number}.questionVisibility`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
   | `overrides.${number}.scoreVisibility.visibleFromDate`;
@@ -66,6 +69,9 @@ function mapIssueToFormFieldPath(
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
+        if (issue.path.length === 2) {
+          return `${prefix}.questionVisibility`;
+        }
         switch (issue.path[2]) {
           case 'visibleFromDate':
             return `${prefix}.questionVisibility.visibleFromDate`;
@@ -103,6 +109,7 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   for (const issues of [
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
+    validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);
