@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 5.0.5
+
+### Patch Changes
+
+- 9aa950a: Upgrade Sentry dependencies
+
 ## 5.0.4
 
 ### Patch Changes
