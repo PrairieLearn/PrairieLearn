@@ -212,12 +212,13 @@ function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
 // Visibility helpers (afterComplete, listBeforeRelease)
 // ---------------------------------------------------------------------------
 
-function buildAfterComplete(
-  rules: AssessmentAccessRuleJson[],
-): AccessControlJsonInput['afterComplete'] | undefined {
+function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  notes: string[];
+} {
   const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
   const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
-  if (!hidesAssessment && !hidesScore) return undefined;
+  if (!hidesAssessment && !hidesScore) return { afterComplete: undefined, notes: [] };
 
   const result: AccessControlJsonInput['afterComplete'] = {};
   if (hidesAssessment) result.questions = { hidden: true };
@@ -246,7 +247,26 @@ function buildAfterComplete(
     }
   }
 
-  return result;
+  // Enforce that questions cannot become visible while the score is still
+  // hidden. If the legacy rules revealed questions before the score, push
+  // questions' reveal forward to match the score's reveal date.
+  const notes: string[] = [];
+  const questionsFrom = result.questions?.visibleFromDate;
+  const scoreFrom = result.score?.visibleFromDate;
+  if (
+    result.questions?.hidden === true &&
+    result.score?.hidden === true &&
+    questionsFrom &&
+    scoreFrom &&
+    scoreFrom > questionsFrom
+  ) {
+    result.questions!.visibleFromDate = scoreFrom;
+    notes.push(
+      `Questions reveal date pushed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
+    );
+  }
+
+  return { afterComplete: result, notes };
 }
 
 function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
@@ -266,10 +286,11 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
 function applyVisibilityMigration(
   result: AccessControlJsonInput,
   rules: AssessmentAccessRuleJson[],
-): void {
-  const afterComplete = buildAfterComplete(rules);
+): { notes: string[] } {
+  const { afterComplete, notes } = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
   if (shouldListBeforeRelease(rules)) result.beforeRelease = { listed: true };
+  return { notes };
 }
 
 // ---------------------------------------------------------------------------
@@ -758,7 +779,8 @@ export function migrateAllowAccess(
   }
 
   // Apply visibility.
-  applyVisibilityMigration(result, schedulingRules);
+  const { notes: visibilityNotes } = applyVisibilityMigration(result, schedulingRules);
+  notes.push(...visibilityNotes);
 
   // Merge PrairieTest integrations.
   if (ptExtract) {

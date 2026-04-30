@@ -521,12 +521,14 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
           afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-07-01' },
+            questions: { hidden: true, visibleFromDate: '2024-09-01' },
             score: { hidden: true, visibleFromDate: '2024-09-01' },
           },
         },
         errors: [],
-        notes: [],
+        notes: [
+          'Questions reveal date pushed from 2024-07-01 to 2024-09-01 so questions do not become visible while the score is still hidden.',
+        ],
         hasUidRules: false,
       },
     },
