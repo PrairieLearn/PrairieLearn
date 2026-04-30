@@ -326,18 +326,21 @@ export function MainDueDateField({
           const overrideHasOwnDueDate =
             override.overriddenFields.includes('due') && override.due.date != null;
           if (overrideHasOwnDueDate) return;
-          setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
-          setValue(
-            `overrides.${i}.afterLastDeadline`,
-            { allowSubmissions: false },
-            { shouldDirty: true },
-          );
-          const cleared = override.overriddenFields.filter(
+          const removed = override.overriddenFields.filter(
             (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',
           );
-          if (cleared.length !== override.overriddenFields.length) {
-            setValue(`overrides.${i}.overriddenFields`, cleared, { shouldDirty: true });
+          if (removed.length === override.overriddenFields.length) return;
+          if (override.overriddenFields.includes('lateDeadlines')) {
+            setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
           }
+          if (override.overriddenFields.includes('afterLastDeadline')) {
+            setValue(
+              `overrides.${i}.afterLastDeadline`,
+              { allowSubmissions: false },
+              { shouldDirty: true },
+            );
+          }
+          setValue(`overrides.${i}.overriddenFields`, removed, { shouldDirty: true });
         });
       }
     }
