@@ -356,7 +356,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.release.date) output.dateControl.release = { date: rule.release.date };
-    output.dateControl.due = buildDueJson(rule.due);
+    // Omit `due` on the main rule when no date is set and no custom credit is
+    // applied — it would just emit `{ date: null }`, which is semantically
+    // equivalent to "no due configured".
+    if (rule.due.date !== null || rule.due.customCredit) {
+      output.dateControl.due = buildDueJson(rule.due);
+    }
     if (rule.earlyDeadlines.length > 0) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
