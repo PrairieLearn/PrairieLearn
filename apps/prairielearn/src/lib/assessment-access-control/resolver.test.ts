@@ -922,6 +922,27 @@ describe('resolveAccessControl', () => {
         reservations: [validReservation],
         expect: { authorized: true, credit: 100, submittable: false, creditDateString: 'None' },
       },
+      {
+        // The date-control timeline is irrelevant under a PT grant: the PT
+        // reservation governs access, so the student popover shouldn't show
+        // a date-control timeline at all.
+        name: 'PT grant clears the date-control access timeline',
+        rules: [
+          makeMainRule(
+            {
+              dateControl: {
+                release: { date: '2025-01-01T00:00:00Z' },
+                due: { date: '2025-02-01T00:00:00Z' },
+                afterLastDeadline: { credit: 50, allowSubmissions: true },
+              },
+            },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
+          ),
+        ],
+        authzMode: 'Exam',
+        reservations: [validReservation],
+        expect: { authorized: true, submittable: true, accessTimeline: [] },
+      },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
     });
