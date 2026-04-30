@@ -5,6 +5,11 @@ import type { FieldErrors } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+} from '../../../lib/assessment-access-control/timeline.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -35,6 +40,79 @@ interface DateTableRow {
   label: string;
   credit: string;
   error?: string;
+  current?: boolean;
+}
+
+/**
+ * Convert a timezone-naive datetime-local string from the form into a Date,
+ * interpreting it in the course instance's display timezone. Returns null
+ * for empty or invalid input — the form may briefly hold partial values
+ * during editing.
+ */
+function plainDateTimeStringToDate(
+  value: string | null | undefined,
+  timezone: string,
+): Date | null {
+  if (!value) return null;
+  try {
+    return new Date(
+      Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).toInstant().epochMilliseconds,
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convert main rule form data into the runtime shape consumed by
+ * `buildAccessTimeline`. Returns undefined when date control is disabled
+ * or the release date is missing/invalid — both cases short-circuit the
+ * timeline to no segments.
+ */
+function mainRuleToRuntimeDateControl(
+  rule: MainRuleData,
+  displayTimezone: string,
+): RuntimeDateControl | undefined {
+  if (!rule.dateControlEnabled) return undefined;
+  const releaseDate = plainDateTimeStringToDate(rule.release.date, displayTimezone);
+  if (!releaseDate) return undefined;
+
+  const toRuntimeDeadlines = (entries: DeadlineEntry[]) =>
+    entries
+      .map((e) => ({ date: plainDateTimeStringToDate(e.date, displayTimezone), credit: e.credit }))
+      .filter((e): e is { date: Date; credit: number } => e.date !== null)
+      .map((e) => ({ date: e.date.toISOString(), credit: e.credit }));
+
+  const early = toRuntimeDeadlines(rule.earlyDeadlines);
+  const late = toRuntimeDeadlines(rule.lateDeadlines);
+
+  return {
+    release: { date: releaseDate },
+    // `due` is always part of dateControl when enabled (mirrors mainRuleToJson).
+    // null/empty due dates collapse to "no due date" for timeline purposes.
+    due: {
+      date: plainDateTimeStringToDate(rule.due.date, displayTimezone),
+      ...(rule.due.customCredit && rule.due.credit != null ? { credit: rule.due.credit } : {}),
+    },
+    ...(early.length > 0 ? { earlyDeadlines: early } : {}),
+    ...(late.length > 0 ? { lateDeadlines: late } : {}),
+    ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
+  };
+}
+
+interface MainRuleCurrentState {
+  rdc: RuntimeDateControl | undefined;
+  segment: AccessTimelineEntry | null;
+}
+
+function getMainRuleCurrentState(
+  rule: MainRuleData,
+  displayTimezone: string,
+): MainRuleCurrentState {
+  const rdc = mainRuleToRuntimeDateControl(rule, displayTimezone);
+  if (!rdc) return { rdc: undefined, segment: null };
+  const segment = buildAccessTimeline(rdc, new Date()).find((s) => s.current) ?? null;
+  return { rdc, segment };
 }
 
 export function generateMainRuleDateTableRows(
@@ -55,6 +133,28 @@ export function generateMainRuleDateTableRows(
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
 
+  const { rdc, segment } = getMainRuleCurrentState(rule, displayTimezone);
+  const segmentEndsAt = segment?.endDate?.getTime() ?? null;
+  const isBeforeReleaseSegment = segment?.startDate === null;
+  // The trailing segment (endDate === null) is either the indefinite-due
+  // segment (when due.date is null) or the after-last-deadline segment. Only
+  // claim it for the After-last row when due has an actual date — otherwise
+  // it belongs to the "No due date" row.
+  const isAfterLastSegment =
+    segment?.endDate === null &&
+    segment.startDate !== null &&
+    rdc?.release != null &&
+    segment.startDate.getTime() !== rdc.release.date.getTime() &&
+    Boolean(dueDate);
+  // Indefinite-due segment is the trailing segment when due.date is null.
+  const isIndefiniteDueSegment = segment?.endDate === null && dueDate === null;
+
+  const isDeadlineCurrent = (formDateString: string): boolean => {
+    if (segmentEndsAt == null) return false;
+    const d = plainDateTimeStringToDate(formDateString, displayTimezone);
+    return d?.getTime() === segmentEndsAt;
+  };
+
   if (releaseDate) {
     rows.push({
       date: (
@@ -67,6 +167,7 @@ export function generateMainRuleDateTableRows(
       ),
       label: 'Release',
       credit: '—',
+      current: isBeforeReleaseSegment,
     });
   }
 
@@ -87,6 +188,7 @@ export function generateMainRuleDateTableRows(
       label: `Early ${index + 1}`,
       credit: `${deadline.credit}%`,
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+      current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
     });
   });
 
@@ -107,6 +209,7 @@ export function generateMainRuleDateTableRows(
       label: 'Due',
       credit: `${dueCredit}%`,
       error: dueError,
+      current: isDeadlineCurrent(dueDate),
     });
   } else if (dueDate === null) {
     rows.push({
@@ -114,6 +217,7 @@ export function generateMainRuleDateTableRows(
       label: 'Due',
       credit: `${dueCredit}%`,
       error: dueError,
+      current: isIndefiniteDueSegment,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
@@ -142,6 +246,7 @@ export function generateMainRuleDateTableRows(
       label: `Late ${index + 1}`,
       credit: `${deadline.credit}%`,
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+      current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
     });
   });
 
@@ -158,6 +263,7 @@ export function generateMainRuleDateTableRows(
           : 'Practice'
         : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
+      current: isAfterLastSegment,
     });
   }
 
@@ -178,16 +284,25 @@ export function generateRuleSummary(
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
 
-  // Show "before release" chip when release date is in the future.
-  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
-    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
-    const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
+  // Show a chip only when the student will see the assessment listed before
+  // they have access. Mirrors the resolver's `showBeforeRelease` logic: the
+  // listing happens when `beforeReleaseListed` is set AND either the release
+  // date is in the future or no release date is configured at all (perpetual
+  // "coming soon" until dates are added or PrairieTest grants access).
+  if (isMainRuleData(rule) && rule.beforeReleaseListed) {
+    const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
+    const releaseInFuture = releaseDate
+      ? Temporal.PlainDateTime.compare(
+          Temporal.PlainDateTime.from(releaseDate),
+          Temporal.Now.plainDateTimeISO(displayTimezone),
+        ) > 0
+      : null;
 
-    if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
+    if (releaseInFuture !== false) {
       items.push({
         key: 'before-release',
-        icon: rule.beforeReleaseListed ? 'bi-eye' : 'bi-eye-slash',
-        text: rule.beforeReleaseListed ? 'Listed before release' : 'Hidden before release',
+        icon: 'bi-eye',
+        text: releaseInFuture ? 'Listed before release' : 'Always listed',
       });
     }
   }
@@ -686,7 +801,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
         <tbody>
           {rows.map((row, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key
-            <tr key={index}>
+            <tr key={index} className={row.current ? 'table-active' : undefined}>
               <td
                 className="border-0"
                 style={{
@@ -702,6 +817,11 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
                     </span>
                   )}
                   {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+                  {row.current && (
+                    <span className="badge bg-primary-subtle text-primary-emphasis ms-2 fw-medium">
+                      Now
+                    </span>
+                  )}
                 </div>
                 {row.error && (
                   <div className="text-danger small">
@@ -717,6 +837,102 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+interface NowIndicator {
+  variant: 'success' | 'warning' | 'secondary' | 'danger';
+  icon: string;
+  text: ReactNode;
+}
+
+function buildMainRuleNowIndicator(
+  rule: MainRuleData,
+  displayTimezone: string,
+): NowIndicator | null {
+  const { rdc, segment } = getMainRuleCurrentState(rule, displayTimezone);
+
+  // Mirrors the resolver's `showBeforeRelease`: students see a "coming soon"
+  // listing when `beforeReleaseListed` is set and either no release date is
+  // configured OR the current time is before the release.
+  const listedBeforeRelease = rule.beforeReleaseListed && (!rdc || segment?.startDate === null);
+
+  if (!segment) {
+    if (listedBeforeRelease) {
+      return {
+        variant: 'warning',
+        icon: 'bi-eye',
+        text: 'Listed but not accessible',
+      };
+    }
+    return null;
+  }
+
+  const friendlyDate = (date: Date) => (
+    <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} tooltip />
+  );
+
+  if (segment.startDate === null) {
+    const opensAt = segment.endDate;
+    if (listedBeforeRelease) {
+      return {
+        variant: 'warning',
+        icon: 'bi-eye',
+        text: opensAt ? (
+          <>Listed but not accessible · opens {friendlyDate(opensAt)}</>
+        ) : (
+          'Listed but not accessible'
+        ),
+      };
+    }
+    return {
+      variant: 'secondary',
+      icon: 'bi-eye-slash',
+      text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
+    };
+  }
+
+  if (!segment.submittable) {
+    return { variant: 'danger', icon: 'bi-lock', text: 'Closed' };
+  }
+
+  if (segment.endDate) {
+    return {
+      variant: 'success',
+      icon: 'bi-unlock',
+      text: (
+        <>
+          Open · {segment.credit}% credit until {friendlyDate(segment.endDate)}
+        </>
+      ),
+    };
+  }
+  return {
+    variant: 'success',
+    icon: 'bi-unlock',
+    text: `Open · ${segment.credit}% credit`,
+  };
+}
+
+export function MainRuleNowIndicator({
+  rule,
+  displayTimezone,
+}: {
+  rule: MainRuleData;
+  displayTimezone: string;
+}) {
+  const indicator = buildMainRuleNowIndicator(rule, displayTimezone);
+  if (!indicator) return null;
+  return (
+    <div
+      className={`d-flex align-items-center gap-2 px-3 py-2 rounded mb-2 bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
+      role="status"
+    >
+      <i className={`bi ${indicator.icon}`} aria-hidden="true" />
+      <span>
+        <strong>Now:</strong> {indicator.text}
+      </span>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { useFormState } from 'react-hook-form';
 
 import {
   DateTableView,
+  MainRuleNowIndicator,
   OverrideRuleSummaryCard,
   type RuleFormErrors,
   generateMainRuleDateTableRows,
@@ -119,6 +120,8 @@ function MainRuleSummaryContent({
 
   return (
     <div>
+      <MainRuleNowIndicator rule={rule} displayTimezone={displayTimezone} />
+
       {dateTableRows.length > 0 && (
         <div className="mb-2">
           <DateTableView rows={dateTableRows} />

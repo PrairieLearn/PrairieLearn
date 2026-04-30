@@ -242,6 +242,29 @@ describe('buildAccessTimeline', () => {
       ],
     },
     {
+      name: 'pre-release with no deadlines: pre-release segment is current',
+      dateControl: {
+        release: { date: new Date('2025-04-01T00:00:00Z') },
+      },
+      currentDate: new Date('2025-03-15T00:00:00Z'),
+      expected: [
+        {
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: true,
+          submittable: false,
+        },
+        {
+          credit: 100,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: true,
+        },
+      ],
+    },
+    {
       name: 'post-due with no afterLastDeadline config: 0% non-submittable final segment',
       dateControl: {
         release: { date: new Date('2025-03-01T00:00:00Z') },
