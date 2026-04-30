@@ -9,6 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
+import type { MainRule, OverrideRule } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
@@ -382,7 +383,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
         assert.deepEqual(main.rule.beforeRelease, { listed: false });
       }));
@@ -408,10 +409,9 @@ describe('Access control syncing', () => {
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((rule) => rule.targetType === 'student_label');
-
         assert.isOk(override);
-        assert.isUndefined(override.rule.beforeRelease);
-
+        // `beforeRelease` is statically prohibited on override rule bodies, so
+        // we only need to verify the DB column was left null.
         const overrideRow = syncedRules.find((rule) => rule.target_type === 'student_label');
         assert.isOk(overrideRow);
         assert.isNull(overrideRow.before_release_listed);
@@ -1547,7 +1547,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
         assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
@@ -1574,7 +1574,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         const questions = override.rule.afterComplete?.questions;
         assert.isOk(questions);
@@ -1605,7 +1605,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.deepEqual(
           override.rule.dateControl?.due?.date,
@@ -1644,7 +1644,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
@@ -1670,7 +1670,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
         const dc = main.rule.dateControl;
         assert.isOk(dc);
@@ -1699,7 +1699,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
         assert.isUndefined(main.rule.dateControl);
       }));
@@ -1737,7 +1737,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
         const dc = main.rule.dateControl;
         assert.isOk(dc);
@@ -1798,7 +1798,7 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         const dc = override.rule.dateControl;
         assert.isOk(dc);
@@ -1829,16 +1829,11 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [
+        assert.deepEqual(main.rule.prairieTestExams, [
           { uuid: TEST_EXAM_UUID, readOnly: false, questionsHidden: false, scoreHidden: false },
         ]);
-        assert.deepEqual(main.rule.integrations, {
-          prairieTest: {
-            exams: [{ examUuid: TEST_EXAM_UUID, readOnly: false }],
-          },
-        });
       }));
 
     it('PrairieTest readOnly flag round-trips correctly', () =>
@@ -1860,16 +1855,11 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
+        const main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [
+        assert.deepEqual(main.rule.prairieTestExams, [
           { uuid: TEST_EXAM_UUID, readOnly: true, questionsHidden: false, scoreHidden: false },
         ]);
-        assert.deepEqual(main.rule.integrations, {
-          prairieTest: {
-            exams: [{ examUuid: TEST_EXAM_UUID, readOnly: true }],
-          },
-        });
       }));
 
     it('removes stale PrairieTest exam rows on re-sync', () =>
@@ -1885,17 +1875,17 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         let rules = await selectAccessControlRulesForAssessment(assessment);
-        let main = rules.find((r) => r.number === 0);
+        let main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.equal(main.rule.integrations?.prairieTest?.exams?.length, 1);
+        assert.equal(main.rule.prairieTestExams.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
         await syncRulesAndRead([makeAccessControlRule()], { courseDir });
 
         rules = await selectAccessControlRulesForAssessment(assessment);
-        main = rules.find((r) => r.number === 0);
+        main = rules.find((r): r is MainRule => r.targetType === 'none');
         assert.isOk(main);
-        assert.isUndefined(main.rule.integrations);
+        assert.equal(main.rule.prairieTestExams.length, 0);
       }));
   });
 });
