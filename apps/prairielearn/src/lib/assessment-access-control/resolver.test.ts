@@ -857,6 +857,34 @@ describe('resolveAccessControl', () => {
         reservations: [validReservation],
         expect: { authorized: true, credit: 100, active: true },
       },
+      {
+        name: 'Exam-mode grant ignores dateControl password and durationMinutes',
+        rules: [
+          makeMainRule(
+            {
+              dateControl: {
+                release: { date: '2025-01-01T00:00:00Z' },
+                due: { date: '2025-02-01T00:00:00Z' },
+                durationMinutes: 60,
+                password: 'secret',
+              },
+            },
+            { prairieTestExams: [ptExam('exam-uuid-1')] },
+          ),
+        ],
+        authzMode: 'Exam',
+        reservations: [validReservation],
+        expect: { authorized: true, password: null, timeLimitMin: null },
+      },
+      {
+        name: 'readOnly exam: creditDateString is None',
+        rules: [
+          makeMainRule({}, { prairieTestExams: [ptExam('exam-uuid-1', { readOnly: true })] }),
+        ],
+        authzMode: 'Exam',
+        reservations: [validReservation],
+        expect: { authorized: true, credit: 100, active: false, creditDateString: 'None' },
+      },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
     });
@@ -1059,7 +1087,9 @@ describe('resolveAccessControl', () => {
           {
             // Top-level afterComplete visibility has unlocked, so the resolver
             // grants a review-only path: authorized=true lets the middleware
-            // serve the page, active=false prevents submissions.
+            // serve the page, active=false prevents submissions. Pins the full
+            // result shape so a future refactor can't silently change defaults
+            // (e.g., leaking a credit string or a non-null nextActiveDate).
             name: 'at home after visible date: review-only',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Public',
@@ -1069,6 +1099,12 @@ describe('resolveAccessControl', () => {
               authorized: true,
               active: false,
               credit: 0,
+              creditDateString: 'None',
+              password: null,
+              timeLimitMin: null,
+              examAccessEnd: null,
+              showBeforeRelease: false,
+              nextActiveDate: null,
               showClosedAssessment: true,
               showClosedAssessmentScore: true,
             },
