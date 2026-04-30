@@ -1,5 +1,15 @@
 # @prairielearn/postgres-tools
 
+## 3.0.5
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [e80a5a5]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/postgres@6.0.2
+
 ## 3.0.4
 
 ### Patch Changes

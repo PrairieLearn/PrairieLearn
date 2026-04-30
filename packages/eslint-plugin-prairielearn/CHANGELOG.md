@@ -1,5 +1,16 @@
 # @prairielearn/eslint-plugin
 
+## 4.1.0
+
+### Minor Changes
+
+- 240b216: Add a new rule `@prairielearn/no-hydrate-reslocals` that forbids passing `resLocals` or `locals` (or spreading `res.locals`, `resLocals`, or `locals`) onto a component rendered inside `<Hydrate>` or passed to `hydrateHtml(...)`. All props on a hydrated component are serialized and sent to the client, so these patterns would leak the full server-side locals.
+
+### Patch Changes
+
+- aaeb317: Expand the `no-current-target-in-callback` rule to also flag `event.currentTarget` accesses after `await` in React event handlers.
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.0
 
 ### Major Changes
