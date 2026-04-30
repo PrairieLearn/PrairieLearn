@@ -197,24 +197,6 @@ export function validateRuleStructuralDependencyIssues(
     }
   }
 
-  // Constraint 5: If questions become visible at a specific time after completion
-  // while the score is otherwise hidden, the score must also be revealed by then.
-  // Otherwise students would see the questions while the score remains hidden,
-  // which contradicts the "questions visible ⊆ score visible" invariant.
-  if (
-    ac?.questions?.hidden === true &&
-    ac.questions.visibleFromDate !== undefined &&
-    ac.score?.hidden === true &&
-    ac.score.visibleFromDate === undefined
-  ) {
-    pushIssue(
-      issues,
-      validationRule,
-      ['afterComplete', 'score', 'visibleFromDate'],
-      'Score must be visible by the time questions become visible: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
-    );
-  }
-
   return issues;
 }
 
@@ -362,26 +344,6 @@ export function validateRuleDateOrderingIssues(
         );
       }
     }
-  }
-
-  // If both questions and score reveal after completion, the score must reveal
-  // first (or simultaneously) — questions cannot become visible while the score
-  // remains hidden.
-  const ac = rule.afterComplete;
-  if (
-    ac?.questions?.hidden === true &&
-    ac.questions.visibleFromDate !== undefined &&
-    ac.score?.hidden === true &&
-    ac.score.visibleFromDate !== undefined &&
-    new Date(ac.score.visibleFromDate).getTime() >
-      new Date(ac.questions.visibleFromDate).getTime()
-  ) {
-    pushIssue(
-      issues,
-      validationRule,
-      ['afterComplete', 'score', 'visibleFromDate'],
-      'Show score again date must be on or before the show questions again date (questions cannot become visible while score remains hidden).',
-    );
   }
 
   return issues;
@@ -770,6 +732,30 @@ export function validateRule(
     rule.afterComplete.questions?.hidden === false
   ) {
     errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
+  }
+
+  if (
+    rule.afterComplete?.questions?.hidden === true &&
+    rule.afterComplete.questions.visibleFromDate !== undefined &&
+    rule.afterComplete.score?.hidden === true &&
+    rule.afterComplete.score.visibleFromDate === undefined
+  ) {
+    errors.push(
+      'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
+    );
+  }
+
+  if (
+    rule.afterComplete?.questions?.hidden === true &&
+    rule.afterComplete.questions.visibleFromDate !== undefined &&
+    rule.afterComplete.score?.hidden === true &&
+    rule.afterComplete.score.visibleFromDate !== undefined &&
+    new Date(rule.afterComplete.score.visibleFromDate).getTime() >
+      new Date(rule.afterComplete.questions.visibleFromDate).getTime()
+  ) {
+    errors.push(
+      'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).',
+    );
   }
 
   errors.push(
