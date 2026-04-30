@@ -14,7 +14,7 @@ const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
   beforeReleaseListed: true,
   dateControlEnabled: true,
-  release: { date: '2025-03-01T00:00:00Z' },
+  release: { date: '2025-03-01T00:00:00Z', released: true },
   due: { date: '2025-04-01T00:00:00Z', credit: null, customCredit: false },
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
@@ -34,7 +34,7 @@ const baseOverride: OverrideData = {
     studentLabels: [],
   },
   overriddenFields: [],
-  release: { date: null },
+  release: { date: null, released: true },
   due: { date: null, credit: null, customCredit: false },
   earlyDeadlines: [],
   lateDeadlines: [],
@@ -53,6 +53,27 @@ describe('jsonToMainRuleFormData', () => {
   it('defaults release.date to null when dateControl is not configured', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
     expect(mainRule.release.date).toBeNull();
+  });
+
+  it('defaults release.released to true for unconfigured release', () => {
+    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+    expect(mainRule.release.released).toBe(true);
+  });
+
+  it('initializes release.released = true when stored date is in the past', () => {
+    const mainRule = jsonToMainRuleFormData(
+      { dateControl: { release: { date: '2000-01-01T00:00:00Z' }, due: { date: null } } },
+      TEST_TIMEZONE,
+    );
+    expect(mainRule.release.released).toBe(true);
+  });
+
+  it('initializes release.released = false when stored date is far in the future', () => {
+    const mainRule = jsonToMainRuleFormData(
+      { dateControl: { release: { date: '2099-01-01T00:00:00Z' }, due: { date: null } } },
+      TEST_TIMEZONE,
+    );
+    expect(mainRule.release.released).toBe(false);
   });
 
   it('defaults hidden to true for questions when afterComplete is not configured', () => {
@@ -87,6 +108,15 @@ describe('formDataToJson', () => {
     const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
 
     expect(mainRule.beforeReleaseListed).toBe(false);
+  });
+
+  it('does not emit the UI-only release.released flag to JSON', () => {
+    const result = formDataToJson({
+      mainRule: { ...defaultMainRule, release: { date: '2099-01-01T00:00:00Z', released: true } },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.release).toEqual({ date: '2099-01-01T00:00:00Z' });
   });
 
   it('omits default score visibility when only main-rule question visibility is non-default', () => {

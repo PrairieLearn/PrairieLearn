@@ -54,19 +54,23 @@ export function generateMainRuleDateTableRows(
 
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
+  const releaseDateError = formErrors?.release?.date?.message;
 
-  if (releaseDate) {
+  if (releaseDate || releaseDateError) {
     rows.push({
-      date: (
+      date: releaseDate ? (
         <FriendlyDate
           date={Temporal.PlainDateTime.from(releaseDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
           tooltip
         />
+      ) : (
+        'No date set'
       ),
       label: 'Release',
       credit: '—',
+      error: releaseDateError,
     });
   }
 
@@ -415,6 +419,7 @@ function generateOverrideFieldItems(
       ) : (
         'Not released'
       ),
+      error: formErrors?.release?.date?.message,
     });
   }
 

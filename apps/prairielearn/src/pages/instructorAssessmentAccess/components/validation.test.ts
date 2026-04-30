@@ -3,13 +3,18 @@ import { describe, expect, it } from 'vitest';
 import type { AccessControlFormData } from './types.js';
 import { getGlobalDateValidationErrors } from './validation.js';
 
-function makeFormData(overrides: AccessControlFormData['overrides']): AccessControlFormData {
+const TEST_TIMEZONE = 'America/Chicago';
+
+function makeFormData(
+  overrides: AccessControlFormData['overrides'],
+  mainRuleOverrides: Partial<AccessControlFormData['mainRule']> = {},
+): AccessControlFormData {
   return {
     mainRule: {
       trackingId: 'main',
       beforeReleaseListed: false,
       dateControlEnabled: true,
-      release: { date: '2024-04-07T00:00:00' },
+      release: { date: '2024-04-07T00:00:00', released: true },
       due: { date: '2024-04-10T00:00:00', credit: null, customCredit: false },
       earlyDeadlines: [],
       lateDeadlines: [],
@@ -19,6 +24,7 @@ function makeFormData(overrides: AccessControlFormData['overrides']): AccessCont
       prairieTestExams: [],
       questionVisibility: { hidden: true },
       scoreVisibility: { hidden: false },
+      ...mainRuleOverrides,
     },
     overrides,
   };
@@ -36,7 +42,7 @@ describe('getGlobalDateValidationErrors', () => {
             studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
           },
           overriddenFields: ['release'],
-          release: { date: '2024-04-06T00:00:00' },
+          release: { date: '2024-04-06T00:00:00', released: true },
           due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [],
           lateDeadlines: [],
@@ -54,7 +60,7 @@ describe('getGlobalDateValidationErrors', () => {
             studentLabels: [],
           },
           overriddenFields: ['earlyDeadlines'],
-          release: { date: null },
+          release: { date: null, released: true },
           due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
           lateDeadlines: [],
@@ -65,6 +71,7 @@ describe('getGlobalDateValidationErrors', () => {
           scoreVisibility: { hidden: false },
         },
       ]),
+      TEST_TIMEZONE,
     );
 
     expect(errors).toContainEqual({
@@ -84,7 +91,7 @@ describe('getGlobalDateValidationErrors', () => {
             studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
           },
           overriddenFields: ['due'],
-          release: { date: null },
+          release: { date: null, released: true },
           due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [],
           lateDeadlines: [],
@@ -102,7 +109,7 @@ describe('getGlobalDateValidationErrors', () => {
             studentLabels: [{ studentLabelId: '2', name: 'Section B' }],
           },
           overriddenFields: ['lateDeadlines'],
-          release: { date: null },
+          release: { date: null, released: true },
           due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [],
           lateDeadlines: [{ date: '2024-04-07T12:00:00', credit: 50 }],
@@ -113,8 +120,98 @@ describe('getGlobalDateValidationErrors', () => {
           scoreVisibility: { hidden: false },
         },
       ]),
+      TEST_TIMEZONE,
     );
 
     expect(errors).toEqual([]);
+  });
+
+  it('flags a future release date when the radio choice is "Released"', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        release: { date: '2099-01-01T00:00:00', released: true },
+        due: { date: '2099-02-01T00:00:00', credit: null, customCredit: false },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'mainRule.release.date',
+      message: 'Release date must not be in the future when state is Released.',
+    });
+  });
+
+  it('flags a past release date when the radio choice is "Scheduled for release"', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        release: { date: '2000-01-01T00:00:00', released: false },
+        due: { date: '2000-02-01T00:00:00', credit: null, customCredit: false },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'mainRule.release.date',
+      message: 'Release date must be in the future when scheduled for release.',
+    });
+  });
+
+  it('flags a future override release date when override radio is "Released"', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([
+        {
+          trackingId: 'override-1',
+          appliesTo: {
+            targetType: 'student_label',
+            enrollments: [],
+            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
+          },
+          overriddenFields: ['release'],
+          release: { date: '2099-01-01T00:00:00', released: true },
+          due: { date: null, credit: null, customCredit: false },
+          earlyDeadlines: [],
+          lateDeadlines: [],
+          afterLastDeadline: { allowSubmissions: false },
+          durationMinutes: null,
+          password: null,
+          questionVisibility: { hidden: true },
+          scoreVisibility: { hidden: false },
+        },
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.release.date',
+      message: 'Release date must not be in the future when state is Released.',
+    });
+  });
+
+  it('does not flag override release inconsistency when release is not overridden', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([
+        {
+          trackingId: 'override-1',
+          appliesTo: {
+            targetType: 'student_label',
+            enrollments: [],
+            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
+          },
+          overriddenFields: ['due'],
+          release: { date: '2099-01-01T00:00:00', released: true },
+          due: { date: '2099-06-01T00:00:00', credit: null, customCredit: false },
+          earlyDeadlines: [],
+          lateDeadlines: [],
+          afterLastDeadline: { allowSubmissions: false },
+          durationMinutes: null,
+          password: null,
+          questionVisibility: { hidden: true },
+          scoreVisibility: { hidden: false },
+        },
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors.find((e) => e.path === 'overrides.0.release.date')).toBeUndefined();
   });
 });

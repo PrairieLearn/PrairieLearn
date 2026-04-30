@@ -92,7 +92,7 @@ export function AccessControlForm({
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData)) {
+    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
       nextManualErrors.set(error.path, error.message);
     }
 
@@ -117,7 +117,7 @@ export function AccessControlForm({
     }
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData, errors]);
+  }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
@@ -184,7 +184,7 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
