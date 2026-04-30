@@ -169,6 +169,11 @@
     "gzip": 278,
     "brotli": 214
   },
+  "scripts/userSettingsClient.ts": {
+    "raw": 10592,
+    "gzip": 3919,
+    "brotli": 3514
+  },
   "scripts/workspaceClient.ts": {
     "raw": 44368,
     "gzip": 13851,
@@ -255,9 +260,9 @@
     "brotli": 171237
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
-    "raw": 525468,
-    "gzip": 165783,
-    "brotli": 144077
+    "raw": 525718,
+    "gzip": 165849,
+    "brotli": 144131
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
     "raw": 259623,
