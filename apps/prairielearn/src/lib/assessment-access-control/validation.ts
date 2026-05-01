@@ -62,10 +62,6 @@ function findDueMs(rule: AccessControlJson): number | null {
   return rule.dateControl?.due?.date ? new Date(rule.dateControl.due.date).getTime() : null;
 }
 
-export function anyRuleHasDueDate(rules: AccessControlJson[]): boolean {
-  return rules.some((rule) => findDueMs(rule) != null);
-}
-
 function findDueState(rule: AccessControlJson): {
   hasConfiguredDue: boolean;
   dueMs: number | null;
@@ -197,6 +193,58 @@ export function validateRuleStructuralDependencyIssues(
         validationRule,
         ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule structural dependency checks.
+ *
+ * The per-rule structural validator catches "late deadlines without a due
+ * date" and "afterLastDeadline without a deadline" within a single rule, but
+ * intentionally treats `dc.due === undefined` on overrides as valid (the
+ * override inherits the main rule's due). This global check closes the gap
+ * where the inherited value is also missing: if any rule has late deadlines
+ * or non-trivial afterLastDeadline behavior, at least one rule must
+ * explicitly set a due date.
+ *
+ * Like the other global validators, this is intentionally coarse: it doesn't
+ * model which student-target subsets cascade together, just whether any due
+ * date exists in the configuration at all.
+ */
+export function validateGlobalStructuralDependencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
+
+  for (const validationRule of validationRules) {
+    const dc = validationRule.rule.dateControl;
+    if (!dc) continue;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date on at least one rule.',
+      );
+    }
+
+    // `allowSubmissions: false` (the default "no submissions" mode) is a
+    // no-op when no deadline exists, so we don't flag it. Practice and
+    // partial-credit modes both set `allowSubmissions: true`.
+    if (dc.afterLastDeadline?.allowSubmissions === true) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        'After-last-deadline behavior requires a due date on at least one rule.',
       );
     }
   }
@@ -869,6 +917,7 @@ export function validateAccessControlRules({
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

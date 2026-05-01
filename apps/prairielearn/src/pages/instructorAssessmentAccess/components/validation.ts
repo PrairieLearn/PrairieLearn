@@ -3,6 +3,7 @@ import {
   type AccessControlValidationRule,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
+  validateGlobalStructuralDependencyIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
@@ -103,6 +104,7 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   for (const issues of [
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
+    validateGlobalStructuralDependencyIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);

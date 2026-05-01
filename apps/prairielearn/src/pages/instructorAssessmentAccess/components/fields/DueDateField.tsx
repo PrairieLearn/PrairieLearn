@@ -1,21 +1,15 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useFormContext, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { anyRuleHasDueDate } from '../../../../lib/assessment-access-control/validation.js';
 import { getAssessmentSettingsUrl } from '../../../../lib/client/url.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import {
-  type AccessControlFormData,
-  type DeadlineEntry,
-  type DueValue,
-  formDataToJson,
-} from '../types.js';
+import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
 function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
@@ -304,7 +298,6 @@ export function MainDueDateField({
     },
   });
 
-  const { setValue, getValues } = useFormContext<AccessControlFormData>();
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {
@@ -319,43 +312,7 @@ export function MainDueDateField({
     customCredit: customCreditCtrl.field.value,
   };
   const handleChange = (next: DueValue) => {
-    if (next.date !== value.date) {
-      dateCtrl.field.onChange(next.date);
-      if (next.date === null) {
-        setValue('mainRule.lateDeadlines', [], { shouldDirty: true, shouldValidate: true });
-        setValue('mainRule.afterLastDeadline', null, { shouldDirty: true, shouldValidate: true });
-        // Overrides can stack: one override may set a due date while another
-        // sets afterLastDeadline, so we only wipe overrides' late data when
-        // no rule resolves to a due date once main's due is cleared.
-        const formValues = getValues();
-        if (!anyRuleHasDueDate(formDataToJson(formValues))) {
-          const { overrides } = formValues;
-          overrides.forEach((override, i) => {
-            const removed = override.overriddenFields.filter(
-              (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',
-            );
-            if (removed.length === override.overriddenFields.length) return;
-            if (override.overriddenFields.includes('lateDeadlines')) {
-              setValue(`overrides.${i}.lateDeadlines`, [], {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }
-            if (override.overriddenFields.includes('afterLastDeadline')) {
-              setValue(
-                `overrides.${i}.afterLastDeadline`,
-                { allowSubmissions: false },
-                { shouldDirty: true, shouldValidate: true },
-              );
-            }
-            setValue(`overrides.${i}.overriddenFields`, removed, {
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-          });
-        }
-      }
-    }
+    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }
@@ -438,46 +395,13 @@ export function OverrideDueDateField({
     },
   });
 
-  const { setValue, getValues } = useFormContext<AccessControlFormData>();
-
   const value: DueValue = {
     date: dateCtrl.field.value,
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
   const handleChange = (next: DueValue) => {
-    if (next.date !== value.date) {
-      dateCtrl.field.onChange(next.date);
-      if (next.date === null) {
-        // Only wipe this override's late/afterLastDeadline if no other rule
-        // (main rule or another override) provides a due date. Overrides can
-        // stack, so another rule's due date keeps these fields valid.
-        const mainDue = getValues('mainRule.due.date');
-        const allOverrides = getValues('overrides');
-        const anyOtherRuleHasDueDate =
-          mainDue != null ||
-          allOverrides.some(
-            (o, i) => i !== index && o.overriddenFields.includes('due') && o.due.date != null,
-          );
-        if (!anyOtherRuleHasDueDate) {
-          setValue(`overrides.${index}.lateDeadlines`, [], {
-            shouldDirty: true,
-            shouldValidate: true,
-          });
-          setValue(
-            `overrides.${index}.afterLastDeadline`,
-            { allowSubmissions: false },
-            { shouldDirty: true, shouldValidate: true },
-          );
-          const currentOverridden = getValues(`overrides.${index}.overriddenFields`);
-          setValue(
-            `overrides.${index}.overriddenFields`,
-            currentOverridden.filter((f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline'),
-            { shouldDirty: true },
-          );
-        }
-      }
-    }
+    if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {
       customCreditCtrl.field.onChange(next.customCredit);
     }

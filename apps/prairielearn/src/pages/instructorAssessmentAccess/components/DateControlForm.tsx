@@ -1,8 +1,6 @@
 import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { anyRuleHasDueDate } from '../../../lib/assessment-access-control/validation.js';
-
 import {
   MainAfterLastDeadlineField,
   OverrideAfterLastDeadlineField,
@@ -12,7 +10,7 @@ import { MainDueDateField, OverrideDueDateField } from './fields/DueDateField.js
 import { MainDurationField, OverrideDurationField } from './fields/DurationField.js';
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
-import { type AccessControlFormData, formDataToJson } from './types.js';
+import type { AccessControlFormData } from './types.js';
 import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
@@ -34,9 +32,19 @@ export function MainDateControlForm({
     name: 'mainRule.dateControlEnabled',
   });
 
+  // Show late-deadline fields when a due date is set, OR when previously
+  // configured late content exists. Preserving content lets the user fix or
+  // intentionally clear it instead of having it silently wiped.
   const dueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
     name: 'mainRule.due.date',
   });
+  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
+  const afterLastDeadline = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
+    name: 'mainRule.afterLastDeadline',
+  });
+  const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
 
   return (
     <div>
@@ -70,7 +78,7 @@ export function MainDateControlForm({
             assessmentId={assessmentId}
             courseInstanceId={courseInstanceId}
           />
-          {dueDate != null && (
+          {showLateFields && (
             <>
               <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
               <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
@@ -109,12 +117,24 @@ export function OverrideDateControlForm({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const mainRule = useWatch<AccessControlFormData, 'mainRule'>({ name: 'mainRule' });
-  const overrides = useWatch<AccessControlFormData, 'overrides'>({ name: 'overrides' });
-  // Overrides can stack: one override may set a due date while another sets
-  // afterLastDeadline, so late-deadline fields are valid as long as any rule
-  // resolves to a due date.
-  const showLateFields = anyRuleHasDueDate(formDataToJson({ mainRule, overrides }));
+  // Show late-deadline fields when this override has its own late content
+  // (so it can be edited/cleared) or when its effective due date — own if
+  // overridden, otherwise inherited from main — provides an anchor for new
+  // late content.
+  const mainDueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
+    name: 'mainRule.due.date',
+  });
+  const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
+    name: `overrides.${index}.overriddenFields`,
+  });
+  const overrideDueDate = useWatch<AccessControlFormData, `overrides.${number}.due.date`>({
+    name: `overrides.${index}.due.date`,
+  });
+  const effectiveDueDate = overriddenFields.includes('due') ? overrideDueDate : mainDueDate;
+  const showLateFields =
+    effectiveDueDate != null ||
+    overriddenFields.includes('lateDeadlines') ||
+    overriddenFields.includes('afterLastDeadline');
 
   return (
     <div>
