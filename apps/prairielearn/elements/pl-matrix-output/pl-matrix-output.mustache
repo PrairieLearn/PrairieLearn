@@ -1,9 +1,3 @@
-<script>
-    $(function(){
-        PrairieUtil.initCopyButton('#pl-matrix-output-{{uuid}} .copy-button');
-    });
-</script>
-
 <div id="pl-matrix-output-{{uuid}}" class="card mb-4">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
@@ -15,14 +9,16 @@
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
                 <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}">{{matlab_data}}</pre>
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
-                    copy this text
+                <button type="button" class="btn btn-secondary btn-sm js-copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    Copy
                 </button>
             </div>
             <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
                 <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">{{python_data}}</pre>
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
-                    copy this text
+                <button type="button" class="btn btn-secondary btn-sm js-copy-button" data-clipboard-target="#python-data-{{uuid}}">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    Copy
                 </button>
             </div>
         </div>

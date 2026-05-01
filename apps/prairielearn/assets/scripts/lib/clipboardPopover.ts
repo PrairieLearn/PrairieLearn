@@ -1,11 +1,22 @@
-import ClipboardJS from 'clipboard';
+document.addEventListener('click', (e) => {
+  const button = (e.target as Element).closest<HTMLElement>('.js-copy-button');
+  if (!button) return;
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
+  const { clipboardText, clipboardTarget } = button.dataset;
 
-onDocumentReady(() => {
-  const clipboard = new ClipboardJS('.btn-copy');
-  clipboard.on('success', (e) => {
-    const popover = window.bootstrap.Popover.getOrCreateInstance(e.trigger, {
+  let text: string;
+  if (clipboardText != null) {
+    text = clipboardText;
+  } else if (clipboardTarget) {
+    text = Array.from(document.querySelectorAll(clipboardTarget))
+      .map((el) => el.textContent ?? '')
+      .join('');
+  } else {
+    return;
+  }
+
+  void navigator.clipboard.writeText(text).then(() => {
+    const popover = window.bootstrap.Popover.getOrCreateInstance(button, {
       content: 'Copied!',
       placement: 'bottom',
       trigger: 'manual',

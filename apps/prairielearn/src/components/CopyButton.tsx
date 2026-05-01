@@ -48,7 +48,7 @@ export function CopyButton({
           void handleCopy();
         }}
       >
-        <i className={copied ? 'bi bi-check' : 'bi bi-copy'} />
+        <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} />
       </button>
     </OverlayTrigger>
   );
