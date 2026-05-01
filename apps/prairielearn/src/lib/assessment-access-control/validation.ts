@@ -1,7 +1,7 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 /**
- * Maximum number of access control rules (main + overrides) per assessment.
+ * Maximum number of access control rules (default + overrides) per assessment.
  * Enforced during both JSON sync and tRPC input validation.
  */
 export const MAX_ACCESS_CONTROL_RULES = 50;
@@ -760,7 +760,7 @@ function formatValues(values: Set<string> | string[]) {
  *
  * @param params
  * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
+ * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for

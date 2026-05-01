@@ -1072,7 +1072,7 @@ describe('Global credit validation', () => {
         ruleIndex: 1,
       },
       {
-        // Override inherits due credit (90 from main) but sets a late credit
+        // Override inherits due credit (90 from default) but sets a late credit
         // above it — no possible timeline can make this monotonic.
         rule: AccessControlJsonSchema.parse({
           labels: ['Section B'],

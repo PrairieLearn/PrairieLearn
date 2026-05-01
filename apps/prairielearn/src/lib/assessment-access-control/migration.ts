@@ -621,10 +621,6 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Main migration pipeline
-// ---------------------------------------------------------------------------
-
 export function migrateAllowAccess(
   rules: AssessmentAccessRuleJson[],
   fallbackReleaseDate?: string,

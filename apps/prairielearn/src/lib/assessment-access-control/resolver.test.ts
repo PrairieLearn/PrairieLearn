@@ -780,7 +780,7 @@ describe('resolveAccessControl', () => {
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-04-01T00:00:00Z' },
-              password: 'main-pass',
+              password: 'default-pass',
             },
           }),
           makeOverrideRule(
