@@ -5,7 +5,6 @@ export function ToggleTitle({
   checked,
   onChange,
   label,
-  showLabel = true,
   disabled,
   title,
 }: {
@@ -13,7 +12,6 @@ export function ToggleTitle({
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
-  showLabel?: boolean;
   disabled?: boolean;
   title?: string;
 }) {
@@ -21,9 +19,7 @@ export function ToggleTitle({
     <Form.Check
       type="checkbox"
       id={id}
-      label={
-        showLabel ? <strong>{label}</strong> : <span className="visually-hidden">{label}</span>
-      }
+      label={<strong>{label}</strong>}
       checked={checked}
       disabled={disabled}
       title={title}

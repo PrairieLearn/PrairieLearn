@@ -2,18 +2,21 @@ import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
-  MainAfterLastDeadlineField,
+  DefaultAfterLastDeadlineField,
   OverrideAfterLastDeadlineField,
 } from './fields/AfterLastDeadlineField.js';
-import { MainDeadlineArrayField, OverrideDeadlineArrayField } from './fields/DeadlineArrayField.js';
-import { MainDueDateField, OverrideDueDateField } from './fields/DueDateField.js';
-import { MainDurationField, OverrideDurationField } from './fields/DurationField.js';
-import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
-import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
+import {
+  DefaultDeadlineArrayField,
+  OverrideDeadlineArrayField,
+} from './fields/DeadlineArrayField.js';
+import { DefaultDueDateField, OverrideDueDateField } from './fields/DueDateField.js';
+import { DefaultDurationField, OverrideDurationField } from './fields/DurationField.js';
+import { DefaultPasswordField, OverridePasswordField } from './fields/PasswordField.js';
+import { DefaultReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
 import type { AccessControlFormData } from './types.js';
 import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
-export function MainDateControlForm({
+export function DefaultDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
   displayTimezone,
@@ -28,21 +31,21 @@ export function MainDateControlForm({
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
-  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
-    name: 'mainRule.dateControlEnabled',
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
   });
 
   // Show late-deadline fields when a due date is set, OR when previously
   // configured late content exists. Preserving content lets the user fix or
   // intentionally clear it instead of having it silently wiped.
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
-    name: 'mainRule.due.date',
+  const dueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
+    name: 'defaultRule.due.date',
   });
-  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
-    name: 'mainRule.lateDeadlines',
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
   });
-  const afterLastDeadline = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
-    name: 'mainRule.afterLastDeadline',
+  const afterLastDeadline = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
+    name: 'defaultRule.afterLastDeadline',
   });
   const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
 
@@ -51,45 +54,49 @@ export function MainDateControlForm({
       <div className="section-header mb-3">
         <Form.Check
           type="checkbox"
-          id="mainRule-date-control-enabled"
+          id="defaultRule-date-control-enabled"
           label={<strong>{title}</strong>}
-          {...register('mainRule.dateControlEnabled', {
+          {...register('defaultRule.dateControlEnabled', {
             onChange: (e) => {
-              if (e.target.checked && !getValues('mainRule.release.date')) {
-                setValue('mainRule.release.date', startOfDayDatetime(todayDate(displayTimezone)), {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                });
+              if (e.target.checked && !getValues('defaultRule.release.date')) {
+                setValue(
+                  'defaultRule.release.date',
+                  startOfDayDatetime(todayDate(displayTimezone)),
+                  {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  },
+                );
               }
             },
           })}
-          aria-describedby="mainRule-date-control-help"
+          aria-describedby="defaultRule-date-control-help"
         />
-        <Form.Text id="mainRule-date-control-help" className="text-muted">
+        <Form.Text id="defaultRule-date-control-help" className="text-muted">
           {description}
         </Form.Text>
       </div>
       {dateControlEnabled ? (
         <div className="d-flex flex-column gap-3">
-          <MainReleaseDateField displayTimezone={displayTimezone} />
-          <MainDeadlineArrayField type="early" displayTimezone={displayTimezone} />
-          <MainDueDateField
+          <DefaultReleaseDateField displayTimezone={displayTimezone} />
+          <DefaultDeadlineArrayField type="early" displayTimezone={displayTimezone} />
+          <DefaultDueDateField
             displayTimezone={displayTimezone}
             assessmentId={assessmentId}
             courseInstanceId={courseInstanceId}
           />
           {showLateFields && (
             <>
-              <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-              <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
+              <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
+              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
             </>
           )}
           <Row className="gy-3">
             <Col md={6}>
-              <MainDurationField />
+              <DefaultDurationField />
             </Col>
             <Col md={6}>
-              <MainPasswordField />
+              <DefaultPasswordField />
             </Col>
           </Row>
         </div>
@@ -121,8 +128,8 @@ export function OverrideDateControlForm({
   // (so it can be edited/cleared) or when its effective due date — own if
   // overridden, otherwise inherited from main — provides an anchor for new
   // late content.
-  const mainDueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
-    name: 'mainRule.due.date',
+  const mainDueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
+    name: 'defaultRule.due.date',
   });
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,

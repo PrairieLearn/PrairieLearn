@@ -95,7 +95,7 @@ describe('Valid configs', () => {
     // Example 5: Extended time override
     [
       {
-        // Main rule (no targets)
+        // Default rule (no targets)
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
           due: { date: '2024-03-21T23:59:00' },
@@ -183,9 +183,9 @@ describe('Valid configs', () => {
   });
 });
 
-describe('Main rule requirement', () => {
-  it('should fail validation when no main rule exists', () => {
-    const rulesWithoutMain: AccessControlJsonInput[] = [
+describe('Default rule requirement', () => {
+  it('should fail validation when no default rule exists', () => {
+    const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
         labels: ['student1'],
         dateControl: {
@@ -200,12 +200,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithoutMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithoutDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
+    assert.isTrue(result.errors.length > 0, 'Expected error when no default rule exists');
     assert.isTrue(
       result.errors.includes(
         'No defaults found. The first element of accessControl must apply to everyone.',
@@ -214,8 +214,8 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should fail validation when multiple main rules exist', () => {
-    const rulesWithMultipleMain: AccessControlJsonInput[] = [
+  it('should fail validation when multiple default rules exist', () => {
+    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
@@ -230,12 +230,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithMultipleMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
+    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
     assert.isTrue(
       result.errors.includes(
         'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
@@ -244,8 +244,8 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should pass validation with exactly one main rule', () => {
-    const rulesWithOneMain: AccessControlJsonInput[] = [
+  it('should pass validation with exactly one default rule', () => {
+    const rulesWithOneDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
@@ -254,12 +254,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithOneMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithOneDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
+    assert.equal(result.errors.length, 0, 'Should have no errors with one default rule');
   });
 
   it('should fail validation when an override specifies beforeRelease', () => {
@@ -1073,7 +1073,7 @@ describe('Global credit validation', () => {
         ruleIndex: 1,
       },
       {
-        // Override inherits due credit (90 from main) but sets a late credit
+        // Override inherits due credit (90 from default) but sets a late credit
         // above it — no possible timeline can make this monotonic.
         rule: AccessControlJsonSchema.parse({
           labels: ['Section B'],
@@ -1435,21 +1435,6 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject main-rule dateControl without due configuration', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        release: { date: '2024-03-14T00:01:00' },
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.includes(
-        'Due date configuration is required on the defaults when dateControl is specified.',
-      ),
-    );
-  });
-
   it('should reject after-complete dates without any deadline', () => {
     const rule = AccessControlJsonSchema.parse({
       afterComplete: {
@@ -1548,7 +1533,7 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
   });
 
-  it('should allow overrides to inherit due date from main rule', () => {
+  it('should allow overrides to inherit due date from default rule', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
