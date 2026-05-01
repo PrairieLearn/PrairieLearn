@@ -27,27 +27,27 @@ export interface PrairieTestExam {
 
 /**
  * Fields that override-targeted rules can set. Mirrors the JSON shape with
- * dates parsed to `Date`. `MainRuleBody` extends this with main-rule-only
+ * dates parsed to `Date`. `DefaultRuleBody` extends this with default-rule-only
  * fields, so an override can't statically declare flags the resolver only
- * honors on the main rule.
+ * honors on the default rule.
  */
 interface OverrideRuleBody {
   dateControl?: RuntimeDateControl;
   afterComplete?: RuntimeAfterComplete;
 }
 
-export interface MainRuleBody extends OverrideRuleBody {
+export interface DefaultRuleBody extends OverrideRuleBody {
   beforeRelease?: { listed?: boolean };
   prairieTestExams: PrairieTestExam[];
 }
 
 /**
- * The main rule (`'none'`, always `number: 0`) carries the full rule body.
+ * The default rule (`'none'`, always `number: 0`) carries the full rule body.
  */
-export interface MainRule {
+export interface DefaultRule {
   targetType: 'none';
   number: 0;
-  rule: MainRuleBody;
+  rule: DefaultRuleBody;
 }
 
 /**
@@ -67,7 +67,7 @@ export type OverrideRule =
       studentLabelIds: string[];
     };
 
-export type AccessControlRuleInput = MainRule | OverrideRule;
+export type AccessControlRuleInput = DefaultRule | OverrideRule;
 
 export interface EnrollmentContext {
   enrollmentId: string;
@@ -201,7 +201,7 @@ function mergeDefined<T extends object>(
  * Folds an override body onto a base. `dateControl` and `afterComplete` merge
  * per top-level key. `due` replaces as a unit (date + credit move together)
  * since a custom-credit override with an unset date — or vice versa — is
- * incoherent. Main-rule-only fields (`beforeRelease`, `prairieTestExams`)
+ * incoherent. Default-rule-only fields (`beforeRelease`, `prairieTestExams`)
  * carry through from `a`: `OverrideRuleBody` strips them at the type level so
  * `b` cannot declare them.
  */
@@ -222,7 +222,7 @@ function matchesOverride(override: OverrideRule, enrollment: EnrollmentContext):
 }
 
 /**
- * Picks and merges the effective rule for a student: the main rule with all
+ * Picks and merges the effective rule for a student: the default rule with all
  * matching overrides cascaded on top. Without an enrollment, no override matches.
  *
  * Cascade order: `student_label` overrides apply first (broader), then
@@ -232,10 +232,10 @@ function matchesOverride(override: OverrideRule, enrollment: EnrollmentContext):
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
   enrollment: EnrollmentContext | null,
-): MainRuleBody | null {
-  const main = rules.find((r): r is MainRule => r.targetType === 'none');
-  if (!main) return null;
-  if (!enrollment) return main.rule;
+): DefaultRuleBody | null {
+  const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+  if (!defaultRule) return null;
+  if (!enrollment) return defaultRule.rule;
 
   const overrides = rules.filter((r): r is OverrideRule => r.targetType !== 'none');
   const matching = overrides.filter((r) => matchesOverride(r, enrollment));
@@ -244,9 +244,9 @@ function pickEffectiveRule(
     return a.number - b.number;
   });
 
-  return matching.reduce<MainRuleBody>(
+  return matching.reduce<DefaultRuleBody>(
     (acc, override) => mergeRules(acc, override.rule),
-    main.rule,
+    defaultRule.rule,
   );
 }
 

@@ -113,7 +113,7 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for main rule afterLastDeadline when not set', () => {
+  it('omits credit for default rule afterLastDeadline when not set', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {

@@ -40,7 +40,7 @@ function validateAssessmentRules(
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
   // Reject them here to prevent label-targeted rules from being silently
-  // treated as main rules.
+  // treated as default rules.
   for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
@@ -82,7 +82,7 @@ function prepareRuleRow(
   const dateControl = rule.dateControl ?? {};
   const afterComplete = rule.afterComplete ?? {};
   const afterLastDeadline = dateControl.afterLastDeadline;
-  const isMainRule = ruleNumber === JSON_RULE_START;
+  const isDefaultRule = ruleNumber === JSON_RULE_START;
 
   const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
   const dueField = mapField(dateControl.due);
@@ -99,13 +99,13 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' = isMainRule ? 'none' : 'student_label';
+  const targetType: 'none' | 'student_label' = isDefaultRule ? 'none' : 'student_label';
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // beforeRelease.listed is only configurable on the main rule.
-    before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the default rule.
+    before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
     date_control_release_date: dateControl.release?.date ?? null,
     date_control_due_overridden: dueField.overridden,

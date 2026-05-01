@@ -7,8 +7,8 @@ import type { AccessControlFormData } from './types.js';
 export function IntegrationsSection() {
   const { setValue } = useFormContext<AccessControlFormData>();
 
-  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
 
   const prairieTestEnabled = prairieTestExams.length > 0;
@@ -20,24 +20,27 @@ export function IntegrationsSection() {
       </div>
       <Form.Check
         type="checkbox"
-        id="mainRule-prairietest-enabled"
+        id="defaultRule-prairietest-enabled"
         label={<strong>PrairieTest</strong>}
         checked={prairieTestEnabled}
-        aria-describedby="mainRule-prairietest-help"
+        aria-describedby="defaultRule-prairietest-help"
         onChange={(e) => {
           if (!e.target.checked) {
-            setValue('mainRule.prairieTestExams', [], { shouldDirty: true, shouldValidate: true });
+            setValue('defaultRule.prairieTestExams', [], {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
           } else {
             // Add an initial entry when toggling it on so that the user can immediately
             // start configuring it without needing to click "Add Exam" first.
-            setValue('mainRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
+            setValue('defaultRule.prairieTestExams', [{ examUuid: '', readOnly: false }], {
               shouldDirty: true,
               shouldValidate: true,
             });
           }
         }}
       />
-      <Form.Text id="mainRule-prairietest-help" className="text-muted">
+      <Form.Text id="defaultRule-prairietest-help" className="text-muted">
         Control access to your assessment through PrairieTest exams
       </Form.Text>
       {prairieTestEnabled && <PrairieTestControlForm />}
