@@ -169,41 +169,51 @@ function AfterLastDeadlineInput({
       </div>
       {mode === 'partial_credit' && (
         <div className="mt-2">
-          <InputGroup>
-            <Form.Control
-              type="number"
-              aria-label="Credit percentage after last deadline"
-              aria-invalid={!!creditError}
-              aria-errormessage={
-                creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
-              }
-              min="0"
-              max="200"
-              placeholder="Credit percentage"
-              isInvalid={!!creditError}
-              onWheel={({ currentTarget }) => currentTarget.blur()}
-              {...register(creditFieldPath, {
-                shouldUnregister: true,
-                valueAsNumber: true,
-                deps: creditDeps,
-                validate: (v, formValues) => {
-                  if (v == null || Number.isNaN(v)) return 'Credit is required';
-                  if (v < 0 || v > 200) return 'Must be 0\u2013200%';
-                  const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
-                    formValues,
-                    overrideIndex,
-                  );
-                  const precedingCredit =
-                    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-                  if (precedingCredit != null && v > precedingCredit) {
-                    return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
-                  }
-                  return true;
-                },
-              })}
-            />
-            <InputGroup.Text>%</InputGroup.Text>
-          </InputGroup>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <label
+              htmlFor={`${idPrefix}-after-deadline-credit`}
+              className="form-label mb-0 small text-body-secondary"
+            >
+              Credit
+            </label>
+            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+              <Form.Control
+                id={`${idPrefix}-after-deadline-credit`}
+                type="number"
+                style={{ width: '5rem' }}
+                aria-label="Credit percentage after last deadline"
+                aria-invalid={!!creditError}
+                aria-errormessage={
+                  creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
+                }
+                min="0"
+                max="200"
+                placeholder="100"
+                isInvalid={!!creditError}
+                onWheel={({ currentTarget }) => currentTarget.blur()}
+                {...register(creditFieldPath, {
+                  shouldUnregister: true,
+                  valueAsNumber: true,
+                  deps: creditDeps,
+                  validate: (v, formValues) => {
+                    if (v == null || Number.isNaN(v)) return 'Credit is required';
+                    if (v < 0 || v > 200) return 'Must be 0\u2013200%';
+                    const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
+                      formValues,
+                      overrideIndex,
+                    );
+                    const precedingCredit =
+                      lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
+                    if (precedingCredit != null && v > precedingCredit) {
+                      return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
+                    }
+                    return true;
+                  },
+                })}
+              />
+              <InputGroup.Text>%</InputGroup.Text>
+            </InputGroup>
+          </div>
           <Form.Text className="text-muted d-block">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
