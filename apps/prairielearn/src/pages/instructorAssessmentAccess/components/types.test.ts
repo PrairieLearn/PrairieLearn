@@ -274,6 +274,91 @@ describe('formDataToJson', () => {
     expect(dc.password).toBeNull();
   });
 
+  it('round-trips PrairieTest exams with default afterComplete flags omitted', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c', readOnly: false }],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        readOnly: false,
+        afterCompleteQuestionsHidden: false,
+        afterCompleteScoreHidden: false,
+      },
+    ]);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
+    ]);
+  });
+
+  it('round-trips PrairieTest exams with afterComplete questions hidden', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+                afterComplete: { questions: { hidden: true } },
+              },
+            ],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams[0].afterCompleteQuestionsHidden).toBe(true);
+    expect(formData.prairieTestExams[0].afterCompleteScoreHidden).toBe(false);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        afterComplete: { questions: { hidden: true } },
+      },
+    ]);
+  });
+
+  it('round-trips PrairieTest exams with both questions and score hidden', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+              },
+            ],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams[0].afterCompleteQuestionsHidden).toBe(true);
+    expect(formData.prairieTestExams[0].afterCompleteScoreHidden).toBe(true);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      },
+    ]);
+  });
+
   it('serializes afterLastDeadline overrides', () => {
     const noSubmissions: OverrideData = {
       ...baseOverride,
