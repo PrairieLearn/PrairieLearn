@@ -54,56 +54,21 @@ function DueDateInput({
 
     const dueDatePlain = Temporal.PlainDateTime.from(value.date);
     const latestEarly = earlyDeadlines ? getLatestDeadlineEntry(earlyDeadlines) : null;
-    const creditLabel = `(${effectiveCredit}% credit)`;
+    const friendly = (date: Date | Temporal.PlainDateTime) => (
+      <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} />
+    );
 
-    if (latestEarly) {
-      return (
-        <>
-          <FriendlyDate
-            date={latestEarly}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    } else if (releaseDate) {
-      const releaseDatePlain = Temporal.PlainDateTime.from(releaseDate);
-      return (
-        <>
-          <FriendlyDate
-            date={releaseDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    } else {
-      return (
-        <>
-          While accessible –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    }
+    const startNode = latestEarly
+      ? friendly(latestEarly)
+      : releaseDate
+        ? friendly(Temporal.PlainDateTime.from(releaseDate))
+        : 'While accessible';
+
+    return (
+      <>
+        {startNode} – {friendly(dueDatePlain)} ({effectiveCredit}% credit)
+      </>
+    );
   };
 
   return (
