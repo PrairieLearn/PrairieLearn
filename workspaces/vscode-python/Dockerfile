@@ -43,6 +43,8 @@ RUN code-server --disable-telemetry --force \
     --install-extension ms-python.python \
     # auto-fix indentation for multiline contexts
     --install-extension KevinRose.vsc-python-indent \
+    # vscode support for python environments (installed as optional dependency of ms-python.python, but we don't want it)
+    && code-server --disable-telemetry --force --uninstall-extension ms-python.vscode-python-envs \
     # Clear the extension cache to reduce image size.
     && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
 
