@@ -12,6 +12,7 @@ import { numericHandler } from './numeric.js';
 import { orderingHandler } from './ordering.js';
 import { richTextHandler } from './rich-text.js';
 import { stringInputHandler } from './string-input.js';
+import { symbolicHandler } from './symbolic.js';
 import { textOnlyHandler } from './text-only.js';
 
 export function createPLBodyRegistry(): BodyEmitRegistry {
@@ -24,6 +25,7 @@ export function createPLBodyRegistry(): BodyEmitRegistry {
   registry.register(numericHandler);
   registry.register(integerHandler);
   registry.register(stringInputHandler);
+  registry.register(symbolicHandler);
   registry.register(orderingHandler);
   registry.register(richTextHandler);
   registry.register(textOnlyHandler);

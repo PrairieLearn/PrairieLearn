@@ -93,9 +93,10 @@ describe('convert (integration)', () => {
       const result = await convert(xml, { basePath: QTI12_FIXTURES });
 
       assert.equal(result.assessmentTitle, 'Sample Chapter Bank');
-      assert.equal(result.questions.length, 4);
+      assert.equal(result.questions.length, 5);
       assert.equal(result.questions[0].infoJson.title, 'Problem 1');
-      assert.include(result.questions[0].questionHtml, 'correct-answer="yes"');
+      assert.include(result.questions[0].questionHtml, '<pl-answer correct="true">Yes</pl-answer>');
+      assert.include(result.questions[0].questionHtml, 'order="fixed"');
       assert.equal(result.questions[0].infoJson.gradingMethod, 'Internal');
       assert.equal(result.questions[1].infoJson.gradingMethod, 'Manual');
       assert.include(
@@ -103,7 +104,13 @@ describe('convert (integration)', () => {
         '<pl-figure file-name="objectbank-diagram.png" directory="clientFilesQuestion"></pl-figure>',
       );
       assert.equal(result.questions[2].infoJson.gradingMethod, 'Internal');
-      assert.equal(result.questions[3].infoJson.gradingMethod, 'Manual');
+      assert.include(
+        result.questions[3].questionHtml,
+        '<pl-symbolic-input answers-name="answer" label="" correct-answer="(x+1)/(y)" variables="x, y"></pl-symbolic-input>',
+      );
+      assert.equal(result.questions[3].infoJson.gradingMethod, 'Internal');
+      assert.include(result.questions[4].questionHtml, '<pl-answer correct="true">C</pl-answer>');
+      assert.include(result.questions[4].questionHtml, 'order="fixed"');
     });
   });
 

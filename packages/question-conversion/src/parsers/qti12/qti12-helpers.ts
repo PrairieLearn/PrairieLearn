@@ -34,6 +34,72 @@ interface BuildQuestionOptions {
 
 const MANUAL_GRADING_QUESTION_TYPES = new Set(['rich-text', 'file-upload']);
 const QUESTION_BANK_IMAGE_RE = /\[\[images\/([^\]]+)\]\]/g;
+const LATEX_WRAP_RE = /^\\\((.*?)\\\)$/s;
+const CHOICE_RE = /^\(?\s*([A-Ea-e])\s*\)?$/;
+const NUMBER_RE = /^[+-]?(?:\d+\.\d+|\d+|\.\d+)$/;
+const INTERVAL_RE = /^\s*([([])\s*(.*?)\s*,\s*(.*?)\s*([)\]])\s*$/s;
+const SYMBOLIC_WORD_RE = /[A-Za-z]+/g;
+const SYMBOLIC_CHAR_RE = /[A-Za-z]/g;
+const SYMBOLIC_EXCLUDED_WORDS = new Set([
+  'e',
+  'pi',
+  'infty',
+  'exp',
+  'log',
+  'ln',
+  'sqrt',
+  'factorial',
+  'abs',
+  'sgn',
+  'max',
+  'min',
+  'sign',
+  'cos',
+  'sin',
+  'tan',
+  'sec',
+  'cot',
+  'csc',
+  'cosh',
+  'sinh',
+  'tanh',
+  'arccos',
+  'arcsin',
+  'arctan',
+  'acos',
+  'asin',
+  'atan',
+  'arctan2',
+  'atan2',
+  'atanh',
+  'acosh',
+  'asinh',
+  'frac',
+  'dfrac',
+  'left',
+  'right',
+  'cdot',
+  'times',
+  'cup',
+  'cap',
+  'operatorname',
+  'text',
+  'mathrm',
+  'mathbb',
+  'mathbf',
+]);
+const ESSAY_PROMPT_MARKERS = [
+  'explain',
+  'why',
+  'justify',
+  'describe',
+  'discuss',
+  'in your own words',
+  'using the language of limits',
+  'what is the purpose',
+  'what is the significance',
+];
+const PROSE_MARKERS = [' because ', ' since ', 'meaning', 'local maximum', 'local minimum'];
 const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
   'cc.multiple_choice.v0p1': 'multiple_choice_question',
   'cc.true_false.v0p1': 'true_false_question',
@@ -44,6 +110,14 @@ const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
   'cc.matching.v0p1': 'matching_question',
   'cc.order.v0p1': 'ordering_question',
 };
+
+interface ObjectBankAnswerClassification {
+  kind: 'manual' | 'short-answer' | 'multiple-choice' | 'symbolic';
+  canonicalAnswer: string;
+  choiceOptions?: string[];
+  variables?: string[];
+  allowSets?: boolean;
+}
 
 /** Parse a raw QTI 1.2 item element into the shared intermediate representation. */
 export function parseQTI12Item(itemEl: Record<string, unknown>): QTI12ParsedItem {
@@ -89,6 +163,107 @@ export function parseQTI12Item(itemEl: Record<string, unknown>): QTI12ParsedItem
     ...(calcBlock != null ? { calculatedBlock: calcBlock } : {}),
     ...(resprocessing != null ? { resprocessing } : {}),
   };
+}
+
+function normalizeObjectBankAnswerText(answerText: string): string {
+  let text = he.decode(answerText.trim());
+  text = text
+    .replaceAll(/<[^>]+>/g, ' ')
+    .replaceAll(/\s+/g, ' ')
+    .trim();
+  while (true) {
+    const match = text.match(LATEX_WRAP_RE);
+    if (!match) break;
+    text = match[1].trim();
+  }
+  return text.trim();
+}
+
+/** Port of the objectbank answer classifier heuristics used by the Python transpiler. */
+export function classifyObjectBankAnswer(
+  answerText: string,
+  promptText?: string,
+): ObjectBankAnswerClassification {
+  const raw = normalizeObjectBankAnswerText(answerText);
+  if (raw === '') {
+    return { kind: 'manual', canonicalAnswer: raw };
+  }
+
+  if (looksExplanatory(raw) || (promptText != null && looksLikeEssayPrompt(promptText))) {
+    return { kind: 'manual', canonicalAnswer: raw };
+  }
+
+  const stripped = raw;
+  const lowered = stripped.toLowerCase().trim();
+  if (['yes', 'y', 'no', 'n'].includes(lowered)) {
+    return {
+      kind: 'multiple-choice',
+      canonicalAnswer: lowered.startsWith('y') ? 'yes' : 'no',
+      choiceOptions: ['Yes', 'No'],
+    };
+  }
+
+  if (['true', 'false'].includes(lowered)) {
+    return {
+      kind: 'multiple-choice',
+      canonicalAnswer: lowered,
+      choiceOptions: ['True', 'False'],
+    };
+  }
+
+  const choiceMatch = stripped.match(CHOICE_RE);
+  if (choiceMatch) {
+    return {
+      kind: 'multiple-choice',
+      canonicalAnswer: choiceMatch[1].toUpperCase(),
+      choiceOptions: ['A', 'B', 'C', 'D', 'E'],
+    };
+  }
+
+  const compact = stripped.replaceAll(/\s+/g, '');
+  if (NUMBER_RE.test(compact)) {
+    return { kind: 'short-answer', canonicalAnswer: compact };
+  }
+
+  const interval = canonicalizeInterval(stripped);
+  if (interval) {
+    return {
+      kind: 'symbolic',
+      canonicalAnswer: interval,
+      variables: extractSymbolicVariables(interval),
+      allowSets: true,
+    };
+  }
+
+  const symbolicTokens = [
+    '\\frac',
+    '\\dfrac',
+    '\\sqrt',
+    '\\sin',
+    '\\cos',
+    '\\tan',
+    '\\ln',
+    '\\log',
+    '\\pi',
+    '\\infty',
+    '^',
+    '_',
+    '=',
+    '+',
+    '-',
+    '/',
+    '*',
+  ];
+  if (!stripped.includes(',') && symbolicTokens.some((token) => stripped.includes(token))) {
+    const canonicalAnswer = convertSymbolicLatexCommands(stripped);
+    return {
+      kind: 'symbolic',
+      canonicalAnswer,
+      variables: extractSymbolicVariables(canonicalAnswer),
+    };
+  }
+
+  return { kind: 'short-answer', canonicalAnswer: raw };
 }
 
 /** Build a PrairieLearn IR question from a parsed QTI 1.2 item. */
@@ -302,6 +477,197 @@ function buildFeedback(item: QTI12ParsedItem, includeGeneralAsAnswer: boolean): 
   }
 
   return feedback;
+}
+
+function looksExplanatory(answerText: string): boolean {
+  const lower = answerText.toLowerCase();
+  if (answerText.includes('\n')) return true;
+  return PROSE_MARKERS.some((marker) => lower.includes(marker));
+}
+
+function looksLikeEssayPrompt(promptText: string): boolean {
+  const lower = promptText.toLowerCase();
+  return ESSAY_PROMPT_MARKERS.some((marker) => lower.includes(marker));
+}
+
+function canonicalizeInterval(answerText: string): string | null {
+  const match = answerText.match(INTERVAL_RE);
+  if (!match) return null;
+
+  const [, left, lower, upper, right] = match;
+  const lowerNorm = normalizeIntervalBound(lower);
+  const upperNorm = normalizeIntervalBound(upper);
+  return `${left} ${lowerNorm}, ${upperNorm} ${right}`;
+}
+
+function normalizeIntervalBound(boundText: string): string {
+  const text = boundText.trim();
+  const normalized = text.replaceAll(/\s+/g, '').toLowerCase();
+  const lowerInfinityTokens = new Set(['-\\infty', '-infty', '-infinity', '-inf', '-∞', '-oo']);
+  const upperInfinityTokens = new Set([
+    '\\infty',
+    '+\\infty',
+    'infty',
+    '+infty',
+    'infinity',
+    '+infinity',
+    'inf',
+    '+inf',
+    '∞',
+    '+∞',
+    'oo',
+    '+oo',
+  ]);
+  if (lowerInfinityTokens.has(normalized)) return '-infty';
+  if (upperInfinityTokens.has(normalized)) return 'infty';
+  return text;
+}
+
+export function extractSymbolicVariables(answerText: string): string[] {
+  const converted = convertSymbolicLatexCommands(answerText);
+  const variables: string[] = [];
+  const seen = new Set<string>();
+
+  for (const wordMatch of converted.matchAll(SYMBOLIC_WORD_RE)) {
+    const word = wordMatch[0];
+    if (SYMBOLIC_EXCLUDED_WORDS.has(word.toLowerCase())) continue;
+
+    for (const charMatch of word.matchAll(SYMBOLIC_CHAR_RE)) {
+      const variable = charMatch[0].toLowerCase();
+      if (seen.has(variable)) continue;
+      seen.add(variable);
+      variables.push(variable);
+    }
+  }
+
+  return variables;
+}
+
+function parseLatexBraceArgs(text: string, startIdx: number): { args: string[]; nextIdx: number } {
+  const args: string[] = [];
+  let idx = startIdx;
+
+  while (idx < text.length && /\s/.test(text[idx])) idx += 1;
+
+  while (idx < text.length && text[idx] === '{') {
+    let depth = 0;
+    let endIdx = idx;
+    while (endIdx < text.length) {
+      const char = text[endIdx];
+      if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+      endIdx += 1;
+    }
+
+    if (depth !== 0 || endIdx >= text.length) {
+      return { args: [], nextIdx: startIdx };
+    }
+
+    args.push(text.slice(idx + 1, endIdx).trim());
+    idx = endIdx + 1;
+    while (idx < text.length && /\s/.test(text[idx])) idx += 1;
+  }
+
+  if (args.length === 0) {
+    return { args: [], nextIdx: startIdx };
+  }
+
+  return { args, nextIdx: idx };
+}
+
+export function convertSymbolicLatexCommands(answerText: string): string {
+  try {
+    let text = answerText;
+    text = text.replaceAll(/\\+log_([A-Za-z0-9]+)\(([^()]+)\)/g, (_match, base, arg) => {
+      return `log(${arg}, ${base})`;
+    });
+
+    const out: string[] = [];
+    let idx = 0;
+    while (idx < text.length) {
+      if (text[idx] !== '\\') {
+        out.push(text[idx]);
+        idx += 1;
+        continue;
+      }
+
+      let slashEnd = idx;
+      while (slashEnd < text.length && text[slashEnd] === '\\') slashEnd += 1;
+
+      const nameStart = slashEnd;
+      let nameEnd = nameStart;
+      while (nameEnd < text.length && /[A-Za-z]/.test(text[nameEnd])) nameEnd += 1;
+
+      if (nameEnd === nameStart) {
+        out.push(text[idx]);
+        idx += 1;
+        continue;
+      }
+
+      const commandName = text.slice(nameStart, nameEnd);
+      const { args, nextIdx } = parseLatexBraceArgs(text, nameEnd);
+      if (args.length > 0) {
+        if (commandName === 'frac' && args.length === 2) {
+          out.push(`(${args[0]})/(${args[1]})`);
+        } else if (commandName === 'dfrac' && args.length === 2) {
+          out.push(`(${args[0]})/(${args[1]})`);
+        } else {
+          out.push(`${commandName}(${args.join(',')})`);
+        }
+        idx = nextIdx;
+        continue;
+      }
+
+      if (nameEnd < text.length && text[nameEnd] === '{') {
+        return answerText;
+      }
+
+      out.push(text.slice(idx, nameEnd));
+      idx = nameEnd;
+    }
+
+    return out.join('');
+  } catch {
+    return answerText;
+  }
+}
+
+export function synthesizeMultipleChoiceItem(
+  item: QTI12ParsedItem,
+  choiceOptions: string[],
+  canonicalAnswer: string,
+): QTI12ParsedItem {
+  const responseIdent = item.responseLids[0]?.ident || 'response1';
+  const lowercasedChoices = choiceOptions.map((option) => option.toLowerCase());
+  const usesLowercaseIdents = lowercasedChoices.every((option) =>
+    ['yes', 'no', 'true', 'false'].includes(option),
+  );
+  const labels = choiceOptions.map((text) => ({
+    ident: usesLowercaseIdents ? text.toLowerCase() : text,
+    text,
+    textType: 'text/plain',
+  }));
+  return {
+    ...item,
+    questionType: 'multiple_choice_question',
+    responseLids: [
+      {
+        ident: responseIdent,
+        rcardinality: 'Single',
+        labels,
+      },
+    ],
+    correctConditions: [
+      {
+        responseIdent,
+        correctLabelIdent: usesLowercaseIdents ? canonicalAnswer.toLowerCase() : canonicalAnswer,
+      },
+    ],
+  };
 }
 
 async function resolveQuestionBankImageRefs(

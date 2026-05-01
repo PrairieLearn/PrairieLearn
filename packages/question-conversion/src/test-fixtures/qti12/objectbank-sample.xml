@@ -18,11 +18,13 @@
       </itemmetadata>
       <presentation>
         <material>
-          <mattext texttype="text/html">&lt;p&gt;Is this statement true or false?&lt;/p&gt;</mattext>
+          <mattext texttype="text/html"
+            >&lt;p&gt;Is this statement true or false?&lt;/p&gt;</mattext
+          >
         </material>
         <response_str ident="response1" rcardinality="Single">
           <render_fib>
-            <response_label ident="answer1" rshuffle="No"/>
+            <response_label ident="answer1" rshuffle="No" />
           </render_fib>
         </response_str>
       </presentation>
@@ -45,18 +47,22 @@
       </itemmetadata>
       <presentation>
         <material>
-          <mattext texttype="text/html">&lt;p&gt;Why does this process work? Explain in your own words.&lt;/p&gt;</mattext>
+          <mattext texttype="text/html"
+            >&lt;p&gt;Why does this process work? Explain in your own words.&lt;/p&gt;</mattext
+          >
         </material>
         <response_str ident="response1" rcardinality="Single">
           <render_fib>
-            <response_label ident="answer1" rshuffle="No"/>
+            <response_label ident="answer1" rshuffle="No" />
           </render_fib>
         </response_str>
       </presentation>
       <itemfeedback ident="general_fb">
         <flow_mat>
           <material>
-            <mattext texttype="text/html">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</mattext>
+            <mattext texttype="text/html"
+              >Lorem ipsum dolor sit amet, consectetur adipiscing elit.</mattext
+            >
           </material>
         </flow_mat>
       </itemfeedback>
@@ -72,11 +78,14 @@
       </itemmetadata>
       <presentation>
         <material>
-          <mattext texttype="text/html">&lt;p&gt;Study the diagram [[images/objectbank-diagram.png]] before answering.&lt;/p&gt;</mattext>
+          <mattext texttype="text/html"
+            >&lt;p&gt;Study the diagram [[images/objectbank-diagram.png]] before
+            answering.&lt;/p&gt;</mattext
+          >
         </material>
         <response_str ident="response1" rcardinality="Single">
           <render_fib>
-            <response_label ident="answer1" rshuffle="No"/>
+            <response_label ident="answer1" rshuffle="No" />
           </render_fib>
         </response_str>
       </presentation>
@@ -99,18 +108,47 @@
       </itemmetadata>
       <presentation>
         <material>
-          <mattext texttype="text/html">&lt;p&gt;Enter the symbolic result of the operation.&lt;/p&gt;</mattext>
+          <mattext texttype="text/html"
+            >&lt;p&gt;Enter the symbolic result of the operation.&lt;/p&gt;</mattext
+          >
         </material>
         <response_str ident="response1" rcardinality="Single">
           <render_fib>
-            <response_label ident="answer1" rshuffle="No"/>
+            <response_label ident="answer1" rshuffle="No" />
           </render_fib>
         </response_str>
       </presentation>
       <itemfeedback ident="general_fb">
         <flow_mat>
           <material>
-            <mattext texttype="text/html">x^2 + C</mattext>
+            <mattext texttype="text/html">\frac{x+1}{y}</mattext>
+          </material>
+        </flow_mat>
+      </itemfeedback>
+    </item>
+    <item ident="q5_choice" title="Problem 5">
+      <itemmetadata>
+        <qtimetadata>
+          <qtimetadatafield>
+            <fieldlabel>question_type</fieldlabel>
+            <fieldentry>essay_question</fieldentry>
+          </qtimetadatafield>
+        </qtimetadata>
+      </itemmetadata>
+      <presentation>
+        <material>
+          <mattext texttype="text/html">&lt;p&gt;Which answer choice is correct?&lt;/p&gt;</mattext>
+        </material>
+        <response_str ident="response1" rcardinality="Single">
+          <render_fib>
+            <response_label ident="answer1" rshuffle="No" />
+          </render_fib>
+        </response_str>
+      </presentation>
+      <itemfeedback ident="general_fb">
+        <flow_mat>
+          <material>
+            <mattext texttype="text/html">(C)</mattext>
           </material>
         </flow_mat>
       </itemfeedback>

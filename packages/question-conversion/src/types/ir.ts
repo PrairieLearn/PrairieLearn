@@ -109,6 +109,7 @@ export type IRQuestionBody =
   | { type: 'numeric'; answer: IRNumericAnswer }
   | { type: 'integer'; answer: IRIntegerAnswer }
   | { type: 'string-input'; correctAnswer: string; ignoreCase?: boolean }
+  | { type: 'symbolic'; correctAnswer: string; variables: string[]; allowSets?: boolean }
   | { type: 'ordering'; correctOrder: IROrderItem[] }
   | { type: 'rich-text'; gradingMethod: 'Manual' }
   | { type: 'text-only' }

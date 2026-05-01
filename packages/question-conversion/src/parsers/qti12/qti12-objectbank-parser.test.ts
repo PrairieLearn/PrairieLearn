@@ -3,6 +3,11 @@ import path from 'node:path';
 
 import { assert, describe, it } from 'vitest';
 
+import {
+  classifyObjectBankAnswer,
+  convertSymbolicLatexCommands,
+  extractSymbolicVariables,
+} from './qti12-helpers.js';
 import { QTI12ObjectBankParser } from './qti12-objectbank-parser.js';
 
 const FIXTURES = path.join(import.meta.dirname, '../../test-fixtures/qti12');
@@ -26,7 +31,7 @@ describe('QTI12ObjectBankParser', () => {
     assert.equal(result.title, 'Sample Chapter Bank');
   });
 
-  it('classifies direct-answer items as auto-graded short-answer questions', async () => {
+  it('classifies direct-answer items as auto-graded multiple-choice questions', async () => {
     const result = await parser.parse(readFixture('objectbank-sample.xml'), {
       basePath: FIXTURES,
     });
@@ -34,10 +39,18 @@ describe('QTI12ObjectBankParser', () => {
     const q1 = result.questions.find((question) => question.sourceId === 'q1_yes');
     assert.isDefined(q1);
     if (!q1) return;
-    assert.equal(q1.body.type, 'string-input');
+    assert.equal(q1.body.type, 'multiple-choice');
     assert.equal(q1.gradingMethod, 'Internal');
-    assert.equal(q1.feedback?.correct, 'yes');
-    assert.equal(q1.feedback?.incorrect, 'yes');
+    if (q1.body.type !== 'multiple-choice') return;
+    assert.deepEqual(
+      q1.body.choices.map((choice) => choice.html),
+      ['Yes', 'No'],
+    );
+    assert.deepEqual(
+      q1.body.choices.map((choice) => choice.correct),
+      [true, false],
+    );
+    assert.equal(q1.shuffleAnswers, false);
   });
 
   it('keeps explanation-style items manual', async () => {
@@ -54,7 +67,7 @@ describe('QTI12ObjectBankParser', () => {
     assert.include(question.feedback?.general ?? '', 'Lorem ipsum dolor sit amet');
   });
 
-  it('warns and falls back to manual grading for ambiguous symbolic answers', async () => {
+  it('infers symbolic inputs from latex answers', async () => {
     const result = await parser.parse(readFixture('objectbank-sample.xml'), {
       basePath: FIXTURES,
     });
@@ -62,13 +75,31 @@ describe('QTI12ObjectBankParser', () => {
     const question = result.questions.find((q) => q.sourceId === 'q4_symbolic');
     assert.isDefined(question);
     if (!question) return;
-    assert.equal(question.body.type, 'rich-text');
-    assert.equal(question.gradingMethod, 'Manual');
-    assert.isTrue(
-      result.parseWarnings?.some(
-        (warning) =>
-          warning.questionId === 'q4_symbolic' && warning.message.includes('non-plain answer key'),
-      ) ?? false,
+    assert.equal(question.body.type, 'symbolic');
+    assert.equal(question.gradingMethod, 'Internal');
+    if (question.body.type !== 'symbolic') return;
+    assert.deepEqual(question.body.variables, ['x', 'y']);
+    assert.equal(question.body.correctAnswer, '(x+1)/(y)');
+    assert.isUndefined(question.body.allowSets);
+  });
+
+  it('names choice options as A through E when the answer key is a letter', async () => {
+    const result = await parser.parse(readFixture('objectbank-sample.xml'), {
+      basePath: FIXTURES,
+    });
+
+    const question = result.questions.find((q) => q.sourceId === 'q5_choice');
+    assert.isDefined(question);
+    if (!question) return;
+    assert.equal(question.body.type, 'multiple-choice');
+    if (question.body.type !== 'multiple-choice') return;
+    assert.deepEqual(
+      question.body.choices.map((choice) => choice.html),
+      ['A', 'B', 'C', 'D', 'E'],
+    );
+    assert.deepEqual(
+      question.body.choices.map((choice) => choice.correct),
+      [false, false, true, false, false],
     );
   });
 
@@ -87,5 +118,18 @@ describe('QTI12ObjectBankParser', () => {
     );
     assert.isTrue(question.assets.has('objectbank-diagram.png'));
     assert.equal(question.assets.get('objectbank-diagram.png')?.type, 'base64');
+  });
+
+  it('ports the answer-classifier heuristics used by the transpiler', () => {
+    const yesNo = classifyObjectBankAnswer('yes');
+    assert.equal(yesNo.kind, 'multiple-choice');
+    assert.deepEqual(yesNo.choiceOptions, ['Yes', 'No']);
+
+    const letterChoice = classifyObjectBankAnswer('(C)');
+    assert.equal(letterChoice.kind, 'multiple-choice');
+    assert.deepEqual(letterChoice.choiceOptions, ['A', 'B', 'C', 'D', 'E']);
+
+    assert.equal(convertSymbolicLatexCommands('\\frac{x+1}{y}'), '(x+1)/(y)');
+    assert.deepEqual(extractSymbolicVariables('\\frac{x+1}{y}'), ['x', 'y']);
   });
 });

@@ -6,12 +6,13 @@ import type { IRAssessment, IRParseWarning, IRQuestion } from '../../types/ir.js
 import type { QTI12ParsedItem } from '../../types/qti12.js';
 import type { InputParser, ParseOptions } from '../parser.js';
 
-import { buildQTI12Question, parseQTI12Item } from './qti12-helpers.js';
+import {
+  buildQTI12Question,
+  classifyObjectBankAnswer,
+  parseQTI12Item,
+  synthesizeMultipleChoiceItem,
+} from './qti12-helpers.js';
 import { attr, ensureArray, parseMetadata, parseXml } from './xml-helpers.js';
-
-const DIRECT_ANSWER_RE = /^(?:yes|no|true|false|[-+]?\d+(?:\.\d+)?)$/i;
-const EXPLANATION_PROMPT_RE =
-  /\b(explain|why|justify|describe|discuss|in your own words|using the language of limits|what is the purpose|what is the significance)\b/i;
 
 /**
  * Parser for QTI 1.2 objectbank exports.
@@ -57,8 +58,7 @@ export class QTI12ObjectBankParser implements InputParser {
     for (const rawItem of rawItems) {
       const parsedItem = parseQTI12Item(rawItem);
       const { questionType, warning } = this.classifyItem(parsedItem);
-      const item =
-        questionType === parsedItem.questionType ? parsedItem : { ...parsedItem, questionType };
+      const item = this.rewriteItem(parsedItem, questionType);
       if (warning) {
         parseWarnings.push({ questionId: item.ident, message: warning });
       }
@@ -69,6 +69,7 @@ export class QTI12ObjectBankParser implements InputParser {
           this.registry,
           {
             parseOptions: options,
+            shuffleAnswers: false,
             includeGeneralFeedbackAsAnswer: true,
           },
           parseWarnings,
@@ -124,18 +125,68 @@ export class QTI12ObjectBankParser implements InputParser {
       };
     }
 
-    if (EXPLANATION_PROMPT_RE.test(promptText)) {
-      return { questionType: 'essay_question' };
+    const classification = classifyObjectBankAnswer(generalFb, promptText);
+    if (classification.kind === 'manual') {
+      return {
+        questionType: 'essay_question',
+        warning: `objectbank item "${item.ident}" has a non-plain answer key in general_fb; emitting as a manual rich-text question.`,
+      };
     }
 
-    if (DIRECT_ANSWER_RE.test(generalFb)) {
-      return { questionType: 'short_answer_question' };
+    if (classification.kind === 'multiple-choice') {
+      return { questionType: 'multiple_choice_question' };
     }
 
-    return {
-      questionType: 'essay_question',
-      warning: `objectbank item "${item.ident}" has a non-plain answer key in general_fb; emitting as a manual rich-text question.`,
-    };
+    if (classification.kind === 'symbolic') {
+      return { questionType: 'symbolic_question' };
+    }
+
+    return { questionType: 'short_answer_question' };
+  }
+
+  private rewriteItem(item: QTI12ParsedItem, questionType: string): QTI12ParsedItem {
+    if (questionType !== 'multiple_choice_question') {
+      return questionType === item.questionType ? item : { ...item, questionType };
+    }
+
+    const classification = classifyObjectBankAnswer(item.feedbacks.get('general_fb') ?? '');
+    if (classification.kind !== 'multiple-choice') {
+      return { ...item, questionType };
+    }
+
+    if (item.responseLids.some((lid) => lid.labels.length > 0)) {
+      const responseLid = item.responseLids[0];
+      if (!responseLid) {
+        return { ...item, questionType };
+      }
+
+      const correctLabel = responseLid.labels.find(
+        (label) =>
+          label.ident.toUpperCase() === classification.canonicalAnswer.toUpperCase() ||
+          label.text.toUpperCase() === classification.canonicalAnswer.toUpperCase(),
+      );
+
+      if (!correctLabel) {
+        return { ...item, questionType };
+      }
+
+      return {
+        ...item,
+        questionType,
+        correctConditions: [
+          {
+            responseIdent: responseLid.ident,
+            correctLabelIdent: correctLabel.ident,
+          },
+        ],
+      };
+    }
+
+    return synthesizeMultipleChoiceItem(
+      item,
+      classification.choiceOptions ?? ['A', 'B', 'C', 'D', 'E'],
+      classification.canonicalAnswer,
+    );
   }
 
   private normalizeText(value: string | undefined): string {

@@ -11,6 +11,7 @@ import { multipleChoiceHandler } from './multiple-choice.js';
 import { multipleDropdownsHandler } from './multiple-dropdowns.js';
 import { numericalHandler } from './numerical.js';
 import { shortAnswerHandler } from './short-answer.js';
+import { symbolicHandler } from './symbolic.js';
 import { textOnlyHandler } from './text-only.js';
 import { trueFalseHandler } from './true-false.js';
 
@@ -26,6 +27,7 @@ export function createQTI12Registry(): TransformRegistry<QTI12ParsedItem> {
   registry.register(textOnlyHandler);
   registry.register(essayHandler);
   registry.register(shortAnswerHandler);
+  registry.register(symbolicHandler);
   registry.register(numericalHandler);
   registry.register(calculatedHandler);
   registry.register(fileUploadHandler);
