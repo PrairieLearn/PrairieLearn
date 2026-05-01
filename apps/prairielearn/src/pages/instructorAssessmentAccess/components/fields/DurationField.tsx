@@ -72,19 +72,16 @@ function DurationToggle({
   value,
   onChange,
   idPrefix,
-  showLabel,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
   idPrefix: string;
-  showLabel?: boolean;
 }) {
   return (
     <ToggleTitle
       id={`${idPrefix}-time-limit-enabled`}
       label="Time limit"
       checked={value !== null}
-      showLabel={showLabel}
       onChange={(checked) => onChange(checked ? 60 : null)}
     />
   );
@@ -135,7 +132,6 @@ export function OverrideDurationField({ index }: { index: number }) {
         <DurationToggle
           value={field.value}
           idPrefix={`overrides-${index}`}
-          showLabel={false}
           onChange={field.onChange}
         />
       }

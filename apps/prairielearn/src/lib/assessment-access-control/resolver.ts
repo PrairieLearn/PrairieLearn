@@ -419,7 +419,9 @@ export function resolveAccessControl(
       ...examVisibility,
       examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
-      accessTimeline,
+      // The PT reservation governs access; the date-control timeline is
+      // irrelevant under a PT grant, so omit it from the student popover.
+      accessTimeline: [],
       nextActiveDate: null,
     };
   }

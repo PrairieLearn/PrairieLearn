@@ -553,7 +553,6 @@ export function OverrideDeadlineArrayField({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={label}
           checked={fields.length > 0}
-          showLabel={false}
           disabled={addEarlyDisabled && fields.length === 0}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
           onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
@@ -577,6 +576,12 @@ export function OverrideDeadlineArrayField({
       }}
       onRemoveOverride={removeOverride}
     >
+      {fields.length === 0 && (
+        <Alert variant="info" className="py-2 mb-0">
+          With no {type} deadlines set, this override clears any {type} deadlines inherited from the
+          defaults or earlier overrides. Click "Remove override" to inherit them instead.
+        </Alert>
+      )}
       <DeadlineArrayInput
         type={type}
         fieldArrayName={fieldArrayName}
