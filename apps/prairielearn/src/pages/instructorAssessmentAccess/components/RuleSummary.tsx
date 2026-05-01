@@ -46,15 +46,11 @@ interface DateTableRow {
 }
 
 /**
- * Convert a timezone-naive datetime-local string from the form into a Date,
- * interpreting it in the course instance's display timezone. Returns null
- * for empty or invalid input — the form may briefly hold partial values
- * during editing.
+ * Convert a form datetime-local string into an absolute instant in `timezone`.
+ * Returns null on empty/invalid input — the form may briefly hold partial
+ * values during editing.
  */
-function plainDateTimeStringToDate(
-  value: string | null | undefined,
-  timezone: string,
-): Date | null {
+function toRuntimeInstant(value: string | null | undefined, timezone: string): Date | null {
   if (!value) return null;
   try {
     return new Date(
@@ -76,12 +72,12 @@ function defaultRuleToRuntimeDateControl(
   displayTimezone: string,
 ): RuntimeDateControl | undefined {
   if (!rule.dateControlEnabled) return undefined;
-  const releaseDate = plainDateTimeStringToDate(rule.release.date, displayTimezone);
+  const releaseDate = toRuntimeInstant(rule.release.date, displayTimezone);
   if (!releaseDate) return undefined;
 
   const toRuntimeDeadlines = (entries: DeadlineEntry[]) =>
     entries
-      .map((e) => ({ date: plainDateTimeStringToDate(e.date, displayTimezone), credit: e.credit }))
+      .map((e) => ({ date: toRuntimeInstant(e.date, displayTimezone), credit: e.credit }))
       .filter((e): e is { date: Date; credit: number } => e.date !== null)
       .map((e) => ({ date: e.date.toISOString(), credit: e.credit }));
 
@@ -93,7 +89,7 @@ function defaultRuleToRuntimeDateControl(
     // `due` is always part of dateControl when enabled (mirrors defaultRuleToJson).
     // null/empty due dates collapse to "no due date" for timeline purposes.
     due: {
-      date: plainDateTimeStringToDate(rule.due.date, displayTimezone),
+      date: toRuntimeInstant(rule.due.date, displayTimezone),
       ...(rule.due.customCredit && rule.due.credit != null ? { credit: rule.due.credit } : {}),
     },
     ...(early.length > 0 ? { earlyDeadlines: early } : {}),
@@ -136,7 +132,11 @@ export function generateDefaultRuleDateTableRows(
   const afterLastDeadline = rule.afterLastDeadline;
 
   const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
-  const segmentEndsAt = segment?.endDate?.getTime() ?? null;
+  const segmentEndPDT = segment?.endDate
+    ? Temporal.Instant.fromEpochMilliseconds(segment.endDate.getTime())
+        .toZonedDateTimeISO(displayTimezone)
+        .toPlainDateTime()
+    : null;
   const isBeforeReleaseSegment = segment?.startDate === null;
   // The trailing segment (endDate === null) is either the indefinite-due
   // segment (when due.date is null) or the after-last-deadline segment. Only
@@ -152,9 +152,12 @@ export function generateDefaultRuleDateTableRows(
   const isIndefiniteDueSegment = segment?.endDate === null && dueDate === null;
 
   const isDeadlineCurrent = (formDateString: string): boolean => {
-    if (segmentEndsAt == null) return false;
-    const d = plainDateTimeStringToDate(formDateString, displayTimezone);
-    return d?.getTime() === segmentEndsAt;
+    if (segmentEndPDT == null) return false;
+    try {
+      return Temporal.PlainDateTime.from(formDateString).equals(segmentEndPDT);
+    } catch {
+      return false;
+    }
   };
 
   if (releaseDate) {
