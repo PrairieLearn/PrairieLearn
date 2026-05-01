@@ -360,11 +360,21 @@
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
     const endMenuItems = mf.menuItems.filter((item) => standardMenuItems.has(item.id));
 
-    // If the allow-trig attribute is set, basic trig functions are added to the virtual keyboard
+    // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
+    const allowSets = mf.getAttribute('allow-sets');
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
+
+    const signKey = {
+      class: 'small',
+      latex: '\\mathrm{sign}',
+      insert: '\\operatorname{sign}\\left({#@}\\right)',
+    };
+
+    /** A key that is only present if `allowSets` */
+    const onlyIfSets = (key) => (allowSets ? [key] : []);
 
     mf.menuItems = [
       {
@@ -399,8 +409,12 @@
 
     const elementKeyboardLayout = {
       label: 'math',
+      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
+      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // stay reachable in the same general region of the keyboard.
       rows: [
         [
+          ...onlyIfSets('[separator]'),
           makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
           makeShortcutProxy(
             {
@@ -422,11 +436,13 @@
           '9',
           '+',
           '[separator]',
-          'e',
+          allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e',
+          ...onlyIfSets(','),
           '\\infty',
           '\\pi',
         ],
         [
+          ...onlyIfSets('[separator]'),
           { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
           logAsLn
             ? {
@@ -446,11 +462,13 @@
           '6',
           '-',
           '[separator]',
-          { latex: 'x' },
-          { latex: 'y' },
+          allowSets ? '[' : 'x',
+          allowSets ? ']' : 'y',
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', insert: '{#?} \\cup {#?}' }, mf)),
           imaginaryUnit,
         ],
         [
+          ...onlyIfSets('[separator]'),
           { class: 'small', latex: '|#@|', insert: '|{#@}|' },
           { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
           { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
@@ -468,13 +486,11 @@
           '[separator]',
           '(',
           ')',
-          {
-            class: 'small',
-            latex: '\\mathrm{sign}',
-            insert: '\\operatorname{sign}\\left({#@}\\right)',
-          },
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', insert: '{#?} \\cap {#?}' }, mf)),
+          allowSets ? 'x' : signKey,
         ],
         [
+          ...onlyIfSets('[separator]'),
           allowTrig
             ? {
                 class: 'small',
@@ -576,6 +592,7 @@
           { class: 'small hide-shift', label: '[left]' },
           { class: 'small hide-shift', label: '[right]' },
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
+          ...onlyIfSets(signKey), // sign shifted from above
         ],
       ],
     };
@@ -680,6 +697,7 @@
     const additionalFunctions = mf.getAttribute('custom-functions')?.split(',') ?? [];
 
     const customFunctions = new Set(additionalFunctions.concat(defaultFunctions));
+    const allowSets = mf.getAttribute('allow-sets');
 
     const macros = {};
     [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
@@ -714,6 +732,16 @@
         value: '\\infty',
       },
     };
+
+    if (allowSets) {
+      inlineShortcuts.cup = { value: '{#@} \\cup {#?}' };
+      inlineShortcuts['\\cup'] = inlineShortcuts.cup;
+      inlineShortcuts.U = inlineShortcuts.cup;
+
+      inlineShortcuts.cap = { value: '{#@} \\cap {#?}' };
+      inlineShortcuts['\\cap'] = inlineShortcuts.cap;
+      inlineShortcuts['&'] = inlineShortcuts.cap;
+    }
 
     const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
 

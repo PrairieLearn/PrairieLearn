@@ -5,11 +5,11 @@ import json
 import os
 import re
 from enum import Enum
+from typing import assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class Counter(Enum):

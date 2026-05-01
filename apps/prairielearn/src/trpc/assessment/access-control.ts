@@ -11,8 +11,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
-import { features } from '../../lib/features/index.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -33,27 +32,13 @@ import { throwAppError } from '../app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireEnhancedAccessControl,
   t,
 } from './init.js';
 
 export interface AccessControlError {
   SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
-
-const requireEnhancedAccessControl = t.middleware(async (opts) => {
-  const enabled = await features.enabled('enhanced-access-control', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-  });
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Enhanced access control is not enabled for this course.',
-    });
-  }
-  return opts.next();
-});
 
 const students = t.procedure
   .use(requireEnhancedAccessControl)
@@ -114,9 +99,10 @@ function formJsonToEnrollmentRuleData(
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
-    releaseDate: dc?.releaseDate ?? null,
-    dueDateOverridden: dc?.dueDate !== undefined,
-    dueDate: dc?.dueDate ?? null,
+    releaseDate: dc?.release?.date ?? null,
+    dueOverridden: dc?.due !== undefined,
+    dueDate: dc?.due?.date ?? null,
+    dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
@@ -159,7 +145,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -231,7 +217,7 @@ const saveAllRules = t.procedure
     const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
-      opts.ctx.course_instance.short_name!,
+      opts.ctx.course_instance.short_name,
       'assessments',
       opts.ctx.assessment.tid!,
     );
@@ -291,7 +277,7 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
-          // TODO: Add audit logging for enrollment rule changes. Label/main rules
+          // TODO: Add audit logging for enrollment rule changes. Label/default rules
           // are tracked in git; only enrollment rules need separate audit logs.
           for (const enrollmentRule of enrollmentRules) {
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);

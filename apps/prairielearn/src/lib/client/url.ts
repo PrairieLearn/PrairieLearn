@@ -23,6 +23,12 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentSettingsUrl(
+  parts: { assessmentId: string } & AssessmentUrlParts,
+): string {
+  return `${getAssessmentUrl(parts)}/settings`;
+}
+
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }
@@ -176,6 +182,10 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
 
 export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';
+}
+
+export function getCourseTrpcUrl(courseId: string): string {
+  return `/pl/course/${courseId}/trpc`;
 }
 
 export function getCourseInstanceTrpcUrl(courseInstanceId: string): string {

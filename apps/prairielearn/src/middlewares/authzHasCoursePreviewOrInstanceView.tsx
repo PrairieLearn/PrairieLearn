@@ -5,6 +5,10 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../components/PageLayout.js';
+import {
+  CourseInstancePageAuthzDataSchema,
+  CoursePageAuthzDataSchema,
+} from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
@@ -46,7 +50,17 @@ export async function authzHasCoursePreviewOrInstanceView(
     const pageContext = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'instructor',
+      withAuthzData: false,
     });
+
+    // This middleware runs on both course-only and course-instance routes.
+    // The upstream `authzCourseOrInstance` middleware only populates CI authz
+    // fields on `res.locals.authz_data` when `course_instance_id` is in the
+    // route params, so we use that param to pick the matching schema.
+    const authzSchema = req.params.course_instance_id
+      ? CourseInstancePageAuthzDataSchema
+      : CoursePageAuthzDataSchema;
+    const authzData = authzSchema.parse(res.locals.authz_data);
     return {
       type: 'body',
       html: PageLayout({
@@ -63,9 +77,9 @@ export async function authzHasCoursePreviewOrInstanceView(
                 'has_course_permission_preview',
                 'has_course_instance_permission_view',
               ]}
-              authzData={pageContext.authz_data}
+              authzData={authzData}
               authnUser={pageContext.authn_user}
-              authzUser={pageContext.authz_data.user}
+              authzUser={authzData.user}
             />
           </Hydrate>
         ),

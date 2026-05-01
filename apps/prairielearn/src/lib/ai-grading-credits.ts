@@ -1,4 +1,16 @@
 /**
+ * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+ * adjustments. Applied on both the client (input validation) and server
+ * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
+ */
+export interface CreditPoolLimits {
+  add: { minMilliDollars: number; maxMilliDollars: number };
+  deduct: { minMilliDollars: number; maxMilliDollars: number };
+  setTransferable: { minMilliDollars: number; maxMilliDollars: number };
+  setNonTransferable: { minMilliDollars: number; maxMilliDollars: number };
+}
+
+/**
  * Format milli-dollars as a display string.
  * Examples: 4509 → "$4.51", 0 → "$0.00", 5 → "<$0.01", -4509 → "-$4.51"
  */

@@ -4,8 +4,8 @@ import type { AccessControlJsonWithId } from '../../../models/assessment-access-
 
 /** Field names that belong to the date control section of an access control rule. */
 export const DATE_CONTROL_FIELD_NAMES = [
-  'releaseDate',
-  'dueDate',
+  'release',
+  'due',
   'earlyDeadlines',
   'lateDeadlines',
   'afterLastDeadline',
@@ -21,6 +21,22 @@ export type OverridableFieldName =
 export interface DeadlineEntry {
   date: string;
   credit: number;
+}
+
+/**
+ * Form-state representation of the due-date configuration. `date = null`
+ * means "no due date". `customCredit = false` means "use default 100% credit"
+ * (and `credit` is ignored); `customCredit = true` means "use the value in
+ * `credit`" — `credit` may be `null` transiently while the user is editing,
+ * which is a validation error.
+ *
+ * We use `null` (not `undefined`) because react-hook-form silently reverts
+ * undefined values to their previous state.
+ */
+export interface DueValue {
+  date: string | null;
+  credit: number | null;
+  customCredit: boolean;
 }
 
 export interface AfterLastDeadlineValue {
@@ -72,14 +88,14 @@ export interface AppliesTo {
   studentLabels: StudentLabelTarget[];
 }
 
-// Main rule: flat fields, null = feature off
-export interface MainRuleData {
+// Default rule: flat fields, null = feature off
+export interface DefaultRuleData {
   id?: string;
   trackingId: string;
   beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
-  releaseDate: string | null;
-  dueDate: string | null;
+  release: { date: string | null };
+  due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
   afterLastDeadline: AfterLastDeadlineValue | null;
@@ -91,7 +107,7 @@ export interface MainRuleData {
 }
 
 // Override: flat fields. The `overriddenFields` array tracks which fields
-// are overridden vs inherited from the main rule.  We avoid using `undefined`
+// are overridden vs inherited from the default rule.  We avoid using `undefined`
 // as a sentinel because react-hook-form does not support setting field values
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
@@ -99,8 +115,8 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
-  releaseDate: string | null;
-  dueDate: string | null;
+  release: { date: string | null };
+  due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
   afterLastDeadline: AfterLastDeadlineValue;
@@ -111,7 +127,7 @@ export interface OverrideData {
 }
 
 export interface AccessControlFormData {
-  mainRule: MainRuleData;
+  defaultRule: DefaultRuleData;
   overrides: OverrideData[];
 }
 
@@ -135,10 +151,10 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
   return value;
 }
 
-export function jsonToMainRuleFormData(
+export function jsonToDefaultRuleFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
-): MainRuleData {
+): DefaultRuleData {
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -147,15 +163,19 @@ export function jsonToMainRuleFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     beforeReleaseListed: json.beforeRelease?.listed ?? false,
     dateControlEnabled:
-      dc?.releaseDate != null ||
-      dc?.dueDate != null ||
+      dc?.release != null ||
+      dc?.due != null ||
       (dc?.earlyDeadlines?.length ?? 0) > 0 ||
       (dc?.lateDeadlines?.length ?? 0) > 0 ||
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    releaseDate: toLocalDatetimeValue(dc?.releaseDate, displayTimezone) ?? null,
-    dueDate: toLocalDatetimeValue(dc?.dueDate, displayTimezone) ?? null,
+    release: { date: toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null },
+    due: {
+      date: toLocalDatetimeValue(dc?.due?.date ?? null, displayTimezone),
+      credit: dc?.due?.credit ?? null,
+      customCredit: dc?.due?.credit != null,
+    },
     earlyDeadlines: (dc?.earlyDeadlines ?? []).map((d) => ({
       ...d,
       date: toLocalDatetimeValue(d.date, displayTimezone),
@@ -213,16 +233,20 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: OverridableFieldName[] = [];
 
-  let releaseDate: string | null = null;
-  if (dc?.releaseDate !== undefined) {
-    releaseDate = toLocalDatetimeValue(dc.releaseDate, displayTimezone);
-    overriddenFields.push('releaseDate');
+  let release: { date: string | null } = { date: null };
+  if (dc?.release !== undefined) {
+    release = { date: toLocalDatetimeValue(dc.release.date, displayTimezone) };
+    overriddenFields.push('release');
   }
 
-  let dueDate: string | null = null;
-  if (dc?.dueDate !== undefined) {
-    dueDate = toLocalDatetimeValue(dc.dueDate, displayTimezone) ?? null;
-    overriddenFields.push('dueDate');
+  let due: DueValue = { date: null, credit: null, customCredit: false };
+  if (dc?.due !== undefined) {
+    due = {
+      date: toLocalDatetimeValue(dc.due.date, displayTimezone),
+      credit: dc.due.credit ?? null,
+      customCredit: dc.due.credit != null,
+    };
+    overriddenFields.push('due');
   }
 
   let earlyDeadlines: DeadlineEntry[] = [];
@@ -286,8 +310,8 @@ export function jsonToOverrideFormData(
     trackingId: json.id ?? crypto.randomUUID(),
     appliesTo,
     overriddenFields,
-    releaseDate,
-    dueDate,
+    release,
+    due,
     earlyDeadlines,
     lateDeadlines,
     afterLastDeadline,
@@ -298,7 +322,29 @@ export function jsonToOverrideFormData(
   };
 }
 
-function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
+/**
+ * Build the JSON `due` object from form state. `customCredit = false` means
+ * "use default" and credit is dropped from JSON; otherwise the explicit
+ * number (including 100) is preserved — an explicit 100 is semantically
+ * distinct from default because cross-rule validation (e.g. forbidding early
+ * deadlines) treats any set credit as customized.
+ *
+ * `customCredit: true` with `credit: null` is a transient editing state that
+ * the form's per-field validator blocks at submit time; assert here so any
+ * future caller that bypasses the form fails loudly instead of silently
+ * coercing to "default credit".
+ */
+function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
+  if (due.customCredit) {
+    if (due.credit === null) {
+      throw new Error('customCredit is true but credit is null');
+    }
+    return { date: due.date, credit: due.credit };
+  }
+  return { date: due.date };
+}
+
+function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
   };
@@ -309,10 +355,19 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 
   if (rule.dateControlEnabled) {
     output.dateControl = {};
-    if (rule.releaseDate) output.dateControl.releaseDate = rule.releaseDate;
-    if (rule.dueDate) output.dateControl.dueDate = rule.dueDate;
-    if (rule.earlyDeadlines.length > 0) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
-    if (rule.lateDeadlines.length > 0) output.dateControl.lateDeadlines = rule.lateDeadlines;
+    if (rule.release.date) output.dateControl.release = { date: rule.release.date };
+    // Omit `due` on the default rule when no date is set and no custom credit is
+    // applied — it would just emit `{ date: null }`, which is semantically
+    // equivalent to "no due configured".
+    if (rule.due.date !== null || rule.due.customCredit) {
+      output.dateControl.due = buildDueJson(rule.due);
+    }
+    if (rule.earlyDeadlines.length > 0) {
+      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+    }
+    if (rule.lateDeadlines.length > 0) {
+      output.dateControl.lateDeadlines = rule.lateDeadlines;
+    }
     if (rule.afterLastDeadline) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
@@ -360,8 +415,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 }
 
 function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
+  // Override rules always emit a `labels` array (possibly empty); only default
+  // rules omit the key. An empty array means the rule targets zero students
+  // (e.g. every label it used to reference was deleted) and is still a
+  // student-label rule, not a second default.
   const labels =
-    rule.appliesTo.targetType === 'student_label' && rule.appliesTo.studentLabels.length > 0
+    rule.appliesTo.targetType === 'student_label'
       ? rule.appliesTo.studentLabels.map((sl) => sl.name)
       : undefined;
 
@@ -376,12 +435,18 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   if (hasDateControl) {
     output.dateControl = {};
-    if (of.has('releaseDate') && rule.releaseDate) {
-      output.dateControl.releaseDate = rule.releaseDate;
+    if (of.has('release') && rule.release.date) {
+      output.dateControl.release = { date: rule.release.date };
     }
-    if (of.has('dueDate')) output.dateControl.dueDate = rule.dueDate;
-    if (of.has('earlyDeadlines')) output.dateControl.earlyDeadlines = rule.earlyDeadlines;
-    if (of.has('lateDeadlines')) output.dateControl.lateDeadlines = rule.lateDeadlines;
+    if (of.has('due')) {
+      output.dateControl.due = buildDueJson(rule.due);
+    }
+    if (of.has('earlyDeadlines')) {
+      output.dateControl.earlyDeadlines = rule.earlyDeadlines;
+    }
+    if (of.has('lateDeadlines')) {
+      output.dateControl.lateDeadlines = rule.lateDeadlines;
+    }
     if (of.has('afterLastDeadline')) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
@@ -421,10 +486,13 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map(overrideToJson)];
+  return [
+    defaultRuleToJson(formData.defaultRule),
+    ...formData.overrides.map((o) => overrideToJson(o)),
+  ];
 }
 
-export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
+export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
@@ -433,16 +501,18 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    releaseDate: mainRule?.releaseDate ?? null,
-    dueDate: mainRule?.dueDate ?? null,
-    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
-    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: mainRule?.afterLastDeadline
-      ? { ...mainRule.afterLastDeadline }
+    release: { date: defaultRule?.release.date ?? null },
+    due: defaultRule?.due
+      ? { ...defaultRule.due }
+      : { date: null, credit: null, customCredit: false },
+    earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: defaultRule?.afterLastDeadline
+      ? { ...defaultRule.afterLastDeadline }
       : { allowSubmissions: false },
-    durationMinutes: mainRule?.durationMinutes ?? null,
-    password: mainRule?.password ?? null,
-    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },
-    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hidden: false },
+    durationMinutes: defaultRule?.durationMinutes ?? null,
+    password: defaultRule?.password ?? null,
+    questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },
+    scoreVisibility: defaultRule ? { ...defaultRule.scoreVisibility } : { hidden: false },
   };
 }
