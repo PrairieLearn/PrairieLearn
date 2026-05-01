@@ -112,7 +112,7 @@ export function validateRuleStructuralDependencyIssues(
 
   // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
   // true) need a due date as an anchor. Early deadlines are standalone bonus
-  // windows. The cross-rule "inherit from main" case is handled by
+  // windows. The cross-rule "inherit from default" case is handled by
   // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
@@ -212,7 +212,7 @@ export function validateRuleStructuralDependencyIssues(
 
 /**
  * Cross-rule structural check: complements the per-rule validator, which
- * treats `dc.due === undefined` on overrides as "inherit from main" and so
+ * treats `dc.due === undefined` on overrides as "inherit from default" and so
  * misses the case where the inherited value is also missing. Lenient like
  * the other global checks — overrides can cascade, so any rule's due could
  * anchor a given student's resolved timeline. Skips overrides that

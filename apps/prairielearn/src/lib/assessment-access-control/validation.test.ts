@@ -1631,8 +1631,8 @@ describe('Structural field dependency validation', () => {
 });
 
 describe('Global structural dependency validation', () => {
-  it('flags override late deadlines when main has no due and override does not override due', () => {
-    const main = AccessControlJsonSchema.parse({
+  it('flags override late deadlines when default has no due and override does not override due', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: null },
@@ -1645,7 +1645,7 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.isTrue(
@@ -1657,8 +1657,8 @@ describe('Global structural dependency validation', () => {
     );
   });
 
-  it('accepts override late deadlines when main has a due date', () => {
-    const main = AccessControlJsonSchema.parse({
+  it('accepts override late deadlines when default has a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: '2024-03-21T23:59:00' },
@@ -1671,14 +1671,14 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.deepEqual(issues, []);
   });
 
   it('accepts override late deadlines when the override sets its own due date', () => {
-    const main = AccessControlJsonSchema.parse({
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: null },
@@ -1692,14 +1692,14 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.deepEqual(issues, []);
   });
 
   it('flags afterLastDeadline practice mode when no rule has a due date', () => {
-    const main = AccessControlJsonSchema.parse({
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: null },
@@ -1712,7 +1712,7 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.isTrue(
@@ -1725,7 +1725,7 @@ describe('Global structural dependency validation', () => {
   });
 
   it('does not flag afterLastDeadline no_submissions mode without a due date', () => {
-    const main = AccessControlJsonSchema.parse({
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: null },
@@ -1738,14 +1738,14 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.deepEqual(issues, []);
   });
 
   it('does not flag rules without late deadlines or afterLastDeadline', () => {
-    const main = AccessControlJsonSchema.parse({
+    const defaultRule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: null },
@@ -1758,7 +1758,7 @@ describe('Global structural dependency validation', () => {
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
-      { rule: main, targetType: 'none', ruleIndex: 0 },
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
       { rule: override, targetType: 'student_label', ruleIndex: 1 },
     ]);
     assert.deepEqual(issues, []);

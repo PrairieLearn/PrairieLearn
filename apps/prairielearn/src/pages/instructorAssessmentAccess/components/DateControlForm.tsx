@@ -124,11 +124,7 @@ export function OverrideDateControlForm({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  // Show late-deadline fields when this override has its own late content
-  // (so it can be edited/cleared) or when its effective due date — own if
-  // overridden, otherwise inherited from main — provides an anchor for new
-  // late content.
-  const mainDueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
+  const defaultRuleDueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
     name: 'defaultRule.due.date',
   });
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
@@ -137,7 +133,7 @@ export function OverrideDateControlForm({
   const overrideDueDate = useWatch<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
   });
-  const effectiveDueDate = overriddenFields.includes('due') ? overrideDueDate : mainDueDate;
+  const effectiveDueDate = overriddenFields.includes('due') ? overrideDueDate : defaultRuleDueDate;
   const showLateFields =
     effectiveDueDate != null ||
     overriddenFields.includes('lateDeadlines') ||
