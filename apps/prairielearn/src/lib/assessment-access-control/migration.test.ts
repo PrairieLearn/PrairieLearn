@@ -605,6 +605,34 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'dates with fractional seconds and UTC suffix match input_date handling',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2019-09-03T08:00:00.179Z',
+          endDate: '2019-12-20T23:59:59.999Z',
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        { active: false, startDate: '2020-01-01 12:34:56.789Z' },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2019-09-03T08:00:00' },
+            due: { date: '2019-12-20T23:59:59' },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2020-01-01T12:34:56' },
+            score: { hidden: true, visibleFromDate: '2020-01-01T12:34:56' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'pre-release listing and later reveal',
       rules: [
         { endDate: '2030-01-01T00:00:00', active: false },
