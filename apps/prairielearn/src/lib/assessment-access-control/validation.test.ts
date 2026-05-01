@@ -6,6 +6,7 @@ import {
 } from '../../schemas/accessControl.js';
 
 import {
+  type AccessControlValidationRule,
   validateAccessControlRules,
   validateAfterCompleteCrossFieldIssues,
   validateGlobalCreditConsistencyIssues,
@@ -1667,7 +1668,11 @@ describe('afterComplete hidden/visibility validation', () => {
 });
 
 describe('afterComplete cross-field validation', () => {
-  function makeRule(json: AccessControlJsonInput, ruleIndex: number, isMain: boolean) {
+  function makeRule(
+    json: AccessControlJsonInput,
+    ruleIndex: number,
+    isMain: boolean,
+  ): AccessControlValidationRule {
     return {
       rule: AccessControlJsonSchema.parse(json),
       targetType: isMain ? 'none' : 'student_label',
