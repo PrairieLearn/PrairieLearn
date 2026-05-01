@@ -536,9 +536,13 @@ export function GroupSettingsCard({
                                       if (value != null && max != null && value > max) {
                                         return 'Must be ≤ max assignees.';
                                       }
-                                      const groupMax = getValues('maxMembers');
-                                      if (value != null && groupMax != null && value > groupMax) {
-                                        return `Must be ≤ group maximum (${groupMax}).`;
+                                      const maxMembers = getValues('maxMembers');
+                                      if (
+                                        value != null &&
+                                        maxMembers != null &&
+                                        value > maxMembers
+                                      ) {
+                                        return `Must be ≤ group maximum (${maxMembers}).`;
                                       }
                                       return true;
                                     },
@@ -580,9 +584,13 @@ export function GroupSettingsCard({
                                       if (value != null && min != null && min > value) {
                                         return 'Must be ≥ min assignees.';
                                       }
-                                      const groupMax = getValues('maxMembers');
-                                      if (value != null && groupMax != null && value > groupMax) {
-                                        return `Must be ≤ group maximum (${groupMax}).`;
+                                      const maxMembers = getValues('maxMembers');
+                                      if (
+                                        value != null &&
+                                        maxMembers != null &&
+                                        value > maxMembers
+                                      ) {
+                                        return `Must be ≤ group maximum (${maxMembers}).`;
                                       }
                                       return true;
                                     },
