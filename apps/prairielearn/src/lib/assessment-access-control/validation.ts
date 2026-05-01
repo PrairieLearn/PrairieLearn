@@ -144,7 +144,7 @@ export function validateRuleStructuralDependencyIssues(
     }
   }
 
-  // Constraint 3: Early deadlines are not allowed when a custom due credit is set.
+  // Constraint 2: Early deadlines are not allowed when a custom due credit is set.
   // Early deadlines are standalone bonus-credit windows above the due-date credit,
   // but when the due-date credit is customized we require a single coherent credit
   // shape around the due date rather than layering bonuses on top.
@@ -157,7 +157,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Constraint 3: Late deadlines are not allowed when due credit is 0%.
   // Late deadline credit must be strictly less than the due credit, so a
   // 0% due credit leaves no valid range.
   if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
@@ -169,7 +169,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 2: After-complete date fields require at least one deadline.
+  // Constraint 4: After-complete date fields require at least one deadline.
   // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
@@ -226,8 +226,12 @@ export function validateRuleStructuralDependencyIssues(
  * or non-trivial afterLastDeadline behavior, at least one rule must
  * explicitly set a due date.
  *
- * Skips the main rule because the per-rule validator already covers it
- * (matches the pattern used by `validateGlobalCreditConsistencyIssues`).
+ * Skips the main rule and overrides that explicitly set their own `due`,
+ * since the per-rule validator already reports those with a more specific
+ * message ("requires a due date." vs the global "...on at least one rule.").
+ * Reporting both would duplicate at the same form-field path, and the
+ * per-rule message is more actionable when an override has explicitly
+ * cleared its own due.
  */
 export function validateGlobalStructuralDependencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -241,6 +245,10 @@ export function validateGlobalStructuralDependencyIssues(
     if (validationRule.targetType === 'none') continue;
     const dc = validationRule.rule.dateControl;
     if (!dc) continue;
+    // Past the early exit above, a defined `dc.due` necessarily has
+    // `date === null` (otherwise `findDueMs` would be non-null and we'd
+    // have returned). Per-rule already flags that case.
+    if (dc.due !== undefined) continue;
 
     if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
       pushIssue(

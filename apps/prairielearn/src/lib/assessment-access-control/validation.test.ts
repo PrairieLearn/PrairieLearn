@@ -1799,6 +1799,39 @@ describe('Global structural dependency validation', () => {
       result.errors.includes('Late deadlines require a due date on at least one rule.'),
     );
   });
+
+  it('does not duplicate when an override explicitly clears its own due date', () => {
+    // The per-rule validator already flags an override with `due: { date: null }`
+    // and lateDeadlines/afterLastDeadline. The global check should defer to it
+    // rather than emit a second error at the same path.
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: null },
+        },
+      }),
+      AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          due: { date: null },
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+          afterLastDeadline: { allowSubmissions: true },
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
+    assert.isTrue(result.errors.includes('After-last-deadline behavior requires a due date.'));
+    assert.isFalse(
+      result.errors.includes('Late deadlines require a due date on at least one rule.'),
+    );
+    assert.isFalse(
+      result.errors.includes(
+        'After-last-deadline behavior requires a due date on at least one rule.',
+      ),
+    );
+  });
 });
 
 describe('AccessControlJsonSchema nullable override fields', () => {
