@@ -1,8 +1,19 @@
 import { assert, describe, it } from 'vitest';
 
-import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import {
+  type AssessmentJson,
+  type AssessmentJsonInput,
+  AssessmentJsonSchema,
+  GroupsJsonSchema,
+} from '../schemas/infoAssessment.js';
 
-import { cascadeRoleRenamesToZones, normalizeGroupSettings } from './group-config.js';
+import {
+  cascadeRoleRenamesToZones,
+  convertLegacyGroupsToGroupsConfig,
+  normalizeGroupSettings,
+  serializeGroupSettings,
+  stripLegacyGroupKeys,
+} from './group-config.js';
 
 describe('normalizeGroupSettings', () => {
   describe('returns null for non-group assessments', () => {
@@ -161,17 +172,17 @@ describe('normalizeGroupSettings', () => {
   });
 
   describe('legacy format (groupWork: true)', () => {
-    it('normalizes a minimal legacy config', () => {
+    it('normalizes a minimal legacy config using legacy schema defaults', () => {
       const result = normalizeGroupSettings({
         groupWork: true,
       } as unknown as AssessmentJsonInput);
 
       assert.deepEqual(result, {
         studentPermissions: {
-          canCreateGroup: true,
-          canJoinGroup: true,
-          canLeaveGroup: true,
-          canNameGroup: true,
+          canCreateGroup: false,
+          canJoinGroup: false,
+          canLeaveGroup: false,
+          canNameGroup: false,
         },
         minMembers: null,
         maxMembers: null,
@@ -409,5 +420,244 @@ describe('cascadeRoleRenamesToZones', () => {
     ]);
     assert.deepEqual(json.zones![0].canView, ['Manager', 'Recorder']);
     assert.deepEqual(json.zones![0].questions[0].canSubmit, ['Manager']);
+  });
+});
+
+describe('serializeGroupSettings', () => {
+  const baseFormValues = {
+    studentPermissions: {
+      canCreateGroup: true,
+      canJoinGroup: true,
+      canLeaveGroup: true,
+      canNameGroup: true,
+    },
+    minMembers: null,
+    maxMembers: null,
+    roles: [],
+  };
+
+  it('produces a schema-valid block for a minimal config', () => {
+    const result = serializeGroupSettings(baseFormValues, { enabled: true });
+    assert.equal(result.enabled, true);
+    assert.doesNotThrow(() => GroupsJsonSchema.parse(result));
+  });
+
+  it('omits rolePermissions entirely when no roles are configured', () => {
+    const result = serializeGroupSettings(baseFormValues, { enabled: true });
+    assert.isUndefined(result.rolePermissions);
+  });
+
+  it('omits rolePermissions when all role permissions are at defaults', () => {
+    const result = serializeGroupSettings(
+      {
+        ...baseFormValues,
+        roles: [
+          {
+            name: 'Worker',
+            origName: 'Worker',
+            minAssignees: null,
+            maxAssignees: null,
+            canAssignRoles: false,
+            canView: true,
+            canSubmit: true,
+          },
+        ],
+      },
+      { enabled: true },
+    );
+    assert.isUndefined(result.rolePermissions);
+  });
+
+  it('omits canView/canSubmit from rolePermissions when all roles are permitted', () => {
+    const result = serializeGroupSettings(
+      {
+        ...baseFormValues,
+        roles: [
+          {
+            name: 'Manager',
+            origName: 'Manager',
+            minAssignees: 1,
+            maxAssignees: 1,
+            canAssignRoles: true,
+            canView: true,
+            canSubmit: true,
+          },
+        ],
+      },
+      { enabled: true },
+    );
+    assert.deepEqual(result.rolePermissions, { canAssignRoles: ['Manager'] });
+  });
+
+  it('emits canView/canSubmit only for the subset of roles that have them', () => {
+    const result = serializeGroupSettings(
+      {
+        ...baseFormValues,
+        roles: [
+          {
+            name: 'Manager',
+            origName: 'Manager',
+            minAssignees: 1,
+            maxAssignees: 1,
+            canAssignRoles: true,
+            canView: true,
+            canSubmit: false,
+          },
+          {
+            name: 'Recorder',
+            origName: 'Recorder',
+            minAssignees: 1,
+            maxAssignees: 1,
+            canAssignRoles: false,
+            canView: true,
+            canSubmit: true,
+          },
+        ],
+      },
+      { enabled: true },
+    );
+    assert.deepEqual(result.rolePermissions, {
+      canAssignRoles: ['Manager'],
+      canSubmit: ['Recorder'],
+    });
+  });
+
+  it('passes through enabled: false', () => {
+    const result = serializeGroupSettings(baseFormValues, { enabled: false });
+    assert.equal(result.enabled, false);
+  });
+});
+
+describe('stripLegacyGroupKeys', () => {
+  it('removes all legacy group keys and preserves unrelated keys', () => {
+    const result = stripLegacyGroupKeys({
+      uuid: 'abc',
+      type: 'Homework',
+      groupWork: true,
+      groupMaxSize: 4,
+      groupMinSize: 2,
+      groupRoles: [{ name: 'Manager' }],
+      studentGroupCreate: true,
+      studentGroupJoin: true,
+      studentGroupLeave: true,
+      studentGroupChooseName: true,
+      canView: ['Manager'],
+      canSubmit: ['Manager'],
+      groups: { enabled: true },
+    } as unknown as AssessmentJsonInput);
+
+    assert.deepEqual(result, {
+      uuid: 'abc',
+      type: 'Homework',
+      groups: { enabled: true },
+    } as unknown as AssessmentJsonInput);
+  });
+
+  it('is a no-op when no legacy keys are present', () => {
+    const input = {
+      uuid: 'abc',
+      type: 'Homework',
+      groups: { enabled: true },
+    } as unknown as AssessmentJsonInput;
+    assert.deepEqual(stripLegacyGroupKeys(input), input);
+  });
+});
+
+describe('convertLegacyGroupsToGroupsConfig', () => {
+  it('maps legacy fields onto the new groups config shape', () => {
+    const result = convertLegacyGroupsToGroupsConfig({
+      groupWork: true,
+      groupMinSize: 2,
+      groupMaxSize: 4,
+      groupRoles: [
+        { name: 'Manager', minimum: 1, maximum: 1, canAssignRoles: true },
+        { name: 'Recorder', minimum: 1, maximum: 1, canAssignRoles: false },
+      ],
+      studentGroupCreate: true,
+      studentGroupJoin: true,
+      studentGroupLeave: false,
+      studentGroupChooseName: false,
+      canView: ['Manager', 'Recorder'],
+      canSubmit: ['Recorder'],
+    } as unknown as AssessmentJson);
+
+    assert.deepEqual(result, {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 4,
+      roles: [
+        { name: 'Manager', minMembers: 1, maxMembers: 1 },
+        { name: 'Recorder', minMembers: 1, maxMembers: 1 },
+      ],
+      studentPermissions: {
+        canCreateGroup: true,
+        canJoinGroup: true,
+        canLeaveGroup: false,
+        canNameGroup: false,
+      },
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager', 'Recorder'],
+        canSubmit: ['Recorder'],
+      },
+    });
+  });
+});
+
+describe('legacy → normalize → serialize round-trip', () => {
+  it('produces a groups block that parses against the assessment schema', () => {
+    const legacyAssessment = {
+      uuid: '11111111-1111-1111-1111-111111111111',
+      type: 'Homework',
+      title: 'Legacy group HW',
+      set: 'Homework',
+      number: '1',
+      groupWork: true,
+      groupMinSize: 2,
+      groupMaxSize: 4,
+      groupRoles: [
+        { name: 'Manager', minimum: 1, maximum: 1, canAssignRoles: true },
+        { name: 'Recorder', minimum: 1, maximum: 1 },
+      ],
+      studentGroupCreate: true,
+      studentGroupJoin: true,
+      studentGroupLeave: true,
+      studentGroupChooseName: true,
+      canView: ['Manager', 'Recorder'],
+      canSubmit: ['Recorder'],
+    } as unknown as AssessmentJsonInput;
+
+    const normalized = normalizeGroupSettings(legacyAssessment);
+    assert.isNotNull(normalized);
+
+    const serialized = serializeGroupSettings(normalized, { enabled: true });
+    const stripped = stripLegacyGroupKeys({ ...legacyAssessment, groups: serialized });
+
+    const parsed = AssessmentJsonSchema.parse(stripped);
+    assert.equal(parsed.groups?.enabled, true);
+    assert.equal(parsed.groups?.minMembers, 2);
+    assert.equal(parsed.groups?.maxMembers, 4);
+    assert.deepEqual(
+      parsed.groups?.roles.map((r) => r.name),
+      ['Manager', 'Recorder'],
+    );
+    assert.deepEqual(parsed.groups?.rolePermissions.canAssignRoles, ['Manager']);
+    assert.deepEqual(parsed.groups?.rolePermissions.canSubmit, ['Recorder']);
+
+    // No legacy keys should remain on the assessment.
+    for (const key of [
+      'groupWork',
+      'groupMinSize',
+      'groupMaxSize',
+      'groupRoles',
+      'studentGroupCreate',
+      'studentGroupJoin',
+      'studentGroupLeave',
+      'studentGroupChooseName',
+      'canView',
+      'canSubmit',
+    ]) {
+      assert.notProperty(stripped, key);
+    }
   });
 });

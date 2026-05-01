@@ -68,6 +68,12 @@ export function serializeGroupSettings(
   const canView = roles.filter((r) => r.canView).map((r) => r.name);
   const canSubmit = roles.filter((r) => r.canSubmit).map((r) => r.name);
 
+  const rolePermissions: NonNullable<GroupsJsonInput['rolePermissions']> = {
+    ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
+    ...(canView.length < roles.length ? { canView } : {}),
+    ...(canSubmit.length < roles.length ? { canSubmit } : {}),
+  };
+
   return {
     enabled,
     minMembers: settings.minMembers ?? undefined,
@@ -83,11 +89,7 @@ export function serializeGroupSettings(
       minMembers: minAssignees ?? undefined,
       maxMembers: maxAssignees ?? undefined,
     })),
-    rolePermissions: {
-      ...(canAssignRoles.length > 0 ? { canAssignRoles } : {}),
-      ...(canView.length < roles.length ? { canView } : {}),
-      ...(canSubmit.length < roles.length ? { canSubmit } : {}),
-    },
+    rolePermissions: Object.keys(rolePermissions).length > 0 ? rolePermissions : undefined,
   };
 }
 
@@ -221,12 +223,16 @@ export function normalizeGroupSettings(json: AssessmentJsonInput): GroupSettings
 
   if (!json.groupWork) return null;
 
+  // Legacy schema defaults `studentGroupCreate` / `studentGroupJoin` /
+  // `studentGroupLeave` to `false` (the new `groups.studentPermissions` block
+  // defaults them to `true`). Mirror the legacy defaults here so the UI shows
+  // the permissions that are actually active for the assessment.
   return {
     studentPermissions: {
-      canCreateGroup: json.studentGroupCreate ?? true,
-      canJoinGroup: json.studentGroupJoin ?? true,
-      canLeaveGroup: json.studentGroupLeave ?? true,
-      canNameGroup: (json.studentGroupCreate ?? true) && (json.studentGroupChooseName ?? true),
+      canCreateGroup: json.studentGroupCreate ?? false,
+      canJoinGroup: json.studentGroupJoin ?? false,
+      canLeaveGroup: json.studentGroupLeave ?? false,
+      canNameGroup: (json.studentGroupCreate ?? false) && (json.studentGroupChooseName ?? true),
     },
     minMembers: json.groupMinSize ?? null,
     maxMembers: json.groupMaxSize ?? null,
