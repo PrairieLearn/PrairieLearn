@@ -219,10 +219,10 @@ export function generateRuleSummary(
   }
 
   if (isDefaultRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const mainErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
+    const defaultRuleErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
+      const msg = defaultRuleErrors?.prairieTestExams?.[i]?.examUuid?.message;
       if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
     }
     const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
