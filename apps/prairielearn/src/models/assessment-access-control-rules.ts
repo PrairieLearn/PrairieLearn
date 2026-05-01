@@ -179,8 +179,8 @@ function dbBaseRowToAccessControlJson(
     afterComplete.score = score;
   }
 
-  const isMainRule = rule.number === 0 && rule.target_type === 'none';
-  const beforeReleaseListed = isMainRule
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
+  const beforeReleaseListed = isDefaultRule
     ? (rule.before_release_listed ?? false)
     : rule.before_release_listed;
 

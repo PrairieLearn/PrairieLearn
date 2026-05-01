@@ -4,13 +4,12 @@ import pathlib
 import random
 from collections import Counter
 from enum import Enum
-from typing import NamedTuple
+from typing import NamedTuple, assert_never
 
 import chevron
 import lxml.etree
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):

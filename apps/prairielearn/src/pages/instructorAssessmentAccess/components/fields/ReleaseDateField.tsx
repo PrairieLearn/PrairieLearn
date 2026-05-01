@@ -87,16 +87,16 @@ function ReleaseDateInput({
   );
 }
 
-export function MainReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
-  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
-    name: 'mainRule.dateControlEnabled',
+export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
   });
 
   const {
     field,
     fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  } = useController<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
     rules: {
       validate: (value) => {
         if (!dateControlEnabled) return true;
@@ -112,7 +112,7 @@ export function MainReleaseDateField({ displayTimezone }: { displayTimezone: str
       <ReleaseDateInput
         value={field.value}
         error={error?.message}
-        idPrefix="mainRule"
+        idPrefix="defaultRule"
         displayTimezone={displayTimezone}
         onChange={field.onChange}
       />
@@ -127,8 +127,8 @@ export function OverrideReleaseDateField({
   index: number;
   displayTimezone: string;
 }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
   const { field } = useController<AccessControlFormData, `overrides.${number}.release.date`>({
@@ -142,7 +142,7 @@ export function OverrideReleaseDateField({
       isOverridden={isOverridden}
       label="Release"
       onOverride={() => {
-        field.onChange(mainValue || todayLocalDatetime(displayTimezone));
+        field.onChange(defaultRuleValue || todayLocalDatetime(displayTimezone));
         addOverride();
       }}
       onRemoveOverride={removeOverride}
