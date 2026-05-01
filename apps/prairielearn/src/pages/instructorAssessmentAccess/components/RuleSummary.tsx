@@ -43,6 +43,7 @@ interface DateTableRow {
   credit: string;
   error?: string;
   current?: boolean;
+  currentVariant?: 'success' | 'primary';
 }
 
 /**
@@ -84,14 +85,23 @@ function defaultRuleToRuntimeDateControl(
   const early = toRuntimeDeadlines(rule.earlyDeadlines);
   const late = toRuntimeDeadlines(rule.lateDeadlines);
 
+  // Mirror defaultRuleToJson: omit `due` entirely when no date is set and no
+  // custom credit is applied. Passing `due: { date: null }` would otherwise
+  // trigger the timeline's "indefinite due" branch.
+  const includeDue = rule.due.date !== null || rule.due.customCredit;
+
   return {
     release: { date: releaseDate },
-    // `due` is always part of dateControl when enabled (mirrors defaultRuleToJson).
-    // null/empty due dates collapse to "no due date" for timeline purposes.
-    due: {
-      date: toRuntimeInstant(rule.due.date, displayTimezone),
-      ...(rule.due.customCredit && rule.due.credit != null ? { credit: rule.due.credit } : {}),
-    },
+    ...(includeDue
+      ? {
+          due: {
+            date: toRuntimeInstant(rule.due.date, displayTimezone),
+            ...(rule.due.customCredit && rule.due.credit != null
+              ? { credit: rule.due.credit }
+              : {}),
+          },
+        }
+      : {}),
     ...(early.length > 0 ? { earlyDeadlines: early } : {}),
     ...(late.length > 0 ? { lateDeadlines: late } : {}),
     ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
@@ -151,6 +161,10 @@ export function generateDefaultRuleDateTableRows(
   // Indefinite-due segment is the trailing segment when due.date is null.
   const isIndefiniteDueSegment = segment?.endDate === null && dueDate === null;
 
+  // Available (open and submittable) → green border; otherwise blue.
+  const currentVariant: 'success' | 'primary' =
+    segment != null && segment.startDate !== null && segment.submittable ? 'success' : 'primary';
+
   const isDeadlineCurrent = (formDateString: string): boolean => {
     if (segmentEndPDT == null) return false;
     try {
@@ -173,6 +187,7 @@ export function generateDefaultRuleDateTableRows(
       label: 'Release',
       credit: '—',
       current: isBeforeReleaseSegment,
+      currentVariant,
     });
   }
 
@@ -194,6 +209,7 @@ export function generateDefaultRuleDateTableRows(
       credit: `${deadline.credit}%`,
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
+      currentVariant,
     });
   });
 
@@ -215,6 +231,7 @@ export function generateDefaultRuleDateTableRows(
       credit: `${dueCredit}%`,
       error: dueError,
       current: isDeadlineCurrent(dueDate),
+      currentVariant,
     });
   } else if (dueDate === null) {
     rows.push({
@@ -223,6 +240,7 @@ export function generateDefaultRuleDateTableRows(
       credit: `${dueCredit}%`,
       error: dueError,
       current: isIndefiniteDueSegment,
+      currentVariant,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
@@ -252,6 +270,7 @@ export function generateDefaultRuleDateTableRows(
       credit: `${deadline.credit}%`,
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
+      currentVariant,
     });
   });
 
@@ -269,6 +288,7 @@ export function generateDefaultRuleDateTableRows(
         : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
+      currentVariant,
     });
   }
 
@@ -778,7 +798,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div
-      className="border rounded overflow-hidden"
+      className="border rounded-top overflow-hidden"
       style={{ borderColor: 'var(--bs-border-color)' }}
     >
       <table className="table table-sm mb-0">
@@ -802,12 +822,17 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
         <tbody>
           {rows.map((row, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key
-            <tr key={index} className={row.current ? 'table-active' : undefined}>
+            <tr key={index}>
               <td
-                className="border-0"
                 style={{
                   ...tdStyle,
                   paddingLeft: '1rem',
+                  borderTop: 0,
+                  borderRight: 0,
+                  borderBottom: 0,
+                  borderLeft: `6px solid ${
+                    row.current ? `var(--bs-${row.currentVariant ?? 'primary'})` : 'transparent'
+                  }`,
                 }}
               >
                 <div className="text-nowrap">
@@ -818,11 +843,6 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
                     </span>
                   )}
                   {row.error ? <span className="text-danger">{row.date}</span> : row.date}
-                  {row.current && (
-                    <span className="badge bg-primary-subtle text-primary-emphasis ms-2 fw-medium">
-                      Now
-                    </span>
-                  )}
                 </div>
                 {row.error && (
                   <div className="text-danger small">
@@ -842,16 +862,16 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   );
 }
 
-interface NowIndicator {
-  variant: 'success' | 'warning' | 'secondary' | 'danger';
+interface CurrentIndicator {
+  variant: 'success' | 'primary';
   icon: string;
   text: ReactNode;
 }
 
-function buildDefaultRuleNowIndicator(
+function buildDefaultRuleCurrentIndicator(
   rule: DefaultRuleData,
   displayTimezone: string,
-): NowIndicator | null {
+): CurrentIndicator | null {
   const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
 
   // Mirrors the resolver's `showBeforeRelease`: students see a "coming soon"
@@ -862,7 +882,7 @@ function buildDefaultRuleNowIndicator(
   if (!segment) {
     if (listedBeforeRelease) {
       return {
-        variant: 'warning',
+        variant: 'primary',
         icon: 'bi-eye',
         text: 'Listed but not accessible',
       };
@@ -878,7 +898,7 @@ function buildDefaultRuleNowIndicator(
     const opensAt = segment.endDate;
     if (listedBeforeRelease) {
       return {
-        variant: 'warning',
+        variant: 'primary',
         icon: 'bi-eye',
         text: opensAt ? (
           <>Listed but not accessible · opens {friendlyDate(opensAt)}</>
@@ -888,14 +908,14 @@ function buildDefaultRuleNowIndicator(
       };
     }
     return {
-      variant: 'secondary',
+      variant: 'primary',
       icon: 'bi-eye-slash',
       text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
     };
   }
 
   if (!segment.submittable) {
-    return { variant: 'danger', icon: 'bi-lock', text: 'Closed' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
   }
 
   if (segment.endDate) {
@@ -916,14 +936,14 @@ function buildDefaultRuleNowIndicator(
   };
 }
 
-export function DefaultRuleNowIndicator({
+export function DefaultRuleCurrentIndicator({
   rule,
   displayTimezone,
 }: {
   rule: DefaultRuleData;
   displayTimezone: string;
 }) {
-  const indicator = buildDefaultRuleNowIndicator(rule, displayTimezone);
+  const indicator = buildDefaultRuleCurrentIndicator(rule, displayTimezone);
   if (!indicator) return null;
   return (
     <div
@@ -932,7 +952,7 @@ export function DefaultRuleNowIndicator({
     >
       <i className={`bi ${indicator.icon}`} aria-hidden="true" />
       <span>
-        <strong>Now:</strong> {indicator.text}
+        <strong>Current:</strong> {indicator.text}
       </span>
     </div>
   );
