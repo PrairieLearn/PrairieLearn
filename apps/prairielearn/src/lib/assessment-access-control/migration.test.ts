@@ -533,6 +533,30 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'questions reveal date removed when score stays hidden forever',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01',
+          endDate: '2024-06-01',
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        { active: false, startDate: '2024-07-01', showClosedAssessmentScore: false },
+      ],
+      expected: {
+        result: {
+          dateControl: { release: { date: '2024-01-01' }, due: { date: '2024-06-01' } },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
+        errors: [],
+        notes: [
+          'Questions reveal date 2024-07-01 was removed because score remains hidden after completion.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'same reveal date when both questions and scores reveal together',
       rules: [
         {

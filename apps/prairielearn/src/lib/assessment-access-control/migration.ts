@@ -253,17 +253,18 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
   const notes: string[] = [];
   const questionsFrom = result.questions?.visibleFromDate;
   const scoreFrom = result.score?.visibleFromDate;
-  if (
-    result.questions?.hidden === true &&
-    result.score?.hidden === true &&
-    questionsFrom &&
-    scoreFrom &&
-    scoreFrom > questionsFrom
-  ) {
-    result.questions.visibleFromDate = scoreFrom;
-    notes.push(
-      `Questions reveal date changed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
-    );
+  if (result.questions?.hidden === true && result.score?.hidden === true && questionsFrom) {
+    if (!scoreFrom) {
+      delete result.questions.visibleFromDate;
+      notes.push(
+        `Questions reveal date ${questionsFrom} was removed because score remains hidden after completion.`,
+      );
+    } else if (scoreFrom > questionsFrom) {
+      result.questions.visibleFromDate = scoreFrom;
+      notes.push(
+        `Questions reveal date changed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
+      );
+    }
   }
 
   return { afterComplete: result, notes };

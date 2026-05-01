@@ -1,5 +1,5 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { get, useController, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -533,6 +533,8 @@ export function OverrideAfterCompleteForm({
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
 
+  const { clearErrors } = useFormContext<AccessControlFormData>();
+
   const {
     isOverridden: qvOverridden,
     addOverride: addQvOverride,
@@ -569,7 +571,10 @@ export function OverrideAfterCompleteForm({
             svField.onChange({ ...mainSV });
             addSvOverride();
           }}
-          onRemoveOverride={removeSvOverride}
+          onRemoveOverride={() => {
+            removeSvOverride();
+            clearErrors(`overrides.${index}.questionVisibility`);
+          }}
         >
           <ScoreVisibilityInput
             value={svField.value}

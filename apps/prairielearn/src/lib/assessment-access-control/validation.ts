@@ -957,6 +957,7 @@ export function validateAccessControlRules({
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };
