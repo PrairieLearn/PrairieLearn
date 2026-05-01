@@ -5,8 +5,8 @@ import { getGlobalDateValidationErrors } from './validation.js';
 
 function makeFormData(overrides: AccessControlFormData['overrides']): AccessControlFormData {
   return {
-    mainRule: {
-      trackingId: 'main',
+    defaultRule: {
+      trackingId: 'default',
       beforeReleaseListed: false,
       dateControlEnabled: true,
       release: { date: '2024-04-07T00:00:00' },

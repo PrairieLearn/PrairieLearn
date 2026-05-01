@@ -14,24 +14,24 @@ import {
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
 
-type RuleData = MainRuleData | OverrideData;
+type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
+export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
 
-function isMainRuleData(rule: RuleData): rule is MainRuleData {
+function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
   return 'dateControlEnabled' in rule;
 }
 
 function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isMainRuleData(rule)) return true;
+  if (isDefaultRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
 
@@ -64,13 +64,13 @@ function plainDateTimeStringToDate(
 }
 
 /**
- * Convert main rule form data into the runtime shape consumed by
+ * Convert default rule form data into the runtime shape consumed by
  * `buildAccessTimeline`. Returns undefined when date control is disabled
  * or the release date is missing/invalid — both cases short-circuit the
  * timeline to no segments.
  */
-function mainRuleToRuntimeDateControl(
-  rule: MainRuleData,
+function defaultRuleToRuntimeDateControl(
+  rule: DefaultRuleData,
   displayTimezone: string,
 ): RuntimeDateControl | undefined {
   if (!rule.dateControlEnabled) return undefined;
@@ -88,7 +88,7 @@ function mainRuleToRuntimeDateControl(
 
   return {
     release: { date: releaseDate },
-    // `due` is always part of dateControl when enabled (mirrors mainRuleToJson).
+    // `due` is always part of dateControl when enabled (mirrors defaultRuleToJson).
     // null/empty due dates collapse to "no due date" for timeline purposes.
     due: {
       date: plainDateTimeStringToDate(rule.due.date, displayTimezone),
@@ -100,23 +100,23 @@ function mainRuleToRuntimeDateControl(
   };
 }
 
-interface MainRuleCurrentState {
+interface DefaultRuleCurrentState {
   rdc: RuntimeDateControl | undefined;
   segment: AccessTimelineEntry | null;
 }
 
-function getMainRuleCurrentState(
-  rule: MainRuleData,
+function getDefaultRuleCurrentState(
+  rule: DefaultRuleData,
   displayTimezone: string,
-): MainRuleCurrentState {
-  const rdc = mainRuleToRuntimeDateControl(rule, displayTimezone);
+): DefaultRuleCurrentState {
+  const rdc = defaultRuleToRuntimeDateControl(rule, displayTimezone);
   if (!rdc) return { rdc: undefined, segment: null };
   const segment = buildAccessTimeline(rdc, new Date()).find((s) => s.current) ?? null;
   return { rdc, segment };
 }
 
-export function generateMainRuleDateTableRows(
-  rule: MainRuleData,
+export function generateDefaultRuleDateTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
@@ -133,7 +133,7 @@ export function generateMainRuleDateTableRows(
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
 
-  const { rdc, segment } = getMainRuleCurrentState(rule, displayTimezone);
+  const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
   const segmentEndsAt = segment?.endDate?.getTime() ?? null;
   const isBeforeReleaseSegment = segment?.startDate === null;
   // The trailing segment (endDate === null) is either the indefinite-due
@@ -289,7 +289,7 @@ export function generateRuleSummary(
   // listing happens when `beforeReleaseListed` is set AND either the release
   // date is in the future or no release date is configured at all (perpetual
   // "coming soon" until dates are added or PrairieTest grants access).
-  if (isMainRuleData(rule) && rule.beforeReleaseListed) {
+  if (isDefaultRuleData(rule) && rule.beforeReleaseListed) {
     const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
     const releaseInFuture = releaseDate
       ? Temporal.PlainDateTime.compare(
@@ -333,11 +333,11 @@ export function generateRuleSummary(
     }
   }
 
-  if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const mainErrors = formErrors as FieldErrors<MainRuleData> | undefined;
+  if (isDefaultRuleData(rule) && rule.prairieTestExams.length > 0) {
+    const defaultRuleErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
+      const msg = defaultRuleErrors?.prairieTestExams?.[i]?.examUuid?.message;
       if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
     }
     const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
@@ -351,9 +351,9 @@ export function generateRuleSummary(
     });
   }
 
-  const isMain = isMainRuleData(rule);
-  const hasDateControl = isMain ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isMain ? rule.prairieTestExams.length > 0 : false;
+  const isDefault = isDefaultRuleData(rule);
+  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
+  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
@@ -847,11 +847,11 @@ interface NowIndicator {
   text: ReactNode;
 }
 
-function buildMainRuleNowIndicator(
-  rule: MainRuleData,
+function buildDefaultRuleNowIndicator(
+  rule: DefaultRuleData,
   displayTimezone: string,
 ): NowIndicator | null {
-  const { rdc, segment } = getMainRuleCurrentState(rule, displayTimezone);
+  const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
 
   // Mirrors the resolver's `showBeforeRelease`: students see a "coming soon"
   // listing when `beforeReleaseListed` is set and either no release date is
@@ -915,14 +915,14 @@ function buildMainRuleNowIndicator(
   };
 }
 
-export function MainRuleNowIndicator({
+export function DefaultRuleNowIndicator({
   rule,
   displayTimezone,
 }: {
-  rule: MainRuleData;
+  rule: DefaultRuleData;
   displayTimezone: string;
 }) {
-  const indicator = buildMainRuleNowIndicator(rule, displayTimezone);
+  const indicator = buildDefaultRuleNowIndicator(rule, displayTimezone);
   if (!indicator) return null;
   return (
     <div
