@@ -124,21 +124,6 @@ export function OverrideDateControlForm({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const defaultRuleDueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
-    name: 'defaultRule.due.date',
-  });
-  const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
-    name: `overrides.${index}.overriddenFields`,
-  });
-  const overrideDueDate = useWatch<AccessControlFormData, `overrides.${number}.due.date`>({
-    name: `overrides.${index}.due.date`,
-  });
-  const effectiveDueDate = overriddenFields.includes('due') ? overrideDueDate : defaultRuleDueDate;
-  const showLateFields =
-    effectiveDueDate != null ||
-    overriddenFields.includes('lateDeadlines') ||
-    overriddenFields.includes('afterLastDeadline');
-
   return (
     <div>
       <div className="section-header mb-3">
@@ -156,16 +141,8 @@ export function OverrideDateControlForm({
           assessmentId={assessmentId}
           courseInstanceId={courseInstanceId}
         />
-        {showLateFields && (
-          <>
-            <OverrideDeadlineArrayField
-              index={index}
-              type="late"
-              displayTimezone={displayTimezone}
-            />
-            <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
-          </>
-        )}
+        <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
+        <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
         <Row className="gy-3">
           <Col md={6}>
             <OverrideDurationField index={index} />
