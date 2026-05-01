@@ -64,7 +64,6 @@ router.get(
           page: 'user_settings',
           type: 'plain',
         },
-        headContent: compiledScriptTag('userSettingsClient.ts'),
         content: (
           <>
             <Hydrate>
