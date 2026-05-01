@@ -67,6 +67,10 @@ export function DefaultDateControlForm({
                     shouldValidate: true,
                   },
                 );
+                setValue('defaultRule.release.released', true, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
               }
             },
           })}

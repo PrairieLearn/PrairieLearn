@@ -90,13 +90,27 @@ export interface AppliesTo {
   studentLabels: StudentLabelTarget[];
 }
 
+/**
+ * Form-state representation of the release configuration. `date` is the
+ * release date itself; `released` is a UI-only flag that backs the
+ * "Released" / "Scheduled for release" radio choice. We track it separately
+ * from `date` so the user can express a state that is inconsistent with the
+ * date (e.g., "Released" with a future date) and see a validation error,
+ * which would not otherwise be possible if `released` were derived from
+ * `date <= now`. The flag is dropped on JSON serialization.
+ */
+export interface ReleaseValue {
+  date: string | null;
+  released: boolean;
+}
+
 // Default rule: flat fields, null = feature off
 export interface DefaultRuleData {
   id?: string;
   trackingId: string;
   beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
-  release: { date: string | null };
+  release: ReleaseValue;
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -117,7 +131,7 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
-  release: { date: string | null };
+  release: ReleaseValue;
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -131,6 +145,17 @@ export interface OverrideData {
 export interface AccessControlFormData {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+}
+
+/**
+ * Whether a (timezone-naive) datetime string is at or before "now" in the
+ * given display timezone. A null/empty value is treated as released.
+ */
+export function isReleasedNow(value: string | null, displayTimezone: string): boolean {
+  if (!value) return true;
+  const release = Temporal.PlainDateTime.from(value);
+  const now = Temporal.Now.plainDateTimeISO(displayTimezone);
+  return Temporal.PlainDateTime.compare(release, now) <= 0;
 }
 
 /**
@@ -160,6 +185,8 @@ export function jsonToDefaultRuleFormData(
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
+  const releaseDate = toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null;
+
   return {
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
@@ -172,7 +199,7 @@ export function jsonToDefaultRuleFormData(
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    release: { date: toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null },
+    release: { date: releaseDate, released: isReleasedNow(releaseDate, displayTimezone) },
     due: {
       date: toLocalDatetimeValue(dc?.due?.date ?? null, displayTimezone),
       credit: dc?.due?.credit ?? null,
@@ -240,9 +267,10 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: OverridableFieldName[] = [];
 
-  let release: { date: string | null } = { date: null };
+  let release: ReleaseValue = { date: null, released: true };
   if (dc?.release !== undefined) {
-    release = { date: toLocalDatetimeValue(dc.release.date, displayTimezone) };
+    const date = toLocalDatetimeValue(dc.release.date, displayTimezone);
+    release = { date, released: isReleasedNow(date, displayTimezone) };
     overriddenFields.push('release');
   }
 
@@ -521,7 +549,10 @@ export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): Ov
       studentLabels: [],
     },
     overriddenFields: [],
-    release: { date: defaultRule?.release.date ?? null },
+    release: {
+      date: defaultRule?.release.date ?? null,
+      released: defaultRule?.release.released ?? true,
+    },
     due: defaultRule?.due
       ? { ...defaultRule.due }
       : { date: null, credit: null, customCredit: false },
