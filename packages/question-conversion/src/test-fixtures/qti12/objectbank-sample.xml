@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="sample_bank">
+    <qtimetadata>
+      <qtimetadatafield>
+        <fieldlabel>bank_title</fieldlabel>
+        <fieldentry>Sample Chapter Bank</fieldentry>
+      </qtimetadatafield>
+    </qtimetadata>
+    <item ident="q1_yes" title="Problem 1">
+      <itemmetadata>
+        <qtimetadata>
+          <qtimetadatafield>
+            <fieldlabel>question_type</fieldlabel>
+            <fieldentry>essay_question</fieldentry>
+          </qtimetadatafield>
+        </qtimetadata>
+      </itemmetadata>
+      <presentation>
+        <material>
+          <mattext texttype="text/html">&lt;p&gt;Is this statement true or false?&lt;/p&gt;</mattext>
+        </material>
+        <response_str ident="response1" rcardinality="Single">
+          <render_fib>
+            <response_label ident="answer1" rshuffle="No"/>
+          </render_fib>
+        </response_str>
+      </presentation>
+      <itemfeedback ident="general_fb">
+        <flow_mat>
+          <material>
+            <mattext texttype="text/html">yes</mattext>
+          </material>
+        </flow_mat>
+      </itemfeedback>
+    </item>
+    <item ident="q2_explain" title="Problem 2">
+      <itemmetadata>
+        <qtimetadata>
+          <qtimetadatafield>
+            <fieldlabel>question_type</fieldlabel>
+            <fieldentry>essay_question</fieldentry>
+          </qtimetadatafield>
+        </qtimetadata>
+      </itemmetadata>
+      <presentation>
+        <material>
+          <mattext texttype="text/html">&lt;p&gt;Why does this process work? Explain in your own words.&lt;/p&gt;</mattext>
+        </material>
+        <response_str ident="response1" rcardinality="Single">
+          <render_fib>
+            <response_label ident="answer1" rshuffle="No"/>
+          </render_fib>
+        </response_str>
+      </presentation>
+      <itemfeedback ident="general_fb">
+        <flow_mat>
+          <material>
+            <mattext texttype="text/html">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</mattext>
+          </material>
+        </flow_mat>
+      </itemfeedback>
+    </item>
+    <item ident="q3_image" title="Problem 3">
+      <itemmetadata>
+        <qtimetadata>
+          <qtimetadatafield>
+            <fieldlabel>question_type</fieldlabel>
+            <fieldentry>essay_question</fieldentry>
+          </qtimetadatafield>
+        </qtimetadata>
+      </itemmetadata>
+      <presentation>
+        <material>
+          <mattext texttype="text/html">&lt;p&gt;Study the diagram [[images/objectbank-diagram.png]] before answering.&lt;/p&gt;</mattext>
+        </material>
+        <response_str ident="response1" rcardinality="Single">
+          <render_fib>
+            <response_label ident="answer1" rshuffle="No"/>
+          </render_fib>
+        </response_str>
+      </presentation>
+      <itemfeedback ident="general_fb">
+        <flow_mat>
+          <material>
+            <mattext texttype="text/html">7</mattext>
+          </material>
+        </flow_mat>
+      </itemfeedback>
+    </item>
+    <item ident="q4_symbolic" title="Problem 4">
+      <itemmetadata>
+        <qtimetadata>
+          <qtimetadatafield>
+            <fieldlabel>question_type</fieldlabel>
+            <fieldentry>essay_question</fieldentry>
+          </qtimetadatafield>
+        </qtimetadata>
+      </itemmetadata>
+      <presentation>
+        <material>
+          <mattext texttype="text/html">&lt;p&gt;Enter the symbolic result of the operation.&lt;/p&gt;</mattext>
+        </material>
+        <response_str ident="response1" rcardinality="Single">
+          <render_fib>
+            <response_label ident="answer1" rshuffle="No"/>
+          </render_fib>
+        </response_str>
+      </presentation>
+      <itemfeedback ident="general_fb">
+        <flow_mat>
+          <material>
+            <mattext texttype="text/html">x^2 + C</mattext>
+          </material>
+        </flow_mat>
+      </itemfeedback>
+    </item>
+  </objectbank>
+</questestinterop>

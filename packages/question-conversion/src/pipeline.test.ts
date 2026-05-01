@@ -7,10 +7,14 @@ import { convert } from './pipeline.js';
 
 const QTI12_FIXTURES = path.join(import.meta.dirname, 'test-fixtures/qti12');
 
+function readFixture(name: string): string {
+  return readFileSync(path.join(QTI12_FIXTURES, name), 'utf-8');
+}
+
 describe('convert (integration)', () => {
   describe('QTI 1.2 assessment', () => {
     it('converts a multiple choice quiz end-to-end', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
+      const xml = readFixture('canvas-mc.xml');
       const result = await convert(xml, { topic: 'Data Structures' });
 
       assert.equal(result.questions.length, 1);
@@ -28,7 +32,7 @@ describe('convert (integration)', () => {
     });
 
     it('converts a true/false quiz end-to-end', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-tf.xml'), 'utf-8');
+      const xml = readFixture('canvas-tf.xml');
       const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
@@ -38,7 +42,7 @@ describe('convert (integration)', () => {
     });
 
     it('converts a checkbox quiz end-to-end', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-checkbox.xml'), 'utf-8');
+      const xml = readFixture('canvas-checkbox.xml');
       const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
@@ -48,7 +52,7 @@ describe('convert (integration)', () => {
     });
 
     it('converts a matching quiz end-to-end', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-matching.xml'), 'utf-8');
+      const xml = readFixture('canvas-matching.xml');
       const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       assert.equal(
@@ -58,7 +62,7 @@ describe('convert (integration)', () => {
     });
 
     it('converts a fill-in-blanks quiz end-to-end', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-fitb.xml'), 'utf-8');
+      const xml = readFixture('canvas-fitb.xml');
       const result = await convert(xml);
       assert.equal(result.questions.length, 1);
       const q = result.questions[0];
@@ -70,7 +74,7 @@ describe('convert (integration)', () => {
     });
 
     it('propagates access_code from assessment_meta.xml into allowAccess password', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
+      const xml = readFixture('canvas-mc.xml');
       const meta = `<?xml version="1.0" encoding="UTF-8"?>
 <quiz xmlns="http://canvas.instructure.com/xsd/cccv1p0">
   <allowed_attempts>1</allowed_attempts>
@@ -83,6 +87,26 @@ describe('convert (integration)', () => {
     });
   });
 
+  describe('QTI 1.2 objectbank', () => {
+    it('converts a chapter bank end-to-end', async () => {
+      const xml = readFixture('objectbank-sample.xml');
+      const result = await convert(xml, { basePath: QTI12_FIXTURES });
+
+      assert.equal(result.assessmentTitle, 'Sample Chapter Bank');
+      assert.equal(result.questions.length, 4);
+      assert.equal(result.questions[0].infoJson.title, 'Problem 1');
+      assert.include(result.questions[0].questionHtml, 'correct-answer="yes"');
+      assert.equal(result.questions[0].infoJson.gradingMethod, 'Internal');
+      assert.equal(result.questions[1].infoJson.gradingMethod, 'Manual');
+      assert.include(
+        result.questions[2].questionHtml,
+        '<pl-figure file-name="objectbank-diagram.png" directory="clientFilesQuestion"></pl-figure>',
+      );
+      assert.equal(result.questions[2].infoJson.gradingMethod, 'Internal');
+      assert.equal(result.questions[3].infoJson.gradingMethod, 'Manual');
+    });
+  });
+
   describe('error handling', () => {
     it('throws for unrecognized format', async () => {
       await expect(convert('<html>not qti</html>')).rejects.toThrow(/No parser found/);
@@ -91,7 +115,7 @@ describe('convert (integration)', () => {
 
   describe('deterministic output', () => {
     it('produces identical UUIDs across runs', async () => {
-      const xml = readFileSync(path.join(QTI12_FIXTURES, 'canvas-mc.xml'), 'utf-8');
+      const xml = readFixture('canvas-mc.xml');
       const [r1, r2] = await Promise.all([convert(xml), convert(xml)]);
       assert.equal(r1.questions[0].infoJson.uuid, r2.questions[0].infoJson.uuid);
     });

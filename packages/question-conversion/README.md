@@ -1,6 +1,6 @@
 # `@prairielearn/question-conversion`
 
-Internal package that converts questions from interchange formats into PrairieLearn course content. Today it supports **QTI 1.2** assessments (the format Canvas exports), producing PrairieLearn `question.html`, `info.json`, and `infoAssessment.json` files. The package is private — it ships as the `question-convert` CLI used by PrairieLearn maintainers and is not published to npm.
+Internal package that converts questions from interchange formats into PrairieLearn course content. Today it supports **QTI 1.2** assessment exports and QTI 1.2 objectbank exports, producing PrairieLearn `question.html`, `info.json`, and `infoAssessment.json` files. The package is private — it ships as the `question-convert` CLI used by PrairieLearn maintainers and is not published to npm.
 
 ## CLI
 
@@ -12,7 +12,7 @@ question-convert <input> --course <dir> --course-instance <name> [flags]
 
 | Flag                       | Required | Description                                                                                                                                                                 |
 | -------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<input>`                  | yes      | Path to a QTI XML file, a quiz export directory, or a Canvas course-export directory containing `imsmanifest.xml`.                                                          |
+| `<input>`                  | yes      | Path to a QTI XML file, a quiz export directory, a Canvas course-export directory containing `imsmanifest.xml`, or a question-bank chapter export directory.                |
 | `--course <dir>`           | yes      | Target PrairieLearn course directory. New questions land in `<course>/questions/imported/<slug>/` and assessments in `<course>/courseInstances/<name>/assessments/<slug>/`. |
 | `--course-instance <name>` | yes      | Course instance directory name (e.g. `Fall2025`).                                                                                                                           |
 | `--timezone <tz>`          | no       | IANA timezone (e.g. `America/Denver`). Falls back to the course export's `course_settings.xml`, then to the existing `infoCourse.json`.                                     |
@@ -25,13 +25,15 @@ question-convert <input> --course <dir> --course-instance <name> [flags]
 For programmatic use, `@prairielearn/question-conversion` exports a small surface from `src/index.ts`:
 
 - `convert`, `convertWith`, `parseAssessment` — high-level pipeline entry points.
-- `QTI12AssessmentParser`, `InputParser`, `ParseOptions` — parser layer.
+- `QTI12AssessmentParser`, `QTI12ObjectBankParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
 - `detectCourseExport`, `findQtiFilesFromManifest`, `slugify` — Canvas course-export helpers.
 
 The pipeline is `parse` (XML → IR) → `transform` (per-question normalization) → `emit` (IR → PrairieLearn files), with `bin/convert.ts` orchestrating the file-system side.
+
+For objectbank imports, the CLI looks for XML files under `question-bank/QTI/` and resolves `[[images/...]]` placeholders against the sibling `question-bank/images/` directory. If a bank is still stored in the older layout, the parser falls back to the XML directory when resolving image assets.
 
 ## Supported question types
 
@@ -48,6 +50,8 @@ The pipeline is `parse` (XML → IR) → `transform` (per-question normalization
 | `essay_question`                                  | `pl-rich-text-editor` (manually graded)                                             |
 | `file_upload_question`                            | `pl-file-upload` (manually graded)                                                  |
 | `text_only_question`                              | prompt-only panel (manually graded)                                                 |
+
+The objectbank parser reuses the same transforms and emitters. It keeps explanatory prompts as manual rich-text questions and auto-grades only clear direct answers when the answer key is plain text, numeric, or boolean-like.
 
 When a question lacks data needed to auto-grade (e.g. no `<respcondition>` marks any choice correct), it is still emitted but flagged `gradingMethod: 'Manual'` with a warning so the conversion completes and a TA can grade it by hand. Structural failures (missing `<formula>` or zero `<var>`s in a calculated question, missing `<questestinterop>` root) raise an error.
 

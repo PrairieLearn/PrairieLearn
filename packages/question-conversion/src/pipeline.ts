@@ -1,13 +1,13 @@
 import type { ConversionResult, EmitOptions, OutputEmitter } from './emitters/emitter.js';
 import { PLEmitter } from './emitters/pl-emitter.js';
 import type { InputParser, ParseOptions } from './parsers/parser.js';
-import { QTI12AssessmentParser } from './parsers/qti12/index.js';
+import { QTI12AssessmentParser, QTI12ObjectBankParser } from './parsers/qti12/index.js';
 import type { IRAssessment } from './types/ir.js';
 
 /** Options for the conversion pipeline. */
 export interface ConvertOptions extends ParseOptions, EmitOptions {}
 
-const DEFAULT_PARSERS: InputParser[] = [new QTI12AssessmentParser()];
+const DEFAULT_PARSERS: InputParser[] = [new QTI12AssessmentParser(), new QTI12ObjectBankParser()];
 
 /**
  * Auto-detect format and parse questions from XML into IR, without emitting.

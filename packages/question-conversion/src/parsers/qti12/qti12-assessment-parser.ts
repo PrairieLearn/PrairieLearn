@@ -1,15 +1,12 @@
 import he from 'he';
-import mime from 'mime';
 
 import { logger } from '@prairielearn/logger';
 
 import { createQTI12Registry } from '../../transforms/qti12/index.js';
 import type { TransformRegistry } from '../../transforms/transform-registry.js';
 import type {
-  AssetReference,
   IRAssessment,
   IRAssessmentMeta,
-  IRFeedback,
   IRParseWarning,
   IRQuestion,
   IRRubric,
@@ -17,21 +14,7 @@ import type {
   IRRubricRating,
   IRZone,
 } from '../../types/ir.js';
-import type {
-  QTI12CorrectCondition,
-  QTI12ParsedAssessment,
-  QTI12ParsedItem,
-  QTI12ResponseLabel,
-  QTI12ResponseLid,
-} from '../../types/qti12.js';
-import {
-  cleanQuestionHtml,
-  convertLatexItemizeToMarkdown,
-  extractInlineImages,
-  resolveImsFileRefs,
-  rewriteImagesAsPlFigure,
-  rewritePreAsPlCode,
-} from '../../utils/html.js';
+import type { QTI12ParsedAssessment, QTI12ParsedItem } from '../../types/qti12.js';
 import type { InputParser, ParseOptions } from '../parser.js';
 
 import {
@@ -42,23 +25,7 @@ import {
   parseXml,
   textContent,
 } from './xml-helpers.js';
-
-/**
- * Maps IMS Common Cartridge cc_profile values (used in course exports) to the
- * question_type strings used in quiz exports. Allows a single set of handlers.
- */
-const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
-  'cc.multiple_choice.v0p1': 'multiple_choice_question',
-  'cc.true_false.v0p1': 'true_false_question',
-  'cc.multiple_response.v0p1': 'multiple_answers_question',
-  'cc.essay.v0p1': 'essay_question',
-  'cc.fib.v0p1': 'fill_in_multiple_blanks_question',
-  'cc.short_answer.v0p1': 'short_answer_question',
-  'cc.matching.v0p1': 'matching_question',
-  'cc.order.v0p1': 'ordering_question',
-};
-
-const MANUAL_GRADING_QUESTION_TYPES = new Set(['rich-text', 'file-upload']);
+import { buildQTI12Question, parseQTI12Item } from './qti12-helpers.js';
 
 /**
  * Parser for QTI 1.2 assessment profile XML (Canvas quiz/course exports).
@@ -121,7 +88,7 @@ export class QTI12AssessmentParser implements InputParser {
     const title = he.decode(attr(assessment, 'title'));
     const qtimetadata = assessment['qtimetadata'];
     const metadata = parseMetadata(qtimetadata);
-    const items = this.collectItems(assessment).map((item) => this.parseItem(item));
+    const items = this.collectItems(assessment).map((item) => parseQTI12Item(item));
     return { ident, title, metadata, items };
   }
 
@@ -482,9 +449,9 @@ export class QTI12AssessmentParser implements InputParser {
   ): Promise<IRQuestion[]> {
     const questions: IRQuestion[] = [];
     for (const itemEl of items) {
-      const item = this.parseItem(itemEl);
+      const item = parseQTI12Item(itemEl);
       try {
-        const q = await this.transformItem(item, opts, warnings);
+        const q = await buildQTI12Question(item, this.registry, opts, warnings);
         if (q !== null) questions.push(q);
       } catch (err) {
         warnings.push({
@@ -517,169 +484,6 @@ export class QTI12AssessmentParser implements InputParser {
     }
 
     return items;
-  }
-
-  private parseItem(itemEl: Record<string, unknown>): QTI12ParsedItem {
-    const ident = attr(itemEl, 'ident');
-    const title = he.decode(attr(itemEl, 'title'));
-
-    // Parse metadata
-    const itemMetadata = getNestedValue(itemEl, 'itemmetadata', 'qtimetadata');
-    const metadata = parseMetadata(itemMetadata);
-    const questionType =
-      metadata['question_type'] ??
-      CC_PROFILE_TO_QUESTION_TYPE[metadata['cc_profile'] ?? ''] ??
-      'unknown';
-    const pointsPossible = metadata['points_possible']
-      ? Number.parseFloat(metadata['points_possible'])
-      : undefined;
-
-    // Parse prompt HTML
-    const presentation = itemEl['presentation'] as Record<string, unknown> | undefined;
-    const rawPrompt = textContent(getNestedValue(presentation, 'material', 'mattext'));
-    const promptHtml = convertLatexItemizeToMarkdown(cleanQuestionHtml(he.decode(rawPrompt)));
-
-    // Parse response_lid elements
-    const responseLidEls = ensureArray(presentation?.['response_lid'] as unknown);
-    const responseLids: QTI12ResponseLid[] = responseLidEls
-      .filter((el): el is Record<string, unknown> => el != null && typeof el === 'object')
-      .map((el) => this.parseResponseLid(el));
-
-    // Parse correct conditions from resprocessing
-    const correctConditions = this.parseCorrectConditions(itemEl);
-
-    // Parse feedbacks
-    const feedbacks = this.parseFeedbacks(itemEl);
-
-    const resprocessing = itemEl['resprocessing'] as Record<string, unknown> | undefined;
-    const calcBlock = getNestedValue(itemEl, 'itemproc_extension', 'calculated') as
-      | Record<string, unknown>
-      | undefined;
-
-    return {
-      ident,
-      title,
-      questionType,
-      pointsPossible,
-      promptHtml,
-      responseLids,
-      correctConditions,
-      feedbacks,
-      metadata,
-      ...(calcBlock != null ? { calculatedBlock: calcBlock } : {}),
-      ...(resprocessing != null ? { resprocessing } : {}),
-    };
-  }
-
-  private parseResponseLid(el: Record<string, unknown>): QTI12ResponseLid {
-    const ident = attr(el, 'ident');
-    const rcardinality = (attr(el, 'rcardinality') || 'Single') as 'Single' | 'Multiple';
-
-    // Material text (used for matching/FITB left-side label)
-    const mattext = getNestedValue(el, 'material', 'mattext');
-    const rawMaterialText = textContent(mattext);
-    const materialTextType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
-    const materialText =
-      (materialTextType === 'text/html' ? he.decode(rawMaterialText) : rawMaterialText) ||
-      undefined;
-
-    // Parse response labels from render_choice
-    const renderChoice = el['render_choice'] as Record<string, unknown> | undefined;
-    const labelEls = ensureArray(renderChoice?.['response_label'] as unknown);
-    const labels: QTI12ResponseLabel[] = labelEls
-      .filter((l): l is Record<string, unknown> => l != null && typeof l === 'object')
-      .map((l) => {
-        const mattext = getNestedValue(l, 'material', 'mattext');
-        const rawText = textContent(mattext);
-        const textType = attr(mattext as Record<string, unknown>, 'texttype') || 'text/plain';
-        // HTML-typed labels use XML-escaped HTML content (e.g. &lt;sup&gt;).
-        // Decode entities so IRChoice.html holds real HTML for downstream rendering.
-        const text = textType === 'text/html' ? he.decode(rawText) : rawText;
-        return { ident: attr(l, 'ident'), text, textType };
-      });
-
-    return { ident, rcardinality, materialText, labels };
-  }
-
-  private parseCorrectConditions(itemEl: Record<string, unknown>): QTI12CorrectCondition[] {
-    const resprocessing = itemEl['resprocessing'] as Record<string, unknown> | undefined;
-    if (!resprocessing) return [];
-
-    const conditions: QTI12CorrectCondition[] = [];
-    const respconditions = ensureArray(resprocessing['respcondition'] as unknown);
-
-    for (const cond of respconditions) {
-      if (cond == null || typeof cond !== 'object') continue;
-      const condRec = cond as Record<string, unknown>;
-
-      // Only treat a condition as identifying a correct answer if it explicitly
-      // sets a positive score. Conditions with no setvar are feedback-only
-      // (e.g. displayfeedback) and must not be treated as correct conditions.
-      const setvar = condRec['setvar'];
-      if (setvar == null) continue;
-      const scoreText = textContent(setvar);
-      if (!scoreText || Number.parseFloat(scoreText) <= 0) continue;
-
-      const conditionvar = condRec['conditionvar'] as Record<string, unknown> | undefined;
-      if (!conditionvar) continue;
-
-      this.extractVarEquals(conditionvar, conditions, false);
-    }
-
-    return conditions;
-  }
-
-  private extractVarEquals(
-    conditionvar: Record<string, unknown>,
-    conditions: QTI12CorrectCondition[],
-    negate: boolean,
-  ): void {
-    // Direct varequal elements
-    const varequals = ensureArray(conditionvar['varequal'] as unknown);
-    for (const ve of varequals) {
-      if (ve == null || typeof ve !== 'object') continue;
-      const veRec = ve as Record<string, unknown>;
-      const responseIdent = attr(veRec, 'respident');
-      const correctLabelIdent = textContent(veRec);
-      if (responseIdent && correctLabelIdent) {
-        conditions.push({ responseIdent, correctLabelIdent, negate });
-      }
-    }
-
-    // Handle <and> grouping. The recursive call also walks any <not>
-    // children of <and> via the top-level <not> path below, so we don't
-    // process them here.
-    const andEl = conditionvar['and'] as Record<string, unknown> | undefined;
-    if (andEl) {
-      this.extractVarEquals(andEl, conditions, negate);
-    }
-
-    // Handle <not> at top level
-    const notEls = ensureArray(conditionvar['not'] as unknown);
-    for (const notEl of notEls) {
-      if (notEl != null && typeof notEl === 'object') {
-        this.extractVarEquals(notEl as Record<string, unknown>, conditions, !negate);
-      }
-    }
-  }
-
-  private parseFeedbacks(itemEl: Record<string, unknown>): Map<string, string> {
-    const feedbacks = new Map<string, string>();
-    const fbEls = ensureArray(itemEl['itemfeedback'] as unknown);
-    for (const fb of fbEls) {
-      if (fb == null || typeof fb !== 'object') continue;
-      const fbRec = fb as Record<string, unknown>;
-      const ident = attr(fbRec, 'ident');
-      if (!ident) continue;
-
-      // Canvas uses flow_mat → material → mattext; some exports use material → mattext directly.
-      const text =
-        textContent(getNestedValue(fbRec, 'flow_mat', 'material', 'mattext')) ||
-        textContent(getNestedValue(fbRec, 'material', 'mattext'));
-
-      feedbacks.set(ident, he.decode(text));
-    }
-    return feedbacks;
   }
 
   /**
@@ -779,121 +583,6 @@ export class QTI12AssessmentParser implements InputParser {
       };
     }
     return undefined;
-  }
-
-  private async transformItem(
-    item: QTI12ParsedItem,
-    {
-      parseOptions,
-      shuffleAnswers,
-      allowedExtensions,
-      sectionPoints,
-    }: {
-      parseOptions?: ParseOptions;
-      shuffleAnswers?: boolean;
-      allowedExtensions?: string[];
-      sectionPoints?: number;
-    },
-    warnings?: IRParseWarning[],
-  ): Promise<IRQuestion | null> {
-    const handler = this.registry.get(item.questionType);
-    if (!handler) {
-      // Caller catches this and records it as a parse warning.
-      throw new Error(
-        `Unsupported question type "${item.questionType}" (supported: ${this.registry.supportedTypes().join(', ')})`,
-      );
-    }
-
-    const result = handler.transform(item);
-    if (warnings && result.warnings) {
-      for (const message of result.warnings) {
-        warnings.push({ questionId: item.ident, message });
-      }
-    }
-    const body =
-      result.body.type === 'file-upload' && allowedExtensions?.length
-        ? { type: 'file-upload' as const, allowedExtensions }
-        : result.body;
-
-    // Resolve $IMS-CC-FILEBASE$ references → clientFilesQuestion/
-    const { html: imsResolved, fileRefs } = resolveImsFileRefs(item.promptHtml);
-
-    // Handle inline base64 images
-    const { html: cleanedPrompt, files } = extractInlineImages(imsResolved);
-    const responsivePrompt = await rewritePreAsPlCode(rewriteImagesAsPlFigure(cleanedPrompt));
-
-    const assets = new Map<string, AssetReference>();
-
-    // Add IMS file references as file-path assets
-    for (const [filename, relativePath] of fileRefs) {
-      assets.set(filename, {
-        type: 'file-path',
-        value: relativePath,
-      });
-    }
-
-    for (const [filename, buffer] of files) {
-      assets.set(filename, {
-        type: 'base64',
-        value: buffer.toString('base64'),
-        contentType: mime.getType(filename) || 'application/octet-stream',
-      });
-    }
-    if (result.assets) {
-      for (const [k, v] of result.assets) {
-        assets.set(k, v);
-      }
-    }
-
-    // Build feedback.
-    // Canvas exports use two patterns:
-    //   1. Global idents: correct_fb / general_incorrect_fb
-    //   2. Per-answer idents: {answerLabelIdent}_fb (e.g. "7877_fb")
-    //
-    // Per-answer feedback is preferred: it supports multi-select questions where
-    // each selected answer's feedback needs to be concatenated at grade time.
-    // Global idents are kept as a fallback for questions that don't use per-answer.
-    const feedback: IRFeedback = {};
-
-    const correctFbText = item.feedbacks.get('correct_fb');
-    const incorrectFbText = item.feedbacks.get('general_incorrect_fb');
-    if (correctFbText) feedback.correct = correctFbText;
-    if (incorrectFbText) feedback.incorrect = incorrectFbText;
-
-    // Collect per-answer feedback: any {labelIdent}_fb entry gets keyed by the
-    // answer display text so the emitter can match against submitted_answers.
-    const perAnswer: Record<string, string> = {};
-    for (const lid of item.responseLids) {
-      for (const label of lid.labels) {
-        const fb = item.feedbacks.get(`${label.ident}_fb`);
-        if (fb) {
-          perAnswer[label.text] = fb;
-        }
-      }
-    }
-    if (Object.keys(perAnswer).length > 0) {
-      feedback.perAnswer = perAnswer;
-    }
-
-    const hasFeedback = feedback.correct || feedback.incorrect || feedback.perAnswer;
-
-    return {
-      sourceId: item.ident,
-      title: item.title || item.ident,
-      promptHtml: responsivePrompt,
-      body,
-      points: sectionPoints ?? item.pointsPossible,
-      feedback: hasFeedback ? feedback : undefined,
-      assets,
-      metadata: {
-        ...item.metadata,
-        ...(parseOptions?.defaultTopic ? { topic: parseOptions.defaultTopic } : {}),
-      },
-      shuffleAnswers,
-      gradingMethod:
-        result.gradingMethod ??
-        (MANUAL_GRADING_QUESTION_TYPES.has(body.type) ? 'Manual' : 'Internal'),
-    };
   }
 }
 

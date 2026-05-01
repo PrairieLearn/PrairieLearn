@@ -4,6 +4,7 @@ export type { ConvertOptions } from './pipeline.js';
 
 // Parsers
 export { QTI12AssessmentParser } from './parsers/qti12/index.js';
+export { QTI12ObjectBankParser } from './parsers/qti12/index.js';
 export type { InputParser, ParseOptions } from './parsers/parser.js';
 
 // Emitters

@@ -10,7 +10,7 @@ import { logger } from '@prairielearn/logger';
 import type { ConversionResult } from '../emitters/emitter.js';
 import { PLEmitter } from '../emitters/pl-emitter.js';
 import type { ParseOptions } from '../parsers/parser.js';
-import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
+import { QTI12AssessmentParser, QTI12ObjectBankParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
 import type { IRAssessment } from '../types/ir.js';
 import {
@@ -244,7 +244,7 @@ interface ParsedAssessment {
   webResourcesDir: string;
 }
 
-const PARSERS = [new QTI12AssessmentParser()];
+const PARSERS = [new QTI12AssessmentParser(), new QTI12ObjectBankParser()];
 const EMITTER = new PLEmitter();
 
 async function parseFile(
@@ -254,6 +254,7 @@ async function parseFile(
 ): Promise<ParsedInput> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
   const webResourcesDir = path.join(entry.assessmentDir, '..', 'web_resources');
+  const parseBasePath = await resolveParseBasePath(entry.assessmentDir);
 
   const metaXmlPath = path.join(entry.assessmentDir, 'assessment_meta.xml');
   let assessmentMetaXml: string | undefined;
@@ -267,13 +268,23 @@ async function parseFile(
   }
 
   const parseOptions: ParseOptions = {
-    basePath: entry.assessmentDir,
+    basePath: parseBasePath,
     assessmentMetaXml,
     timezone,
     rubricsXml,
   };
   const ir = await parseAssessment(xmlContent, PARSERS, parseOptions);
   return { ir, parseOptions, webResourcesDir };
+}
+
+async function resolveParseBasePath(assessmentDir: string): Promise<string> {
+  if (path.basename(assessmentDir).toLowerCase() === 'qti') {
+    const parentDir = path.dirname(assessmentDir);
+    if (await fileExists(path.join(parentDir, 'images'))) {
+      return parentDir;
+    }
+  }
+  return assessmentDir;
 }
 
 function emitWithSlug(
