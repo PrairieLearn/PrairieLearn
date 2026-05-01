@@ -28,8 +28,10 @@ export type AccessControlIssuePath =
   | ['dateControl', 'lateDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'credit']
   | ['dateControl', 'afterLastDeadline', 'credit']
+  | ['afterComplete', 'questions']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score']
   | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
@@ -196,6 +198,30 @@ export function validateRuleStructuralDependencyIssues(
         validationRule,
         ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  // Constraint 5: After-complete settings on the default rule require a
+  // completion mechanism. Without dateControl or PrairieTest, there is no
+  // event for after-complete to trigger on. Overrides are checked separately
+  // by validateGlobalAfterCompleteOverrideIssues, which accounts for
+  // inheritance from the default rule.
+  if (validationRule.targetType === 'none' && ac && !dc && !hasPrairieTest) {
+    if (ac.questions !== undefined) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'questions'],
+        'After-complete settings require date control or PrairieTest exams.',
+      );
+    }
+    if (ac.score !== undefined) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'score'],
+        'After-complete settings require date control or PrairieTest exams.',
       );
     }
   }
@@ -539,6 +565,52 @@ export function validateGlobalCreditConsistencyIssues(
 }
 
 /**
+ * Cross-rule check: each override with after-complete settings must have a
+ * completion mechanism for its students. The mechanism can come from
+ * dateControl on the override itself, dateControl on the defaults (inherited
+ * when the override does not set its own dateControl), or PrairieTest exams
+ * on the defaults (which apply to all students).
+ */
+export function validateGlobalAfterCompleteOverrideIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none');
+  const defaultHasDateControl = defaultRule?.rule.dateControl != null;
+  const defaultHasPrairieTest =
+    (defaultRule?.rule.integrations?.prairieTest?.exams ?? []).length > 0;
+
+  for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
+    const ac = validationRule.rule.afterComplete;
+    if (!ac) continue;
+    const overrideHasDateControl = validationRule.rule.dateControl != null;
+    if (overrideHasDateControl || defaultHasDateControl || defaultHasPrairieTest) continue;
+
+    if (ac.questions !== undefined) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'questions'],
+        'After-complete settings require date control or PrairieTest exams.',
+      );
+    }
+    if (ac.score !== undefined) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['afterComplete', 'score'],
+        'After-complete settings require date control or PrairieTest exams.',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
  * Validates date ordering within a single access control rule.
  * Returns an array of error messages (empty if valid).
  */
@@ -652,17 +724,6 @@ export function validateRule(
   if (targetType === 'none') {
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
-    }
-
-    // Constraint 5: afterComplete requires dateControl or PrairieTest exams.
-    // Without a timeline or exam integration there is no completion event,
-    // so after-complete settings are meaningless.
-    if (
-      rule.afterComplete &&
-      !rule.dateControl &&
-      (rule.integrations?.prairieTest?.exams ?? []).length === 0
-    ) {
-      errors.push('After-complete settings require date control or PrairieTest exams.');
     }
   } else {
     if (rule.beforeRelease !== undefined) {
@@ -871,28 +932,10 @@ export function validateAccessControlRules({
     errors.push(...validateRule(rule, 'enrollment'));
   }
 
-  // Global constraint: afterComplete on overrides requires at least one rule
-  // to provide a completion mechanism (dateControl on any rule, or PrairieTest
-  // exams on the defaults). Without any timeline, there is no completion event
-  // for the override's settings to trigger on.
-  const anyRuleHasDateControl = validationRules.some((vr) => vr.rule.dateControl != null);
-  const defaultRuleHasPrairieTest = validationRules.some(
-    (vr) => vr.targetType === 'none' && (vr.rule.integrations?.prairieTest?.exams ?? []).length > 0,
-  );
-  if (!anyRuleHasDateControl && !defaultRuleHasPrairieTest) {
-    for (const vr of validationRules) {
-      if (vr.targetType !== 'none' && vr.rule.afterComplete) {
-        errors.push(
-          'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
-        );
-        break;
-      }
-    }
-  }
-
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalAfterCompleteOverrideIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

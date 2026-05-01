@@ -1476,8 +1476,9 @@ describe('Structural field dependency validation', () => {
 
   it.each([
     {
-      label: 'after-complete boolean fields without deadlines',
+      label: 'after-complete boolean fields with dateControl but no deadlines',
       config: {
+        dateControl: { release: { date: '2024-03-14T00:01:00' } },
         afterComplete: {
           questions: { hidden: true },
           score: { hidden: true },
@@ -1732,6 +1733,9 @@ describe('afterComplete requires dateControl or PrairieTest', () => {
 });
 
 describe('Global afterComplete override validation', () => {
+  const completionMechanismMessage =
+    'After-complete settings require date control or PrairieTest exams.';
+
   it('rejects afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
     const result = validateAccessControlRules({
       rules: [
@@ -1744,11 +1748,7 @@ describe('Global afterComplete override validation', () => {
         }),
       ],
     });
-    assert.isTrue(
-      result.errors.includes(
-        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
-      ),
-    );
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
   });
 
   it('accepts afterComplete on overrides when main rule has dateControl', () => {
@@ -1768,11 +1768,7 @@ describe('Global afterComplete override validation', () => {
         }),
       ],
     });
-    assert.isFalse(
-      result.errors.includes(
-        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
-      ),
-    );
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
   });
 
   it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
@@ -1793,14 +1789,10 @@ describe('Global afterComplete override validation', () => {
         }),
       ],
     });
-    assert.isFalse(
-      result.errors.includes(
-        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
-      ),
-    );
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
   });
 
-  it('accepts afterComplete on overrides when an override has dateControl', () => {
+  it('accepts afterComplete on an override that has its own dateControl', () => {
     const result = validateAccessControlRules({
       rules: [
         AccessControlJsonSchema.parse({}),
@@ -1815,10 +1807,30 @@ describe('Global afterComplete override validation', () => {
         }),
       ],
     });
-    assert.isFalse(
-      result.errors.includes(
-        'After-complete settings on overrides require at least one rule to have date control or PrairieTest exams.',
-      ),
-    );
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override when only another override has dateControl', () => {
+    // Tighter semantics: another override's dateControl does not provide a
+    // completion mechanism for this override's students. They inherit the
+    // (missing) defaults' dateControl.
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
   });
 });

@@ -92,7 +92,7 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
-  hasCompletionMechanism = true,
+  hasActiveCompletion = true,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -101,7 +101,7 @@ function QuestionVisibilityInput({
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
-  hasCompletionMechanism?: boolean;
+  hasActiveCompletion?: boolean;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
@@ -252,7 +252,7 @@ function QuestionVisibilityInput({
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
-      {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
+      {!hasPrairieTest && hasActiveCompletion && hideQuestionsMode !== 'show_questions' && (
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
           completion" so students can review their work.
@@ -442,7 +442,7 @@ export function DefaultAfterCompleteForm({
   const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
     name: 'defaultRule.durationMinutes',
   });
-  const hasCompletionMechanism =
+  const hasActiveCompletion =
     hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
 
   return (
@@ -455,7 +455,7 @@ export function DefaultAfterCompleteForm({
           value={qvField.value}
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
-          hasCompletionMechanism={hasCompletionMechanism}
+          hasActiveCompletion={hasActiveCompletion}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}

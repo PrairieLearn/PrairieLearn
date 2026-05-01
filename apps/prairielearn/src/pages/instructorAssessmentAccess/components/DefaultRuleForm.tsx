@@ -6,7 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
 import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
-import { useHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
+import { useDefaultRuleHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
 import type { AccessControlFormData } from './types.js';
 
 const beforeReleasePopoverConfig = {
@@ -31,7 +31,7 @@ export function DefaultRuleForm({
   courseInstanceId: string;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
-  const hasCompletionMechanism = useHasCompletionMechanism();
+  const hasCompletionMechanism = useDefaultRuleHasCompletionMechanism();
 
   return (
     <div className="d-flex flex-column gap-3">

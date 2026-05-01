@@ -132,6 +132,32 @@ export interface AccessControlFormData {
 }
 
 /**
+ * The default rule has a completion mechanism when date control is enabled
+ * or PrairieTest exams are configured. Used to gate after-complete UI and
+ * serialization on the default rule, mirroring the server-side check in
+ * validateRuleStructuralDependencyIssues (Constraint 5).
+ */
+export function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolean {
+  return rule.dateControlEnabled || rule.prairieTestExams.length > 0;
+}
+
+/**
+ * An override has a completion mechanism for its students when it sets its
+ * own dateControl, or when the default rule provides one (dateControl
+ * inherited or PrairieTest exams that apply to all students). Mirrors the
+ * server-side check in validateGlobalAfterCompleteOverrideIssues.
+ */
+export function overrideHasCompletionMechanism(
+  override: OverrideData,
+  defaultRule: DefaultRuleData,
+): boolean {
+  const overrideHasDateControl = DATE_CONTROL_FIELD_NAMES.some((f) =>
+    override.overriddenFields.includes(f),
+  );
+  return overrideHasDateControl || defaultRuleHasCompletionMechanism(defaultRule);
+}
+
+/**
  * Convert a date string to a timezone-naive datetime-local value suitable for
  * `<input type="datetime-local">` (format: `yyyy-MM-ddTHH:mm:ss`).
  *
@@ -387,7 +413,7 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   // (questions.hidden: true, score.hidden: false) AND there is a
   // completion mechanism (dateControl or PrairieTest). Without one,
   // after-complete settings are meaningless and would fail validation.
-  const hasCompletionMechanism = rule.dateControlEnabled || rule.prairieTestExams.length > 0;
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
@@ -492,16 +518,11 @@ function overrideToJson(
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  const defaultHasCompletionMechanism =
-    formData.defaultRule.dateControlEnabled || formData.defaultRule.prairieTestExams.length > 0;
-  const anyOverrideHasDateControl = formData.overrides.some((o) =>
-    DATE_CONTROL_FIELD_NAMES.some((f) => o.overriddenFields.includes(f)),
-  );
-  const overrideHasCompletionMechanism =
-    defaultHasCompletionMechanism || anyOverrideHasDateControl;
   return [
     defaultRuleToJson(formData.defaultRule),
-    ...formData.overrides.map((o) => overrideToJson(o, overrideHasCompletionMechanism)),
+    ...formData.overrides.map((o) =>
+      overrideToJson(o, overrideHasCompletionMechanism(o, formData.defaultRule)),
+    ),
   ];
 }
 
