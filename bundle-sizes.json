@@ -235,9 +235,9 @@
     "brotli": 2132
   },
   "stylesheets/splitPane.css": {
-    "raw": 615,
-    "gzip": 328,
-    "brotli": 243
+    "raw": 658,
+    "gzip": 345,
+    "brotli": 256
   },
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
     "raw": 442408,
