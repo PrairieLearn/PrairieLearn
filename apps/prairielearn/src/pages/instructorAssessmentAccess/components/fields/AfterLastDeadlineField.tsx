@@ -209,10 +209,7 @@ function AfterLastDeadlineInput({
           </Form.Text>
         </div>
       )}
-      {/* Rendered outside the partial_credit conditional so cross-field
-          errors (e.g. "requires a due date") set on this path are visible
-          in practice and no-submissions modes too, where the credit input
-          is not rendered. */}
+      {/* Outside the partial_credit block so cross-field errors (e.g. "requires a due date") show in all modes. */}
       {creditError && (
         <Form.Text
           id={`${idPrefix}-after-deadline-credit-error`}

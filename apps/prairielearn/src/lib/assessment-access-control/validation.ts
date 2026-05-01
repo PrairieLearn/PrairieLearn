@@ -110,14 +110,9 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines and non-trivial afterLastDeadline behavior
-  // require a due date as an anchor. Early deadlines are standalone bonus-credit
-  // windows and don't need one. `afterLastDeadline.allowSubmissions: false` is a
-  // no-op without a deadline, so only `allowSubmissions: true` (practice and
-  // partial-credit modes) is constrained.
-  // On overrides, due === undefined means "inherit from main rule" (valid),
-  // while due.date === null means "explicitly no due date" (invalid). The
-  // cross-rule case where the inherited value is also missing is handled by
+  // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
+  // true) need a due date as an anchor. Early deadlines are standalone bonus
+  // windows. The cross-rule "inherit from main" case is handled by
   // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
@@ -216,39 +211,25 @@ export function validateRuleStructuralDependencyIssues(
 }
 
 /**
- * Cross-rule structural dependency checks.
- *
- * The per-rule structural validator catches "late deadlines without a due
- * date" and "afterLastDeadline without a deadline" within a single rule, but
- * intentionally treats `dc.due === undefined` on overrides as valid (the
- * override inherits the main rule's due). This global check closes the gap
- * where the inherited value is also missing: if any rule has late deadlines
- * or non-trivial afterLastDeadline behavior, at least one rule must
- * explicitly set a due date.
- *
- * Skips the main rule and overrides that explicitly set their own `due`,
- * since the per-rule validator already reports those with a more specific
- * message ("requires a due date." vs the global "...on at least one rule.").
- * Reporting both would duplicate at the same form-field path, and the
- * per-rule message is more actionable when an override has explicitly
- * cleared its own due.
+ * Cross-rule structural check: complements the per-rule validator, which
+ * treats `dc.due === undefined` on overrides as "inherit from main" and so
+ * misses the case where the inherited value is also missing. Lenient like
+ * the other global checks — overrides can cascade, so any rule's due could
+ * anchor a given student's resolved timeline. Skips overrides that
+ * explicitly set their own `due`: either it provides an anchor, or per-rule
+ * already flagged the explicit-null case.
  */
 export function validateGlobalStructuralDependencyIssues(
   validationRules: AccessControlValidationRule[],
 ): AccessControlValidationIssue[] {
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
-
   if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
 
   for (const validationRule of validationRules) {
     if (validationRule.targetType === 'none') continue;
     const dc = validationRule.rule.dateControl;
-    if (!dc) continue;
-    // Past the early exit above, a defined `dc.due` necessarily has
-    // `date === null` (otherwise `findDueMs` would be non-null and we'd
-    // have returned). Per-rule already flags that case.
-    if (dc.due !== undefined) continue;
+    if (!dc || dc.due !== undefined) continue;
 
     if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
       pushIssue(
@@ -259,9 +240,7 @@ export function validateGlobalStructuralDependencyIssues(
       );
     }
 
-    // `allowSubmissions: false` (the default "no submissions" mode) is a
-    // no-op when no deadline exists, so we don't flag it. Practice and
-    // partial-credit modes both set `allowSubmissions: true`.
+    // `allowSubmissions: false` is a no-op without a deadline.
     if (dc.afterLastDeadline?.allowSubmissions === true) {
       pushIssue(
         issues,
