@@ -1,9 +1,31 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AccessControlFormData } from './types.js';
+import type { AccessControlFormData, OverrideData } from './types.js';
 import { getGlobalDateValidationErrors } from './validation.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
+
+function makeOverride(partial: Partial<OverrideData> = {}): OverrideData {
+  return {
+    trackingId: 'override',
+    appliesTo: {
+      targetType: 'student_label',
+      enrollments: [],
+      studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
+    },
+    overriddenFields: [],
+    release: { date: null, released: true },
+    due: { date: null, credit: null, customCredit: false },
+    earlyDeadlines: [],
+    lateDeadlines: [],
+    afterLastDeadline: { allowSubmissions: false },
+    durationMinutes: null,
+    password: null,
+    questionVisibility: { hidden: true },
+    scoreVisibility: { hidden: false },
+    ...partial,
+  };
+}
 
 function makeFormData(
   overrides: AccessControlFormData['overrides'],
@@ -34,42 +56,19 @@ describe('getGlobalDateValidationErrors', () => {
   it('maps an impossible early deadline to the matching override field path', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData([
-        {
-          trackingId: 'override-1',
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
-          },
+        makeOverride({
           overriddenFields: ['release'],
           release: { date: '2024-04-06T00:00:00', released: true },
-          due: { date: null, credit: null, customCredit: false },
-          earlyDeadlines: [],
-          lateDeadlines: [],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
-        {
-          trackingId: 'override-2',
+        }),
+        makeOverride({
           appliesTo: {
             targetType: 'enrollment',
             enrollments: [{ enrollmentId: 'e1', uid: 'student1', name: 'Student 1' }],
             studentLabels: [],
           },
           overriddenFields: ['earlyDeadlines'],
-          release: { date: null, released: true },
-          due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
-          lateDeadlines: [],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
+        }),
       ]),
       TEST_TIMEZONE,
     );
@@ -83,42 +82,16 @@ describe('getGlobalDateValidationErrors', () => {
   it('skips due-based global errors when any rule can unset the due date', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData([
-        {
-          trackingId: 'override-1',
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
-          },
-          overriddenFields: ['due'],
-          release: { date: null, released: true },
-          due: { date: null, credit: null, customCredit: false },
-          earlyDeadlines: [],
-          lateDeadlines: [],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
-        {
-          trackingId: 'override-2',
+        makeOverride({ overriddenFields: ['due'] }),
+        makeOverride({
           appliesTo: {
             targetType: 'student_label',
             enrollments: [],
             studentLabels: [{ studentLabelId: '2', name: 'Section B' }],
           },
           overriddenFields: ['lateDeadlines'],
-          release: { date: null, released: true },
-          due: { date: null, credit: null, customCredit: false },
-          earlyDeadlines: [],
           lateDeadlines: [{ date: '2024-04-07T12:00:00', credit: 50 }],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
+        }),
       ]),
       TEST_TIMEZONE,
     );
@@ -159,24 +132,10 @@ describe('getGlobalDateValidationErrors', () => {
   it('flags a future override release date when override radio is "Released"', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData([
-        {
-          trackingId: 'override-1',
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
-          },
+        makeOverride({
           overriddenFields: ['release'],
           release: { date: '2099-01-01T00:00:00', released: true },
-          due: { date: null, credit: null, customCredit: false },
-          earlyDeadlines: [],
-          lateDeadlines: [],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
+        }),
       ]),
       TEST_TIMEZONE,
     );
@@ -190,24 +149,11 @@ describe('getGlobalDateValidationErrors', () => {
   it('does not flag override release inconsistency when release is not overridden', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData([
-        {
-          trackingId: 'override-1',
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [{ studentLabelId: '1', name: 'Section A' }],
-          },
+        makeOverride({
           overriddenFields: ['due'],
           release: { date: '2099-01-01T00:00:00', released: true },
           due: { date: '2099-06-01T00:00:00', credit: null, customCredit: false },
-          earlyDeadlines: [],
-          lateDeadlines: [],
-          afterLastDeadline: { allowSubmissions: false },
-          durationMinutes: null,
-          password: null,
-          questionVisibility: { hidden: true },
-          scoreVisibility: { hidden: false },
-        },
+        }),
       ]),
       TEST_TIMEZONE,
     );
