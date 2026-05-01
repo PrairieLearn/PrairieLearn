@@ -88,8 +88,8 @@ export interface AppliesTo {
   studentLabels: StudentLabelTarget[];
 }
 
-// Main rule: flat fields, null = feature off
-export interface MainRuleData {
+// Default rule: flat fields, null = feature off
+export interface DefaultRuleData {
   id?: string;
   trackingId: string;
   beforeReleaseListed: boolean;
@@ -107,7 +107,7 @@ export interface MainRuleData {
 }
 
 // Override: flat fields. The `overriddenFields` array tracks which fields
-// are overridden vs inherited from the main rule.  We avoid using `undefined`
+// are overridden vs inherited from the default rule.  We avoid using `undefined`
 // as a sentinel because react-hook-form does not support setting field values
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
@@ -127,7 +127,7 @@ export interface OverrideData {
 }
 
 export interface AccessControlFormData {
-  mainRule: MainRuleData;
+  defaultRule: DefaultRuleData;
   overrides: OverrideData[];
 }
 
@@ -151,10 +151,10 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
   return value;
 }
 
-export function jsonToMainRuleFormData(
+export function jsonToDefaultRuleFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
-): MainRuleData {
+): DefaultRuleData {
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -344,7 +344,7 @@ function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
   return { date: due.date };
 }
 
-function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
+function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
   };
@@ -356,7 +356,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.release.date) output.dateControl.release = { date: rule.release.date };
-    // Omit `due` on the main rule when no date is set and no custom credit is
+    // Omit `due` on the default rule when no date is set and no custom credit is
     // applied — it would just emit `{ date: null }`, which is semantically
     // equivalent to "no due configured".
     if (rule.due.date !== null || rule.due.customCredit) {
@@ -421,7 +421,7 @@ function overrideToJson(
   rule: OverrideData,
   hasCompletionMechanism: boolean,
 ): AccessControlJsonWithId {
-  // Override rules always emit a `labels` array (possibly empty); only main
+  // Override rules always emit a `labels` array (possibly empty); only default
   // rules omit the key. An empty array means the rule targets zero students
   // (e.g. every label it used to reference was deleted) and is still a
   // student-label rule, not a second default.
@@ -492,19 +492,20 @@ function overrideToJson(
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  const mainHasCompletionMechanism =
-    formData.mainRule.dateControlEnabled || formData.mainRule.prairieTestExams.length > 0;
+  const defaultHasCompletionMechanism =
+    formData.defaultRule.dateControlEnabled || formData.defaultRule.prairieTestExams.length > 0;
   const anyOverrideHasDateControl = formData.overrides.some((o) =>
     DATE_CONTROL_FIELD_NAMES.some((f) => o.overriddenFields.includes(f)),
   );
-  const overrideHasCompletionMechanism = mainHasCompletionMechanism || anyOverrideHasDateControl;
+  const overrideHasCompletionMechanism =
+    defaultHasCompletionMechanism || anyOverrideHasDateControl;
   return [
-    mainRuleToJson(formData.mainRule),
+    defaultRuleToJson(formData.defaultRule),
     ...formData.overrides.map((o) => overrideToJson(o, overrideHasCompletionMechanism)),
   ];
 }
 
-export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
+export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
@@ -513,16 +514,18 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    release: { date: mainRule?.release.date ?? null },
-    due: mainRule?.due ? { ...mainRule.due } : { date: null, credit: null, customCredit: false },
-    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
-    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: mainRule?.afterLastDeadline
-      ? { ...mainRule.afterLastDeadline }
+    release: { date: defaultRule?.release.date ?? null },
+    due: defaultRule?.due
+      ? { ...defaultRule.due }
+      : { date: null, credit: null, customCredit: false },
+    earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: defaultRule?.afterLastDeadline
+      ? { ...defaultRule.afterLastDeadline }
       : { allowSubmissions: false },
-    durationMinutes: mainRule?.durationMinutes ?? null,
-    password: mainRule?.password ?? null,
-    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },
-    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hidden: false },
+    durationMinutes: defaultRule?.durationMinutes ?? null,
+    password: defaultRule?.password ?? null,
+    questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },
+    scoreVisibility: defaultRule ? { ...defaultRule.scoreVisibility } : { hidden: false },
   };
 }

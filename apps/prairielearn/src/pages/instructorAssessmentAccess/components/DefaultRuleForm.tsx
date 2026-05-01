@@ -3,8 +3,8 @@ import { useFormContext } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { MainAfterCompleteForm } from './AfterCompleteForm.js';
-import { MainDateControlForm } from './DateControlForm.js';
+import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
+import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
 import { useHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
 import type { AccessControlFormData } from './types.js';
@@ -21,7 +21,7 @@ const beforeReleasePopoverConfig = {
   props: { id: 'before-release-info-popover' },
 };
 
-export function MainRuleForm({
+export function DefaultRuleForm({
   displayTimezone,
   assessmentId,
   courseInstanceId,
@@ -35,7 +35,7 @@ export function MainRuleForm({
 
   return (
     <div className="d-flex flex-column gap-3">
-      <MainDateControlForm
+      <DefaultDateControlForm
         displayTimezone={displayTimezone}
         assessmentId={assessmentId}
         courseInstanceId={courseInstanceId}
@@ -57,16 +57,16 @@ export function MainRuleForm({
         </div>
         <Form.Check
           type="checkbox"
-          id="mainRule-before-release-listed"
+          id="defaultRule-before-release-listed"
           label={<strong>List before release</strong>}
-          {...register('mainRule.beforeReleaseListed')}
-          aria-describedby="mainRule-before-release-listed-help"
+          {...register('defaultRule.beforeReleaseListed')}
+          aria-describedby="defaultRule-before-release-listed-help"
         />
-        <Form.Text id="mainRule-before-release-listed-help" className="text-muted">
+        <Form.Text id="defaultRule-before-release-listed-help" className="text-muted">
           Students can see the assessment title before release
         </Form.Text>
       </div>
-      {hasCompletionMechanism && <MainAfterCompleteForm displayTimezone={displayTimezone} />}
+      {hasCompletionMechanism && <DefaultAfterCompleteForm displayTimezone={displayTimezone} />}
     </div>
   );
 }

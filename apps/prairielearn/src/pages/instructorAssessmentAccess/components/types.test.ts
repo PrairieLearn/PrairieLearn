@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   type AccessControlFormData,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverrideData,
   formDataToJson,
-  jsonToMainRuleFormData,
+  jsonToDefaultRuleFormData,
 } from './types.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
-const defaultMainRule: MainRuleData = {
-  trackingId: 'main-1',
+const defaultRuleFixture: DefaultRuleData = {
+  trackingId: 'default-1',
   beforeReleaseListed: true,
   dateControlEnabled: true,
   release: { date: '2025-03-01T00:00:00Z' },
@@ -46,53 +46,53 @@ const baseOverride: OverrideData = {
 };
 
 function buildFormData(override: OverrideData): AccessControlFormData {
-  return { mainRule: defaultMainRule, overrides: [override] };
+  return { defaultRule: defaultRuleFixture, overrides: [override] };
 }
 
-describe('jsonToMainRuleFormData', () => {
+describe('jsonToDefaultRuleFormData', () => {
   it('defaults release.date to null when dateControl is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.release.date).toBeNull();
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.release.date).toBeNull();
   });
 
   it('defaults hidden to true for questions when afterComplete is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.questionVisibility.hidden).toBe(true);
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.questionVisibility.hidden).toBe(true);
   });
 
   it('defaults hidden to false for score when afterComplete is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.scoreVisibility.hidden).toBe(false);
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.scoreVisibility.hidden).toBe(false);
   });
 
   it('preserves hidden: false for questions when explicitly set in JSON', () => {
-    const mainRule = jsonToMainRuleFormData(
+    const defaultRule = jsonToDefaultRuleFormData(
       { afterComplete: { questions: { hidden: false } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hidden).toBe(false);
+    expect(defaultRule.questionVisibility.hidden).toBe(false);
   });
 
   it('preserves hidden: true for questions when explicitly set in JSON', () => {
-    const mainRule = jsonToMainRuleFormData(
+    const defaultRule = jsonToDefaultRuleFormData(
       { afterComplete: { questions: { hidden: true } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hidden).toBe(true);
+    expect(defaultRule.questionVisibility.hidden).toBe(true);
   });
 });
 
 describe('formDataToJson', () => {
-  it('defaults beforeReleaseListed to false when omitted from the main rule JSON', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+  it('defaults beforeReleaseListed to false when omitted from the default rule JSON', () => {
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
 
-    expect(mainRule.beforeReleaseListed).toBe(false);
+    expect(defaultRule.beforeReleaseListed).toBe(false);
   });
 
-  it('omits default score visibility when only main-rule question visibility is non-default', () => {
+  it('omits default score visibility when only default-rule question visibility is non-default', () => {
     const result = formDataToJson({
-      mainRule: {
-        ...defaultMainRule,
+      defaultRule: {
+        ...defaultRuleFixture,
         questionVisibility: { hidden: false },
         scoreVisibility: { hidden: false },
       },
@@ -104,10 +104,10 @@ describe('formDataToJson', () => {
     });
   });
 
-  it('omits `due` on main rules when there is no due date and no custom credit', () => {
+  it('omits `due` on default rules when there is no due date and no custom credit', () => {
     const result = formDataToJson({
-      mainRule: {
-        ...defaultMainRule,
+      defaultRule: {
+        ...defaultRuleFixture,
         due: { date: null, credit: null, customCredit: false },
       },
       overrides: [],
@@ -116,10 +116,10 @@ describe('formDataToJson', () => {
     expect(result[0].dateControl?.due).toBeUndefined();
   });
 
-  it('emits an explicit null due date on main rules with custom credit', () => {
+  it('emits an explicit null due date on default rules with custom credit', () => {
     const result = formDataToJson({
-      mainRule: {
-        ...defaultMainRule,
+      defaultRule: {
+        ...defaultRuleFixture,
         due: { date: null, credit: 80, customCredit: true },
       },
       overrides: [],
@@ -226,7 +226,7 @@ describe('formDataToJson', () => {
 
   it('preserves explicit null/empty override removals in dateControl', () => {
     const formData: AccessControlFormData = {
-      mainRule: defaultMainRule,
+      defaultRule: defaultRuleFixture,
       overrides: [
         {
           ...baseOverride,
