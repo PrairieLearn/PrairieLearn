@@ -1,7 +1,7 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 /**
- * Maximum number of access control rules (main + overrides) per assessment.
+ * Maximum number of access control rules (default + overrides) per assessment.
  * Enforced during both JSON sync and tRPC input validation.
  */
 export const MAX_ACCESS_CONTROL_RULES = 50;
@@ -110,26 +110,36 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines require a due date.
-  // Late deadlines define credit after the due date, so they need one as an anchor.
-  // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, due === undefined means "inherit from main rule" (valid),
-  // while due.date === null means "explicitly no due date" (invalid with late deadlines).
+  // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
+  // true) need a due date as an anchor. Early deadlines are standalone bonus
+  // windows. The cross-rule "inherit from default" case is handled by
+  // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
       validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'lateDeadlines', 0, 'date'],
-        'Late deadlines require a due date.',
-      );
+    if (dueDateMissing) {
+      if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', 0, 'date'],
+          'Late deadlines require a due date.',
+        );
+      }
+
+      if (dc.afterLastDeadline?.allowSubmissions === true) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'afterLastDeadline', 'credit'],
+          'After-last-deadline behavior requires a due date.',
+        );
+      }
     }
   }
 
-  // Constraint 3: Early deadlines are not allowed when a custom due credit is set.
+  // Constraint 2: Early deadlines are not allowed when a custom due credit is set.
   // Early deadlines are standalone bonus-credit windows above the due-date credit,
   // but when the due-date credit is customized we require a single coherent credit
   // shape around the due date rather than layering bonuses on top.
@@ -142,7 +152,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Constraint 3: Late deadlines are not allowed when due credit is 0%.
   // Late deadline credit must be strictly less than the due credit, so a
   // 0% due credit leaves no valid range.
   if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
@@ -154,12 +164,12 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 2: After-complete date fields require at least one deadline.
+  // Constraint 4: After-complete date fields require at least one deadline.
   // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
-  // Only enforced on the main rule — overrides may inherit deadlines.
+  // Only enforced on the default rule — overrides may inherit deadlines.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
   const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
@@ -193,6 +203,50 @@ export function validateRuleStructuralDependencyIssues(
         validationRule,
         ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule structural check: complements the per-rule validator, which
+ * treats `dc.due === undefined` on overrides as "inherit from default" and so
+ * misses the case where the inherited value is also missing. Lenient like
+ * the other global checks — overrides can cascade, so any rule's due could
+ * anchor a given student's resolved timeline. Skips overrides that
+ * explicitly set their own `due`: either it provides an anchor, or per-rule
+ * already flagged the explicit-null case.
+ */
+export function validateGlobalStructuralDependencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+  if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
+
+  for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
+    const dc = validationRule.rule.dateControl;
+    if (!dc || dc.due !== undefined) continue;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date on at least one rule.',
+      );
+    }
+
+    // `allowSubmissions: false` is a no-op without a deadline.
+    if (dc.afterLastDeadline?.allowSubmissions === true) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        'After-last-deadline behavior requires a due date on at least one rule.',
       );
     }
   }
@@ -455,8 +509,8 @@ export function validateGlobalCreditConsistencyIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  const mainRule = validationRules.find((vr) => vr.targetType === 'none');
-  const baseHasCustomCredit = mainRule?.rule.dateControl?.due?.credit !== undefined;
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none');
+  const baseHasCustomCredit = defaultRule?.rule.dateControl?.due?.credit !== undefined;
 
   // "Clears custom credit" = an override supplies its own `due` with no credit
   // field (explicit default 100%). A non-overridden `due` inherits instead.
@@ -635,10 +689,10 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * beforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the default rule).
  *
  * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
+ * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
  */
 export function validateRule(
   rule: AccessControlJson,
@@ -760,7 +814,7 @@ function formatValues(values: Set<string> | string[]) {
  *
  * @param params
  * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
+ * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
@@ -791,24 +845,24 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule is identified by the absence of a `labels` key.
-  const mainRules = rules.filter((rule) => rule.labels == null);
+  // A default rule is identified by the absence of a `labels` key.
+  const defaultRules = rules.filter((rule) => rule.labels == null);
 
-  if (mainRules.length === 0) {
+  if (defaultRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
+  } else if (defaultRules.length > 1) {
     errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+      `Found ${defaultRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
     );
   } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
+    // The DB constraint `check_first_rule_is_none` requires the default rule at index 0
     const firstRule = rules[0];
     if (firstRule.labels != null) {
       errors.push('The defaults must be the first element in the array.');
     }
   }
 
-  // Index 0 is the main rule; everything else is a student-label rule.
+  // Index 0 is the default rule; everything else is a student-label rule.
   rules.forEach((rule, index) => {
     const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
 
@@ -860,6 +914,7 @@ export function validateAccessControlRules({
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

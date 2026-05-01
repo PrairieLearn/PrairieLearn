@@ -9,6 +9,7 @@ import {
   validateAccessControlRules,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
+  validateGlobalStructuralDependencyIssues,
   validateRule,
   validateRuleCreditMonotonicity,
   validateRuleDateOrdering,
@@ -94,7 +95,7 @@ describe('Valid configs', () => {
     // Example 5: Extended time override
     [
       {
-        // Main rule (no targets)
+        // Default rule (no targets)
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
           due: { date: '2024-03-21T23:59:00' },
@@ -182,9 +183,9 @@ describe('Valid configs', () => {
   });
 });
 
-describe('Main rule requirement', () => {
-  it('should fail validation when no main rule exists', () => {
-    const rulesWithoutMain: AccessControlJsonInput[] = [
+describe('Default rule requirement', () => {
+  it('should fail validation when no default rule exists', () => {
+    const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
         labels: ['student1'],
         dateControl: {
@@ -199,12 +200,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithoutMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithoutDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
+    assert.isTrue(result.errors.length > 0, 'Expected error when no default rule exists');
     assert.isTrue(
       result.errors.includes(
         'No defaults found. The first element of accessControl must apply to everyone.',
@@ -213,8 +214,8 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should fail validation when multiple main rules exist', () => {
-    const rulesWithMultipleMain: AccessControlJsonInput[] = [
+  it('should fail validation when multiple default rules exist', () => {
+    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
@@ -229,12 +230,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithMultipleMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
+    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
     assert.isTrue(
       result.errors.includes(
         'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
@@ -243,8 +244,8 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should pass validation with exactly one main rule', () => {
-    const rulesWithOneMain: AccessControlJsonInput[] = [
+  it('should pass validation with exactly one default rule', () => {
+    const rulesWithOneDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
@@ -253,12 +254,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithOneMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithOneDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
+    assert.equal(result.errors.length, 0, 'Should have no errors with one default rule');
   });
 
   it('should fail validation when an override specifies beforeRelease', () => {
@@ -1072,7 +1073,7 @@ describe('Global credit validation', () => {
         ruleIndex: 1,
       },
       {
-        // Override inherits due credit (90 from main) but sets a late credit
+        // Override inherits due credit (90 from default) but sets a late credit
         // above it — no possible timeline can make this monotonic.
         rule: AccessControlJsonSchema.parse({
           labels: ['Section B'],
@@ -1532,7 +1533,7 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
   });
 
-  it('should allow overrides to inherit due date from main rule', () => {
+  it('should allow overrides to inherit due date from default rule', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
@@ -1561,6 +1562,260 @@ describe('Structural field dependency validation', () => {
       ruleIndex: 1,
     });
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
+  });
+
+  it('should reject afterLastDeadline practice mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should accept afterLastDeadline no_submissions mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: false },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should reject overrides that explicitly clear due date with afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should allow overrides to inherit due date for afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.deepEqual(issues, []);
+  });
+});
+
+describe('Global structural dependency validation', () => {
+  it('flags override late deadlines when default has no due and override does not override due', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.ruleIndex === 1 &&
+          i.message === 'Late deadlines require a due date on at least one rule.',
+      ),
+    );
+  });
+
+  it('accepts override late deadlines when default has a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: '2024-03-21T23:59:00' },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('accepts override late deadlines when the override sets its own due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        due: { date: '2024-03-21T23:59:00' },
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('flags afterLastDeadline practice mode when no rule has a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.ruleIndex === 1 &&
+          i.message === 'After-last-deadline behavior requires a due date on at least one rule.',
+      ),
+    );
+  });
+
+  it('does not flag afterLastDeadline no_submissions mode without a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: false },
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('does not flag rules without late deadlines or afterLastDeadline', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        password: 'secret',
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('surfaces through validateAccessControlRules end-to-end', () => {
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: null },
+        },
+      }),
+      AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(
+      result.errors.includes('Late deadlines require a due date on at least one rule.'),
+    );
+  });
+
+  it('does not duplicate when an override explicitly clears its own due date', () => {
+    // The per-rule validator already flags an override with `due: { date: null }`
+    // and lateDeadlines/afterLastDeadline. The global check should defer to it
+    // rather than emit a second error at the same path.
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: null },
+        },
+      }),
+      AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          due: { date: null },
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+          afterLastDeadline: { allowSubmissions: true },
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
+    assert.isTrue(result.errors.includes('After-last-deadline behavior requires a due date.'));
+    assert.isFalse(
+      result.errors.includes('Late deadlines require a due date on at least one rule.'),
+    );
+    assert.isFalse(
+      result.errors.includes(
+        'After-last-deadline behavior requires a due date on at least one rule.',
+      ),
+    );
   });
 });
 

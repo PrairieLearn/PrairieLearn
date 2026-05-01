@@ -3,6 +3,7 @@ import {
   type AccessControlValidationRule,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
+  validateGlobalStructuralDependencyIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
@@ -10,16 +11,16 @@ import {
 import { type AccessControlFormData, formDataToJson } from './types.js';
 
 export type AccessControlFormFieldPath =
-  | 'mainRule.release.date'
-  | 'mainRule.due.date'
-  | 'mainRule.due.credit'
-  | `mainRule.earlyDeadlines.${number}.date`
-  | `mainRule.lateDeadlines.${number}.date`
-  | `mainRule.lateDeadlines.${number}.credit`
-  | 'mainRule.afterLastDeadline.credit'
-  | 'mainRule.questionVisibility.visibleFromDate'
-  | 'mainRule.questionVisibility.visibleUntilDate'
-  | 'mainRule.scoreVisibility.visibleFromDate'
+  | 'defaultRule.release.date'
+  | 'defaultRule.due.date'
+  | 'defaultRule.due.credit'
+  | `defaultRule.earlyDeadlines.${number}.date`
+  | `defaultRule.lateDeadlines.${number}.date`
+  | `defaultRule.lateDeadlines.${number}.credit`
+  | 'defaultRule.afterLastDeadline.credit'
+  | 'defaultRule.questionVisibility.visibleFromDate'
+  | 'defaultRule.questionVisibility.visibleUntilDate'
+  | 'defaultRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.release.date`
   | `overrides.${number}.due.date`
   | `overrides.${number}.due.credit`
@@ -42,8 +43,8 @@ function buildValidationRules(formData: AccessControlFormData): AccessControlVal
 function mapIssueToFormFieldPath(
   issue: AccessControlValidationIssue,
 ): AccessControlFormFieldPath | null {
-  const prefix: 'mainRule' | `overrides.${number}` =
-    issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
+  const prefix: 'defaultRule' | `overrides.${number}` =
+    issue.ruleIndex === 0 ? 'defaultRule' : `overrides.${issue.ruleIndex - 1}`;
 
   switch (issue.path[0]) {
     case 'dateControl':
@@ -103,6 +104,7 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
   for (const issues of [
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
+    validateGlobalStructuralDependencyIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);
