@@ -110,22 +110,37 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines require a due date.
-  // Late deadlines define credit after the due date, so they need one as an anchor.
-  // Early deadlines are standalone bonus-credit windows and don't need a due date.
+  // Constraint 1: Late deadlines and non-trivial afterLastDeadline behavior
+  // require a due date as an anchor. Early deadlines are standalone bonus-credit
+  // windows and don't need one. `afterLastDeadline.allowSubmissions: false` is a
+  // no-op without a deadline, so only `allowSubmissions: true` (practice and
+  // partial-credit modes) is constrained.
   // On overrides, due === undefined means "inherit from main rule" (valid),
-  // while due.date === null means "explicitly no due date" (invalid with late deadlines).
+  // while due.date === null means "explicitly no due date" (invalid). The
+  // cross-rule case where the inherited value is also missing is handled by
+  // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
       validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'lateDeadlines', 0, 'date'],
-        'Late deadlines require a due date.',
-      );
+    if (dueDateMissing) {
+      if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', 0, 'date'],
+          'Late deadlines require a due date.',
+        );
+      }
+
+      if (dc.afterLastDeadline?.allowSubmissions === true) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'afterLastDeadline', 'credit'],
+          'After-last-deadline behavior requires a due date.',
+        );
+      }
     }
   }
 
@@ -211,9 +226,8 @@ export function validateRuleStructuralDependencyIssues(
  * or non-trivial afterLastDeadline behavior, at least one rule must
  * explicitly set a due date.
  *
- * Like the other global validators, this is intentionally coarse: it doesn't
- * model which student-target subsets cascade together, just whether any due
- * date exists in the configuration at all.
+ * Skips the main rule because the per-rule validator already covers it
+ * (matches the pattern used by `validateGlobalCreditConsistencyIssues`).
  */
 export function validateGlobalStructuralDependencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -224,6 +238,7 @@ export function validateGlobalStructuralDependencyIssues(
   if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
 
   for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
     const dc = validationRule.rule.dateControl;
     if (!dc) continue;
 

@@ -297,7 +297,6 @@ export function MainDueDateField({
       validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
     },
   });
-
   const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
     name: 'mainRule.due.credit',
     rules: {

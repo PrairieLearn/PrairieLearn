@@ -1578,6 +1578,71 @@ describe('Structural field dependency validation', () => {
     });
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
+
+  it('should reject afterLastDeadline practice mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should accept afterLastDeadline no_submissions mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: false },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should reject overrides that explicitly clear due date with afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should allow overrides to inherit due date for afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.deepEqual(issues, []);
+  });
 });
 
 describe('Global structural dependency validation', () => {

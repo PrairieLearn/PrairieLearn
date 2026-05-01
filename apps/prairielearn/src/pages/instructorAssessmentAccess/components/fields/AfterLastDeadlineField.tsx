@@ -204,19 +204,23 @@ function AfterLastDeadlineInput({
             />
             <InputGroup.Text>%</InputGroup.Text>
           </InputGroup>
-          {creditError && (
-            <Form.Text
-              id={`${idPrefix}-after-deadline-credit-error`}
-              className="text-danger d-block"
-              role="alert"
-            >
-              {creditError}
-            </Form.Text>
-          )}
           <Form.Text className="text-muted d-block">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
         </div>
+      )}
+      {/* Rendered outside the partial_credit conditional so cross-field
+          errors (e.g. "requires a due date") set on this path are visible
+          in practice and no-submissions modes too, where the credit input
+          is not rendered. */}
+      {creditError && (
+        <Form.Text
+          id={`${idPrefix}-after-deadline-credit-error`}
+          className="text-danger d-block"
+          role="alert"
+        >
+          {creditError}
+        </Form.Text>
       )}
     </Form.Group>
   );
