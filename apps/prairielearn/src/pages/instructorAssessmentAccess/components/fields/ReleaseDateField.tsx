@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
@@ -23,7 +22,6 @@ function ReleaseDateInput({
   error,
   idPrefix,
   displayTimezone,
-  inputRef,
 }: {
   date: string | null;
   released: boolean;
@@ -32,7 +30,6 @@ function ReleaseDateInput({
   error?: string;
   idPrefix: string;
   displayTimezone: string;
-  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
     <Form.Group>
@@ -75,7 +72,6 @@ function ReleaseDateInput({
         />
       </div>
       <Form.Control
-        ref={inputRef}
         type="datetime-local"
         step={1}
         aria-label="Release date"
@@ -98,12 +94,6 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     name: 'defaultRule.dateControlEnabled',
   });
 
-  // The browser zeroes a datetime-local input's value when the user types an
-  // invalid date (e.g. "04/31/2026"), so an empty `value` can mean either
-  // "blank" or "malformed input". Read the input's `validity.badInput` via a
-  // ref to distinguish the two and surface a more useful message.
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const {
     field: dateField,
     fieldState: { error },
@@ -112,11 +102,7 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     rules: {
       validate: (value) => {
         if (!dateControlEnabled) return true;
-        if (!value) {
-          return inputRef.current?.validity.badInput
-            ? 'Enter a valid release date.'
-            : 'A release date is required.';
-        }
+        if (!value) return 'Release date is required';
         return true;
       },
     },
@@ -136,7 +122,6 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
         error={error?.message}
         idPrefix="defaultRule"
         displayTimezone={displayTimezone}
-        inputRef={inputRef}
         onChangeDate={dateField.onChange}
         onChangeReleased={releasedField.onChange}
       />
