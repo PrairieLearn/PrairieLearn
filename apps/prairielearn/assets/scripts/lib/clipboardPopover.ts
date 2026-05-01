@@ -3,7 +3,8 @@ import { observe } from 'selector-observer';
 observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-target]', {
   constructor: HTMLElement,
   add(button) {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
       const { clipboardText, clipboardTarget } = button.dataset;
 
       let text: string;
@@ -11,7 +12,7 @@ observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-ta
         text = clipboardText;
       } else if (clipboardTarget) {
         text = Array.from(document.querySelectorAll(clipboardTarget))
-          .map((el) => el.textContent ?? '')
+          .map((el) => el.textContent)
           .join('');
       } else {
         return;

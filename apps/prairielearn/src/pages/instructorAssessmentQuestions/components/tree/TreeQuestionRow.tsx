@@ -282,13 +282,7 @@ export function TreeQuestionRow({
                 {renderedTitle}
               </a>
               {!hasTitle && (
-                <CopyButton
-                  text={question.id}
-                  tooltipId={`copy-qid-${question.id}`}
-                  ariaLabel="Copy QID"
-                  className="hover-show ms-1"
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <CopyButton text={question.id} ariaLabel="Copy QID" className="hover-show ms-1" />
               )}
             </>
           ) : (
@@ -323,13 +317,7 @@ export function TreeQuestionRow({
             style={{ fontSize: '0.75rem' }}
           >
             <span className="text-truncate">{question.id}</span>
-            <CopyButton
-              text={question.id}
-              tooltipId={`copy-qid-${question.id}`}
-              ariaLabel="Copy QID"
-              className="hover-show ms-1"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <CopyButton text={question.id} ariaLabel="Copy QID" className="hover-show ms-1" />
           </div>
         )}
         {viewType === 'detailed' && questionData && (
