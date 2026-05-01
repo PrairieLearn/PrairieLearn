@@ -7,11 +7,11 @@ const TEST_TIMEZONE = 'America/Chicago';
 
 function makeFormData(
   overrides: AccessControlFormData['overrides'],
-  mainRuleOverrides: Partial<AccessControlFormData['mainRule']> = {},
+  defaultRuleOverrides: Partial<AccessControlFormData['defaultRule']> = {},
 ): AccessControlFormData {
   return {
-    mainRule: {
-      trackingId: 'main',
+    defaultRule: {
+      trackingId: 'default',
       beforeReleaseListed: false,
       dateControlEnabled: true,
       release: { date: '2024-04-07T00:00:00', released: true },
@@ -24,7 +24,7 @@ function makeFormData(
       prairieTestExams: [],
       questionVisibility: { hidden: true },
       scoreVisibility: { hidden: false },
-      ...mainRuleOverrides,
+      ...defaultRuleOverrides,
     },
     overrides,
   };
@@ -136,7 +136,7 @@ describe('getGlobalDateValidationErrors', () => {
     );
 
     expect(errors).toContainEqual({
-      path: 'mainRule.release.date',
+      path: 'defaultRule.release.date',
       message: 'Release date must not be in the future when state is Released.',
     });
   });
@@ -151,7 +151,7 @@ describe('getGlobalDateValidationErrors', () => {
     );
 
     expect(errors).toContainEqual({
-      path: 'mainRule.release.date',
+      path: 'defaultRule.release.date',
       message: 'Release date must be in the future when scheduled for release.',
     });
   });

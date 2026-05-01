@@ -9,24 +9,24 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
 
-type RuleData = MainRuleData | OverrideData;
+type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
+export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
 
-function isMainRuleData(rule: RuleData): rule is MainRuleData {
+function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
   return 'dateControlEnabled' in rule;
 }
 
 function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isMainRuleData(rule)) return true;
+  if (isDefaultRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
 
@@ -37,8 +37,8 @@ interface DateTableRow {
   error?: string;
 }
 
-export function generateMainRuleDateTableRows(
-  rule: MainRuleData,
+export function generateDefaultRuleDateTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
@@ -183,7 +183,7 @@ export function generateRuleSummary(
   const items: SummaryItem[] = [];
 
   // Show "before release" chip when release date is in the future.
-  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
+  if (isDefaultRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
     const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
     const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
 
@@ -222,11 +222,11 @@ export function generateRuleSummary(
     }
   }
 
-  if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const mainErrors = formErrors as FieldErrors<MainRuleData> | undefined;
+  if (isDefaultRuleData(rule) && rule.prairieTestExams.length > 0) {
+    const defaultRuleErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
+      const msg = defaultRuleErrors?.prairieTestExams?.[i]?.examUuid?.message;
       if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
     }
     const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
@@ -240,9 +240,9 @@ export function generateRuleSummary(
     });
   }
 
-  const isMain = isMainRuleData(rule);
-  const hasDateControl = isMain ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isMain ? rule.prairieTestExams.length > 0 : false;
+  const isDefault = isDefaultRuleData(rule);
+  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
+  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);

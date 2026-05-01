@@ -7,12 +7,11 @@ from prairielearn import ...
 
 import math
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, assert_never
 
 import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
-from typing_extensions import assert_never
 
 from prairielearn.question_utils import QuestionData
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState

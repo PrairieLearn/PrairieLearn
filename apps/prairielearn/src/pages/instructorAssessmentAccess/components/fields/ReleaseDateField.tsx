@@ -93,9 +93,9 @@ function ReleaseDateInput({
   );
 }
 
-export function MainReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
-  const dateControlEnabled = useWatch<AccessControlFormData, 'mainRule.dateControlEnabled'>({
-    name: 'mainRule.dateControlEnabled',
+export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
   });
 
   // The browser zeroes a datetime-local input's value when the user types an
@@ -107,8 +107,8 @@ export function MainReleaseDateField({ displayTimezone }: { displayTimezone: str
   const {
     field: dateField,
     fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  } = useController<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
     rules: {
       validate: (value) => {
         if (!dateControlEnabled) return true;
@@ -124,8 +124,8 @@ export function MainReleaseDateField({ displayTimezone }: { displayTimezone: str
 
   const { field: releasedField } = useController<
     AccessControlFormData,
-    'mainRule.release.released'
-  >({ name: 'mainRule.release.released' });
+    'defaultRule.release.released'
+  >({ name: 'defaultRule.release.released' });
 
   return (
     <div>
@@ -134,7 +134,7 @@ export function MainReleaseDateField({ displayTimezone }: { displayTimezone: str
         date={dateField.value}
         released={releasedField.value}
         error={error?.message}
-        idPrefix="mainRule"
+        idPrefix="defaultRule"
         displayTimezone={displayTimezone}
         inputRef={inputRef}
         onChangeDate={dateField.onChange}
@@ -151,8 +151,8 @@ export function OverrideReleaseDateField({
   index: number;
   displayTimezone: string;
 }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
   const {
@@ -176,7 +176,7 @@ export function OverrideReleaseDateField({
       isOverridden={isOverridden}
       label="Release"
       onOverride={() => {
-        const date = mainValue || todayLocalDatetime(displayTimezone);
+        const date = defaultRuleValue || todayLocalDatetime(displayTimezone);
         dateField.onChange(date);
         releasedField.onChange(isReleasedNow(date, displayTimezone));
         addOverride();
