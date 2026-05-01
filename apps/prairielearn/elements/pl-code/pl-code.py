@@ -326,7 +326,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # to make it easier for a human to read.
         return f"<pre><code>\n{code.strip()}\n</code></pre>"
 
-    lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
+    if language is None:
+        lexer = NoHighlightingLexer()
+    else:
+        named_lexer = get_lexer_by_name(language)
+        if named_lexer is None:
+            raise KeyError(
+                f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
+            )
+        lexer = named_lexer
 
     pygments_style = get_style_by_name(style_name)
 
