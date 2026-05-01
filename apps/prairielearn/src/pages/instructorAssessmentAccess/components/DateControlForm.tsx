@@ -103,16 +103,19 @@ export function OverrideDateControlForm({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
-    name: `overrides.${index}.overriddenFields`,
-  });
-  const overrideDueDate = useWatch<AccessControlFormData, `overrides.${number}.due.date`>({
-    name: `overrides.${index}.due.date`,
-  });
   const mainDueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
     name: 'mainRule.due.date',
   });
-  const effectiveDueDate = overriddenFields.includes('due') ? overrideDueDate : mainDueDate;
+  const overrides = useWatch<AccessControlFormData, 'overrides'>({
+    name: 'overrides',
+  });
+  // An override's late deadlines and afterLastDeadline are valid as long as
+  // *any* rule in the configuration provides a due date (main rule or any
+  // override), because overrides can stack — one override may set a due date
+  // while another sets afterLastDeadline.
+  const anyRuleHasDueDate =
+    mainDueDate != null ||
+    overrides.some((o) => o.overriddenFields.includes('due') && o.due.date != null);
 
   return (
     <div>
@@ -131,7 +134,7 @@ export function OverrideDateControlForm({
           assessmentId={assessmentId}
           courseInstanceId={courseInstanceId}
         />
-        {effectiveDueDate != null && (
+        {anyRuleHasDueDate && (
           <>
             <OverrideDeadlineArrayField
               index={index}

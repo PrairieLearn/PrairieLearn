@@ -318,30 +318,33 @@ export function MainDueDateField({
       if (next.date === null) {
         setValue('mainRule.lateDeadlines', [], { shouldDirty: true, shouldValidate: true });
         setValue('mainRule.afterLastDeadline', null, { shouldDirty: true, shouldValidate: true });
-        // Wipe late deadlines / after-last-deadline on overrides that don't
-        // have their own due date, since those values would otherwise be
-        // stranded with no effective due date to anchor them.
+        // Wipe late deadlines / after-last-deadline on overrides only if no
+        // override anywhere provides its own due date. Overrides can stack —
+        // one override may set a due date while another sets afterLastDeadline,
+        // so a due date from any override keeps all overrides' late data valid.
         const { overrides } = getValues();
-        overrides.forEach((override, i) => {
-          const overrideHasOwnDueDate =
-            override.overriddenFields.includes('due') && override.due.date != null;
-          if (overrideHasOwnDueDate) return;
-          const removed = override.overriddenFields.filter(
-            (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',
-          );
-          if (removed.length === override.overriddenFields.length) return;
-          if (override.overriddenFields.includes('lateDeadlines')) {
-            setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
-          }
-          if (override.overriddenFields.includes('afterLastDeadline')) {
-            setValue(
-              `overrides.${i}.afterLastDeadline`,
-              { allowSubmissions: false },
-              { shouldDirty: true },
+        const anyOverrideHasDueDate = overrides.some(
+          (o) => o.overriddenFields.includes('due') && o.due.date != null,
+        );
+        if (!anyOverrideHasDueDate) {
+          overrides.forEach((override, i) => {
+            const removed = override.overriddenFields.filter(
+              (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',
             );
-          }
-          setValue(`overrides.${i}.overriddenFields`, removed, { shouldDirty: true });
-        });
+            if (removed.length === override.overriddenFields.length) return;
+            if (override.overriddenFields.includes('lateDeadlines')) {
+              setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
+            }
+            if (override.overriddenFields.includes('afterLastDeadline')) {
+              setValue(
+                `overrides.${i}.afterLastDeadline`,
+                { allowSubmissions: false },
+                { shouldDirty: true },
+              );
+            }
+            setValue(`overrides.${i}.overriddenFields`, removed, { shouldDirty: true });
+          });
+        }
       }
     }
     if (next.customCredit !== value.customCredit) {
@@ -437,21 +440,33 @@ export function OverrideDueDateField({
     if (next.date !== value.date) {
       dateCtrl.field.onChange(next.date);
       if (next.date === null) {
-        setValue(`overrides.${index}.lateDeadlines`, [], {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-        setValue(
-          `overrides.${index}.afterLastDeadline`,
-          { allowSubmissions: false },
-          { shouldDirty: true, shouldValidate: true },
-        );
-        const currentOverridden = getValues(`overrides.${index}.overriddenFields`);
-        setValue(
-          `overrides.${index}.overriddenFields`,
-          currentOverridden.filter((f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline'),
-          { shouldDirty: true },
-        );
+        // Only wipe this override's late/afterLastDeadline if no other rule
+        // (main rule or another override) provides a due date. Overrides can
+        // stack, so another rule's due date keeps these fields valid.
+        const mainDue = getValues('mainRule.due.date');
+        const allOverrides = getValues('overrides');
+        const anyOtherRuleHasDueDate =
+          mainDue != null ||
+          allOverrides.some(
+            (o, i) => i !== index && o.overriddenFields.includes('due') && o.due.date != null,
+          );
+        if (!anyOtherRuleHasDueDate) {
+          setValue(`overrides.${index}.lateDeadlines`, [], {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          setValue(
+            `overrides.${index}.afterLastDeadline`,
+            { allowSubmissions: false },
+            { shouldDirty: true, shouldValidate: true },
+          );
+          const currentOverridden = getValues(`overrides.${index}.overriddenFields`);
+          setValue(
+            `overrides.${index}.overriddenFields`,
+            currentOverridden.filter((f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline'),
+            { shouldDirty: true },
+          );
+        }
       }
     }
     if (next.customCredit !== value.customCredit) {
