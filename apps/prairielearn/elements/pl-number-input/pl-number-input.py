@@ -262,7 +262,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if atol < 0:
                 raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             example_true = 100
-            example_eps = example_true * rtol + atol
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -274,8 +273,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "show_atol": atol > ATOL_DEFAULT,
                 "show_tolerance": rtol != 0 or atol > ATOL_DEFAULT,
                 "example_true": example_true,
-                "example_lower": f"{example_true - example_eps:g}",
-                "example_upper": f"{example_true + example_eps:g}",
+                "example_eps": f"{example_true * rtol + atol:g}",
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
