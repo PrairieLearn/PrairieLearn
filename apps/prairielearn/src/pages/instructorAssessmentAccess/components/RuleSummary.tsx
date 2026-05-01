@@ -141,29 +141,21 @@ export function generateDefaultRuleDateTableRows(
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
 
-  const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
+  const { segment } = getDefaultRuleCurrentState(rule, displayTimezone);
   const segmentEndPDT = segment?.endDate
     ? Temporal.Instant.fromEpochMilliseconds(segment.endDate.getTime())
         .toZonedDateTimeISO(displayTimezone)
         .toPlainDateTime()
     : null;
-  const isBeforeReleaseSegment = segment?.startDate === null;
-  // The trailing segment (endDate === null) is either the indefinite-due
-  // segment (when due.date is null) or the after-last-deadline segment. Only
-  // claim it for the After-last row when due has an actual date — otherwise
-  // it belongs to the "No due date" row.
-  const isAfterLastSegment =
-    segment?.endDate === null &&
-    segment.startDate !== null &&
-    rdc?.release != null &&
-    segment.startDate.getTime() !== rdc.release.date.getTime() &&
-    Boolean(dueDate);
-  // Indefinite-due segment is the trailing segment when due.date is null.
-  const isIndefiniteDueSegment = segment?.endDate === null && dueDate === null;
+  const isBeforeReleaseSegment = segment?.kind === 'beforeRelease';
+  const isAfterLastSegment = segment?.kind === 'afterLastDeadline';
+  const isIndefiniteDueSegment = segment?.kind === 'indefiniteDue';
 
   // Available (open and submittable) → green border; otherwise blue.
   const currentVariant: 'success' | 'primary' =
-    segment != null && segment.startDate !== null && segment.submittable ? 'success' : 'primary';
+    segment != null && segment.kind !== 'beforeRelease' && segment.submittable
+      ? 'success'
+      : 'primary';
 
   const isDeadlineCurrent = (formDateString: string): boolean => {
     if (segmentEndPDT == null) return false;
@@ -877,7 +869,8 @@ function buildDefaultRuleCurrentIndicator(
   // Mirrors the resolver's `showBeforeRelease`: students see a "coming soon"
   // listing when `beforeReleaseListed` is set and either no release date is
   // configured OR the current time is before the release.
-  const listedBeforeRelease = rule.beforeReleaseListed && (!rdc || segment?.startDate === null);
+  const listedBeforeRelease =
+    rule.beforeReleaseListed && (!rdc || segment?.kind === 'beforeRelease');
 
   if (!segment) {
     if (listedBeforeRelease) {
@@ -894,7 +887,7 @@ function buildDefaultRuleCurrentIndicator(
     <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} tooltip />
   );
 
-  if (segment.startDate === null) {
+  if (segment.kind === 'beforeRelease') {
     const opensAt = segment.endDate;
     if (listedBeforeRelease) {
       return {
