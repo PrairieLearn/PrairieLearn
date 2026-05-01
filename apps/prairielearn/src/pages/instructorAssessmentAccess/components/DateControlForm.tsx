@@ -35,6 +35,20 @@ export function DefaultDateControlForm({
     name: 'defaultRule.dateControlEnabled',
   });
 
+  // Show late-deadline fields when a due date is set, OR when previously
+  // configured late content exists. Preserving content lets the user fix or
+  // intentionally clear it instead of having it silently wiped.
+  const dueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
+    name: 'defaultRule.due.date',
+  });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const afterLastDeadline = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
+    name: 'defaultRule.afterLastDeadline',
+  });
+  const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
+
   return (
     <div>
       <div className="section-header mb-3">
@@ -71,8 +85,12 @@ export function DefaultDateControlForm({
             assessmentId={assessmentId}
             courseInstanceId={courseInstanceId}
           />
-          <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-          <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+          {showLateFields && (
+            <>
+              <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
+              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+            </>
+          )}
           <Row className="gy-3">
             <Col md={6}>
               <DefaultDurationField />
