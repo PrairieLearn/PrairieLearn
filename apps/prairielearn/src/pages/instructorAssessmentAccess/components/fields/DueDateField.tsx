@@ -6,10 +6,16 @@ import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { anyRuleHasDueDate } from '../../../../lib/assessment-access-control/validation.js';
 import { getAssessmentSettingsUrl } from '../../../../lib/client/url.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
+import {
+  type AccessControlFormData,
+  type DeadlineEntry,
+  type DueValue,
+  formDataToJson,
+} from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
 function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
@@ -318,15 +324,12 @@ export function MainDueDateField({
       if (next.date === null) {
         setValue('mainRule.lateDeadlines', [], { shouldDirty: true, shouldValidate: true });
         setValue('mainRule.afterLastDeadline', null, { shouldDirty: true, shouldValidate: true });
-        // Wipe late deadlines / after-last-deadline on overrides only if no
-        // override anywhere provides its own due date. Overrides can stack —
-        // one override may set a due date while another sets afterLastDeadline,
-        // so a due date from any override keeps all overrides' late data valid.
-        const { overrides } = getValues();
-        const anyOverrideHasDueDate = overrides.some(
-          (o) => o.overriddenFields.includes('due') && o.due.date != null,
-        );
-        if (!anyOverrideHasDueDate) {
+        // Overrides can stack: one override may set a due date while another
+        // sets afterLastDeadline, so we only wipe overrides' late data when
+        // no rule resolves to a due date once main's due is cleared.
+        const formValues = getValues();
+        if (!anyRuleHasDueDate(formDataToJson(formValues))) {
+          const { overrides } = formValues;
           overrides.forEach((override, i) => {
             const removed = override.overriddenFields.filter(
               (f) => f !== 'lateDeadlines' && f !== 'afterLastDeadline',

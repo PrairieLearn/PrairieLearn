@@ -62,6 +62,10 @@ function findDueMs(rule: AccessControlJson): number | null {
   return rule.dateControl?.due?.date ? new Date(rule.dateControl.due.date).getTime() : null;
 }
 
+export function anyRuleHasDueDate(rules: AccessControlJson[]): boolean {
+  return rules.some((rule) => findDueMs(rule) != null);
+}
+
 function findDueState(rule: AccessControlJson): {
   hasConfiguredDue: boolean;
   dueMs: number | null;

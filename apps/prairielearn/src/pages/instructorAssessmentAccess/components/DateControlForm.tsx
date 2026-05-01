@@ -1,6 +1,8 @@
 import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
+import { anyRuleHasDueDate } from '../../../lib/assessment-access-control/validation.js';
+
 import {
   MainAfterLastDeadlineField,
   OverrideAfterLastDeadlineField,
@@ -10,7 +12,7 @@ import { MainDueDateField, OverrideDueDateField } from './fields/DueDateField.js
 import { MainDurationField, OverrideDurationField } from './fields/DurationField.js';
 import { MainPasswordField, OverridePasswordField } from './fields/PasswordField.js';
 import { MainReleaseDateField, OverrideReleaseDateField } from './fields/ReleaseDateField.js';
-import type { AccessControlFormData } from './types.js';
+import { type AccessControlFormData, formDataToJson } from './types.js';
 import { startOfDayDatetime, todayDate } from './utils/dateUtils.js';
 
 export function MainDateControlForm({
@@ -107,19 +109,12 @@ export function OverrideDateControlForm({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const mainDueDate = useWatch<AccessControlFormData, 'mainRule.due.date'>({
-    name: 'mainRule.due.date',
-  });
-  const overrides = useWatch<AccessControlFormData, 'overrides'>({
-    name: 'overrides',
-  });
-  // An override's late deadlines and afterLastDeadline are valid as long as
-  // *any* rule in the configuration provides a due date (main rule or any
-  // override), because overrides can stack — one override may set a due date
-  // while another sets afterLastDeadline.
-  const anyRuleHasDueDate =
-    mainDueDate != null ||
-    overrides.some((o) => o.overriddenFields.includes('due') && o.due.date != null);
+  const mainRule = useWatch<AccessControlFormData, 'mainRule'>({ name: 'mainRule' });
+  const overrides = useWatch<AccessControlFormData, 'overrides'>({ name: 'overrides' });
+  // Overrides can stack: one override may set a due date while another sets
+  // afterLastDeadline, so late-deadline fields are valid as long as any rule
+  // resolves to a due date.
+  const showLateFields = anyRuleHasDueDate(formDataToJson({ mainRule, overrides }));
 
   return (
     <div>
@@ -138,7 +133,7 @@ export function OverrideDateControlForm({
           assessmentId={assessmentId}
           courseInstanceId={courseInstanceId}
         />
-        {anyRuleHasDueDate && (
+        {showLateFields && (
           <>
             <OverrideDeadlineArrayField
               index={index}
