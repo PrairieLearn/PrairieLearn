@@ -273,7 +273,7 @@ const enableGroupWork = t.procedure
     return {
       origHash: saveResult.newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
-      groupSettingsDefaults: normalizeGroupSettings(savedJson),
+      groupSettingsDefaults: savedJson ? normalizeGroupSettings(savedJson) : null,
     };
   });
 
@@ -475,7 +475,7 @@ const disableGroupWork = t.procedure
 
     return {
       origHash: saveResult.newHash,
-      groupSettingsDefaults: normalizeGroupSettings(savedJson),
+      groupSettingsDefaults: savedJson ? normalizeGroupSettings(savedJson) : null,
     };
   });
 
