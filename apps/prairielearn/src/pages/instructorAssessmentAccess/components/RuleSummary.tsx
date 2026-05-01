@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
+
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import {
@@ -284,27 +286,23 @@ export function generateRuleSummary(
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
 
-  // Show a chip only when the student will see the assessment listed before
-  // they have access. Mirrors the resolver's `showBeforeRelease` logic: the
-  // listing happens when `beforeReleaseListed` is set AND either the release
-  // date is in the future or no release date is configured at all (perpetual
-  // "coming soon" until dates are added or PrairieTest grants access).
-  if (isDefaultRuleData(rule) && rule.beforeReleaseListed) {
-    const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
-    const releaseInFuture = releaseDate
-      ? Temporal.PlainDateTime.compare(
-          Temporal.PlainDateTime.from(releaseDate),
-          Temporal.Now.plainDateTimeISO(displayTimezone),
-        ) > 0
-      : null;
-
-    if (releaseInFuture !== false) {
-      items.push({
-        key: 'before-release',
-        icon: 'bi-eye',
-        text: releaseInFuture ? 'Listed before release' : 'Always listed',
-      });
-    }
+  if (isDefaultRuleData(rule)) {
+    const listed = rule.beforeReleaseListed;
+    const text = run(() => {
+      const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
+      if (releaseDate) {
+        return listed ? 'Listed before release' : 'Hidden before release';
+      }
+      if (rule.prairieTestExams.length > 0) {
+        return listed ? 'Listed before exam' : 'Hidden before exam';
+      }
+      return listed ? 'Always listed' : 'Always hidden';
+    });
+    items.push({
+      key: 'before-release',
+      icon: listed ? 'bi-eye' : 'bi-eye-slash',
+      text,
+    });
   }
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
