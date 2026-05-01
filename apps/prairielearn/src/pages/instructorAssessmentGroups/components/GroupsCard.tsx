@@ -44,7 +44,7 @@ function EditGroupModal({
 
   const onSubmit = (data: { uids: string }) => {
     mutation.mutate(
-      { group_id: row.group_id, uids: data.uids },
+      { groupId: row.group_id, uids: data.uids },
       {
         onSuccess: ({ group, notAssigned, failures }) => {
           onGroupEdited(group, notAssigned);
@@ -170,7 +170,7 @@ function DeleteGroupModal({
         onSubmit={(e) => {
           e.preventDefault();
           mutation.mutate(
-            { group_id: row.group_id },
+            { groupId: row.group_id },
             {
               onSuccess: ({ notAssigned }) => {
                 onGroupDeleted(row.group_id, notAssigned);
@@ -267,14 +267,14 @@ function UploadAssessmentGroupsModal({
 }
 
 function RandomAssessmentGroupsModal({
-  groupMin,
-  groupMax,
+  minGroupSize,
+  maxGroupSize,
   courseInstanceId,
   show,
   onHide,
 }: {
-  groupMin: number;
-  groupMax: number;
+  minGroupSize: number;
+  maxGroupSize: number;
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
@@ -287,11 +287,11 @@ function RandomAssessmentGroupsModal({
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<{ min_group_size: number; max_group_size: number }>({
-    values: { min_group_size: groupMin, max_group_size: groupMax },
+  } = useForm<{ minGroupSize: number; maxGroupSize: number }>({
+    values: { minGroupSize, maxGroupSize },
   });
 
-  const onSubmit = (data: { min_group_size: number; max_group_size: number }) => {
+  const onSubmit = (data: { minGroupSize: number; maxGroupSize: number }) => {
     mutation.mutate(data, {
       onSuccess: ({ jobSequenceId }) => {
         window.location.href = getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId);
@@ -300,7 +300,7 @@ function RandomAssessmentGroupsModal({
   };
 
   const handleHide = () => {
-    reset({ min_group_size: groupMin, max_group_size: groupMax });
+    reset({ minGroupSize, maxGroupSize });
     mutation.reset();
     onHide();
   };
@@ -331,9 +331,9 @@ function RandomAssessmentGroupsModal({
                 min="1"
                 className="form-control"
                 id="formMin"
-                defaultValue={groupMin}
+                defaultValue={minGroupSize}
                 required
-                {...register('min_group_size', { valueAsNumber: true })}
+                {...register('minGroupSize', { valueAsNumber: true })}
               />
             </div>
             <div className="col-6">
@@ -345,9 +345,9 @@ function RandomAssessmentGroupsModal({
                 min="1"
                 className="form-control"
                 id="formMax"
-                defaultValue={groupMax}
+                defaultValue={maxGroupSize}
                 required
-                {...register('max_group_size', { valueAsNumber: true })}
+                {...register('maxGroupSize', { valueAsNumber: true })}
               />
             </div>
           </div>
@@ -387,11 +387,11 @@ function AddGroupModal({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<{ group_name: string; uids: string }>({
-    defaultValues: { group_name: '', uids: '' },
+  } = useForm<{ groupName: string; uids: string }>({
+    defaultValues: { groupName: '', uids: '' },
   });
 
-  const onSubmit = (data: { group_name: string; uids: string }) => {
+  const onSubmit = (data: { groupName: string; uids: string }) => {
     mutation.mutate(data, {
       onSuccess: ({ group, notAssigned }) => {
         onGroupAdded(group, notAssigned);
@@ -425,14 +425,14 @@ function AddGroupModal({
             </label>
             <input
               type="text"
-              className={clsx('form-control', errors.group_name && 'is-invalid')}
+              className={clsx('form-control', errors.groupName && 'is-invalid')}
               id="formName"
               aria-describedby="addGroupNameHelp"
-              aria-invalid={errors.group_name ? 'true' : undefined}
-              {...(errors.group_name ? { 'aria-errormessage': 'addGroupNameError' } : {})}
+              aria-invalid={errors.groupName ? 'true' : undefined}
+              {...(errors.groupName ? { 'aria-errormessage': 'addGroupNameError' } : {})}
               maxLength={30}
               defaultValue=""
-              {...register('group_name', {
+              {...register('groupName', {
                 pattern: {
                   value: /^[0-9a-zA-Z]*$/,
                   message: 'Only letters and numbers are allowed.',
@@ -440,9 +440,9 @@ function AddGroupModal({
                 maxLength: { value: 30, message: 'Use at most 30 characters.' },
               })}
             />
-            {errors.group_name && (
+            {errors.groupName && (
               <div id="addGroupNameError" className="invalid-feedback">
-                {errors.group_name.message}
+                {errors.groupName.message}
               </div>
             )}
             <small id="addGroupNameHelp" className="form-text text-muted">
@@ -624,8 +624,8 @@ export function GroupsCard({
   courseInstanceId,
   csrfToken,
   canEdit,
-  groupMin,
-  groupMax,
+  minGroupSize,
+  maxGroupSize,
 }: {
   groupsCsvFilename?: string;
   initialGroups?: GroupUsersRow[];
@@ -635,8 +635,8 @@ export function GroupsCard({
   courseInstanceId: string;
   csrfToken: string;
   canEdit: boolean;
-  groupMin: number;
-  groupMax: number;
+  minGroupSize: number;
+  maxGroupSize: number;
 }) {
   const [groups, setGroups] = useState(initialGroups);
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
@@ -677,8 +677,8 @@ export function GroupsCard({
             onHide={uploadModal.hide}
           />
           <RandomAssessmentGroupsModal
-            groupMin={groupMin}
-            groupMax={groupMax}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
             courseInstanceId={courseInstanceId}
             show={randomModal.show}
             onHide={randomModal.hide}

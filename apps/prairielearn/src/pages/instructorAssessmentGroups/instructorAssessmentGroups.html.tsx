@@ -160,10 +160,10 @@ function InstructorAssessmentGroupsInner({
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
-  const [groupMin, setGroupMin] = useState(
+  const [minGroupSize, setMinGroupSize] = useState(
     groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
   );
-  const [groupMax, setGroupMax] = useState(
+  const [maxGroupSize, setMaxGroupSize] = useState(
     groupSettingsDefaults?.maxMembers ?? groupConfigInfo?.maximum ?? 4,
   );
 
@@ -193,8 +193,8 @@ function InstructorAssessmentGroupsInner({
         canEdit={canEditCourse}
         onOrigHashChange={setOrigHash}
         onGroupSizeSaved={(min, max) => {
-          setGroupMin(min ?? 2);
-          setGroupMax(max ?? 4);
+          setMinGroupSize(min ?? 2);
+          setMaxGroupSize(max ?? 4);
         }}
       />
       <GroupsCard
@@ -206,8 +206,8 @@ function InstructorAssessmentGroupsInner({
         courseInstanceId={pageContext.course_instance.id}
         csrfToken={pageContext.__csrf_token}
         canEdit={canEditCourseInstance}
-        groupMin={groupMin}
-        groupMax={groupMax}
+        minGroupSize={minGroupSize}
+        maxGroupSize={maxGroupSize}
       />
       {canEditCourse && (
         <ManageGroupWorkCard
