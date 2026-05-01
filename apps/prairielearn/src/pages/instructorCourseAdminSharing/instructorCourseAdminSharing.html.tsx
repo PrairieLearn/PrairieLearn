@@ -4,7 +4,6 @@ import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const SharingSetRowSchema = z.object({
