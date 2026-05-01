@@ -930,7 +930,7 @@ describe('resolveAccessControl', () => {
         // a date-control timeline at all.
         name: 'PT grant clears the date-control access timeline',
         rules: [
-          makeMainRule(
+          makeDefaultRule(
             {
               dateControl: {
                 release: { date: '2025-01-01T00:00:00Z' },
