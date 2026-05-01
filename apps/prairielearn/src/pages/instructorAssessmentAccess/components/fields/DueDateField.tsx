@@ -333,16 +333,22 @@ export function MainDueDateField({
             );
             if (removed.length === override.overriddenFields.length) return;
             if (override.overriddenFields.includes('lateDeadlines')) {
-              setValue(`overrides.${i}.lateDeadlines`, [], { shouldDirty: true });
+              setValue(`overrides.${i}.lateDeadlines`, [], {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
             }
             if (override.overriddenFields.includes('afterLastDeadline')) {
               setValue(
                 `overrides.${i}.afterLastDeadline`,
                 { allowSubmissions: false },
-                { shouldDirty: true },
+                { shouldDirty: true, shouldValidate: true },
               );
             }
-            setValue(`overrides.${i}.overriddenFields`, removed, { shouldDirty: true });
+            setValue(`overrides.${i}.overriddenFields`, removed, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
           });
         }
       }
