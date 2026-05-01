@@ -3,7 +3,7 @@
  * migrateAllowAccess(), normalizes shapes and error signatures, and generates
  * an HTML report comparing old vs new for each unique (shape, outcome) pair.
  *
- * Run from the root of the repository with `yarn tsx scripts/migration-harness.mts`
+ * Run from the root of the repository with `./node_modules/.bin/tsx scripts/migration-harness.mts`
  */
 
 import * as fs from 'fs/promises';
