@@ -114,7 +114,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' }, due: { date: null } },
+          dateControl: { release: { date: '2024-01-01T00:00:00' } },
           integrations: {
             prairieTest: { exams: [{ examUuid: '11111111-1111-1111-1111-111111111111' }] },
           },
@@ -129,7 +129,7 @@ describe('migrateAllowAccess', () => {
       rules: [{ startDate: '2024-01-01T00:00:00', active: false }],
       expected: {
         accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' }, due: { date: null } },
+          dateControl: { release: { date: '2024-01-01T00:00:00' } },
         },
         errors: [],
         notes: [],
@@ -184,7 +184,7 @@ describe('migrateAllowAccess', () => {
       rules: [{ credit: 100 }],
       expected: {
         accessControl: {
-          dateControl: { due: { date: null }, release: { date: FALLBACK_RELEASE } },
+          dateControl: { release: { date: FALLBACK_RELEASE } },
         },
         errors: [],
         notes: [],
@@ -264,7 +264,7 @@ describe('migrateAllowAccess', () => {
       rules: [{ credit: 100, startDate: '2024-01-01T00:00:00' }],
       expected: {
         accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' }, due: { date: null } },
+          dateControl: { release: { date: '2024-01-01T00:00:00' } },
         },
         errors: [],
         notes: [],
@@ -346,7 +346,6 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           dateControl: {
             release: { date: '2024-01-01T00:00:00' },
-            due: { date: null },
           },
         },
         errors: [],
@@ -881,7 +880,6 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           dateControl: {
             password: 'secret',
-            due: { date: null },
             release: { date: FALLBACK_RELEASE },
           },
         },
@@ -1058,7 +1056,6 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           dateControl: {
             release: { date: '2024-02-01T00:00:00' },
-            due: { date: null },
           },
         },
         errors: [],
