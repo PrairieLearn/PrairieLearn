@@ -760,14 +760,15 @@ export function PrairieTestExamsTable({
   // Re-fetches when the set of valid UUIDs changes, but not while the user is
   // mid-edit on an invalid UUID. Falls back to the server-rendered initial
   // metadata until the first query result lands.
-  const { data: metadata = initialMetadata } = useQuery({
+  const { data: metadata } = useQuery({
     ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
     enabled: validExamUuids.length > 0,
+    initialData: initialMetadata,
   });
 
   if (exams.length === 0) return null;
 
-  const metadataByUuid = new Map(metadata.map((m) => [m.examUuid.toLowerCase(), m]));
+  const metadataByUuid = new Map(metadata.map((m) => [m.uuid.toLowerCase(), m]));
 
   return (
     <div
@@ -803,18 +804,18 @@ export function PrairieTestExamsTable({
             const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
             const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
             const examLink =
-              meta?.ptCourseId && meta.ptExamId
-                ? `${ptHost}/pt/course/${meta.ptCourseId}/staff/exam/${meta.ptExamId}`
+              meta?.pt_course_id && meta.pt_exam_id
+                ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
                 : null;
             const examName =
-              meta?.ptCourseName && meta.ptExamName
-                ? `${meta.ptCourseName}: ${meta.ptExamName}`
+              meta?.pt_course_name && meta.pt_exam_name
+                ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
                 : null;
 
             return (
               // We don't use UUID as they might be duplicated in the list.
               // eslint-disable-next-line @eslint-react/no-array-index-key
-              <tr key={`${index}`}>
+              <tr key={index}>
                 <td className="border-0" style={{ ...tdStyle, paddingLeft: '1rem' }}>
                   {uuidError ? (
                     <span className="text-danger">

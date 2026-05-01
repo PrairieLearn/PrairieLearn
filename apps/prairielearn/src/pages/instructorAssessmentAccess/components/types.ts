@@ -395,7 +395,7 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
           }
           return {
             examUuid: e.examUuid,
-            readOnly: e.readOnly,
+            ...(e.readOnly && { readOnly: true }),
             ...(Object.keys(afterComplete).length > 0 && { afterComplete }),
           };
         }),

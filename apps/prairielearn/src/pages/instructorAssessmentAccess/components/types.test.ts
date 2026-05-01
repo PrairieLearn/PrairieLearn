@@ -297,7 +297,7 @@ describe('formDataToJson', () => {
 
     const json = formDataToJson({ defaultRule: formData, overrides: [] });
     expect(json[0].integrations?.prairieTest?.exams).toEqual([
-      { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c', readOnly: false },
+      { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
     ]);
   });
 
@@ -309,7 +309,6 @@ describe('formDataToJson', () => {
             exams: [
               {
                 examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
-                readOnly: false,
                 afterComplete: { questions: { hidden: true } },
               },
             ],
@@ -326,7 +325,6 @@ describe('formDataToJson', () => {
     expect(json[0].integrations?.prairieTest?.exams).toEqual([
       {
         examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
-        readOnly: false,
         afterComplete: { questions: { hidden: true } },
       },
     ]);
@@ -340,7 +338,6 @@ describe('formDataToJson', () => {
             exams: [
               {
                 examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
-                readOnly: false,
                 afterComplete: { questions: { hidden: true }, score: { hidden: true } },
               },
             ],
@@ -357,7 +354,6 @@ describe('formDataToJson', () => {
     expect(json[0].integrations?.prairieTest?.exams).toEqual([
       {
         examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
-        readOnly: false,
         afterComplete: { questions: { hidden: true }, score: { hidden: true } },
       },
     ]);
