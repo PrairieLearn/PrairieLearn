@@ -82,23 +82,23 @@ function PasswordDetails({
   );
 }
 
-export function MainPasswordField() {
-  const { field } = useController<AccessControlFormData, 'mainRule.password'>({
-    name: 'mainRule.password',
+export function DefaultPasswordField() {
+  const { field } = useController<AccessControlFormData, 'defaultRule.password'>({
+    name: 'defaultRule.password',
     rules: { validate: (v) => v !== '' || 'Password is required' },
   });
 
   return (
     <Form.Group>
-      <PasswordToggle value={field.value} idPrefix="mainRule" onChange={field.onChange} />
-      <PasswordDetails value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <PasswordToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
+      <PasswordDetails value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
     </Form.Group>
   );
 }
 
 export function OverridePasswordField({ index }: { index: number }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.password'>({
-    name: 'mainRule.password',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.password'>({
+    name: 'defaultRule.password',
   });
 
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
@@ -120,7 +120,7 @@ export function OverridePasswordField({ index }: { index: number }) {
         />
       }
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
