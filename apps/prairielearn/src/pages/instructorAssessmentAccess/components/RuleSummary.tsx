@@ -12,7 +12,7 @@ import { useTRPC } from '../../../trpc/assessment/context.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
@@ -21,17 +21,17 @@ import {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type RuleData = MainRuleData | OverrideData;
+type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
+export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
 
-function isMainRuleData(rule: RuleData): rule is MainRuleData {
+function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
   return 'dateControlEnabled' in rule;
 }
 
 function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isMainRuleData(rule)) return true;
+  if (isDefaultRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
 
@@ -42,8 +42,8 @@ interface DateTableRow {
   error?: string;
 }
 
-export function generateMainRuleDateTableRows(
-  rule: MainRuleData,
+export function generateDefaultRuleDateTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
@@ -184,7 +184,7 @@ export function generateRuleSummary(
   const items: SummaryItem[] = [];
 
   // Show "before release" chip when release date is in the future.
-  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
+  if (isDefaultRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
     const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
     const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
 
@@ -223,9 +223,9 @@ export function generateRuleSummary(
     }
   }
 
-  const isMain = isMainRuleData(rule);
-  const hasDateControl = isMain ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isMain ? rule.prairieTestExams.length > 0 : false;
+  const isDefault = isDefaultRuleData(rule);
+  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
+  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
@@ -739,10 +739,10 @@ export function PrairieTestExamsTable({
   ptHost,
   formErrors,
 }: {
-  exams: MainRuleData['prairieTestExams'];
+  exams: DefaultRuleData['prairieTestExams'];
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  formErrors?: FieldErrors<MainRuleData>;
+  formErrors?: FieldErrors<DefaultRuleData>;
 }) {
   const trpc = useTRPC();
 

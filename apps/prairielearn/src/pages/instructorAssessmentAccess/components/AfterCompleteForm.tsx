@@ -395,51 +395,53 @@ function AfterCompleteCard({
   );
 }
 
-export function MainAfterCompleteForm({
+export function DefaultAfterCompleteForm({
   title,
   displayTimezone,
 }: {
   title?: string;
   displayTimezone: string;
 }) {
-  const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
-    name: 'mainRule.questionVisibility',
-    rules: { validate: validateQuestionVisibility },
-  });
+  const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
+    {
+      name: 'defaultRule.questionVisibility',
+      rules: { validate: validateQuestionVisibility },
+    },
+  );
 
-  const { field: svField } = useController<AccessControlFormData, 'mainRule.scoreVisibility'>({
-    name: 'mainRule.scoreVisibility',
+  const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
+    name: 'defaultRule.scoreVisibility',
     rules: { validate: validateScoreVisibility },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
   const qvVisibleFromError: string | undefined = get(
     errors,
-    'mainRule.questionVisibility.visibleFromDate',
+    'defaultRule.questionVisibility.visibleFromDate',
   )?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
-    'mainRule.questionVisibility.visibleUntilDate',
+    'defaultRule.questionVisibility.visibleUntilDate',
   )?.message;
   const svVisibleFromError: string | undefined = get(
     errors,
-    'mainRule.scoreVisibility.visibleFromDate',
+    'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
 
-  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
-  const due = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
   const dueDate = due.date;
-  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
-    name: 'mainRule.lateDeadlines',
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
   });
-  const durationMinutes = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
   });
   const hasCompletionMechanism =
     hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
@@ -459,12 +461,12 @@ export function MainAfterCompleteForm({
         </Col>
       )}
       <Col md={6}>
-        <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
+        <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
         </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
-          idPrefix="mainRule"
+          idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
           visibleFromDateError={qvVisibleFromError}
@@ -474,12 +476,12 @@ export function MainAfterCompleteForm({
         />
       </Col>
       <Col md={6}>
-        <Form.Label className="fw-bold" htmlFor="mainRule-score-visibility-mode">
+        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
           Score visibility
         </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
-          idPrefix="mainRule"
+          idPrefix="defaultRule"
           visibleFromDateError={svVisibleFromError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
@@ -498,14 +500,14 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
-  const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
-    name: 'mainRule.questionVisibility',
+  const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
+    name: 'defaultRule.questionVisibility',
   });
-  const mainSV = useWatch<AccessControlFormData, 'mainRule.scoreVisibility'>({
-    name: 'mainRule.scoreVisibility',
+  const defaultRuleSV = useWatch<AccessControlFormData, 'defaultRule.scoreVisibility'>({
+    name: 'defaultRule.scoreVisibility',
   });
-  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
@@ -556,7 +558,7 @@ export function OverrideAfterCompleteForm({
           isOverridden={qvOverridden}
           label="Question visibility"
           onOverride={() => {
-            qvField.onChange({ ...mainQV });
+            qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
           }}
           onRemoveOverride={removeQvOverride}
@@ -577,7 +579,7 @@ export function OverrideAfterCompleteForm({
           isOverridden={svOverridden}
           label="Score visibility"
           onOverride={() => {
-            svField.onChange({ ...mainSV });
+            svField.onChange({ ...defaultRuleSV });
             addSvOverride();
           }}
           onRemoveOverride={removeSvOverride}

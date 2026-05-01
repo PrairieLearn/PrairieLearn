@@ -90,7 +90,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         result: {
-          dateControl: { release: { date: '2024-01-01' }, due: { date: null } },
+          dateControl: { release: { date: '2024-01-01' } },
           integrations: { prairieTest: { exams: [{ examUuid: 'exam-uuid-1' }] } },
         },
         errors: [],
@@ -102,7 +102,7 @@ describe('migrateAllowAccess', () => {
       name: 'view-only',
       rules: [{ startDate: '2024-01-01', active: false }],
       expected: {
-        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: null } } },
+        result: { dateControl: { release: { date: '2024-01-01' } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -148,7 +148,7 @@ describe('migrateAllowAccess', () => {
       name: 'always-open',
       rules: [{ credit: 100 }],
       expected: {
-        result: { dateControl: { due: { date: null } } },
+        result: { dateControl: {} },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -226,7 +226,7 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended full credit (startDate, no endDate)',
       rules: [{ credit: 100, startDate: '2024-01-01' }],
       expected: {
-        result: { dateControl: { release: { date: '2024-01-01' }, due: { date: null } } },
+        result: { dateControl: { release: { date: '2024-01-01' } } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -307,7 +307,6 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: {
             release: { date: '2024-01-01' },
-            due: { date: null },
           },
         },
         errors: [],
@@ -809,7 +808,7 @@ describe('migrateAllowAccess', () => {
       name: 'password-gated without dates',
       rules: [{ password: 'secret', credit: 100 }],
       expected: {
-        result: { dateControl: { password: 'secret', due: { date: null } } },
+        result: { dateControl: { password: 'secret' } },
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -937,7 +936,6 @@ describe('migrateAllowAccess', () => {
         result: {
           dateControl: {
             release: { date: '2024-02-01' },
-            due: { date: null },
           },
         },
         errors: [],

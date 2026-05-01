@@ -20,10 +20,10 @@ import {
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
-  generateMainRuleDateTableRows,
+  generateDefaultRuleDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
-import type { AccessControlFormData, MainRuleData, OverrideData } from './types.js';
+import type { AccessControlFormData, DefaultRuleData, OverrideData } from './types.js';
 
 /**
  * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
@@ -108,21 +108,21 @@ function SummaryItemChips({
   );
 }
 
-function MainRuleSummaryContent({
+function DefaultRuleSummaryContent({
   rule,
   formErrors,
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
 }: {
-  rule: MainRuleData;
+  rule: DefaultRuleData;
   formErrors: RuleFormErrors | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
 }) {
   const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
-  const dateTableRows = generateMainRuleDateTableRows(rule, displayTimezone, formErrors);
+  const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
   const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
@@ -139,7 +139,7 @@ function MainRuleSummaryContent({
             exams={rule.prairieTestExams}
             initialMetadata={prairieTestExamMetadata}
             ptHost={ptHost}
-            formErrors={formErrors as FieldErrors<MainRuleData> | undefined}
+            formErrors={formErrors as FieldErrors<DefaultRuleData> | undefined}
           />
         </div>
       )}
@@ -159,30 +159,30 @@ function MainRuleSummaryContent({
 }
 
 export function AccessControlSummary({
-  mainRule,
+  defaultRule,
   overrides,
   getOverrideName,
   onAddOverride,
   onRemoveOverride,
   onMoveOverride,
-  onEditMainRule,
-  onClearMainRule,
+  onEditDefaultRule,
+  onClearDefaultRule,
   onEditOverride,
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
 }: {
-  mainRule: MainRuleData;
+  defaultRule: DefaultRuleData;
   overrides: OverrideData[];
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
-  /** Callback when main rule edit is requested */
-  onEditMainRule: () => void;
-  /** Callback when main rule reset is requested */
-  onClearMainRule: () => void;
+  /** Callback when default rule edit is requested */
+  onEditDefaultRule: () => void;
+  /** Callback when default rule reset is requested */
+  onClearDefaultRule: () => void;
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
   displayTimezone: string;
@@ -212,7 +212,7 @@ export function AccessControlSummary({
   };
 
   const { errors } = useFormState<AccessControlFormData>();
-  const mainRuleErrorCount = countErrors(errors.mainRule);
+  const defaultRuleErrorCount = countErrors(errors.defaultRule);
   const overridesErrorCount = countErrors(errors.overrides);
 
   return (
@@ -221,18 +221,28 @@ export function AccessControlSummary({
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0 d-flex align-items-center">
             Defaults
-            {mainRuleErrorCount > 0 && (
+            {defaultRuleErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
-                {mainRuleErrorCount} {mainRuleErrorCount === 1 ? 'error' : 'errors'}
+                {defaultRuleErrorCount} {defaultRuleErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
           </h5>
           <div className="d-flex gap-2">
-            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEditMainRule}>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              aria-label="Edit"
+              onClick={onEditDefaultRule}
+            >
               <i className="bi bi-pencil" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
-            <Button variant="outline-danger" size="sm" aria-label="Clear" onClick={onClearMainRule}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              aria-label="Clear"
+              onClick={onClearDefaultRule}
+            >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Clear</span>
             </Button>
@@ -242,9 +252,9 @@ export function AccessControlSummary({
           Access settings that apply to all students by default.
         </small>
 
-        <MainRuleSummaryContent
-          rule={mainRule}
-          formErrors={errors.mainRule}
+        <DefaultRuleSummaryContent
+          rule={defaultRule}
+          formErrors={errors.defaultRule}
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}

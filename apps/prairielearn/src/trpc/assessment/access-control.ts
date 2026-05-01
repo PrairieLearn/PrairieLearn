@@ -154,7 +154,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -286,7 +286,7 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
-          // TODO: Add audit logging for enrollment rule changes. Label/main rules
+          // TODO: Add audit logging for enrollment rule changes. Label/default rules
           // are tracked in git; only enrollment rules need separate audit logs.
           for (const enrollmentRule of enrollmentRules) {
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
