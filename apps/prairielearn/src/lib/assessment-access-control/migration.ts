@@ -347,8 +347,9 @@ function normalizeCreditDeadlines(
  * If afterLastDeadline grants credit >= dueDateCredit and there are no
  * early/late deadlines describing intermediate credit windows, the dueDate
  * is meaningless — credit continues at the same or higher level forever.
- * Collapse to `due: { date: null }` (always open from release), preserving
- * the open-ended credit so we don't silently upgrade a non-100% rule to 100%.
+ * Collapse to "always open from release": omit `due` entirely when the
+ * collapsed credit is 100%, or use `due: { date: null, credit: X }` to
+ * preserve a non-100% open-ended credit.
  *
  * When early or late deadlines exist, skip the collapse so we don't drop
  * those windows on the floor (the dueDate carries them; collapsing erases
@@ -365,8 +366,11 @@ function simplifyTimeline(
     (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
   ) {
     const collapseCredit = dateControl.afterLastDeadline.credit ?? 0;
-    dateControl.due =
-      collapseCredit === 100 ? { date: null } : { date: null, credit: collapseCredit };
+    if (collapseCredit === 100) {
+      delete dateControl.due;
+    } else {
+      dateControl.due = { date: null, credit: collapseCredit };
+    }
     delete dateControl.afterLastDeadline;
   }
 }
@@ -428,9 +432,7 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
       return { dateControl: undefined, errors, notes };
     }
     const releaseDate = findReleaseDate(rules);
-    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {
-      due: { date: null },
-    };
+    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
     if (releaseDate) dateControl.release = { date: releaseDate };
     return { dateControl, errors, notes };
   }
@@ -641,10 +643,6 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Main migration pipeline
-// ---------------------------------------------------------------------------
-
 export function migrateAllowAccess(
   rules: AssessmentAccessRuleJson[],
   fallbackReleaseDate?: string,
@@ -758,7 +756,7 @@ export function migrateAllowAccess(
     const viewOnlyRules = getVisibilityRules(schedulingRules).filter((r) => r.startDate);
     if (viewOnlyRules.length > 0) {
       const releaseDate = viewOnlyRules.map((r) => r.startDate!).sort()[0];
-      result.dateControl = { release: { date: releaseDate }, due: { date: null } };
+      result.dateControl = { release: { date: releaseDate } };
     }
   }
 

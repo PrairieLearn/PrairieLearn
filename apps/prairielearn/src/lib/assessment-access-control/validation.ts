@@ -1,7 +1,7 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 /**
- * Maximum number of access control rules (main + overrides) per assessment.
+ * Maximum number of access control rules (default + overrides) per assessment.
  * Enforced during both JSON sync and tRPC input validation.
  */
 export const MAX_ACCESS_CONTROL_RULES = 50;
@@ -114,7 +114,7 @@ export function validateRuleStructuralDependencyIssues(
   // Constraint 1: Late deadlines require a due date.
   // Late deadlines define credit after the due date, so they need one as an anchor.
   // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, due === undefined means "inherit from main rule" (valid),
+  // On overrides, due === undefined means "inherit from default rule" (valid),
   // while due.date === null means "explicitly no due date" (invalid with late deadlines).
   if (dc) {
     const dueDateMissing =
@@ -160,7 +160,7 @@ export function validateRuleStructuralDependencyIssues(
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
-  // Only enforced on the main rule — overrides may inherit deadlines.
+  // Only enforced on the default rule — overrides may inherit deadlines.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
   const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
@@ -456,8 +456,8 @@ export function validateGlobalCreditConsistencyIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  const mainRule = validationRules.find((vr) => vr.targetType === 'none');
-  const baseHasCustomCredit = mainRule?.rule.dateControl?.due?.credit !== undefined;
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none');
+  const baseHasCustomCredit = defaultRule?.rule.dateControl?.due?.credit !== undefined;
 
   // "Clears custom credit" = an override supplies its own `due` with no credit
   // field (explicit default 100%). A non-overridden `due` inherits instead.
@@ -548,14 +548,14 @@ interface EffectiveAfterCompleteScore {
 
 function resolveEffectiveAfterComplete(
   rule: AccessControlJson,
-  mainRule: AccessControlJson | undefined,
+  defaultRule: AccessControlJson | undefined,
 ): { questions: EffectiveAfterCompleteQuestions; score: EffectiveAfterCompleteScore } {
   const ruleAc = rule.afterComplete;
-  const mainAc = mainRule?.afterComplete;
+  const defaultAc = defaultRule?.afterComplete;
   // Defaults: questions hidden, score visible. An override that doesn't
-  // include questions/score inherits the main rule's effective value.
-  const questions = ruleAc?.questions ?? mainAc?.questions ?? { hidden: true };
-  const score = ruleAc?.score ?? mainAc?.score ?? { hidden: false };
+  // include questions/score inherits the default rule's effective value.
+  const questions = ruleAc?.questions ?? defaultAc?.questions ?? { hidden: true };
+  const score = ruleAc?.score ?? defaultAc?.score ?? { hidden: false };
   return { questions, score };
 }
 
@@ -581,7 +581,7 @@ function getAfterCompleteCrossFieldMessage(
  * Cross-field afterComplete validation. Checks that the effective
  * questions/score visibility is internally consistent, including for overrides
  * that only override one of the two fields (the inherited side is resolved
- * against the main rule). The error is reported on the questions field; the
+ * against the default rule). The error is reported on the questions field; the
  * score field is treated as the trailing dependency in the relationship.
  */
 export function validateAfterCompleteCrossFieldIssues(
@@ -590,10 +590,10 @@ export function validateAfterCompleteCrossFieldIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  const mainRule = validationRules.find((vr) => vr.targetType === 'none')?.rule;
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none')?.rule;
 
   for (const validationRule of validationRules) {
-    const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, mainRule);
+    const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, defaultRule);
     const message = getAfterCompleteCrossFieldMessage(questions, score);
     if (message) {
       pushIssue(issues, validationRule, ['afterComplete', 'questions'], message);
@@ -703,10 +703,10 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * beforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the default rule).
  *
  * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
+ * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
  */
 export function validateRule(
   rule: AccessControlJson,
@@ -717,11 +717,6 @@ export function validateRule(
   if (targetType === 'none') {
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
-    }
-    if (rule.dateControl && !rule.dateControl.due) {
-      errors.push(
-        'Due date configuration is required on the defaults when dateControl is specified.',
-      );
     }
   } else {
     if (rule.beforeRelease !== undefined) {
@@ -857,7 +852,7 @@ function formatValues(values: Set<string> | string[]) {
  *
  * @param params
  * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
+ * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
@@ -888,24 +883,24 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule is identified by the absence of a `labels` key.
-  const mainRules = rules.filter((rule) => rule.labels == null);
+  // A default rule is identified by the absence of a `labels` key.
+  const defaultRules = rules.filter((rule) => rule.labels == null);
 
-  if (mainRules.length === 0) {
+  if (defaultRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
+  } else if (defaultRules.length > 1) {
     errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+      `Found ${defaultRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
     );
   } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
+    // The DB constraint `check_first_rule_is_none` requires the default rule at index 0
     const firstRule = rules[0];
     if (firstRule.labels != null) {
       errors.push('The defaults must be the first element in the array.');
     }
   }
 
-  // Index 0 is the main rule; everything else is a student-label rule.
+  // Index 0 is the default rule; everything else is a student-label rule.
   rules.forEach((rule, index) => {
     const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
 
