@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -26,6 +25,7 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
   selectGroupById,
   selectGroupConfigForAssessment,
@@ -51,7 +51,7 @@ const addGroup = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_name: z.string(),
+      groupName: z.string(),
       uids: z.string(),
     }),
   )
@@ -63,7 +63,7 @@ const addGroup = t.procedure
       const group = await createGroup({
         course_instance,
         assessment,
-        group_name: input.group_name || null,
+        group_name: input.groupName || null,
         uids: parseUniqueValuesFromString(input.uids, MAX_UIDS),
         authn_user_id: authn_user.id,
         authzData: authz_data,
@@ -93,7 +93,7 @@ const editGroup = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_id: IdSchema,
+      groupId: IdSchema,
       uids: z.string(),
     }),
   )
@@ -103,7 +103,7 @@ const editGroup = t.procedure
     const desiredUids = parseUniqueValuesFromString(input.uids, MAX_UIDS);
 
     const currentGroup = await selectGroupById({
-      group_id: input.group_id,
+      group_id: input.groupId,
       assessment_id: assessment.id,
     });
     const desiredSet = new Set(desiredUids);
@@ -116,7 +116,7 @@ const editGroup = t.procedure
     await runInTransactionAsync(async () => {
       for (const user of toRemove) {
         try {
-          await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
+          await leaveGroup(assessment.id, user.id, authn_user.id, input.groupId);
         } catch (err) {
           if (err instanceof GroupOperationError || err instanceof HttpStatusError) {
             failures.push({ uid: user.uid, message: err.message });
@@ -131,7 +131,7 @@ const editGroup = t.procedure
           await addUserToGroup({
             course_instance,
             assessment,
-            group_id: input.group_id,
+            group_id: input.groupId,
             uid,
             authn_user_id: authn_user.id,
             enforceGroupSize: false,
@@ -148,7 +148,7 @@ const editGroup = t.procedure
     });
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById({ group_id: input.group_id, assessment_id: assessment.id }),
+      selectGroupById({ group_id: input.groupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,
@@ -161,14 +161,14 @@ const deleteGroupProcedure = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_id: IdSchema,
+      groupId: IdSchema,
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const { assessment, authn_user, course_instance } = ctx;
 
     try {
-      await deleteGroup(assessment.id, input.group_id, authn_user.id);
+      await deleteGroup(assessment.id, input.groupId, authn_user.id);
     } catch (err) {
       if (err instanceof GroupOperationError) {
         throwAppError<AssessmentGroupsError['DeleteGroup']>({
@@ -203,6 +203,15 @@ const enableGroupWork = t.procedure
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     const { origHash } = input;
+
+    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot enable group work while students have assessment instances. Remove their progress from the Students tab first.',
+      });
+    }
+
     const assessmentDir = path.join(
       ctx.course.path,
       'courseInstances',
@@ -212,14 +221,15 @@ const enableGroupWork = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
+    let savedJson: AssessmentJsonInput | null = null;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (json) => {
         const existing = normalizeGroupSettings(json);
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: true })
           : { enabled: true };
-        const stripped = stripLegacyGroupKeys(json);
-        return stripped;
+        savedJson = stripLegacyGroupKeys(json);
+        return savedJson;
       },
       jsonPath: assessmentPath,
       conflictCheck: {
@@ -260,7 +270,6 @@ const enableGroupWork = t.procedure
       });
     }
 
-    const savedJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
     return {
       origHash: saveResult.newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
@@ -405,6 +414,15 @@ const disableGroupWork = t.procedure
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     const { origHash } = input;
+
+    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
+      });
+    }
+
     const assessmentDir = path.join(
       ctx.course.path,
       'courseInstances',
@@ -414,14 +432,15 @@ const disableGroupWork = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
+    let savedJson: AssessmentJsonInput | null = null;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (json) => {
         const existing = normalizeGroupSettings(json);
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: false })
           : { enabled: false };
-        const stripped = stripLegacyGroupKeys(json);
-        return stripped;
+        savedJson = stripLegacyGroupKeys(json);
+        return savedJson;
       },
       jsonPath: assessmentPath,
       conflictCheck: {
@@ -454,7 +473,6 @@ const disableGroupWork = t.procedure
       });
     }
 
-    const savedJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
     return {
       origHash: saveResult.newHash,
       groupSettingsDefaults: normalizeGroupSettings(savedJson),
@@ -465,12 +483,12 @@ const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      min_group_size: z.number().int().min(1),
-      max_group_size: z.number().int().min(1),
+      minGroupSize: z.number().int().min(1),
+      maxGroupSize: z.number().int().min(1),
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    if (input.min_group_size > input.max_group_size) {
+    if (input.minGroupSize > input.maxGroupSize) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Minimum group size cannot be greater than maximum group size.',
@@ -482,8 +500,8 @@ const randomizeGroups = t.procedure
       assessment: ctx.assessment,
       user_id: ctx.authn_user.id,
       authn_user_id: ctx.authn_user.id,
-      min_group_size: input.min_group_size,
-      max_group_size: input.max_group_size,
+      min_group_size: input.minGroupSize,
+      max_group_size: input.maxGroupSize,
       authzData: ctx.authz_data,
     });
     return { jobSequenceId };
