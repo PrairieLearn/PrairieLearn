@@ -68,8 +68,12 @@ export function MainDateControlForm({
             assessmentId={assessmentId}
             courseInstanceId={courseInstanceId}
           />
-          <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-          {dueDate != null && <MainAfterLastDeadlineField displayTimezone={displayTimezone} />}
+          {dueDate != null && (
+            <>
+              <MainDeadlineArrayField type="late" displayTimezone={displayTimezone} />
+              <MainAfterLastDeadlineField displayTimezone={displayTimezone} />
+            </>
+          )}
           <Row className="gy-3">
             <Col md={6}>
               <MainDurationField />
