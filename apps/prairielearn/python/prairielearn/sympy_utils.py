@@ -10,7 +10,6 @@ import copy
 import html
 import operator
 import re
-import string
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -200,7 +199,7 @@ class _SympyJsonStrPrinter(StrPrinter):
         return "{}"
 
     def _print_Interval(self, i: sympy.Interval) -> str:  # noqa: N802
-        start, end = self._print(i.start), self._print(i.end)
+        start, end = self._print(i.start), self._print(i.end)  # type: ignore
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
@@ -508,7 +507,7 @@ class CheckAST(ast.NodeVisitor):
         match name:
             case "Symbol":
                 return self._set_type(node, None)
-            case "Integer" | "Float":
+            case "Number" | "Integer" | "Float":
                 overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
                 self._enforce_signature(name, args, *overloads)
                 return self._set_type(node, ASTSympyType.SCALAR)
@@ -858,23 +857,23 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = (
-        *sympy_parser.standard_transformations,
-        sympy_parser.implicit_multiplication_application,
-    )
     if allow_sets:
         transformations = (
-            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _unmangle_name_transformation(_Constants.set_operators, OP),
+            _unmangle_name_transformation(locals_for_eval["functions"], NAME),
             _set_literal_transformation,
             _set_operation_transformation,
             _interval_transformation,
-            *transformations,
+            *sympy_parser.standard_transformations,
+            sympy_parser.implicit_multiplication_application,
         )
     else:
         # check for open intervals
         transformations = (
+            _unmangle_name_transformation(locals_for_eval["functions"], NAME),
             _err_on_transform(_interval_transformation, HasSetNotationError),
-            *transformations,
+            *sympy_parser.standard_transformations,
+            sympy_parser.implicit_multiplication_application,
         )
 
     try:
@@ -1587,16 +1586,21 @@ def _interval_transformation(
     return result
 
 
-def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | None:
-    r"""Returns (op, num_text) if text is <op>\d+"""
-    if text not in binops:
-        stripped = text.rstrip(string.digits)
-        if stripped in binops:
-            return stripped, text[len(stripped) :]
+def _split_first_mangled_name(
+    names: Sequence[str], text: str
+) -> tuple[str, str] | None:
+    r"""Unmangles functions and prefix/infix operators with names that match `\D+`"""
+    if text not in names:
+        i = next((i for i, e in enumerate(text) if e.isdigit()), None)
+        # NOTE: names may include pairs like `arctan` and `arctan2`. Careful!
+        if i is not None:
+            stripped = text[:i]
+            if stripped in names:
+                return stripped, text[i:]
     return None
 
 
-def _unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
+def _unmangle_name_transformation(names: Iterable[str], token_type: int) -> TRANS:
     """Return a token transform that splits infix operator names from suffix digits.
 
     SymPy's tokenizer treats strings like ``U2`` or ``cup3`` as a single ``NAME``
@@ -1605,23 +1609,34 @@ def _unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRAN
     interpret set-union/set-intersection input from the formula editor without
     exposing parser internals to students.
     """
-    bin_lit_set = tuple(binop_literals)
 
-    def _infix_binop_unmangler(
+    def _name_unmangler(
         tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
     ) -> list[TOKEN]:
+        name_set = tuple(names)
         out = []
+
+        def _chunk_unmangled_tail(rest: str) -> None:
+            chunk_is_number, switch = rest[0].isdigit(), 0
+            for i, c in enumerate(rest):
+                c_is_digit = c.isdigit()
+                if c_is_digit != chunk_is_number:
+                    out.append((NUMBER if chunk_is_number else NAME, rest[switch:i]))
+                    chunk_is_number, switch = c_is_digit, i
+            out.append((NUMBER if chunk_is_number else NAME, rest[switch:]))
+
         for typ, text in tokens:
             if typ == NAME:
-                split = _split_mangled_binop(bin_lit_set, text)
+                split = _split_first_mangled_name(name_set, text)
                 if split is not None:
-                    op, num = split
-                    out.extend(((OP, op), (NUMBER, num)))
+                    op, rest = split
+                    out.append((token_type, op))
+                    _chunk_unmangled_tail(rest)
                     continue
             out.append((typ, text))
         return out
 
-    return _infix_binop_unmangler
+    return _name_unmangler
 
 
 def _set_operation_transformation(
@@ -1708,19 +1723,20 @@ def _build_name_conflict_data(
         with builtins or themselves and valid_sanitized_names maps `sanitized_unique_name ->
         (was_variable, unsanitized)`.
     """
-    builtins = get_builtin_functions(
+    builtin_fns = get_builtin_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
-    ) | get_builtin_constants(
+    )
+    builtins = builtin_fns | get_builtin_constants(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
     )
-    set_ops = tuple(_Constants.set_operators.keys())
+    mangleable = list(builtin_fns)
 
     def _conflicts(name: str) -> bool:
         if name in builtins:
             return True
-        return allow_sets and _split_mangled_binop(set_ops, name) is not None
+        return allow_sets and _split_first_mangled_name(mangleable, name) is not None
 
     valid_names: dict[str, tuple[bool, str]] = {}
     conflict_vars: list[str] = []
