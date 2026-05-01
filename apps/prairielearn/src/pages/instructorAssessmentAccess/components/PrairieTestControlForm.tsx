@@ -89,8 +89,8 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
         onChange={handleModeChange}
       />
       {readOnly && (
-        <Form.Text className="text-muted d-block mt-2">
-          Read-only reservations have no completion state, so these settings don't apply.
+        <Form.Text className="text-muted d-block">
+          Questions and scores are always shown during read-only reservations.
         </Form.Text>
       )}
     </div>
@@ -131,7 +131,7 @@ export function PrairieTestControlForm() {
   };
 
   return (
-    <div>
+    <div className="mt-2">
       {examFields.map((field, index) => (
         <div
           key={field.id}
@@ -188,7 +188,7 @@ export function PrairieTestControlForm() {
               </Form.Text>
             )}
             <Form.Text id={`defaultRule-exam-uuid-${index}-help`} className="text-muted">
-              You can find this UUID in the PrairieTest exam settings
+              You can find this UUID in the PrairieTest exam settings.
             </Form.Text>
           </Form.Group>
           <Form.Group>
@@ -219,7 +219,8 @@ export function PrairieTestControlForm() {
               aria-describedby={`defaultRule-exam-readonly-${index}-help`}
             />
             <Form.Text id={`defaultRule-exam-readonly-${index}-help`} className="text-muted">
-              Students can view but not submit answers
+              During a read-only reservation, students can view their previous submissions, but
+              cannot submit new answers or start the assessment if they haven't already.
             </Form.Text>
           </Form.Group>
           <ExamAfterCompleteFields index={index} />

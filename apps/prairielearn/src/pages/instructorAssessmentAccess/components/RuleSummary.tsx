@@ -4,6 +4,8 @@ import { type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
+
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
@@ -792,13 +794,7 @@ export function PrairieTestExamsTable({
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              Show score
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              Show questions
+              After completion
             </th>
           </tr>
         </thead>
@@ -837,10 +833,17 @@ export function PrairieTestExamsTable({
                   <YesNoBadge value={!exam.readOnly} />
                 </td>
                 <td className="border-0 text-nowrap" style={tdStyle}>
-                  <YesNoBadge value={exam.readOnly ? null : !exam.afterCompleteScoreHidden} />
-                </td>
-                <td className="border-0 text-nowrap" style={tdStyle}>
-                  <YesNoBadge value={exam.readOnly ? null : !exam.afterCompleteQuestionsHidden} />
+                  {run(() => {
+                    if (exam.readOnly) return <>&mdash;</>;
+
+                    if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
+                      return 'Questions and score hidden';
+                    } else if (exam.afterCompleteQuestionsHidden) {
+                      return 'Questions hidden';
+                    } else {
+                      return 'Questions and score visible';
+                    }
+                  })}
                 </td>
               </tr>
             );

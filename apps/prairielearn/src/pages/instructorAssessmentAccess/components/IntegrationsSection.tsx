@@ -52,7 +52,7 @@ export function IntegrationsSection() {
         }}
       />
       <Form.Text id="defaultRule-prairietest-help" className="text-muted">
-        Control access to your assessment through PrairieTest exams
+        Control access to your assessment through PrairieTest exams.
       </Form.Text>
       {prairieTestEnabled && <PrairieTestControlForm />}
     </div>
