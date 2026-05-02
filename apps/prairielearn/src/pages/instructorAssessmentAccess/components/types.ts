@@ -153,7 +153,7 @@ export interface AccessControlFormData {
  * serialization on the default rule, mirroring the server-side check in
  * validateRuleStructuralDependencyIssues (Constraint 5).
  */
-export function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolean {
+function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolean {
   return rule.dateControlEnabled || rule.prairieTestExams.length > 0;
 }
 
@@ -163,7 +163,7 @@ export function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolea
  * inherited or PrairieTest exams that apply to all students). Mirrors the
  * server-side check in validateGlobalAfterCompleteOverrideIssues.
  */
-export function overrideHasCompletionMechanism(
+function overrideHasCompletionMechanism(
   override: OverrideData,
   defaultRule: DefaultRuleData,
 ): boolean {
