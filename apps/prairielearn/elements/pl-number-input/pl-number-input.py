@@ -261,21 +261,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
                 raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
-            example_true = 100
             # Hide the default atol (1e-8) since it's too small to be useful
             # context for students. Show any explicitly-set non-zero value.
             show_atol = atol != ATOL_DEFAULT and atol > 0
-            example_eps = example_true * rtol + (atol if show_atol else 0)
+            example_true = 100
+            rtol_term = f"{example_true * rtol:g}"
+            atol_term = f"{atol:g}"
+            if rtol > 0 and show_atol:
+                example_eps = f"({rtol_term} + {atol_term})"
+            elif rtol > 0:
+                example_eps = rtol_term
+            else:
+                example_eps = atol_term
             info_params = {
                 "format": True,
                 "relabs": True,
                 "rtol_pct": f"{(rtol * 100):g}",
                 "nonzero_rtol": rtol != 0,
-                "atol": f"{atol:g}",
+                "atol": atol_term,
                 "show_atol": show_atol,
                 "show_tolerance": rtol != 0 or show_atol,
                 "example_true": example_true,
-                "example_eps": f"{example_eps:g}",
+                "example_eps": example_eps,
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
