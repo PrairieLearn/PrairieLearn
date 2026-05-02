@@ -1,7 +1,6 @@
 import importlib
-import string
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import prairielearn.sympy_utils as psu
 import pytest
@@ -102,81 +101,6 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     assert psu.json_to_sympy(
         data["submitted_answers"]["test"], allow_sets=True
     ) == sympy.FiniteSet(1, 2)
-
-
-@pytest.mark.parametrize(
-    ("sub", "allow_trig", "variables", "custom_functions", "expected"),
-    [
-        # Greek letters
-        ("Α", False, ["Α"], [], " Alpha "),  # noqa: RUF001
-        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # noqa: RUF001
-        (
-            "t h e t a s i n t h e t a c o s t h e t a",
-            True,
-            ["theta"],
-            [],
-            "theta sin theta cos theta",
-        ),
-        (
-            "a b a b l a b l a b l a a b l a",
-            False,
-            ["bla", "abla", "ab"],
-            [],
-            "ab abla bla bla abla",
-        ),
-        (  # Overlapping-match test
-            "a b a b",
-            False,
-            ["ab", "aba"],
-            [],
-            "aba b",
-        ),
-        (  # Longer-match test
-            "a b c a b d",
-            False,
-            ["ab", "abc"],
-            [],
-            "abc ab d",
-        ),
-        (  # Performance test
-            "a b " * 1000,
-            False,
-            ["ab", *list(string.ascii_lowercase)[2:]],
-            [],
-            "ab " * 1000,
-        ),
-        # Trig functions
-        ("s i n ( x )", True, ["x"], [], "sin ( x )"),
-        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
-        ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
-        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # noqa: RUF001
-        # Variables
-        ("t i m e + x", True, ["time", "x"], [], "time + x"),
-        # Prefix test
-        ("a c o s h ( a c o s ( x ) )", True, ["x"], [], "acosh ( acos ( x ) )"),
-        # Number spacing
-        ("x2+x10", False, ["x"], [], "x 2+x 10"),
-        ("e^x2", False, ["x"], [], "e^x 2"),
-        # Custom functions
-        ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
-        ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
-        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # noqa: RUF001
-        ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
-        # Formatting operators
-        ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
-    ],
-)
-def test_format_formula_editor_submission_for_sympy(
-    sub: str,
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-    expected: str,
-) -> None:
-    out = symbolic_input.format_formula_editor_submission_for_sympy(
-        sub, allow_trig, variables, custom_functions
-    )
-    assert out == expected
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:
@@ -309,6 +233,72 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
     assert "\\ln{\\left(x \\right)}" in rendered
     assert "\\log{\\left(x \\right)}" not in rendered
+
+
+def test_formula_editor_test_submission_includes_mathjson() -> None:
+    x = sympy.Symbol("x")
+    # pyright is not smart enough here
+    expected = cast(
+        sympy.Basic, sympy.Function("test")(sympy.sqrt(sympy.exp(x) / x**2))
+    )
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'variables="x"',
+        'custom-functions="test"',
+    )
+    data = make_question_data(correct_answers={"test": psu.sympy_to_json(expected)})
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+
+    raw_submitted_answers = data["raw_submitted_answers"]
+    assert raw_submitted_answers["test"] == str(expected)
+    assert isinstance(raw_submitted_answers["test-json"], str)
+
+    parse_data = make_question_data(
+        submitted_answers=raw_submitted_answers,
+        correct_answers={"test": psu.sympy_to_json(expected)},
+    )
+    symbolic_input.parse(element_html, parse_data)
+
+    assert "test" not in parse_data["format_errors"]
+    assert (
+        psu.json_to_sympy(parse_data["submitted_answers"]["test"], allow_sets=True)
+        == expected
+    )
+
+
+def test_formula_editor_set_test_submission_includes_mathjson() -> None:
+    expected = sympy.Union(
+        sympy.Interval(-sympy.oo, sympy.Rational(-1, 2)),
+        sympy.Interval(sympy.Rational(1, 2), sympy.oo),
+    )
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'correct-answer="(-infty, -1/2] U [1/2, infty)"',
+    )
+    data = make_question_data()
+    data["test_type"] = "correct"
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.test(element_html, data)
+
+    raw_submitted_answers = data["raw_submitted_answers"]
+    assert raw_submitted_answers["test"] == str(expected)
+    assert isinstance(raw_submitted_answers["test-json"], str)
+
+    parse_data = make_question_data(
+        submitted_answers=raw_submitted_answers,
+        correct_answers=data["correct_answers"],
+    )
+    symbolic_input.parse(element_html, parse_data)
+
+    assert "test" not in parse_data["format_errors"]
+    assert (
+        psu.json_to_sympy(parse_data["submitted_answers"]["test"], allow_sets=True)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
