@@ -6,7 +6,10 @@ import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../../models/assessment-access-control-rules.js';
 import type { AccessControlError } from '../../../trpc/assessment/access-control.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
@@ -19,6 +22,8 @@ interface AssessmentAccessControlProps {
   origHash: string | null;
   assessmentId: string;
   initialData: AccessControlJsonWithId[];
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }
 
 function AssessmentAccessControlInner({
@@ -26,6 +31,8 @@ function AssessmentAccessControlInner({
   assessmentId,
   origHash: initialOrigHash,
   initialData,
+  prairieTestExamMetadata,
+  ptHost,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
@@ -77,6 +84,8 @@ function AssessmentAccessControlInner({
         courseInstance={courseInstance}
         assessmentId={assessmentId}
         initialData={initialData}
+        prairieTestExamMetadata={prairieTestExamMetadata}
+        ptHost={ptHost}
         isSaving={saveMutation.isPending}
         alert={alert}
         onSubmit={handleFormSubmit}

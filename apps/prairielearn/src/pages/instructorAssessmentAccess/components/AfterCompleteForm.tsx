@@ -360,6 +360,11 @@ const infoPopoverConfig = {
         The completion date can be different for different students based on when they started or
         their specific accommodations.
       </p>
+      <p>
+        These settings apply only when the student does not have an active PrairieTest reservation.
+        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
+        govern visibility instead.
+      </p>
     </>
   ),
   props: { id: 'after-complete-info-popover' },

@@ -6,7 +6,10 @@ import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
-import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../../models/assessment-access-control-rules.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { DefaultRuleForm } from './DefaultRuleForm.js';
@@ -33,6 +36,8 @@ type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | 
 
 export function AccessControlForm({
   initialData = defaultInitialData,
+  prairieTestExamMetadata,
+  ptHost,
   onSubmit,
   courseInstance,
   assessmentId,
@@ -40,6 +45,8 @@ export function AccessControlForm({
   alert,
 }: {
   initialData?: AccessControlJsonWithId[];
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentId: string;
@@ -92,7 +99,7 @@ export function AccessControlForm({
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData)) {
+    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
       nextManualErrors.set(error.path, error.message);
     }
 
@@ -117,7 +124,7 @@ export function AccessControlForm({
     }
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData, errors]);
+  }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
@@ -184,7 +191,7 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
@@ -282,6 +289,8 @@ export function AccessControlForm({
                     getOverrideName={getOverrideName}
                     defaultRule={watchedData.defaultRule}
                     overrides={watchedData.overrides}
+                    prairieTestExamMetadata={prairieTestExamMetadata}
+                    ptHost={ptHost}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={moveOverride}
