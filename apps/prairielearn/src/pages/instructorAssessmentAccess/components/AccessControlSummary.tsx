@@ -17,6 +17,7 @@ import type { PrairieTestExamMetadata } from '../../../models/assessment-access-
 
 import {
   DateTableView,
+  DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
@@ -127,6 +128,8 @@ function DefaultRuleSummaryContent({
 
   return (
     <div>
+      <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
+
       {dateTableRows.length > 0 && (
         <div className="mb-2">
           <DateTableView rows={dateTableRows} />
