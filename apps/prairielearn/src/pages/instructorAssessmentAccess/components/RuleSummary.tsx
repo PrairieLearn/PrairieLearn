@@ -69,46 +69,61 @@ function toRuntimeDate(value: string | null | undefined, timezone: string): Date
 
 /**
  * Convert default rule form data into the runtime shape consumed by
- * `buildAccessTimeline`. Returns undefined when date control is disabled
- * or the release date is missing/invalid — both cases short-circuit the
- * timeline to no segments.
+ * `buildAccessTimeline`. Returns undefined when date control is disabled,
+ * or when any enabled date field has a value that fails to parse — both
+ * cases short-circuit the timeline to no segments so the indicator and
+ * row highlighting fall silent during transient invalid edits, rather
+ * than misrepresenting the rule.
  */
 function defaultRuleToRuntimeDateControl(
   rule: DefaultRuleData,
   displayTimezone: string,
 ): RuntimeDateControl | undefined {
   if (!rule.dateControlEnabled) return undefined;
-  const releaseDate = toRuntimeDate(rule.release.date, displayTimezone);
-  if (!releaseDate) return undefined;
+  if (rule.release.date === null) return undefined;
+  const releaseDateString = rule.release.date;
 
-  const toRuntimeDeadlines = (entries: DeadlineEntry[]) =>
-    entries
-      .map((e) => ({ date: toRuntimeDate(e.date, displayTimezone), credit: e.credit }))
-      .filter((e): e is { date: Date; credit: number } => e.date !== null)
-      .map((e) => ({ date: e.date.toISOString(), credit: e.credit }));
+  // An unparseable date should suppress the timeline.
+  if (
+    [
+      releaseDateString,
+      ...rule.earlyDeadlines.map((e) => e.date),
+      ...rule.lateDeadlines.map((e) => e.date),
+      // Ignore due.date === null
+      ...(rule.due.date === null ? [] : [rule.due.date]),
+    ].some((s) => toRuntimeDate(s, displayTimezone) === null)
+  ) {
+    return undefined;
+  }
 
-  const early = toRuntimeDeadlines(rule.earlyDeadlines);
-  const late = toRuntimeDeadlines(rule.lateDeadlines);
+  const earlyDeadlines = rule.earlyDeadlines.map((e) => ({
+    date: toRuntimeDate(e.date, displayTimezone)!.toISOString(),
+    credit: e.credit,
+  }));
+  const lateDeadlines = rule.lateDeadlines.map((e) => ({
+    date: toRuntimeDate(e.date, displayTimezone)!.toISOString(),
+    credit: e.credit,
+  }));
 
   // Mirror defaultRuleToJson: omit `due` entirely when no date is set and no
   // custom credit is applied. Passing `due: { date: null }` would otherwise
-  // trigger the timeline's "indefinite due" branch.
+  // trigger the timeline's `noDeadline` branch.
   const includeDue = rule.due.date !== null || rule.due.customCredit;
 
   return {
-    release: { date: releaseDate },
+    release: { date: toRuntimeDate(releaseDateString, displayTimezone)! },
     ...(includeDue
       ? {
           due: {
-            date: toRuntimeDate(rule.due.date, displayTimezone),
+            date: rule.due.date === null ? null : toRuntimeDate(rule.due.date, displayTimezone)!,
             ...(rule.due.customCredit && rule.due.credit != null
               ? { credit: rule.due.credit }
               : {}),
           },
         }
       : {}),
-    ...(early.length > 0 ? { earlyDeadlines: early } : {}),
-    ...(late.length > 0 ? { lateDeadlines: late } : {}),
+    ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
+    ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
     ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
   };
 }

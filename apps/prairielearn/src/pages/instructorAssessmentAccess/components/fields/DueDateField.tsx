@@ -62,7 +62,8 @@ function DueDateInput({
       ? friendly(latestEarly)
       : releaseDate
         ? friendly(Temporal.PlainDateTime.from(releaseDate))
-        : 'While accessible';
+        : null;
+    if (!startNode) return null;
 
     return (
       <>
