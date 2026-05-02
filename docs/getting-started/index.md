@@ -151,7 +151,7 @@ Go back to **Files** and again edit `question.html`, now with the templated vers
 
 Save and preview. Click **New variant** to see the values change. Each student now gets a different version of this question.
 
-!!! tip "Don't write every question from scratch"
+!!! tip "You don't need to write every question from scratch"
 
     The **Add question** modal includes a library of templates covering common patterns. Pick a template close to what you want and edit from there.
 
