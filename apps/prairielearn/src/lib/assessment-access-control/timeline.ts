@@ -18,15 +18,15 @@ export interface RuntimeDateControl {
 /**
  * Discriminator for which structural slot a segment fills:
  * - `beforeRelease`: pre-release segment (always entries[0])
- * - `beforeDeadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
+ * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
  * - `afterLastDeadline`: trailing segment when at least one deadline exists; credit/submittable come from `afterLastDeadline`
- * - `indefiniteDue`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
+ * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
  */
 const AccessTimelineEntryKindSchema = z.enum([
   'beforeRelease',
-  'beforeDeadline',
+  'deadline',
   'afterLastDeadline',
-  'indefiniteDue',
+  'noDeadline',
 ]);
 
 export const AccessTimelineEntrySchema = z.object({
@@ -151,7 +151,7 @@ export function buildAccessTimeline(
   let segStart = releaseDate;
   for (const deadline of deadlines) {
     entries.push({
-      kind: 'beforeDeadline',
+      kind: 'deadline',
       startDate: segStart,
       endDate: deadline.date,
       credit: deadline.credit,
@@ -163,7 +163,7 @@ export function buildAccessTimeline(
 
   if (dueIsIndefinite || deadlines.length === 0) {
     entries.push({
-      kind: 'indefiniteDue',
+      kind: 'noDeadline',
       startDate: segStart,
       endDate: null,
       credit: dueIsIndefinite ? dueCredit : 100,

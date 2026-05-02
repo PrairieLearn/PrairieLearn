@@ -56,7 +56,7 @@ interface DateTableRow {
  * Returns null on empty/invalid input — the form may briefly hold partial
  * values during editing.
  */
-function toRuntimeInstant(value: string | null | undefined, timezone: string): Date | null {
+function toRuntimeDate(value: string | null | undefined, timezone: string): Date | null {
   if (!value) return null;
   try {
     return new Date(
@@ -78,12 +78,12 @@ function defaultRuleToRuntimeDateControl(
   displayTimezone: string,
 ): RuntimeDateControl | undefined {
   if (!rule.dateControlEnabled) return undefined;
-  const releaseDate = toRuntimeInstant(rule.release.date, displayTimezone);
+  const releaseDate = toRuntimeDate(rule.release.date, displayTimezone);
   if (!releaseDate) return undefined;
 
   const toRuntimeDeadlines = (entries: DeadlineEntry[]) =>
     entries
-      .map((e) => ({ date: toRuntimeInstant(e.date, displayTimezone), credit: e.credit }))
+      .map((e) => ({ date: toRuntimeDate(e.date, displayTimezone), credit: e.credit }))
       .filter((e): e is { date: Date; credit: number } => e.date !== null)
       .map((e) => ({ date: e.date.toISOString(), credit: e.credit }));
 
@@ -100,7 +100,7 @@ function defaultRuleToRuntimeDateControl(
     ...(includeDue
       ? {
           due: {
-            date: toRuntimeInstant(rule.due.date, displayTimezone),
+            date: toRuntimeDate(rule.due.date, displayTimezone),
             ...(rule.due.customCredit && rule.due.credit != null
               ? { credit: rule.due.credit }
               : {}),
@@ -148,14 +148,14 @@ export function generateDefaultRuleDateTableRows(
   const releaseDateError = formErrors?.release?.date?.message;
 
   const { segment } = getDefaultRuleCurrentState(rule, displayTimezone);
-  const segmentEndPDT = segment?.endDate
+  const segmentEnd = segment?.endDate
     ? Temporal.Instant.fromEpochMilliseconds(segment.endDate.getTime())
         .toZonedDateTimeISO(displayTimezone)
         .toPlainDateTime()
     : null;
   const isBeforeReleaseSegment = segment?.kind === 'beforeRelease';
   const isAfterLastSegment = segment?.kind === 'afterLastDeadline';
-  const isIndefiniteDueSegment = segment?.kind === 'indefiniteDue';
+  const isNoDeadlineSegment = segment?.kind === 'noDeadline';
 
   // Available (open and submittable) → green border; otherwise blue.
   const currentVariant: 'success' | 'primary' =
@@ -164,9 +164,9 @@ export function generateDefaultRuleDateTableRows(
       : 'primary';
 
   const isDeadlineCurrent = (formDateString: string): boolean => {
-    if (segmentEndPDT == null) return false;
+    if (segmentEnd == null) return false;
     try {
-      return Temporal.PlainDateTime.from(formDateString).equals(segmentEndPDT);
+      return Temporal.PlainDateTime.from(formDateString).equals(segmentEnd);
     } catch {
       return false;
     }
@@ -240,7 +240,7 @@ export function generateDefaultRuleDateTableRows(
       label: 'Due',
       credit: `${dueCredit}%`,
       error: dueError,
-      current: isIndefiniteDueSegment,
+      current: isNoDeadlineSegment,
       currentVariant,
     });
   } else {

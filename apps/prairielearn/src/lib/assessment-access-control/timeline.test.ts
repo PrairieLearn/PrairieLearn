@@ -53,7 +53,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-03-15T00:00:00Z'),
@@ -90,7 +90,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 120,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-03-08T00:00:00Z'),
@@ -98,7 +98,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-08T00:00:00Z'),
           endDate: new Date('2025-03-15T00:00:00Z'),
@@ -106,7 +106,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 50,
           startDate: new Date('2025-03-15T00:00:00Z'),
           endDate: new Date('2025-03-22T00:00:00Z'),
@@ -141,7 +141,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-03-15T00:00:00Z'),
@@ -176,7 +176,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-03-15T00:00:00Z'),
@@ -210,7 +210,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-15T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -244,7 +244,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -277,7 +277,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'indefiniteDue',
+          kind: 'noDeadline',
           credit: 100,
           startDate: new Date('2025-04-01T00:00:00Z'),
           endDate: null,
@@ -303,7 +303,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-03-15T00:00:00Z'),
@@ -337,7 +337,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 80,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -375,7 +375,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 80,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -383,7 +383,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 80,
           startDate: new Date('2025-04-01T00:00:00Z'),
           endDate: new Date('2025-04-15T00:00:00Z'),
@@ -391,7 +391,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 70,
           startDate: new Date('2025-04-15T00:00:00Z'),
           endDate: new Date('2025-04-30T00:00:00Z'),
@@ -429,7 +429,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 130,
           startDate: new Date('2025-01-01T00:00:00Z'),
           endDate: new Date('2025-02-01T00:00:00Z'),
@@ -437,7 +437,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 120,
           startDate: new Date('2025-02-01T00:00:00Z'),
           endDate: new Date('2025-03-01T00:00:00Z'),
@@ -445,7 +445,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 120,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -479,7 +479,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'indefiniteDue',
+          kind: 'noDeadline',
           credit: 50,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: null,
@@ -505,7 +505,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'indefiniteDue',
+          kind: 'noDeadline',
           credit: 100,
           startDate: new Date('2025-03-01T00:00:00Z'),
           endDate: null,
@@ -533,7 +533,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 120,
           startDate: new Date('2025-01-01T00:00:00Z'),
           endDate: new Date('2025-02-01T00:00:00Z'),
@@ -541,7 +541,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'indefiniteDue',
+          kind: 'noDeadline',
           credit: 80,
           startDate: new Date('2025-02-01T00:00:00Z'),
           endDate: null,
@@ -569,7 +569,7 @@ describe('buildAccessTimeline', () => {
           submittable: false,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 100,
           startDate: new Date('2025-03-15T00:00:00Z'),
           endDate: new Date('2025-04-01T00:00:00Z'),
@@ -577,7 +577,7 @@ describe('buildAccessTimeline', () => {
           submittable: true,
         },
         {
-          kind: 'beforeDeadline',
+          kind: 'deadline',
           credit: 50,
           startDate: new Date('2025-04-01T00:00:00Z'),
           endDate: new Date('2025-04-08T00:00:00Z'),
