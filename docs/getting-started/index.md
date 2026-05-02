@@ -1,4 +1,4 @@
-# Get started
+# Getting started
 
 This guide walks you through the process of creating your first course instance and assessment in the browser.
 

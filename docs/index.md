@@ -22,4 +22,4 @@ You can view a comprehensive list of features on the [PrairieLearn homepage](htt
 
 - [Request a course space](requestCourse/index.md)
 - [Concepts](./concepts/index.md)
-- [Quick start](getting-started/index.md)
+- [Getting started](getting-started/index.md)

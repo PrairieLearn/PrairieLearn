@@ -10,4 +10,4 @@ That takes you to the course request form. Fill it in with your institution, cou
 
 While you wait, this is also a good time to join the [PrairieLearn Slack](https://prairielearn.com/slack). This forum is a great place to ask questions and get help from the PrairieLearn community.
 
-When your request is approved, you'll be granted **Owner** access to a fresh course in PrairieLearn and a dedicated GitHub repository for its content. From there, jump to [Get started](../getting-started/index.md).
+When your request is approved, you'll be granted **Owner** access to a fresh course in PrairieLearn and a dedicated GitHub repository for its content. From there, jump to [Getting started](../getting-started/index.md).

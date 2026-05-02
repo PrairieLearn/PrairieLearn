@@ -1,6 +1,6 @@
 # Instructor guide
 
-This section of the documentation is the reference for everything an instructor does in PrairieLearn. If you're brand-new, start with [Get started](../getting-started/index.md).
+This section of the documentation is the reference for everything an instructor does in PrairieLearn. If you're brand-new, start with [Getting started](../getting-started/index.md).
 
 ## Returning each semester
 
