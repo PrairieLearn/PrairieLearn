@@ -43,7 +43,7 @@
     "@prairielearn/eslint-config": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@reteps/tree-sitter-htmlmustache": "^0.7.3",
+    "@reteps/tree-sitter-htmlmustache": "^0.9.3",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
     "@vitest/coverage-v8": "^4.1.2",
     "dependency-cruiser": "^17.3.10",
@@ -73,6 +73,7 @@
   "resolutions": {
     "@sa11y/common/axe-core": "^4",
     "@sa11y/format/axe-core": "^4",
+    "@typescript/native-preview": "7.0.0-dev.20260305.1",
     "markdownlint-cli2/smol-toml": "^1",
     "notebookjs/jsdom": "*",
     "typescript-cp/tar": "*"

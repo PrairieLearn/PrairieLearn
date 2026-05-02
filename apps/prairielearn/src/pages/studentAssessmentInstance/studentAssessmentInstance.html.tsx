@@ -12,10 +12,18 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import {
+  StudentAccessRulesPopover,
+  StudentAccessTimelinePopover,
+} from '../../components/StudentAccessPopovers.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
+import {
+  type Assessment,
+  type AssessmentInstance,
+  type GroupConfig,
+  type SprocAuthzAssessmentInstance,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -275,7 +283,9 @@ export function StudentAssessmentInstance({
                   </div>
                   <div class="col-md-9 col-sm-12">
                     ${AssessmentStatus({
+                      assessment: resLocals.assessment,
                       assessment_instance: resLocals.assessment_instance,
+                      displayTimezone: resLocals.course_instance.display_timezone,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>
@@ -300,7 +310,9 @@ export function StudentAssessmentInstance({
                   </div>
                   <div class="col-md-6 col-sm-12">
                     ${AssessmentStatus({
+                      assessment: resLocals.assessment,
                       assessment_instance: resLocals.assessment_instance,
+                      displayTimezone: resLocals.course_instance.display_timezone,
                       authz_result: resLocals.authz_result,
                     })}
                   </div>
@@ -430,20 +442,29 @@ export function StudentAssessmentInstance({
 }
 
 function AssessmentStatus({
+  assessment,
   assessment_instance,
+  displayTimezone,
   authz_result,
 }: {
+  assessment: Assessment;
   assessment_instance: AssessmentInstance;
-  authz_result: any;
+  displayTimezone: string;
+  authz_result: SprocAuthzAssessmentInstance;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
       Assessment is <strong>open</strong> and you can answer questions.
       <br />
       Available credit: ${authz_result.credit_date_string}
-      ${StudentAccessRulesPopover({
-        accessRules: authz_result.access_rules,
-      })}
+      ${assessment.modern_access_control
+        ? StudentAccessTimelinePopover({
+            accessTimeline: authz_result.access_timeline,
+            displayTimezone,
+          })
+        : StudentAccessRulesPopover({
+            accessRules: authz_result.access_rules,
+          })}
     `;
   }
 

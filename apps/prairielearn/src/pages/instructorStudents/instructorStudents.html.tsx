@@ -39,7 +39,7 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
-import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -91,7 +91,7 @@ function ManageEnrollmentsDropdown({
   onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   onInvite: () => void;
   onSync: () => void;
 }) {
@@ -184,7 +184,7 @@ function ManageEnrollmentsDropdown({
 }
 
 interface StudentsCardProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
@@ -199,6 +199,7 @@ interface StudentsCardProps {
 type ColumnId =
   | 'select'
   | 'user_uid'
+  | 'user_uin'
   | 'user_name'
   | 'enrollment_status'
   | 'user_email'
@@ -277,6 +278,7 @@ function StudentsCard({
     return {
       select: undefined,
       user_uid: undefined,
+      user_uin: undefined,
       user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
@@ -500,6 +502,25 @@ function StudentsCard({
           return filterValues.includes(current);
         },
       }),
+      columnHelper.accessor((row) => row.user?.uin, {
+        id: 'user_uin',
+        header: 'UIN',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-uin-tooltip' },
+              }}
+            >
+              <i className="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
+      }),
       columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
         header: 'Email',
@@ -565,7 +586,7 @@ function StudentsCard({
   const allColumnIds = columns
     .map((col) => col.id)
     .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hiddenByDefault = new Set(['user_email']);
+  const hiddenByDefault = new Set(['user_uin', 'user_email']);
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
   );
@@ -916,7 +937,7 @@ export const InstructorStudents = ({
   trpcCsrfToken,
   origHash,
 }: {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
   isDevMode: boolean;
