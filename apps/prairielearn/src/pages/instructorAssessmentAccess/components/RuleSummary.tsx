@@ -1,5 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
-import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
@@ -12,6 +13,8 @@ import {
   type RuntimeDateControl,
   buildAccessTimeline,
 } from '../../../lib/assessment-access-control/timeline.js';
+import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
 
 import {
   type AfterLastDeadlineValue,
@@ -22,6 +25,8 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RuleData = DefaultRuleData | OverrideData;
 
@@ -140,6 +145,7 @@ export function generateDefaultRuleDateTableRows(
 
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
+  const releaseDateError = formErrors?.release?.date?.message;
 
   const { segment } = getDefaultRuleCurrentState(rule, displayTimezone);
   const segmentEndPDT = segment?.endDate
@@ -166,20 +172,23 @@ export function generateDefaultRuleDateTableRows(
     }
   };
 
-  if (releaseDate) {
+  if (releaseDate || releaseDateError) {
     rows.push({
-      date: (
+      date: releaseDate ? (
         <FriendlyDate
           date={Temporal.PlainDateTime.from(releaseDate)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
           tooltip
         />
+      ) : (
+        'No date set'
       ),
       label: 'Release',
       credit: '—',
       current: isBeforeReleaseSegment,
       currentVariant,
+      error: releaseDateError,
     });
   }
 
@@ -344,24 +353,6 @@ export function generateRuleSummary(
         error,
       });
     }
-  }
-
-  if (isDefaultRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const defaultRuleErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
-    const examErrors: string[] = [];
-    for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = defaultRuleErrors?.prairieTestExams?.[i]?.examUuid?.message;
-      if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
-    }
-    const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
-    items.push({
-      key: 'prairietest',
-      icon: 'bi-pc-display',
-      text: error
-        ? 'Missing PrairieTest exam UUID'
-        : `${rule.prairieTestExams.length} PrairieTest ${rule.prairieTestExams.length === 1 ? 'exam' : 'exams'}`,
-      error,
-    });
   }
 
   const isDefault = isDefaultRuleData(rule);
@@ -543,6 +534,7 @@ function generateOverrideFieldItems(
       ) : (
         'Not released'
       ),
+      error: formErrors?.release?.date?.message,
     });
   }
 
@@ -786,6 +778,18 @@ function CreditBadge({ credit }: { credit: string }) {
   return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
 }
 
+function YesNoBadge({ value }: { value: boolean | null }) {
+  if (value === null) {
+    return <span className="text-body-secondary">—</span>;
+  }
+  const className = value
+    ? 'bg-success-subtle text-success-emphasis'
+    : 'bg-warning-subtle text-warning-emphasis';
+  return (
+    <span className={`badge rounded-pill fw-medium ${className}`}>{value ? 'Yes' : 'No'}</span>
+  );
+}
+
 export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
@@ -963,6 +967,126 @@ const tdStyle = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
+
+export function PrairieTestExamsTable({
+  exams,
+  initialMetadata,
+  ptHost,
+  formErrors,
+}: {
+  exams: DefaultRuleData['prairieTestExams'];
+  initialMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
+  formErrors?: FieldErrors<DefaultRuleData>;
+}) {
+  const trpc = useTRPC();
+
+  const validExamUuids = Array.from(
+    new Set(
+      exams
+        .map((e) => e.examUuid)
+        .filter((u) => UUID_PATTERN.test(u))
+        .map((u) => u.toLowerCase()),
+    ),
+  ).sort();
+
+  // Re-fetches when the set of valid UUIDs changes, but not while the user is
+  // mid-edit on an invalid UUID. Falls back to the server-rendered initial
+  // metadata until the first query result lands.
+  const { data: metadata } = useQuery({
+    ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
+    enabled: validExamUuids.length > 0,
+    initialData: initialMetadata,
+  });
+
+  if (exams.length === 0) return null;
+
+  const metadataByUuid = new Map(metadata.map((m) => [m.uuid.toLowerCase(), m]));
+
+  return (
+    <div
+      className="border rounded overflow-hidden"
+      style={{ borderColor: 'var(--bs-border-color)' }}
+    >
+      <table className="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
+              style={thStyle}
+            >
+              <i className="bi bi-pc-display me-1" aria-hidden="true" />
+              PrairieTest exams
+            </th>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
+              Allows submissions
+            </th>
+            <th
+              className="fw-semibold text-body-secondary text-nowrap border-bottom"
+              style={thStyle}
+            >
+              After completion
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {exams.map((exam, index) => {
+            const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
+            const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
+            const examLink =
+              meta?.pt_course_id && meta.pt_exam_id
+                ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
+                : null;
+            const examName =
+              meta?.pt_course_name && meta.pt_exam_name
+                ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
+                : null;
+
+            return (
+              // We don't use UUID as they might be duplicated in the list.
+              // eslint-disable-next-line @eslint-react/no-array-index-key
+              <tr key={index}>
+                <td className="border-0" style={{ ...tdStyle, paddingLeft: '1rem' }}>
+                  {uuidError ? (
+                    <span className="text-danger">
+                      <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                      {uuidError}
+                    </span>
+                  ) : examName && examLink ? (
+                    <a href={examLink} target="_blank" rel="noopener noreferrer">
+                      {examName}
+                    </a>
+                  ) : (
+                    <span className="text-body-secondary">Unknown exam</span>
+                  )}
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  <YesNoBadge value={!exam.readOnly} />
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  {run(() => {
+                    if (exam.readOnly) return <>&mdash;</>;
+
+                    if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
+                      return 'Questions and score hidden';
+                    } else if (exam.afterCompleteQuestionsHidden) {
+                      return 'Questions hidden';
+                    } else {
+                      return 'Questions and score visible';
+                    }
+                  })}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function OverrideRuleSummaryCard({
   rule,
