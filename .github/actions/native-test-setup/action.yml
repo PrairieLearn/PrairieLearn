@@ -1,0 +1,88 @@
+name: Native test setup
+description: Shared setup steps for running PrairieLearn tests natively on the runner.
+
+inputs:
+  install-playwright-browsers:
+    description: Whether to install Playwright browsers (chromium).
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    # The default Azure apt mirror on GitHub Actions runners is frequently
+    # slow or throttled, causing apt-get operations to take minutes instead
+    # of seconds. This action finds and configures a faster mirror.
+    - uses: vegardit/fast-apt-mirror.sh@v1
+      with:
+        exclude-current: true # Don't include the current APT mirror since it is unreliable.
+
+    # We uninstall `man-db` to speed up the installation of other packages
+    # by avoiding building man pages for them. As this is a non-interactive
+    # environment, we will never need man pages anyways.
+    #
+    # We don't install `texlive` since it's a huge package and the test suite
+    # doesn't require it.
+    - name: Install OS packages
+      shell: bash
+      run: |
+        sudo apt-get purge -y man-db
+        sudo apt-get install -y --no-install-recommends graphviz libgraphviz-dev
+
+    - name: Set up Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        cache: 'yarn'
+    - name: Cache node-gyp headers
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/node-gyp
+        key: node-gyp-${{ runner.os }}
+    - name: Preinstall node-gyp headers
+      shell: bash
+      run: yarn dlx node-gyp install
+    - name: Install Node dependencies
+      shell: bash
+      run: yarn install --immutable --inline-builds
+      env:
+        # Disable hardened mode to eke out a little more speed.
+        YARN_ENABLE_HARDENED_MODE: 0
+    - name: Install Playwright browsers
+      if: inputs.install-playwright-browsers == 'true'
+      shell: bash
+      run: yarn playwright install chromium --with-deps
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: 'pyproject.toml'
+        cache-suffix: core
+    - name: Install core Python dependencies
+      shell: bash
+      env:
+        UV_LOCKED: 1
+      run: make python-deps-core
+
+    - name: Set up Turborepo cache
+      uses: actions/cache@v5
+      with:
+        path: .turbo/cache
+        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-
+    - name: Build all code
+      shell: bash
+      run: make build
+
+    - name: Configure git
+      shell: bash
+      run: |
+        git config --global user.email "dev@example.com"
+        git config --global user.name "Dev User"
+        git config --global safe.directory '*'

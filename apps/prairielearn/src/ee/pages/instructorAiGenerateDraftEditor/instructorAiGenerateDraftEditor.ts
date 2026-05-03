@@ -23,10 +23,12 @@ import {
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
+import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { validateShortName } from '../../../lib/short-name.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
@@ -167,7 +169,7 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
@@ -367,6 +369,43 @@ router.post(
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
       res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
+    } else if (req.body.__action === 'rename_draft_question') {
+      if (req.accepts('html')) {
+        throw new error.HttpStatusError(406, 'Not Acceptable');
+      }
+
+      const qid =
+        typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
+          ? req.body.qid
+          : res.locals.question.qid;
+      const title =
+        typeof req.body.title === 'string' && req.body.title.trim() !== ''
+          ? req.body.title
+          : res.locals.question.title;
+
+      const validation = validateShortName(qid);
+      if (!validation.valid) {
+        throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
+      }
+
+      const client = getCourseFilesClient();
+
+      const result = await client.renameQuestion.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_id: res.locals.question.id,
+        qid,
+        title,
+      });
+
+      if (result.status === 'error') {
+        throw new Error('Renaming question failed.');
+      }
+
+      const updatedQuestion = await selectQuestionById(res.locals.question.id);
+      res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
@@ -395,7 +434,7 @@ router.post(
 
 router.get(
   '/variant',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     // This endpoint is JSON-only; the client patches the preview without a full page reload.
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -423,7 +462,7 @@ router.get(
 
 router.post(
   '/variant',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       // This endpoint is JSON-only; the client patches the preview without a full page reload.
       const variantId = await processSubmission(req, res);

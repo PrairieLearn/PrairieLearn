@@ -1,11 +1,19 @@
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
+import { type NewsItem } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPage<'plain'> }) {
+export function AdministratorSettings({
+  resLocals,
+  newsItems,
+}: {
+  resLocals: ResLocalsForPage<'plain'>;
+  newsItems: NewsItem[];
+}) {
   const showAiSettings =
     isEnterprise() &&
     config.aiQuestionGenerationOpenAiApiKey &&
@@ -88,9 +96,92 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
               });
             });
           </script>
+          ${config.newsFeedUrl
+            ? html`
+                <hr />
+                <form method="POST" class="d-inline">
+                  <input type="hidden" name="__action" value="sync_news_feed" />
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button type="submit" class="btn btn-primary">Sync news feed</button>
+                </form>
+              `
+            : ''}
         </div>
       </div>
 
+      ${newsItems.length > 0
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white d-flex align-items-center">
+                <h2>News items</h2>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped" aria-label="News items">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Published</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${newsItems.map(
+                      (item) => html`
+                        <tr>
+                          <td class="align-middle">
+                            <a href="${item.link}" target="_blank" rel="noopener noreferrer">
+                              ${item.title}
+                            </a>
+                          </td>
+                          <td class="align-middle">${formatDate(item.pub_date, 'UTC')}</td>
+                          <td class="align-middle">
+                            ${item.managed_by === 'admin' && item.hidden_at != null
+                              ? html`<span class="badge bg-secondary">Hidden by admin</span>`
+                              : item.managed_by === 'sync' && item.hidden_at != null
+                                ? html`<span class="badge bg-secondary">Hidden by sync</span>`
+                                : html`<span class="badge bg-success">Visible</span>`}
+                          </td>
+                          <td class="align-middle">
+                            ${item.hidden_at == null
+                              ? html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="hide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                      Hide
+                                    </button>
+                                  </form>
+                                `
+                              : html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="unhide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                      Unhide
+                                    </button>
+                                  </form>
+                                `}
+                          </td>
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `
+        : ''}
       ${showAiSettings
         ? html`
             <div class="card mb-4">
@@ -158,38 +249,104 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
           <div class="mb-4 p-4 bg-dark">
             <button type="button" class="btn btn-outline-light">Light</button>
           </div>
-          <h3>Custom colors</h3>
-          <div class="mb-4" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-            <button type="button" class="btn color-red1">Red 1</button>
-            <button type="button" class="btn color-red2">Red 2</button>
-            <button type="button" class="btn color-red3">Red 3</button>
-            <button type="button" class="btn color-pink1">Pink 1</button>
-            <button type="button" class="btn color-pink2">Pink 2</button>
-            <button type="button" class="btn color-pink3">Pink 3</button>
-            <button type="button" class="btn color-purple1">Purple 1</button>
-            <button type="button" class="btn color-purple2">Purple 2</button>
-            <button type="button" class="btn color-purple3">Purple 3</button>
-            <button type="button" class="btn color-blue1">Blue 1</button>
-            <button type="button" class="btn color-blue2">Blue 2</button>
-            <button type="button" class="btn color-blue3">Blue 3</button>
-            <button type="button" class="btn color-turquoise1">Turquoise 1</button>
-            <button type="button" class="btn color-turquoise2">Turquoise 2</button>
-            <button type="button" class="btn color-turquoise3">Turquoise 3</button>
-            <button type="button" class="btn color-green1">Green 1</button>
-            <button type="button" class="btn color-green2">Green 2</button>
-            <button type="button" class="btn color-green3">Green 3</button>
-            <button type="button" class="btn color-yellow1">Yellow 1</button>
-            <button type="button" class="btn color-yellow2">Yellow 2</button>
-            <button type="button" class="btn color-yellow3">Yellow 3</button>
-            <button type="button" class="btn color-orange1">Orange 1</button>
-            <button type="button" class="btn color-orange2">Orange 2</button>
-            <button type="button" class="btn color-orange3">Orange 3</button>
-            <button type="button" class="btn color-brown1">Brown 1</button>
-            <button type="button" class="btn color-brown2">Brown 2</button>
-            <button type="button" class="btn color-brown3">Brown 3</button>
-            <button type="button" class="btn color-gray1">Gray 1</button>
-            <button type="button" class="btn color-gray2">Gray 2</button>
-            <button type="button" class="btn color-gray3">Gray 3</button>
+          <h3>Custom color badges</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <span class="badge color-red1">Red 1</span>
+            <span class="badge color-red2">Red 2</span>
+            <span class="badge color-red3">Red 3</span>
+            <span class="badge color-pink1">Pink 1</span>
+            <span class="badge color-pink2">Pink 2</span>
+            <span class="badge color-pink3">Pink 3</span>
+            <span class="badge color-purple1">Purple 1</span>
+            <span class="badge color-purple2">Purple 2</span>
+            <span class="badge color-purple3">Purple 3</span>
+            <span class="badge color-blue1">Blue 1</span>
+            <span class="badge color-blue2">Blue 2</span>
+            <span class="badge color-blue3">Blue 3</span>
+            <span class="badge color-turquoise1">Turquoise 1</span>
+            <span class="badge color-turquoise2">Turquoise 2</span>
+            <span class="badge color-turquoise3">Turquoise 3</span>
+            <span class="badge color-green1">Green 1</span>
+            <span class="badge color-green2">Green 2</span>
+            <span class="badge color-green3">Green 3</span>
+            <span class="badge color-yellow1">Yellow 1</span>
+            <span class="badge color-yellow2">Yellow 2</span>
+            <span class="badge color-yellow3">Yellow 3</span>
+            <span class="badge color-orange1">Orange 1</span>
+            <span class="badge color-orange2">Orange 2</span>
+            <span class="badge color-orange3">Orange 3</span>
+            <span class="badge color-brown1">Brown 1</span>
+            <span class="badge color-brown2">Brown 2</span>
+            <span class="badge color-brown3">Brown 3</span>
+            <span class="badge color-gray1">Gray 1</span>
+            <span class="badge color-gray2">Gray 2</span>
+            <span class="badge color-gray3">Gray 3</span>
+          </div>
+          <h3>Custom color badge pills</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <span class="badge rounded-pill color-red1">Red 1</span>
+            <span class="badge rounded-pill color-red2">Red 2</span>
+            <span class="badge rounded-pill color-red3">Red 3</span>
+            <span class="badge rounded-pill color-pink1">Pink 1</span>
+            <span class="badge rounded-pill color-pink2">Pink 2</span>
+            <span class="badge rounded-pill color-pink3">Pink 3</span>
+            <span class="badge rounded-pill color-purple1">Purple 1</span>
+            <span class="badge rounded-pill color-purple2">Purple 2</span>
+            <span class="badge rounded-pill color-purple3">Purple 3</span>
+            <span class="badge rounded-pill color-blue1">Blue 1</span>
+            <span class="badge rounded-pill color-blue2">Blue 2</span>
+            <span class="badge rounded-pill color-blue3">Blue 3</span>
+            <span class="badge rounded-pill color-turquoise1">Turquoise 1</span>
+            <span class="badge rounded-pill color-turquoise2">Turquoise 2</span>
+            <span class="badge rounded-pill color-turquoise3">Turquoise 3</span>
+            <span class="badge rounded-pill color-green1">Green 1</span>
+            <span class="badge rounded-pill color-green2">Green 2</span>
+            <span class="badge rounded-pill color-green3">Green 3</span>
+            <span class="badge rounded-pill color-yellow1">Yellow 1</span>
+            <span class="badge rounded-pill color-yellow2">Yellow 2</span>
+            <span class="badge rounded-pill color-yellow3">Yellow 3</span>
+            <span class="badge rounded-pill color-orange1">Orange 1</span>
+            <span class="badge rounded-pill color-orange2">Orange 2</span>
+            <span class="badge rounded-pill color-orange3">Orange 3</span>
+            <span class="badge rounded-pill color-brown1">Brown 1</span>
+            <span class="badge rounded-pill color-brown2">Brown 2</span>
+            <span class="badge rounded-pill color-brown3">Brown 3</span>
+            <span class="badge rounded-pill color-gray1">Gray 1</span>
+            <span class="badge rounded-pill color-gray2">Gray 2</span>
+            <span class="badge rounded-pill color-gray3">Gray 3</span>
+          </div>
+          <h3>Clickable color badges</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-badge color-red1">Red 1</button>
+            <button type="button" class="btn btn-badge color-red2">Red 2</button>
+            <button type="button" class="btn btn-badge color-red3">Red 3</button>
+            <button type="button" class="btn btn-badge color-pink1">Pink 1</button>
+            <button type="button" class="btn btn-badge color-pink2">Pink 2</button>
+            <button type="button" class="btn btn-badge color-pink3">Pink 3</button>
+            <button type="button" class="btn btn-badge color-purple1">Purple 1</button>
+            <button type="button" class="btn btn-badge color-purple2">Purple 2</button>
+            <button type="button" class="btn btn-badge color-purple3">Purple 3</button>
+            <button type="button" class="btn btn-badge color-blue1">Blue 1</button>
+            <button type="button" class="btn btn-badge color-blue2">Blue 2</button>
+            <button type="button" class="btn btn-badge color-blue3">Blue 3</button>
+            <button type="button" class="btn btn-badge color-turquoise1">Turquoise 1</button>
+            <button type="button" class="btn btn-badge color-turquoise2">Turquoise 2</button>
+            <button type="button" class="btn btn-badge color-turquoise3">Turquoise 3</button>
+            <button type="button" class="btn btn-badge color-green1">Green 1</button>
+            <button type="button" class="btn btn-badge color-green2">Green 2</button>
+            <button type="button" class="btn btn-badge color-green3">Green 3</button>
+            <button type="button" class="btn btn-badge color-yellow1">Yellow 1</button>
+            <button type="button" class="btn btn-badge color-yellow2">Yellow 2</button>
+            <button type="button" class="btn btn-badge color-yellow3">Yellow 3</button>
+            <button type="button" class="btn btn-badge color-orange1">Orange 1</button>
+            <button type="button" class="btn btn-badge color-orange2">Orange 2</button>
+            <button type="button" class="btn btn-badge color-orange3">Orange 3</button>
+            <button type="button" class="btn btn-badge color-brown1">Brown 1</button>
+            <button type="button" class="btn btn-badge color-brown2">Brown 2</button>
+            <button type="button" class="btn btn-badge color-brown3">Brown 3</button>
+            <button type="button" class="btn btn-badge color-gray1">Gray 1</button>
+            <button type="button" class="btn btn-badge color-gray2">Gray 2</button>
+            <button type="button" class="btn btn-badge color-gray3">Gray 3</button>
           </div>
           <h3>Ghost button</h3>
           <p>

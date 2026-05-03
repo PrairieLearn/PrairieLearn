@@ -7,35 +7,19 @@
   "module": "Module2",
   "constantQuestionValue": true,
   "allowAccess": [
-    {
-      "credit": 120,
-      "startDate": "2014-04-07T00:00:01",
-      "endDate": "2014-07-10T23:59:59"
-    },
-    {
-      "credit": 100,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2024-07-10T23:59:59"
-    },
-    {
-      "credit": 80,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2024-08-10T23:59:59"
-    },
-    {
-      "credit": 50,
-      "startDate": "2014-07-07T00:00:01",
-      "endDate": "2024-09-10T23:59:59"
-    }
+    { "credit": 120, "startDate": "2014-04-07T00:00:01", "endDate": "2014-07-10T23:59:59" },
+    { "credit": 100, "startDate": "2014-07-07T00:00:01", "endDate": "2024-07-10T23:59:59" },
+    { "credit": 80, "startDate": "2014-07-07T00:00:01", "endDate": "2024-08-10T23:59:59" },
+    { "credit": 50, "startDate": "2014-07-07T00:00:01", "endDate": "2024-09-10T23:59:59" }
   ],
   "zones": [
     {
       "questions": [
-        { "id": "partialCredit1", "points": 1, "maxPoints": 5 },
+        { "id": "partialCredit1", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "partialCredit2", "autoPoints": 2, "maxAutoPoints": 10, "manualPoints": 3 },
-        { "id": "partialCredit3", "points": 2, "maxPoints": 10, "triesPerVariant": 3 },
-        { "id": "partialCredit4_v2", "points": 3, "maxPoints": 10 },
-        { "id": "partialCredit6_no_partial", "points": 3, "maxPoints": 11 }
+        { "id": "partialCredit3", "autoPoints": 2, "maxAutoPoints": 10, "triesPerVariant": 3 },
+        { "id": "partialCredit4_v2", "autoPoints": 3, "maxAutoPoints": 10 },
+        { "id": "partialCredit6_no_partial", "autoPoints": 3, "maxAutoPoints": 11 }
       ]
     }
   ]

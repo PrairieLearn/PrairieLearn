@@ -1,5 +1,17 @@
 # @prairielearn/express-test-utils
 
+## 2.0.10
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+
+## 2.0.9
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
 ## 2.0.8
 
 ### Patch Changes

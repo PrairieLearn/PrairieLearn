@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryScalars } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../../lib/config.js';
@@ -117,7 +117,7 @@ router.post(
       });
       res.send();
     } else if (req.body.__action === 'delete_drafts') {
-      const questions = await queryRows(
+      const questions = await queryScalars(
         sql.select_draft_questions_by_course_id,
         { course_id: res.locals.course.id.toString() },
         IdSchema,

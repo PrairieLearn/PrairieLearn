@@ -12,8 +12,8 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
-  queryRows,
+  queryScalar,
+  queryScalars,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -22,7 +22,7 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { getFileMetadataForPath } from '../../lib/editorUtil.js';
+import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -110,14 +110,16 @@ router.get(
 
       const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
       const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
+      const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
 
       const editorData: FileEditorData = {
         fileName: path.basename(relPath),
         normalizedFileName: path.normalize(relPath),
-        aceMode: getModeForPath(relPath).mode,
+        aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
         diskContents: encodedContents,
         diskHash: getHash(encodedContents),
         fileMetadata,
+        lintHtmlMustache,
       };
 
       const draftEdit = await readDraftEdit({
@@ -264,7 +266,7 @@ async function readDraftEdit({
   // contents of whatever draft we found, because we don't want to get
   // in a situation where the user is trapped with an unreadable draft.
   // We accept the possibility that a draft will occasionally be lost.
-  const deletedFileEdits = await queryRows(
+  const deletedFileEdits = await queryScalars(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -310,7 +312,7 @@ async function writeDraftEdit({
   orig_hash: string;
   editContents: string;
 }) {
-  const deletedFileEdits = await queryRows(
+  const deletedFileEdits = await queryScalars(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -332,7 +334,7 @@ async function writeDraftEdit({
     authn_user_id,
   });
 
-  const editID = await queryRow(
+  const editID = await queryScalar(
     sql.insert_file_edit,
     { user_id, course_id, dir_name, file_name, orig_hash, file_id },
     IdSchema,

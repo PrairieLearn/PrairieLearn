@@ -5,10 +5,9 @@ import os
 import pathlib
 import sys
 from inspect import signature
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, assert_never
 
 import lxml.html
-from typing_extensions import assert_never
 
 from prairielearn.internal.check_data import Phase, check_data
 from prairielearn.internal.traverse import (

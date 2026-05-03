@@ -21,6 +21,7 @@ import {
   ClientFingerprintSchema,
   CourseSchema,
   QuestionSchema,
+  type User,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
@@ -34,19 +35,18 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 export const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
   instance_question_id: z.string().nullable(),
   variant_id: z.string().nullable(),
   variant_number: z.number().nullable(),
+  variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
@@ -64,7 +64,7 @@ export async function checkBelongs(
   assessment_id: string,
 ): Promise<void> {
   if (
-    (await sqldb.queryOptionalRow(
+    (await sqldb.queryOptionalScalar(
       sql.check_belongs,
       { assessment_instance_id, assessment_id },
       IdSchema,
@@ -193,7 +193,7 @@ export async function updateAssessmentInstance(
     }
 
     // Insert any new questions not previously in the assessment instance
-    const newInstanceQuestionIds = await sqldb.queryRows(
+    const newInstanceQuestionIds = await sqldb.queryScalars(
       sql.insert_instance_questions,
       { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
       IdSchema,
@@ -308,10 +308,9 @@ export async function gradeAssessmentInstance({
     // to grade a broken variant as an error.
     if (row.variant.broken_at) return;
 
-    const check_submission_id = null;
     await gradeVariant({
       variant: row.variant,
-      check_submission_id,
+      check_submission_id: null,
       question: row.question,
       variant_course: row.variant_course,
       user_id,
@@ -337,6 +336,38 @@ export async function gradeAssessmentInstance({
   // only bad thing that will happen is that we'll have wasted some work, but
   // that's acceptable.
   await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
+}
+
+export async function crossLockpoint({
+  assessmentInstance,
+  zoneId,
+  authnUser,
+}: {
+  assessmentInstance: AssessmentInstance;
+  zoneId: string;
+  authnUser: User;
+}): Promise<void> {
+  const crossedLockpointId = await sqldb.queryOptionalScalar(
+    sql.cross_lockpoint,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId, authn_user_id: authnUser.id },
+    IdSchema,
+  );
+  if (crossedLockpointId != null) return;
+
+  // The INSERT uses ON CONFLICT DO NOTHING, which returns nothing both when
+  // the conflict fires (already crossed) and when the WHERE conditions fail
+  // (not eligible to cross). This second query distinguishes those cases.
+  const alreadyCrossed = await sqldb.queryOptionalScalar(
+    sql.check_lockpoint_crossed,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId },
+    IdSchema,
+  );
+  if (alreadyCrossed != null) return;
+
+  throw new error.HttpStatusError(
+    403,
+    'Unable to cross this lockpoint. Please return to the assessment overview and try again.',
+  );
 }
 
 const InstancesToGradeSchema = z.object({
@@ -422,7 +453,7 @@ export async function gradeAllAssessmentInstances({
 export async function updateAssessmentStatisticsForCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
-  const rows = await sqldb.queryRows(
+  const rows = await sqldb.queryScalars(
     sql.select_assessments_for_statistics_update,
     { course_instance_id },
     IdSchema,
@@ -441,7 +472,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
     await sqldb.executeRow(sql.select_assessment_lock, { assessment_id });
 
     // check whether we need to update the statistics
-    const needs_statistics_update = await sqldb.queryRow(
+    const needs_statistics_update = await sqldb.queryScalar(
       sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
@@ -550,7 +581,7 @@ export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessment_questions = await sqldb.queryRows(
+    const assessment_questions = await sqldb.queryScalars(
       sql.select_assessment_questions,
       { assessment_id },
       IdSchema,
@@ -565,7 +596,7 @@ export async function deleteAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  const deleted_id = await sqldb.queryOptionalRow(
+  const deleted_id = await sqldb.queryOptionalScalar(
     sql.delete_assessment_instance,
     { assessment_id, assessment_instance_id, authn_user_id },
     IdSchema,
@@ -589,7 +620,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
 }
 
 export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
-  return await sqldb.queryRow(
+  return await sqldb.queryScalar(
     sql.select_assessment_instance_last_submission_date,
     { assessment_instance_id },
     DateFromISOString.nullable(),

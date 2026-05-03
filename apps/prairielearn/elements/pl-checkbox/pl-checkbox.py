@@ -2,12 +2,11 @@ import html
 import random
 from enum import Enum
 from itertools import count
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple, assert_never, cast
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class PartialCreditType(Enum):

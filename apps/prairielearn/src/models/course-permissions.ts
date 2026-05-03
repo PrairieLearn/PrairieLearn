@@ -5,6 +5,7 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -12,12 +13,14 @@ import {
 import {
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
+  CourseInstanceSchema,
   type CoursePermission,
   CoursePermissionSchema,
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
   type User,
+  UserSchema,
 } from '../lib/db-types.js';
 
 import {
@@ -282,6 +285,33 @@ export async function insertCourseInstancePermissions({
 }
 
 /**
+ * Inserts or updates course instance permissions for a user, setting the role
+ * to the exact value provided (unlike {@link insertCourseInstancePermissions},
+ * which only steps up). The user must already have a course_permissions record.
+ */
+export async function upsertCourseInstancePermissionsRole({
+  course_id,
+  course_instance_id,
+  user_id,
+  course_instance_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  course_instance_role: EnumCourseInstanceRole;
+  authn_user_id: string;
+}): Promise<void> {
+  await execute(sql.upsert_course_instance_permissions_role, {
+    course_id,
+    course_instance_id,
+    user_id,
+    course_instance_role,
+    authn_user_id,
+  });
+}
+
+/**
  * Updates the course instance role for an existing course_instance_permissions
  * record. Throws a 404 error if no course instance permissions exist for the user.
  *
@@ -348,22 +378,6 @@ export async function deleteCourseInstancePermissions({
 }
 
 /**
- * Deletes all course instance permissions for all instances of a course.
- */
-export async function deleteAllCourseInstancePermissionsForCourse({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
-  await execute(sql.delete_all_course_instance_permissions_for_course, {
-    course_id,
-    authn_user_id,
-  });
-}
-
-/**
  * Returns the course instance role for a user in a specific course instance,
  * or null if the user has no course instance permissions.
  */
@@ -374,7 +388,7 @@ export async function selectCourseInstancePermissionForUser({
   course_instance_id: string;
   user_id: string;
 }) {
-  return await queryOptionalRow(
+  return await queryOptionalScalar(
     sql.select_course_instance_permission_for_user,
     { course_instance_id, user_id },
     EnumCourseInstanceRoleSchema,
@@ -392,11 +406,34 @@ export async function selectCoursePermissionForUser({
   course_id: string;
   user_id: string;
 }) {
-  return await queryOptionalRow(
+  return await queryOptionalScalar(
     sql.select_course_permission_for_user,
     { course_id, user_id },
     EnumCourseRoleSchema,
   );
+}
+
+const CourseInstanceRoleRowSchema = z.object({
+  id: CourseInstanceSchema.shape.id,
+  short_name: CourseInstanceSchema.shape.short_name,
+  course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+  course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+  course_instance_role_formatted: z.string(),
+});
+
+export const CourseUsersRowSchema = z.object({
+  user: UserSchema,
+  course_permission: CoursePermissionSchema,
+  course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
+});
+export type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
+
+/**
+ * Returns all users with course permissions for the given course, along with
+ * their course instance roles and other course instances they have access to.
+ */
+export async function selectCourseUsers({ course_id }: { course_id: string }) {
+  return queryRows(sql.select_course_users, { course_id }, CourseUsersRowSchema);
 }
 
 /**
@@ -409,7 +446,7 @@ export async function userIsInstructorInAnyCourse({
 }: {
   user_id: string;
 }): Promise<boolean> {
-  const result = await queryOptionalRow(
+  const result = await queryOptionalScalar(
     sql.user_is_instructor_in_any_course,
     { user_id },
     z.boolean(),

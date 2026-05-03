@@ -13,7 +13,10 @@ WITH
     GROUP BY
       i.instance_question_id
   ),
-  latest_submissions AS (
+  -- MATERIALIZED forces these CTEs to be computed once instead of being
+  -- inlined into the outer query's nested loop join, where they would be
+  -- re-executed once per outer row.
+  latest_submissions AS MATERIALIZED (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       s.id AS submission_id,
@@ -28,15 +31,15 @@ WITH
       iq.id ASC,
       s.date DESC
   ),
-  rubric_items_agg AS (
+  rubric_items_agg AS MATERIALIZED (
     SELECT
       ls.instance_question_id,
       COALESCE(
-        json_agg(rgi.rubric_item_id) FILTER (
+        jsonb_agg(rgi.rubric_item_id) FILTER (
           WHERE
             rgi.rubric_item_id IS NOT NULL
         ),
-        '[]'::json
+        '[]'::jsonb
       ) AS rubric_grading_item_ids
     FROM
       latest_submissions AS ls
@@ -61,7 +64,7 @@ SELECT
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
-  COALESCE(ri.rubric_grading_item_ids, '[]'::json) AS rubric_grading_item_ids,
+  COALESCE(ri.rubric_grading_item_ids, '[]'::jsonb) AS rubric_grading_item_ids,
   e.id AS enrollment_id
 FROM
   instance_questions AS iq

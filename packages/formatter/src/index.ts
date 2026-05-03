@@ -1,5 +1,6 @@
 export {
   formatDate,
+  formatDateISO,
   formatDateFriendly,
   formatDateHMS,
   formatDateRangeFriendly,
@@ -19,3 +20,4 @@ export {
   MINUTE_IN_MILLISECONDS,
   SECOND_IN_MILLISECONDS,
 } from './interval.js';
+export { truncateMiddle } from './string.js';

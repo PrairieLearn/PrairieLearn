@@ -21,6 +21,8 @@ WITH
         uid_attribute,
         uin_attribute,
         name_attribute,
+        given_name_attribute,
+        family_name_attribute,
         email_attribute,
         public_key,
         private_key
@@ -37,6 +39,8 @@ WITH
         $uid_attribute,
         $uin_attribute,
         $name_attribute,
+        $given_name_attribute,
+        $family_name_attribute,
         $email_attribute,
         COALESCE($public_key, ''),
         COALESCE($private_key, '')
@@ -52,6 +56,8 @@ WITH
       uid_attribute = EXCLUDED.uid_attribute,
       uin_attribute = EXCLUDED.uin_attribute,
       name_attribute = EXCLUDED.name_attribute,
+      given_name_attribute = EXCLUDED.given_name_attribute,
+      family_name_attribute = EXCLUDED.family_name_attribute,
       email_attribute = EXCLUDED.email_attribute,
       public_key = COALESCE($public_key, saml_providers.public_key),
       private_key = COALESCE($private_key, saml_providers.private_key)

@@ -1,9 +1,10 @@
 import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
@@ -12,13 +13,16 @@ import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { getInstanceQuestionUrl, getQuestionUrl } from '../../lib/client/url.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
   InstanceQuestionSchema,
+  VariantSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -45,6 +49,12 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
+  last_variant_id: VariantSchema.shape.id.nullable(),
+  last_variant_seed: VariantSchema.shape.variant_seed.nullable(),
+  lockpoint: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -79,6 +89,10 @@ export function InstructorAssessmentInstance({
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
+  const headingLabel = resLocals.instance_group
+    ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+    : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`;
+
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
@@ -117,12 +131,7 @@ export function InstructorAssessmentInstance({
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Summary:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Summary: ${headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
@@ -300,12 +309,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Questions:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Questions: ${headingLabel}</h2>
         </div>
 
         <div class="table-responsive">
@@ -346,6 +350,28 @@ export function InstructorAssessmentInstance({
                   }
 
                   return html`
+                    ${instance_question.start_new_zone && instance_question.lockpoint
+                      ? html`
+                          <tr>
+                            <th colspan="9" class="bg-light fw-normal">
+                              ${instance_question.lockpoint_crossed
+                                ? html`
+                                    Lockpoint crossed by
+                                    ${instance_question.lockpoint_crossed_authn_user_uid ??
+                                    'unknown user'}
+                                    ${instance_question.lockpoint_crossed_at
+                                      ? html`at
+                                        ${formatDate(
+                                          instance_question.lockpoint_crossed_at,
+                                          resLocals.course_instance.display_timezone,
+                                        )}`
+                                      : ''}
+                                  `
+                                : html`Lockpoint not yet crossed`}
+                            </th>
+                          </tr>
+                        `
+                      : ''}
                     ${showZoneInfo
                       ? html`
                           <tr>
@@ -380,8 +406,11 @@ export function InstructorAssessmentInstance({
                     <tr>
                       <td>
                         S-${instance_question.question_number}. (<a
-                          href="/pl/course_instance/${resLocals.course_instance
-                            .id}/instance_question/${instance_question.id}/"
+                          href="${getInstanceQuestionUrl({
+                            courseInstanceId: resLocals.course_instance.id,
+                            instanceQuestionId: instance_question.id,
+                            variantId: instance_question.last_variant_id,
+                          })}"
                           >student view</a
                         >)
                       </td>
@@ -390,7 +419,11 @@ export function InstructorAssessmentInstance({
                         ${resLocals.authz_data.has_course_permission_preview
                           ? html`
                               (<a
-                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
+                                href="${getQuestionUrl({
+                                  courseInstanceId: resLocals.course_instance.id,
+                                  questionId: instance_question.question_id,
+                                  variantSeed: instance_question.last_variant_seed,
+                                })}"
                                 >instructor view</a
                               >)
                             `
@@ -515,12 +548,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Statistics:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Statistics: ${headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
@@ -542,13 +570,21 @@ export function InstructorAssessmentInstance({
             </thead>
             <tbody>
               ${assessment_instance_stats.map((row) => {
+                const instance_question = instance_questions.find((iq) =>
+                  idsEqual(iq.id, row.instance_question_id),
+                );
                 return html`
                   <tr>
                     <td>
                       I-${row.number}.
                       ${resLocals.authz_data.has_course_permission_preview
                         ? html`
-                            <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                            <a
+                              href="${getQuestionUrl({
+                                courseInstanceId: resLocals.course_instance.id,
+                                questionId: row.question_id,
+                                variantSeed: instance_question?.last_variant_seed,
+                              })}"
                               >${row.qid}</a
                             >
                           `
@@ -581,12 +617,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Log:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Log: ${headingLabel}</h2>
         </div>
         <div class="card-body">
           <small>
@@ -625,7 +656,9 @@ export function InstructorAssessmentInstance({
               ${assessmentInstanceLog.map((row, index) => {
                 return html`
                   <tr>
-                    <td class="text-nowrap">${row.formatted_date}</td>
+                    <td class="text-nowrap">
+                      ${formatDate(row.event_date, resLocals.course_instance.display_timezone)}
+                    </td>
                     <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                     ${resLocals.instance_user
                       ? row.client_fingerprint && row.client_fingerprint_number !== null
@@ -633,7 +666,7 @@ export function InstructorAssessmentInstance({
                             <td>
                               <button
                                 type="button"
-                                class="btn btn-xs color-${FINGERPRINT_COLORS[
+                                class="btn btn-badge color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
                                 id="fingerprintPopover${row.client_fingerprint.id}-${index}"
@@ -656,21 +689,38 @@ export function InstructorAssessmentInstance({
                     <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                     <td>
                       ${run(() => {
-                        if (!row.qid) return '';
-                        const text = `I-${row.instructor_question_number}. ${row.qid}`;
+                        if (!row.qid || !row.question_id) return '';
+                        // Instructor question number may be null if this
+                        // question was deleted from the assessment after the
+                        // event was logged
+                        const number =
+                          row.instructor_question_number != null
+                            ? `${row.instructor_question_number}. `
+                            : '';
+                        const text = `${number}${row.qid}`;
                         if (!resLocals.authz_data.has_course_permission_preview) return text;
                         return html`
-                          <a href="${resLocals.urlPrefix}/question/${row.question_id}/">${text}</a>
+                          <a
+                            href="${getQuestionUrl({
+                              courseInstanceId: resLocals.course_instance.id,
+                              questionId: row.question_id,
+                              variantSeed: row.variant_seed,
+                            })}"
+                            >${text}</a
+                          >
                         `;
                       })}
                     </td>
                     <td>
                       ${row.student_question_number
-                        ? row.variant_id
+                        ? row.instance_question_id && row.variant_id
                           ? html`
                               <a
-                                href="/pl/course_instance/${resLocals.course_instance
-                                  .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
+                                href="${getInstanceQuestionUrl({
+                                  courseInstanceId: resLocals.course_instance.id,
+                                  instanceQuestionId: row.instance_question_id,
+                                  variantId: row.variant_id,
+                                })}"
                               >
                                 S-${row.student_question_number}#${row.variant_number}
                               </a>

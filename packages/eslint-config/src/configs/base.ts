@@ -102,7 +102,7 @@ export function baseConfig(): TSESLint.FlatConfig.ConfigArray {
         'prefer-named-capture-group': 'off',
         'prefer-object-has-own': 'off',
         'prefer-template': 'off',
-        radix: ['error', 'as-needed'],
+        radix: ['off'], // We should never rely on this for parsing non-decimal numbers.
         'require-atomic-updates': 'off',
         'require-await': 'off',
         'require-unicode-regexp': 'off',

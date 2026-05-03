@@ -15,8 +15,8 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
   title: z.string(),
   number: z.string().nullable(),
-  alternative_group_number: z.number(),
-  alternative_group_size: z.coerce.number(),
+  alternative_pool_number: z.number(),
+  alternative_pool_size: z.coerce.number(),
   num_instance_questions: z.coerce.number(),
   num_instance_questions_to_grade: z.coerce.number(),
   num_instance_questions_assigned: z.coerce.number(),
@@ -70,22 +70,6 @@ export function ManualGradingAssessment({
           assessmentId={resLocals.assessment.id}
           urlPrefix={resLocals.urlPrefix}
         />
-        {adminFeaturesEnabled && (
-          <>
-            <form method="POST" id="ai-grade-all">
-              <input type="hidden" name="__action" value="ai_grade_all" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-            <form method="POST" id="delete-ai-grading-data">
-              <input type="hidden" name="__action" value="delete_ai_grading_data" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-            <form method="POST" id="export-ai-grading-statistics">
-              <input type="hidden" name="__action" value="export_ai_grading_statistics" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-          </>
-        )}
         <div className="card mb-4">
           <div className="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2">
             <h1>
@@ -97,40 +81,46 @@ export function ManualGradingAssessment({
                 // React doesn't let us emit raw event handlers, so
                 // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
 
-                // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
                   __html: html`
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="export-ai-grading-statistics"
-                      aria-label="Export AI grading statistics"
-                      onclick="$('#export-ai-grading-statistics').submit();"
-                    >
-                      <i class="bi bi-download" aria-hidden="true"></i>
-                      Export AI grading statistics
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="ai-grade-all-questions"
-                      aria-label="AI grade all questions"
-                      onclick="$('#ai-grade-all').submit();"
-                    >
-                      <i class="bi bi-stars" aria-hidden="true"></i>
-                      AI grade all questions
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="delete-ai-grading-data"
-                      aria-label="Delete all AI grading data"
-                      data-bs-toggle="tooltip"
-                      data-bs-title="Delete all AI grading results for this assessment's questions"
-                      onclick="$('#delete-ai-grading-data').submit();"
-                    >
-                      Delete AI grading data
-                    </button>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="export_ai_grading_statistics" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="Export AI grading statistics"
+                      >
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                        Export AI grading statistics
+                      </button>
+                    </form>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="ai_grade_all" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="AI grade all questions"
+                      >
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        AI grade all questions
+                      </button>
+                    </form>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="delete_ai_grading_data" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="Delete all AI grading data"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Delete all AI grading results for this assessment's questions"
+                      >
+                        Delete AI grading data
+                      </button>
+                    </form>
                   `.toString(),
                 }}
               />
@@ -192,8 +182,8 @@ function AssessmentQuestionRow({
     <tr>
       <td className="align-middle">
         <a href={gradingUrl}>
-          {question.alternative_group_number}.
-          {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
+          {question.alternative_pool_number}.
+          {question.alternative_pool_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
           {question.title}
         </a>
         {question.manual_rubric_id != null && (

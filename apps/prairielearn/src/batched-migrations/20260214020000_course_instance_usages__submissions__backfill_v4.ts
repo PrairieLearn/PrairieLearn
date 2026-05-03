@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -13,7 +13,7 @@ export default makeBatchedMigration({
     await execute(sql.delete_old_usages, { END_DATE });
 
     // Only backfill from submissions that are older than the end date
-    const max = await queryRow(
+    const max = await queryScalar(
       sql.select_bounds,
       { END_DATE },
       z.bigint({ coerce: true }).nullable(),

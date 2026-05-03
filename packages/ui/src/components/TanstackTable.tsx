@@ -247,7 +247,7 @@ export function TanstackTable<RowDataModel>({
   useEffect(() => {
     if (hasAutoSized) {
       // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
@@ -259,6 +259,7 @@ export function TanstackTable<RowDataModel>({
     <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
       <div
         ref={scrollContainerRef}
+        data-testid="table-scroll-container"
         style={{
           position: 'absolute',
           top: 0,
@@ -287,7 +288,8 @@ export function TanstackTable<RowDataModel>({
               style={{
                 display: 'grid',
                 zIndex: 1,
-                borderBottom: 'var(--bs-border-width) solid black',
+                borderBottom: 'var(--bs-border-width) solid rgba(0, 0, 0, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               }}
             >
               <tr
@@ -495,6 +497,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.globalFilter.placeholder - Placeholder text for the search input
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
+ * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
  */
 export function TanstackTableCard<RowDataModel>({
   table,
@@ -506,6 +509,7 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions,
+  statusContent,
   className,
   ...divProps
 }: {
@@ -526,6 +530,7 @@ export function TanstackTableCard<RowDataModel>({
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
   > & { pluralLabel?: string; singularLabel?: string };
+  statusContent?: ReactNode;
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -612,7 +617,12 @@ export function TanstackTableCard<RowDataModel>({
           {columnManager?.buttons}
         </div>
         <div className="ms-auto text-muted text-nowrap">
-          Showing {displayedCount} of {totalCount} {totalCount === 1 ? singularLabel : pluralLabel}
+          {statusContent ?? (
+            <>
+              Showing {displayedCount} of {totalCount}{' '}
+              {totalCount === 1 ? singularLabel : pluralLabel}
+            </>
+          )}
         </div>
       </div>
       <div className="flex-grow-1">
