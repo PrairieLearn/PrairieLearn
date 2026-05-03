@@ -252,5 +252,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "files": {},
         })
     elif result == "invalid":
-        data["raw_submitted_answers"][drawing_name] = "not valid json"
-        data["format_errors"][drawing_name] = ["Invalid drawing submission"]
+        invalid_submission = "not valid json"
+        data["raw_submitted_answers"][drawing_name] = invalid_submission
+        try:
+            json.loads(invalid_submission)
+        except ValueError as exc:
+            data["format_errors"][drawing_name] = [f"Invalid drawing submission: {exc}"]
