@@ -357,7 +357,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 pl.add_submitted_file(data, file_name, file.get("contents", ""))
 
 
-def generate_filename_from_pattern(pattern: str) -> str:
+def generate_filename_from_pattern(
+    pattern: str, used_names: set[str] | None = None
+) -> str:
     """Generate a plausible filename from a glob pattern for testing."""
     bracket_star = "__BRACKET_STAR__"
     bracket_question_mark = "__BRACKET_QUESTION_MARK__"
@@ -378,13 +380,52 @@ def generate_filename_from_pattern(pattern: str) -> str:
             return bracket_question_mark
         return char
 
-    result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
-    result = result.replace("**", "test_file")
-    result = result.replace("*", "test_file")
-    result = result.replace("?", "x")
-    result = result.replace(bracket_star, "*")
-    result = result.replace(bracket_question_mark, "?")
-    return result
+    def build(star_substitute: str) -> str:
+        result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
+        result = result.replace("**", star_substitute)
+        result = result.replace("*", star_substitute)
+        result = result.replace("?", "x")
+        result = result.replace(bracket_star, "*")
+        result = result.replace(bracket_question_mark, "?")
+        return result
+
+    candidate = build("test_file")
+    used = used_names or set()
+    # Return the default candidate if the pattern doesn't collide or if it
+    # has no `*` wildcard to vary (ignoring literal * characters)
+    # Useful for scenarios like file-names="test_file.py" file-patterns="*.py"
+    has_wildcard = "*" in re.sub(r"\[[^\]]*\]", "", pattern)
+    if candidate not in used or not has_wildcard:
+        return candidate
+
+    # Deal with collisions by incrementing the suffix.
+    for n in range(1, 100):
+        candidate = build(f"test_file_{n}")
+        if candidate not in used:
+            return candidate
+    return candidate
+
+
+def _generate_unique_filenames(
+    literal_names: list[str], patterns: list[str]
+) -> list[str]:
+    origin: dict[str, str] = {}
+    names: list[str] = []
+
+    def add(name: str, source: str) -> None:
+        if name in origin:
+            raise ValueError(
+                f"Cannot generate distinct filenames for {origin[name]} "
+                f"and {source} (both produce '{name}')."
+            )
+        origin[name] = source
+        names.append(name)
+
+    for n in literal_names:
+        add(n, f"file name '{n}'")
+    for p in patterns:
+        add(generate_filename_from_pattern(p, set(origin)), f"pattern '{p}'")
+    return names
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
@@ -417,12 +458,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         selected_opt_file_patterns = random.sample(
             opt_file_patterns, random.randint(0, len(opt_file_patterns))
         )
-        all_names = (
-            file_names
-            + selected_opt_file_names
-            + [generate_filename_from_pattern(p) for p in file_patterns]
-            + [generate_filename_from_pattern(p) for p in selected_opt_file_patterns]
+        all_names = _generate_unique_filenames(
+            file_names + selected_opt_file_names,
+            file_patterns + selected_opt_file_patterns,
         )
+
         if not all_names:
             if opt_file_names:
                 all_names = [random.choice(opt_file_names)]
@@ -447,15 +487,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # Submit with a required file missing to test validation
             # The remaining files are still submitted
             missing_file = file_names[0]
-            submitted_names = file_names[1:]
+            submitted_names = _generate_unique_filenames(file_names[1:], file_patterns)
             files = []
             for name in submitted_names:
-                content = base64.b64encode(f"Test invalid for {name}".encode()).decode(
-                    "utf-8"
-                )
-                files.append({"name": name, "contents": content})
-            for p in file_patterns:
-                name = generate_filename_from_pattern(p)
                 content = base64.b64encode(f"Test invalid for {name}".encode()).decode(
                     "utf-8"
                 )

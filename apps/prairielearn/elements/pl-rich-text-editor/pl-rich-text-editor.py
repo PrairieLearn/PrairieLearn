@@ -328,12 +328,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     answer_name = get_answer_name(file_name)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
     result = data["test_type"]
 
+    def html_for(label: str) -> str:
+        target = max(min_wc or 0, 2)
+        if max_wc is not None:
+            target = min(target, max_wc)
+        words = (["Test", label] + [f"word{i}" for i in range(target)])[:target]
+        return f"<p>{' '.join(words)}</p>"
+
     if result in {"correct", "incorrect"}:
-        html_content = f"<p>Test {result}</p>"
         data["raw_submitted_answers"][answer_name] = base64.b64encode(
-            html_content.encode("utf-8")
+            html_for(result).encode("utf-8")
         ).decode("utf-8")
     elif result == "invalid":
         if allow_blank:
@@ -341,7 +349,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # we provide valid content. The grading pipeline will treat this
             # the same as a correct submission.
             data["raw_submitted_answers"][answer_name] = base64.b64encode(
-                b"<p>Test content (blank allowed, no invalid state)</p>"
+                html_for("blank-allowed").encode("utf-8")
             ).decode("utf-8")
         else:
             data["raw_submitted_answers"][answer_name] = ""

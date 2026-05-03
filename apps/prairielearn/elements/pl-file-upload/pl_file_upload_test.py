@@ -135,6 +135,58 @@ def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> N
     assert fnmatch.fnmatch(output, pattern)
 
 
+@pytest.mark.parametrize(
+    ("pattern", "used_names", "expected_output"),
+    [
+        ("*.py", {"test_file.py"}, "test_file_1.py"),
+        ("*.py", {"test_file.py", "test_file_1.py"}, "test_file_2.py"),
+        ("**.py", {"test_file.py"}, "test_file_1.py"),
+        ("*", {"test_file"}, "test_file_1"),
+    ],
+)
+def test_generate_filename_from_pattern_with_used_names(
+    pattern: str, used_names: set[str], expected_output: str
+) -> None:
+    output = file_upload.generate_filename_from_pattern(pattern, used_names)
+    assert output == expected_output
+    assert output not in used_names
+    assert fnmatch.fnmatch(output, pattern)
+
+
+# Patterns without `*` (purely literal, `?`-only, or `[...]`-only) cannot be
+# disambiguated and return their default match even on collision.
+@pytest.mark.parametrize(
+    ("pattern", "used_names", "expected_output"),
+    [
+        ("report.pdf", {"report.pdf"}, "report.pdf"),
+        ("test_?.txt", {"test_x.txt"}, "test_x.txt"),
+        ("[abc]_file.txt", {"a_file.txt"}, "a_file.txt"),
+        ("[*ab].txt", {"*.txt"}, "*.txt"),
+        ("[!x].txt", {"a.txt"}, "a.txt"),
+    ],
+)
+def test_generate_filename_from_pattern_unresolvable_collision(
+    pattern: str, used_names: set[str], expected_output: str
+) -> None:
+    output = file_upload.generate_filename_from_pattern(pattern, used_names)
+    assert output == expected_output
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns"),
+    [
+        (["report.pdf"], ["report.pdf"]),
+        ([], ["?.txt", "?.txt"]),
+        ([], ["[abc].txt", "[abc].txt"]),
+    ],
+)
+def test_generate_unique_filenames_raises_on_collision(
+    literal_names: list[str], patterns: list[str]
+) -> None:
+    with pytest.raises(ValueError, match="Cannot generate distinct filenames"):
+        file_upload._generate_unique_filenames(literal_names, patterns)
+
+
 # Function must be backward compatible (i.e., if only file-names is defined, it should
 # produce the same has as an older version that only supported file-names)
 def test_get_answer_name_backward_compatible() -> None:
