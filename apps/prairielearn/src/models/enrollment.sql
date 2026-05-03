@@ -145,13 +145,16 @@ RETURNING
 WITH
   old_enrollments AS (
     SELECT
-      e.*,
-      ci.course_id AS ci_course_id
+      e.*
     FROM
       enrollments AS e
       JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
     WHERE
       ci.course_id = $course_id
+      AND (
+        $course_instance_id::bigint IS NULL
+        OR ci.id = $course_instance_id::bigint
+      )
       AND e.user_id = ANY ($user_ids::bigint[])
       AND e.status IN ('joined', 'blocked')
     FOR NO KEY UPDATE OF
@@ -170,8 +173,7 @@ WITH
   )
 SELECT
   to_jsonb(oe.*) AS old_enrollment,
-  to_jsonb(ue.*) AS new_enrollment,
-  oe.ci_course_id AS course_id
+  to_jsonb(ue.*) AS new_enrollment
 FROM
   old_enrollments AS oe
   JOIN updated_enrollments AS ue ON (oe.id = ue.id);
@@ -180,13 +182,16 @@ FROM
 WITH
   enrollments_to_delete AS (
     SELECT
-      e.*,
-      ci.course_id AS ci_course_id
+      e.*
     FROM
       enrollments AS e
       JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
     WHERE
       ci.course_id = $course_id
+      AND (
+        $course_instance_id::bigint IS NULL
+        OR ci.id = $course_instance_id::bigint
+      )
       AND (
         e.user_id = ANY ($user_ids::bigint[])
         OR e.pending_uid IN (
@@ -211,7 +216,6 @@ WITH
   )
 SELECT
   to_jsonb(etd.*) AS old_enrollment,
-  etd.ci_course_id AS course_id,
   COALESCE(etd.user_id, u.id)::bigint AS resolved_user_id
 FROM
   enrollments_to_delete AS etd
@@ -241,7 +245,6 @@ SELECT
   to_jsonb(e) AS enrollment,
   COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids,
   CASE
-    WHEN e.status IN ('invited', 'rejected') THEN 'Student'
     WHEN u.id IS NOT NULL THEN users_get_displayed_role (u.id, e.course_instance_id)
     ELSE 'None'
   END AS role

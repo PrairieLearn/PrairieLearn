@@ -980,94 +980,30 @@ type StaffPermissionsActionDetail = 'staff_permissions_granted' | 'staff_permiss
 const UpdatedEnrollmentRowSchema = z.object({
   old_enrollment: EnrollmentSchema,
   new_enrollment: EnrollmentSchema,
-  course_id: z.string().optional(),
 });
 
 const DeletedEnrollmentRowSchema = z.object({
   old_enrollment: EnrollmentSchema,
-  course_id: z.string().optional(),
   resolved_user_id: z.string().nullable(),
 });
 
 /**
- * Updates or deletes enrollment for a user in a specific course instance when staff permissions change.
+ * Updates or deletes enrollments for one or more users in a course (or a single
+ * course instance, if `courseInstanceId` is provided).
  * - Joined/blocked enrollments are transitioned to 'removed'.
  * - Invited/rejected enrollments are hard deleted.
- * Used when staff permissions are granted at the course instance level.
- */
-export async function updateEnrollmentToRemovedForStaffPermissions({
-  courseInstanceId,
-  userId,
-  actionDetail,
-  agentUserId,
-  agentAuthnUserId,
-}: {
-  courseInstanceId: string;
-  userId: string;
-  actionDetail: StaffPermissionsActionDetail;
-  agentUserId: string;
-  agentAuthnUserId: string;
-}): Promise<void> {
-  assertIsInTransaction();
-
-  const courseInstance = await selectCourseInstanceById(courseInstanceId);
-  const user = await selectAndLockUser(userId);
-
-  const enrollment = await selectOptionalEnrollmentByUid({
-    uid: user.uid,
-    courseInstance,
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
-  });
-
-  if (!enrollment) return;
-
-  const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-
-  if (lockedEnrollment.status === 'invited' || lockedEnrollment.status === 'rejected') {
-    await queryRow(
-      sql.delete_enrollment_by_id,
-      { enrollment_id: lockedEnrollment.id },
-      EnrollmentSchema,
-    );
-
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'delete',
-      actionDetail,
-      rowId: lockedEnrollment.id,
-      oldRow: lockedEnrollment,
-      newRow: null,
-      courseInstanceId: lockedEnrollment.course_instance_id,
-      subjectUserId: userId,
-      agentUserId,
-      agentAuthnUserId,
-    });
-  } else if (lockedEnrollment.status === 'joined' || lockedEnrollment.status === 'blocked') {
-    await _updateEnrollmentStatus({
-      lockedEnrollment,
-      status: 'removed',
-      actionDetail,
-      agentUserId,
-      agentAuthnUserId,
-    });
-  }
-}
-
-/**
- * Updates or deletes all enrollments for one or more users in all instances of a course.
- * - Joined/blocked enrollments are transitioned to 'removed'.
- * - Invited/rejected enrollments are hard deleted.
- * Used when staff permissions are granted or removed at the course level.
+ * Used when staff permissions are granted or removed.
  */
 export async function updateEnrollmentsToRemovedForCourse({
   courseId,
+  courseInstanceId = null,
   userIds,
   actionDetail,
   agentUserId,
   agentAuthnUserId,
 }: {
   courseId: string;
+  courseInstanceId?: string | null;
   userIds: string[];
   actionDetail: StaffPermissionsActionDetail;
   agentUserId: string;
@@ -1079,7 +1015,7 @@ export async function updateEnrollmentsToRemovedForCourse({
 
   const updatedRows = await queryRows(
     sql.update_enrollments_to_removed_for_course_batch,
-    { course_id: courseId, user_ids: userIds },
+    { course_id: courseId, course_instance_id: courseInstanceId, user_ids: userIds },
     UpdatedEnrollmentRowSchema,
   );
 
@@ -1098,7 +1034,7 @@ export async function updateEnrollmentsToRemovedForCourse({
 
   const deletedRows = await queryRows(
     sql.delete_enrollments_for_course_batch,
-    { course_id: courseId, user_ids: userIds },
+    { course_id: courseId, course_instance_id: courseInstanceId, user_ids: userIds },
     DeletedEnrollmentRowSchema,
   );
 

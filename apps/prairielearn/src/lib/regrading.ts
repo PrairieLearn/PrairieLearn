@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
@@ -10,7 +9,6 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { selectAndLockAssessmentInstance } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
@@ -201,14 +199,14 @@ async function regradeSingleAssessmentInstance({
   authn_user_id: string;
 }) {
   return await runInTransactionAsync(async () => {
-    const result = await selectAndLockAssessmentInstance(assessment_instance_id);
-    if (result == null) {
-      throw new error.HttpStatusError(404, 'Assessment instance not found');
-    }
-    const { assessment_instance: assessmentInstance, assessment } = result;
+    const assessmentInstance = await queryRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema.extend({ assessment_type: AssessmentSchema.shape.type }),
+    );
 
     const assessmentUpdated =
-      assessment.type === 'Homework'
+      assessmentInstance.assessment_type === 'Homework'
         ? await updateAssessmentInstance(
             assessment_instance_id,
             authn_user_id,

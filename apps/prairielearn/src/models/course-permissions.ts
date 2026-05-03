@@ -23,10 +23,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 
-import {
-  updateEnrollmentToRemovedForStaffPermissions,
-  updateEnrollmentsToRemovedForCourse,
-} from './enrollment.js';
+import { updateEnrollmentsToRemovedForCourse } from './enrollment.js';
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -175,56 +172,6 @@ export async function deleteCoursePermissions({
 }
 
 /**
- * Deletes course permissions for all users who are not owners of the course.
- */
-export async function deleteCoursePermissionsForNonOwners({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
-  await runInTransactionAsync(async () => {
-    const nonOwners = await queryRows(
-      sql.select_and_lock_non_owners,
-      { course_id },
-      CoursePermissionSchema,
-    );
-    await deleteCoursePermissions({
-      course_id,
-      user_id: nonOwners.map((user) => user.user_id),
-      authn_user_id,
-    });
-  });
-}
-
-/**
- * Deletes course permissions for users who have no access to the course
- * (i.e., course_role is 'None' and they have no course instance permissions
- * with a role greater than 'None').
- */
-export async function deleteCoursePermissionsForUsersWithoutAccess({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
-  await runInTransactionAsync(async () => {
-    const usersWithoutAccess = await queryRows(
-      sql.select_and_lock_course_permissions_without_access,
-      { course_id },
-      CoursePermissionSchema,
-    );
-    await deleteCoursePermissions({
-      course_id,
-      user_id: usersWithoutAccess.map((user) => user.user_id),
-      authn_user_id,
-    });
-  });
-}
-
-/**
  * Inserts or updates course instance permissions for a user. If the user doesn't
  * have course permissions yet, a course_permissions record with role 'None' is
  * created first. This allows administrators (who may not have explicit course
@@ -273,9 +220,10 @@ export async function insertCourseInstancePermissions({
     // The enrollment update is idempotent (only updates 'joined' enrollments),
     // so it's safe to call even if permissions weren't actually changed.
     if (course_instance_role !== 'None') {
-      await updateEnrollmentToRemovedForStaffPermissions({
+      await updateEnrollmentsToRemovedForCourse({
+        courseId: course_id,
         courseInstanceId: course_instance_id,
-        userId: user_id,
+        userIds: [user_id],
         actionDetail: 'staff_permissions_granted',
         agentUserId: authn_user_id,
         agentAuthnUserId: authn_user_id,
@@ -341,11 +289,11 @@ export async function updateCourseInstancePermissionsRole({
       throw new error.HttpStatusError(404, 'No course instance permissions to update');
     }
 
-    // Only update enrollment if the new role is greater than 'None'
     if (course_instance_role !== 'None') {
-      await updateEnrollmentToRemovedForStaffPermissions({
+      await updateEnrollmentsToRemovedForCourse({
+        courseId: course_id,
         courseInstanceId: course_instance_id,
-        userId: user_id,
+        userIds: [user_id],
         actionDetail: 'staff_permissions_granted',
         agentUserId: authn_user_id,
         agentAuthnUserId: authn_user_id,
