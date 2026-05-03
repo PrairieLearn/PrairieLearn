@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
+  assertIsInTransaction,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -948,7 +949,6 @@ const DeletedEnrollmentRowSchema = z.object({
  * - Joined/blocked enrollments are transitioned to 'removed'.
  * - Invited/rejected enrollments are hard deleted.
  * Used when staff permissions are granted at the course instance level.
- * Must be called within a transaction.
  */
 export async function updateEnrollmentToRemovedForStaffPermissions({
   courseInstanceId,
@@ -963,6 +963,8 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
   agentUserId: string;
   agentAuthnUserId: string;
 }): Promise<void> {
+  assertIsInTransaction();
+
   const lockedEnrollment = await queryOptionalRow(
     sql.select_and_lock_enrollment_for_staff_permissions,
     { course_instance_id: courseInstanceId, user_id: userId },
@@ -1010,7 +1012,6 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
  * - Joined/blocked enrollments are transitioned to 'removed'.
  * - Invited/rejected enrollments are hard deleted.
  * Used when staff permissions are granted or removed at the course level.
- * Must be called within a transaction.
  */
 export async function updateEnrollmentsToRemovedForCourse({
   courseId,
@@ -1026,6 +1027,8 @@ export async function updateEnrollmentsToRemovedForCourse({
   agentAuthnUserId: string;
 }): Promise<void> {
   if (userIds.length === 0) return;
+
+  assertIsInTransaction();
 
   const updatedRows = await queryRows(
     sql.update_enrollments_to_removed_for_course_batch,
