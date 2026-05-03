@@ -15,13 +15,13 @@ import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
-  canUserAssignGroupRoles,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
@@ -31,10 +31,8 @@ import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.j
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
-import {
-  InstanceQuestionRowSchema,
-  StudentAssessmentInstance,
-} from './studentAssessmentInstance.html.js';
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
+import { InstanceQuestionRowSchema } from './studentAssessmentInstance.types.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -254,22 +252,24 @@ router.get(
     const allPreviousVariants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
     });
-    for (const instance_question of instance_question_rows) {
-      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
-        idsEqual(variant.instance_question_id, instance_question.id),
+    for (const row of instance_question_rows) {
+      row.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, row.instance_question.id),
       );
-      if (instance_question.grade_rate_minutes) {
-        instance_question.allowGradeLeftMs = await computeNextAllowedGradingTimeMs({
-          instanceQuestionId: instance_question.id,
+      if (row.assessment_question.grade_rate_minutes) {
+        row.allowGradeLeftMs = await computeNextAllowedGradingTimeMs({
+          instanceQuestionId: row.instance_question.id,
         });
       }
     }
 
     res.locals.has_manual_grading_question = instance_question_rows.some(
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
+      ({ instance_question: iq, assessment_question: aq }) =>
+        aq.max_manual_points || iq.manual_points || iq.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = instance_question_rows.some(
-      (q) => q.max_auto_points || q.auto_points || !q.max_points,
+      ({ instance_question: iq, assessment_question: aq }) =>
+        aq.max_auto_points || iq.auto_points || !aq.max_points,
     );
     const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix);
     res.locals.assessment_text_templated = assessment_text_templated;
@@ -300,9 +300,9 @@ router.get(
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
-        for (const question of instance_question_rows) {
-          question.group_role_permissions = await getQuestionGroupPermissions(
-            question.id,
+        for (const row of instance_question_rows) {
+          row.group_role_permissions = await getQuestionGroupPermissions(
+            row.instance_question.id,
             res.locals.assessment_instance.team_id!,
             res.locals.authz_data.user.id,
           );

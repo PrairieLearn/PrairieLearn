@@ -222,7 +222,6 @@ export function QuestionDetailPanel({
   // not update until user interaction with mode: 'onChange'.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [trigger, onFormValidChange]);
@@ -542,6 +541,28 @@ export function QuestionDetailPanel({
         </FormField>
       </Wrapper>
 
+      {questionData?.question.preferences_schema &&
+        Object.keys(questionData.question.preferences_schema).length > 0 && (
+          <>
+            <DetailSectionHeader>Preferences</DetailSectionHeader>
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => (
+                <PreferenceField
+                  key={name}
+                  name={name}
+                  schema={schema}
+                  idPrefix={idPrefix}
+                  editMode={editMode}
+                  preferences={question.preferences}
+                  questionTrackingId={questionTrackingId}
+                  alternativeTrackingId={alternativeTrackingId}
+                  onUpdate={onUpdate}
+                />
+              ))}
+            </Wrapper>
+          </>
+        )}
+
       {/* Advanced fields */}
       <AdvancedFields
         register={register}
@@ -550,6 +571,7 @@ export function QuestionDetailPanel({
         variant="question"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
 
       {/* Action buttons */}
@@ -920,5 +942,182 @@ function PointsFields({
         ))}
       {!isManualGrading && manualPointsField}
     </>
+  );
+}
+
+function PreferenceField({
+  name,
+  schema,
+  idPrefix,
+  editMode,
+  preferences,
+  questionTrackingId,
+  alternativeTrackingId,
+  onUpdate,
+}: {
+  name: string;
+  schema: { type: string; default: string | number | boolean; enum?: (string | number)[] };
+  idPrefix: string;
+  editMode: boolean;
+  preferences: Record<string, string | number | boolean> | undefined;
+  questionTrackingId: string;
+  alternativeTrackingId: string | undefined;
+  onUpdate: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
+}) {
+  const id = `${idPrefix}-pref-${name}`;
+  const defaultDisplay = String(schema.default);
+  const currentValue = preferences?.[name];
+  const hasOverride = currentValue != null;
+
+  function setOverride(value: string | number | boolean) {
+    onUpdate(
+      questionTrackingId,
+      { preferences: { ...preferences, [name]: value } },
+      alternativeTrackingId,
+    );
+  }
+
+  function clearOverride() {
+    const newPreferences = { ...preferences };
+    delete newPreferences[name];
+    onUpdate(
+      questionTrackingId,
+      {
+        preferences: Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+      },
+      alternativeTrackingId,
+    );
+  }
+
+  if (!editMode) {
+    return (
+      <FormField
+        editMode={false}
+        id={id}
+        label={<span className="font-monospace">{name}</span>}
+        viewValue={hasOverride ? String(currentValue) : `${defaultDisplay} (default)`}
+      >
+        {() => null}
+      </FormField>
+    );
+  }
+
+  if (!hasOverride) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <input
+          type="text"
+          className="form-control form-control-sm bg-light"
+          id={id}
+          value={defaultDisplay}
+          aria-describedby={`${id}-help`}
+          disabled
+        />
+        <small id={`${id}-help`} className="form-text text-muted">
+          Using question default.{' '}
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={() => setOverride(schema.default)}
+          >
+            Override
+          </button>
+        </small>
+      </div>
+    );
+  }
+
+  const resetHelpText = (
+    <small id={`${id}-help`} className="form-text text-muted">
+      Overrides question default ({defaultDisplay}).{' '}
+      <button
+        type="button"
+        className="btn btn-link btn-sm p-0 align-baseline"
+        title="Reset to question default"
+        onClick={clearOverride}
+      >
+        Reset
+      </button>
+    </small>
+  );
+
+  if (schema.type === 'boolean') {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => setOverride(e.target.value === 'true')}
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  if (schema.enum && schema.enum.length > 0) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => {
+            const val = e.target.value;
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }}
+        >
+          {schema.enum.map((v) => (
+            <option key={String(v)} value={String(v)}>
+              {String(v)}
+            </option>
+          ))}
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <label htmlFor={id} className="form-label">
+        <span className="font-monospace">{name}</span>
+      </label>
+      <input
+        type={schema.type === 'number' ? 'number' : 'text'}
+        step={schema.type === 'number' ? 'any' : undefined}
+        className="form-control form-control-sm"
+        id={id}
+        aria-describedby={`${id}-help`}
+        defaultValue={String(currentValue)}
+        onBlur={(e) => {
+          const val = e.target.value.trim();
+          if (val === '') {
+            clearOverride();
+          } else {
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }
+        }}
+      />
+      {resetHelpText}
+    </div>
   );
 }

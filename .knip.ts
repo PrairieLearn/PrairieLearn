@@ -83,13 +83,13 @@ const config: KnipConfig = {
   // The knip language server reports "Unused file" false positives for non-TS files
   // that don't match the `project` glob. Ignore them explicitly as a workaround.
   // https://github.com/webpro-nl/knip/issues/1606
-  ignore: ['**/*.{css,html,json,md,mustache,png,py,sql,svg}'],
+  ignore: ['**/*.{css,html,json,md,mustache,png,py,sql,svg}', '.claude/**'],
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}'],
       project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts', 'eslint.config.mjs'],
+      ignore: ['vitest.config.ts'],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
@@ -144,7 +144,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies', 'unlisted'],
+  exclude: ['binaries'],
 };
 
 export default config;

@@ -105,7 +105,6 @@ export function ZoneDetailPanel({
   // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [zoneQuestionCount, trigger, onFormValidChange]);
@@ -356,6 +355,7 @@ export function ZoneDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
         zoneIndex={zoneIndex}
+        assessmentType={assessmentType}
       />
     </div>
   );

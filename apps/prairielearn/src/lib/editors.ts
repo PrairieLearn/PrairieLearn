@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -22,10 +23,12 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
+import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -40,14 +43,24 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
+import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
+import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
+
+function todayAsDatetimeLocal(
+  timezone: string,
+  instant: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
+  return `${today.toString()}T00:00:00`;
+}
 
 async function syncCourseFromDisk(
   course: Course,
@@ -94,15 +107,6 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
-}
-
-export async function getOriginalHash(path: string) {
-  try {
-    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
 }
 
 interface BaseEditorOptions<ResLocals = object> {
@@ -772,8 +776,8 @@ export class CourseInstanceCopyEditor extends Editor {
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
   private accessControlMigration?: {
-    strategy: 'migrate' | 'keep' | 'wipe';
-    preserveIncompatible: boolean;
+    strategy: 'migrate' | 'keep' | 'clear';
+    clearIncompatible: boolean;
   };
 
   public readonly uuid: string;
@@ -785,8 +789,8 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
       accessControlMigration?: {
-        strategy: 'migrate' | 'keep' | 'wipe';
-        preserveIncompatible: boolean;
+        strategy: 'migrate' | 'keep' | 'clear';
+        clearIncompatible: boolean;
       };
     },
   ) {
@@ -956,15 +960,18 @@ export class CourseInstanceCopyEditor extends Editor {
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
-    if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
-      const assessmentsPath = path.join(courseInstancePath, 'assessments');
-      const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
-      for (const dir of assessmentDirs) {
-        const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+    const assessmentsPath = path.join(courseInstancePath, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+    for (const dir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+
+      if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
         await applyMigrationToAssessmentFile(
           infoPath,
           this.accessControlMigration.strategy,
-          this.accessControlMigration.preserveIncompatible,
+          this.accessControlMigration.clearIncompatible,
+          this.metadataOverrides?.publishing?.startDate ??
+            todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
     }
@@ -1585,10 +1592,6 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
       assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
@@ -1759,10 +1762,6 @@ export class AssessmentSetRenameEditor extends Editor {
     const pathsToAdd: string[] = [];
 
     for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
       assert(assessment.assessment_directory !== null, 'assessment_directory is required');
 
       const infoPath = path.join(
@@ -2489,3 +2488,164 @@ export class MultiEditor extends Editor {
 }
 
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+
+type PrepareJsonFileEditorResult =
+  | {
+      success: true;
+      editor: FileModifyEditor;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+    }
+  | { success: false; reason: 'conflict' };
+
+type SaveJsonFileResult =
+  | {
+      success: true;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+    }
+  | { success: false; reason: 'conflict' }
+  | { success: false; reason: 'sync_failed'; jobSequenceId: string };
+
+interface JsonFileEdit<T extends Record<string, unknown>> {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  conflictCheck: {
+    origHash: string | null;
+    /** The section of the JSON file to hash for conflict detection. */
+    scope: (jsonContents: T) => object | object[];
+  };
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+}
+
+/**
+ * Prepares a `FileModifyEditor` for a JSON file edit: reads the file, runs
+ * scoped conflict detection, applies the caller's mutation, formats the
+ * result, and constructs the editor without executing it. Useful when the
+ * edit needs to be bundled into a `MultiEditor` so it commits and syncs as
+ * part of a larger atomic operation.
+ */
+export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
+  applyChanges,
+  jsonPath,
+  conflictCheck,
+  locals,
+  container,
+}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult> {
+  // Read file once for conflict check, content modification, and TOCTOU hash.
+  const rawContents = await fs.readFile(jsonPath, 'utf8');
+  const fullFileHash = computeFileContentHash(rawContents);
+  const jsonContents = JSON.parse(rawContents) as T;
+
+  // Scoped conflict detection: hash only the section being edited.
+  if (conflictCheck.origHash) {
+    const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
+    if (currentHash !== conflictCheck.origHash) {
+      return { success: false, reason: 'conflict' };
+    }
+  }
+
+  const modifiedJsonContents = applyChanges(jsonContents);
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
+
+  // Use the full-file hash for FileModifyEditor's TOCTOU safety net.
+  const editor = new FileModifyEditor({
+    locals,
+    container,
+    filePath: jsonPath,
+    editContents: b64EncodeUnicode(formattedJson),
+    origHash: fullFileHash,
+  });
+
+  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
+  return { success: true, editor, newHash };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>(
+  args: JsonFileEdit<T>,
+): Promise<SaveJsonFileResult> {
+  const prepared = await prepareJsonFileEditor(args);
+  if (!prepared.success) return prepared;
+
+  const serverJob = await prepared.editor.prepareServerJob();
+  try {
+    await prepared.editor.executeWithServerJob(serverJob);
+  } catch {
+    return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
+  }
+
+  return { success: true, newHash: prepared.newHash };
+}
+
+/**
+ * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
+ * access control references `labelName`. The caller supplies `transform` to
+ * either rename the label (rewrite array entries) or delete it (filter it
+ * out). Intended to be bundled with the `infoCourseInstance.json` edit in a
+ * `MultiEditor` so the changes commit and sync atomically.
+ *
+ * Affected assessments are located by joining through the synced
+ * `assessment_access_control_student_labels` table, matching the pattern
+ * used by `AssessmentSetRenameEditor`.
+ */
+export async function prepareAccessControlLabelRewriteEditors({
+  course,
+  courseInstanceId,
+  labelName,
+  transform,
+  locals,
+}: {
+  course: Course;
+  courseInstanceId: string;
+  labelName: string;
+  transform: (labels: string[]) => string[];
+  locals: { authz_data: AuthzData; course: Course; user: User };
+}): Promise<FileModifyEditor[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_student_label,
+    { course_instance_id: courseInstanceId, label_name: labelName },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessment of assessments) {
+    if (assessment.assessment_directory == null) continue;
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+    );
+    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (contents) => {
+        for (const rule of contents.accessControl ?? []) {
+          if (rule.labels == null) continue;
+          if (!rule.labels.includes(labelName)) continue;
+          rule.labels = transform(rule.labels);
+        }
+        return contents;
+      },
+      jsonPath: infoPath,
+      // No scoped hash: this edit is not driven by a user-held origHash.
+      // FileModifyEditor's full-file hash still guards against TOCTOU at
+      // write time, and shouldEdit() makes unchanged files a no-op.
+      conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    // `prepared` can only fail with reason 'conflict', which can't happen
+    // when origHash is null.
+    if (prepared.success) editors.push(prepared.editor);
+  }
+
+  return editors;
+}

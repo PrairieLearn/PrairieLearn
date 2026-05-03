@@ -16,7 +16,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
@@ -24,6 +24,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  IndeterminateCheckbox,
   MultiSelectColumnFilter,
   NuqsAdapter,
   OverlayTrigger,
@@ -38,7 +39,7 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
-import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -57,39 +58,6 @@ import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLa
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
-
-function IndeterminateCheckbox({
-  checked,
-  indeterminate,
-  disabled,
-  onChange,
-  'aria-label': ariaLabel,
-}: {
-  checked: boolean;
-  indeterminate: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-  'aria-label': string;
-}) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = indeterminate;
-    }
-  }, [indeterminate]);
-
-  return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={checked}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={onChange}
-    />
-  );
-}
 
 function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
   return (
@@ -123,7 +91,7 @@ function ManageEnrollmentsDropdown({
   onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   onInvite: () => void;
   onSync: () => void;
 }) {
@@ -216,7 +184,7 @@ function ManageEnrollmentsDropdown({
 }
 
 interface StudentsCardProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
@@ -231,6 +199,7 @@ interface StudentsCardProps {
 type ColumnId =
   | 'select'
   | 'user_uid'
+  | 'user_uin'
   | 'user_name'
   | 'enrollment_status'
   | 'user_email'
@@ -309,6 +278,7 @@ function StudentsCard({
     return {
       select: undefined,
       user_uid: undefined,
+      user_uin: undefined,
       user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
@@ -532,6 +502,25 @@ function StudentsCard({
           return filterValues.includes(current);
         },
       }),
+      columnHelper.accessor((row) => row.user?.uin, {
+        id: 'user_uin',
+        header: 'UIN',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-uin-tooltip' },
+              }}
+            >
+              <i className="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
+      }),
       columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
         header: 'Email',
@@ -597,7 +586,7 @@ function StudentsCard({
   const allColumnIds = columns
     .map((col) => col.id)
     .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hiddenByDefault = new Set(['user_email']);
+  const hiddenByDefault = new Set(['user_uin', 'user_email']);
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
   );
@@ -948,7 +937,7 @@ export const InstructorStudents = ({
   trpcCsrfToken,
   origHash,
 }: {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
   isDevMode: boolean;

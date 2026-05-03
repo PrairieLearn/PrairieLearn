@@ -52,6 +52,66 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
+export async function selectOptionalCourseByRepositoryName(
+  repoName: string,
+): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await queryOptionalRow(
+    sql.select_course_by_repository_name,
+    { repo_name: escapedRepoName },
+    CourseSchema,
+  );
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
+interface CourseFieldCheck {
+  exists: boolean;
+  owned: boolean;
+}
+
+const CourseFieldCheckRowSchema = z.object({
+  exists: z.boolean(),
+  owned: z.boolean().nullable(),
+});
+
+export async function checkCourseTitleInInstitution({
+  title,
+  institutionId,
+  userId,
+}: {
+  title: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_title_in_institution,
+    { title, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export async function checkCourseShortNameInInstitution({
+  shortName,
+  institutionId,
+  userId,
+}: {
+  shortName: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }

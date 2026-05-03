@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 3.1.2
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.1.1
 
 ### Patch Changes

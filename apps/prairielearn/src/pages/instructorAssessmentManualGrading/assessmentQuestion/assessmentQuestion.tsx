@@ -9,6 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -53,8 +54,8 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
       res.locals,
     );
 
@@ -62,11 +63,13 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
-      await selectInstanceQuestionGroups({
-        assessmentQuestionId: res.locals.assessment_question.id,
-      }),
-    );
+    const instanceQuestionGroups = aiSubmissionGroupingEnabled
+      ? z.array(StaffInstanceQuestionGroupSchema).parse(
+          await selectInstanceQuestionGroups({
+            assessmentQuestionId: res.locals.assessment_question.id,
+          }),
+        )
+      : [];
 
     const unfilledInstanceQuestionInfo = await selectInstanceQuestionsForManualGrading({
       assessment: res.locals.assessment,
@@ -115,7 +118,7 @@ router.get(
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
-    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit;
     const search = getUrl(req).search;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -133,6 +136,10 @@ router.get(
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
+
+    const aiGradingRelativeCosts = aiGradingEnabled
+      ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
+      : {};
 
     res.send(
       PageLayout({
@@ -169,7 +176,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&
                   assessment_question.ai_grading_mode &&
@@ -189,6 +196,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                aiGradingRelativeCosts={aiGradingRelativeCosts}
               />
             </Hydrate>
           </>
@@ -216,10 +224,10 @@ router.get(
       req.session.show_submissions_assigned_to_me_only ?? true;
 
     const use_instance_question_groups = await run(async () => {
-      const aiGradingMode =
-        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      const groupingAvailable =
+        (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
         res.locals.assessment_question.ai_grading_mode;
-      if (!aiGradingMode) {
+      if (!groupingAvailable) {
         return false;
       }
       return await selectAssessmentQuestionHasInstanceQuestionGroups({
