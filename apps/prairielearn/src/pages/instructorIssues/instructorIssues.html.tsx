@@ -217,6 +217,8 @@ function IssueRow({
   hasCoursePermissionEdit: boolean;
   csrfToken: string;
 }) {
+  // eslint-disable-next-line @eslint-react/purity -- server-rendered only, no re-renders
+  const now = Date.now();
   const mailtoLink = `mailto:${
     issue.user_email || issue.user_uid || '-'
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
@@ -288,7 +290,7 @@ function IssueRow({
           #{issue.id} reported{' '}
           {issue.date && (
             <span title={formatDate(issue.date, issue.display_timezone)}>
-              {formatDistance(issue.date, Date.now(), { addSuffix: true })}
+              {formatDistance(issue.date, now, { addSuffix: true })}
             </span>
           )}{' '}
           {issue.showUser && (

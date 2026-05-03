@@ -1,16 +1,23 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+} from '../../../../schemas/infoAssessment.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
+  coerceToBoolean,
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   makeResetAndSave,
+  parseCommentValue,
 } from '../../utils/formHelpers.js';
 import {
   computeZoneQuestionCount,
+  getZoneMixedToolsWarning,
   getZonePointsMismatch,
   hasZoneChooseExceedsCount,
   validatePositiveInteger,
@@ -20,13 +27,16 @@ import { useAutoSave } from '../../utils/useAutoSave.js';
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
+import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 
-interface ZoneFormData {
+type ToolFormFields = Record<`tool_${EnumAssessmentTool}`, boolean | undefined>;
+
+interface ZoneFormData extends ToolFormFields {
   title: string;
   maxPoints?: number;
   numberChoose?: number;
   bestQuestions?: number;
-  lockpoint: boolean;
+  lockpoint?: boolean;
   comment?: string;
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
@@ -35,33 +45,39 @@ interface ZoneFormData {
 
 export function ZoneDetailPanel({
   zone,
+  zones,
   zoneIndex,
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onFormValidChange,
 }: {
   zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
   zoneIndex: number;
   idPrefix: string;
   state: DetailState;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
-  onDelete: (zoneTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults } = state;
+  const { editMode, assessmentType, assessmentDefaults, assessmentToolDefaults } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
     lockpoint: zone.lockpoint,
-    comment: extractStringComment(zone.comment),
+    comment: commentToString(zone.comment),
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
+    ...(Object.fromEntries(
+      EnumAssessmentToolSchema.options.map((tool) => [
+        `tool_${tool}` as const,
+        zone.tools?.[tool] != null ? zone.tools[tool].enabled : undefined,
+      ]),
+    ) as ToolFormFields),
   };
 
   const {
@@ -89,23 +105,33 @@ export function ZoneDetailPanel({
   // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [zoneQuestionCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
+      const tools: Partial<Record<EnumAssessmentTool, { enabled: boolean }>> = {};
+      let hasToolOverride = false;
+      for (const tool of EnumAssessmentToolSchema.options) {
+        const value = coerceToBoolean(data[`tool_${tool}`]);
+        if (value != null) {
+          tools[tool] = { enabled: value };
+          hasToolOverride = true;
+        }
+      }
+
       onUpdate(zone.trackingId, {
         title: data.title || undefined,
         maxPoints: data.maxPoints,
         numberChoose: data.numberChoose,
         bestQuestions: data.bestQuestions,
         lockpoint: data.lockpoint,
-        comment: data.comment || undefined,
+        comment: parseCommentValue(data.comment),
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
+        tools: hasToolOverride ? tools : undefined,
       });
     },
     [onUpdate, zone.trackingId],
@@ -116,7 +142,7 @@ export function ZoneDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   useEffect(() => {
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
@@ -139,8 +165,13 @@ export function ZoneDetailPanel({
 
   const Wrapper = editMode ? 'div' : 'dl';
 
+  const [overriddenTools, setOverriddenTools] = useState(
+    () => new Set(EnumAssessmentToolSchema.options.filter((tool) => zone.tools?.[tool] != null)),
+  );
+
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
+  const mixedToolsWarning = getZoneMixedToolsWarning({ zone, zones, assessmentToolDefaults });
 
   return (
     <div className="p-3">
@@ -160,7 +191,7 @@ export function ZoneDetailPanel({
         {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
       </div>
 
-      <DetailSectionHeader first>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
@@ -221,13 +252,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('numberChoose', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Number to choose');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Number to choose'),
               })}
             />
           )}
@@ -249,17 +274,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('bestQuestions', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Best questions');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                  const numberChoose = getValues('numberChoose');
-                  if (v != null && numberChoose != null && v > numberChoose) {
-                    return `Cannot exceed number to choose (${numberChoose}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Best questions'),
               })}
             />
           )}
@@ -271,7 +286,7 @@ export function ZoneDetailPanel({
           label="Comment"
           viewValue={
             zone.comment != null ? (
-              <span className="text-break">{String(zone.comment)}</span>
+              <span className="text-break">{commentToString(zone.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."
@@ -288,6 +303,50 @@ export function ZoneDetailPanel({
         </FormField>
       </Wrapper>
 
+      <DetailSectionHeader>Tools</DetailSectionHeader>
+      <Wrapper className={clsx(!editMode && 'mb-0')}>
+        {EnumAssessmentToolSchema.options.map((tool) => {
+          const toolLabel = tool[0].toUpperCase() + tool.slice(1);
+          const fieldName = `tool_${tool}` as const;
+          const inheritedValue = assessmentToolDefaults[tool] ?? false;
+          const isInherited = !overriddenTools.has(tool);
+          const watchedValue = watch(fieldName);
+          return (
+            <InheritableCheckboxField
+              key={tool}
+              id={`${idPrefix}-tool-${tool}`}
+              label={toolLabel}
+              helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
+              editMode={editMode}
+              isInherited={isInherited}
+              inheritedValue={inheritedValue}
+              inheritedFromLabel="assessment"
+              viewValue={!isInherited ? !!watchedValue : undefined}
+              registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
+              showResetButton={!isInherited}
+              onOverride={() => {
+                setOverriddenTools((prev) => new Set(prev).add(tool));
+                setValue(fieldName, inheritedValue, { shouldDirty: true });
+              }}
+              onReset={() => {
+                setOverriddenTools((prev) => {
+                  const next = new Set(prev);
+                  next.delete(tool);
+                  return next;
+                });
+                resetAndSave(fieldName);
+              }}
+            />
+          );
+        })}
+      </Wrapper>
+      {mixedToolsWarning && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {mixedToolsWarning}
+        </div>
+      )}
+
       <AdvancedFields
         register={register}
         errors={errors}
@@ -296,17 +355,8 @@ export function ZoneDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
         zoneIndex={zoneIndex}
+        assessmentType={assessmentType}
       />
-
-      {editMode && (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-danger"
-          onClick={() => onDelete(zone.trackingId)}
-        >
-          Delete zone
-        </button>
-      )}
     </div>
   );
 }

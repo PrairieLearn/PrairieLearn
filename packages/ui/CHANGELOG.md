@@ -1,5 +1,42 @@
 # @prairielearn/ui
 
+## 3.3.0
+
+### Minor Changes
+
+- f3e7b53: Add `RadioGroup`, `Radio`, `IndeterminateCheckbox`, and `ExpandableCheckboxGroup` components
+- 24d9afc: Add `RichSelect` component for single-selection dropdowns with descriptions per option
+- a00d61f: Add `useResizeHandle` hook for keyboard-accessible split pane resizers
+- f3e7b53: Add `additionalMenuItems` prop to `TanstackTableDownloadButton` for custom dropdown items
+- 14bb451: Add `SplitPane` component
+- 1e00357: Add `useColumnVisibilityQueryState` hook for URL-persisted column visibility. Add `statusContent` prop to `TanstackTableCard` for custom status text.
+- 07dfbca: Add `StickyActionBar` component for displaying save/cancel actions in a sticky bottom bar
+
+### Patch Changes
+
+- 98f6be5: Removed "autoComplete=true" attrs on CategoricalColumnFilter radio buttons because of noncompliance with accessibility requirements
+- 1e00357: Fix ColumnManager rendering an unnecessary divider when only top content is present.
+- 6ee5647: Fix column manager dropdown closing when clicking checkbox labels
+- a00d61f: Fix inconsistent vertical padding in FilterDropdown list
+- dab7ca0: Fix OverlayTrigger focus trapping when trigger prop is an array
+- dab7ca0: Fix OverlayTrigger returning focus on tooltip dismiss, which created an infinite focus loop for focus-triggered tooltips
+- f3e7b53: Fix Radio component to render a visible radio indicator since react-aria visually hides the native input
+- 0dd8480: Fix resize handle width desync when bounds change dynamically
+- e918ccb: Allow `TanstackTableCsvCell` values to be `string[]`. Array values are joined with `'; '` in CSV exports and serialized as arrays in JSON exports.
+- 1e00357: Hide the View dropdown in TanstackTableCard when no columns are hideable
+- b6e03e9: Upgrade dependencies
+- f8eb106: Replace react-aria-components with react-bootstrap Form.Check in RadioGroup and Radio components
+- e756585: Return no-op onChange handler in useShiftClickCheckbox
+- 07dfbca: Add gap to split pane right panel header to prevent text and buttons from touching at narrow widths
+- d2df970: Make `useModalState` callbacks referentially stable with `useCallback`
+- aaeb317: TagPicker: Fix rendering bugs, and move selected tags outside the `ComboBox` component to avoid nested interactive elements.
+  ComboBox: Refactor implementation
+- 45221b9: Make TanstackTable easier to test
+- aaeb317: Replace the `TagPicker` Select-based workaround with React Aria's released multi-select ComboBox implementation.
+- Updated dependencies [b6e03e9]
+  - @prairielearn/browser-utils@2.7.2
+  - @prairielearn/run@2.0.3
+
 ## 3.2.2
 
 ### Patch Changes

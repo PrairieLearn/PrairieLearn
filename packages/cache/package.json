@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/cache",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,8 +15,8 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.10.0",
-    "lru-cache": "^11.2.6",
+    "ioredis": "^5.10.1",
+    "lru-cache": "^11.2.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {

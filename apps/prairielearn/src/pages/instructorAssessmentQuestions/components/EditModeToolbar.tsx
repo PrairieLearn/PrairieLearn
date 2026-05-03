@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import { useId } from 'react';
-import { ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -22,33 +21,43 @@ export function ViewToggle({
 }) {
   return (
     <div className="d-flex gap-2 align-items-center">
-      <ToggleButtonGroup
-        type="radio"
-        name="viewType"
-        value={viewType}
-        size="sm"
-        onChange={(val: ViewType) => onViewTypeChange(val)}
-      >
-        <ToggleButton id="viewType-simple" value="simple" variant="outline-secondary">
+      <div className="btn-group btn-group-sm" role="group" aria-label="View type">
+        <button
+          type="button"
+          className={clsx('btn', viewType === 'simple' ? 'btn-secondary' : 'btn-outline-secondary')}
+          aria-pressed={viewType === 'simple'}
+          onClick={() => onViewTypeChange('simple')}
+        >
           Simple
-        </ToggleButton>
-        <ToggleButton id="viewType-detailed" value="detailed" variant="outline-secondary">
+        </button>
+        <button
+          type="button"
+          className={clsx(
+            'btn',
+            viewType === 'detailed' ? 'btn-secondary' : 'btn-outline-secondary',
+          )}
+          aria-pressed={viewType === 'detailed'}
+          onClick={() => onViewTypeChange('detailed')}
+        >
           Detailed
-        </ToggleButton>
-      </ToggleButtonGroup>
+        </button>
+      </div>
       {hasAlternatives && (
         <button
           className="btn btn-sm btn-outline-secondary"
           type="button"
+          aria-label={isAllExpanded ? 'Collapse alternatives' : 'Expand alternatives'}
           onClick={onToggleExpandCollapse}
         >
           {isAllExpanded ? (
             <>
-              <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse alternatives
+              <i className="bi bi-chevron-contract" aria-hidden="true" />{' '}
+              <span className="toolbar-btn-label">Collapse alternatives</span>
             </>
           ) : (
             <>
-              <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand alternatives
+              <i className="bi bi-chevron-expand" aria-hidden="true" />{' '}
+              <span className="toolbar-btn-label">Expand alternatives</span>
             </>
           )}
         </button>
@@ -103,9 +112,11 @@ export function EditModeToolbar({
       )}
       type="submit"
       disabled={saveButtonDisabled}
+      aria-label="Save and sync"
       {...(saveButtonDisabledReason && { 'aria-describedby': saveTooltipId })}
     >
-      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
+      <i className="bi bi-floppy" aria-hidden="true" />{' '}
+      <span className="toolbar-btn-label">Save and sync</span>
     </button>
   );
 

@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
@@ -47,7 +48,7 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.id) : [];
 
-    const { mode } = await ipToMode({
+    const mode = await ipToMode({
       ip: req.ip,
       date: res.locals.req_date,
       authn_user_id: authn_user.id,
@@ -63,6 +64,7 @@ router.get(
           page: 'user_settings',
           type: 'plain',
         },
+        headContent: compiledScriptTag('userSettingsClient.ts'),
         content: (
           <>
             <Hydrate>
@@ -100,7 +102,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'token_generate') {
-      const { mode } = await ipToMode({
+      const mode = await ipToMode({
         ip: req.ip,
         date: res.locals.req_date,
         authn_user_id: res.locals.authn_user.id,

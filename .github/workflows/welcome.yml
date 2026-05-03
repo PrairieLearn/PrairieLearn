@@ -1,0 +1,38 @@
+name: Welcome first-time contributors
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      # This is pinned to v1.3.0 and all updates have been disabled for it.
+      # There are incompatibilities with v2 and v3 of the action that don't work
+      # well for us.
+      # See: https://github.com/actions/first-interaction/issues/365 and https://github.com/actions/first-interaction/pull/404
+      # There is no equivalent popular action that does a similar thing as far as @reteps can tell.
+      - uses: actions/first-interaction@v1.3.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            :wave: Thanks for your first pull request to PrairieLearn! Here are a few things to keep in mind:
+
+            - **Make sure you disclose if any AI assistance was used, and the extent of its use.** If you fail to do so, your PR may be rejected.
+            - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)
+            - Feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
+            - Please briefly introduce yourself, including if/how you are using PrairieLearn and the context of your contribution.
+
+            And also a few tips:
+
+            - If you are fixing a bug, make sure you include test cases, and steps for reproducing the issue/fix (videos/links preferred!).
+            - If you are adding a new feature, make sure you include documentation and tests.
+            - Your PR titles should follow our format - `<Verb> <effect>` (e.g. `Fix enrollment filtering queries` or `Add support for new LTI 1.3 tool`).
+            - Our CLA bot will ask you to sign a [contributor license agreement](https://github.com/PrairieLearn/cla) if you haven't already.
+            - A maintainer will need to approve CI workflows for your PR, since you are a first-time contributor.
+
+            We appreciate your contribution! :tada:

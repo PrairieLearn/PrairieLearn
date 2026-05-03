@@ -55,7 +55,7 @@ export function parsePointsListValue(v: string): number | number[] | string | un
 
 /**
  * Validates that at least one points field (auto points or manual points) is set.
- * When `parentValues` is provided (e.g. for alternatives inheriting from an alt group),
+ * When `parentValues` is provided (e.g. for alternatives inheriting from an alternative pool),
  * the parent's values also satisfy the requirement.
  * Returns an error message if all are undefined, or undefined if valid.
  */
@@ -121,16 +121,38 @@ export function validatePointsListFormat(
 }
 
 /**
- * Extracts a string comment from a value that may be a string or other type.
- * Returns the comment if it's a string, or undefined otherwise.
+ * Converts a comment value to a string for display or form editing.
+ * Strings are returned as-is; arrays and objects are JSON-stringified.
  */
-export function extractStringComment(comment: unknown): string | undefined {
-  return typeof comment === 'string' ? comment : undefined;
+export function commentToString(comment: unknown): string | undefined {
+  if (comment == null) return undefined;
+  if (typeof comment === 'string') return comment;
+  return JSON.stringify(comment);
+}
+
+/**
+ * Parses a comment string from a form textarea back to its proper type.
+ * If the string parses as a valid JSON array or object, the parsed value
+ * is returned. Otherwise the raw string is returned.
+ */
+export function parseCommentValue(
+  value: string | undefined,
+): string | unknown[] | Record<string, unknown> | undefined {
+  if (value == null || value === '') return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
+      return parsed;
+    }
+  } catch {
+    // Not valid JSON, return as string
+  }
+  return value;
 }
 
 /**
  * Assessment-level default values for advanced fields that cascade
- * down through zones, alternative groups, and questions.
+ * down through zones, alternative pools, and questions.
  */
 export interface AssessmentAdvancedDefaults {
   advanceScorePerc: number | undefined;

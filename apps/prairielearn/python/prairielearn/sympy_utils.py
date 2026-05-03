@@ -8,31 +8,41 @@ from prairielearn.sympy_utils import ...
 import ast
 import copy
 import html
+import operator
 import re
+import string
 from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from tokenize import TokenError
+from enum import Enum
+from functools import wraps
+from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
-from typing import Any, Literal, TypedDict, TypeGuard, cast
+from types import MappingProxyType as FrozenDict
+from typing import (
+    Any,
+    Final,
+    Literal,
+    NotRequired,
+    TypedDict,
+    TypeGuard,
+    cast,
+)
 
 import sympy
-from sympy.parsing.sympy_parser import (
-    eval_expr,
-    evaluateFalse,
-    implicit_multiplication_application,
-    standard_transformations,
-    stringify_expr,
-)
-from typing_extensions import NotRequired
+from sympy.parsing import sympy_parser
+from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
+from sympy.printing.str import StrPrinter
 
 from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
+SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 
 SympyMapT = dict[str, sympy.Basic | complex]
+_FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
+_FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
-ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
 A dictionary of assumptions for variables in the expression.
@@ -40,6 +50,8 @@ A dictionary of assumptions for variables in the expression.
 Examples:
     >>> {"x": {"positive": True}, "y": {"real": True}}
 """
+
+ASTWhiteListT = tuple[type[ast.AST], ...]
 
 
 class SympyJson(TypedDict):
@@ -50,6 +62,19 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+
+
+@dataclass(frozen=True, slots=True)
+class SympyParseSuccess:
+    expr: sympy.Expr
+
+
+@dataclass(frozen=True, slots=True)
+class SympyParseFailure:
+    error: str
+
+
+type SympyParseResult = SympyParseSuccess | SympyParseFailure
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -76,76 +101,109 @@ class LocalsForEval(TypedDict):
     helpers: SympyFunctionMapT
 
 
-# Create a new instance of this class to access the member dictionaries. This
-# is to avoid accidentally modifying these dictionaries.
 class _Constants:
-    helpers: SympyFunctionMapT
-    variables: SympyMapT
-    hidden_variables: SympyMapT
-    complex_variables: SympyMapT
-    hidden_complex_variables: SympyMapT
-    functions: SympyFunctionMapT
-    trig_functions: SympyFunctionMapT
+    helpers: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Number": sympy.Number,
+        "_Integer": sympy.Integer,
+    })
 
-    def __init__(self) -> None:
-        self.helpers = {
-            "_Integer": sympy.Integer,
-        }
+    variables: Final[_FrozenSympyMapT] = FrozenDict({
+        "pi": sympy.pi,
+        "e": sympy.E,
+        "infty": sympy.oo,
+    })
 
-        self.variables = {"pi": sympy.pi, "e": sympy.E, "infty": sympy.oo}
+    hidden_variables: Final[_FrozenSympyMapT] = FrozenDict({
+        "_Exp1": sympy.E,
+    })
 
-        self.hidden_variables = {
-            "_Exp1": sympy.E,
-        }
+    complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
+        "i": sympy.I,
+        "j": sympy.I,
+    })
 
-        self.complex_variables = {
-            "i": sympy.I,
-            "j": sympy.I,
-        }
+    hidden_complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
+        "_ImaginaryUnit": sympy.I,
+    })
 
-        self.hidden_complex_variables = {
-            "_ImaginaryUnit": sympy.I,
-        }
+    functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "exp": sympy.exp,
+        "log": sympy.log,
+        "ln": sympy.log,
+        "sqrt": sympy.sqrt,
+        "factorial": sympy.factorial,
+        "abs": sympy.Abs,
+        "sgn": sympy.sign,
+        "max": sympy.Max,
+        "min": sympy.Min,
+        # Extra aliases to make parsing works correctly
+        "sign": sympy.sign,
+        "Abs": sympy.Abs,
+        "Max": sympy.Max,
+        "Min": sympy.Min,
+    })
 
-        self.functions = {
-            "exp": sympy.exp,
-            "log": sympy.log,
-            "ln": sympy.log,
-            "sqrt": sympy.sqrt,
-            "factorial": sympy.factorial,
-            "abs": sympy.Abs,
-            "sgn": sympy.sign,
-            "max": sympy.Max,
-            "min": sympy.Min,
-            # Extra aliases to make parsing work correctly
-            "sign": sympy.sign,
-            "Abs": sympy.Abs,
-            "Max": sympy.Max,
-            "Min": sympy.Min,
-        }
+    trig_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "cos": sympy.cos,
+        "sin": sympy.sin,
+        "tan": sympy.tan,
+        "sec": sympy.sec,
+        "cot": sympy.cot,
+        "csc": sympy.csc,
+        "cosh": sympy.cosh,
+        "sinh": sympy.sinh,
+        "tanh": sympy.tanh,
+        "arccos": sympy.acos,
+        "arcsin": sympy.asin,
+        "arctan": sympy.atan,
+        "acos": sympy.acos,
+        "asin": sympy.asin,
+        "atan": sympy.atan,
+        "arctan2": sympy.atan2,
+        "atan2": sympy.atan2,
+        "atanh": sympy.atanh,
+        "acosh": sympy.acosh,
+        "asinh": sympy.asinh,
+    })
 
-        self.trig_functions = {
-            "cos": sympy.cos,
-            "sin": sympy.sin,
-            "tan": sympy.tan,
-            "sec": sympy.sec,
-            "cot": sympy.cot,
-            "csc": sympy.csc,
-            "cosh": sympy.cosh,
-            "sinh": sympy.sinh,
-            "tanh": sympy.tanh,
-            "arccos": sympy.acos,
-            "arcsin": sympy.asin,
-            "arctan": sympy.atan,
-            "acos": sympy.acos,
-            "asin": sympy.asin,
-            "atan": sympy.atan,
-            "arctan2": sympy.atan2,
-            "atan2": sympy.atan2,
-            "atanh": sympy.atanh,
-            "acosh": sympy.acosh,
-            "asinh": sympy.asinh,
-        }
+    set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Interval": sympy.Interval,
+        "FiniteSet": sympy.FiniteSet,
+        "Union": sympy.Union,
+        "Intersection": sympy.Intersection,
+    })
+
+    set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "U": operator.or_,
+        "cup": operator.or_,
+        "∪": operator.or_,  # noqa: RUF001
+        "cap": operator.and_,
+        "∩": operator.and_,
+    })
+
+    set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
+        "U": "|",
+        "cup": "|",
+        "∪": "|",  # noqa: RUF001
+        "cap": "&",
+        "∩": "&",
+    })
+
+
+class _SympyJsonStrPrinter(StrPrinter):
+    """String printer that keeps set notation parseable by avoiding banned ast nodes.
+
+    Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
+    """
+
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # noqa: ARG002, N802
+        return "{}"
+
+    def _print_Interval(self, i: sympy.Interval) -> str:  # noqa: N802
+        start, end = self._print(i.start), self._print(i.end)
+        left = "(" if i.left_open else "["
+        right = ")" if i.right_open else "]"
+        return f"{left}{start}, {end}{right}"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -219,18 +277,17 @@ class HasComplexError(BaseSympyError):
 
 
 @dataclass
+class HasSetNotationError(BaseSympyError):
+    pass
+
+
+@dataclass
 class HasInvalidExpressionError(BaseSympyError):
     offset: int
 
 
 @dataclass
 class HasInvalidFunctionError(BaseSympyError):
-    offset: int
-    text: str
-
-
-@dataclass
-class HasInvalidVariableError(BaseSympyError):
     offset: int
     text: str
 
@@ -261,48 +318,100 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
+# Deprecated / unused, kept for backwards compatibility.
+@dataclass
+class HasInvalidVariableError(BaseSympyError):
+    """Deprecated / unused."""
+
+    offset: int
+    text: str
+
+
+class ASTSympyType(Enum):
+    SCALAR = "number"
+    SET = "set"
+    BOOL = "true/false"
+    STRING = "text"
+
+    def __str__(self) -> str:
+        """Returns `self.value`"""
+        return self.value
+
+
+@dataclass
+class HasArgumentTypeError(BaseSympyError):
+    fn: str
+    got: ASTSympyType
+    allowable_types: Sequence[ASTSympyType]
+    arg_idx: int
+    offset: int = -1
+
+    def format_allowable_types(self) -> str:
+        if len(self.allowable_types) == 1:
+            return f"a {self.allowable_types[0]}"
+        return f"either {_format_comma_separated(list(dict.fromkeys(self.allowable_types)))}"
+
+    def as_type_error(self) -> TypeError:
+        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
+        return TypeError(
+            f"unsupported operand type(s) for {self.fn}: "
+            f"argument #{self.arg_idx + 1} requires {self.format_allowable_types()}, not {self.got}"
+        )
+
+
+@dataclass
+class HasFunctionArityError(BaseSympyError):
+    fn: str
+    provided: int
+    expected: str
+    offset: int = -1
+
+    def as_type_error(self) -> TypeError:
+        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
+        return TypeError(
+            f"wrong number of arguments for {self.fn}: "
+            f"got {self.provided} but expected {self.expected}"
+        )
+
+
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
     functions: SympyFunctionMapT
     __parents: dict[int, ast.AST]
+    __type_cache: dict[int, ASTSympyType | None]
+
+    __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
+        ast.Add: "+",
+        ast.BitAnd: "&",
+        ast.BitOr: "|",
+        ast.Div: "/",
+        ast.Mod: "%",
+        ast.Mult: "*",
+        ast.Pow: "**",
+        ast.Sub: "-",
+    })
 
     def __init__(
         self,
         whitelist: ASTWhiteListT,
         variables: SympyMapT,
         functions: SympyFunctionMapT,
+        *,
+        allow_sets: bool = False,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
         self.__parents = {}
+        self.__type_cache = {}
+        self.allow_sets = allow_sets
 
-    def visit(self, node: ast.AST) -> None:
+    def visit(self, node: ast.AST) -> ASTSympyType | None:
         if not isinstance(node, self.whitelist):
             err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
-
-    def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
-            err_node = self.get_parent_with_location(node)
-            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
-        self.generic_visit(node)
-
-    def visit_Name(self, node: ast.Name) -> None:
-        if (
-            isinstance(node.ctx, ast.Load)
-            and not self.is_name_of_function(node)
-            and node.id not in self.variables
-        ):
-            err_node = self.get_parent_with_location(node)
-            if node.id in self.functions:
-                raise FunctionNameWithoutArgumentsError(
-                    err_node.col_offset, err_node.id
-                )
-            raise HasInvalidVariableError(err_node.col_offset, err_node.id)
-        self.generic_visit(node)
 
     def is_name_of_function(self, node: ast.AST) -> bool:
         # The node is the name of a function if all of the following are true:
@@ -339,15 +448,164 @@ class CheckAST(ast.NodeVisitor):
             for node in ast.walk(root)
             for child in ast.iter_child_nodes(node)
         }
+        try:
+            self.visit(root)
+        finally:
+            self.__parents = {}
+            self.__type_cache = {}
 
-        self.visit(root)
+    def _set_type(
+        self, node: ast.AST, inferred_type: ASTSympyType | None
+    ) -> ASTSympyType | None:
+        self.__type_cache[id(node)] = inferred_type
+        return inferred_type
 
-        # Empty parents dict after execution
-        # dict is only populated during execution
-        self.__parents = {}
+    def _get_type(self, node: ast.AST) -> ASTSympyType | None:
+        if id(node) in self.__type_cache:
+            return self.__type_cache[id(node)]
+        return self.visit(node)
+
+    def visit_Expression(self, node: ast.Expression) -> ASTSympyType | None:
+        return self._set_type(node, self._get_type(node.body))
+
+    def visit_Constant(self, node: ast.Constant) -> ASTSympyType | None:
+        if node.value is True or node.value is False:
+            return self._set_type(node, ASTSympyType.BOOL)
+        if node.kind is not None:
+            return self._set_type(node, ASTSympyType.STRING)
+        return self._set_type(node, ASTSympyType.SCALAR)
+
+    def visit_Name(self, node: ast.Name) -> ASTSympyType | None:
+        if (
+            isinstance(node.ctx, ast.Load)
+            and not self.is_name_of_function(node)
+            and node.id not in self.variables
+        ):
+            err_node = self.get_parent_with_location(node)
+            if node.id in self.functions:
+                raise FunctionNameWithoutArgumentsError(
+                    err_node.col_offset, err_node.id
+                )
+            return self._set_type(node, None)
+
+        if node.id in self.variables:
+            var_type = None if self.allow_sets else ASTSympyType.SCALAR
+            return self._set_type(node, var_type)
+
+        return self._set_type(node, None)
+
+    def visit_Call(self, node: ast.Call) -> ASTSympyType | None:
+        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+            err_node = self.get_parent_with_location(node)
+            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+
+        self.generic_visit(node)
+
+        if not isinstance(node.func, ast.Name):
+            return self._set_type(node, None)
+
+        name, args = node.func.id, node.args
+        match name:
+            case "Symbol":
+                return self._set_type(node, None)
+            case "Integer" | "Float":
+                overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
+                self._enforce_signature(name, args, *overloads)
+                return self._set_type(node, ASTSympyType.SCALAR)
+            case fn if self.allow_sets and fn in _Constants.set_functions:
+                return self._set_type(node, self._infer_set_function_type(name, args))
+            case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
+                self._enforce_signature(fn, args, len(args) * [ASTSympyType.SCALAR])
+                return self._set_type(node, ASTSympyType.SCALAR)
+            case _:
+                return self._set_type(node, None)
+
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
+        operand_type = self._get_type(node.operand)
+        if operand_type == ASTSympyType.SET:
+            err_node = self.get_parent_with_location(node)
+            raise HasInvalidExpressionError(err_node.col_offset)
+        return self._set_type(node, operand_type)
+
+    def visit_BinOp(self, node: ast.BinOp) -> ASTSympyType | None:
+        op_str = self.__unparsed_opstr.get(type(node.op))
+        if op_str is None:
+            return self._set_type(node, None)
+        inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
+        return self._set_type(node, inferred_type)
+
+    def _enforce_signature(
+        self,
+        fn_name: str,
+        args: Sequence[ast.expr],
+        *overloads: Sequence[ASTSympyType | None],
+    ) -> tuple[ASTSympyType | None, ...]:
+        arity_matches = [s for s in overloads if len(s) == len(args)]
+        if not arity_matches:
+            msg = _format_comma_separated(sorted(set(map(len, overloads))))
+            raise HasFunctionArityError(fn_name, len(args), msg)
+
+        arg_types = tuple(map(self._get_type, args))
+
+        fails: list[tuple[int, ASTSympyType, ASTSympyType]] = []
+        for signature in arity_matches:
+            for i, (expected, got) in enumerate(zip(signature, arg_types, strict=True)):
+                if got is not None and expected is not None and got != expected:
+                    fails.append((i, expected, got))
+                    break
+            else:
+                return arg_types
+
+        arg_index, _, got = max(fails, key=lambda f: f[0])
+        expecteds = [e for i, e, _ in fails if i == arg_index]
+        raise HasArgumentTypeError(fn_name, got, expecteds, arg_idx=arg_index)
+
+    def _infer_set_function_type(
+        self, name: str, args: list[ast.expr]
+    ) -> ASTSympyType | None:
+        match name:
+            case "FiniteSet":
+                return ASTSympyType.SET
+            case "Interval":
+                self._enforce_signature(
+                    name,
+                    args,
+                    (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
+                    (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
+                )
+                return ASTSympyType.SET
+            case "Union" | "Intersection":
+                if not args:
+                    raise HasFunctionArityError(name, len(args), "1+")
+                self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
+                return ASTSympyType.SET
+            case _:
+                return None
+
+    def _infer_bin_op_type(
+        self, op: str, left: ast.expr, right: ast.expr
+    ) -> ASTSympyType | None:
+        match op:
+            case "|" | "&":
+                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SET])
+                return ASTSympyType.SET
+            case "-" | "+":
+                overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
+                left_type, _ = self._enforce_signature(op, (left, right), *overloads)
+                return left_type
+            case "**" | "*" | "/" | "%":
+                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SCALAR])
+                return ASTSympyType.SCALAR
+            case _:
+                lt, rt = self._get_type(left), self._get_type(right)
+                if lt is None or rt is None or lt == rt:
+                    return lt or rt
+                return None
 
 
-def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
+def ast_check_str(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
+) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
@@ -379,15 +637,24 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
         ast.Div,
         ast.Mod,
         ast.Pow,
+        ast.BitAnd,
+        ast.BitOr,
     )
 
     CheckAST(
-        whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
+        whitelist,
+        locals_for_eval["variables"],
+        locals_for_eval["helpers"] | locals_for_eval["functions"],
+        allow_sets=allow_sets,
     ).check_expression(expr)
 
 
 def sympy_check(
-    expr: sympy.Expr, locals_for_eval: LocalsForEval, *, allow_complex: bool
+    expr: sympy.Expr,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
@@ -404,37 +671,104 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        if not allow_complex and item == sympy.I:
-            raise HasComplexError("complex values not allowed")
+        if not allow_sets and isinstance(item, sympy.Set):
+            raise HasSetNotationError
+        # Detect complex numbers both in simplified form (sympy.I) and in
+        # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
+        # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
+        # non-finite values, which aren't complex in the student-input sense.
+        #
+        # The is_extended_real query can trigger internal sympy bugs on certain
+        # unevaluated expressions (e.g. sec(0) with evaluateFalse), so we catch
+        # AttributeError and skip the check for those items.
+        if not allow_complex:
+            if item is sympy.I:
+                raise HasComplexError("complex values not allowed")
+            try:
+                is_complex = (
+                    item.is_extended_real is False
+                    and getattr(item, "is_finite", None) is not False
+                )
+            except AttributeError:
+                is_complex = False
+            if is_complex:
+                raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
 
 
 def evaluate(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
 ) -> sympy.Expr:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
     Returns:
         A SymPy expression.
     """
-    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
+    return evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )[0]
 
 
-def _normalize_expr(expr: str) -> str:
-    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
-    return full_unidecode(greek_unicode_transform(expr))
+def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") -> str:
+    comma_sep = ", ".join(map(str, items))
+    return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
-def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
+def _normalize_expr(expr: str) -> tuple[str, list[int]]:
     """Normalize expr and build a mapping from normalized indices to original indices."""
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
-        normalized_char = _normalize_expr(char)
+        normalized_char = char
+        # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
+        if char not in _Constants.set_operators:
+            normalized_char = full_unidecode(greek_unicode_transform(char))
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
+
+
+def _regex_sub_expr_and_map_offsets(
+    expr: str, offsets: list[int], pattern: re.Pattern[str], replacement: str
+) -> tuple[str, list[int]]:
+    r"""Apply a regex substitution while keeping the offset map aligned.
+
+    Returns:
+        a tuple of the transformed expr and the new offset list
+
+    Example:
+        >>> import re
+        >>> _regex_sub_expr_and_map_offsets(
+        ...     "x^2",
+        ...     [0, 1, 2],
+        ...     re.compile(r"\\^"),
+        ...     r"**",
+        ... )
+        ('x**2', [0, 1, 1, 2])
+    """
+    parts: list[str] = []
+    new_offsets: list[int] = []
+    last_end = 0
+
+    for match in pattern.finditer(expr):
+        parts.append(expr[last_end : match.start()])
+        new_offsets.extend(offsets[last_end : match.start()])
+        replacement_text = match.expand(replacement)
+        parts.append(replacement_text)
+        new_offsets.extend([offsets[match.start()]] * len(replacement_text))
+        last_end = match.end()
+
+    parts.append(expr[last_end:])
+    new_offsets.extend(offsets[last_end:])
+    return "".join(parts), new_offsets
 
 
 def evaluate_with_source(
@@ -442,6 +776,7 @@ def evaluate_with_source(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
+    allow_sets: bool = False,
     simplify_expression: bool = True,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
@@ -452,29 +787,46 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasSetNotationError: If the expression contains interval or set characters.
+        HasArgumentTypeError: If an expression is given the wrong types.
+        HasFunctionArityError: If a function is given the wrong number of args.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(expr)
+    normalized_expr, char_offsets = _normalize_expr(expr)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
     # back to the original string position in all cases.
     ind = normalized_expr.find("\\")
     if ind != -1:
-        raise HasEscapeError(normalized_offsets[ind])
+        raise HasEscapeError(char_offsets[ind])
     ind = normalized_expr.find("#")
     if ind != -1:
-        raise HasCommentError(normalized_offsets[ind])
+        raise HasCommentError(char_offsets[ind])
+
+    # the only thing this can't catch is open intervals `(-, -)`, checked later
+    if not allow_sets and any(
+        token in normalized_expr
+        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # noqa: RUF001
+    ):
+        raise HasSetNotationError
 
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = normalized_expr.replace("^", "**")
+    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
+        normalized_expr, char_offsets, re.compile(r"\^"), r"**"
+    )
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
     # Euler's number plus 3), not 2000.0.
-    expr = re.sub(r"(\d)([eE])([+-])", r"\1*\2\3", expr)
+    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
+        normalized_expr,
+        char_offsets,
+        re.compile(r"(\d)([eE])([+-])"),
+        r"\1*\2\3",
+    )
 
     # When complex numbers are not allowed, prevent Python from interpreting
     # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
@@ -484,7 +836,12 @@ def evaluate_with_source(
     # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
     # (complex) + "n" regardless - they will still fail with HasComplexError.
     if not allow_complex:
-        expr = re.sub(r"(\d)([jJ])(?![a-zA-Z0-9])", r"\1*\2", expr)
+        normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
+            normalized_expr,
+            char_offsets,
+            re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
+            r"\1*\2",
+        )
 
     local_dict = {
         k: v
@@ -501,11 +858,33 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = (*standard_transformations, implicit_multiplication_application)
+    transformations = (
+        *sympy_parser.standard_transformations,
+        sympy_parser.implicit_multiplication_application,
+    )
+    if allow_sets:
+        transformations = (
+            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _set_literal_transformation,
+            _set_operation_transformation,
+            _interval_transformation,
+            *transformations,
+        )
+    else:
+        # check for open intervals
+        transformations = (
+            _err_on_transform(_interval_transformation, HasSetNotationError),
+            *transformations,
+        )
 
     try:
-        code = stringify_expr(expr, local_dict, global_dict, transformations)
-    except TokenError as exc:
+        code = sympy_parser.stringify_expr(
+            normalized_expr, local_dict, global_dict, transformations
+        )
+    except (TokenError, IndexError) as exc:
+        # SymPy can raise IndexError on malformed token streams for some invalid
+        # inputs instead of a cleaner TokenError. Treat those the same way so the
+        # caller receives a normal syntax error rather than an unexpected error.
         raise HasParseError(-1) from exc
 
     # First do AST check, mainly for security
@@ -517,6 +896,9 @@ def evaluate_with_source(
         Integer=sympy.Integer,
         Symbol=sympy.Symbol,
         Float=sympy.Float,
+        Interval=sympy.Interval,
+        Union=sympy.Union,
+        Intersection=sympy.Intersection,
     )
 
     parsed_locals_to_eval["variables"].update(
@@ -524,19 +906,43 @@ def evaluate_with_source(
         oo=sympy.oo,
     )
 
-    ast_check_str(code, parsed_locals_to_eval)
+    try:
+        ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
+    except (HasArgumentTypeError, HasFunctionArityError) as exc:
+        index = _find_type_error_offset(
+            normalized_expr, char_offsets, exc.as_type_error()
+        )
+        if index != -1:
+            exc.offset = index
+
+        raise
 
     if not simplify_expression:
-        code = compile(evaluateFalse(code), "<string>", "eval")
+        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
 
     # Now that it's safe, get sympy expression
     try:
-        res = eval_expr(code, local_dict, global_dict)
+        res = sympy_parser.eval_expr(code, local_dict, global_dict)
+    except TypeError as exc:
+        # SymPy raises TypeError for semantically invalid set operations that are
+        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
+        # Because the AST check above already ran, TypeErrors here are expected to
+        # come from SymPy's own type system, not from Python infrastructure bugs.
+        index = _find_type_error_offset(normalized_expr, char_offsets, exc)
+        if index != -1:
+            raise HasParseError(index) from exc
+        # if we can't localize the type error, report to staff.
+        raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
 
     # Finally, check for invalid symbols
-    sympy_check(res, locals_for_eval, allow_complex=allow_complex)
+    sympy_check(
+        res,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
 
     return res, code
 
@@ -547,6 +953,7 @@ def convert_string_to_sympy(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -581,6 +988,7 @@ def convert_string_to_sympy(
         expr,
         variables=variables,
         allow_hidden=allow_hidden,
+        allow_sets=allow_sets,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
@@ -595,6 +1003,7 @@ def convert_string_to_sympy_with_source(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -613,14 +1022,43 @@ def convert_string_to_sympy_with_source(
         HasConflictingVariableError: If the variable names conflict with existing names.
         HasConflictingFunctionError: If the function names conflict with existing names.
     """
-    const = _Constants()
+    # Check assumptions are all made about valid variables only
+    if assumptions is not None:
+        unbound_variables = assumptions.keys() - set(
+            variables if variables is not None else []
+        )
+        if unbound_variables:
+            raise HasInvalidAssumptionError(
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
+            )
+
+    # Check user-defined names are valid
+    conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
+        variables if variables is not None else [],
+        custom_functions if custom_functions is not None else [],
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+    )
+
+    if conflict_vars:
+        raise HasConflictingVariableError(
+            f"Conflicting variable name(s): {', '.join(conflict_vars)}"
+        )
+    if conflict_fns:
+        raise HasConflictingFunctionError(
+            f"Conflicting function name(s): {', '.join(conflict_fns)}"
+        )
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
+    const = _Constants
+
     locals_for_eval: LocalsForEval = {
-        "functions": const.functions,
-        "variables": const.variables,
-        "helpers": const.helpers,
+        "functions": dict(const.functions),
+        "variables": dict(const.variables),
+        "helpers": dict(const.helpers),
     }
 
     if allow_hidden:
@@ -633,60 +1071,22 @@ def convert_string_to_sympy_with_source(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    used_names = set().union(
-        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
-    )
+    if allow_sets:
+        locals_for_eval["functions"].update(const.set_functions)
 
-    # Check assumptions are all made about valid variables only
-    if assumptions is not None:
-        unbound_variables = assumptions.keys() - set(
-            variables if variables is not None else []
-        )
-        if unbound_variables:
-            raise HasInvalidAssumptionError(
-                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
-            )
-
-    # If there is a list of variables, add each one to the whitelist with assumptions
-    if variables is not None:
-        variable_dict = locals_for_eval["variables"]
-
-        for raw_variable in variables:
-            variable = greek_unicode_transform(raw_variable)
-            # Check for naming conflicts
-            if variable in used_names:
-                raise HasConflictingVariableError(
-                    f"Conflicting variable name: {variable}"
-                )
-            used_names.add(variable)
-
-            # If no conflict, add to locals dict with assumptions
-            if assumptions is None:
-                variable_dict[variable] = sympy.Symbol(variable)
-            else:
-                variable_dict[variable] = sympy.Symbol(
-                    variable, **assumptions.get(variable, {})
-                )
-
-    # If there is a list of custom functions, add each one to the whitelist
-    if custom_functions is not None:
-        function_dict = locals_for_eval["functions"]
-        for raw_function in custom_functions:
-            function = greek_unicode_transform(raw_function)
-            if function in used_names:
-                raise HasConflictingFunctionError(
-                    f"Conflicting variable name: {function}"
-                )
-
-            used_names.add(function)
-
-            function_dict[function] = sympy.Function(function)
+    for name, (is_var, raw_name) in valid_names.items():
+        if is_var:
+            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
+        else:
+            locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
     return evaluate_with_source(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
+        allow_sets=allow_sets,
         simplify_expression=simplify_expression,
     )
 
@@ -719,32 +1119,66 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     return expr.rfind(symbol)
 
 
+_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
+    r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
+)
+
+
+def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int:
+    """Return an approximate offset for a SymPy TypeError in expr."""
+    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
+    if match is None:
+        return -1
+
+    # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
+    # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
+    # line 925 for an example.
+    candidate_operators = match.group("operator").replace("()", "").split(" or ")
+    # account for de-sugaring
+    candidate_operators.extend(
+        alias
+        for alias, transformed_operator in _Constants.set_operator_desugars.items()
+        if transformed_operator in candidate_operators
+    )
+
+    for candidate in candidate_operators:
+        ind = find_symbol_offset(expr, candidate)
+        if ind != -1:
+            return offsets[ind]
+
+    return -1
+
+
 def sympy_to_json(
-    a: sympy.Expr, *, allow_complex: bool = True, allow_trig_functions: bool = True
+    a: sympy.Expr | sympy.Set,
+    *,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
+    allow_sets: bool = False,
 ) -> SympyJson:
     """Convert a SymPy expression to a JSON-seralizable dictionary.
 
     Returns:
         A JSON-serializable representation of the SymPy expression.
+
+    Raises:
+        HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
     """
-    const = _Constants()
+    if isinstance(a, sympy.Set) and not allow_sets:
+        raise HasSetNotationError
+
+    const = _Constants
 
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
 
     # Get reserved variables for custom function parsing
-    reserved = (
-        const.helpers.keys()
-        | const.variables.keys()
-        | const.hidden_variables.keys()
-        | const.functions.keys()
+    reserved = get_builtin_constants(
+        allow_complex=allow_complex, allow_hidden=True
+    ) | get_builtin_functions(
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
     )
-    if allow_complex:
-        reserved |= (
-            const.complex_variables.keys() | const.hidden_complex_variables.keys()
-        )
-    if allow_trig_functions:
-        reserved |= const.trig_functions.keys()
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([
@@ -766,7 +1200,7 @@ def sympy_to_json(
 
     return {
         "_type": "sympy",
-        "_value": str(a_sub),
+        "_value": _SympyJsonStrPrinter().doprint(a_sub),
         "_variables": variables,
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
@@ -776,6 +1210,7 @@ def sympy_to_json(
 def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
+    allow_sets: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -802,6 +1237,7 @@ def json_to_sympy(
         sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
@@ -809,21 +1245,31 @@ def json_to_sympy(
     )
 
 
-def validate_string_as_sympy(
+def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
-    allow_hidden: bool = False,
     allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
-) -> str | None:
-    """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+    assumptions: AssumptionsDictT | None = None,
+) -> SympyParseResult:
+    """Try to parse expr as a SymPy expression.
 
     Returns:
-        `None` if the expression is valid, and an error message otherwise.
+        A parsed SymPy expression on success, or a formatted error message on failure.
+
+    Example::
+
+        result = try_parse_string_as_sympy("x + 1", ["x"])
+        if isinstance(result, SympyParseFailure):
+            print(result.error)
+        else:
+            print(result.expr)
     """
     try:
         expr_parsed = convert_string_to_sympy(
@@ -831,12 +1277,14 @@ def validate_string_as_sympy(
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
+            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
+            assumptions=assumptions,
         )
     except HasFloatError as exc:
-        return (
+        return SympyParseFailure(
             f"Your answer contains the floating-point number {exc.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)."
         )
@@ -852,79 +1300,101 @@ def validate_string_as_sympy(
                 "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
             )
 
-        return "".join(err_string)
+        return SympyParseFailure("".join(err_string))
+    except HasSetNotationError:
+        return SympyParseFailure(
+            "Your answer contains set notation, but set notation is not allowed for this question."
+        )
     except HasInvalidExpressionError as exc:
-        return (
+        return SympyParseFailure(
             f"Your answer has an invalid expression. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidFunctionError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer calls an invalid function "{exc.text}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except HasInvalidVariableError as exc:
-        return (
-            f'Your answer refers to an invalid variable "{exc.text}". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
     except FunctionNameWithoutArgumentsError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer mentions the function "{exc.text}" without '
             "applying it to anything. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidSymbolError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
             f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
+    except HasArgumentTypeError as exc:
+        error_text = (
+            f"Your answer provides the wrong types to {exc.fn}. "
+            f"It was expecting {exc.format_allowable_types()}, but got a {exc.got} "
+            f"for argument #{exc.arg_idx + 1} instead."
+        )
+        if exc.offset != -1:
+            return SympyParseFailure(
+                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        return SympyParseFailure(error_text)
+    except HasFunctionArityError as exc:
+        error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
+        if exc.offset != -1:
+            return SympyParseFailure(
+                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        return SympyParseFailure(error_text)
     except HasParseError as exc:
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return (
+            return SympyParseFailure(
                 "Your answer has a syntax error. "
                 "This issue might be caused by mismatched parentheses or some other misplaced symbol."
             )
-        return (
+        return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasEscapeError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer must not contain the character "\\". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasCommentError as exc:
-        return (
+        return SympyParseFailure(
             f'Your answer must not contain the character "#". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasConflictingVariableError as exc:
-        return (
+        return SympyParseFailure(
             f"Question configuration error: {exc}. "
             "The variable list contains a name that conflicts with a built-in constant. "
             "Please contact the course staff."
         )
     except HasConflictingFunctionError as exc:
-        return (
+        return SympyParseFailure(
             f"Question configuration error: {exc}. "
             "The custom function list contains a name that conflicts with a built-in function. "
             "Please contact the course staff."
         )
     except HasInvalidAssumptionError as exc:
-        return f"Question configuration error: {exc}. Please contact the course staff."
+        return SympyParseFailure(
+            f"Question configuration error: {exc}. Please contact the course staff."
+        )
     except Exception as exc:
-        return f"Unexpected error: {exc}. Please contact the course staff."
+        return SympyParseFailure(
+            f"Unexpected error: {exc}. Please contact the course staff."
+        )
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
@@ -933,10 +1403,47 @@ def validate_string_as_sympy(
         and (expr_parsed.has(sympy.I))
     ):
         expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        return (
-            "Your answer was simplified to this, which contains a complex number"
+        return SympyParseFailure(
+            "Your answer was simplified to this, which contains a complex number "
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
+
+    return SympyParseSuccess(expr_parsed)
+
+
+def validate_string_as_sympy(
+    expr: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_sets: bool = False,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+) -> str | None:
+    """Try to parse expr as a SymPy expression.
+
+    Returns:
+        `None` if the expression is valid, and an error message otherwise.
+    """
+    result = try_parse_string_as_sympy(
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_sets=allow_sets,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        custom_functions=custom_functions,
+        imaginary_unit=imaginary_unit,
+        simplify_expression=simplify_expression,
+        assumptions=assumptions,
+    )
+
+    if isinstance(result, SympyParseFailure):
+        return result.error
 
     return None
 
@@ -949,36 +1456,291 @@ def get_items_list(items_string: str | None) -> list[str]:
     return list(map(str.strip, items_string.split(",")))
 
 
-def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
+def _set_literal_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that rewrites set literals to FiniteSet calls."""
+    if not tokens:
+        return tokens
+
+    set_start = (NAME, "FiniteSet"), (OP, "(")
+    set_end = (OP, ")")
+    out: list[TOKEN] = []
+    depth = 0
+
+    for token in tokens:
+        _, text = token
+        if text == "{":
+            out.extend(set_start)
+            depth += 1
+        elif text == "}":
+            if depth <= 0:
+                raise TokenError("too many closing braces")
+            out.append(set_end)
+            depth -= 1
+        else:
+            out.append(token)
+
+    if depth != 0:
+        raise TokenError("set notation is incomplete")
+
+    return out
+
+
+def _try_rewrite_interval_literal(
+    tokens: list[TOKEN], start_index: int
+) -> tuple[tuple[TOKEN, ...] | None, int]:
+    _, start_text = tokens[start_index]
+    if start_text not in ("(", "["):
+        return None, start_index
+
+    set_literal_openers = {"(", "[", "{"}
+    set_literal_closers = {")", "]", "}"}
+
+    def _seek_comma_or_closer(start_index: int) -> tuple[bool, list[TOKEN], int, TOKEN]:
+        operand, depth = [], 0
+        for i, token in enumerate(tokens[start_index:], start=start_index):
+            _, text = token
+            if text in set_literal_openers:
+                depth += 1
+            elif text in set_literal_closers:
+                if depth == 0:
+                    return True, operand, i, token
+                depth -= 1
+            elif text == "," and depth == 0:
+                return False, operand, i, token
+            operand.append(token)
+        raise TokenError("interval notation is incomplete")
+
+    set_notation_only_tokens = {"[", "]", "{", "}", "|", "&"}
+    set_fn_names = _Constants.set_functions.keys() | set_notation_only_tokens
+
+    def _contains_set_notation(tokens: list[TOKEN]) -> bool:
+        return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
+
+    # consume until the first top-level comma or closing bracket.
+    closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
+    if closed:
+        return None, start_index
+
+    # consume until the matching top-level closing bracket.
+    closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
+    if not closed:
+        raise TokenError("interval contains more than one separator")
+
+    if _contains_set_notation(left_side) or _contains_set_notation(right_side):
+        raise TokenError("interval endpoints cannot contain set notation")
+
+    return (
+        (NAME, "Interval"),
+        (OP, "("),
+        *left_side,
+        (OP, ","),
+        *right_side,
+        (OP, ","),
+        (NAME, "True" if start_text == "(" else "False"),
+        (OP, ","),
+        (NAME, "True" if end_text == ")" else "False"),
+        (OP, ")"),
+    ), end_index
+
+
+def _err_on_transform(trans: TRANS, exc: type[BaseSympyError]) -> TRANS:
+    @wraps(trans)
+    def _raise_on_transform(
+        in_tokens: list[TOKEN], local_dict: DICT, global_dict: DICT
+    ) -> list[TOKEN]:
+        out_tokens = trans(in_tokens, local_dict, global_dict)
+        if out_tokens != in_tokens:
+            raise exc()
+        return out_tokens
+
+    return _raise_on_transform
+
+
+def _interval_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that interprets mathematical intervals like `(-inf, 0]` or `[pi/2, pi]`
+
+    Returns:
+        A transformed sequence of SymPy tokens.
+    """
+    if not tokens:
+        return tokens
+    result = []
+    prev = None
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if not prev or prev[0] != NAME:
+            rewritten_tokens, end_index = _try_rewrite_interval_literal(tokens, i)
+            if rewritten_tokens is not None:
+                result.extend(rewritten_tokens)
+                prev = tokens[end_index]
+                i = end_index + 1
+                continue
+
+        result.append(token)
+        prev = token
+        i += 1
+    return result
+
+
+def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | None:
+    r"""Returns (op, num_text) if text is <op>\d+"""
+    if text not in binops:
+        stripped = text.rstrip(string.digits)
+        if stripped in binops:
+            return stripped, text[len(stripped) :]
+    return None
+
+
+def _unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
+    """Return a token transform that splits infix operator names from suffix digits.
+
+    SymPy's tokenizer treats strings like ``U2`` or ``cup3`` as a single ``NAME``
+    token. PrairieLearn uses this transform to recover the operator literal and
+    the trailing numeric suffix as separate tokens, so later parsing steps can
+    interpret set-union/set-intersection input from the formula editor without
+    exposing parser internals to students.
+    """
+    bin_lit_set = tuple(binop_literals)
+
+    def _infix_binop_unmangler(
+        tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+    ) -> list[TOKEN]:
+        out = []
+        for typ, text in tokens:
+            if typ == NAME:
+                split = _split_mangled_binop(bin_lit_set, text)
+                if split is not None:
+                    op, num = split
+                    out.extend(((OP, op), (NUMBER, num)))
+                    continue
+            out.append((typ, text))
+        return out
+
+    return _infix_binop_unmangler
+
+
+def _set_operation_transformation(
+    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
+) -> list[TOKEN]:
+    """A SymPy token transformation that de-sugars set union/intersection.
+
+    Returns:
+        A transformed sequence of SymPy tokens.
+    """
+    set_ops = _Constants.set_operator_desugars
+    return [
+        (OP, set_ops[text]) if text in set_ops else (typ, text) for typ, text in tokens
+    ]
+
+
+def get_builtin_constants(
+    *, allow_complex: bool = False, allow_hidden: bool = True
+) -> set[str]:
     """Return the set of built-in constant names.
 
     Parameters:
         allow_complex: Whether to include complex number constants (i, j).
+        allow_hidden: Whether to include sympy's longer name for constants.
 
     Returns:
         A set of built-in constant names.
     """
-    const = _Constants()
+    const = _Constants
     names = set(const.variables.keys())
     if allow_complex:
         names |= const.complex_variables.keys()
+    if allow_hidden:
+        names.update(const.hidden_variables.keys())
+    if allow_complex and allow_hidden:
+        names.update(const.hidden_complex_variables.keys())
     return names
 
 
-def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
+def get_builtin_functions(
+    *, allow_trig_functions: bool = True, allow_sets: bool = False
+) -> set[str]:
     """Return the set of built-in function names.
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
+        allow_sets: Whether to include set operators and constructors.
 
     Returns:
         A set of built-in function names.
     """
-    const = _Constants()
-    names = set(const.functions.keys())
+    const = _Constants
+    names = const.functions.keys() | const.helpers.keys()
     if allow_trig_functions:
         names |= const.trig_functions.keys()
+    if allow_sets:
+        names |= const.set_functions.keys()
+        names |= const.set_operators.keys()
     return names
+
+
+def _build_name_conflict_data(
+    variables: Iterable[str],
+    custom_functions: Iterable[str],
+    *,
+    allow_complex: bool,
+    allow_hidden: bool,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
+    """Validate that user-specified names don't conflict with built-in constants or functions.
+
+    Parameters:
+        element_name: Name of the element (for error messages).
+        variables: User-specified variable names.
+        custom_functions: User-specified custom function names.
+        allow_complex: Whether complex constants (i, j) are available.
+        allow_hidden: Whether sympy's long-form names for constants are available.
+        allow_sets: Whether set operations are available.
+        allow_trig_functions: Whether trig functions are available.
+
+    Returns:
+        A list of (var_names, fun_names, valid_sanitized_names) where var/fun_names conflict
+        with builtins or themselves and valid_sanitized_names maps `sanitized_unique_name ->
+        (was_variable, unsanitized)`.
+    """
+    builtins = get_builtin_functions(
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    ) | get_builtin_constants(
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden,
+    )
+    set_ops = tuple(_Constants.set_operators.keys())
+
+    def _conflicts(name: str) -> bool:
+        if name in builtins:
+            return True
+        return allow_sets and _split_mangled_binop(set_ops, name) is not None
+
+    valid_names: dict[str, tuple[bool, str]] = {}
+    conflict_vars: list[str] = []
+    conflict_fns: list[str] = []
+
+    for raw in variables:
+        sanitized = greek_unicode_transform(raw)
+        if sanitized in valid_names or _conflicts(sanitized):
+            conflict_vars.append(raw)
+        else:
+            valid_names[sanitized] = (True, raw)
+
+    for raw in custom_functions:
+        sanitized = greek_unicode_transform(raw)
+        if sanitized in valid_names or _conflicts(sanitized):
+            conflict_fns.append(raw)
+        else:
+            valid_names[sanitized] = (False, raw)
+
+    return conflict_vars, conflict_fns, valid_names
 
 
 def validate_names_for_conflicts(
@@ -987,7 +1749,9 @@ def validate_names_for_conflicts(
     custom_functions: list[str],
     *,
     allow_complex: bool = False,
+    allow_hidden_variables: bool = True,
     allow_trig_functions: bool = True,
+    allow_sets: bool = False,
 ) -> None:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -996,16 +1760,22 @@ def validate_names_for_conflicts(
         variables: User-specified variable names.
         custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
+        allow_hidden_variables: Whether sympy's long-form names for constants are available.
+        allow_sets: Whether set operations are available.
         allow_trig_functions: Whether trig functions are available.
 
     Raises:
         ValueError: If any names conflict with built-ins.
     """
-    builtins = get_builtin_constants(
-        allow_complex=allow_complex
-    ) | get_builtin_functions(allow_trig_functions=allow_trig_functions)
-
-    conflicts = [name for name in variables + custom_functions if name in builtins]
+    v_conflicts, f_conflicts, _valid = _build_name_conflict_data(
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden_variables,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+    )
+    conflicts = v_conflicts + f_conflicts
     if conflicts:
         raise ValueError(
             f'Element "{element_name}" specifies names that conflict with built-ins: '

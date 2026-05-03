@@ -4,10 +4,12 @@ export function WarningIndicator({
   tooltipId,
   label,
   body,
+  variant = 'warning',
 }: {
   tooltipId: string;
   label: string;
   body: string;
+  variant?: 'warning' | 'error';
 }) {
   return (
     <OverlayTrigger
@@ -19,7 +21,7 @@ export function WarningIndicator({
     >
       <button
         type="button"
-        className="btn btn-badge color-yellow2"
+        className={`btn btn-badge ${variant === 'error' ? 'color-red2' : 'color-yellow2'}`}
         aria-label={body}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {

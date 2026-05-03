@@ -52,6 +52,66 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
+export async function selectOptionalCourseByRepositoryName(
+  repoName: string,
+): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await queryOptionalRow(
+    sql.select_course_by_repository_name,
+    { repo_name: escapedRepoName },
+    CourseSchema,
+  );
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
+interface CourseFieldCheck {
+  exists: boolean;
+  owned: boolean;
+}
+
+const CourseFieldCheckRowSchema = z.object({
+  exists: z.boolean(),
+  owned: z.boolean().nullable(),
+});
+
+export async function checkCourseTitleInInstitution({
+  title,
+  institutionId,
+  userId,
+}: {
+  title: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_title_in_institution,
+    { title, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export async function checkCourseShortNameInInstitution({
+  shortName,
+  institutionId,
+  userId,
+}: {
+  shortName: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }
@@ -279,6 +339,57 @@ export async function insertCourse({
       new_state: course,
       institution_id,
       course_id: course.id,
+    });
+    return course;
+  });
+}
+
+const updateCourseColumnSqlMap = {
+  short_name: sql.update_course_column_short_name,
+  title: sql.update_course_column_title,
+  display_timezone: sql.update_course_column_display_timezone,
+  path: sql.update_course_column_path,
+  repository: sql.update_course_column_repository,
+  branch: sql.update_course_column_branch,
+  institution_id: sql.update_course_column_institution_id,
+} as const;
+
+export async function updateCourseColumn({
+  courseId,
+  columnName,
+  value,
+  authnUserId,
+}: {
+  courseId: string;
+  columnName:
+    | 'short_name'
+    | 'title'
+    | 'display_timezone'
+    | 'path'
+    | 'repository'
+    | 'branch'
+    | 'institution_id';
+  value: string;
+  authnUserId: string;
+}): Promise<Course> {
+  return await runInTransactionAsync(async () => {
+    const oldCourse = await selectCourseById(courseId);
+    const course = await queryRow(
+      updateCourseColumnSqlMap[columnName],
+      { course_id: courseId, value },
+      CourseSchema,
+    );
+    await insertAuditLog({
+      authn_user_id: authnUserId,
+      action: 'update',
+      table_name: 'courses',
+      column_name: columnName,
+      row_id: courseId,
+      parameters: { [columnName]: value },
+      old_state: oldCourse,
+      new_state: course,
+      course_id: courseId,
+      institution_id: course.institution_id,
     });
     return course;
   });

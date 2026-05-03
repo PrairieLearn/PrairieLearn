@@ -33,7 +33,7 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5.4-mini-2026-03-17' satisfies OpenAIModelId;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
@@ -60,7 +60,10 @@ async function aiEvaluateStudentResponse({
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
+    urlPrefix,
+    showCorrectAnswer: false,
+    allowAnswerEditing: false,
+    questionRenderContext: 'ai_grading' as const,
   };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render({

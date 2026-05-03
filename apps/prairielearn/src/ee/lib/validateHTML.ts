@@ -419,6 +419,8 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   const errors: string[] = [];
   let answersName: string | null = null;
   let allowBlank = false;
+  let allowSets = false;
+  let usedAdditionalSimplifications = false;
   let usedBlankValue = false;
   let usedCorrectAnswer = false;
 
@@ -448,7 +450,9 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
         case 'placeholder':
         case 'custom-functions':
         case 'suffix':
+          break;
         case 'additional-simplifications':
+          usedAdditionalSimplifications = true;
           break;
         case 'display':
           assertInChoices('pl-symbolic-input', key, val, ['block', 'inline'], errors);
@@ -458,12 +462,16 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           break;
         case 'allow-complex':
         case 'allow-trig-functions':
+        case 'allow-sets':
         case 'show-help-text':
         case 'show-score':
         case 'formula-editor':
         case 'display-log-as-ln':
         case 'display-simplified-expression':
           assertBool('pl-symbolic-input', key, val, errors);
+          if (key === 'allow-sets') {
+            allowSets = isBooleanTrue(val);
+          }
           break;
         case 'allow-blank':
           assertBool('pl-symbolic-input', key, val, errors);
@@ -479,6 +487,11 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   }
   if (!answersName) {
     errors.push('pl-symbolic-input: answers-name is a required attribute.');
+  }
+  if (allowSets && usedAdditionalSimplifications) {
+    errors.push(
+      "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true.",
+    );
   }
   if (usedBlankValue && !allowBlank) {
     errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');

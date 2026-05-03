@@ -12,6 +12,7 @@ import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
+import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
@@ -26,7 +27,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
 }: {
-  resLocals: ResLocalsForPage<'instructor-question'>;
+  resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;

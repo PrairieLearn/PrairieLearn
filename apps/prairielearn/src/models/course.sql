@@ -15,6 +15,67 @@ WHERE
   c.short_name = $short_name
   AND c.deleted_at IS NULL;
 
+-- BLOCK select_course_by_repository_name
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  (
+    c.repository ILIKE '%/' || $repo_name || '.git' ESCAPE '\'
+    OR c.repository ILIKE '%:' || $repo_name || '.git' ESCAPE '\'
+  )
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK select_course_by_path
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.path = $path
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK check_course_title_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.title) = LOWER($title)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK check_course_short_name_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.short_name) = LOWER($short_name)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET
@@ -154,6 +215,7 @@ SET
   deleted_at = current_timestamp
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -196,6 +258,76 @@ SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK update_course_column_short_name
+UPDATE courses
+SET
+  short_name = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_title
+UPDATE courses
+SET
+  title = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_display_timezone
+UPDATE courses
+SET
+  display_timezone = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_path
+UPDATE courses
+SET
+  path = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_repository
+UPDATE courses
+SET
+  repository = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_branch
+UPDATE courses
+SET
+  branch = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_institution_id
+UPDATE courses
+SET
+  institution_id = $value::bigint
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
 
 -- BLOCK find_courses_by_sharing_names
 SELECT

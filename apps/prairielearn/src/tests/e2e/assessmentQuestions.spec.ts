@@ -24,8 +24,14 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
+  await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
+    // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
+    // the next drop position. Yield to the event loop so React can
+    // commit the state update and dnd-kit can re-measure rects before
+    // the next arrow press.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   }
   await page.keyboard.press(' ');
 }
@@ -52,10 +58,6 @@ async function resetAssessmentFromTemplate({
 }
 
 test.describe('Assessment questions', () => {
-  test.beforeEach(async ({ enableFeatureFlag }) => {
-    await enableFeatureFlag('assessment-questions-editor');
-  });
-
   test.describe('exam5-perZoneGrading mutations', () => {
     const assessmentTid = 'exam5-perZoneGrading';
 
@@ -287,14 +289,14 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test.describe('hw16-editorTest alt group mutations', () => {
+  test.describe('hw16-editorTest alt pool mutations', () => {
     const assessmentTid = 'hw16-editorTest';
 
     test.beforeEach(async ({ testCoursePath }) => {
       await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
     });
 
-    test('can add an alternative to an alt group and save', async ({
+    test('can add an alternative to an alt pool and save', async ({
       page,
       testCoursePath,
       courseInstance,
@@ -308,10 +310,10 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
-      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).first().click();
       await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
       await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -331,10 +333,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
-      expect(lastBlock.numberChoose).toBe(1);
-      expect(lastBlock.alternatives).toHaveLength(3);
-      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+      const altPoolBlock = savedAssessment.zones[2].questions[1];
+      expect(altPoolBlock.numberChoose).toBe(1);
+      expect(altPoolBlock.alternatives).toHaveLength(3);
+      expect(altPoolBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -350,19 +352,20 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+      const warningText = 'Number to choose exceeds the number of alternatives in this pool.';
+      await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
-        .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+        .getByRole('button', { name: 'Delete question aiGradingMultiImageCapture', exact: true })
         .click();
 
-      await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+      await expect(page.getByText(warningText)).toBeVisible();
     });
   });
 
@@ -376,17 +379,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit1"]').first().click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
     const saveButton = page.getByRole('button', { name: 'Save and sync' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
+    await page.locator('[aria-label="Delete zone \'Zone to delete\'"]').last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();

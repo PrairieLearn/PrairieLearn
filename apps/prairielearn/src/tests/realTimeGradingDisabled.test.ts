@@ -291,19 +291,20 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
 
       // We should now be able to finish the entire assessment.
       //
-      // First, make sure that the form and button actually exist.
-      const modal = otherEnabledGradeResponse.$('#confirmFinishModal');
-      const form = modal.closest('form');
-      assert.lengthOf(form, 1);
-      const finishButton = form.find('button[name="__action"][value="finish"]');
+      // First, make sure that "Finish assessment" button is present and enabled.
+      // This will open a modal that will allow the student to finish the assessment.
+      const finishButton = otherEnabledGradeResponse.$(
+        'button[data-bs-target]:contains("Finish assessment")',
+      );
       assert.lengthOf(finishButton, 1);
+      assert.notEqual(finishButton.attr('disabled'), 'disabled');
 
-      // Make a request to actually finish.
+      // Next, make a request to actually finish.
       const finishResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'finish',
-          __csrf_token: helperClient.getCSRFToken(form),
+          __csrf_token: helperClient.getCSRFToken(otherEnabledGradeResponse.$),
         }),
       });
       assert.isTrue(finishResponse.ok);

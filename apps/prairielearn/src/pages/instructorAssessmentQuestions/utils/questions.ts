@@ -1,7 +1,7 @@
 import {
+  type EditorQuestionMetadata,
   type OtherAssessment,
   type StaffAssessmentQuestionRow,
-  StaffAssessmentQuestionRowSchema,
 } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
@@ -11,8 +11,13 @@ import type {
   StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
-import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+  type QuestionPointsJson,
+  type ZoneAssessmentJson,
+} from '../../../schemas/infoAssessment.js';
+import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-questions.js';
 import type {
   AssessmentForPicker,
   CourseQuestionForPicker,
@@ -21,7 +26,16 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
-export type QuestionMetadataMap = Partial<Record<string, StaffAssessmentQuestionRow>>;
+export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
+
+/**
+ * Whether the question has a non-empty, non-whitespace title.
+ * When false, callers should display the QID instead.
+ */
+export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -88,13 +102,16 @@ export function normalizeQuestionPoints<T extends ZoneQuestionBlockForm | Questi
   return normalized;
 }
 
-export function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuestionRow) {
-  if (!question.question.qid) throw new Error('Question QID is required');
-  if (course.id === question.question.course_id) {
-    return question.question.qid;
+export function questionDisplayName(
+  course: StaffCourse,
+  row: Pick<EditorQuestionMetadata, 'question' | 'course'>,
+) {
+  if (!row.question.qid) throw new Error('Question QID is required');
+  if (course.id === row.question.course_id) {
+    return row.question.qid;
   }
-  if (!question.course.sharing_name) throw new Error('Sharing name is required');
-  return `@${question.course.sharing_name}/${question.question.qid}`;
+  if (!row.course.sharing_name) throw new Error('Sharing name is required');
+  return `@${row.course.sharing_name}/${row.question.qid}`;
 }
 
 /**
@@ -108,7 +125,7 @@ export function buildHierarchicalAssessment(
   rows: StaffAssessmentQuestionRow[],
 ): ZoneAssessmentJson[] {
   const zones: ZoneAssessmentJson[] = [];
-  const zoneAlternativeGroupCounts: Record<number, number> = {};
+  const zoneAlternativePoolCounts: Record<number, number> = {};
 
   for (const row of rows) {
     zones[row.zone.number - 1] ??= {
@@ -121,39 +138,41 @@ export function buildHierarchicalAssessment(
       questions: [],
       advanceScorePerc: row.zone.advance_score_perc ?? undefined,
       gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+      allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
       canView: row.zone.json_can_view ?? [],
       canSubmit: row.zone.json_can_submit ?? [],
     };
 
     const zoneNumber = row.zone.number;
-    zoneAlternativeGroupCounts[zoneNumber] ??= -1;
+    zoneAlternativePoolCounts[zoneNumber] ??= -1;
 
-    // If this is a new alternative group in this zone, increment the count
-    if (row.start_new_alternative_group) {
-      zoneAlternativeGroupCounts[zoneNumber]++;
+    // If this is a new alternative pool in this zone, increment the count
+    if (row.start_new_alternative_pool) {
+      zoneAlternativePoolCounts[zoneNumber]++;
     }
 
     // Use the count as the position within the zone
-    const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
+    const positionInZone = zoneAlternativePoolCounts[zoneNumber];
     if (!zones[zoneNumber - 1].questions[positionInZone]) {
       zones[zoneNumber - 1].questions[positionInZone] ??= {
-        comment: row.alternative_group.json_comment ?? undefined,
-        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
-        canView: row.alternative_group.json_can_view ?? [],
-        canSubmit: row.alternative_group.json_can_submit ?? [],
-        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
-        numberChoose: row.alternative_group.number_choose ?? undefined,
-        triesPerVariant: row.alternative_group.json_tries_per_variant ?? undefined,
-        points: row.alternative_group.json_points ?? undefined,
-        autoPoints: row.alternative_group.json_auto_points ?? undefined,
-        maxPoints: row.alternative_group.json_max_points ?? undefined,
-        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
-        manualPoints: row.alternative_group.json_manual_points ?? undefined,
-        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
+        comment: row.alternative_pool.json_comment ?? undefined,
+        advanceScorePerc: row.alternative_pool.advance_score_perc ?? undefined,
+        canView: row.alternative_pool.json_can_view ?? [],
+        canSubmit: row.alternative_pool.json_can_submit ?? [],
+        gradeRateMinutes: row.alternative_pool.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.alternative_pool.json_allow_real_time_grading ?? undefined,
+        numberChoose: row.alternative_pool.number_choose ?? undefined,
+        triesPerVariant: row.alternative_pool.json_tries_per_variant ?? undefined,
+        points: row.alternative_pool.json_points ?? undefined,
+        autoPoints: row.alternative_pool.json_auto_points ?? undefined,
+        maxPoints: row.alternative_pool.json_max_points ?? undefined,
+        maxAutoPoints: row.alternative_pool.json_max_auto_points ?? undefined,
+        manualPoints: row.alternative_pool.json_manual_points ?? undefined,
+        forceMaxPoints: row.alternative_pool.json_force_max_points ?? undefined,
       };
     }
 
-    if (row.alternative_group.json_has_alternatives) {
+    if (row.alternative_pool.json_has_alternatives) {
       if (row.assessment_question.number_in_alternative_group == null) {
         throw new Error('Assessment question number is required');
       }
@@ -174,10 +193,15 @@ export function buildHierarchicalAssessment(
         maxPoints: row.assessment_question.json_max_points ?? undefined,
         maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
+        preferences: row.assessment_question.preferences ?? undefined,
       };
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
+      zones[zoneNumber - 1].questions[positionInZone].comment =
+        row.assessment_question.json_comment ?? undefined;
+      zones[zoneNumber - 1].questions[positionInZone].preferences =
+        row.assessment_question.preferences ?? undefined;
     }
   }
   return zones;
@@ -213,17 +237,17 @@ export function computeZonePointTotals(
   // instead of the initial autoPoints value.
   const blockPoints = questions.map((q) => {
     if (q.alternatives) {
-      // Resolve each alternative's effective points (alternative-level ?? group-level)
+      // Resolve each alternative's effective points (alternative-level ?? pool-level)
       const resolved = q.alternatives.map((alt) => ({
         auto: firstPoints(
           alt.maxAutoPoints ??
             alt.maxPoints ??
             q.maxAutoPoints ??
             q.maxPoints ??
-            alt.points ??
             alt.autoPoints ??
-            q.points ??
-            q.autoPoints,
+            alt.points ??
+            q.autoPoints ??
+            q.points,
         ),
         manual: alt.manualPoints ?? q.manualPoints ?? 0,
       }));
@@ -237,13 +261,17 @@ export function computeZonePointTotals(
       };
     }
     return {
-      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.points ?? q.autoPoints),
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.autoPoints ?? q.points),
       manual: q.manualPoints ?? 0,
     };
   });
 
   // If the zone uses bestQuestions or numberChoose, only the best N blocks count.
-  const zoneChoose = opts?.bestQuestions ?? opts?.numberChoose;
+  // When both are set, the effective limit is the smaller of the two.
+  const zoneChoose =
+    opts?.bestQuestions != null && opts.numberChoose != null
+      ? Math.min(opts.bestQuestions, opts.numberChoose)
+      : (opts?.bestQuestions ?? opts?.numberChoose);
   if (zoneChoose != null && zoneChoose < blockPoints.length) {
     blockPoints.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
     blockPoints.length = zoneChoose;
@@ -257,7 +285,7 @@ export function computeZonePointTotals(
 
 /**
  * Computes the maximum total points for a question, resolving inheritance
- * from the parent alt group when applicable.
+ * from the parent alt pool when applicable.
  */
 export function computeQuestionTotalPoints(
   question: QuestionPointsJson,
@@ -281,7 +309,7 @@ export function computeQuestionTotalPoints(
 }
 
 /**
- * Returns true if alternatives within an alt group have different total point values.
+ * Returns true if alternatives within an alt pool have different total point values.
  */
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
@@ -290,9 +318,9 @@ export function hasPointsMismatch(
 ): boolean {
   if (alternatives.length <= 1) return false;
   // When all alternatives are selected, different point values don't cause
-  // inconsistency — every student gets the same total. Alt groups default
-  // to choosing 1 alternative when numberChoose is not set.
-  const effectiveChoose = parent?.numberChoose ?? 1;
+  // inconsistency — every student gets the same total. The assessment instance
+  // creation process selects all alternatives when number_choose is NULL.
+  const effectiveChoose = parent?.numberChoose ?? alternatives.length;
   if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
@@ -367,15 +395,81 @@ export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
   if (count === 0) return false;
   if (zone.numberChoose != null && zone.numberChoose > count) return true;
   if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
+  if (
+    zone.bestQuestions != null &&
+    zone.numberChoose != null &&
+    zone.bestQuestions > zone.numberChoose
+  ) {
+    return true;
+  }
   return false;
 }
 
 /**
- * Returns true if an alt group's numberChoose exceeds the number of alternatives.
+ * Returns true if an alt pool's numberChoose exceeds the number of alternatives.
  */
-export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
+export function hasAltPoolChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
   if (block.numberChoose == null || block.alternatives == null) return false;
   return block.numberChoose > block.alternatives.length;
+}
+
+/**
+ * Computes the [min, max] range of questions chosen from a specific alt pool,
+ * based on the zone's spreading algorithm (mirrors `z_numbered_assessment_questions`
+ * in `assessment.sql`).
+ *
+ * Think of it like dealing cards in rounds: round 1 deals one question to each
+ * block, round 2 deals a second to blocks large enough, etc. The zone's
+ * `numberChoose` is the total number of cards dealt.
+ */
+export function computeAltPoolChosenRange(
+  zone: ZoneAssessmentForm,
+  targetBlock: ZoneQuestionBlockForm,
+): { min: number; max: number } {
+  // Compute the effective size of each block (how many questions it contributes).
+  const blockSizes = zone.questions.map((block) => {
+    if (block.alternatives) {
+      return Math.min(block.numberChoose ?? block.alternatives.length, block.alternatives.length);
+    }
+    return 1;
+  });
+
+  const targetIdx = zone.questions.indexOf(targetBlock);
+  const targetSize = blockSizes[targetIdx];
+
+  // If zone.numberChoose is null (select all), every block contributes its full effective size.
+  if (zone.numberChoose == null) {
+    return { min: targetSize, max: targetSize };
+  }
+
+  const budget = zone.numberChoose;
+
+  // Build rounds: round k (1-indexed) has one question from each block with size >= k.
+  // questionsDealtByRound[k] = cumulative questions dealt through round k.
+  const maxRound = Math.max(...blockSizes, 0);
+  const questionsDealtByRound: number[] = [0];
+  for (let k = 1; k <= maxRound; k++) {
+    const blocksInRound = blockSizes.filter((s) => s >= k).length;
+    questionsDealtByRound[k] = questionsDealtByRound[k - 1] + blocksInRound;
+  }
+
+  // How many full rounds is the target guaranteed to participate in?
+  // That's the last round k (up to targetSize) where the cumulative deal fits in budget.
+  let fullRoundsGuaranteed = 0;
+  for (let k = 0; k <= targetSize; k++) {
+    if (questionsDealtByRound[k] <= budget) {
+      fullRoundsGuaranteed = k;
+    }
+  }
+
+  // The target *might* get one more if it has capacity in the next round
+  // and there's leftover budget after the last full round.
+  const hasCapacityForNextRound = targetSize > fullRoundsGuaranteed;
+  const hasLeftoverBudget = budget > questionsDealtByRound[fullRoundsGuaranteed];
+  const max =
+    hasCapacityForNextRound && hasLeftoverBudget ? fullRoundsGuaranteed + 1 : fullRoundsGuaranteed;
+
+  return { min: fullRoundsGuaranteed, max };
 }
 
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
@@ -390,14 +484,25 @@ export function toAssessmentForPicker(assessments: OtherAssessment[]): Assessmen
   }));
 }
 
+export function toEditorMetadata(row: StaffAssessmentQuestionRow): EditorQuestionMetadata {
+  return {
+    question: row.question,
+    topic: row.topic,
+    course: row.course,
+    tags: row.tags,
+    other_assessments: row.other_assessments,
+    open_issue_count: row.open_issue_count,
+    assessment_question_id: row.assessment_question.id,
+  };
+}
+
 export function buildQuestionMetadata(opts: {
   data: QuestionByQidResult;
   assessment: StaffAssessment;
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
   courseQuestions?: CourseQuestionForPicker[];
-}): StaffAssessmentQuestionRow {
-  const { data, assessment, courseInstance, course, courseQuestions } = opts;
+}): EditorQuestionMetadata {
+  const { data, assessment, courseInstance, courseQuestions } = opts;
 
   const otherAssessments: OtherAssessment[] | null = (() => {
     if (!courseQuestions) return null;
@@ -419,121 +524,19 @@ export function buildQuestionMetadata(opts: {
     return filtered.length > 0 ? filtered : null;
   })();
 
-  return StaffAssessmentQuestionRowSchema.parse({
-    zone: {
-      id: '0',
-      assessment_id: assessment.id,
-      number: 0,
-      title: null,
-      max_points: null,
-      best_questions: null,
-      number_choose: null,
-      advance_score_perc: null,
-      lockpoint: false,
-      json_allow_real_time_grading: null,
-      json_can_submit: null,
-      json_can_view: null,
-      json_comment: null,
-      json_grade_rate_minutes: null,
-    },
-    course_instance: courseInstance,
-    course,
+  return {
     question: data.question,
     topic: data.topic,
-    open_issue_count: data.open_issue_count,
+    course: data.course,
     tags: data.tags,
     other_assessments: otherAssessments,
-    assessment,
-    assessment_question: {
-      id: '0',
-      question_id: data.question.id,
-      assessment_id: assessment.id,
-      ai_grading_mode: false,
-      allow_real_time_grading: true,
-      alternative_group_id: null,
-      advance_score_perc: null,
-      average_average_submission_score: null,
-      average_first_submission_score: null,
-      average_last_submission_score: null,
-      average_max_submission_score: null,
-      average_number_submissions: null,
-      average_submission_score_hist: null,
-      average_submission_score_variance: null,
-      deleted_at: null,
-      discrimination: null,
-      effective_advance_score_perc: 0,
-      first_submission_score_hist: null,
-      first_submission_score_variance: null,
-      force_max_points: null,
-      grade_rate_minutes: null,
-      incremental_submission_points_array_averages: null,
-      incremental_submission_points_array_variances: null,
-      incremental_submission_score_array_averages: null,
-      incremental_submission_score_array_variances: null,
-      init_points: null,
-      json_allow_real_time_grading: null,
-      json_auto_points: null,
-      json_comment: null,
-      json_force_max_points: null,
-      json_grade_rate_minutes: null,
-      json_manual_points: null,
-      json_max_auto_points: null,
-      json_max_points: null,
-      json_points: null,
-      json_tries_per_variant: null,
-      last_submission_score_hist: null,
-      last_submission_score_variance: null,
-      manual_rubric_id: null,
-      max_auto_points: null,
-      max_manual_points: null,
-      max_points: null,
-      max_submission_score_hist: null,
-      max_submission_score_variance: null,
-      mean_question_score: null,
-      median_question_score: null,
-      number: 0,
-      number_in_alternative_group: null,
-      number_submissions_hist: null,
-      number_submissions_variance: null,
-      points_list: null,
-      question_score_variance: null,
-      quintile_question_scores: null,
-      some_nonzero_submission_perc: null,
-      some_perfect_submission_perc: null,
-      some_submission_perc: null,
-      submission_score_array_averages: null,
-      submission_score_array_variances: null,
-      tries_per_variant: null,
-    },
-    alternative_group: {
-      id: '0',
-      assessment_id: assessment.id,
-      number: 0,
-      zone_id: '0',
-      advance_score_perc: null,
-      json_allow_real_time_grading: null,
-      json_auto_points: null,
-      json_can_submit: null,
-      json_can_view: null,
-      json_comment: null,
-      json_force_max_points: null,
-      json_grade_rate_minutes: null,
-      json_has_alternatives: null,
-      json_manual_points: null,
-      json_max_auto_points: null,
-      json_max_points: null,
-      json_points: null,
-      json_tries_per_variant: null,
-      number_choose: null,
-    },
-    start_new_zone: false,
-    start_new_alternative_group: true,
-    alternative_group_size: 1,
-  });
+    open_issue_count: data.open_issue_count,
+    assessment_question_id: null,
+  };
 }
 
 /**
- * Computes the set of tags shared across all alternatives in an alt group.
+ * Computes the set of tags shared across all alternatives in an alt pool.
  * Returns the tag objects from the first alternative that has tags.
  */
 export function getSharedTags(
@@ -558,7 +561,7 @@ export function getSharedTags(
 }
 
 /**
- * Returns the topic shared by all alternatives in an alt group, or null if they differ.
+ * Returns the topic shared by all alternatives in an alt pool, or null if they differ.
  */
 export function getSharedTopic(
   alternatives: { id: string }[],
@@ -570,5 +573,39 @@ export function getSharedTopic(
   if (topics.length === 0) return null;
   const firstName = topics[0].name;
   if (topics.every((t) => t.name === firstName)) return topics[0];
+  return null;
+}
+
+/**
+ * Returns a warning message if a tool is enabled in an earlier zone but
+ * disabled in a later zone. Students have access to tools in previous
+ * zones regardless, so the zone restriction is not actually enforced.
+ */
+export function getZoneMixedToolsWarning({
+  zone: currentZone,
+  zones,
+  assessmentToolDefaults,
+}: {
+  zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+}): string | null {
+  if (zones.length < 2) return null;
+
+  for (const tool of EnumAssessmentToolSchema.options) {
+    const defaultValue = assessmentToolDefaults[tool] ?? false;
+
+    let seenEnabled = false;
+    for (const zone of zones) {
+      const effectiveValue = zone.tools?.[tool]?.enabled ?? defaultValue;
+      if (effectiveValue) {
+        seenEnabled = true;
+      } else if (seenEnabled && currentZone.trackingId === zone.trackingId) {
+        const toolLabel = tool[0].toUpperCase() + tool.slice(1);
+        return `${toolLabel} is enabled in an earlier zone so students can still access it from earlier questions.`;
+      }
+    }
+  }
+
   return null;
 }

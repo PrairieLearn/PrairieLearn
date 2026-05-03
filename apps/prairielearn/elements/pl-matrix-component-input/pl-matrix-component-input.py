@@ -2,14 +2,13 @@ import math
 import random
 from enum import Enum
 from html import escape
-from typing import Literal
+from typing import Literal, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
 from sympy import Expr
-from typing_extensions import assert_never
 
 
 class ComparisonMode(Enum):

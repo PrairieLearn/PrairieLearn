@@ -48,6 +48,13 @@ let splitEsbuildServer: esbuild.ServeResult | null = null;
 
 let relativeSourcePaths: string[] | null = null;
 
+/**
+ * Node built-in modules to mark as external.
+ *
+ * See https://github.com/tree-sitter/tree-sitter/pull/5546.
+ */
+const NODE_ONLY_EXTERNALS = ['fs/promises', 'module'];
+
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
   options = {
     ...DEFAULT_OPTIONS,
@@ -87,6 +94,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      external: NODE_ONLY_EXTERNALS,
     });
     esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
 
@@ -117,6 +125,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      external: NODE_ONLY_EXTERNALS,
     });
     splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
@@ -299,6 +308,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     define: {
       'process.env.NODE_ENV': '"production"',
     },
+    external: NODE_ONLY_EXTERNALS,
     metafile: true, // Write metadata about the build
   });
 
@@ -322,6 +332,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     define: {
       'process.env.NODE_ENV': '"production"',
     },
+    external: NODE_ONLY_EXTERNALS,
     metafile: true,
   });
 
@@ -351,6 +362,9 @@ function makeManifest(
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
       if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
+      // External imports aren't emitted to disk,
+      // so they shouldn't be added to preloads.
+      if (entry.external) return;
       const preloadPath = path.relative(buildDirectory, entry.path);
       if (preloads.has(preloadPath)) return;
       preloads.add(preloadPath);

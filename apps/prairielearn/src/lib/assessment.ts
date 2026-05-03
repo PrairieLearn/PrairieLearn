@@ -34,19 +34,18 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 export const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
   instance_question_id: z.string().nullable(),
   variant_id: z.string().nullable(),
   variant_number: z.number().nullable(),
+  variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
@@ -314,10 +313,9 @@ export async function gradeAssessmentInstance({
     // to grade a broken variant as an error.
     if (row.variant.broken_at) return;
 
-    const check_submission_id = null;
     await gradeVariant({
       variant: row.variant,
-      check_submission_id,
+      check_submission_id: null,
       question: row.question,
       variant_course: row.variant_course,
       user_id,

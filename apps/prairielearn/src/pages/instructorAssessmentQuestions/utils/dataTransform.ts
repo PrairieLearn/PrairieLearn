@@ -7,7 +7,9 @@ import type {
   ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type {
+  AltPoolBlockForm,
   QuestionAlternativeForm,
+  StandaloneQuestionBlockForm,
   TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -28,7 +30,10 @@ function createTrackingId(): TrackingId {
  * - For all other questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
  * Only converts when the modern field isn't already set.
  */
-function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMethod?: string): T {
+function normalizeQuestionPoints<T extends QuestionPointsJson>(
+  obj: T,
+  isManualGrading: boolean,
+): T {
   const result = { ...obj };
   // For Manual questions, the sync code (sync_assessments.sql) uses max_points as
   // computed_manual_points. For Homework, max_points comes from maxPoints ?? points;
@@ -37,7 +42,7 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMe
   // Skip if split-point fields (autoPoints/maxAutoPoints) are already set, since those
   // indicate the author is using modern fields and intentionally omitted manualPoints.
   if (
-    gradingMethod === 'Manual' &&
+    isManualGrading &&
     result.manualPoints == null &&
     result.autoPoints == null &&
     result.maxAutoPoints == null
@@ -63,6 +68,114 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMe
 }
 
 /**
+ * Returns the effective grading method for an alt pool by examining its alternatives.
+ *
+ * Alternatives with missing metadata are treated as unknown. If the pool
+ * contains both Manual and unknown alternatives, this returns 'mixed' to
+ * avoid silently rewriting points when the unknown alternative may be
+ * auto-graded.
+ */
+function getAltPoolGradingMethod(
+  alternatives: QuestionAlternativeJson[],
+  getGradingMethod: (id?: string) => string | null | undefined,
+): 'manual' | 'auto' | 'mixed' {
+  const methods = alternatives.map((alt) => getGradingMethod(alt.id));
+  const allKnown = methods.every((m) => m != null);
+  const hasManual = methods.includes('Manual');
+  const hasNonManual = methods.some((m) => m != null && m !== 'Manual');
+  const hasUnknown = !allKnown;
+
+  if (hasManual && !hasNonManual && !hasUnknown) return 'manual';
+  if (!hasManual) return 'auto'; // all non-manual, all unknown, or non-manual + unknown
+  return 'mixed';
+}
+
+/** Returns true when a question block uses only legacy point fields. */
+function hasLegacyPoints(question: ZoneQuestionBlockJson): boolean {
+  return (
+    (question.points != null || question.maxPoints != null) &&
+    question.autoPoints == null &&
+    question.maxAutoPoints == null &&
+    question.manualPoints == null
+  );
+}
+
+function firstPointValue(points: QuestionPointsJson['points']): number | undefined {
+  if (points == null) return undefined;
+  return Array.isArray(points) ? points[0] : points;
+}
+
+/**
+ * Materializes pool-level legacy `points`/`maxPoints` onto a single alternative
+ * while preserving any point fields the alternative already defines.
+ */
+function normalizeMixedPoolAlternativePoints(
+  alternative: QuestionAlternativeJson,
+  poolPoints: QuestionPointsJson['points'],
+  poolMaxPoints: QuestionPointsJson['maxPoints'],
+  isManualGrading: boolean,
+): QuestionAlternativeJson {
+  const normalized = normalizeQuestionPoints(alternative, isManualGrading);
+
+  if (isManualGrading) {
+    // Check the *original* alternative for manualPoints, not the normalized
+    // one. `normalizeQuestionPoints` may have already derived manualPoints
+    // from the alternative's own `points`, but the sync code
+    // (sync_assessments.ts) resolves manual points as
+    // `maxPoints ?? points`, preferring the pool's values when the
+    // alternative doesn't define its own. We intentionally overwrite
+    // to match that priority: alt maxPoints > pool maxPoints > alt points
+    // > pool points.
+    if (alternative.manualPoints == null) {
+      const effectiveManualPoints =
+        alternative.maxPoints ?? poolMaxPoints ?? firstPointValue(alternative.points ?? poolPoints);
+      if (effectiveManualPoints != null) {
+        normalized.manualPoints = effectiveManualPoints;
+      }
+    }
+  } else {
+    // `autoPoints` can be `number | number[]` so we assign directly;
+    // `manualPoints` above uses `firstPointValue` because it must be scalar.
+    if (normalized.autoPoints == null && (alternative.points ?? poolPoints) != null) {
+      normalized.autoPoints = alternative.points ?? poolPoints;
+    }
+    if (normalized.maxAutoPoints == null && (alternative.maxPoints ?? poolMaxPoints) != null) {
+      normalized.maxAutoPoints = alternative.maxPoints ?? poolMaxPoints;
+    }
+  }
+
+  delete normalized.points;
+  delete normalized.maxPoints;
+  return normalized;
+}
+
+/**
+ * For mixed-grading alt pools, copies pool-level `points`/`maxPoints` to each
+ * alternative as needed, then normalizes per-alternative based on grading
+ * method. Clears points from the pool.
+ */
+function pushPointsToAlternatives(
+  question: ZoneQuestionBlockJson,
+  getGradingMethod: (id?: string) => string | null | undefined,
+): AltPoolBlockForm {
+  const { points, maxPoints, ...poolRest } = question;
+  return {
+    ...poolRest,
+    pointsDistributedInfoBanner: true,
+    trackingId: createTrackingId(),
+    alternatives: (question.alternatives ?? []).map((alt) => ({
+      ...normalizeMixedPoolAlternativePoints(
+        alt,
+        points,
+        maxPoints,
+        getGradingMethod(alt.id) === 'Manual',
+      ),
+      trackingId: createTrackingId(),
+    })),
+  } as AltPoolBlockForm;
+}
+
+/**
  * Prepares raw JSON zones for the editor by adding tracking IDs and
  * normalizing legacy point fields. Converts `points`/`maxPoints` to
  * `autoPoints`/`maxAutoPoints` (or `manualPoints` for manually-graded questions).
@@ -78,14 +191,32 @@ export function prepareZonesForEditor(
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
-    questions: zone.questions.map((question) => ({
-      ...normalizeQuestionPoints(question, getGradingMethod(question.id)),
-      trackingId: createTrackingId(),
-      alternatives: question.alternatives?.map((alt) => ({
-        ...normalizeQuestionPoints(alt, getGradingMethod(alt.id)),
+    questions: zone.questions.map((question) => {
+      // Alt pools have no `id`, so we can't look up a grading method directly.
+      // Determine it from the alternatives' grading methods instead.
+      const altPoolGradingMethod =
+        question.alternatives && !question.id
+          ? getAltPoolGradingMethod(question.alternatives, getGradingMethod)
+          : undefined;
+
+      if (altPoolGradingMethod === 'mixed' && hasLegacyPoints(question)) {
+        return pushPointsToAlternatives(question, getGradingMethod);
+      }
+
+      const isManualGrading =
+        altPoolGradingMethod === 'manual' || altPoolGradingMethod === 'auto'
+          ? altPoolGradingMethod === 'manual'
+          : getGradingMethod(question.id) === 'Manual';
+
+      return {
+        ...normalizeQuestionPoints(question, isManualGrading),
         trackingId: createTrackingId(),
-      })),
-    })),
+        alternatives: question.alternatives?.map((alt) => ({
+          ...normalizeQuestionPoints(alt, getGradingMethod(alt.id) === 'Manual'),
+          trackingId: createTrackingId(),
+        })),
+      };
+    }),
   })) as ZoneAssessmentForm[];
 }
 
@@ -102,7 +233,12 @@ export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJso
       questions: questions
         .filter((q) => !q.alternatives || q.alternatives.length > 0)
         .map((question: ZoneQuestionBlockForm) => {
-          const { trackingId: _trackingId, alternatives, ...questionRest } = question;
+          const {
+            trackingId: _trackingId,
+            pointsDistributedInfoBanner: _banner,
+            alternatives,
+            ...questionRest
+          } = question;
           return {
             ...questionRest,
             alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {
@@ -133,12 +269,26 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
-  // Cast needed for TypeScript spread inference with union types
+export function createQuestionWithTrackingId(): Omit<StandaloneQuestionBlockForm, 'id'> {
   return {
     trackingId: createTrackingId(),
     autoPoints: 1,
-  } as ZoneQuestionBlockForm;
+  };
+}
+
+/**
+ * Returns the default point fields for a newly added question based on its grading method.
+ */
+export function getDefaultPointFieldsForNewQuestion(gradingMethod: string | null | undefined) {
+  if (gradingMethod === 'Manual') {
+    return {
+      autoPoints: undefined,
+      manualPoints: 1,
+    };
+  }
+  return {
+    autoPoints: 1,
+  };
 }
 
 /**
@@ -151,45 +301,46 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 }
 
 /**
- * Creates a new alternative group with a trackingId and empty alternatives.
+ * Creates a new alternative pool with a trackingId and empty alternatives.
+ * Point defaults are chosen when the first question is added, since a blank
+ * pool does not yet have a grading method to inherit from.
  */
-export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
+export function createAltPoolWithTrackingId(): AltPoolBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
-    numberChoose: 1,
     canSubmit: [],
     canView: [],
-    autoPoints: 1,
-  } as ZoneQuestionBlockForm;
+  } as AltPoolBlockForm;
 }
 
 /**
  * Converts an alternative to a standalone question block.
  * Preserves trackingId so dnd-kit can track the item mid-drag.
- * When a parent block is provided, inherited fields (points, triesPerVariant,
- * advanced settings) are resolved so the extracted question retains its
- * effective values rather than losing them.
+ * Strips undefined own properties so they don't appear as explicit keys
+ * in the resulting object.
+ *
+ * When {@link parentPool} is provided, any inheritable fields that the
+ * alternative was inheriting (i.e. undefined on the alternative itself)
+ * are filled in from the parent so the standalone question preserves
+ * the same effective behavior.
  */
 export function alternativeToQuestionBlock(
   alt: QuestionAlternativeForm,
-  parent?: ZoneQuestionBlockForm,
-): ZoneQuestionBlockForm {
-  if (!parent) return { ...alt } as ZoneQuestionBlockForm;
-
-  return {
-    points: alt.points ?? parent.points,
-    autoPoints: alt.autoPoints ?? parent.autoPoints,
-    maxPoints: alt.maxPoints ?? parent.maxPoints,
-    maxAutoPoints: alt.maxAutoPoints ?? parent.maxAutoPoints,
-    manualPoints: alt.manualPoints ?? parent.manualPoints,
-    triesPerVariant: alt.triesPerVariant ?? parent.triesPerVariant,
-    forceMaxPoints: alt.forceMaxPoints ?? parent.forceMaxPoints,
-    advanceScorePerc: alt.advanceScorePerc ?? parent.advanceScorePerc,
-    gradeRateMinutes: alt.gradeRateMinutes ?? parent.gradeRateMinutes,
-    allowRealTimeGrading: alt.allowRealTimeGrading ?? parent.allowRealTimeGrading,
-    ...alt,
-  } as ZoneQuestionBlockForm;
+  parentPool?: ZoneQuestionBlockForm,
+): StandaloneQuestionBlockForm {
+  const merged = { ...alt };
+  if (parentPool) {
+    merged.autoPoints ??= parentPool.autoPoints;
+    merged.manualPoints ??= parentPool.manualPoints;
+    merged.maxAutoPoints ??= parentPool.maxAutoPoints;
+    merged.triesPerVariant ??= parentPool.triesPerVariant;
+    merged.forceMaxPoints ??= parentPool.forceMaxPoints;
+    merged.advanceScorePerc ??= parentPool.advanceScorePerc;
+    merged.gradeRateMinutes ??= parentPool.gradeRateMinutes;
+    merged.allowRealTimeGrading ??= parentPool.allowRealTimeGrading;
+  }
+  return omitUndefined(merged) as StandaloneQuestionBlockForm;
 }
 
 /**
@@ -223,16 +374,19 @@ const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
 function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
   return omitUndefined({
     id: alternative.id,
+
     points: alternative.points,
     autoPoints: alternative.autoPoints,
     maxPoints: alternative.maxPoints,
     maxAutoPoints: alternative.maxAutoPoints,
     manualPoints: alternative.manualPoints,
+
     triesPerVariant: alternative.triesPerVariant,
+    forceMaxPoints: alternative.forceMaxPoints,
     advanceScorePerc: alternative.advanceScorePerc,
     gradeRateMinutes: alternative.gradeRateMinutes,
-    forceMaxPoints: alternative.forceMaxPoints,
     allowRealTimeGrading: alternative.allowRealTimeGrading,
+    preferences: alternative.preferences,
     // For some reason, comment gets set to the empty string if it's not set.
     comment: alternative.comment || undefined,
   });
@@ -240,32 +394,36 @@ function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
 
 /** Serializes a question block for JSON output, stripping default values where appropriate. */
 function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
-  const isAlternativeGroup = 'alternatives' in question && question.alternatives;
+  const isAlternativePool = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({
-    id: isAlternativeGroup ? undefined : question.id,
-    alternatives: isAlternativeGroup
+    id: isAlternativePool ? undefined : question.id,
+    alternatives: isAlternativePool
       ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
     numberChoose: question.numberChoose,
-    // For some reason, comment gets set to the empty string if it's not set.
-    comment: question.comment || undefined,
 
-    // These defaults will be inherited by question alternatives, unless they override them.
-    // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
-    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
-    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
-
-    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
-    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
     points: question.points,
     autoPoints: question.autoPoints,
     maxPoints: question.maxPoints,
     maxAutoPoints: question.maxAutoPoints,
     manualPoints: question.manualPoints,
+
+    // triesPerVariant and forceMaxPoints don't inherit from zones, so stripping
+    // their defaults is safe — the sync code applies the same defaults.
+    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
     advanceScorePerc: question.advanceScorePerc,
     gradeRateMinutes: question.gradeRateMinutes,
+    // Preserve allowRealTimeGrading as-is: stripping the default `true` would
+    // silently change behavior when a parent zone/assessment sets `false`,
+    // since the sync code inherits question → zone → assessment.
+    allowRealTimeGrading: question.allowRealTimeGrading,
+    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
+    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
+    preferences: question.preferences,
+    // For some reason, comment gets set to the empty string if it's not set.
+    comment: question.comment || undefined,
   });
 }
 
@@ -280,7 +438,11 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       bestQuestions: zone.bestQuestions,
       advanceScorePerc: zone.advanceScorePerc,
       gradeRateMinutes: zone.gradeRateMinutes,
-      allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, true),
+      // Preserve as-is: stripping `true` would change behavior when the
+      // assessment-level default is `false`, since sync inherits zone → assessment.
+      allowRealTimeGrading: zone.allowRealTimeGrading,
+      // Preserve zone-level tool overrides as-is.
+      tools: zone.tools,
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),

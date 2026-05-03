@@ -1,12 +1,19 @@
 import type { Dispatch } from 'react';
-import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
-import {
-  QuestionAlternativeJsonSchema,
-  ZoneAssessmentJsonSchema,
-  ZoneQuestionBlockJsonSchema,
+import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
+import type {
+  Assessment,
+  AssessmentSet,
+  EnumAssessmentType,
+  Question,
+  Tag,
+  Topic,
+} from '../../lib/db-types.js';
+import type {
+  EnumAssessmentTool,
+  QuestionAlternativeJsonInput,
+  ZoneAssessmentJsonInput,
+  ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -24,48 +31,81 @@ export interface ChangeTrackingResult {
  * Branded UUID type for stable drag-and-drop identity.
  * Using a branded type prevents accidental confusion with question IDs (QIDs).
  */
-export const TrackingIdSchema = z.string().uuid().brand<'TrackingId'>();
-export type TrackingId = z.infer<typeof TrackingIdSchema>;
+export type TrackingId = string & { __brand: 'TrackingId' };
 
 /**
  * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
  */
-export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.extend({
-  trackingId: TrackingIdSchema,
-});
-export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
+export type QuestionAlternativeForm = QuestionAlternativeJsonInput & {
+  trackingId: TrackingId;
+};
 
 /**
- * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
+ * Shared fields across both question block variants.
+ * Excludes the discriminating `id` and `alternatives` properties.
  */
-export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
-  alternatives: true,
-}).extend({
-  trackingId: TrackingIdSchema,
-  alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
-});
-export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
+type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJsonInput, 'id' | 'alternatives'> & {
+  trackingId: TrackingId;
+  /** Transient flag: set when legacy `points` were pushed to alternatives due to mixed grading methods. Not serialized. */
+  pointsDistributedInfoBanner?: boolean;
+};
+
+/**
+ * A standalone question block — has a QID, no alternatives.
+ */
+export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
+  id: string;
+  alternatives?: undefined;
+};
+
+/**
+ * An alternative pool — has alternatives, no direct QID.
+ */
+export type AltPoolBlockForm = ZoneQuestionBlockFormBase & {
+  id?: undefined;
+  alternatives: QuestionAlternativeForm[];
+};
+
+/**
+ * A question block is either a standalone question or an alternative pool.
+ * Discriminate via `q.alternatives != null` (alt pool) or `q.id != null` (single question).
+ */
+export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltPoolBlockForm;
+
+/**
+ * A question (standalone or alternative) that is known to have a QID.
+ * Used by components that only render individual questions, never alt pools.
+ */
+export type QuestionWithId = StandaloneQuestionBlockForm | QuestionAlternativeForm;
+
+/**
+ * Asserts that a question block is a standalone question (not an alternative pool).
+ */
+export function assertStandaloneQuestion(
+  q: ZoneQuestionBlockForm,
+): asserts q is StandaloneQuestionBlockForm {
+  if (!q.id) throw new Error('Expected a standalone question block, not an alternative pool');
+}
 
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
-export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
-  trackingId: TrackingIdSchema,
-  questions: z.array(ZoneQuestionBlockFormSchema),
-});
-export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+export type ZoneAssessmentForm = Omit<ZoneAssessmentJsonInput, 'questions'> & {
+  trackingId: TrackingId;
+  questions: ZoneQuestionBlockForm[];
+};
 
 /**
  * Assessment data for the question picker, including fields needed for grouping.
  */
 export interface AssessmentForPicker {
-  assessment_id: string;
+  assessment_id: Assessment['id'];
   label: string;
-  color: string;
-  assessment_set_abbreviation?: string;
-  assessment_set_name?: string;
-  assessment_set_color?: string;
-  assessment_number?: string;
+  color: AssessmentSet['color'];
+  assessment_set_abbreviation?: AssessmentSet['abbreviation'];
+  assessment_set_name?: AssessmentSet['name'];
+  assessment_set_color?: AssessmentSet['color'];
+  assessment_number?: Assessment['number'];
 }
 
 /**
@@ -73,11 +113,12 @@ export interface AssessmentForPicker {
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
-  id: string;
+  id: Question['id'];
   qid: string;
-  title: string;
-  topic: { id: string; name: string; color: string };
-  tags: { id: string; name: string; color: string }[] | null;
+  title: Question['title'];
+  grading_method: Question['grading_method'];
+  topic: Pick<Topic, 'id' | 'name' | 'color'>;
+  tags: Pick<Tag, 'id' | 'name' | 'color'>[] | null;
   assessments: AssessmentForPicker[] | null;
 }
 
@@ -87,11 +128,15 @@ export interface CourseQuestionForPicker {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
-  /** Tracks which alternative groups are collapsed by their trackingId */
-  collapsedGroups: Set<string>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
+  /** Tracks which alternative pools are collapsed by their trackingId */
+  collapsedPools: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
+  /** Tracks which points-distributed info banners have been dismissed by trackingId */
+  dismissedBanners: Set<string>;
+  /** The currently selected item in the split-pane editor */
+  selectedItem: SelectedItem;
 }
 
 /**
@@ -103,8 +148,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm;
-      questionData?: StaffAssessmentQuestionRow;
+      question: StandaloneQuestionBlockForm;
+      questionData: EditorQuestionMetadata;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
+      question: AltPoolBlockForm;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';
@@ -122,7 +173,7 @@ export type EditorAction =
       type: 'DELETE_QUESTION';
       questionTrackingId: string;
       questionId: string;
-      /** Only set when deleting an alternative from an alternative group */
+      /** Only set when deleting an alternative from an alternative pool */
       alternativeTrackingId?: string;
     }
   | {
@@ -155,29 +206,30 @@ export type EditorAction =
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       oldQuestionId?: string;
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
-      type: 'TOGGLE_GROUP_COLLAPSE';
+      type: 'TOGGLE_POOL_COLLAPSE';
       trackingId: string;
     }
   | {
       type: 'TOGGLE_ZONE_COLLAPSE';
       trackingId: string;
     }
-  | { type: 'EXPAND_ALL_GROUPS' }
-  | { type: 'COLLAPSE_ALL_GROUPS' }
+  | { type: 'EXPAND_ALL_POOLS' }
+  | { type: 'COLLAPSE_ALL_POOLS' }
+  | { type: 'DISMISS_BANNER'; trackingId: string }
   | { type: 'RESET' }
   | {
       type: 'ADD_ALTERNATIVE';
-      altGroupTrackingId: string;
+      altPoolTrackingId: string;
       alternative: QuestionAlternativeForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: EditorQuestionMetadata;
     }
   | {
       type: 'REORDER_ALTERNATIVE';
       alternativeTrackingId: string;
-      toAltGroupTrackingId: string;
+      toAltPoolTrackingId: string;
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
@@ -189,13 +241,27 @@ export type EditorAction =
       beforeQuestionTrackingId: string | null;
     }
   | {
-      type: 'MERGE_QUESTION_INTO_ALT_GROUP';
+      type: 'MERGE_QUESTION_INTO_ALT_POOL';
       questionTrackingId: string;
-      toAltGroupTrackingId: string;
+      toAltPoolTrackingId: string;
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
   | { type: 'REMOVE_QUESTION_BY_QID'; qid: string }
+  | { type: 'SET_SELECTED_ITEM'; selectedItem: SelectedItem }
+  | {
+      /**
+       * Compound action dispatched after fetching question data in the picker.
+       * The reducer reads the latest zones and selectedItem to atomically
+       * apply all mutations (remove duplicates, update metadata, add/change
+       * the question, update selection).
+       */
+      type: 'QUESTION_PICKED';
+      qid: string;
+      metadata: EditorQuestionMetadata;
+      /** The selectedItem at the time the pick was initiated; used to detect stale picks. */
+      expectedSelectedItem: SelectedItem;
+    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
@@ -208,9 +274,9 @@ export type SelectedItem =
   | { type: 'zone'; zoneTrackingId: string }
   | { type: 'question'; questionTrackingId: string }
   | { type: 'alternative'; questionTrackingId: string; alternativeTrackingId: string }
-  | { type: 'altGroup'; questionTrackingId: string }
+  | { type: 'altPool'; questionTrackingId: string }
   | { type: 'picker'; zoneTrackingId: string; returnToSelection?: SelectedItem }
-  | { type: 'altGroupPicker'; zoneTrackingId: string; altGroupTrackingId?: string }
+  | { type: 'altPoolPicker'; zoneTrackingId: string; altPoolTrackingId?: string }
   | null;
 
 export type ViewType = 'simple' | 'detailed';
@@ -218,15 +284,15 @@ export type ViewType = 'simple' | 'detailed';
 /**
  * Describes the parent values from which advanced fields can be inherited.
  */
-export type InheritanceSource = 'zone' | 'group' | 'assessment';
+export type InheritanceSource = 'zone' | 'pool' | 'assessment';
 
 /**
  * Bundles all callbacks passed through the assessment tree hierarchy.
  */
 export interface TreeActions {
   onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onAddAltPool: (zoneTrackingId: string) => void;
+  onAddToAltPool: (altPoolTrackingId: string) => void;
   onDeleteQuestion: (
     questionTrackingId: string,
     questionId: string,
@@ -244,8 +310,8 @@ export interface TreeState {
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
-  collapsedGroups: Set<string>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
+  collapsedPools: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
   courseInstanceId: string;
@@ -258,12 +324,15 @@ export interface TreeState {
  */
 export interface DetailState {
   editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;
+  dismissedBanners: Set<string>;
 }
 
 /**
@@ -282,10 +351,11 @@ export interface DetailActions {
     alternativeTrackingId?: string,
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onAddToAltPool: (altPoolTrackingId: string) => void;
   onQuestionPicked: (qid: string) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onRemoveQuestionByQid: (qid: string) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
+  onDismissBanner: (trackingId: string) => void;
 }
