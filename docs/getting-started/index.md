@@ -71,11 +71,11 @@ In the **Course** sidebar, click **Questions**.
 
 ![Questions list — a populated course; yours will start empty](screenshots/06-questions.png)
 
-(Yours will be empty — the screenshot shows a populated course so you can see the layout.) Click **Add question**.
+(Yours will be empty — the screenshot shows a populated course so you can see the layout.) Click **Add question**. We highly recommend starting with a template, but for this tutorial, we will start from an empty question.
 
 ![Add question form with template tabs and a list of basic question templates](screenshots/07-create-question.png)
 
-For this tutorial: name it `Find the area of a rectangle`, set the **QID** to `rectangle-area`, choose **Empty question**, and then click **Create question**.
+Name it `Find the area of a rectangle`, set the **QID** to `rectangle-area`, choose **Empty question**, and then click **Create question**.
 
 You will land on the question's **Files** tab.
 
@@ -153,7 +153,9 @@ Save and preview. Click **New variant** to see the values change. Each student n
 
 !!! tip "You don't need to write every question from scratch"
 
-    The **Add question** modal includes a library of templates covering common patterns. Pick a template close to what you want and edit from there.
+    The **Add question** form leads with a gallery of templates organized into three categories — **Basic questions** (hardcoded prompts and answers), **Intermediate questions** (built-in randomization without Python), and **Advanced questions** (Python-powered randomization). After picking a template, you'll land in the **Files** tab with a working `question.html` (and `server.py` if applicable) ready to edit.
+
+    ![Add question form with the PrairieLearn template gallery showing Basic, Intermediate, and Advanced template cards](screenshots/11-question-templates.png)
 
     For something more specific, browse [**XC 101: Example Course**](https://us.prairielearn.com/pl/course/108/), which ships with 200+ ready-to-copy questions covering every element and grading style. To copy one into your course:
 

@@ -252,6 +252,23 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await page.goto(`${courseInstanceUrl}/instructor/course_admin/questions/create`);
   await page.getByLabel('Title').fill('Find the area of a rectangle');
   await page.getByLabel('Question identifier (QID)').fill('rectangle-area');
+
+  // The page defaults to "PrairieLearn template" with the gallery shown.
+  // Capture it before switching to "Empty question" for the tutorial flow.
+  await page.setViewportSize(TALL_VIEWPORT);
+  await page.getByRole('heading', { name: 'Basic questions', exact: true }).waitFor();
+  const templatesBottom = await page.evaluate(() => {
+    const groups = Array.from(document.querySelectorAll('[role="group"]'));
+    const advancedGroup = groups.find((g) =>
+      /Advanced questions/i.test(g.querySelector('h3')?.textContent ?? ''),
+    );
+    return advancedGroup ? Math.ceil(advancedGroup.getBoundingClientRect().bottom) : null;
+  });
+  await shoot(page, '11-question-templates', {
+    clip: { x: 0, y: 0, width: TALL_VIEWPORT.width, height: (templatesBottom ?? 1200) + 24 },
+  });
+  await page.setViewportSize(VIEWPORT);
+
   await page.getByText('Empty question', { exact: true }).click();
   await page.getByText("You'll start with empty").waitFor();
   await highlight(page.getByText('Empty question', { exact: true }));
