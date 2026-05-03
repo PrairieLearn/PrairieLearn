@@ -136,46 +136,11 @@ def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> N
 
 
 @pytest.mark.parametrize(
-    ("pattern", "used_names", "expected_output"),
-    [
-        ("*.py", {"test_file.py"}, "test_file_1.py"),
-        ("*.py", {"test_file.py", "test_file_1.py"}, "test_file_2.py"),
-        ("**.py", {"test_file.py"}, "test_file_1.py"),
-        ("*", {"test_file"}, "test_file_1"),
-    ],
-)
-def test_generate_filename_from_pattern_with_used_names(
-    pattern: str, used_names: set[str], expected_output: str
-) -> None:
-    output = file_upload.generate_filename_from_pattern(pattern, used_names)
-    assert output == expected_output
-    assert output not in used_names
-    assert fnmatch.fnmatch(output, pattern)
-
-
-# Patterns without `*` (purely literal, `?`-only, or `[...]`-only) cannot be
-# disambiguated and return their default match even on collision.
-@pytest.mark.parametrize(
-    ("pattern", "used_names", "expected_output"),
-    [
-        ("report.pdf", {"report.pdf"}, "report.pdf"),
-        ("test_?.txt", {"test_x.txt"}, "test_x.txt"),
-        ("[abc]_file.txt", {"a_file.txt"}, "a_file.txt"),
-        ("[*ab].txt", {"*.txt"}, "*.txt"),
-        ("[!x].txt", {"a.txt"}, "a.txt"),
-    ],
-)
-def test_generate_filename_from_pattern_unresolvable_collision(
-    pattern: str, used_names: set[str], expected_output: str
-) -> None:
-    output = file_upload.generate_filename_from_pattern(pattern, used_names)
-    assert output == expected_output
-
-
-@pytest.mark.parametrize(
     ("literal_names", "patterns"),
     [
         (["report.pdf"], ["report.pdf"]),
+        (["test_file.py"], ["*.py"]),
+        ([], ["*.py", "*.py"]),
         ([], ["?.txt", "?.txt"]),
         ([], ["[abc].txt", "[abc].txt"]),
     ],

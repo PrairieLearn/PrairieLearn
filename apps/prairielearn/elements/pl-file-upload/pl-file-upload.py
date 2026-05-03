@@ -357,9 +357,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 pl.add_submitted_file(data, file_name, file.get("contents", ""))
 
 
-def generate_filename_from_pattern(
-    pattern: str, used_names: set[str] | None = None
-) -> str:
+def generate_filename_from_pattern(pattern: str) -> str:
     """Generate a plausible filename from a glob pattern for testing."""
     bracket_star = "__BRACKET_STAR__"
     bracket_question_mark = "__BRACKET_QUESTION_MARK__"
@@ -380,30 +378,13 @@ def generate_filename_from_pattern(
             return bracket_question_mark
         return char
 
-    def build(star_substitute: str) -> str:
-        result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
-        result = result.replace("**", star_substitute)
-        result = result.replace("*", star_substitute)
-        result = result.replace("?", "x")
-        result = result.replace(bracket_star, "*")
-        result = result.replace(bracket_question_mark, "?")
-        return result
-
-    candidate = build("test_file")
-    used = used_names or set()
-    # Return the default candidate if the pattern doesn't collide or if it
-    # has no `*` wildcard to vary (ignoring literal * characters)
-    # Useful for scenarios like file-names="test_file.py" file-patterns="*.py"
-    has_wildcard = "*" in re.sub(r"\[[^\]]*\]", "", pattern)
-    if candidate not in used or not has_wildcard:
-        return candidate
-
-    # Deal with collisions by incrementing the suffix.
-    for n in range(1, 100):
-        candidate = build(f"test_file_{n}")
-        if candidate not in used:
-            return candidate
-    return candidate
+    result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
+    result = result.replace("**", "test_file")
+    result = result.replace("*", "test_file")
+    result = result.replace("?", "x")
+    result = result.replace(bracket_star, "*")
+    result = result.replace(bracket_question_mark, "?")
+    return result
 
 
 def _generate_unique_filenames(
@@ -424,7 +405,7 @@ def _generate_unique_filenames(
     for n in literal_names:
         add(n, f"file name '{n}'")
     for p in patterns:
-        add(generate_filename_from_pattern(p, set(origin)), f"pattern '{p}'")
+        add(generate_filename_from_pattern(p), f"pattern '{p}'")
     return names
 
 
