@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
@@ -196,7 +197,7 @@ async function regradeSingleAssessmentInstance({
   return await runInTransactionAsync(async () => {
     const result = await selectAndLockAssessmentInstance(assessment_instance_id);
     if (result == null) {
-      throw new Error('Assessment instance not found');
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
     const { assessment_instance: assessmentInstance, assessment } = result;
 

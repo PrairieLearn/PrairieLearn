@@ -102,27 +102,6 @@ WHERE
   id = $id
 FOR NO KEY UPDATE;
 
--- BLOCK select_and_lock_enrollment_for_staff_permissions
-SELECT
-  e.*
-FROM
-  enrollments AS e
-WHERE
-  e.course_instance_id = $course_instance_id
-  AND (
-    e.user_id = $user_id
-    OR e.pending_uid = (
-      SELECT
-        u.uid
-      FROM
-        users AS u
-      WHERE
-        u.id = $user_id
-    )
-  )
-  AND e.status IN ('joined', 'blocked', 'invited', 'rejected')
-FOR NO KEY UPDATE;
-
 -- BLOCK set_enrollment_status
 UPDATE enrollments
 SET

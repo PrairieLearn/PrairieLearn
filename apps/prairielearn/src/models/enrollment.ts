@@ -965,17 +965,19 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
 }): Promise<void> {
   assertIsInTransaction();
 
-  const lockedEnrollment = await queryOptionalRow(
-    sql.select_and_lock_enrollment_for_staff_permissions,
-    { course_instance_id: courseInstanceId, user_id: userId },
-    EnrollmentSchema,
-  );
+  const courseInstance = await selectCourseInstanceById(courseInstanceId);
+  const user = await selectAndLockUser(userId);
 
-  if (!lockedEnrollment) {
-    return;
-  }
+  const enrollment = await selectOptionalEnrollmentByUid({
+    uid: user.uid,
+    courseInstance,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+  });
 
-  await selectAndLockUser(userId);
+  if (!enrollment) return;
+
+  const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
   if (lockedEnrollment.status === 'invited' || lockedEnrollment.status === 'rejected') {
     await queryRow(
@@ -996,7 +998,7 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
       agentUserId,
       agentAuthnUserId,
     });
-  } else {
+  } else if (lockedEnrollment.status === 'joined' || lockedEnrollment.status === 'blocked') {
     await _updateEnrollmentStatus({
       lockedEnrollment,
       status: 'removed',
