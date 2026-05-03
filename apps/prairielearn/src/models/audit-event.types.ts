@@ -89,7 +89,6 @@ export type SupportedTableActionCombination =
         | 'reenrolled_by_manual_sync'
         | 'reenrolled_by_instructor'
         | 'staff_permissions_granted'
-        | 'staff_permissions_removed'
         | null;
     }
   | {

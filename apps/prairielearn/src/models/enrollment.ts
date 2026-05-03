@@ -975,82 +975,82 @@ export async function inviteEnrollment({
   });
 }
 
-type StaffPermissionsActionDetail = 'staff_permissions_granted' | 'staff_permissions_removed';
-
-const UpdatedEnrollmentRowSchema = z.object({
+const RecomputedEnrollmentRowSchema = z.object({
   old_enrollment: EnrollmentSchema,
-  new_enrollment: EnrollmentSchema,
-});
-
-const DeletedEnrollmentRowSchema = z.object({
-  old_enrollment: EnrollmentSchema,
-  resolved_user_id: z.string().nullable(),
+  new_enrollment: EnrollmentSchema.nullable(),
 });
 
 /**
- * Updates or deletes enrollments for one or more users in a course (or a single
- * course instance, if `courseInstanceId` is provided).
- * - Joined/blocked enrollments are transitioned to 'removed'.
- * - Invited/rejected enrollments are hard deleted.
- * Used when staff permissions are granted or removed.
+ * Reconciles a user's enrollments with their current staff status.
+ *
+ * For every course instance in the scope where the user is currently staff
+ * (either via an admin row, a non-`None` course role, or a non-`None` course
+ * instance role), the user's enrollment in that course instance is forced
+ * out of any active student state:
+ * - `joined` / `blocked` enrollments are transitioned to `removed`.
+ * - `invited` / `rejected` enrollments are hard-deleted.
+ * - `left` / `removed` / `lti13_pending` enrollments are left alone.
+ *
+ * The function is a no-op for course instances where the user is not staff,
+ * which is intentional: per design, losing staff permissions does not
+ * automatically re-enroll a user as a student.
+ *
+ * Pass `courseInstanceId` to scope to one course instance (the typical case
+ * for course-instance-level permission changes). Omit it to consider every
+ * course instance in the course (course-level permission changes).
+ *
+ * The caller must be inside a transaction and must have already applied the
+ * permission change before calling this function.
  */
-export async function updateEnrollmentsToRemovedForCourse({
+export async function recomputeEnrollmentForStaffStatus({
   courseId,
+  userId,
   courseInstanceId = null,
-  userIds,
-  actionDetail,
   agentUserId,
   agentAuthnUserId,
 }: {
   courseId: string;
+  userId: string;
   courseInstanceId?: string | null;
-  userIds: string[];
-  actionDetail: StaffPermissionsActionDetail;
   agentUserId: string;
   agentAuthnUserId: string;
 }): Promise<void> {
-  if (userIds.length === 0) return;
-
   assertIsInTransaction();
 
-  const updatedRows = await queryRows(
-    sql.update_enrollments_to_removed_for_course_batch,
-    { course_id: courseId, course_instance_id: courseInstanceId, user_ids: userIds },
-    UpdatedEnrollmentRowSchema,
+  await selectAndLockUser(userId);
+
+  const rows = await queryRows(
+    sql.recompute_enrollment_for_staff_status,
+    { course_id: courseId, course_instance_id: courseInstanceId, user_id: userId },
+    RecomputedEnrollmentRowSchema,
   );
 
-  for (const row of updatedRows) {
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
-      actionDetail,
-      rowId: row.new_enrollment.id,
-      oldRow: row.old_enrollment,
-      newRow: row.new_enrollment,
-      agentUserId,
-      agentAuthnUserId,
-    });
-  }
-
-  const deletedRows = await queryRows(
-    sql.delete_enrollments_for_course_batch,
-    { course_id: courseId, course_instance_id: courseInstanceId, user_ids: userIds },
-    DeletedEnrollmentRowSchema,
-  );
-
-  for (const row of deletedRows) {
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'delete',
-      actionDetail,
-      rowId: row.old_enrollment.id,
-      oldRow: row.old_enrollment,
-      newRow: null,
-      courseInstanceId: row.old_enrollment.course_instance_id,
-      subjectUserId: row.resolved_user_id,
-      agentUserId,
-      agentAuthnUserId,
-    });
+  for (const row of rows) {
+    if (row.new_enrollment != null) {
+      await insertAuditEvent({
+        tableName: 'enrollments',
+        action: 'update',
+        actionDetail: 'staff_permissions_granted',
+        rowId: row.new_enrollment.id,
+        oldRow: row.old_enrollment,
+        newRow: row.new_enrollment,
+        agentUserId,
+        agentAuthnUserId,
+      });
+    } else {
+      await insertAuditEvent({
+        tableName: 'enrollments',
+        action: 'delete',
+        actionDetail: 'staff_permissions_granted',
+        rowId: row.old_enrollment.id,
+        oldRow: row.old_enrollment,
+        newRow: null,
+        courseInstanceId: row.old_enrollment.course_instance_id,
+        subjectUserId: userId,
+        agentUserId,
+        agentAuthnUserId,
+      });
+    }
   }
 }
 

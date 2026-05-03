@@ -23,7 +23,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 
-import { updateEnrollmentsToRemovedForCourse } from './enrollment.js';
+import { recomputeEnrollmentForStaffStatus } from './enrollment.js';
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -60,9 +60,6 @@ export async function insertCoursePermissionsByUserUid({
  * Inserts course permissions for a user identified by user ID. This only allows
  * stepping up in permissions; if the user already has a higher role, the role
  * is not changed.
- *
- * When granting non-'None' permissions, also updates any existing enrollments
- * for this user in instances of this course to 'removed' status.
  */
 async function insertCoursePermissionsByUserId({
   course_id,
@@ -83,27 +80,18 @@ async function insertCoursePermissionsByUserId({
       authn_user_id,
     });
 
-    // Update enrollments to 'removed' when granting non-'None' permissions.
-    // The enrollment update is idempotent (only updates 'joined' enrollments),
-    // so it's safe to call even if permissions weren't actually changed.
-    if (course_role !== 'None') {
-      await updateEnrollmentsToRemovedForCourse({
-        courseId: course_id,
-        userIds: [user_id],
-        actionDetail: 'staff_permissions_granted',
-        agentUserId: authn_user_id,
-        agentAuthnUserId: authn_user_id,
-      });
-    }
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
 /**
  * Updates the course role for an existing course_permissions record.
  * Throws a 404 error if no course permissions exist for the user.
- *
- * When updating to a non-'None' role, also updates any existing enrollments
- * for this user in instances of this course to 'removed' status.
  */
 export async function updateCoursePermissionsRole({
   course_id,
@@ -126,22 +114,18 @@ export async function updateCoursePermissionsRole({
       throw new error.HttpStatusError(404, 'No course permissions to update');
     }
 
-    if (course_role !== 'None') {
-      await updateEnrollmentsToRemovedForCourse({
-        courseId: course_id,
-        userIds: [user_id],
-        actionDetail: 'staff_permissions_granted',
-        agentUserId: authn_user_id,
-        agentAuthnUserId: authn_user_id,
-      });
-    }
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
 /**
- * Deletes course permissions for one or more users. Also updates all
- * enrollments for these users in instances of this course to 'removed' status.
- * Does not throw an error if no course permissions exist.
+ * Deletes course permissions for one or more users. Does not throw an error if
+ * no course permissions exist.
  */
 export async function deleteCoursePermissions({
   course_id,
@@ -155,19 +139,20 @@ export async function deleteCoursePermissions({
   const user_ids = Array.isArray(user_id) ? user_id : [user_id];
 
   await runInTransactionAsync(async () => {
-    await updateEnrollmentsToRemovedForCourse({
-      courseId: course_id,
-      userIds: user_ids,
-      actionDetail: 'staff_permissions_removed',
-      agentUserId: authn_user_id,
-      agentAuthnUserId: authn_user_id,
-    });
-
     await execute(sql.delete_course_permissions, {
       course_id,
       user_ids,
       authn_user_id,
     });
+
+    for (const id of user_ids) {
+      await recomputeEnrollmentForStaffStatus({
+        courseId: course_id,
+        userId: id,
+        agentUserId: authn_user_id,
+        agentAuthnUserId: authn_user_id,
+      });
+    }
   });
 }
 
@@ -180,9 +165,6 @@ export async function deleteCoursePermissions({
  *
  * This only allows stepping up in permissions; if the user already has a higher
  * course instance role, the role is not changed.
- *
- * When granting non-'None' permissions, also updates any existing enrollment
- * for this user in this course instance to 'removed' status.
  */
 export async function insertCourseInstancePermissions({
   course_id,
@@ -200,14 +182,13 @@ export async function insertCourseInstancePermissions({
   await runInTransactionAsync(async () => {
     // Ensure the user has a course_permissions record (with at least 'None' role).
     // This is necessary for administrators who may not have explicit course permissions.
-    await insertCoursePermissionsByUserId({
+    await execute(sql.insert_course_permissions, {
       course_id,
       user_id,
       course_role: 'None',
       authn_user_id,
     });
 
-    // Now insert the course instance permissions
     await execute(sql.insert_course_instance_permissions, {
       course_id,
       course_instance_id,
@@ -216,19 +197,13 @@ export async function insertCourseInstancePermissions({
       authn_user_id,
     });
 
-    // Update enrollment to 'removed' when granting non-'None' permissions.
-    // The enrollment update is idempotent (only updates 'joined' enrollments),
-    // so it's safe to call even if permissions weren't actually changed.
-    if (course_instance_role !== 'None') {
-      await updateEnrollmentsToRemovedForCourse({
-        courseId: course_id,
-        courseInstanceId: course_instance_id,
-        userIds: [user_id],
-        actionDetail: 'staff_permissions_granted',
-        agentUserId: authn_user_id,
-        agentAuthnUserId: authn_user_id,
-      });
-    }
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
@@ -250,21 +225,28 @@ export async function upsertCourseInstancePermissionsRole({
   course_instance_role: EnumCourseInstanceRole;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.upsert_course_instance_permissions_role, {
-    course_id,
-    course_instance_id,
-    user_id,
-    course_instance_role,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.upsert_course_instance_permissions_role, {
+      course_id,
+      course_instance_id,
+      user_id,
+      course_instance_role,
+      authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
 /**
  * Updates the course instance role for an existing course_instance_permissions
  * record. Throws a 404 error if no course instance permissions exist for the user.
- *
- * When updating to a non-'None' role, also updates any existing enrollment
- * for this user in this course instance to 'removed' status.
  */
 export async function updateCourseInstancePermissionsRole({
   course_id,
@@ -289,16 +271,13 @@ export async function updateCourseInstancePermissionsRole({
       throw new error.HttpStatusError(404, 'No course instance permissions to update');
     }
 
-    if (course_instance_role !== 'None') {
-      await updateEnrollmentsToRemovedForCourse({
-        courseId: course_id,
-        courseInstanceId: course_instance_id,
-        userIds: [user_id],
-        actionDetail: 'staff_permissions_granted',
-        agentUserId: authn_user_id,
-        agentAuthnUserId: authn_user_id,
-      });
-    }
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 
@@ -317,11 +296,21 @@ export async function deleteCourseInstancePermissions({
   user_id: string;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_instance_permissions, {
-    course_id,
-    course_instance_id,
-    user_id,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.delete_course_instance_permissions, {
+      course_id,
+      course_instance_id,
+      user_id,
+      authn_user_id,
+    });
+
+    await recomputeEnrollmentForStaffStatus({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      userId: user_id,
+      agentUserId: authn_user_id,
+      agentAuthnUserId: authn_user_id,
+    });
   });
 }
 

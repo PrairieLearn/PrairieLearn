@@ -141,22 +141,58 @@ WHERE
 RETURNING
   *;
 
--- BLOCK update_enrollments_to_removed_for_course_batch
+-- BLOCK recompute_enrollment_for_staff_status
+-- For a single user, ensures that any enrollment in a course instance where
+-- they are currently staff is not in an active student state:
+--   joined / blocked   -> 'removed'
+--   invited / rejected -> hard-deleted
+--   left / removed / lti13_pending / no row -> no-op
+--
+-- Pass a course_instance_id to scope to a single course instance; pass NULL
+-- to consider every course instance in the course.
+--
+-- Returns one row per modified enrollment. new_enrollment is null for deletes.
 WITH
-  old_enrollments AS (
+  user_info AS (
     SELECT
-      e.*
+      u.id,
+      u.uid
     FROM
-      enrollments AS e
-      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+      users AS u
+    WHERE
+      u.id = $user_id
+  ),
+  scoped_course_instances AS (
+    SELECT
+      ci.id
+    FROM
+      course_instances AS ci
     WHERE
       ci.course_id = $course_id
       AND (
         $course_instance_id::bigint IS NULL
         OR ci.id = $course_instance_id::bigint
       )
-      AND e.user_id = ANY ($user_ids::bigint[])
-      AND e.status IN ('joined', 'blocked')
+  ),
+  staff_course_instances AS (
+    SELECT
+      sci.id
+    FROM
+      scoped_course_instances AS sci,
+      user_info AS ui
+    WHERE
+      users_is_instructor_in_course_instance (ui.id, sci.id)
+  ),
+  candidate_enrollments AS (
+    SELECT
+      e.*
+    FROM
+      enrollments AS e
+      JOIN staff_course_instances AS sci ON (sci.id = e.course_instance_id),
+      user_info AS ui
+    WHERE
+      e.user_id = ui.id
+      OR e.pending_uid = ui.uid
     FOR NO KEY UPDATE OF
       e
   ),
@@ -165,62 +201,31 @@ WITH
     SET
       status = 'removed'
     FROM
-      old_enrollments AS oe
+      candidate_enrollments AS ce
     WHERE
-      e.id = oe.id
+      e.id = ce.id
+      AND ce.status IN ('joined', 'blocked')
     RETURNING
       e.*
-  )
-SELECT
-  to_jsonb(oe.*) AS old_enrollment,
-  to_jsonb(ue.*) AS new_enrollment
-FROM
-  old_enrollments AS oe
-  JOIN updated_enrollments AS ue ON (oe.id = ue.id);
-
--- BLOCK delete_enrollments_for_course_batch
-WITH
-  enrollments_to_delete AS (
-    SELECT
-      e.*
-    FROM
-      enrollments AS e
-      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
-    WHERE
-      ci.course_id = $course_id
-      AND (
-        $course_instance_id::bigint IS NULL
-        OR ci.id = $course_instance_id::bigint
-      )
-      AND (
-        e.user_id = ANY ($user_ids::bigint[])
-        OR e.pending_uid IN (
-          SELECT
-            u.uid
-          FROM
-            users AS u
-          WHERE
-            u.id = ANY ($user_ids::bigint[])
-        )
-      )
-      AND e.status IN ('invited', 'rejected')
-    FOR NO KEY UPDATE OF
-      e
   ),
   deleted_enrollments AS (
-    DELETE FROM enrollments AS e USING enrollments_to_delete AS etd
+    DELETE FROM enrollments AS e USING candidate_enrollments AS ce
     WHERE
-      e.id = etd.id
+      e.id = ce.id
+      AND ce.status IN ('invited', 'rejected')
     RETURNING
       e.*
   )
 SELECT
-  to_jsonb(etd.*) AS old_enrollment,
-  COALESCE(etd.user_id, u.id)::bigint AS resolved_user_id
+  to_jsonb(ce.*) AS old_enrollment,
+  to_jsonb(ue.*) AS new_enrollment
 FROM
-  enrollments_to_delete AS etd
-  JOIN deleted_enrollments AS de ON (etd.id = de.id)
-  LEFT JOIN users AS u ON (u.uid = etd.pending_uid);
+  candidate_enrollments AS ce
+  LEFT JOIN updated_enrollments AS ue ON (ce.id = ue.id)
+  LEFT JOIN deleted_enrollments AS de ON (ce.id = de.id)
+WHERE
+  ue.id IS NOT NULL
+  OR de.id IS NOT NULL;
 
 -- BLOCK select_users_and_enrollments_for_course_instance
 WITH

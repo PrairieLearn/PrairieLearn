@@ -29,7 +29,6 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     reenrolled_by_manual_sync: 'Reenrolled (manual student list sync)',
     reenrolled_by_instructor: 'Reenrolled in course by instructor',
     staff_permissions_granted: 'Removed from course (added to course staff)',
-    staff_permissions_removed: 'Removed from course (lost course staff permissions)',
 
     // You can never actually see these states since canceling an invitation
     // hard-deletes the enrollment.
