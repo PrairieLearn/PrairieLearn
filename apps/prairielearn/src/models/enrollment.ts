@@ -1006,40 +1006,13 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
 }
 
 /**
- * Updates all enrollments for a user in all instances of a course to 'removed' status.
+ * Updates or deletes all enrollments for one or more users in all instances of a course.
+ * - Joined/blocked enrollments are transitioned to 'removed'.
+ * - Invited/rejected enrollments are hard deleted.
  * Used when staff permissions are granted or removed at the course level.
  * Must be called within a transaction.
  */
 export async function updateEnrollmentsToRemovedForCourse({
-  courseId,
-  userId,
-  actionDetail,
-  agentUserId,
-  agentAuthnUserId,
-}: {
-  courseId: string;
-  userId: string;
-  actionDetail: StaffPermissionsActionDetail;
-  agentUserId: string;
-  agentAuthnUserId: string;
-}): Promise<void> {
-  await updateEnrollmentsToRemovedForCourseBatch({
-    courseId,
-    userIds: [userId],
-    actionDetail,
-    agentUserId,
-    agentAuthnUserId,
-  });
-}
-
-/**
- * Updates or deletes all enrollments for multiple users in all instances of a course.
- * - Joined/blocked enrollments are transitioned to 'removed'.
- * - Invited/rejected enrollments are hard deleted.
- * Used when staff permissions are granted or removed for multiple users.
- * Must be called within a transaction.
- */
-export async function updateEnrollmentsToRemovedForCourseBatch({
   courseId,
   userIds,
   actionDetail,

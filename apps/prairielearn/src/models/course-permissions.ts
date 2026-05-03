@@ -23,7 +23,6 @@ import {
 import {
   updateEnrollmentToRemovedForStaffPermissions,
   updateEnrollmentsToRemovedForCourse,
-  updateEnrollmentsToRemovedForCourseBatch,
 } from './enrollment.js';
 import { selectOrInsertUserByUid } from './user.js';
 
@@ -90,7 +89,7 @@ async function insertCoursePermissionsByUserId({
     if (course_role !== 'None') {
       await updateEnrollmentsToRemovedForCourse({
         courseId: course_id,
-        userId: user_id,
+        userIds: [user_id],
         actionDetail: 'staff_permissions_granted',
         agentUserId: authn_user_id,
         agentAuthnUserId: authn_user_id,
@@ -130,7 +129,7 @@ export async function updateCoursePermissionsRole({
     if (course_role !== 'None') {
       await updateEnrollmentsToRemovedForCourse({
         courseId: course_id,
-        userId: user_id,
+        userIds: [user_id],
         actionDetail: 'staff_permissions_granted',
         agentUserId: authn_user_id,
         agentAuthnUserId: authn_user_id,
@@ -156,7 +155,7 @@ export async function deleteCoursePermissions({
   const user_ids = Array.isArray(user_id) ? user_id : [user_id];
 
   await runInTransactionAsync(async () => {
-    await updateEnrollmentsToRemovedForCourseBatch({
+    await updateEnrollmentsToRemovedForCourse({
       courseId: course_id,
       userIds: user_ids,
       actionDetail: 'staff_permissions_removed',
