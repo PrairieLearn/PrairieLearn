@@ -4,7 +4,7 @@
  * Dots are allowed in non-leading positions of each path segment (e.g., `foo.bar` or `foo/bar.baz`
  * are valid, but `.foo` or `foo/.bar` are not).
  *
- * TODO: Use the `v flag to ensure we have no regex ambiguity once we are on ES2024.
+ * TODO: Use the `v` flag to ensure this matches the behavior of browsers when this is used in the pattern attribute once we are on ES2024.
  */
 export const SHORT_NAME_REGEX =
   /^[A-Za-z0-9\-_][A-Za-z0-9\-_.]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_.]*)*$/;
