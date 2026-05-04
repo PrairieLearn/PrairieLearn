@@ -214,12 +214,12 @@ export async function selectCoursesWithStaffAccess({
   user_id: string;
   is_administrator: boolean;
 }): Promise<CourseWithPermissions[]> {
-  const rawCourses = await run(async () => {
+  const rawCourses: { course_role: EnumCourseRole; course: Course }[] = await run(async () => {
     if (is_administrator) {
       // Administrators have Owner permission in all courses, so we can skip the
       // complex query and just return all courses
       const courses = await queryRows(sql.select_all_courses, CourseSchema);
-      return courses.map((course) => ({ course, course_role: 'Owner' as EnumCourseRole }));
+      return courses.map((course) => ({ course, course_role: 'Owner' }));
     }
 
     return await queryRows(

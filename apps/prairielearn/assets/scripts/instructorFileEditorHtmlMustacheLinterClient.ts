@@ -8,4 +8,4 @@ document.addEventListener('pl:html-mustache-linter-attach', ((e: Event) => {
     editor: event.detail.editor,
     reformatButton: document.querySelector<HTMLButtonElement>('.js-reformat-html-mustache'),
   });
-}) as EventListener);
+}));

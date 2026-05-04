@@ -580,8 +580,8 @@ async function loadCourseInfo({
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
     const result = deduplicateByName<Entry>(
-      (info![fieldName] ?? []) as Entry[],
-      defaults as Entry[] | undefined,
+      (info![fieldName] ?? []),
+      defaults,
     );
 
     if (result.duplicates.size > 0) {

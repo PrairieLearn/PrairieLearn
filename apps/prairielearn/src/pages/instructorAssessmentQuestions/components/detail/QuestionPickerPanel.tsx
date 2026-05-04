@@ -109,7 +109,7 @@ export function QuestionPickerPanel({
       topics: Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       tags: Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       assessments: [
-        { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' } as FilterItem,
+        { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' },
         ...sortedAssessments,
       ],
     };
