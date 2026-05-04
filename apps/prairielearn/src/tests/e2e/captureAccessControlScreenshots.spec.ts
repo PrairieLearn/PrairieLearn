@@ -2,7 +2,7 @@
  * Regenerates the screenshots embedded in `docs/assessment/accessControlModern.md`.
  *
  * This is a Playwright spec rather than a normal test. It is skipped unless
- * `CAPTURE_ACCESS_CONTROL_SCREENSHOTS=1` is set so normal e2e runs do not
+ * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
  * Usage: `yarn capture-access-control-screenshots`
@@ -299,8 +299,8 @@ async function seedRealisticOverrides({
 
 test.describe('Modern access control docs screenshots', () => {
   test.skip(
-    !process.env.CAPTURE_ACCESS_CONTROL_SCREENSHOTS,
-    'Set CAPTURE_ACCESS_CONTROL_SCREENSHOTS=1 to regenerate docs/assessment/accessControlModern/*.png.',
+    !process.env.CAPTURE_SCREENSHOTS,
+    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/assessment/accessControlModern/*.png.',
   );
 
   test('capture access-control UI screenshots', async ({

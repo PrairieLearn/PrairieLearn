@@ -85,7 +85,6 @@ export function AccessControlForm({
     append: appendOverride,
     remove: removeOverride,
     move: moveOverride,
-    insert: insertOverride,
   } = useFieldArray({
     control,
     name: 'overrides',
@@ -132,17 +131,8 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
-    // Enrollment overrides are inserted before student-label overrides
-    const firstLabelIndex = watchedData.overrides.findIndex(
-      (o) => o.appliesTo.targetType === 'student_label',
-    );
-    if (firstLabelIndex === -1) {
-      appendOverride(newOverride);
-      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
-    } else {
-      insertOverride(firstLabelIndex, newOverride);
-      setSelectedRule({ type: 'override', index: firstLabelIndex });
-    }
+    appendOverride(newOverride);
+    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
   };
 
   const handleDeleteClick = (index: number) => {
