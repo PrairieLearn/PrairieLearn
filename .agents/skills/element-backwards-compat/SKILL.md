@@ -12,6 +12,6 @@ The persisted dict-shaped fields are:
 
 ## Rules
 
-1. **Adding a new key to a persisted dict?** Every reader in every element function must use `dict.get(key, default)` with a sensible default, never `dict[key]`. This applies to top-level keys and to keys inside any nested per-block / per-answer dict stored inside a persisted field. If the element uses a `TypedDict` for the nested shape, mark the new field `NotRequired[...]` from `typing_extensions` so pyright catches unguarded reads.
+1. **Adding a new key to a persisted dict?** Every reader in every element function must use `dict.get(key, default)` with a sensible default, never `dict[key]`. This applies to top-level keys and to keys inside any nested per-block / per-answer dict stored inside a persisted field. If the element uses a `TypedDict` for the nested shape, mark the new field `NotRequired[...]` from `typing` so pyright catches unguarded reads.
 
 2. **Renaming, removing, or changing the semantics of a persisted key?** Don't. Keep the old key alongside the new one and have readers fall back to it when the new one is missing. Old rows still hold the old shape forever.

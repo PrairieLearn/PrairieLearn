@@ -7,9 +7,7 @@ from prairielearn import ...
 
 import base64
 import math
-from typing import Any, Literal, TypedDict
-
-from typing_extensions import NotRequired
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 class PartialScore(TypedDict):

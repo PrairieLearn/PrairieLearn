@@ -1,13 +1,12 @@
 from enum import Enum
 from random import choice
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
 from pint import UnitRegistry, errors
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):

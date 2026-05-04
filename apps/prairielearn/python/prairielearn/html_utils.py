@@ -8,14 +8,12 @@ from prairielearn import ...
 import html
 import re
 from enum import Enum
-from typing import Any, TypeVar, overload
+from typing import Any, overload
 
 import lxml.html
 
 from prairielearn.colors import PLColor
 from prairielearn.misc_utils import escape_unicode_string
-
-EnumT = TypeVar("EnumT", bound=Enum)
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
 LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
@@ -35,7 +33,7 @@ LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
 })
 
 
-def get_enum_attrib(
+def get_enum_attrib[EnumT: Enum](
     element: lxml.html.HtmlElement,
     name: str,
     enum_type: type[EnumT],

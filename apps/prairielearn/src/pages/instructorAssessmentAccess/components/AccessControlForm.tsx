@@ -5,17 +5,20 @@ import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { SplitPane, StickySaveBar, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
-import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../../models/assessment-access-control-rules.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
-import { MainRuleForm } from './MainRuleForm.js';
+import { DefaultRuleForm } from './DefaultRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
   createDefaultOverrideFormData,
   formDataToJson,
-  jsonToMainRuleFormData,
+  jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
 import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
@@ -28,10 +31,12 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
  */
 const accessControlFormInitialRightWidth = 560;
 
-type SelectedRule = { type: 'main' } | { type: 'override'; index: number } | null;
+type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | null;
 
 export function AccessControlForm({
   initialData = defaultInitialData,
+  prairieTestExamMetadata,
+  ptHost,
   onSubmit,
   courseInstance,
   assessmentId,
@@ -39,6 +44,8 @@ export function AccessControlForm({
   alert,
 }: {
   initialData?: AccessControlJsonWithId[];
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentId: string;
@@ -49,15 +56,15 @@ export function AccessControlForm({
   const deleteModal = useModalState<{ index: number; name: string }>();
 
   const displayTimezone = courseInstance.display_timezone;
-  const mainRule = initialData[0]
-    ? jsonToMainRuleFormData(initialData[0], displayTimezone)
-    : jsonToMainRuleFormData({}, displayTimezone);
+  const defaultRule = initialData[0]
+    ? jsonToDefaultRuleFormData(initialData[0], displayTimezone)
+    : jsonToDefaultRuleFormData({}, displayTimezone);
   const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
   const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
     defaultValues: {
-      mainRule,
+      defaultRule,
       overrides,
     },
   });
@@ -91,7 +98,7 @@ export function AccessControlForm({
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData)) {
+    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
       nextManualErrors.set(error.path, error.message);
     }
 
@@ -116,14 +123,14 @@ export function AccessControlForm({
     }
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData, errors]);
+  }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = (data: AccessControlFormData) => {
     onSubmit(formDataToJson(data));
   };
 
   const addOverride = () => {
-    const newOverride = createDefaultOverrideFormData(watchedData.mainRule);
+    const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
     // Enrollment overrides are inserted before student-label overrides
     const firstLabelIndex = watchedData.overrides.findIndex(
       (o) => o.appliesTo.targetType === 'student_label',
@@ -184,7 +191,7 @@ export function AccessControlForm({
   };
 
   const rightTitle =
-    selectedRule?.type === 'main'
+    selectedRule?.type === 'default'
       ? 'Defaults'
       : selectedRule?.type === 'override'
         ? getOverrideName(selectedRule.index)
@@ -202,9 +209,9 @@ export function AccessControlForm({
   ) : undefined;
 
   const rightPanel =
-    selectedRule?.type === 'main' ? (
+    selectedRule?.type === 'default' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm
+        <DefaultRuleForm
           displayTimezone={displayTimezone}
           assessmentId={assessmentId}
           courseInstanceId={courseInstance.id}
@@ -258,16 +265,18 @@ export function AccessControlForm({
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
-                    mainRule={watchedData.mainRule}
+                    defaultRule={watchedData.defaultRule}
                     overrides={watchedData.overrides}
+                    prairieTestExamMetadata={prairieTestExamMetadata}
+                    ptHost={ptHost}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={moveOverride}
-                    onEditMainRule={() => setSelectedRule({ type: 'main' })}
-                    onClearMainRule={() =>
+                    onEditDefaultRule={() => setSelectedRule({ type: 'default' })}
+                    onClearDefaultRule={() =>
                       reset(
                         {
-                          mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                          defaultRule: jsonToDefaultRuleFormData({}, displayTimezone),
                           overrides: watch('overrides'),
                         },
                         {

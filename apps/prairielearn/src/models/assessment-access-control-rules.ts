@@ -179,8 +179,8 @@ function dbBaseRowToAccessControlJson(
     afterComplete.score = score;
   }
 
-  const isMainRule = rule.number === 0 && rule.target_type === 'none';
-  const beforeReleaseListed = isMainRule
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
+  const beforeReleaseListed = isDefaultRule
     ? (rule.before_release_listed ?? false)
     : rule.before_release_listed;
 
@@ -249,6 +249,26 @@ export async function selectAccessControlRules(
     RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
+}
+
+export const PrairieTestExamMetadataSchema = z.object({
+  uuid: z.string(),
+  pt_exam_id: z.string().nullable(),
+  pt_exam_name: z.string().nullable(),
+  pt_course_id: z.string().nullable(),
+  pt_course_name: z.string().nullable(),
+});
+export type PrairieTestExamMetadata = z.infer<typeof PrairieTestExamMetadataSchema>;
+
+export async function selectPrairieTestExamMetadataByUuids(
+  examUuids: string[],
+): Promise<PrairieTestExamMetadata[]> {
+  if (examUuids.length === 0) return [];
+  return await queryRows(
+    sql.select_prairietest_exam_metadata_by_uuids,
+    { exam_uuids: examUuids },
+    PrairieTestExamMetadataSchema,
+  );
 }
 
 /**

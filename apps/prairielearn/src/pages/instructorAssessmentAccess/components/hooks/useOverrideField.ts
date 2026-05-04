@@ -5,7 +5,7 @@ import type { AccessControlFormData, OverridableFieldName } from '../types.js';
 
 /**
  * Hook that manages whether a single override field is active (overridden) or
- * inherited from the main rule.  The overridden state is tracked via the
+ * inherited from the default rule.  The overridden state is tracked via the
  * `overriddenFields` string array on the override – not by setting the value
  * to `undefined`, which react-hook-form does not support.
  */

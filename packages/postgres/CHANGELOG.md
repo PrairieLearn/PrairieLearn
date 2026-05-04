@@ -1,5 +1,12 @@
 # @prairielearn/postgres
 
+## 6.0.2
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
 ## 6.0.1
 
 ### Patch Changes
