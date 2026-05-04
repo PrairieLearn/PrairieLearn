@@ -159,7 +159,7 @@
     "es-main": "^1.4.0",
     "es-toolkit": "^1.45.1",
     "execa": "^9.6.1",
-    "express": "^4.22.1",
+    "express": "^4.22.1 <5",
     "express-async-handler": "^1.2.0",
     "fabric": "4.6.0-browser",
     "fast-glob": "^3.3.3",
@@ -270,7 +270,7 @@
     "xml2js": "^0.6.2",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.30",
-    "zod": "^3.25.76",
+    "zod": "^3.25.76 <4",
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
