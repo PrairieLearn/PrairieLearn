@@ -597,7 +597,8 @@ function InstructorAssessmentSettingsInner({
                     <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
                       Homework or Exam
                     </a>
-                    . To change the type, make a copy of this assessment with the new type.
+                    . To change the type, make a copy of this assessment, then modify the type on
+                    the copied assessment's detail page.
                   </small>
                 </div>
               </div>
