@@ -4,4 +4,4 @@ import './behaviors/dropdown.js';
 import './behaviors/popover.js';
 import './behaviors/tooltip.js';
 import './behaviors/collapsible-card.js';
-import './lib/clipboardPopover.js';
+import './behaviors/clipboard-popover.js';
