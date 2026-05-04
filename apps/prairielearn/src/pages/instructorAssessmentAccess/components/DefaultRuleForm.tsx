@@ -1,12 +1,11 @@
 import { Button, Form } from 'react-bootstrap';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
 import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
-import { useDefaultRuleHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
 import type { AccessControlFormData } from './types.js';
 
 const beforeReleasePopoverConfig = {
@@ -31,7 +30,13 @@ export function DefaultRuleForm({
   courseInstanceId: string;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
-  const hasCompletionMechanism = useDefaultRuleHasCompletionMechanism();
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
+  });
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
+  });
+  const hasCompletionMechanism = dateControlEnabled || prairieTestExams.length > 0;
 
   return (
     <div className="d-flex flex-column gap-3">

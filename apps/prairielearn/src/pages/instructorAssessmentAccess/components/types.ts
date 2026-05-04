@@ -158,22 +158,6 @@ function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolean {
 }
 
 /**
- * An override has a completion mechanism for its students when it sets its
- * own dateControl, or when the default rule provides one (dateControl
- * inherited or PrairieTest exams that apply to all students). Mirrors the
- * server-side check in validateGlobalAfterCompleteOverrideIssues.
- */
-function overrideHasCompletionMechanism(
-  override: OverrideData,
-  defaultRule: DefaultRuleData,
-): boolean {
-  const overrideHasDateControl = DATE_CONTROL_FIELD_NAMES.some((f) =>
-    override.overriddenFields.includes(f),
-  );
-  return overrideHasDateControl || defaultRuleHasCompletionMechanism(defaultRule);
-}
-
-/**
  * Whether a (timezone-naive) datetime string is at or before "now" in the
  * given display timezone. A null/empty value is treated as released.
  */
@@ -491,10 +475,7 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   return output;
 }
 
-function overrideToJson(
-  rule: OverrideData,
-  hasCompletionMechanism: boolean,
-): AccessControlJsonWithId {
+function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
   // Override rules always emit a `labels` array (possibly empty); only default
   // rules omit the key. An empty array means the rule targets zero students
   // (e.g. every label it used to reference was deleted) and is still a
@@ -534,7 +515,7 @@ function overrideToJson(
     if (of.has('password')) output.dateControl.password = rule.password;
   }
 
-  if (hasCompletionMechanism && (of.has('questionVisibility') || of.has('scoreVisibility'))) {
+  if (of.has('questionVisibility') || of.has('scoreVisibility')) {
     output.afterComplete = {};
     if (of.has('questionVisibility')) {
       const qv = rule.questionVisibility;
@@ -568,9 +549,7 @@ function overrideToJson(
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
   return [
     defaultRuleToJson(formData.defaultRule),
-    ...formData.overrides.map((o) =>
-      overrideToJson(o, overrideHasCompletionMechanism(o, formData.defaultRule)),
-    ),
+    ...formData.overrides.map((o) => overrideToJson(o)),
   ];
 }
 

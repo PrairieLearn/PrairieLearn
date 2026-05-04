@@ -1,6 +1,5 @@
 import { OverrideAfterCompleteForm } from './AfterCompleteForm.js';
 import { OverrideDateControlForm } from './DateControlForm.js';
-import { useOverrideHasCompletionMechanism } from './hooks/useHasCompletionMechanism.js';
 
 export function OverrideRuleContent({
   index,
@@ -13,8 +12,6 @@ export function OverrideRuleContent({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const hasCompletionMechanism = useOverrideHasCompletionMechanism(index);
-
   return (
     <div className="d-flex flex-column gap-3">
       <OverrideDateControlForm
@@ -26,13 +23,11 @@ export function OverrideRuleContent({
         courseInstanceId={courseInstanceId}
       />
 
-      {hasCompletionMechanism && (
-        <OverrideAfterCompleteForm
-          index={index}
-          title="After completion"
-          displayTimezone={displayTimezone}
-        />
-      )}
+      <OverrideAfterCompleteForm
+        index={index}
+        title="After completion"
+        displayTimezone={displayTimezone}
+      />
     </div>
   );
 }

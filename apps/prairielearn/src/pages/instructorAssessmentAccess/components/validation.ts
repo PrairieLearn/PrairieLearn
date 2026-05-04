@@ -1,7 +1,7 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
-  validateGlobalAfterCompleteOverrideIssues,
+  validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
@@ -80,6 +80,7 @@ function mapIssueToFormFieldPath(
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (issue.path[1] === 'score') {
         switch (issue.path[2]) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           case 'visibleFromDate':
             return `${prefix}.scoreVisibility.visibleFromDate`;
           default:
@@ -152,7 +153,7 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
-    validateGlobalAfterCompleteOverrideIssues(validationRules),
+    validateGlobalAfterCompleteIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);
