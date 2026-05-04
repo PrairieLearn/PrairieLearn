@@ -77,7 +77,7 @@ export function AccessControlForm({
     setError,
     watch,
     reset,
-    formState: { isDirty, errors },
+    formState: { isDirty, isValid, errors },
   } = methods;
 
   const {
@@ -190,6 +190,14 @@ export function AccessControlForm({
     }
   };
 
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
+
+  const saveDisabledReason = !isDirty
+    ? 'No changes to save'
+    : !isValid || hasManualErrors
+      ? 'Fix validation errors before saving'
+      : null;
+
   const rightTitle =
     selectedRule?.type === 'default'
       ? 'Defaults'
@@ -289,7 +297,12 @@ export function AccessControlForm({
                   />
                 </div>
                 {alert}
-                <StickySaveBar isDirty={isDirty} isSubmitting={isSaving} onCancel={() => reset()} />
+                <StickySaveBar
+                  visible={isDirty}
+                  isSaving={isSaving}
+                  saveDisabledReason={saveDisabledReason}
+                  onCancel={() => reset()}
+                />
               </>
             ),
           }}

@@ -944,8 +944,8 @@ export const InstructorQuestionSettingsForm = ({
 
       {canEdit && (
         <StickySaveBar
-          isDirty={isDirty}
-          isSubmitting={isSubmitting}
+          visible={isDirty}
+          isSaving={isSubmitting}
           formId="edit-question-settings-form"
           onCancel={() => reset()}
         />

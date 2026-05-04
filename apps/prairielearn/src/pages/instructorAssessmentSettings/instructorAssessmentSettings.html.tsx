@@ -1209,8 +1209,8 @@ function InstructorAssessmentSettingsInner({
               </Alert>
             )}
             <StickySaveBar
-              isDirty={isDirty}
-              isSubmitting={isSubmitting || saveMutation.isPending}
+              visible={isDirty}
+              isSaving={isSubmitting || saveMutation.isPending}
               onCancel={() => {
                 reset();
                 setUseCustomMaxPoints(getValues('max_points') !== '');
