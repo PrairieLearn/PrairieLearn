@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { resolveModernAssessmentAccess } from '../lib/assessment-access-control/authz.js';
@@ -10,6 +11,7 @@ import {
   AssessmentSetSchema,
   SprocAuthzAssessmentSchema,
 } from '../lib/db-types.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
@@ -26,6 +28,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 export default asyncHandler(async (req, res, next) => {
+  const isTrpc = isTrpcRequest(req);
   const row = await queryOptionalRow(
     sql.select_and_auth,
     {
@@ -37,6 +40,9 @@ export default asyncHandler(async (req, res, next) => {
     SelectAndAuthzAssessmentSchema,
   );
   if (row === null) {
+    if (isTrpc) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
@@ -50,7 +56,8 @@ export default asyncHandler(async (req, res, next) => {
     });
     row.authz_result = modernResult;
   }
-  if (!row.authz_result.authorized) {
+  // tRPC requests handle authz at the procedure level via `require*` middlewares
+  if (!row.authz_result.authorized && !isTrpc) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }

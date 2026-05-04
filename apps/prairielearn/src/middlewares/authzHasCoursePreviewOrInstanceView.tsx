@@ -10,6 +10,7 @@ import {
   CoursePageAuthzDataSchema,
 } from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
@@ -94,6 +95,11 @@ export async function authzHasCoursePreviewOrInstanceView(
 }
 
 export default asyncHandler(async (req, res, next) => {
+  // tRPC requests handle authz at the procedure level via `require*` middlewares
+  if (isTrpcRequest(req)) {
+    next();
+    return;
+  }
   const result = await authzHasCoursePreviewOrInstanceView(req, res);
   if (result.type === 'body') {
     res.status(403).send(result.html);

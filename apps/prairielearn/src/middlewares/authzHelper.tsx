@@ -11,6 +11,7 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { extractPageContext } from '../lib/client/page-context.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
 import {
   AuthzAccessMismatch,
@@ -30,6 +31,12 @@ export const createAuthzMiddleware =
     unauthorizedUsers: 'passthrough' | 'block';
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
+    // tRPC requests handle authz at the procedure level via `require*` middlewares
+    if (isTrpcRequest(req)) {
+      next();
+      return;
+    }
+
     const hasAuthzData = res.locals.authz_data != null;
     // This is special-cased because the middleware that sets authz_data
     // may not have run yet.

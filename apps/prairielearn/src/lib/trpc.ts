@@ -7,6 +7,10 @@ import { formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
+export function isTrpcRequest(req: Request): boolean {
+  return req.header('X-TRPC') === 'true';
+}
+
 /**
  * Reimplements error handling from `pages/error/error.ts` for tRPC errors.
  * This is necessary because tRPC errors aren't propagated to all the Express
