@@ -20,7 +20,7 @@ const { findVariable } = ASTUtils;
  *
  * Recognized permission middlewares:
  * - requireCoursePermissionPreview / View / Edit / Own
- * - requireCourseInstancePermissionView / Edit
+ * - requireCourseInstancePermissionPreview / View / Edit / Own
  * - requireAdministrator
  *
  * Feature gates like `requireEnhancedAccessControl` and `requireAiGradingFeature`
