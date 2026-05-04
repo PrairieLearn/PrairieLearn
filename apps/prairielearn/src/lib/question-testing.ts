@@ -188,6 +188,7 @@ function compareTestResults(
   expectedData: questionServers.TestResultData,
   hasFatalIssue: boolean,
   submission: Submission,
+  question: Question,
 ): Error[] {
   const courseIssues: Error[] = [];
 
@@ -217,8 +218,13 @@ function compareTestResults(
   if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
-  checkEqual('score', expectedData.score, submission.score);
+  // For manual-only questions, auto-grading is skipped entirely, so the
+  // submission will have null partial_scores and score. Skip comparison
+  // in that case since there's nothing to compare against.
+  if (question.grading_method !== 'Manual') {
+    checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+    checkEqual('score', expectedData.score, submission.score);
+  }
   return courseIssues;
 }
 
@@ -283,7 +289,7 @@ async function testVariant(
   const submission = await selectSubmission(submission_id);
 
   // Step 3: Compare expected results with actual submission
-  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission, question);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
