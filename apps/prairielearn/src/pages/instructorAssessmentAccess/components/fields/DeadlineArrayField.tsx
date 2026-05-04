@@ -264,7 +264,8 @@ function DeadlineArrayInput({
   };
 
   const validateCredit = (value: number, index: number) => {
-    if (!Number.isFinite(value)) return 'Credit is required';
+    if (Number.isNaN(value)) return 'Credit is required';
+    if (!Number.isFinite(value)) return 'Credit must be a finite number';
     if (isEarly) {
       if (value < 101 || value > 200) return 'Credit must be 101-200%';
     } else if (dueCreditRef.current !== 0) {
@@ -363,7 +364,7 @@ function DeadlineArrayInput({
                   id={`${idPrefix}-${type}-deadline-${index}-credit`}
                   type="number"
                   defaultValue={deadlineField.credit}
-                  style={{ width: '5rem' }}
+                  style={{ width: '6rem' }}
                   aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
                   aria-invalid={!!getCreditError(index)}
                   aria-errormessage={
