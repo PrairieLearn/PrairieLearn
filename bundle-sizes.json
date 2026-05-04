@@ -115,9 +115,9 @@
     "brotli": 279834
   },
   "scripts/instructorFileEditorHtmlMustacheLinterClient.ts": {
-    "raw": 151806,
-    "gzip": 41777,
-    "brotli": 36731
+    "raw": 152278,
+    "gzip": 41837,
+    "brotli": 36765
   },
   "scripts/instructorQuestionStatisticsClient.ts": {
     "raw": 62446,
