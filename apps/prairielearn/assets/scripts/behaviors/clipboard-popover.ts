@@ -19,7 +19,15 @@ observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-ta
       }
 
       void navigator.clipboard.writeText(text).then(() => {
+        const tooltipInstance = window.bootstrap.Tooltip.getInstance(button);
+        // If there is a tooltip instance, don't attempt to show the popover as it may interfere with the tooltip.
+        if (tooltipInstance) {
+          tooltipInstance.hide();
+          return;
+        }
+
         const popover = window.bootstrap.Popover.getOrCreateInstance(button, {
+          title: '',
           content: 'Copied!',
           placement: 'bottom',
           trigger: 'manual',
