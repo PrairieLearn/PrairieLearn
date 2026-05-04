@@ -42,7 +42,7 @@
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.10.0",
     "eslint-plugin-unicorn": "^64.0.0",
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
-    "globals": "^17.4.0",
+    "globals": "^17.6.0",
     "typescript-eslint": "^8.59.2"
   },
   "devDependencies": {

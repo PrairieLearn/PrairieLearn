@@ -22,7 +22,7 @@
     "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
-    "filesize": "^11.0.15",
+    "filesize": "^11.0.17",
     "socket.io": "^4.8.3",
     "zod": "^3.25.76 <4"
   },
