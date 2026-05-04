@@ -300,8 +300,7 @@ export function AccessControlSummary({
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
                 const isFirstEnrollment =
-                  override.appliesTo.targetType === 'enrollment' &&
-                  (index === 0 || overrides[index - 1].appliesTo.targetType !== 'enrollment');
+                  index === 0 && override.appliesTo.targetType === 'enrollment';
                 const isFirstLabel =
                   override.appliesTo.targetType === 'student_label' &&
                   (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
