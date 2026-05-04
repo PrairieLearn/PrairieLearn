@@ -8,6 +8,11 @@ import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import {
+  type AccessTimelineEntry,
+  type RuntimeDateControl,
+  buildAccessTimeline,
+} from '../../../lib/assessment-access-control/timeline.js';
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
@@ -22,6 +27,10 @@ import {
 } from './types.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function formatCreditPercent(credit: number): string {
+  return Number.isFinite(credit) ? `${credit}%` : '—';
+}
 
 type RuleData = DefaultRuleData | OverrideData;
 
@@ -42,6 +51,100 @@ interface DateTableRow {
   label: string;
   credit: string;
   error?: string;
+  current?: boolean;
+  currentVariant?: 'success' | 'primary';
+}
+
+/**
+ * Convert a form datetime-local string into an absolute instant in `timezone`.
+ * Returns null on empty/invalid input — the form may briefly hold partial
+ * values during editing.
+ */
+function toRuntimeDate(value: string | null | undefined, timezone: string): Date | null {
+  if (!value) return null;
+  try {
+    return new Date(
+      Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).toInstant().epochMilliseconds,
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convert default rule form data into the runtime shape consumed by
+ * `buildAccessTimeline`. Returns undefined when date control is disabled,
+ * or when any enabled date field has a value that fails to parse — both
+ * cases short-circuit the timeline to no segments so the indicator and
+ * row highlighting fall silent during transient invalid edits, rather
+ * than misrepresenting the rule.
+ */
+function defaultRuleToRuntimeDateControl(
+  rule: DefaultRuleData,
+  displayTimezone: string,
+): RuntimeDateControl | undefined {
+  if (!rule.dateControlEnabled) return undefined;
+  if (rule.release.date === null) return undefined;
+  const releaseDateString = rule.release.date;
+
+  // An unparseable date should suppress the timeline.
+  if (
+    [
+      releaseDateString,
+      ...rule.earlyDeadlines.map((e) => e.date),
+      ...rule.lateDeadlines.map((e) => e.date),
+      // Ignore due.date === null
+      ...(rule.due.date === null ? [] : [rule.due.date]),
+    ].some((s) => toRuntimeDate(s, displayTimezone) === null)
+  ) {
+    return undefined;
+  }
+
+  const earlyDeadlines = rule.earlyDeadlines.map((e) => ({
+    date: toRuntimeDate(e.date, displayTimezone)!.toISOString(),
+    credit: e.credit,
+  }));
+  const lateDeadlines = rule.lateDeadlines.map((e) => ({
+    date: toRuntimeDate(e.date, displayTimezone)!.toISOString(),
+    credit: e.credit,
+  }));
+
+  // Mirror defaultRuleToJson: omit `due` entirely when no date is set and no
+  // custom credit is applied. Passing `due: { date: null }` would otherwise
+  // trigger the timeline's `noDeadline` branch.
+  const includeDue = rule.due.date !== null || rule.due.customCredit;
+
+  return {
+    release: { date: toRuntimeDate(releaseDateString, displayTimezone)! },
+    ...(includeDue
+      ? {
+          due: {
+            date: rule.due.date === null ? null : toRuntimeDate(rule.due.date, displayTimezone)!,
+            ...(rule.due.customCredit && rule.due.credit != null
+              ? { credit: rule.due.credit }
+              : {}),
+          },
+        }
+      : {}),
+    ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
+    ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
+    ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
+  };
+}
+
+interface DefaultRuleCurrentState {
+  rdc: RuntimeDateControl | undefined;
+  segment: AccessTimelineEntry | null;
+}
+
+function getDefaultRuleCurrentState(
+  rule: DefaultRuleData,
+  displayTimezone: string,
+): DefaultRuleCurrentState {
+  const rdc = defaultRuleToRuntimeDateControl(rule, displayTimezone);
+  if (!rdc) return { rdc: undefined, segment: null };
+  const segment = buildAccessTimeline(rdc, new Date()).find((s) => s.current) ?? null;
+  return { rdc, segment };
 }
 
 export function generateDefaultRuleDateTableRows(
@@ -63,6 +166,31 @@ export function generateDefaultRuleDateTableRows(
   const afterLastDeadline = rule.afterLastDeadline;
   const releaseDateError = formErrors?.release?.date?.message;
 
+  const { segment } = getDefaultRuleCurrentState(rule, displayTimezone);
+  const segmentEnd = segment?.endDate
+    ? Temporal.Instant.fromEpochMilliseconds(segment.endDate.getTime())
+        .toZonedDateTimeISO(displayTimezone)
+        .toPlainDateTime()
+    : null;
+  const isBeforeReleaseSegment = segment?.kind === 'beforeRelease';
+  const isAfterLastSegment = segment?.kind === 'afterLastDeadline';
+  const isNoDeadlineSegment = segment?.kind === 'noDeadline';
+
+  // Available (open and submittable) → green border; otherwise blue.
+  const currentVariant: 'success' | 'primary' =
+    segment != null && segment.kind !== 'beforeRelease' && segment.submittable
+      ? 'success'
+      : 'primary';
+
+  const isDeadlineCurrent = (formDateString: string): boolean => {
+    if (segmentEnd == null) return false;
+    try {
+      return Temporal.PlainDateTime.from(formDateString).equals(segmentEnd);
+    } catch {
+      return false;
+    }
+  };
+
   if (releaseDate || releaseDateError) {
     rows.push({
       date: releaseDate ? (
@@ -77,6 +205,8 @@ export function generateDefaultRuleDateTableRows(
       ),
       label: 'Release',
       credit: '—',
+      current: isBeforeReleaseSegment,
+      currentVariant,
       error: releaseDateError,
     });
   }
@@ -96,8 +226,10 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Early ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+      current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
+      currentVariant,
     });
   });
 
@@ -116,22 +248,26 @@ export function generateDefaultRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
+      current: isDeadlineCurrent(dueDate),
+      currentVariant,
     });
   } else if (dueDate === null) {
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
+      current: isNoDeadlineSegment,
+      currentVariant,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
     });
   }
@@ -151,8 +287,10 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Late ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
+      current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
+      currentVariant,
     });
   });
 
@@ -165,10 +303,12 @@ export function generateDefaultRuleDateTableRows(
       label: 'After last deadline',
       credit: afterLastDeadline?.allowSubmissions
         ? afterLastDeadline.credit != null
-          ? `${afterLastDeadline.credit}%`
+          ? formatCreditPercent(afterLastDeadline.credit)
           : 'Practice'
         : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
+      current: isAfterLastSegment,
+      currentVariant,
     });
   }
 
@@ -189,18 +329,23 @@ export function generateRuleSummary(
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
 
-  // Show "before release" chip when release date is in the future.
-  if (isDefaultRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
-    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
-    const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
-
-    if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
-      items.push({
-        key: 'before-release',
-        icon: rule.beforeReleaseListed ? 'bi-eye' : 'bi-eye-slash',
-        text: rule.beforeReleaseListed ? 'Listed before release' : 'Hidden before release',
-      });
-    }
+  if (isDefaultRuleData(rule)) {
+    const listed = rule.beforeReleaseListed;
+    const text = run(() => {
+      const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
+      if (releaseDate) {
+        return listed ? 'Listed before release' : 'Hidden before release';
+      }
+      if (rule.prairieTestExams.length > 0) {
+        return listed ? 'Listed before exam' : 'Hidden before exam';
+      }
+      return listed ? 'Always listed' : 'Always hidden';
+    });
+    items.push({
+      key: 'before-release',
+      icon: listed ? 'bi-eye' : 'bi-eye-slash',
+      text,
+    });
   }
 
   if (isOverrideFieldActive(rule, 'durationMinutes')) {
@@ -363,10 +508,10 @@ function formatDeadlineEntries(
           options={{ includeTz: false }}
           tooltip
         />{' '}
-        ({entry.credit}% credit)
+        ({formatCreditPercent(entry.credit)} credit)
       </>
     ) : (
-      `No date set (${entry.credit}% credit)`
+      `No date set (${formatCreditPercent(entry.credit)} credit)`
     ),
     error: deadlineErrors?.[i],
   }));
@@ -374,7 +519,11 @@ function formatDeadlineEntries(
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
-  if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
+  if (
+    afterLastDeadline.allowSubmissions &&
+    afterLastDeadline.credit != null &&
+    Number.isFinite(afterLastDeadline.credit)
+  ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
@@ -430,7 +579,7 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('due')) {
-    const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
+    const creditLabel = rule.due.credit != null ? ` (${formatCreditPercent(rule.due.credit)})` : '';
     const dueDateErr = formErrors?.due?.date?.message;
     const dueCreditErr = formErrors?.due?.credit?.message;
     items.push({
@@ -668,7 +817,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div
-      className="border rounded overflow-hidden"
+      className="border rounded-top overflow-hidden"
       style={{ borderColor: 'var(--bs-border-color)' }}
     >
       <table className="table table-sm mb-0">
@@ -694,10 +843,15 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
             // eslint-disable-next-line @eslint-react/no-array-index-key
             <tr key={index}>
               <td
-                className="border-0"
                 style={{
                   ...tdStyle,
                   paddingLeft: '1rem',
+                  borderTop: 0,
+                  borderRight: 0,
+                  borderBottom: 0,
+                  borderLeft: `6px solid ${
+                    row.current ? `var(--bs-${row.currentVariant ?? 'primary'})` : 'transparent'
+                  }`,
                 }}
               >
                 <div className="text-nowrap">
@@ -723,6 +877,103 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+interface CurrentIndicator {
+  variant: 'success' | 'primary';
+  icon: string;
+  text: ReactNode;
+}
+
+function buildDefaultRuleCurrentIndicator(
+  rule: DefaultRuleData,
+  displayTimezone: string,
+): CurrentIndicator | null {
+  const { rdc, segment } = getDefaultRuleCurrentState(rule, displayTimezone);
+
+  // Mirrors the resolver's `showBeforeRelease`: students see a "coming soon"
+  // listing when `beforeReleaseListed` is set and either no release date is
+  // configured OR the current time is before the release.
+  const listedBeforeRelease =
+    rule.beforeReleaseListed && (!rdc || segment?.kind === 'beforeRelease');
+
+  if (!segment) {
+    if (listedBeforeRelease) {
+      return {
+        variant: 'primary',
+        icon: 'bi-eye',
+        text: 'Listed but not accessible',
+      };
+    }
+    return null;
+  }
+
+  const friendlyDate = (date: Date) => (
+    <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} tooltip />
+  );
+
+  if (segment.kind === 'beforeRelease') {
+    const opensAt = segment.endDate;
+    if (listedBeforeRelease) {
+      return {
+        variant: 'primary',
+        icon: 'bi-eye',
+        text: opensAt ? (
+          <>Listed but not accessible · opens {friendlyDate(opensAt)}</>
+        ) : (
+          'Listed but not accessible'
+        ),
+      };
+    }
+    return {
+      variant: 'primary',
+      icon: 'bi-eye-slash',
+      text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
+    };
+  }
+
+  if (!segment.submittable) {
+    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
+  }
+
+  if (segment.endDate) {
+    return {
+      variant: 'success',
+      icon: 'bi-unlock',
+      text: (
+        <>
+          Open · {formatCreditPercent(segment.credit)} credit until {friendlyDate(segment.endDate)}
+        </>
+      ),
+    };
+  }
+  return {
+    variant: 'success',
+    icon: 'bi-unlock',
+    text: `Open · ${formatCreditPercent(segment.credit)} credit`,
+  };
+}
+
+export function DefaultRuleCurrentIndicator({
+  rule,
+  displayTimezone,
+}: {
+  rule: DefaultRuleData;
+  displayTimezone: string;
+}) {
+  const indicator = buildDefaultRuleCurrentIndicator(rule, displayTimezone);
+  if (!indicator) return null;
+  return (
+    <div
+      className={`d-flex align-items-center gap-2 px-3 py-2 rounded mb-2 bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
+      role="status"
+    >
+      <i className={`bi ${indicator.icon}`} aria-hidden="true" />
+      <span>
+        <strong>Current:</strong> {indicator.text}
+      </span>
     </div>
   );
 }

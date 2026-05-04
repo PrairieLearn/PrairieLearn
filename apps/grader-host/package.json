@@ -49,11 +49,10 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.12.2",
     "@types/tmp": "^0.2.6",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
+    "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.2",
     "nodemon": "^3.1.14",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.1.2"
   }

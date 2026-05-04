@@ -19,8 +19,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "typescript": "^5.9.3"
+    "@typescript/native-preview": "beta"
   },
   "sideEffects": false
 }

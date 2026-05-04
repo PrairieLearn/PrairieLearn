@@ -22,12 +22,7 @@ import {
 } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import {
-  type EnumCourseInstanceRole,
-  type EnumCourseRole,
-  InstitutionSchema,
-  UserSchema,
-} from '../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
@@ -570,11 +565,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          course_role: 'None' as EnumCourseRole,
+          course_role: 'None',
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
             ? {
-                course_instance_role: 'None' as EnumCourseInstanceRole,
+                course_instance_role: 'None',
                 has_student_access: false,
                 has_student_access_with_enrollment: false,
                 ...calculateCourseInstanceRolePermissions('None'),

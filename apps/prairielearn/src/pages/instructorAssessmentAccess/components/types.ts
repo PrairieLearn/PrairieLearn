@@ -374,16 +374,13 @@ export function jsonToOverrideFormData(
  * distinct from default because cross-rule validation (e.g. forbidding early
  * deadlines) treats any set credit as customized.
  *
- * `customCredit: true` with `credit: null` is a transient editing state that
- * the form's per-field validator blocks at submit time; assert here so any
- * future caller that bypasses the form fails loudly instead of silently
- * coercing to "default credit".
+ * `customCredit: true` with `credit: null` is a transient editing state (the
+ * user has cleared the input). The field-level validator surfaces "Credit is
+ * required" and blocks submit; here we just omit `credit` so that live
+ * cross-field validation can keep running without throwing.
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
-  if (due.customCredit) {
-    if (due.credit === null) {
-      throw new Error('customCredit is true but credit is null');
-    }
+  if (due.customCredit && due.credit !== null) {
     return { date: due.date, credit: due.credit };
   }
   return { date: due.date };

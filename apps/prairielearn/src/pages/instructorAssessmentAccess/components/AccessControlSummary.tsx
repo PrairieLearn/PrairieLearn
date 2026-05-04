@@ -11,12 +11,13 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { type FieldErrors, useFormState } from 'react-hook-form';
+import { useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
   DateTableView,
+  DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
@@ -127,6 +128,8 @@ function DefaultRuleSummaryContent({
 
   return (
     <div>
+      <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
+
       {dateTableRows.length > 0 && (
         <div className="mb-2">
           <DateTableView rows={dateTableRows} />
@@ -139,7 +142,7 @@ function DefaultRuleSummaryContent({
             exams={rule.prairieTestExams}
             initialMetadata={prairieTestExamMetadata}
             ptHost={ptHost}
-            formErrors={formErrors as FieldErrors<DefaultRuleData> | undefined}
+            formErrors={formErrors}
           />
         </div>
       )}
