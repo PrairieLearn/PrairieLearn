@@ -180,7 +180,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.afterComplete = rule.afterComplete;
     }
 
-    return clean as AccessControlJson;
+    return clean;
   });
 }
 
