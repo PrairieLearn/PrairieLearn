@@ -55,7 +55,7 @@ import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.
 import { selectTopicsByCourseId } from '../../models/topics.js';
 import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
-import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
+import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {
   EditableCourseSchema,
   SelectedAssessmentsSchema,
@@ -630,7 +630,7 @@ router.get(
         },
         content: (
           <Hydrate>
-            <InstructorQuestionSettings
+            <InstructorQuestionSettingsForm
               question={question}
               topic={topic}
               courseInstance={courseInstance}
