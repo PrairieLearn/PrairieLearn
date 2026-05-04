@@ -31,7 +31,7 @@ const insert = t.procedure
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
-      repository: z.string().min(1, 'Repository is required'),
+      repository: z.string(), // Optional
       branch: z.string().min(1, 'Branch is required'),
     }),
   )
@@ -92,23 +92,23 @@ const deleteCourseProcedure = t.procedure
 const updateColumn = t.procedure
   .use(requireAdministrator)
   .input(
-    z.object({
-      courseId: IdSchema,
-      columnName: z.enum([
-        'short_name',
-        'title',
-        'display_timezone',
-        'path',
-        'repository',
-        'branch',
-      ]),
-      value: z.string().min(1, 'Value is required'),
-    }),
+    z.discriminatedUnion('columnName', [
+      z.object({
+        courseId: IdSchema,
+        columnName: z.enum(['short_name', 'title', 'display_timezone', 'path', 'branch']),
+        value: z.string().min(1, 'Value is required'),
+      }),
+      z.object({
+        courseId: IdSchema,
+        columnName: z.enum(['repository']),
+        value: z.string(), // Optional
+      }),
+    ]),
   )
   .mutation(async ({ input, ctx }) => {
     let value = input.value;
 
-    if (input.columnName === 'repository') {
+    if (input.columnName === 'repository' && value) {
       const repoExists = await checkCourseRepositoryUrlExists(value, input.courseId);
       if (repoExists) {
         throw new TRPCError({

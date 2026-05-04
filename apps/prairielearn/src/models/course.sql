@@ -302,7 +302,7 @@ RETURNING
 -- BLOCK update_course_column_repository
 UPDATE courses
 SET
-  repository = $value
+  repository = NULLIF($value, '')
 WHERE
   id = $course_id
   AND deleted_at IS NULL

@@ -175,7 +175,7 @@ const CourseRow = memo(({ row }: { row: CourseWithInstitution }) => {
       <CourseUpdateColumn row={row} columnName="title" label="title" />
       <CourseUpdateColumn row={row} columnName="display_timezone" label="timezone" />
       <CourseUpdateColumn row={row} columnName="path" label="path" />
-      <CourseUpdateColumn row={row} columnName="repository" label="repository" />
+      <CourseUpdateColumn row={row} columnName="repository" label="repository" required={false} />
       <CourseUpdateColumn row={row} columnName="branch" label="branch" />
       <td className="align-middle">
         <OverlayTrigger
@@ -398,11 +398,13 @@ function CourseUpdateColumn({
   columnName,
   label,
   href,
+  required = true,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
   href?: string;
+  required?: boolean;
 }) {
   const [showPopover, setShowPopover] = useState(false);
 
@@ -419,6 +421,7 @@ function CourseUpdateColumn({
               row={row}
               columnName={columnName}
               label={label}
+              required={required}
               onCancel={() => setShowPopover(false)}
             />
           ),
@@ -443,11 +446,13 @@ function CourseUpdateColumnForm({
   row,
   columnName,
   label,
+  required,
   onCancel,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
+  required: boolean;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
@@ -485,7 +490,7 @@ function CourseUpdateColumnForm({
           className={clsx('form-control', errors.value && 'is-invalid')}
           aria-label={label}
           {...register('value', {
-            required: `Enter a ${label}`,
+            required: required && `Enter a ${label}`,
             pattern:
               columnName === 'short_name'
                 ? {
