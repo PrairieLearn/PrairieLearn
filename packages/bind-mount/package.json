@@ -25,7 +25,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/bindings": "^1.5.5",
     "@types/node": "^24.12.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "typescript": "^5.9.3"
+    "@typescript/native-preview": "beta"
   }
 }
