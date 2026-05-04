@@ -390,16 +390,6 @@ export const QuestionSettingsForm = ({
               </div>
             )}
           </div>
-          <QuestionSettingsCardFooter
-            canEdit={canEdit}
-            canCopy={canCopy}
-            editableCourses={editableCourses}
-            courseId={courseId}
-            qid={defaultValues.qid}
-            assessmentsWithQuestion={assessmentsWithQuestion}
-            csrfToken={csrfToken}
-            questionGHLink={questionGHLink}
-          />
         </div>
 
         <div className="card">
@@ -944,6 +934,17 @@ export const QuestionSettingsForm = ({
           </div>
         </div>
       )}
+
+      <QuestionSettingsCardFooter
+        canEdit={canEdit}
+        canCopy={canCopy}
+        editableCourses={editableCourses}
+        courseId={courseId}
+        qid={defaultValues.qid}
+        assessmentsWithQuestion={assessmentsWithQuestion}
+        csrfToken={csrfToken}
+        questionGHLink={questionGHLink}
+      />
 
       {canEdit && (
         <StickySaveBar
