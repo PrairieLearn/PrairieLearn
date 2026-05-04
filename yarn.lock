@@ -5307,6 +5307,7 @@ __metadata:
     "@tiptap/extension-bold": "npm:^3.22.5"
     "@tiptap/extension-bullet-list": "npm:^3.22.5"
     "@tiptap/extension-code": "npm:^3.22.5"
+    "@tiptap/extension-code-block": "npm:^3.22.5"
     "@tiptap/extension-collaboration": "npm:^3.22.5"
     "@tiptap/extension-document": "npm:^3.22.5"
     "@tiptap/extension-drag-handle": "npm:^3.22.5"
@@ -7090,6 +7091,16 @@ __metadata:
   peerDependencies:
     "@tiptap/extension-list": 3.22.5
   checksum: 10c0/055ed9ed79542df78239f37069a2e1dc78fbb768430c7d1cbbe4d05e235f6b63fbcd0eadd57dc2b718ecb57b390f2e1e808ec9df86b9ebee7ea37888d2223492
+  languageName: node
+  linkType: hard
+
+"@tiptap/extension-code-block@npm:^3.22.5":
+  version: 3.22.5
+  resolution: "@tiptap/extension-code-block@npm:3.22.5"
+  peerDependencies:
+    "@tiptap/core": 3.22.5
+    "@tiptap/pm": 3.22.5
+  checksum: 10c0/2c44df5ea57e0d6fd33417a56aef51aba4aa42770b02224a66bb53d342636ca302d8816f4b99667e3ad0d2203fc4e52a3710c55ba04ca330d5727514c3ef7ed0
   languageName: node
   linkType: hard
 

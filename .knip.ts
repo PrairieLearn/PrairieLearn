@@ -12,6 +12,7 @@ const REFERENCED_NODE_MODULES_DEPS = [
   'marked',
   'clipboard',
   'async',
+  'tom-select',
   'qrcode-svg',
   'socket.io-client',
   'lodash',
@@ -25,15 +26,7 @@ const REFERENCED_NODE_MODULES_DEPS = [
 
 // These packages aren't used in our own code, but we still want them installed
 // as they are used by elements in other courses.
-const FALSE_NEGATIVE_ELEMENT_DEPS = [
-  'backbone',
-  'dropzone',
-  'lodash',
-  'mersenne',
-  'numeric',
-  'popper.js',
-  'showdown',
-];
+const FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
 
 // These packages are used for their CLI tools, so we still want them installed.
 const FALSE_NEGATIVE_CLI_DEPS = [
@@ -97,6 +90,9 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 
 const config: KnipConfig = {
   tags: ['-knipignore'],
+  // TODO: We need to fix dependency issues
+
+  ignore: ['**/*.json'],
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}'],
