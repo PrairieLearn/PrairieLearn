@@ -100,12 +100,35 @@ function hasAnyDeadline(rule: AccessControlJson): boolean {
   return false;
 }
 
-function hasCompletionMechanism(rule: AccessControlJson): boolean {
-  return (
-    hasAnyDeadline(rule) ||
-    rule.dateControl?.durationMinutes != null ||
-    (rule.integrations?.prairieTest?.exams ?? []).length > 0
-  );
+type CompletionMechanismType = 'deadline' | 'duration' | 'prairieTest';
+
+function getCompletionMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
+  const types = new Set<CompletionMechanismType>();
+  if (hasAnyDeadline(rule)) types.add('deadline');
+  if (rule.dateControl?.durationMinutes != null) types.add('duration');
+  if ((rule.integrations?.prairieTest?.exams ?? []).length > 0) types.add('prairieTest');
+  return types;
+}
+
+/**
+ * Mechanism types that an override actively clears, i.e. nulls out without
+ * supplying a replacement. Used to pull a globally-available mechanism out
+ * of consideration for this override's resolved view: e.g. a default with only
+ * a due date paired with an override of `dateControl: { due: { date: null } }`
+ * leaves the override's students with nothing. Overrides cannot define
+ * `integrations`, so PrairieTest exams cannot be cleared by an override.
+ */
+function overrideClearedMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
+  const cleared = new Set<CompletionMechanismType>();
+  const dc = rule.dateControl;
+  if (!dc) return cleared;
+  if (!hasAnyDeadline(rule) && dc.due !== undefined && dc.due.date == null) {
+    cleared.add('deadline');
+  }
+  if (dc.durationMinutes === null) {
+    cleared.add('duration');
+  }
+  return cleared;
 }
 
 /**
@@ -605,13 +628,16 @@ export function validateGlobalCreditConsistencyIssues(
 
 /**
  * Cross-rule check: each rule with after-complete settings must have a
- * completion mechanism for its students — a real deadline (due date or
- * late deadline), a duration limit, or a PrairieTest exam. A dateControl
- * with only `release`, `password`, or `due: { date: null }` is not enough
- * since none of those can ever close the assessment, so any after-complete
- * settings would be a no-op. For the default rule the mechanism must come
- * from its own config; overrides may additionally inherit one from the
- * default when they don't explicitly override it.
+ * completion mechanism — a real deadline (due date or late deadline), a
+ * duration limit, or a PrairieTest exam. A dateControl with only `release`,
+ * `password`, or `due: { date: null }` is not enough since none of those can
+ * ever close the assessment, so any after-complete settings would be a no-op.
+ *
+ * The default rule must carry a mechanism in its own config. Overrides accept
+ * any globally-available mechanism (any rule may contribute, since overrides
+ * stack at runtime), minus types this override actively clears: a globally
+ * unique mechanism type that the override nulls out leaves nothing for the
+ * override's students.
  */
 export function validateGlobalAfterCompleteIssues(
   validationRules: AccessControlValidationRule[],
@@ -619,19 +645,25 @@ export function validateGlobalAfterCompleteIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  const defaultRule = validationRules.find((vr) => vr.targetType === 'none');
-  const defaultHasCompletion = defaultRule ? hasCompletionMechanism(defaultRule.rule) : false;
-
   const message =
     'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  const globalMechanisms = new Set<CompletionMechanismType>();
+  for (const vr of validationRules) {
+    for (const t of getCompletionMechanismTypes(vr.rule)) globalMechanisms.add(t);
+  }
 
   for (const validationRule of validationRules) {
     const ac = validationRule.rule.afterComplete;
     if (!ac) continue;
 
-    const ruleHasCompletion = hasCompletionMechanism(validationRule.rule);
-    const hasMechanism =
-      ruleHasCompletion || (validationRule.targetType !== 'none' && defaultHasCompletion);
+    let hasMechanism: boolean;
+    if (validationRule.targetType === 'none') {
+      hasMechanism = getCompletionMechanismTypes(validationRule.rule).size > 0;
+    } else {
+      const cleared = overrideClearedMechanismTypes(validationRule.rule);
+      hasMechanism = [...globalMechanisms].some((t) => !cleared.has(t));
+    }
     if (hasMechanism) continue;
 
     if (ac.questions !== undefined) {

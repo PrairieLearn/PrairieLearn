@@ -181,11 +181,11 @@ describe('getGlobalDateValidationErrors', () => {
 
     expect(errors).toContainEqual({
       path: 'overrides.0.questionVisibility',
-      message: 'After-complete settings require date control or PrairieTest exams.',
+      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
     });
     expect(errors).toContainEqual({
       path: 'overrides.0.scoreVisibility',
-      message: 'After-complete settings require date control or PrairieTest exams.',
+      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility.visibleFromDate')).toBe(
       undefined,

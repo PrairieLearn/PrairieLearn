@@ -2091,10 +2091,44 @@ describe('Global afterComplete validation', () => {
     assert.isTrue(result.errors.includes(completionMechanismMessage));
   });
 
-  it('rejects afterComplete on an override when only another override has dateControl', () => {
-    // Tighter semantics: another override's dateControl does not provide a
-    // completion mechanism for this override's students. They inherit the
-    // (missing) defaults' dateControl.
+  it("rejects afterComplete on an override that explicitly clears the default's only completion mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it("accepts an override that clears the default's due when the default still provides another mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+            durationMinutes: 60,
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when only another override has dateControl', () => {
+    // Globally we count any rule's mechanism, since overrides stack at runtime
+    // and the contributing rule may apply to the same student.
     const result = validateAccessControlRules({
       rules: [
         AccessControlJsonSchema.parse({}),
@@ -2109,6 +2143,57 @@ describe('Global afterComplete validation', () => {
           afterComplete: {
             questions: { hidden: false },
           },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when another override provides duration', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only globally-available mechanism (duration)', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: null },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only global mechanism contributed by another override', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
         }),
       ],
     });
