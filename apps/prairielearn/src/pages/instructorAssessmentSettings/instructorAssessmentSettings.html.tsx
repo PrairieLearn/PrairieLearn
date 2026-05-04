@@ -220,7 +220,7 @@ function CopyAssessmentModal({
 
   const placeholderAid = assessment.tid ?? '';
   const placeholderTitle = assessment.title ?? '';
-  const placeholderNumber = assessment.number ?? '';
+  const placeholderNumber = assessment.number;
   const defaultSet = assessmentSet.name;
 
   const {
