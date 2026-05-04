@@ -28,8 +28,10 @@ export type AccessControlIssuePath =
   | ['dateControl', 'lateDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'credit']
   | ['dateControl', 'afterLastDeadline', 'credit']
+  | ['afterComplete', 'questions']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score']
   | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
@@ -628,7 +630,7 @@ export function validateGlobalAfterCompleteIssues(
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'questions', 'visibleFromDate'],
+        ['afterComplete', 'questions'],
         'After-complete settings require date control or PrairieTest exams.',
       );
     }
@@ -636,7 +638,7 @@ export function validateGlobalAfterCompleteIssues(
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'score', 'visibleFromDate'],
+        ['afterComplete', 'score'],
         'After-complete settings require date control or PrairieTest exams.',
       );
     }
