@@ -295,6 +295,8 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
     { name: 'pl-github-link' },
+    { name: 'pl-matrix-output' },
+    { name: 'variable' }, // Deprecated alias for pl-variable
     // pl-drawing
     { name: 'pl-drawing' },
     { name: 'pl-drawing-answer' },
