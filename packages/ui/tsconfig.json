@@ -1,10 +1,6 @@
 {
-  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
+  "extends": "@prairielearn/tsconfig/tsconfig.package-browser.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "types": ["node"],
-    "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "jsx": "react-jsx"
   }
 }

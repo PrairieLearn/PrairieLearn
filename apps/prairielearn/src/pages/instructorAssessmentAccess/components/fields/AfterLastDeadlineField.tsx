@@ -180,7 +180,7 @@ function AfterLastDeadlineInput({
               <Form.Control
                 id={`${idPrefix}-after-deadline-credit`}
                 type="number"
-                style={{ width: '5rem' }}
+                style={{ width: '6rem' }}
                 aria-label="Credit percentage after last deadline"
                 aria-invalid={!!creditError}
                 aria-errormessage={
@@ -197,6 +197,7 @@ function AfterLastDeadlineInput({
                   deps: creditDeps,
                   validate: (v, formValues) => {
                     if (v == null || Number.isNaN(v)) return 'Credit is required';
+                    if (!Number.isFinite(v)) return 'Credit must be a finite number';
                     if (v < 0 || v > 200) return 'Must be 0\u2013200%';
                     const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
                       formValues,
