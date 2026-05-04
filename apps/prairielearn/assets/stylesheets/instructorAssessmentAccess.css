@@ -12,10 +12,6 @@
   }
 }
 
-.table > :not(caption) > * > .assessment-access-date-cell {
-  padding-left: 1rem;
-}
-
 .assessment-access-date-cell-current::before {
   content: '';
   position: absolute;
