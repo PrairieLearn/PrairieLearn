@@ -135,7 +135,7 @@ export interface OverrideData {
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue;
+  afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -302,7 +302,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
+  let afterLastDeadline: AfterLastDeadlineValue | null = null;
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -558,9 +558,7 @@ export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): Ov
       : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: defaultRule?.afterLastDeadline
-      ? { ...defaultRule.afterLastDeadline }
-      : { allowSubmissions: false },
+    afterLastDeadline: defaultRule?.afterLastDeadline ? { ...defaultRule.afterLastDeadline } : null,
     durationMinutes: defaultRule?.durationMinutes ?? null,
     password: defaultRule?.password ?? null,
     questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },

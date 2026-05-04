@@ -297,11 +297,14 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: 'After last deadline',
-      credit: afterLastDeadline?.allowSubmissions
-        ? afterLastDeadline.credit != null
-          ? `${afterLastDeadline.credit}%`
-          : 'Practice'
-        : 'Closed',
+      credit:
+        afterLastDeadline == null
+          ? 'No access'
+          : afterLastDeadline.allowSubmissions
+            ? afterLastDeadline.credit != null
+              ? `${afterLastDeadline.credit}%`
+              : 'Practice'
+            : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -513,7 +516,8 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
+  if (afterLastDeadline == null) return 'no access';
   const parts: string[] = [];
   if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
     parts.push(`${afterLastDeadline.credit}% credit`);
