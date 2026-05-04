@@ -7,8 +7,20 @@ import { formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
+/**
+ * Returns true if the request is a tRPC request from one of our tRPC clients.
+ *
+ * All tRPC routers in this app are mounted under a path segment named `trpc`,
+ * and our tRPC clients use `httpLink`, which produces URLs of the form
+ * `/<base>/trpc/<procedureName>`. So we check that the segment immediately
+ * before the procedure name is `trpc`.
+ */
 export function isTrpcRequest(req: Request): boolean {
-  return req.header('X-TRPC') === 'true';
+  // This header is spoofable; the URL path is what Express actually uses to dispatch.
+  if (req.header('X-TRPC') !== 'true') return false;
+  const pathOnly = req.originalUrl.split('?')[0];
+  const segments = pathOnly.split('/');
+  return segments.at(-2) === 'trpc';
 }
 
 /**
