@@ -48,18 +48,18 @@ export default [
     typeAwareFiles: ['apps/prairielearn/**/*.{ts,tsx}'],
   }),
 
-  // HTML plugin
+  // HTML plugin (applies to all files; per-language overrides below)
   {
     plugins: {
       '@html-eslint': html,
     },
     rules: {
-      // This has false positives in our codebase.
-      '@eslint-react/jsx-no-leaked-semicolon': 'off',
       // Use the recommended rules for HTML.
       ...Object.fromEntries(
         Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
       ),
+      // This has false positives in our codebase.
+      '@eslint-react/jsx-no-leaked-semicolon': 'off',
       // We don't want these style rules
       '@html-eslint/attrs-newline': 'off',
       '@html-eslint/element-newline': 'off',
@@ -68,11 +68,6 @@ export default [
       '@html-eslint/no-trailing-spaces': 'off',
       '@html-eslint/sort-attrs': 'off',
       // We don't want these rules
-      '@html-eslint/no-heading-inside-button': 'off', // not important
-      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
-      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
-      '@html-eslint/require-input-label': 'off', // we don't always have labels.
-      // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/no-extra-spacing-attrs': [
         'error',
         {
@@ -82,6 +77,11 @@ export default [
           enforceBeforeSelfClose: true,
         },
       ],
+      '@html-eslint/no-heading-inside-button': 'off', // not important
+      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
+      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
+      '@html-eslint/require-input-label': 'off', // we don't always have labels.
+      // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
       // False positives for attribute/element baseline browser compatibility.
       '@html-eslint/use-baseline': 'off',
@@ -114,33 +114,11 @@ export default [
     },
   },
 
-  // HTML rules in JS/TS files
+  // HTML rule overrides for HTML embedded in JS/TS files (templated strings).
   {
     files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
     rules: {
-      // Use the recommended rules for HTML.
-      ...Object.fromEntries(
-        Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
-      ),
-      // We don't want these style rules
-      '@html-eslint/attrs-newline': 'off',
-      '@html-eslint/element-newline': 'off',
-      '@html-eslint/indent': 'off',
-      '@html-eslint/no-inline-styles': 'off',
-      '@html-eslint/no-trailing-spaces': 'off',
-      '@html-eslint/sort-attrs': 'off',
-      // We don't want these rules
-      '@html-eslint/no-heading-inside-button': 'off', // not important
-      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
-      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
-      '@html-eslint/require-input-label': 'off', // we don't always have labels.
-      // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
-      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
-      // False positives for attribute/element baseline browser compatibility.
-      '@html-eslint/use-baseline': 'off',
-      // We violate these rules in a lot of places.
-      '@html-eslint/id-naming-convention': 'off',
       '@html-eslint/require-button-type': 'off',
     },
   },
