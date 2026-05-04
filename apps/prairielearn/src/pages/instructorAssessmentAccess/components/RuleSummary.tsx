@@ -845,7 +845,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
             <tr key={index}>
               <td
                 className={clsx(
-                  'border-0 position-relative ps-3 assessment-access-date-cell',
+                  'border-0 position-relative ps-3',
                   row.current &&
                     `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
                 )}
