@@ -22,12 +22,10 @@ const AdministratorQuerySpecsSchema = z.object({
 });
 export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const AdministratorQueryResultSchema = z.object({
-  rows: z.record(z.any()).array(),
-  columns: z.string().array().readonly(),
-});
-export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
+export interface AdministratorQueryResult {
+  rows: Record<string, any>[];
+  columns: readonly string[];
+}
 
 export async function runLegacySqlAdminQuery(
   metaUrl: string,
