@@ -17,6 +17,7 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
+  type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
   jsonToDefaultRuleFormData,
@@ -76,6 +77,7 @@ export function AccessControlForm({
     getFieldState,
     handleSubmit,
     setError,
+    setValue,
     watch,
     reset,
     formState: { isDirty, isValid, errors },
@@ -133,6 +135,46 @@ export function AccessControlForm({
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
     appendOverride(newOverride);
     setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+  };
+
+  const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
+    const override = watchedData.overrides[index];
+    if (!override || override.appliesTo.targetType === targetType) return;
+
+    const nextOverrides = watchedData.overrides.map((override, i) =>
+      i === index
+        ? {
+            ...override,
+            appliesTo: {
+              targetType,
+              enrollments: [],
+              studentLabels: [],
+            },
+          }
+        : override,
+    );
+    const reorderedOverrides = [
+      ...nextOverrides.filter((override) => override.appliesTo.targetType === 'student_label'),
+      ...nextOverrides.filter((override) => override.appliesTo.targetType === 'enrollment'),
+    ];
+    const newIndex = reorderedOverrides.findIndex(
+      (override) => override.trackingId === nextOverrides[index].trackingId,
+    );
+
+    if (newIndex !== index) {
+      moveOverride(index, newIndex);
+    }
+
+    setValue(
+      `overrides.${newIndex}.appliesTo`,
+      {
+        targetType,
+        enrollments: [],
+        studentLabels: [],
+      },
+      { shouldDirty: true, shouldValidate: true },
+    );
+    setSelectedRule({ type: 'override', index: newIndex });
   };
 
   const handleDeleteClick = (index: number) => {
@@ -238,6 +280,9 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              onTargetTypeChange={(targetType) =>
+                handleOverrideTargetTypeChange(selectedRule.index, targetType)
+              }
             />
             <OverrideRuleContent
               index={selectedRule.index}

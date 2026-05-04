@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -14,11 +14,12 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  onTargetTypeChange: (targetType: TargetType) => void;
 }) {
-  const { setValue } = useFormContext<AccessControlFormData>();
   const trpc = useTRPC();
 
   const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
@@ -36,15 +37,7 @@ export function AppliesToField({
   });
 
   const handleTargetTypeChange = (newType: TargetType) => {
-    setValue(
-      `${namePrefix}.appliesTo`,
-      {
-        targetType: newType,
-        enrollments: [],
-        studentLabels: [],
-      },
-      { shouldDirty: true },
-    );
+    onTargetTypeChange(newType);
   };
 
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
