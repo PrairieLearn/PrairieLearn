@@ -98,7 +98,7 @@ test-e2e: start-support
 	@yarn workspace @prairielearn/prairielearn run test:e2e
 
 fix-dependencies:
-	@yarn knip  -c .knip.ts --fix --fix-type exports,types
+	@yarn knip  -c .knip.ts --fix --fix-type exports --fix-type types --fix-type dependencies
 lint-dependencies:
 	@yarn knip -c .knip.ts
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
@@ -228,4 +228,4 @@ dangerous-drop-all-dbs:
 		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
 	done
 
-ci: lint typecheck check-dependencies test
+ci: lint typecheck lint-dependencies test

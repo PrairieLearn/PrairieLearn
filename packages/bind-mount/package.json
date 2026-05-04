@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "bindings": "^1.5.0",
-    "nan": "^2.26.2",
     "node-gyp": "^12.3.0"
   },
   "devDependencies": {

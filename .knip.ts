@@ -8,6 +8,7 @@ import type { KnipConfig } from 'knip';
 // TODO: We might want to re-evaluate this approach.
 const REFERENCED_NODE_MODULES_DEPS = [
   'd3',
+  'he',
   'marked',
   'clipboard',
   'async',
@@ -18,6 +19,7 @@ const REFERENCED_NODE_MODULES_DEPS = [
   'bootstrap-table',
   'bootstrap',
   'jquery',
+  'mathlive',
   'highlight.js',
 ];
 
@@ -33,8 +35,16 @@ const FALSE_NEGATIVE_ELEMENT_DEPS = [
   'showdown',
 ];
 
-// These packages are just used for their CLI tools, so we still want them installed.
-const FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli2', 'pyright', 's3rver'];
+// These packages are used for their CLI tools, so we still want them installed.
+const FALSE_NEGATIVE_CLI_DEPS = [
+  'linkinator',
+  'htmlhint',
+  'markdownlint-cli2',
+  'pyright',
+  's3rver',
+  '@postgres-language-server/cli',
+  '@reteps/tree-sitter-htmlmustache',
+];
 
 // We want extract all dependencies of our elements, and mark them as used.
 // See https://github.com/webpro-nl/knip/issues/641 and https://github.com/webpro-nl/knip/pull/1220

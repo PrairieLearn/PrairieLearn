@@ -4782,7 +4782,6 @@ __metadata:
     node-fetch: "npm:^3.3.2"
     pretty-bytes: "npm:^7.1.0"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.21.0"
     vitest: "npm:^4.1.5"
   bin:
     compiled-assets: dist/cli.js
@@ -5356,7 +5355,6 @@ __metadata:
     "@types/json-stringify-safe": "npm:^5.0.3"
     "@types/klaw": "npm:^3.0.7"
     "@types/lodash": "npm:^4.17.24"
-    "@types/loopbench": "npm:^1.2.4"
     "@types/memorystream": "npm:^0.3.4"
     "@types/mime": "npm:^4.0.0"
     "@types/minimist": "npm:^1.2.5"
@@ -5420,7 +5418,6 @@ __metadata:
     debug: "npm:^4.4.3"
     delegated-events: "npm:^1.1.2"
     dockerode: "npm:^5.0.0"
-    domelementtype: "npm:^3.0.0"
     domhandler: "npm:^6.0.1"
     dompurify: "npm:^3.4.2"
     dropzone: "npm:^5.9.3 <6"
@@ -5462,8 +5459,6 @@ __metadata:
     json-stringify-safe: "npm:^5.0.1"
     klaw: "npm:^4.1.0"
     lodash: "npm:^4.18.1"
-    loopbench: "npm:^2.0.0"
-    lru-cache: "npm:^11.3.6"
     marked: "npm:^18.0.3"
     mathjax: "npm:^4.1.2"
     mathlive: "npm:^0.109.2"
@@ -5497,7 +5492,6 @@ __metadata:
     prosemirror-state: "npm:^1.4.4"
     prosemirror-view: "npm:^1.41.8"
     qrcode-svg: "npm:^1.1.0"
-    qs: "npm:^6.15.1"
     quill: "npm:2.0.2"
     quilljs-markdown: "npm:^1.2.0"
     react: "npm:^19.2.5"
@@ -5539,6 +5533,7 @@ __metadata:
     use-stick-to-bottom: "npm:^1.1.4"
     vite: "npm:^8.0.10"
     vitest: "npm:^4.1.5"
+    web-tree-sitter: "npm:^0.26.8"
     winston: "npm:^3.19.0"
     xml-formatter: "npm:^3.7.0"
     xml2js: "npm:^0.6.2"
@@ -8476,15 +8471,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/475f787ae2b992a22f3b794ad0920d2b43e0541d126020c1edb25ebd60b736122d1c4db6813aa8fa9ad5cfed49b700a1e6ee5154acabac2ebc2bed7b40c0d667
-  languageName: node
-  linkType: hard
-
-"@types/tar-stream@npm:^3.1.4":
-  version: 3.1.4
-  resolution: "@types/tar-stream@npm:3.1.4"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/1ee17888b0532f9907788e3e9d60ef25fd5e376c4a09b40aa6ece407fa67ad3d11d25780914ed6360e50451d3039a4e248696c780dcba410779c2d37842afd19
   languageName: node
   linkType: hard
 
@@ -13263,7 +13249,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-stream@npm:^9.0.0, get-stream@npm:^9.0.1":
+"get-stream@npm:^9.0.0":
   version: 9.0.1
   resolution: "get-stream@npm:9.0.1"
   dependencies:
@@ -17535,14 +17521,12 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
-    "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"
     dependency-cruiser: "npm:^17.4.0"
     eslint: "npm:^10.3.0"
     fast-glob: "npm:^3.3.3"
     fs-extra: "npm:^11.3.4"
-    get-stream: "npm:^9.0.1"
     globals: "npm:^17.6.0"
     globby: "npm:^16.2.0"
     htmlhint: "npm:^1.9.2"
@@ -17557,10 +17541,7 @@ __metadata:
     prettier-plugin-sql: "npm:^0.20.0"
     prettier-plugin-toml: "npm:^2.0.6"
     pyright: "npm:^1.1.409"
-    react: "npm:^19.2.5"
-    react-dom: "npm:^19.2.5"
     s3rver: "npm:^3.7.1"
-    tar-stream: "npm:^3.2.0"
     turbo: "npm:^2.9.9"
     vitest: "npm:^4.1.5"
     zod: "npm:^3.25.76 <4"
@@ -17945,15 +17926,6 @@ __metadata:
   bin:
     qrcode-svg: bin/qrcode-svg.js
   checksum: 10c0/c0b53f8937178b4691b80a2059904c899447db45ca934a9eea56f3795c7cd129faed334cb2b476ccb403d46d514c002a6f31e9e0c3029c4b6e836f8b61dacb5b
-  languageName: node
-  linkType: hard
-
-"qs@npm:^6.15.1":
-  version: 6.15.1
-  resolution: "qs@npm:6.15.1"
-  dependencies:
-    side-channel: "npm:^1.1.0"
-  checksum: 10c0/19ee504f0ebff72598503e38cd6d9bd7b52a8ab62ae18b1e6bee3d4db58469bd65871ef1893a881bafb0f80ef2f9ab586e1f255cf25cc8d816c0f5a704721d97
   languageName: node
   linkType: hard
 
@@ -19739,7 +19711,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-stream@npm:^3.0.0, tar-stream@npm:^3.2.0":
+"tar-stream@npm:^3.0.0":
   version: 3.2.0
   resolution: "tar-stream@npm:3.2.0"
   dependencies:
@@ -20823,6 +20795,13 @@ __metadata:
   version: 0.26.6
   resolution: "web-tree-sitter@npm:0.26.6"
   checksum: 10c0/877359f2988809d8799de3ce06f526355decd7634464bf2519ba92be6b68f4ec15bd57e4691d47a57b129cf09c2f80347322702113ba8fdb80c1b1c78ede641a
+  languageName: node
+  linkType: hard
+
+"web-tree-sitter@npm:^0.26.8":
+  version: 0.26.8
+  resolution: "web-tree-sitter@npm:0.26.8"
+  checksum: 10c0/6382099fc8495dc6a464c532852b375ee05b8b3cc68682a8cddf7ba751c08088cd6ec5a34f6a752428fea6d8d6e29a9d281d6068adbc0831a29561c33cd1630f
   languageName: node
   linkType: hard
 
