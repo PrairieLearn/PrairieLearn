@@ -1,3 +1,4 @@
 {
-  "controller": "pl-variable-output.py"
+  "controller": "pl-variable-output.py",
+  "additionalNames": ["pl-matrix-output"]
 }

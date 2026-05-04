@@ -73,6 +73,12 @@ export const htmlMustacheConfig: Config = {
         'pl-variable-score is deprecated. v3 submission elements have built-in score display options.',
     },
     {
+      id: 'pl-deprecated-matrix-output',
+      selector: 'pl-matrix-output',
+      message:
+        'pl-matrix-output is deprecated. Migrate to pl-variable-output. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+    },
+    {
       id: 'pl-prefer-pl-inputs',
       selector: 'input, textarea, select',
       message: 'Prefer PrairieLearn input elements over raw HTML form inputs.',
