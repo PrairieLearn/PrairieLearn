@@ -1911,7 +1911,7 @@ describe('afterComplete hidden/visibility validation', () => {
 
 describe('Global afterComplete validation', () => {
   const completionMechanismMessage =
-    'After-complete settings require date control or PrairieTest exams.';
+    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
 
   it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
     const result = validateAccessControlRules({
@@ -2047,6 +2047,48 @@ describe('Global afterComplete validation', () => {
       ],
     });
     assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on main rule when dateControl has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+          afterComplete: {
+            questions: { hidden: true },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with durationMinutes', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on overrides when default rule has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
   });
 
   it('rejects afterComplete on an override when only another override has dateControl', () => {
