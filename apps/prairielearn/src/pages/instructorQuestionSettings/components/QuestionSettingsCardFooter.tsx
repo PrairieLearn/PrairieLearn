@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
@@ -240,9 +241,10 @@ export function QuestionSettingsCardFooter({
         {rows.map((row, index) => (
           <div
             key={row.key}
-            className={`d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-3${
-              index > 0 ? ' border-top' : ''
-            }`}
+            className={clsx(
+              'd-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-3',
+              index > 0 && 'border-top',
+            )}
           >
             {row.node}
           </div>
