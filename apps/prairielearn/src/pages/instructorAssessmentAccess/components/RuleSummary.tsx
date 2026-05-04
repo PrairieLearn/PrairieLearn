@@ -28,6 +28,10 @@ import {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function formatCreditPercent(credit: number): string {
+  return Number.isFinite(credit) ? `${credit}%` : '—';
+}
+
 type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
@@ -222,7 +226,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Early ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -244,7 +248,7 @@ export function generateDefaultRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
       current: isDeadlineCurrent(dueDate),
       currentVariant,
@@ -253,7 +257,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
       current: isNoDeadlineSegment,
       currentVariant,
@@ -263,7 +267,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
     });
   }
@@ -283,7 +287,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Late ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -302,7 +306,7 @@ export function generateDefaultRuleDateTableRows(
           ? 'No access'
           : afterLastDeadline.allowSubmissions
             ? afterLastDeadline.credit != null
-              ? `${afterLastDeadline.credit}%`
+              ? formatCreditPercent(afterLastDeadline.credit)
               : 'Practice'
             : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
@@ -507,10 +511,10 @@ function formatDeadlineEntries(
           options={{ includeTz: false }}
           tooltip
         />{' '}
-        ({entry.credit}% credit)
+        ({formatCreditPercent(entry.credit)} credit)
       </>
     ) : (
-      `No date set (${entry.credit}% credit)`
+      `No date set (${formatCreditPercent(entry.credit)} credit)`
     ),
     error: deadlineErrors?.[i],
   }));
@@ -519,7 +523,11 @@ function formatDeadlineEntries(
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
   if (afterLastDeadline == null) return 'no access';
   const parts: string[] = [];
-  if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
+  if (
+    afterLastDeadline.allowSubmissions &&
+    afterLastDeadline.credit != null &&
+    Number.isFinite(afterLastDeadline.credit)
+  ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
@@ -575,7 +583,7 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('due')) {
-    const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
+    const creditLabel = rule.due.credit != null ? ` (${formatCreditPercent(rule.due.credit)})` : '';
     const dueDateErr = formErrors?.due?.date?.message;
     const dueCreditErr = formErrors?.due?.credit?.message;
     items.push({
@@ -940,7 +948,7 @@ function buildDefaultRuleCurrentIndicator(
       icon: 'bi-unlock',
       text: (
         <>
-          Open · {segment.credit}% credit until {friendlyDate(segment.endDate)}
+          Open · {formatCreditPercent(segment.credit)} credit until {friendlyDate(segment.endDate)}
         </>
       ),
     };
@@ -948,7 +956,7 @@ function buildDefaultRuleCurrentIndicator(
   return {
     variant: 'success',
     icon: 'bi-unlock',
-    text: `Open · ${segment.credit}% credit`,
+    text: `Open · ${formatCreditPercent(segment.credit)} credit`,
   };
 }
 
