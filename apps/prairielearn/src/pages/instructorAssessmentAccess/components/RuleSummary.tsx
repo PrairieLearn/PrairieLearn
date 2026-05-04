@@ -248,7 +248,7 @@ export function generateDefaultRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
       current: isDeadlineCurrent(dueDate),
       currentVariant,
@@ -257,7 +257,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
       current: isNoDeadlineSegment,
       currentVariant,
@@ -267,7 +267,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: `${dueCredit}%`,
+      credit: formatCreditPercent(dueCredit),
       error: dueError,
     });
   }
@@ -579,7 +579,7 @@ function generateOverrideFieldItems(
   }
 
   if (overriddenFields.has('due')) {
-    const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
+    const creditLabel = rule.due.credit != null ? ` (${formatCreditPercent(rule.due.credit)})` : '';
     const dueDateErr = formErrors?.due?.date?.message;
     const dueCreditErr = formErrors?.due?.credit?.message;
     items.push({
@@ -944,7 +944,7 @@ function buildDefaultRuleCurrentIndicator(
       icon: 'bi-unlock',
       text: (
         <>
-          Open · {segment.credit}% credit until {friendlyDate(segment.endDate)}
+          Open · {formatCreditPercent(segment.credit)} credit until {friendlyDate(segment.endDate)}
         </>
       ),
     };
@@ -952,7 +952,7 @@ function buildDefaultRuleCurrentIndicator(
   return {
     variant: 'success',
     icon: 'bi-unlock',
-    text: `Open · ${segment.credit}% credit`,
+    text: `Open · ${formatCreditPercent(segment.credit)} credit`,
   };
 }
 
