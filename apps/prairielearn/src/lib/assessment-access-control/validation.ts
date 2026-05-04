@@ -621,8 +621,7 @@ export function validateGlobalAfterCompleteIssues(
     const hasMechanism =
       ruleHasDateControl ||
       ruleHasPrairieTest ||
-      (validationRule.targetType !== 'none' &&
-        (defaultHasDateControl || defaultHasPrairieTest));
+      (validationRule.targetType !== 'none' && (defaultHasDateControl || defaultHasPrairieTest));
     if (hasMechanism) continue;
 
     if (ac.questions !== undefined) {
