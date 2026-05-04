@@ -421,16 +421,16 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'active access restriction with late-credit window and later hidden review window',
+      name: 'pre-release listing, late-credit window, and later hidden review window',
       rules: [
-        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
-        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
         {
           active: false,
           credit: 0,
-          startDate: '2021-01-01T00:00:00',
-          endDate: '2034-12-31T23:59:59',
+          startDate: '1999-01-01T00:00:01',
+          endDate: '2019-12-31T23:59:59',
         },
+        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
+        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
         {
           active: false,
           credit: 0,
@@ -447,11 +447,11 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
-            release: { date: '2020-01-01T00:00:01' },
+            release: { date: '1999-01-01T00:00:01' },
             due: { date: '2020-12-31T23:59:59' },
             lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
-            afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2040-01-01T00:00:01' },
@@ -894,7 +894,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'password-gated with practice window',
+      name: 'password-gated with view-only window extending past the deadline',
       rules: [
         {
           startDate: '2021-10-21T14:00:00',
@@ -916,7 +916,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2021-10-21T14:00:00' },
             due: { date: '2021-10-21T15:15:00' },
             durationMinutes: 55,
-            afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         },
         errors: [],

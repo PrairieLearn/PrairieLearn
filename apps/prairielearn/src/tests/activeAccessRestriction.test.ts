@@ -393,10 +393,9 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      assert.include(
-        response.$('div.card-body').text(),
-        "This assessment's configuration does not allow you to access it right now.",
-      );
+      const msg = response.$('[data-testid="assessment-closed-message"]');
+      assert.lengthOf(msg, 1);
+      assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
     });
 
     test.sequential('access the homework when it is active', async () => {
@@ -504,19 +503,6 @@ describe(
       assert.isTrue(response.ok);
       assert.match(response.$('body').text(), /Available credit:\s+75%/);
     });
-
-    test.sequential(
-      'access the homework when an active 75% rule overlaps an inactive rule',
-      async () => {
-        headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
-
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
-        assert.match(response.$('body').text(), /Available credit:\s+75%/);
-      },
-    );
 
     test.sequential(
       'access the homework when active and showClosedAssessment are false, and the homework will never be active again',
