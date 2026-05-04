@@ -3,7 +3,6 @@ import { Modal } from 'react-bootstrap';
 
 import type { StudentHomePageCourse } from '../home.types.js';
 
-
 export function StudentCoursesCard({
   studentCourses,
   hasInstructorCourses,
