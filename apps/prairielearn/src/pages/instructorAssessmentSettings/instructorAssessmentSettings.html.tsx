@@ -240,19 +240,11 @@ function CopyAssessmentModal({
   };
 
   const onSubmit = handleSubmit((data) => {
-    copyMutation.mutate(
-      {
-        aid: data.aid.trim(),
-        title: data.title.trim(),
-        number: data.number.trim(),
-        set: data.set,
+    copyMutation.mutate(data, {
+      onSuccess: (result) => {
+        window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
       },
-      {
-        onSuccess: (result) => {
-          window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
-        },
-      },
-    );
+    });
   });
 
   return (
