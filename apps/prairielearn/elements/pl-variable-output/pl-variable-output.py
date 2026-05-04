@@ -53,6 +53,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "default-tab", TabType, DEFAULT_TAB_DEFAULT
     )
 
+    if element.tag == "pl-matrix-output":
+        # Backwards compatibility for pl-matrix-output, which is deprecated.
+        # This element only supports Matlab and Python, so we set the default
+        # tab to Matlab and hide the other tabs.
+        show_mathematica = False
+        show_r = False
+        show_sympy = False
+        default_tab = TabType.MATLAB
+
     # Setting the default tab
     displayed_tab = [show_matlab, show_mathematica, show_python, show_r, show_sympy]
     if not any(displayed_tab):
