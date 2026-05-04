@@ -11,7 +11,6 @@ const REFERENCED_NODE_MODULES_DEPS = [
   'marked',
   'clipboard',
   'async',
-  'tom-select',
   'qrcode-svg',
   'socket.io-client',
   'lodash',
@@ -24,7 +23,15 @@ const REFERENCED_NODE_MODULES_DEPS = [
 
 // These packages aren't used in our own code, but we still want them installed
 // as they are used by elements in other courses.
-const FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
+const FALSE_NEGATIVE_ELEMENT_DEPS = [
+  'backbone',
+  'dropzone',
+  'lodash',
+  'mersenne',
+  'numeric',
+  'popper.js',
+  'showdown',
+];
 
 // These packages are just used for their CLI tools, so we still want them installed.
 const FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli2', 'pyright', 's3rver'];

@@ -2002,17 +2002,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dnd-kit/abstract@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/abstract@npm:0.4.0"
-  dependencies:
-    "@dnd-kit/geometry": "npm:^0.4.0"
-    "@dnd-kit/state": "npm:^0.4.0"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/aabe218c13e371f2760a3620b71a69b863af77ceb1b147515abef0ed9078f83bc37ae600cad98db6884d9f445c5b8cf9b8cbe4a381ce43aaf886b53a640895a6
-  languageName: node
-  linkType: hard
-
 "@dnd-kit/accessibility@npm:^3.1.1":
   version: 3.1.1
   resolution: "@dnd-kit/accessibility@npm:3.1.1"
@@ -2021,17 +2010,6 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: 10c0/be0bf41716dc58f9386bc36906ec1ce72b7b42b6d1d0e631d347afe9bd8714a829bd6f58a346dd089b1519e93918ae2f94497411a61a4f5e4d9247c6cfd1fef8
-  languageName: node
-  linkType: hard
-
-"@dnd-kit/collision@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/collision@npm:0.4.0"
-  dependencies:
-    "@dnd-kit/abstract": "npm:^0.4.0"
-    "@dnd-kit/geometry": "npm:^0.4.0"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/8f6895cdc2742e6720426fdd59439791aa73eecc1e57578a737981b31bd79c3feafc11977c5e5e320c21cc6d01dd60cdcefa17dbeaccf12b65617f2bda359d0f
   languageName: node
   linkType: hard
 
@@ -2049,44 +2027,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dnd-kit/dom@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/dom@npm:0.4.0"
-  dependencies:
-    "@dnd-kit/abstract": "npm:^0.4.0"
-    "@dnd-kit/collision": "npm:^0.4.0"
-    "@dnd-kit/geometry": "npm:^0.4.0"
-    "@dnd-kit/state": "npm:^0.4.0"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/53450a4c504872863b9e5dcdf113be189144bdfb4f7ed13da98eab5cf6d5921f16b6504a22623923fdefa27d5c4025c73c2d1f9fc3e68feb6d3ce20b8afe88d0
-  languageName: node
-  linkType: hard
-
-"@dnd-kit/geometry@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/geometry@npm:0.4.0"
-  dependencies:
-    "@dnd-kit/state": "npm:^0.4.0"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/1a3e5eb87c3ffc6927a6a91b0a776c638a75bb1a267c69de096096875f39557023ffd423243a763198c421fceed09d939ae7570c3cbadabdd5d75d7ec7b460e7
-  languageName: node
-  linkType: hard
-
-"@dnd-kit/react@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/react@npm:0.4.0"
-  dependencies:
-    "@dnd-kit/abstract": "npm:^0.4.0"
-    "@dnd-kit/dom": "npm:^0.4.0"
-    "@dnd-kit/state": "npm:^0.4.0"
-    tslib: "npm:^2.6.2"
-  peerDependencies:
-    react: ^18.0.0 || ^19.0.0
-    react-dom: ^18.0.0 || ^19.0.0
-  checksum: 10c0/1cc4f2c098a61ae77459db1b0ab1db29111464525797a32dfa6464f40ab1ebdce469dd4ff56719e0d79053e13f84f0ef7ae642063306c3adbdc2d51d3e123500
-  languageName: node
-  linkType: hard
-
 "@dnd-kit/sortable@npm:^10.0.0":
   version: 10.0.0
   resolution: "@dnd-kit/sortable@npm:10.0.0"
@@ -2097,16 +2037,6 @@ __metadata:
     "@dnd-kit/core": ^6.3.0
     react: ">=16.8.0"
   checksum: 10c0/37ee48bc6789fb512dc0e4c374a96d19abe5b2b76dc34856a5883aaa96c3297891b94cc77bbc409e074dcce70967ebcb9feb40cd9abadb8716fc280b4c7f99af
-  languageName: node
-  linkType: hard
-
-"@dnd-kit/state@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@dnd-kit/state@npm:0.4.0"
-  dependencies:
-    "@preact/signals-core": "npm:^1.10.0"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/22ced96e6477095c5a2e6176438f6b56bb343e5cf52a2bbe2eeeda2f31d8ba25b848c1e6b5c79112e3dcaf53add1fdc598a21e0bbf7486a5f3c06001a4db5791
   languageName: node
   linkType: hard
 
@@ -5317,7 +5247,6 @@ __metadata:
     "@aws-sdk/lib-storage": "npm:^3.1042.0"
     "@cortex-js/compute-engine": "npm:^0.55.6"
     "@dnd-kit/core": "npm:^6.3.1"
-    "@dnd-kit/react": "npm:^0.4.0"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
     "@fortawesome/fontawesome-free": "npm:^7.2.0"
@@ -5374,13 +5303,11 @@ __metadata:
     "@tanstack/react-query": "npm:^5.100.9"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.24"
-    "@tanstack/table-core": "npm:^8.21.3"
     "@tiptap/core": "npm:^3.22.5"
     "@tiptap/extension-blockquote": "npm:^3.22.5"
     "@tiptap/extension-bold": "npm:^3.22.5"
     "@tiptap/extension-bullet-list": "npm:^3.22.5"
     "@tiptap/extension-code": "npm:^3.22.5"
-    "@tiptap/extension-code-block": "npm:^3.22.5"
     "@tiptap/extension-collaboration": "npm:^3.22.5"
     "@tiptap/extension-document": "npm:^3.22.5"
     "@tiptap/extension-drag-handle": "npm:^3.22.5"
@@ -5925,13 +5852,6 @@ __metadata:
     zod: "npm:^3.25.76 <4"
   languageName: unknown
   linkType: soft
-
-"@preact/signals-core@npm:^1.10.0":
-  version: 1.13.0
-  resolution: "@preact/signals-core@npm:1.13.0"
-  checksum: 10c0/25f536b90f5dbd116e037a27b51f5ca69914a957b5fa3c1d8af2857d145257fdb106e86cb6e1d5d22bc6feb1215d4448bf208482d2349f832720548bc788ca08
-  languageName: node
-  linkType: hard
 
 "@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
   version: 1.1.2
@@ -7175,16 +7095,6 @@ __metadata:
   peerDependencies:
     "@tiptap/extension-list": 3.22.5
   checksum: 10c0/055ed9ed79542df78239f37069a2e1dc78fbb768430c7d1cbbe4d05e235f6b63fbcd0eadd57dc2b718ecb57b390f2e1e808ec9df86b9ebee7ea37888d2223492
-  languageName: node
-  linkType: hard
-
-"@tiptap/extension-code-block@npm:^3.22.5":
-  version: 3.22.5
-  resolution: "@tiptap/extension-code-block@npm:3.22.5"
-  peerDependencies:
-    "@tiptap/core": 3.22.5
-    "@tiptap/pm": 3.22.5
-  checksum: 10c0/2c44df5ea57e0d6fd33417a56aef51aba4aa42770b02224a66bb53d342636ca302d8816f4b99667e3ad0d2203fc4e52a3710c55ba04ca330d5727514c3ef7ed0
   languageName: node
   linkType: hard
 
