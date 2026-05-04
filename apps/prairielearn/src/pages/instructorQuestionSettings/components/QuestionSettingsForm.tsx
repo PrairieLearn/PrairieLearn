@@ -94,15 +94,11 @@ export const QuestionSettingsForm = ({
   origHash,
   csrfToken,
   canEdit,
-  canCopy,
+  hasCoursePermissionView,
   editableCourses,
-  courseId,
   questionGHLink,
-  sharingEnabled,
-  sharingSetsIn,
-  showTestsSection,
-  questionTestPath,
-  questionTestCsrfToken,
+  sharing,
+  questionTest,
 }: {
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
@@ -115,16 +111,17 @@ export const QuestionSettingsForm = ({
   origHash: string;
   csrfToken: string;
   canEdit: boolean;
-  canCopy: boolean;
+  hasCoursePermissionView: boolean;
   editableCourses: EditableCourse[];
-  courseId: string;
   questionGHLink: string | null;
-  sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
-  showTestsSection: boolean;
-  questionTestPath: string;
-  questionTestCsrfToken: string;
+  sharing: { enabled: boolean; setsIn: SharingSetRow[] };
+  questionTest: { path: string; csrfToken: string };
 }) => {
+  const canCopy = editableCourses.length > 0 && hasCoursePermissionView;
+  const showTestsSection =
+    question.type === 'Freeform' &&
+    question.grading_method !== 'External' &&
+    hasCoursePermissionView;
   // `handleSubmit` runs after react-hook-form processes the submit event, so use a
   // stable ref rather than depending on `event.currentTarget` here.
   // If we didn't wrap in `handleSubmit`, we could use `event.currentTarget`.
@@ -908,7 +905,7 @@ export const QuestionSettingsForm = ({
         </div>
       </form>
 
-      {sharingEnabled && (
+      {sharing.enabled && (
         <div className="card">
           <div className="card-body">
             <h2 className="h5 card-title mb-3">Sharing</h2>
@@ -916,7 +913,7 @@ export const QuestionSettingsForm = ({
               <QuestionSharing
                 sharePublicly={question.share_publicly}
                 shareSourcePublicly={question.share_source_publicly}
-                sharingSetsIn={sharingSetsIn}
+                sharingSetsIn={sharing.setsIn}
               />
             </div>
           </div>
@@ -928,8 +925,8 @@ export const QuestionSettingsForm = ({
           <div className="card-body">
             <h2 className="h5 card-title mb-3">Tests</h2>
             <QuestionTestsForm
-              questionTestPath={questionTestPath}
-              csrfToken={questionTestCsrfToken}
+              questionTestPath={questionTest.path}
+              csrfToken={questionTest.csrfToken}
             />
           </div>
         </div>
@@ -939,7 +936,7 @@ export const QuestionSettingsForm = ({
         canEdit={canEdit}
         canCopy={canCopy}
         editableCourses={editableCourses}
-        courseId={courseId}
+        courseId={question.course_id}
         qid={defaultValues.qid}
         assessmentsWithQuestion={assessmentsWithQuestion}
         csrfToken={csrfToken}

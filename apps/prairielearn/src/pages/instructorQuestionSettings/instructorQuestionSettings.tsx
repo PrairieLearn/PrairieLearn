@@ -609,16 +609,11 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
     const hasCoursePermissionView = authz_data.has_course_permission_view;
-    const isFreeformQuestion = question.type === 'Freeform';
-    const isExternalGrading = question.grading_method === 'External';
 
     const parsedCourseTopics = z.array(StaffTopicSchema).parse(courseTopics);
     const parsedCourseTags = z.array(StaffTagSchema).parse(courseTags);
     const parsedQuestionTags = z.array(StaffTagSchema).parse(questionTags);
     const parsedEditableCourses = z.array(EditableCourseSchema).parse(editableCourses);
-
-    const canCopy =
-      editableCourses.length > 0 && hasCoursePermissionView && question.course_id === course.id;
 
     res.send(
       PageLayout({
@@ -639,23 +634,17 @@ router.get(
               question={question}
               topic={topic}
               courseInstance={courseInstance}
-              courseId={course.id}
               csrfToken={__csrf_token}
               questionGHLink={questionGHLink}
-              questionTestPath={questionTestPath}
-              questionTestCsrfToken={questionTestCsrfToken}
+              questionTest={{ path: questionTestPath, csrfToken: questionTestCsrfToken }}
               questionTags={parsedQuestionTags}
               qids={qids}
               assessmentsWithQuestion={assessmentsWithQuestion}
-              sharingEnabled={sharingEnabled}
-              sharingSetsIn={sharingSetsIn ?? []}
+              sharing={{ enabled: sharingEnabled, setsIn: sharingSetsIn ?? [] }}
               editableCourses={parsedEditableCourses}
               origHash={origHash}
               canEdit={canEdit}
-              canCopy={canCopy}
               hasCoursePermissionView={hasCoursePermissionView}
-              isFreeformQuestion={isFreeformQuestion}
-              isExternalGrading={isExternalGrading}
               courseTopics={parsedCourseTopics}
               courseTags={parsedCourseTags}
             />

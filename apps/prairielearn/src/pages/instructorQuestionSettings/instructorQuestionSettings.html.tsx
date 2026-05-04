@@ -16,51 +16,37 @@ export function InstructorQuestionSettings({
   question,
   topic,
   courseInstance,
-  courseId,
   csrfToken,
   questionGHLink,
-  questionTestPath,
-  questionTestCsrfToken,
+  questionTest,
   questionTags,
   qids,
   assessmentsWithQuestion,
-  sharingEnabled,
-  sharingSetsIn,
+  sharing,
   editableCourses,
   origHash,
   canEdit,
-  canCopy,
   hasCoursePermissionView,
-  isFreeformQuestion,
-  isExternalGrading,
   courseTopics,
   courseTags,
 }: {
   question: StaffQuestion;
   topic: StaffTopic;
   courseInstance: StaffCourseInstance | null;
-  courseId: string;
   csrfToken: string;
   questionGHLink: string | null;
-  questionTestPath: string;
-  questionTestCsrfToken: string;
+  questionTest: { path: string; csrfToken: string };
   questionTags: StaffTag[];
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
-  sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
+  sharing: { enabled: boolean; setsIn: SharingSetRow[] };
   editableCourses: EditableCourse[];
   origHash: string;
   canEdit: boolean;
-  canCopy: boolean;
   hasCoursePermissionView: boolean;
-  isFreeformQuestion: boolean;
-  isExternalGrading: boolean;
   courseTopics: StaffTopic[];
   courseTags: StaffTag[];
 }) {
-  const showTestsSection = isFreeformQuestion && !isExternalGrading && hasCoursePermissionView;
-
   return (
     <div className="d-flex flex-column gap-3">
       <QuestionSettingsForm
@@ -73,17 +59,13 @@ export function InstructorQuestionSettings({
         origHash={origHash}
         csrfToken={csrfToken}
         canEdit={canEdit}
-        canCopy={canCopy}
+        hasCoursePermissionView={hasCoursePermissionView}
         editableCourses={editableCourses}
-        courseId={courseId}
         questionGHLink={questionGHLink}
         courseInstance={courseInstance}
         assessmentsWithQuestion={assessmentsWithQuestion}
-        sharingEnabled={sharingEnabled}
-        sharingSetsIn={sharingSetsIn}
-        showTestsSection={showTestsSection}
-        questionTestPath={questionTestPath}
-        questionTestCsrfToken={questionTestCsrfToken}
+        sharing={sharing}
+        questionTest={questionTest}
       />
     </div>
   );
