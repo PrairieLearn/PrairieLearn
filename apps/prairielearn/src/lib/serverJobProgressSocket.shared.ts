@@ -54,16 +54,13 @@ export type JobProgress = z.infer<typeof JobProgressSchema>;
 /**
  * Progress update message sent from the server job progress socket.
  */
-const ProgressUpdateMessageSchema = z.discriminatedUnion('has_progress_data', [
-  JobProgressSchema.extend({
-    /** Progress data was available in the cache. */
-    has_progress_data: z.literal(true),
-  }),
-  z.object({
-    job_sequence_id: z.string(),
-    /** No progress data was available in the cache. */
-    has_progress_data: z.literal(false),
-  }),
-]);
-
-export type ProgressUpdateMessage = z.infer<typeof ProgressUpdateMessageSchema>;
+export type ProgressUpdateMessage =
+  | (JobProgress & {
+      /** Progress data was available in the cache. */
+      has_progress_data: true;
+    })
+  | {
+      job_sequence_id: string;
+      /** No progress data was available in the cache. */
+      has_progress_data: false;
+    };
