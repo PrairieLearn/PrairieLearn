@@ -74,6 +74,7 @@
     "@sa11y/common/axe-core": "^4",
     "@sa11y/format/axe-core": "^4",
     "@typescript/native-preview": "beta",
+    "linkinator/marked": "^18",
     "markdownlint-cli2/smol-toml": "^1",
     "notebookjs/jsdom": "*",
     "typescript-cp/tar": "*"
