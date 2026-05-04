@@ -186,7 +186,7 @@ Click **Create**. You land on the assessment with empty zones.
 
 ## 7. Add questions to the assessment
 
-Go to the assessment's **Questions** tab and click **Edit**. Click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
+Go to the assessment's **Questions** tab and click **Edit**. Click **Add zone** to create a zone, then click **Add question** at the bottom of the zone, search for `rectangle-area`, and pick the matching result.
 
 ![Question picker with rectangle-area searched and the result highlighted](screenshots/21-question-picker.png)
 
