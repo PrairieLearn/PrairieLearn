@@ -52,8 +52,9 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
-            release: { date: '2024-01-01T00:00:00' },
+            release: { date: '2024-02-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
         },
@@ -449,7 +450,7 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           beforeRelease: { listed: true },
           dateControl: {
-            release: { date: '1999-01-01T00:00:01' },
+            release: { date: '2020-01-01T00:00:01' },
             due: { date: '2020-12-31T23:59:59' },
             lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
           },
@@ -911,6 +912,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
             password: 'password',
             release: { date: '2021-10-21T14:00:00' },
@@ -931,6 +933,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
             password: 'secret',
             release: { date: '2024-02-01T00:00:00' },

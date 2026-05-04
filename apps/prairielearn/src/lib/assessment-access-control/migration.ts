@@ -118,20 +118,19 @@ function ruleCovers(outer: AssessmentAccessRuleJson, inner: AssessmentAccessRule
 }
 
 function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  // The new format's `release` is the start of submittability, not visibility.
+  // When credit rules exist, release must coincide with the first credit window
+  // — otherwise the resolver would treat any earlier visibility-rule startDate
+  // as a submittable 100%-credit window. Pre-credit visibility is preserved
+  // separately via `beforeRelease.listed`.
   const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (firstCreditStartDate) return firstCreditStartDate;
+
   const visibilityDates = getVisibilityRules(rules)
     .map((r) => r.startDate)
-    .filter(
-      (date): date is string => !!date && (!firstCreditStartDate || date <= firstCreditStartDate),
-    );
-  if (visibilityDates.length > 0) return visibilityDates.sort()[0];
-
-  const creditDates = getCreditRules(rules)
-    .map((r) => r.startDate)
-    .filter(Boolean) as string[];
-  if (creditDates.length > 0) return creditDates.sort()[0];
-
-  return undefined;
+    .filter((date): date is string => !!date)
+    .sort();
+  return visibilityDates[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -293,12 +292,14 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   const firstCreditStartDate = findFirstCreditStartDate(rules);
   if (!firstCreditStartDate) return false;
 
+  // Any visibility rule that covers some pre-release time is enough to list
+  // the assessment beforehand. The rule's endDate is irrelevant — `listed` is
+  // a binary flag for the pre-release segment, not a full visibility schedule.
   return getVisibilityRules(rules).some((rule) => {
     if (rule.showClosedAssessment === false || rule.showClosedAssessmentScore === false) {
       return false;
     }
-    if (!rule.endDate || rule.endDate > firstCreditStartDate) return false;
-    if (rule.startDate && rule.startDate > firstCreditStartDate) return false;
+    if (rule.startDate && rule.startDate >= firstCreditStartDate) return false;
     return true;
   });
 }
@@ -609,7 +610,6 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
 function extractPassword(rules: AssessmentAccessRuleJson[]): {
   password: string;
   remainingRules: AssessmentAccessRuleJson[];
-  passwordStartDate: string | undefined;
   notes: string[];
 } | null {
   const passwordRules = rules.filter((r) => r.password);
@@ -624,15 +624,6 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
       'Multiple distinct passwords were used in legacy access rules; only the first password was kept in the migrated configuration.',
     );
   }
-
-  // Use the earliest startDate among rules using the kept password, so the
-  // release date can't be pulled before any window the password originally
-  // gated.
-  const passwordStartDate = passwordRules
-    .filter((r) => r.password === password)
-    .map((r) => r.startDate)
-    .filter((d): d is string => !!d)
-    .sort()[0];
 
   // Strip the password from rules. Keep the rule itself for credit/date
   // processing. Password rules without explicit credit (credit omitted) but
@@ -653,7 +644,6 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
   return {
     password,
     remainingRules,
-    passwordStartDate,
     notes,
   };
 }
@@ -843,17 +833,6 @@ export function migrateAllowAccess(
   if (pwExtract) {
     if (!accessControl.dateControl) accessControl.dateControl = {};
     accessControl.dateControl.password = pwExtract.password;
-
-    // Don't let an earlier `active: false` visibility rule pull the release
-    // date back before the password rule's startDate — that would grant the
-    // password-gated credit window before the legacy password access opened.
-    if (
-      pwExtract.passwordStartDate &&
-      accessControl.dateControl.release?.date &&
-      accessControl.dateControl.release.date < pwExtract.passwordStartDate
-    ) {
-      accessControl.dateControl.release = { date: pwExtract.passwordStartDate };
-    }
   }
 
   applyVisibilityMigration(accessControl, schedulingRules);
