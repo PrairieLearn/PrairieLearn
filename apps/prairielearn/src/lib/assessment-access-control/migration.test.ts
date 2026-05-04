@@ -421,6 +421,48 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'active access restriction with late-credit window and later hidden review window',
+      rules: [
+        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
+        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
+        {
+          active: false,
+          credit: 0,
+          startDate: '2021-01-01T00:00:00',
+          endDate: '2034-12-31T23:59:59',
+        },
+        {
+          active: false,
+          credit: 0,
+          showClosedAssessment: false,
+          startDate: '2035-01-01T00:00:01',
+          endDate: '2039-12-31T23:59:59',
+        },
+        {
+          active: false,
+          credit: 0,
+          startDate: '2040-01-01T00:00:01',
+          endDate: '2049-12-31T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2020-01-01T00:00:01' },
+            due: { date: '2020-12-31T23:59:59' },
+            lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2040-01-01T00:00:01' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'late deadline preserved when open-ended credit is lower than due-date credit',
       rules: [
         { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },

@@ -393,9 +393,10 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      const msg = response.$('[data-testid="assessment-closed-message"]');
-      assert.lengthOf(msg, 1);
-      assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
+      assert.include(
+        response.$('div.card-body').text(),
+        "This assessment's configuration does not allow you to access it right now.",
+      );
     });
 
     test.sequential('access the homework when it is active', async () => {
@@ -445,7 +446,7 @@ describe(
     });
 
     test.sequential('access the homework when it is no longer active', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         headers,
@@ -494,26 +495,18 @@ describe(
       assert.equal(countVariantsResult, context.numberOfVariants);
     });
 
-    test.sequential(
-      'access the homework when active and showClosedAssessment are false, but the homework will be active later',
-      async () => {
-        headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
+    test.sequential('access the homework during the late 75% credit window', async () => {
+      headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
-
-        const msg = response.$('[data-testid="assessment-closed-message"]');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
-
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+      assert.match(response.$('body').text(), /Available credit:\s+75%/);
+    });
 
     test.sequential(
-      'access the homework when an active and a non-active access rule are both satisfied, and both have nonzero credit',
+      'access the homework when an active 75% rule overlaps an inactive rule',
       async () => {
         headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
 
@@ -521,6 +514,7 @@ describe(
           headers,
         });
         assert.isTrue(response.ok);
+        assert.match(response.$('body').text(), /Available credit:\s+75%/);
       },
     );
 
@@ -543,7 +537,7 @@ describe(
     );
 
     test.sequential('submit an answer to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -586,7 +580,7 @@ describe(
     );
 
     test.sequential('try to attach a file to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -614,7 +608,7 @@ describe(
     });
 
     test.sequential('try to attach a file to the assessment when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         method: 'POST',
@@ -646,7 +640,7 @@ describe(
     );
 
     test.sequential('try to attach text to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -674,7 +668,7 @@ describe(
     });
 
     test.sequential('try to attach text to the assessment when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         method: 'POST',
