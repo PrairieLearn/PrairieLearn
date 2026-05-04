@@ -57,9 +57,11 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
-      'Controls for assessment behavior after last deadline',
-    ).optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
+      .describe(
+        'Controls for assessment behavior after last deadline. Null means no access; omitted means inherit from default (overrides only).',
+      )
+      .optional(),
     durationMinutes: z
       .number()
       .int()
