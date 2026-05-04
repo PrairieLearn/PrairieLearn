@@ -110,26 +110,36 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines require a due date.
-  // Late deadlines define credit after the due date, so they need one as an anchor.
-  // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, due === undefined means "inherit from default rule" (valid),
-  // while due.date === null means "explicitly no due date" (invalid with late deadlines).
+  // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
+  // true) need a due date as an anchor. Early deadlines are standalone bonus
+  // windows. The cross-rule "inherit from default" case is handled by
+  // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
       validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'lateDeadlines', 0, 'date'],
-        'Late deadlines require a due date.',
-      );
+    if (dueDateMissing) {
+      if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', 0, 'date'],
+          'Late deadlines require a due date.',
+        );
+      }
+
+      if (dc.afterLastDeadline?.allowSubmissions === true) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'afterLastDeadline', 'credit'],
+          'After-last-deadline behavior requires a due date.',
+        );
+      }
     }
   }
 
-  // Constraint 3: Early deadlines are not allowed when a custom due credit is set.
+  // Constraint 2: Early deadlines are not allowed when a custom due credit is set.
   // Early deadlines are standalone bonus-credit windows above the due-date credit,
   // but when the due-date credit is customized we require a single coherent credit
   // shape around the due date rather than layering bonuses on top.
@@ -142,7 +152,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Constraint 3: Late deadlines are not allowed when due credit is 0%.
   // Late deadline credit must be strictly less than the due credit, so a
   // 0% due credit leaves no valid range.
   if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
@@ -154,7 +164,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 2: After-complete date fields require at least one deadline.
+  // Constraint 4: After-complete date fields require at least one deadline.
   // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
@@ -193,6 +203,50 @@ export function validateRuleStructuralDependencyIssues(
         validationRule,
         ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule structural check: complements the per-rule validator, which
+ * treats `dc.due === undefined` on overrides as "inherit from default" and so
+ * misses the case where the inherited value is also missing. Lenient like
+ * the other global checks — overrides can cascade, so any rule's due could
+ * anchor a given student's resolved timeline. Skips overrides that
+ * explicitly set their own `due`: either it provides an anchor, or per-rule
+ * already flagged the explicit-null case.
+ */
+export function validateGlobalStructuralDependencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+  if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
+
+  for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
+    const dc = validationRule.rule.dateControl;
+    if (!dc || dc.due !== undefined) continue;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date on at least one rule.',
+      );
+    }
+
+    // `allowSubmissions: false` is a no-op without a deadline.
+    if (dc.afterLastDeadline?.allowSubmissions === true) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        'After-last-deadline behavior requires a due date on at least one rule.',
       );
     }
   }
@@ -860,6 +914,7 @@ export function validateAccessControlRules({
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

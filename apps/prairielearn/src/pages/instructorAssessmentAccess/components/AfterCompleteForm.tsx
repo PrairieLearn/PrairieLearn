@@ -248,12 +248,6 @@ function QuestionVisibilityInput({
           )}
         </div>
       )}
-      {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
-        <Alert variant="warning" className="mt-2 mb-0">
-          Showing questions after completion is not recommended when PrairieTest exams are
-          connected. Students may be able to view exam content when their assessment is closed.
-        </Alert>
-      )}
       {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
@@ -361,6 +355,11 @@ const infoPopoverConfig = {
       <p>
         The completion date can be different for different students based on when they started or
         their specific accommodations.
+      </p>
+      <p>
+        These settings apply only when the student does not have an active PrairieTest reservation.
+        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
+        govern visibility instead.
       </p>
     </>
   ),

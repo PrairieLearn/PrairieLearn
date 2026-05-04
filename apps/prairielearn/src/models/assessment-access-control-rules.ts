@@ -251,6 +251,26 @@ export async function selectAccessControlRules(
   return rows.map(dbRowToAccessControlJson);
 }
 
+export const PrairieTestExamMetadataSchema = z.object({
+  uuid: z.string(),
+  pt_exam_id: z.string().nullable(),
+  pt_exam_name: z.string().nullable(),
+  pt_course_id: z.string().nullable(),
+  pt_course_name: z.string().nullable(),
+});
+export type PrairieTestExamMetadata = z.infer<typeof PrairieTestExamMetadataSchema>;
+
+export async function selectPrairieTestExamMetadataByUuids(
+  examUuids: string[],
+): Promise<PrairieTestExamMetadata[]> {
+  if (examUuids.length === 0) return [];
+  return await queryRows(
+    sql.select_prairietest_exam_metadata_by_uuids,
+    { exam_uuids: examUuids },
+    PrairieTestExamMetadataSchema,
+  );
+}
+
 /**
  * Creates or updates an enrollment-based access control rule (targeting individual students).
  * These rules are stored in the database with target_type = 'enrollment'.
