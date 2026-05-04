@@ -140,7 +140,6 @@ def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> N
     [
         (["report.pdf"], ["report.pdf"]),
         (["test_file.py"], ["*.py"]),
-        ([], ["*.py", "*.py"]),
         ([], ["?.txt", "?.txt"]),
         ([], ["[abc].txt", "[abc].txt"]),
     ],
@@ -150,6 +149,25 @@ def test_generate_unique_filenames_raises_on_collision(
 ) -> None:
     with pytest.raises(ValueError, match="Cannot generate distinct filenames"):
         file_upload._generate_unique_filenames(literal_names, patterns)
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns", "expected_output"),
+    [
+        ([], ["*.py", "*.py"], ["test_file.py", "test_file_1.py"]),
+        ([], ["**", "**"], ["test_file", "test_file_1"]),
+        (
+            ["foo.txt"],
+            ["*.py", "*.py", "*.txt"],
+            ["foo.txt", "test_file.py", "test_file_1.py", "test_file.txt"],
+        ),
+    ],
+)
+def test_generate_unique_filenames_repeats_wildcard_pattern(
+    literal_names: list[str], patterns: list[str], expected_output: list[str]
+) -> None:
+    output = file_upload._generate_unique_filenames(literal_names, patterns)
+    assert output == expected_output
 
 
 # Function must be backward compatible (i.e., if only file-names is defined, it should

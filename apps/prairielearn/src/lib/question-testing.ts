@@ -221,11 +221,10 @@ function compareTestResults(
   // For manual-only questions, auto-grading is skipped entirely, so the
   // submission will have null partial_scores and score. Skip comparison
   // in that case since there's nothing to compare against.
-  if (question.grading_method === 'Manual') {
-    return courseIssues;
+  if (question.grading_method !== 'Manual') {
+    checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+    checkEqual('score', expectedData.score, submission.score);
   }
-  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
-  checkEqual('score', expectedData.score, submission.score);
   return courseIssues;
 }
 

@@ -357,10 +357,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 pl.add_submitted_file(data, file_name, file.get("contents", ""))
 
 
-def generate_filename_from_pattern(pattern: str) -> str:
-    """Generate a plausible filename from a glob pattern for testing."""
-    bracket_star = "__BRACKET_STAR__"
-    bracket_question_mark = "__BRACKET_QUESTION_MARK__"
+BRACKET_STAR = "__BRACKET_STAR__"
+BRACKET_QUESTION_MARK = "__BRACKET_QUESTION_MARK__"
+
+
+def generate_filename_from_pattern(pattern: str, suffix: str = "") -> str:
+    """Generate a plausible filename from a glob pattern for testing. The suffix is appended to wildcard substitutions, allowing distinct filenames to be generated from the same pattern."""
 
     def replace_bracket(m: re.Match[str]) -> str:
         content = m.group(1)
@@ -373,17 +375,18 @@ def generate_filename_from_pattern(pattern: str) -> str:
             return "x"
         char = content[0]
         if char == "*":
-            return bracket_star
+            return BRACKET_STAR
         if char == "?":
-            return bracket_question_mark
+            return BRACKET_QUESTION_MARK
         return char
 
+    wildcard_replacement = f"test_file{suffix}"
     result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
-    result = result.replace("**", "test_file")
-    result = result.replace("*", "test_file")
+    result = result.replace("**", wildcard_replacement)
+    result = result.replace("*", wildcard_replacement)
     result = result.replace("?", "x")
-    result = result.replace(bracket_star, "*")
-    result = result.replace(bracket_question_mark, "?")
+    result = result.replace(BRACKET_STAR, "*")
+    result = result.replace(BRACKET_QUESTION_MARK, "?")
     return result
 
 
@@ -404,8 +407,12 @@ def _generate_unique_filenames(
 
     for n in literal_names:
         add(n, f"file name '{n}'")
+    pattern_counts: dict[str, int] = {}
     for p in patterns:
-        add(generate_filename_from_pattern(p), f"pattern '{p}'")
+        idx = pattern_counts.get(p, 0)
+        pattern_counts[p] = idx + 1
+        suffix = f"_{idx}" if idx > 0 else ""
+        add(generate_filename_from_pattern(p, suffix), f"pattern '{p}' (#{idx + 1})")
     return names
 
 
@@ -436,9 +443,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         selected_opt_file_names = random.sample(
             opt_file_names, random.randint(0, len(opt_file_names))
         )
-        selected_opt_file_patterns = random.sample(
-            opt_file_patterns, random.randint(0, len(opt_file_patterns))
-        )
+        # Each optional pattern may match 0..N files, and the same pattern can
+        # be repeated. Patterns without wildcards can only generate one unique
+        # filename, so they can match at most once.
+        selected_opt_file_patterns: list[str] = []
+        for p in opt_file_patterns:
+            max_count = 2 if any(c in p for c in "*?") else 1
+            selected_opt_file_patterns.extend([p] * random.randint(0, max_count))
         all_names = _generate_unique_filenames(
             file_names + selected_opt_file_names,
             file_patterns + selected_opt_file_patterns,
