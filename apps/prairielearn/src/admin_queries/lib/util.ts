@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { defaultPool } from '@prairielearn/postgres';
 
-export const AdministratorQuerySpecsSchema = z.object({
+const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
   enabled: z.boolean().optional(),
   resultFormats: z.record(z.enum(['pre'])).optional(),
@@ -22,7 +22,8 @@ export const AdministratorQuerySpecsSchema = z.object({
 });
 export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
-export const AdministratorQueryResultSchema = z.object({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const AdministratorQueryResultSchema = z.object({
   rows: z.record(z.any()).array(),
   columns: z.string().array().readonly(),
 });

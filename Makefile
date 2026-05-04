@@ -97,9 +97,11 @@ test-prairielearn: start-support
 test-e2e: start-support
 	@yarn workspace @prairielearn/prairielearn run test:e2e
 
-check-dependencies:
-	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+fix-dependencies:
+	@yarn knip  -c .knip.ts --fix --fix-type exports,types
+lint-dependencies:
 	@yarn knip -c .knip.ts
+	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check

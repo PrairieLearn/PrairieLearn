@@ -1,4 +1,5 @@
-export const PLAN_FEATURE_NAMES = [
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const PLAN_FEATURE_NAMES = [
   'course-instance-access',
   'external-grading',
   'workspaces',

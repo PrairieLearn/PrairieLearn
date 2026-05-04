@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 // also in config.ts as config.lti13InstancePlatforms
-export const LTI13InstancePlatformsSchema = z
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const LTI13InstancePlatformsSchema = z
   .array(
     z.object({
       platform: z.string(),

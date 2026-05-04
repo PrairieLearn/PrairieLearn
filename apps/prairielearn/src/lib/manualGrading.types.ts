@@ -18,7 +18,8 @@ export const AppliedRubricItemSchema = z.object({
 });
 export type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
-export const RenderedRubricItemSchema = z.object({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const RenderedRubricItemSchema = z.object({
   rubric_item: RubricItemSchema,
   num_submissions: z.number(),
   description_rendered: z.string().optional(),
