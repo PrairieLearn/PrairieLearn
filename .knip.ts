@@ -3,10 +3,39 @@ import { readFile } from 'fs/promises';
 import { globby } from 'globby';
 import type { KnipConfig } from 'knip';
 
-// These packages are used in our own code, outside of nodeModulesAssetPath() calls.
-// Thus, we want to track their usage instead of ignoring them.
-// TODO: We might want to re-evaluate this approach.
-const REFERENCED_NODE_MODULES_DEPS = [
+/**
+ * How dependency detection works in this repo
+ * --------------------------------------------
+ * Knip walks our source files and reports any `dependencies` in `package.json`
+ * that it doesn't see imported. That works for normal `import` statements, but
+ * we also pull packages in two ways knip can't see:
+ *
+ *   1. `nodeModulesAssetPath('pkg/...')` calls in TS/TSX, which serve files
+ *      from `node_modules` at request time.
+ *   2. `dependencies.nodeModulesScripts` / `nodeModulesStyles` /
+ *      `dynamicDependencies.nodeModulesScripts` entries in element / question
+ *      `info.json` files.
+ *
+ * Without help, knip reports every package used only via (1) or (2) as unused.
+ * To work around this, we scan source + info.json files at config-load time,
+ * extract the package names, and add them to `ignoreDependencies` so knip
+ * leaves them alone. See https://github.com/webpro-nl/knip/issues/641 and
+ * https://github.com/webpro-nl/knip/pull/1220 for the upstream feature gap.
+ *
+ * On top of the auto-collected set, three manually maintained lists cover
+ * cases the scan can't get right. Each list below documents the case it
+ * handles.
+ */
+
+/**
+ * Packages our scan picks up via `nodeModulesAssetPath()` / `info.json`, but
+ * which are *also* imported normally elsewhere in the codebase. If we let
+ * `ignoreDependencies` cover them, knip would warn "you're ignoring a
+ * dependency that's actually used" — a false alarm. We strip them from the
+ * auto-detected set so knip tracks them through their real imports and will
+ * flag them if those imports go away.
+ */
+const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'd3',
   'he',
   'marked',
@@ -23,12 +52,21 @@ const REFERENCED_NODE_MODULES_DEPS = [
   'highlight.js',
 ];
 
-// Dependencies referenced from files that aren't referenced
-const DEAD_CODE_DEPS = ['@tiptap/extension-code-block'];
+/**
+ * Packages that are only reachable from source files knip considers dead.
+ * Knip would normally flag them as unused; we keep them installed because the
+ * referencing code still ships. Remove an entry once the referencing file is
+ * either deleted or wired back into a live entry point.
+ */
+const DEPS_OF_DEAD_CODE = ['@tiptap/extension-code-block'];
 
-// These packages aren't used in our own code, but we still want them installed
-// as they are used by elements in other courses.
-const FALSE_NEGATIVE_ELEMENT_DEPS = [
+/**
+ * Packages that no first-party code in this repo imports, but that we ship so
+ * elements in *external* course repositories can use them at runtime. The
+ * info.json scan only sees this repo's courses, so these have to be listed by
+ * hand.
+ */
+const EXTERNAL_ELEMENT_DEPS = [
   'backbone',
   'dropzone',
   'lodash',
@@ -38,8 +76,12 @@ const FALSE_NEGATIVE_ELEMENT_DEPS = [
   'showdown',
 ];
 
-// These packages are used for their CLI tools, so we still want them installed.
-const FALSE_NEGATIVE_CLI_DEPS = [
+/**
+ * Packages we install only for the CLI binary they ship (invoked from
+ * Makefile / scripts / CI). They have no `import` site, so knip can't see the
+ * usage.
+ */
+const CLI_ONLY_DEPS = [
   'linkinator',
   'htmlhint',
   'markdownlint-cli2',
@@ -49,9 +91,7 @@ const FALSE_NEGATIVE_CLI_DEPS = [
   '@reteps/tree-sitter-htmlmustache',
 ];
 
-// We want extract all dependencies of our elements, and mark them as used.
-// See https://github.com/webpro-nl/knip/issues/641 and https://github.com/webpro-nl/knip/pull/1220
-// for why we need to manually extract dependencies and ignore them.
+// Collect packages referenced by element / question `info.json` files.
 const infoJsonPaths = await globby(
   '{exampleCourse,testCourse,apps/prairielearn/elements}/**/info.json',
 );
@@ -69,8 +109,8 @@ const infoJsonDependencies = infoJsonContents.flatMap((infoJson) => [
   ...Object.values(infoJson.dynamicDependencies?.nodeModulesScripts ?? {}),
 ]);
 
-// Since knip can't track these normally, we manually extract them from the source code.
-// For instance, this matches nodeModulesAssetPath('highlight.js/styles/default.css')
+// Collect packages referenced by `nodeModulesAssetPath('pkg/...')` calls in
+// TS / TSX source. Example match: `nodeModulesAssetPath('highlight.js/styles/default.css')`.
 const assetPathRegex = /nodeModulesAssetPath\(\s*'([^']*)'\s*\)/g;
 
 const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
@@ -83,8 +123,10 @@ const sourceFileDependencies = (
   )
 ).flat();
 
-// Extract package names from full dependency paths (e.g. "lodash/lodash.min.js" -> "lodash").
-const packageDependencies = new Set<string>(
+// Reduce full asset paths down to package names. e.g.
+//   "lodash/lodash.min.js"            -> "lodash"
+//   "@fortawesome/fontawesome/...css" -> "@fortawesome/fontawesome"
+const autoDetectedDeps = new Set<string>(
   [...infoJsonDependencies, ...sourceFileDependencies].map((dep) => {
     const parts = dep.split('/');
     if (parts[0].startsWith('@')) {
@@ -94,8 +136,10 @@ const packageDependencies = new Set<string>(
   }),
 );
 
-for (const dep of REFERENCED_NODE_MODULES_DEPS) {
-  packageDependencies.delete(dep);
+// Hand back to knip the deps that have a real import site, so it can keep
+// tracking them.
+for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
+  autoDetectedDeps.delete(dep);
 }
 
 const config: KnipConfig = {
@@ -153,12 +197,14 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
-  // knip will not report these dependencies as unused.
+  // Tell knip not to flag these as unused. Order matches the explanation at
+  // the top of the file: auto-detected runtime asset deps, then the three
+  // manual buckets.
   ignoreDependencies: [
-    ...packageDependencies,
-    ...FALSE_NEGATIVE_ELEMENT_DEPS,
-    ...FALSE_NEGATIVE_CLI_DEPS,
-    ...DEAD_CODE_DEPS,
+    ...autoDetectedDeps,
+    ...EXTERNAL_ELEMENT_DEPS,
+    ...CLI_ONLY_DEPS,
+    ...DEPS_OF_DEAD_CODE,
   ],
   // TODO: enable these features
   exclude: ['binaries'],
