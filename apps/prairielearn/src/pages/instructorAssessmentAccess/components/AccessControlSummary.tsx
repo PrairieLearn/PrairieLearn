@@ -206,7 +206,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types; each target type has its own precedence section.
+    // Prevent reordering across override types (enrollment must stay before student_label)
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
