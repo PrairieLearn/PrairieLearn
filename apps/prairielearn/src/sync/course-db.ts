@@ -579,10 +579,7 @@ async function loadCourseInfo({
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const result = deduplicateByName<Entry>(
-      (info![fieldName] ?? []),
-      defaults,
-    );
+    const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
       const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
