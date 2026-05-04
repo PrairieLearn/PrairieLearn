@@ -11,11 +11,15 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
+
+import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
   DateTableView,
+  DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
+  PrairieTestExamsTable,
   type RuleFormErrors,
   generateDefaultRuleDateTableRows,
   generateRuleSummary,
@@ -109,25 +113,43 @@ function DefaultRuleSummaryContent({
   rule,
   formErrors,
   displayTimezone,
+  prairieTestExamMetadata,
+  ptHost,
 }: {
   rule: DefaultRuleData;
   formErrors: RuleFormErrors | undefined;
   displayTimezone: string;
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }) {
   const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
+  const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
     <div>
+      <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
+
       {dateTableRows.length > 0 && (
         <div className="mb-2">
           <DateTableView rows={dateTableRows} />
         </div>
       )}
 
+      {hasPrairieTestExams && (
+        <div className="mb-2">
+          <PrairieTestExamsTable
+            exams={rule.prairieTestExams}
+            initialMetadata={prairieTestExamMetadata}
+            ptHost={ptHost}
+            formErrors={formErrors as FieldErrors<DefaultRuleData> | undefined}
+          />
+        </div>
+      )}
+
       {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
 
-      {dateTableRows.length === 0 && summaryItems.length === 0 && (
+      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
         <div
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}
@@ -150,6 +172,8 @@ export function AccessControlSummary({
   onClearDefaultRule,
   onEditOverride,
   displayTimezone,
+  prairieTestExamMetadata,
+  ptHost,
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
@@ -165,6 +189,8 @@ export function AccessControlSummary({
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
   displayTimezone: string;
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }) {
   const dndId = useId();
   const sensors = useSensors(
@@ -233,6 +259,8 @@ export function AccessControlSummary({
           rule={defaultRule}
           formErrors={errors.defaultRule}
           displayTimezone={displayTimezone}
+          prairieTestExamMetadata={prairieTestExamMetadata}
+          ptHost={ptHost}
         />
       </section>
 

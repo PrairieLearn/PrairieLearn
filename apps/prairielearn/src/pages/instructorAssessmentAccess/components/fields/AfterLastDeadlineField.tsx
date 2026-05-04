@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Form, InputGroup } from 'react-bootstrap';
+import { Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
   get,
@@ -77,13 +77,11 @@ function AfterLastDeadlineInput({
   onChange,
   overrideIndex,
   displayTimezone,
-  showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
   overrideIndex?: number;
   displayTimezone: string;
-  showNoDueDateWarning?: boolean;
 }) {
   const isOverride = overrideIndex != null;
   const creditFieldPath = isOverride
@@ -108,7 +106,7 @@ function AfterLastDeadlineInput({
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
   // Watch dep fields so this component re-renders when they change,
-  // keeping display values (last-deadline text, warnings) up to date.
+  // keeping display values (last-deadline text) up to date.
   useWatch<AccessControlFormData>({ name: creditDeps });
   const {
     dueDate,
@@ -142,8 +140,6 @@ function AfterLastDeadlineInput({
     return 'This will take effect after the last deadline';
   };
 
-  const hasLastDeadline = !!dueDate || lateDeadlines.length > 0;
-
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
       case 'no_submissions':
@@ -171,62 +167,67 @@ function AfterLastDeadlineInput({
           onChange={handleModeChange}
         />
       </div>
-      {showNoDueDateWarning && !hasLastDeadline && mode !== 'no_submissions' && (
-        <Alert variant="warning" className="py-2 mb-2">
-          This setting will have no effect because there is no due date set.
-        </Alert>
-      )}
-
       {mode === 'partial_credit' && (
         <div className="mt-2">
-          <InputGroup>
-            <Form.Control
-              type="number"
-              aria-label="Credit percentage after last deadline"
-              aria-invalid={!!creditError}
-              aria-errormessage={
-                creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
-              }
-              min="0"
-              max="200"
-              placeholder="Credit percentage"
-              isInvalid={!!creditError}
-              onWheel={({ currentTarget }) => currentTarget.blur()}
-              {...register(creditFieldPath, {
-                shouldUnregister: true,
-                valueAsNumber: true,
-                deps: creditDeps,
-                validate: (v, formValues) => {
-                  if (v == null || Number.isNaN(v)) return 'Credit is required';
-                  if (v < 0 || v > 200) return 'Must be 0\u2013200%';
-                  const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
-                    formValues,
-                    overrideIndex,
-                  );
-                  const precedingCredit =
-                    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-                  if (precedingCredit != null && v > precedingCredit) {
-                    return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
-                  }
-                  return true;
-                },
-              })}
-            />
-            <InputGroup.Text>%</InputGroup.Text>
-          </InputGroup>
-          {creditError && (
-            <Form.Text
-              id={`${idPrefix}-after-deadline-credit-error`}
-              className="text-danger d-block"
-              role="alert"
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <label
+              htmlFor={`${idPrefix}-after-deadline-credit`}
+              className="form-label mb-0 small text-body-secondary"
             >
-              {creditError}
-            </Form.Text>
-          )}
+              Credit
+            </label>
+            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+              <Form.Control
+                id={`${idPrefix}-after-deadline-credit`}
+                type="number"
+                style={{ width: '5rem' }}
+                aria-label="Credit percentage after last deadline"
+                aria-invalid={!!creditError}
+                aria-errormessage={
+                  creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
+                }
+                min="0"
+                max="200"
+                placeholder="100"
+                isInvalid={!!creditError}
+                onWheel={({ currentTarget }) => currentTarget.blur()}
+                {...register(creditFieldPath, {
+                  shouldUnregister: true,
+                  valueAsNumber: true,
+                  deps: creditDeps,
+                  validate: (v, formValues) => {
+                    if (v == null || Number.isNaN(v)) return 'Credit is required';
+                    if (v < 0 || v > 200) return 'Must be 0\u2013200%';
+                    const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
+                      formValues,
+                      overrideIndex,
+                    );
+                    const precedingCredit =
+                      lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
+                    if (precedingCredit != null && v > precedingCredit) {
+                      return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
+                    }
+                    return true;
+                  },
+                })}
+              />
+              <InputGroup.Text>%</InputGroup.Text>
+            </InputGroup>
+          </div>
           <Form.Text className="text-muted d-block">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
         </div>
+      )}
+      {/* Outside the partial_credit block so cross-field errors (e.g. "requires a due date") show in all modes. */}
+      {creditError && (
+        <Form.Text
+          id={`${idPrefix}-after-deadline-credit-error`}
+          className="text-danger d-block"
+          role="alert"
+        >
+          {creditError}
+        </Form.Text>
       )}
     </Form.Group>
   );
@@ -283,7 +284,6 @@ export function OverrideAfterLastDeadlineField({
         value={field.value}
         overrideIndex={index}
         displayTimezone={displayTimezone}
-        showNoDueDateWarning={false}
         onChange={field.onChange}
       />
     </FieldWrapper>

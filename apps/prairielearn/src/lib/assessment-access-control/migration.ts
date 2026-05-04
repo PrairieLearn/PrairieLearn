@@ -85,6 +85,22 @@ function findLastCreditEndDate(rules: AssessmentAccessRuleJson[]): string | unde
   return endDates[endDates.length - 1];
 }
 
+function normalizeDateForInputDate(date: string): string {
+  // Match the `input_date` sproc behavior: only the date and whole-second time
+  // are used, so fractional seconds and trailing timezone markers are ignored.
+  const dateParts = /([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})/.exec(date);
+  if (!dateParts) return date;
+  return `${dateParts[1]}T${dateParts[2]}`;
+}
+
+function normalizeRuleDates(rule: AssessmentAccessRuleJson): AssessmentAccessRuleJson {
+  return {
+    ...rule,
+    ...(rule.startDate ? { startDate: normalizeDateForInputDate(rule.startDate) } : {}),
+    ...(rule.endDate ? { endDate: normalizeDateForInputDate(rule.endDate) } : {}),
+  };
+}
+
 /**
  * Returns true when `outer`'s [start, end] window fully covers `inner`'s.
  * Both rules must be closed (have an endDate). A missing startDate on `outer`
@@ -138,7 +154,8 @@ export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAcc
         return rest;
       }
       return r;
-    });
+    })
+    .map(normalizeRuleDates);
 }
 
 // ---------------------------------------------------------------------------
