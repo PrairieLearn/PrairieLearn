@@ -162,7 +162,7 @@ function DueDateInput({
                 min={0}
                 max={200}
                 step={1}
-                style={{ width: '5rem' }}
+                style={{ width: '6rem' }}
                 aria-label="Due date credit percentage"
                 aria-invalid={!!creditError}
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
@@ -230,7 +230,7 @@ function validateDueCredit(credit: number | null, customCredit: boolean): string
     if (customCredit) return 'Credit is required';
     return undefined;
   }
-  if (!Number.isFinite(credit)) return 'Credit must be a number';
+  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
   if (!Number.isInteger(credit)) return 'Credit must be an integer';
   if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
   return undefined;

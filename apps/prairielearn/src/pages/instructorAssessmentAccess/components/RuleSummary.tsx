@@ -28,6 +28,10 @@ import {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function formatCreditPercent(credit: number): string {
+  return Number.isFinite(credit) ? `${credit}%` : '—';
+}
+
 type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
@@ -222,7 +226,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Early ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -283,7 +287,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Late ${index + 1}`,
-      credit: `${deadline.credit}%`,
+      credit: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -299,7 +303,7 @@ export function generateDefaultRuleDateTableRows(
       label: 'After last deadline',
       credit: afterLastDeadline?.allowSubmissions
         ? afterLastDeadline.credit != null
-          ? `${afterLastDeadline.credit}%`
+          ? formatCreditPercent(afterLastDeadline.credit)
           : 'Practice'
         : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
@@ -504,10 +508,10 @@ function formatDeadlineEntries(
           options={{ includeTz: false }}
           tooltip
         />{' '}
-        ({entry.credit}% credit)
+        ({formatCreditPercent(entry.credit)} credit)
       </>
     ) : (
-      `No date set (${entry.credit}% credit)`
+      `No date set (${formatCreditPercent(entry.credit)} credit)`
     ),
     error: deadlineErrors?.[i],
   }));
@@ -515,7 +519,11 @@ function formatDeadlineEntries(
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
-  if (afterLastDeadline.allowSubmissions && afterLastDeadline.credit != null) {
+  if (
+    afterLastDeadline.allowSubmissions &&
+    afterLastDeadline.credit != null &&
+    Number.isFinite(afterLastDeadline.credit)
+  ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
