@@ -35,15 +35,14 @@ test.describe('Question settings', () => {
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(originalInfo.title).toBe('Add two numbers');
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible({ timeout: 10000 });
-
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).toHaveValue('Add two numbers', { timeout: 15000 });
 
     await titleInput.click();
     await titleInput.fill('Updated title from e2e test');
 
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeVisible({ timeout: 10000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
 
     await saveButton.click();
@@ -63,9 +62,6 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const topicComboBoxButton = page.getByRole('button', { name: 'Show suggestions' }).first();
     await topicComboBoxButton.click();
 
@@ -73,6 +69,8 @@ test.describe('Question settings', () => {
     await expect(listbox).toBeVisible({ timeout: 5000 });
     await listbox.getByText('Calculus', { exact: true }).click();
 
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
@@ -95,12 +93,11 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const singleVariantCheckbox = page.getByLabel('Single variant');
     await singleVariantCheckbox.click();
 
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
@@ -125,12 +122,11 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const gradingMethodSelect = page.getByLabel('Grading method');
     await gradingMethodSelect.selectOption('Manual');
 
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
