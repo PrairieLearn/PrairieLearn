@@ -44,12 +44,14 @@ function SortableOverrideCard({
   displayTimezone,
   onEdit,
   onRemove,
+  isActive,
 }: {
   id: string;
   override: OverrideData;
   formErrors: RuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
+  isActive: boolean;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -70,6 +72,7 @@ function SortableOverrideCard({
         title={title}
         displayTimezone={displayTimezone}
         formErrors={formErrors}
+        isActive={isActive}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
@@ -164,6 +167,7 @@ function DefaultRuleSummaryContent({
 export function AccessControlSummary({
   defaultRule,
   overrides,
+  selectedOverrideIndex,
   getOverrideName,
   onAddOverride,
   onRemoveOverride,
@@ -177,6 +181,7 @@ export function AccessControlSummary({
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+  selectedOverrideIndex: number | null;
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
@@ -323,6 +328,7 @@ export function AccessControlSummary({
                       formErrors={errors.overrides?.[index]}
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
+                      isActive={selectedOverrideIndex === index}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

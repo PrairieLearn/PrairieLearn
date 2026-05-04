@@ -164,6 +164,20 @@ export function AccessControlForm({
     deleteModal.hide();
   };
 
+  const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    moveOverride(fromIndex, toIndex);
+
+    if (selectedRule?.type !== 'override') return;
+
+    if (selectedRule.index === fromIndex) {
+      setSelectedRule({ type: 'override', index: toIndex });
+    } else if (fromIndex < selectedRule.index && selectedRule.index <= toIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
+    } else if (toIndex <= selectedRule.index && selectedRule.index < fromIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index + 1 });
+    }
+  };
+
   const getOverrideName = (index: number): string => {
     if (index >= watchedData.overrides.length) return `Override ${index + 1}`;
     const override = watchedData.overrides[index];
@@ -289,11 +303,14 @@ export function AccessControlForm({
                     getOverrideName={getOverrideName}
                     defaultRule={watchedData.defaultRule}
                     overrides={watchedData.overrides}
+                    selectedOverrideIndex={
+                      selectedRule?.type === 'override' ? selectedRule.index : null
+                    }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
-                    onMoveOverride={moveOverride}
+                    onMoveOverride={handleMoveOverride}
                     onEditDefaultRule={() => setSelectedRule({ type: 'default' })}
                     onClearDefaultRule={() =>
                       reset(
