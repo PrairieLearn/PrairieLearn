@@ -1,4 +1,6 @@
-import { ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
+import { ASTUtils, ESLintUtils, type TSESLint, type TSESTree } from '@typescript-eslint/utils';
+
+const { findVariable } = ASTUtils;
 
 /**
  * tRPC procedures must enforce their own authorization via a `require*`
@@ -23,6 +25,10 @@ import { ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
  *
  * Feature gates like `requireEnhancedAccessControl` and `requireAiGradingFeature`
  * don't count — they must be paired with a permission middleware.
+ *
+ * The rule follows intermediate procedure-base variables so patterns like
+ * `const protected = t.procedure.use(...); ...; protected.query(...)` are
+ * checked end-to-end.
  */
 
 // TODO: This list requires manual maintenance. We should consider making feature gates
@@ -38,15 +44,86 @@ function unwrapMemberObject(expr: TSESTree.Expression): TSESTree.Expression {
 }
 
 function isTProcedure(expr: TSESTree.Expression): boolean {
-  const unwrapped = unwrapMemberObject(expr);
   return (
-    unwrapped.type === 'MemberExpression' &&
-    !unwrapped.computed &&
-    unwrapped.property.type === 'Identifier' &&
-    unwrapped.property.name === 'procedure' &&
-    unwrapped.object.type === 'Identifier' &&
-    unwrapped.object.name === 't'
+    expr.type === 'MemberExpression' &&
+    !expr.computed &&
+    expr.property.type === 'Identifier' &&
+    expr.property.name === 'procedure' &&
+    expr.object.type === 'Identifier' &&
+    expr.object.name === 't'
   );
+}
+
+interface ChainInfo {
+  matchesTProcedure: boolean;
+  middlewares: string[];
+}
+
+/**
+ * Walks back through a chain like `expr.use(A).input(B).use(C)` collecting
+ * `.use(...)` argument identifiers. If the base of the chain is `t.procedure`,
+ * returns the collected middlewares. If the base is a variable, follows the
+ * variable's initializer (e.g. `const protected = t.procedure.use(X)`).
+ */
+function getProcedureChainInfo(
+  expr: TSESTree.Expression,
+  scope: TSESLint.Scope.Scope,
+  visited: Set<TSESTree.Node>,
+): ChainInfo {
+  if (visited.has(expr)) return { matchesTProcedure: false, middlewares: [] };
+  visited.add(expr);
+
+  const middlewares: string[] = [];
+  let cursor: TSESTree.Expression = expr;
+
+  while (cursor.type === 'CallExpression') {
+    const callee = cursor.callee;
+    if (
+      callee.type !== 'MemberExpression' ||
+      callee.computed ||
+      callee.property.type !== 'Identifier'
+    ) {
+      return { matchesTProcedure: false, middlewares: [] };
+    }
+    if (callee.property.name === 'use' && cursor.arguments[0]?.type === 'Identifier') {
+      middlewares.push(cursor.arguments[0].name);
+    }
+    cursor = callee.object;
+  }
+
+  cursor = unwrapMemberObject(cursor);
+
+  if (isTProcedure(cursor)) {
+    return { matchesTProcedure: true, middlewares };
+  }
+
+  // Follow an intermediate procedure-base variable defined in the same module:
+  //   const protectedProcedure = t.procedure.use(...);
+  //   protectedProcedure.query(...);
+  if (cursor.type === 'Identifier') {
+    const variable = findVariable(scope, cursor);
+    if (variable && variable.defs.length === 1) {
+      const def = variable.defs[0];
+      if (
+        def.node.type === 'VariableDeclarator' &&
+        def.node.init &&
+        // Conservative: only follow `const` bindings to avoid stale data
+        // from let/var rebinding.
+        def.parent?.type === 'VariableDeclaration' &&
+        def.parent.kind === 'const'
+      ) {
+        const upstream = getProcedureChainInfo(def.node.init, scope, visited);
+        if (upstream.matchesTProcedure) {
+          return {
+            matchesTProcedure: true,
+            middlewares: [...middlewares, ...upstream.middlewares],
+          };
+        }
+      }
+    }
+  }
+
+  return { matchesTProcedure: false, middlewares: [] };
 }
 
 export default ESLintUtils.RuleCreator.withoutDocs({
@@ -72,27 +149,12 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           return;
         }
 
-        const usedMiddlewares: string[] = [];
-        let cursor: TSESTree.Expression = node.callee.object;
+        const scope = context.sourceCode.getScope(node);
+        const info = getProcedureChainInfo(node.callee.object, scope, new Set());
 
-        while (cursor.type === 'CallExpression') {
-          const callee = cursor.callee;
-          if (
-            callee.type !== 'MemberExpression' ||
-            callee.computed ||
-            callee.property.type !== 'Identifier'
-          ) {
-            return;
-          }
-          if (callee.property.name === 'use' && cursor.arguments[0]?.type === 'Identifier') {
-            usedMiddlewares.push(cursor.arguments[0].name);
-          }
-          cursor = callee.object;
-        }
+        if (!info.matchesTProcedure) return;
 
-        if (!isTProcedure(cursor)) return;
-
-        const hasPermissionGate = usedMiddlewares.some((name) =>
+        const hasPermissionGate = info.middlewares.some((name) =>
           PERMISSION_MIDDLEWARE_PATTERN.test(name),
         );
         if (!hasPermissionGate) {

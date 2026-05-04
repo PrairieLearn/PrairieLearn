@@ -28,7 +28,6 @@ const SelectAndAuthzAssessmentSchema = z.object({
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 export default asyncHandler(async (req, res, next) => {
-  const isTrpc = isTrpcRequest(req);
   const row = await queryOptionalRow(
     sql.select_and_auth,
     {
@@ -40,7 +39,7 @@ export default asyncHandler(async (req, res, next) => {
     SelectAndAuthzAssessmentSchema,
   );
   if (row === null) {
-    if (isTrpc) {
+    if (isTrpcRequest(req)) {
       throw new HttpStatusError(403, 'Access denied');
     }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
@@ -56,8 +55,10 @@ export default asyncHandler(async (req, res, next) => {
     });
     row.authz_result = modernResult;
   }
-  // tRPC requests handle authz at the procedure level via `require*` middlewares
-  if (!row.authz_result.authorized && !isTrpc) {
+  if (!row.authz_result.authorized) {
+    if (isTrpcRequest(req)) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
