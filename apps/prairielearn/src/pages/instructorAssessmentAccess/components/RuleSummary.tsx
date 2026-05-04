@@ -521,7 +521,7 @@ function formatDeadlineEntries(
 }
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
-  if (afterLastDeadline == null) return 'no access';
+  if (afterLastDeadline == null) return 'No access';
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
@@ -531,9 +531,9 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | nul
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push('submissions allowed');
+    parts.push((parts.length > 0 ? 's' : 'S') + 'ubmissions allowed');
   } else {
-    parts.push('closed');
+    parts.push('Closed');
   }
   return parts.join(', ');
 }
