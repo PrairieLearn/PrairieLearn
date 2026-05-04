@@ -1,9 +1,8 @@
-import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
@@ -71,7 +70,7 @@ export function AccessControlForm({
     setError,
     watch,
     reset,
-    formState: { isDirty, isValid, errors },
+    formState: { isDirty, errors },
   } = methods;
 
   const {
@@ -184,26 +183,6 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData).length > 0;
-
-  const saveDisabledReason = isSaving
-    ? 'Saving...'
-    : !isDirty
-      ? 'No changes to save'
-      : !isValid || hasManualErrors
-        ? 'Fix validation errors before saving'
-        : null;
-
-  const saveButton = (
-    <button
-      className={clsx('btn btn-sm', saveDisabledReason ? 'btn-outline-secondary' : 'btn-primary')}
-      type="submit"
-      disabled={saveDisabledReason !== null}
-    >
-      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
-    </button>
-  );
-
   const rightTitle =
     selectedRule?.type === 'main'
       ? 'Defaults'
@@ -276,7 +255,6 @@ export function AccessControlForm({
             content: (
               <>
                 <div className="p-3">
-                  {alert}
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
@@ -301,30 +279,8 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickyActionBar
-                  message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
-                  actions={
-                    <>
-                      <button
-                        className="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        disabled={isSaving || !isDirty}
-                        onClick={() => reset()}
-                      >
-                        Cancel
-                      </button>
-                      {saveDisabledReason ? (
-                        <OverlayTrigger
-                          tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
-                        >
-                          <span className="d-inline-block">{saveButton}</span>
-                        </OverlayTrigger>
-                      ) : (
-                        saveButton
-                      )}
-                    </>
-                  }
-                />
+                {alert}
+                <StickySaveBar isDirty={isDirty} isSubmitting={isSaving} onCancel={() => reset()} />
               </>
             ),
           }}

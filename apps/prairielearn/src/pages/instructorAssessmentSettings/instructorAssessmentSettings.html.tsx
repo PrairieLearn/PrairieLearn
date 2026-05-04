@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Alert, Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { StickySaveBar } from '@prairielearn/ui';
+
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { StickySaveBar } from '../../components/StickySaveBar.js';
 import { getAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
@@ -999,20 +1000,37 @@ function InstructorAssessmentSettingsInner({
         </div>
 
         {canEdit && (
-          <StickySaveBar
-            isDirty={isDirty}
-            isSubmitting={isSubmitting || saveMutation.isPending}
-            successMessage={saveMutation.isSuccess ? 'Assessment updated successfully.' : null}
-            errorMessage={appError?.message}
-            saveLabel="Save and sync"
-            onDismissSuccess={() => saveMutation.reset()}
-            onDismissError={() => saveMutation.reset()}
-            onCancel={() => {
-              reset();
-              setUseCustomMaxPoints(getValues('max_points') !== '');
-              saveMutation.reset();
-            }}
-          />
+          <>
+            {saveMutation.isSuccess && (
+              <Alert
+                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+                variant="success"
+                dismissible
+                onClose={() => saveMutation.reset()}
+              >
+                Assessment updated successfully.
+              </Alert>
+            )}
+            {appError?.message && (
+              <Alert
+                className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+                variant="danger"
+                dismissible
+                onClose={() => saveMutation.reset()}
+              >
+                {appError.message}
+              </Alert>
+            )}
+            <StickySaveBar
+              isDirty={isDirty}
+              isSubmitting={isSubmitting || saveMutation.isPending}
+              onCancel={() => {
+                reset();
+                setUseCustomMaxPoints(getValues('max_points') !== '');
+                saveMutation.reset();
+              }}
+            />
+          </>
         )}
       </form>
     </>

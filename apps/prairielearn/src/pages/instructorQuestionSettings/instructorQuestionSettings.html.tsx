@@ -2,10 +2,9 @@ import clsx from 'clsx';
 import { useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
+import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { StickySaveBar } from '../../components/StickySaveBar.js';
 import { TagBadge } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadge } from '../../components/TopicBadge.js';
@@ -947,7 +946,6 @@ export const InstructorQuestionSettingsForm = ({
         <StickySaveBar
           isDirty={isDirty}
           isSubmitting={isSubmitting}
-          saveLabel="Save and sync"
           formId="edit-question-settings-form"
           onCancel={() => reset()}
         />
