@@ -159,7 +159,7 @@
     "es-main": "^1.4.0",
     "es-toolkit": "^1.45.1",
     "execa": "^9.6.1",
-    "express": "^4.22.1 <5",
+    "express": "^4.22.1",
     "express-async-handler": "^1.2.0",
     "fabric": "4.6.0-browser",
     "fast-glob": "^3.3.3",
@@ -270,7 +270,7 @@
     "xml2js": "^0.6.2",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.30",
-    "zod": "^3.25.76 <4",
+    "zod": "^3.25.76",
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
@@ -299,7 +299,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/he": "^1.2.3",
     "@types/jju": "^1.4.5",
-    "@types/jquery": "^3.5.34 <4",
+    "@types/jquery": "^3.5.34",
     "@types/js-cookie": "^3.0.6",
     "@types/jsdom": "^28.0.1",
     "@types/json-stringify-safe": "^5.0.3",
