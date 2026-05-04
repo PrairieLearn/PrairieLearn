@@ -475,6 +475,8 @@ export class AssessmentCopyEditor extends Editor {
   private course_instance: CourseInstance;
   private tid_new?: string;
   private title_new?: string;
+  private number_new?: string;
+  private set_new?: string;
 
   public readonly uuid: string;
 
@@ -482,6 +484,8 @@ export class AssessmentCopyEditor extends Editor {
     params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
       tid_new?: string;
       title_new?: string;
+      number_new?: string;
+      set_new?: string;
     },
   ) {
     const { course_instance, assessment } = params.locals;
@@ -495,6 +499,8 @@ export class AssessmentCopyEditor extends Editor {
     this.course_instance = course_instance;
     this.tid_new = params.tid_new;
     this.title_new = params.title_new;
+    this.number_new = params.number_new;
+    this.set_new = params.set_new;
 
     this.uuid = crypto.randomUUID();
   }
@@ -550,6 +556,12 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
+    if (this.number_new !== undefined) {
+      infoJson.number = this.number_new;
+    }
+    if (this.set_new !== undefined) {
+      infoJson.set = this.set_new;
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);

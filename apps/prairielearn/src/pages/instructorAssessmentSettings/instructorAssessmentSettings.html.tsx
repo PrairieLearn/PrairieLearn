@@ -195,22 +195,13 @@ export function InstructorAssessmentSettings({
 
 InstructorAssessmentSettings.displayName = 'InstructorAssessmentSettings';
 
-function suggestCopyShortName(sourceTid: string, tidSet: Set<string>): string {
-  const stripped = sourceTid.match(/^(.*)_copy[0-9]*$/)?.[1] ?? sourceTid;
-  let candidate = `${stripped}_copy`;
-  let counter = 2;
-  while (tidSet.has(candidate)) {
-    candidate = `${stripped}_copy${counter}`;
-    counter++;
-  }
-  return candidate;
-}
-
 function CopyAssessmentModal({
   show,
   onHide,
   onExited,
   assessment,
+  assessmentSet,
+  assessmentSets,
   tidSet,
   urlPrefix,
 }: {
@@ -218,6 +209,8 @@ function CopyAssessmentModal({
   onHide: () => void;
   onExited: () => void;
   assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  assessmentSets: StaffAssessmentSet[];
   tidSet: Set<string>;
   urlPrefix: string;
 }) {
@@ -225,37 +218,47 @@ function CopyAssessmentModal({
   const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
   const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
 
-  const defaultAid = suggestCopyShortName(assessment.tid ?? 'assessment', tidSet);
-  const defaultTitle = assessment.title ? `${assessment.title} (copy)` : '';
+  const placeholderAid = assessment.tid ?? '';
+  const placeholderTitle = assessment.title ?? '';
+  const placeholderNumber = assessment.number ?? '';
+  const defaultSet = assessmentSet.name;
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<{ aid: string; title: string }>({
+  } = useForm<{ aid: string; title: string; number: string; set: string }>({
     mode: 'onSubmit',
-    defaultValues: { aid: defaultAid, title: defaultTitle },
+    defaultValues: { aid: '', title: '', number: '', set: defaultSet },
   });
 
   const handleExited = () => {
     copyMutation.reset();
-    reset({ aid: defaultAid, title: defaultTitle });
+    reset({ aid: '', title: '', number: '', set: defaultSet });
     onExited();
   };
 
   const onSubmit = handleSubmit((data) => {
-    copyMutation.mutate(data, {
-      onSuccess: (result) => {
-        window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
+    copyMutation.mutate(
+      {
+        aid: data.aid.trim(),
+        title: data.title.trim(),
+        number: data.number.trim(),
+        set: data.set,
       },
-    });
+      {
+        onSuccess: (result) => {
+          window.location.href = `${urlPrefix}/assessment/${result.assessmentId}/settings`;
+        },
+      },
+    );
   });
 
   return (
     <Modal show={show} onHide={onHide} onExited={handleExited}>
       <Modal.Header closeButton>
-        <Modal.Title>Copy assessment</Modal.Title>
+        <Modal.Title>Make a copy of this assessment</Modal.Title>
       </Modal.Header>
       <form onSubmit={onSubmit}>
         <Modal.Body>
@@ -265,7 +268,7 @@ function CopyAssessmentModal({
             </Alert>
           )}
           <p className="text-muted small mb-3">
-            Copying <code>{assessment.tid}</code>.
+            Making a copy of <code>{assessment.tid}</code>.
           </p>
           <div className="mb-3">
             <label className="form-label" htmlFor="copy-assessment-title">
@@ -277,8 +280,10 @@ function CopyAssessmentModal({
               className={clsx('form-control', errors.title && 'is-invalid')}
               aria-invalid={errors.title ? 'true' : 'false'}
               {...(errors.title ? { 'aria-errormessage': 'copy-assessment-title-error' } : {})}
-              defaultValue={defaultTitle}
-              {...register('title', { required: 'Title is required' })}
+              placeholder={placeholderTitle}
+              {...register('title', {
+                validate: (value) => (value.trim() === '' ? 'Title is required' : true),
+              })}
             />
             {errors.title && (
               <div id="copy-assessment-title-error" className="invalid-feedback">
@@ -286,7 +291,7 @@ function CopyAssessmentModal({
               </div>
             )}
           </div>
-          <div className="mb-0">
+          <div className="mb-3">
             <label className="form-label" htmlFor="copy-assessment-aid">
               Short name
             </label>
@@ -297,13 +302,14 @@ function CopyAssessmentModal({
               aria-describedby="copy-assessment-aid-help"
               aria-invalid={errors.aid ? 'true' : 'false'}
               {...(errors.aid ? { 'aria-errormessage': 'copy-assessment-aid-error' } : {})}
-              defaultValue={defaultAid}
+              placeholder={placeholderAid}
               {...register('aid', {
-                required: 'Short name is required',
                 validate: (value) => {
-                  const result = validateShortName(value);
+                  const trimmed = value.trim();
+                  if (trimmed === '') return 'Short name is required';
+                  const result = validateShortName(trimmed);
                   if (!result.valid) return result.message;
-                  if (tidSet.has(value)) return 'This ID is already in use';
+                  if (tidSet.has(trimmed)) return 'This ID is already in use';
                   return true;
                 },
               })}
@@ -317,13 +323,39 @@ function CopyAssessmentModal({
               <AssessmentShortNameDescription />
             </small>
           </div>
+          <div className="row">
+            <div className="col-md-6 mb-3 mb-md-0">
+              <label className="form-label" htmlFor="copy-assessment-set">
+                Set
+              </label>
+              <Form.Select id="copy-assessment-set" defaultValue={defaultSet} {...register('set')}>
+                {assessmentSets.map((set) => (
+                  <option key={set.id} value={set.name}>
+                    {set.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </div>
+            <div className="col-md-6 mb-0">
+              <label className="form-label" htmlFor="copy-assessment-number">
+                Number
+              </label>
+              <input
+                id="copy-assessment-number"
+                type="text"
+                className="form-control"
+                placeholder={placeholderNumber}
+                {...register('number')}
+              />
+            </div>
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" disabled={copyMutation.isPending} onClick={onHide}>
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={copyMutation.isPending}>
-            {copyMutation.isPending ? 'Copying...' : 'Copy assessment'}
+            {copyMutation.isPending ? 'Copying...' : 'Make a copy'}
           </Button>
         </Modal.Footer>
       </form>
@@ -451,6 +483,8 @@ function InstructorAssessmentSettingsInner({
       <CopyAssessmentModal
         show={copyModalState.show}
         assessment={assessment}
+        assessmentSet={assessmentSet}
+        assessmentSets={assessmentSets}
         tidSet={tidSet}
         urlPrefix={urlPrefix}
         onHide={copyModalState.onHide}
@@ -499,31 +533,6 @@ function InstructorAssessmentSettingsInner({
       </Modal>
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
-        <div className="bg-light border-bottom px-3 py-2 d-flex flex-wrap align-items-center gap-2">
-          {canEdit && (
-            <>
-              <Button
-                size="sm"
-                variant="outline-primary"
-                onClick={() => copyModalState.showWithData(true)}
-              >
-                <i className="bi bi-copy me-1" aria-hidden="true" />
-                Make a copy of this assessment
-              </Button>
-              <Button
-                size="sm"
-                variant="outline-danger"
-                onClick={() => deleteModalState.showWithData(true)}
-              >
-                <i className="bi bi-trash me-1" aria-hidden="true" />
-                Delete this assessment
-              </Button>
-            </>
-          )}
-          <div className="ms-auto">
-            <GitHubButton gitHubLink={currentGHLink} />
-          </div>
-        </div>
         <div className="container d-flex flex-column gap-3 py-3">
           <div className="card">
             <div className="card-body">
@@ -585,7 +594,7 @@ function InstructorAssessmentSettingsInner({
                     <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
                       Homework or Exam
                     </a>
-                    .
+                    . To change the type, make a copy of this assessment with the new type.
                   </small>
                 </div>
               </div>
@@ -1117,6 +1126,68 @@ function InstructorAssessmentSettingsInner({
               ))}
             </div>
           </div>
+
+          {(currentGHLink || canEdit) && (
+            <div className="card">
+              <div className="card-body">
+                <h2 className="h5 card-title mb-3">Manage assessment</h2>
+                <div className="d-flex flex-column gap-3">
+                  {currentGHLink && (
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                      <div>
+                        <div className="fw-semibold">View source on GitHub</div>
+                        <div className="small text-muted">
+                          Open this assessment's source files in the course's repository.
+                        </div>
+                      </div>
+                      <GitHubButton gitHubLink={currentGHLink} variant="outline-secondary" />
+                    </div>
+                  )}
+                  {canEdit && (
+                    <>
+                      <div
+                        className={clsx(
+                          'd-flex flex-wrap align-items-center justify-content-between gap-3',
+                          currentGHLink && 'border-top pt-3',
+                        )}
+                      >
+                        <div>
+                          <div className="fw-semibold">Make a copy of this assessment</div>
+                          <div className="small text-muted">
+                            Create a duplicate of this assessment to use as a starting point.
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline-primary"
+                          onClick={() => copyModalState.showWithData(true)}
+                        >
+                          <i className="bi bi-copy me-1" aria-hidden="true" />
+                          Make a copy
+                        </Button>
+                      </div>
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 border-top pt-3">
+                        <div>
+                          <div className="fw-semibold">Delete this assessment</div>
+                          <div className="small text-muted">
+                            Permanently remove this assessment and all associated student data.
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          onClick={() => deleteModalState.showWithData(true)}
+                        >
+                          <i className="bi bi-trash me-1" aria-hidden="true" />
+                          Delete
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {canEdit && (

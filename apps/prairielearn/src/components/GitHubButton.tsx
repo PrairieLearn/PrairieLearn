@@ -1,8 +1,14 @@
-export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
+export function GitHubButton({
+  gitHubLink,
+  variant = 'light',
+}: {
+  gitHubLink: string | null;
+  variant?: 'light' | 'outline-secondary';
+}) {
   if (!gitHubLink) return null;
   return (
     <a
-      className="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
+      className={`btn btn-sm btn-${variant} d-inline-flex align-items-center gap-2`}
       target="_blank"
       rel="noreferrer"
       aria-label="View on GitHub"

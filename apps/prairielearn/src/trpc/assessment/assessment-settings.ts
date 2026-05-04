@@ -291,6 +291,8 @@ const copyAssessment = t.procedure
     z.object({
       aid: z.string().min(1, 'Short name is required'),
       title: z.string().min(1, 'Long name is required'),
+      number: z.string(),
+      set: z.string(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -298,6 +300,8 @@ const copyAssessment = t.procedure
 
     const aid = input.aid.trim();
     const title = input.title.trim();
+    const number = input.number.trim();
+    const set = input.set;
 
     const shortNameValidation = validateShortName(aid);
     if (!shortNameValidation.valid) {
@@ -317,7 +321,13 @@ const copyAssessment = t.procedure
       });
     }
 
-    const editor = new AssessmentCopyEditor({ locals, tid_new: aid, title_new: title });
+    const editor = new AssessmentCopyEditor({
+      locals,
+      tid_new: aid,
+      title_new: title,
+      number_new: number,
+      set_new: set,
+    });
     const serverJob = await editor.prepareServerJob();
     try {
       await editor.executeWithServerJob(serverJob);
