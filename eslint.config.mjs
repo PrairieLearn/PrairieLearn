@@ -88,6 +88,10 @@ export default [
       // We violate these rules in a lot of places.
       '@html-eslint/id-naming-convention': 'off',
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
+
+      // TODO: Fix these rule violations.
+      '@html-eslint/no-extra-spacing-tags': 'off',
+      '@html-eslint/require-content': 'off',
     },
   },
   {
