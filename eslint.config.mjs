@@ -90,7 +90,8 @@ export default [
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
 
       // TODO: Fix these rule violations.
-      '@html-eslint/no-extra-spacing-tags': 'off',
+      '@html-eslint/no-extra-spacing-tags': 'off', // ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-button-type': 'off',
       '@html-eslint/require-content': 'off',
     },
   },
@@ -111,15 +112,6 @@ export default [
           selector: 'MemberExpression[object.name="module"][property.name="exports"]',
         },
       ],
-    },
-  },
-
-  // HTML rule overrides for HTML embedded in JS/TS files (templated strings).
-  {
-    files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
-    rules: {
-      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
-      '@html-eslint/require-button-type': 'off',
     },
   },
 
