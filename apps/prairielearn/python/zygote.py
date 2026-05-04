@@ -287,6 +287,8 @@ def worker_loop() -> None:
                 # fast as possible.
                 os._exit(0)
 
+            assert file is not None
+
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
                 # so that we can reuse the same worker processes, and specifically

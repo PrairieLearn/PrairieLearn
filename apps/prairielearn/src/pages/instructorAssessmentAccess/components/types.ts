@@ -3,7 +3,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
-export const DATE_CONTROL_FIELD_NAMES = [
+const DATE_CONTROL_FIELD_NAMES = [
   'release',
   'due',
   'earlyDeadlines',
@@ -76,7 +76,7 @@ export interface EnrollmentTarget {
   name: string | null;
 }
 
-export interface StudentLabelTarget {
+interface StudentLabelTarget {
   studentLabelId: string;
   name: string;
   color?: string;
@@ -84,7 +84,7 @@ export interface StudentLabelTarget {
 
 export type TargetType = 'enrollment' | 'student_label';
 
-export interface AppliesTo {
+interface AppliesTo {
   targetType: TargetType;
   enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
@@ -99,7 +99,7 @@ export interface AppliesTo {
  * which would not otherwise be possible if `released` were derived from
  * `date <= now`. The flag is dropped on JSON serialization.
  */
-export interface ReleaseValue {
+interface ReleaseValue {
   date: string | null;
   released: boolean;
 }
