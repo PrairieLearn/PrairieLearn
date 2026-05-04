@@ -92,18 +92,18 @@ const deleteCourseProcedure = t.procedure
 const updateColumn = t.procedure
   .use(requireAdministrator)
   .input(
-    z.discriminatedUnion('columnName', [
-      z.object({
-        courseId: IdSchema,
-        columnName: z.enum(['short_name', 'title', 'display_timezone', 'path', 'branch']),
-        value: z.string().min(1, 'Value is required'),
-      }),
-      z.object({
-        courseId: IdSchema,
-        columnName: z.enum(['repository']),
-        value: z.string(), // Optional
-      }),
-    ]),
+    z.object({ courseId: IdSchema }).and(
+      z.discriminatedUnion('columnName', [
+        z.object({
+          columnName: z.enum(['short_name', 'title', 'display_timezone', 'path', 'branch']),
+          value: z.string().min(1, 'Value is required'),
+        }),
+        z.object({
+          columnName: z.enum(['repository']),
+          value: z.string(), // Optional
+        }),
+      ]),
+    ),
   )
   .mutation(async ({ input, ctx }) => {
     let value = input.value;
