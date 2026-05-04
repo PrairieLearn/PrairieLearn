@@ -4,7 +4,6 @@ import path from 'path';
 import esbuild, { type Metafile } from 'esbuild';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
-import getPort from 'get-port';
 import { globby } from 'globby';
 
 import { type HtmlSafeString, html } from '@prairielearn/html';
@@ -55,14 +54,16 @@ let relativeSourcePaths: string[] | null = null;
  * See https://github.com/tree-sitter/tree-sitter/pull/5546.
  */
 const NODE_ONLY_EXTERNALS = ['fs/promises', 'module'];
-// Avoid mkdocs' default development port, which is used by `make dev-docs`.
-const ESBUILD_EXCLUDED_PORTS = [8000];
 
 async function serveEsbuildContext(context: esbuild.BuildContext): Promise<esbuild.ServeResult> {
-  const port = await getPort({ exclude: ESBUILD_EXCLUDED_PORTS });
   // This must stay in sync with the Host header workaround in `handler()`.
   // esbuild 0.25+ validates proxied requests against the server's listening host.
-  return context.serve({ host: '0.0.0.0', port });
+  return context.serve({
+    host: '0.0.0.0',
+    // Use an OS-assigned port to avoid esbuild's default port 8000, which
+    // conflicts with mkdocs when running `make dev-docs`.
+    port: 0,
+  });
 }
 
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
