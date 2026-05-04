@@ -141,7 +141,7 @@ Common override uses include:
 
 Existing overrides appear as cards under **Overrides for student labels** or **Overrides for specific students**. Click **Edit** to change the target or overridden fields.
 
-![Student-specific override editor with an overridden release date](accessControlModern/04-student-override.png)
+![Student-specific override editor with an overridden release date](accessControlModern/03-student-override.png)
 
 When an override field is active, the detail panel shows **Remove override** for that field. Removing the override does not clear the default value; it makes the rule inherit that field again.
 

@@ -343,6 +343,6 @@ test.describe('Modern access control docs screenshots', () => {
 
     await getOverrideCard(page, 'Release date').getByRole('button', { name: 'Edit' }).click();
     await getDetailPanel(page).waitFor({ state: 'visible' });
-    await shootMainContent(page, '04-student-override', screenshotTextReplacements);
+    await shootMainContent(page, '03-student-override', screenshotTextReplacements);
   });
 });
