@@ -289,19 +289,16 @@ const copyAssessment = t.procedure
   .use(requireCoursePermissionEdit)
   .input(
     z.object({
-      aid: z.string().min(1, 'Short name is required'),
-      title: z.string().min(1, 'Long name is required'),
-      number: z.string(),
+      aid: z.string().trim().min(1, 'Short name is required'),
+      title: z.string().trim().min(1, 'Long name is required'),
+      number: z.string().trim(),
       set: z.string(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const { course_instance, locals } = ctx;
 
-    const aid = input.aid.trim();
-    const title = input.title.trim();
-    const number = input.number.trim();
-    const set = input.set;
+    const { aid, title, number, set } = input;
 
     const shortNameValidation = validateShortName(aid);
     if (!shortNameValidation.valid) {

@@ -556,10 +556,10 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
-    if (this.number_new !== undefined) {
+    if (this.number_new) {
       infoJson.number = this.number_new;
     }
-    if (this.set_new !== undefined) {
+    if (this.set_new) {
       infoJson.set = this.set_new;
     }
 

@@ -281,6 +281,7 @@ function CopyAssessmentModal({
               aria-invalid={errors.title ? 'true' : 'false'}
               {...(errors.title ? { 'aria-errormessage': 'copy-assessment-title-error' } : {})}
               placeholder={placeholderTitle}
+              defaultValue=""
               {...register('title', {
                 validate: (value) => (value.trim() === '' ? 'Title is required' : true),
               })}
@@ -303,6 +304,7 @@ function CopyAssessmentModal({
               aria-invalid={errors.aid ? 'true' : 'false'}
               {...(errors.aid ? { 'aria-errormessage': 'copy-assessment-aid-error' } : {})}
               placeholder={placeholderAid}
+              defaultValue=""
               {...register('aid', {
                 validate: (value) => {
                   const trimmed = value.trim();
@@ -345,6 +347,7 @@ function CopyAssessmentModal({
                 type="text"
                 className="form-control"
                 placeholder={placeholderNumber}
+                defaultValue=""
                 {...register('number')}
               />
             </div>
