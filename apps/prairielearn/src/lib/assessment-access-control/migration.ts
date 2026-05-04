@@ -571,9 +571,9 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
   }
 
   // --- Practice window (active credit:0 rules extending past last deadline) ---
-  // `active: false` rules are visibility-only in the legacy resolver; treating
-  // them as practice would silently grant submission rights that the legacy
-  // never did.
+  // `active: false` rules forbid submissions in the legacy resolver, so
+  // treating them as practice would silently grant submission rights they
+  // never had.
   if (!dateControl.afterLastDeadline) {
     const lastDeadline = findLastCreditEndDate(rules) ?? dueDate;
     if (lastDeadline) {
