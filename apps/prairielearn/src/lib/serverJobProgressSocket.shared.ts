@@ -54,6 +54,7 @@ export type JobProgress = z.infer<typeof JobProgressSchema>;
 /**
  * Progress update message sent from the server job progress socket.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ProgressUpdateMessageSchema = z.discriminatedUnion('has_progress_data', [
   JobProgressSchema.extend({
     /** Progress data was available in the cache. */
