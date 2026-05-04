@@ -1,9 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PLAN_FEATURE_NAMES = [
-  'course-instance-access',
-  'external-grading',
-  'workspaces',
-] as const;
+const PLAN_FEATURE_NAMES = ['course-instance-access', 'external-grading', 'workspaces'] as const;
 export const PLAN_NAMES = ['basic', 'compute', 'everything'] as const;
 
 export type PlanFeatureName = (typeof PLAN_FEATURE_NAMES)[number];

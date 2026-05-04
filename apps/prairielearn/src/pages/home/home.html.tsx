@@ -1,15 +1,12 @@
 import { Hydrate } from '@prairielearn/react/server';
 
-import {
-  type StaffInstitution,
-} from '../../lib/client/safe-db-types.js';
+import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
 import { type NewsItem } from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
 import { NewsAlert } from './components/NewsAlert.js';
 import type { InstructorHomePageCourse, StudentHomePageCourse } from './home.types.js';
-
 
 export function Home({
   canAddCourses,
