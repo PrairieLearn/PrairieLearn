@@ -17,7 +17,6 @@ import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import * as helperServer from './helperServer.js';
-import { withConfig } from './utils/config.js';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -289,17 +288,18 @@ const accessibilitySkip = new Set([
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
+  const originalWorkersCount = config.workersCount;
 
   beforeAll(async function () {
     config.features['process-questions-in-server'] = false;
-    await withConfig({ workersCount: 8 }, async () => {
-      await helperServer.before()();
-    });
+    config.workersCount = 4;
+    await helperServer.before()();
   });
 
   afterAll(async function () {
     await helperServer.after();
     config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+    config.workersCount = originalWorkersCount;
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
