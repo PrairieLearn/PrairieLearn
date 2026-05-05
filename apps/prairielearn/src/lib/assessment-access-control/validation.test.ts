@@ -1908,491 +1908,286 @@ describe('afterComplete hidden/visibility validation', () => {
 });
 
 describe('afterComplete cross-field validation', () => {
-  function makeRule(
-    json: AccessControlJsonInput,
-    ruleIndex: number,
-    isMain: boolean,
-  ): AccessControlValidationRule {
-    return {
-      rule: AccessControlJsonSchema.parse(json),
-      targetType: isMain ? 'none' : 'student_label',
-      ruleIndex,
-    };
+  interface ExpectedIssue {
+    ruleIndex: number;
+    message: RegExp;
   }
 
-  it('returns no issues for a valid default rule with score and questions visible', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule({ afterComplete: { questions: { hidden: false } } }, 0, true),
-    ]);
-    assert.deepEqual(issues, []);
-  });
+  function buildRules(jsons: AccessControlJsonInput[]): AccessControlValidationRule[] {
+    return jsons.map((json, ruleIndex) => ({
+      rule: AccessControlJsonSchema.parse(json),
+      targetType: ruleIndex === 0 ? 'none' : 'student_label',
+      ruleIndex,
+    }));
+  }
 
-  it('rejects default rule where score is hidden but questions are visible', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
-        {
-          afterComplete: {
-            questions: { hidden: false },
-            score: { hidden: true },
-          },
-        },
-        0,
-        true,
-      ),
-    ]);
-    assert.lengthOf(issues, 1);
-    assert.deepEqual(issues[0].path, ['afterComplete', 'questions']);
-    assert.match(issues[0].message, /Score cannot be hidden while questions are visible/);
-  });
-
-  it('rejects default rule where score never becomes visible but questions do', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+  it.each([
+    {
+      label: 'empty rule list',
+      rules: [],
+      issues: [],
+    },
+    {
+      label: 'default rule with all-default visibility',
+      rules: [{}],
+      issues: [],
+    },
+    {
+      label: 'default rule: score hidden but questions visible',
+      rules: [{ afterComplete: { questions: { hidden: false }, score: { hidden: true } } }],
+      issues: [{ ruleIndex: 0, message: /Score cannot be hidden while questions are visible/ }],
+    },
+    {
+      label: 'default rule: questions reveal but score never becomes visible',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true },
           },
         },
-        0,
-        true,
-      ),
-    ]);
-    assert.lengthOf(issues, 1);
-    assert.match(issues[0].message, /Score must become visible by the time questions do/);
-  });
-
-  it('rejects default rule where score becomes visible after questions do', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [{ ruleIndex: 0, message: /Score must become visible by the time questions do/ }],
+    },
+    {
+      label: 'default rule: score reveals after questions',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-    ]);
-    assert.lengthOf(issues, 1);
-    assert.match(issues[0].message, /Show score date must be on or before the show questions date/);
-  });
-
-  it('accepts score visible on the same date questions become visible', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /Show score date must be on or before the show questions date/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: score reveals on the same date questions do (boundary)',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('accepts override that overrides only score consistently with the main questions', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score conflicts with inherited questions',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
         {
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
-          },
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
         },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('rejects override-score that conflicts with inherited main questions', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /Show score date must be on or before the show questions date/,
+        },
+      ],
+    },
+    {
+      label: 'override-questions earlier than inherited score',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
         {
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
-          },
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-06T00:00:00' } },
         },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((issue) => issue.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.deepEqual(overrideIssue.path, ['afterComplete', 'questions']);
-    assert.match(
-      overrideIssue.message,
-      /Show score date must be on or before the show questions date/,
-    );
-  });
-
-  it('rejects override-questions that conflicts with inherited main score', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [
         {
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
-          },
+          ruleIndex: 1,
+          message: /Show score date must be on or before the show questions date/,
         },
-        0,
-        true,
-      ),
-      makeRule(
-        {
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
-          },
-        },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((issue) => issue.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue.message,
-      /Show score date must be on or before the show questions date/,
-    );
-  });
-
-  it('treats an override that does not touch afterComplete as fully inheriting', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
-        {
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
-            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
-          },
-        },
-        0,
-        true,
-      ),
-      makeRule({ labels: ['Section A'] }, 1, false),
-    ]);
-    // Both rules inherit the conflicting main values, so both should report.
-    assert.lengthOf(issues, 2);
-    assert.includeMembers(
-      issues.map((i) => i.ruleIndex),
-      [0, 1],
-    );
-  });
-
-  it('returns no issues when both fields are at their defaults', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([makeRule({}, 0, true)]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('returns no issues for an empty rule list', () => {
-    assert.deepEqual(validateAfterCompleteCrossFieldIssues([]), []);
-  });
-
-  it('accepts override-questions later than inherited score visibleFromDate', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+    },
+    {
+      label: 'override-questions later than inherited score',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      // Override pushes questions later; inherited score is still earlier — valid.
-      makeRule(
         {
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-12T00:00:00' },
-          },
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-12T00:00:00' } },
         },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('rejects override-questions earlier than inherited score visibleFromDate', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
-        {
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
-            score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
-          },
-        },
-        0,
-        true,
-      ),
-      // Override pulls questions earlier than the inherited score date.
-      makeRule(
-        {
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-06T00:00:00' },
-          },
-        },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((i) => i.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue.message,
-      /Show score date must be on or before the show questions date/,
-    );
-  });
-
-  it('accepts override-score earlier than inherited questions visibleFromDate', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score earlier than inherited questions',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
         {
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' },
-          },
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
         },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('accepts override that customizes both fields consistently', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both consistent',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
         {
-          labels: ['Section A'],
+          labels: ['A'],
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-18T00:00:00' },
           },
         },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('rejects override that customizes both fields with score after questions', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both with score reveal after questions',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
         {
-          labels: ['Section A'],
+          labels: ['A'],
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
           },
         },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((i) => i.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(
-      overrideIssue.message,
-      /Show score date must be on or before the show questions date/,
-    );
-  });
-
-  it('rejects override that flips questions to visible while inheriting hidden-forever score', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule({ afterComplete: { score: { hidden: true } } }, 0, true),
-      makeRule(
+      ],
+      issues: [
         {
-          labels: ['Section A'],
-          afterComplete: { questions: { hidden: false } },
+          ruleIndex: 1,
+          message: /Show score date must be on or before the show questions date/,
         },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((i) => i.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(overrideIssue.message, /Score cannot be hidden while questions are visible/);
-  });
-
-  it('rejects override that flips score to hidden-forever while inheriting visible questions', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule({ afterComplete: { questions: { hidden: false } } }, 0, true),
-      makeRule(
-        {
-          labels: ['Section A'],
-          afterComplete: { score: { hidden: true } },
-        },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((i) => i.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(overrideIssue.message, /Score cannot be hidden while questions are visible/);
-  });
-
-  it('accepts override that hides questions forever, inheriting any score state', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule({ afterComplete: { score: { hidden: true } } }, 0, true),
-      makeRule(
-        {
-          labels: ['Section A'],
-          afterComplete: { questions: { hidden: true } },
-        },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('accepts override-score with no visibleFromDate when questions are hidden forever', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule({ afterComplete: { questions: { hidden: true } } }, 0, true),
-      makeRule(
-        {
-          labels: ['Section A'],
-          afterComplete: { score: { hidden: true } },
-        },
-        1,
-        false,
-      ),
-    ]);
-    assert.deepEqual(issues, []);
-  });
-
-  it('rejects override that hides score forever while inheriting questions with visibleFromDate', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+      ],
+    },
+    {
+      label: 'override flips questions visible while inheriting hidden-forever score',
+      rules: [
+        { afterComplete: { score: { hidden: true } } },
+        { labels: ['A'], afterComplete: { questions: { hidden: false } } },
+      ],
+      issues: [{ ruleIndex: 1, message: /Score cannot be hidden while questions are visible/ }],
+    },
+    {
+      label: 'override-score hidden forever with both effectively hidden forever',
+      rules: [
+        { afterComplete: { questions: { hidden: true } } },
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score hidden forever conflicts with inherited questions reveal date',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      makeRule(
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [{ ruleIndex: 1, message: /Score must become visible by the time questions do/ }],
+    },
+    {
+      label: 'override that does not touch afterComplete inherits a conflict on both rules',
+      rules: [
         {
-          labels: ['Section A'],
-          afterComplete: { score: { hidden: true } },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          },
         },
-        1,
-        false,
-      ),
-    ]);
-    const overrideIssue = issues.find((i) => i.ruleIndex === 1);
-    assert.isDefined(overrideIssue);
-    assert.match(overrideIssue.message, /Score must become visible by the time questions do/);
-  });
-
-  it('reports issues independently across multiple conflicting overrides', () => {
-    const issues = validateAfterCompleteCrossFieldIssues([
-      makeRule(
+        { labels: ['A'] },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /Show score date must be on or before the show questions date/,
+        },
+        {
+          ruleIndex: 1,
+          message: /Show score date must be on or before the show questions date/,
+        },
+      ],
+    },
+    {
+      label: 'multiple overrides report independently',
+      rules: [
         {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
           },
         },
-        0,
-        true,
-      ),
-      // Section A: override score to be later than inherited questions.
-      makeRule(
         {
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
-          },
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
         },
-        1,
-        false,
-      ),
-      // Section B: consistent override.
-      makeRule(
         {
-          labels: ['Section B'],
-          afterComplete: {
-            score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
-          },
+          labels: ['B'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' } },
         },
-        2,
-        false,
-      ),
-      // Section C: override questions earlier than inherited score date.
-      makeRule(
         {
-          labels: ['Section C'],
-          afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' },
-          },
+          labels: ['C'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
         },
-        3,
-        false,
-      ),
-    ]);
-
-    const failingIndices = issues.map((i) => i.ruleIndex).sort();
-    assert.deepEqual(failingIndices, [1, 3]);
-  });
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /Show score date must be on or before the show questions date/,
+        },
+        {
+          ruleIndex: 3,
+          message: /Show score date must be on or before the show questions date/,
+        },
+      ],
+    },
+  ] satisfies { label: string; rules: AccessControlJsonInput[]; issues: ExpectedIssue[] }[])(
+    '$label',
+    ({ rules, issues: expectedIssues }) => {
+      const actualIssues = validateAfterCompleteCrossFieldIssues(buildRules(rules));
+      assert.lengthOf(actualIssues, expectedIssues.length);
+      for (const expected of expectedIssues) {
+        const issue = actualIssues.find((i) => i.ruleIndex === expected.ruleIndex);
+        assert.isDefined(issue);
+        assert.deepEqual(issue.path, ['afterComplete', 'questions']);
+        assert.match(issue.message, expected.message);
+      }
+    },
+  );
 });
