@@ -72,7 +72,7 @@ Enable **Password** to require a password before a student can start the assessm
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-While a matching reservation is active, PrairieTest controls the scheduled access window and time limit. The top-level date control, before-release behavior, and after-completion visibility apply outside the active reservation.
+While a matching reservation is active, PrairieTest controls the scheduled access window and time limit. PrairieTest does not enforce a separate password — passwords configured under date control do not apply during a reservation. The top-level date control, before-release behavior, and after-completion visibility apply outside the active reservation.
 
 For each PrairieTest exam, configure what students see after they finish while the reservation is still active:
 
@@ -88,7 +88,7 @@ If both PrairieTest and date control are configured, an active matching PrairieT
 
 ### Before release
 
-Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest, this is before the exam is closed. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
+Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), the assessment is listed any time the student is not in an active reservation. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
 
 Disable it when the assessment should be completely hidden until release.
 
@@ -98,18 +98,18 @@ Use **Question visibility** and **Score visibility** to decide what students can
 
 An assessment is complete when students can no longer answer questions, usually after the last late deadline, after a timed assessment closes, or after an instructor closes it.
 
-Question visibility can:
+Question visibility options:
 
-- hide questions after completion;
-- show questions after completion;
-- hide questions until a reveal date;
-- reveal questions only during a date range.
+- **Hide questions permanently**: questions are never visible after completion.
+- **Show questions after completion**: students can review questions and answers immediately after completing the assessment.
+- **Show questions after date**: questions are hidden after completion and become visible on the chosen date.
+- **Show questions between dates**: questions are visible only between the chosen dates.
 
-Score visibility can:
+Score visibility options:
 
-- show scores after completion;
-- hide scores after completion;
-- hide scores until a reveal date.
+- **Show score after completion**: students can see their score immediately.
+- **Hide score permanently**: the score is never visible after completion.
+- **Hide score until date**: the score is hidden after completion and becomes visible on the chosen date.
 
 For PrairieTest exams, top-level after-completion settings apply outside an active reservation. Use the per-exam PrairieTest visibility setting to control what students see while their reservation is still active.
 
@@ -209,6 +209,34 @@ In the UI:
       ]
     }
     ```
+
+### Always-open practice assessment
+
+Students can access a practice assessment indefinitely after release with full credit. There is no due date, so deadlines and after-deadline behavior do not apply.
+
+In the UI:
+
+1. Edit **Defaults**.
+2. Enable **Date control**.
+3. Set **Release** to **Released** (or **Scheduled for release** with a release date).
+4. Set **Due date** to **No due date**.
+
+??? info "Advanced JSON"
+
+    ```json
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": null }
+          }
+        }
+      ]
+    }
+    ```
+
+    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release and any `afterLastDeadline` configuration is ignored.
 
 ### Homework with early bonus and late penalty
 
@@ -504,6 +532,8 @@ If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed
 `beforeRelease` can only be configured on the defaults rule.
 
 ### `afterComplete`
+
+By default, questions are hidden and scores are shown after completion.
 
 | Field                        | Type    | Default | Description                                        |
 | ---------------------------- | ------- | ------- | -------------------------------------------------- |
