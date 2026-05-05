@@ -115,6 +115,10 @@ jobs:
             ) }}
 
       - name: Run the JavaScript linter
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
         run: make lint-js-cached
       - name: Run the Mustache linter
         run: make lint-mustache
