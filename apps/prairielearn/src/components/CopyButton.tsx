@@ -5,10 +5,12 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 export function CopyButton({
   text,
+  label = '',
   ariaLabel = 'Copy',
   className,
 }: {
   text: string;
+  label?: string;
   ariaLabel?: string;
   className?: string;
 }) {
@@ -45,7 +47,7 @@ export function CopyButton({
           void handleCopy();
         }}
       >
-        <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} />
+        <i className={copied ? 'bi bi-check' : 'bi bi-clipboard'} /> {label}
       </button>
     </OverlayTrigger>
   );
