@@ -35,7 +35,6 @@ SELECT
   a.id AS assessment_id,
   a.tid AS assessment_name,
   a.title AS assessment_title,
-  (aset.abbreviation || a.number) AS assessment_label,
   aset.abbreviation AS assessment_set_abbreviation,
   a.number AS assessment_number,
   u.id AS user_id,

@@ -66,7 +66,6 @@ export const AssessmentInstanceDataSchema = z.object({
   assessment_id: AssessmentInstanceSchema.shape.assessment_id,
   assessment_name: AssessmentSchema.shape.tid,
   assessment_title: AssessmentSchema.shape.title,
-  assessment_label: z.string(),
   assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
   assessment_number: AssessmentSchema.shape.number,
   user_id: UserSchema.shape.id.nullable(),
@@ -97,6 +96,7 @@ export function formatAssessmentInstanceDataForResponse(
   const { date_limit, date, duration, modified_at, ...instance } = data;
   return {
     ...instance,
+    assessment_label: instance.assessment_set_abbreviation + instance.assessment_number,
     modified_at: formatDateISO(modified_at, resLocals.course_instance.display_timezone),
     time_remaining: instance.open
       ? date_limit
