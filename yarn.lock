@@ -4713,6 +4713,7 @@ __metadata:
     "@types/node": "npm:^24.12.2"
     "@typescript/native-preview": "npm:beta"
     bindings: "npm:^1.5.0"
+    nan: "npm:^2.26.2"
     node-gyp: "npm:^12.3.0"
   languageName: unknown
   linkType: soft
@@ -16046,7 +16047,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0":
+"nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0, nan@npm:^2.26.2":
   version: 2.26.2
   resolution: "nan@npm:2.26.2"
   dependencies:
@@ -17338,6 +17339,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
     "@vitest/coverage-v8": "npm:^4.1.5"
+    async: "npm:^3.2.6"
     dependency-cruiser: "npm:^17.4.0"
     eslint: "npm:^10.3.0"
     fast-glob: "npm:^3.3.3"

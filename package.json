@@ -3,9 +3,7 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "contrib",
-    "packages/*",
-    "scripts"
+    "packages/*"
   ],
   "packageManager": "yarn@4.12.0",
   "engines": {
@@ -30,6 +28,7 @@
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
+    "async": "^3.2.6",
     "node-gyp": "^12.3.0"
   },
   "devDependencies": {

@@ -8,18 +8,20 @@ import type { KnipConfig } from 'knip';
  * --------------------------------------------
  * Knip walks our source files and reports any `dependencies` in `package.json`
  * that it doesn't see imported. That works for normal `import` statements, but
- * we also pull packages in two ways knip can't see:
+ * we also pull packages in several ways knip can't see:
  *
  *   1. `nodeModulesAssetPath('pkg/...')` calls in TS/TSX, which serve files
  *      from `node_modules` at request time.
  *   2. `dependencies.nodeModulesScripts` / `nodeModulesStyles` /
  *      `dynamicDependencies.nodeModulesScripts` entries in element / question
  *      `info.json` files.
+ *   3. `require('pkg')` calls inside `binding.gyp` (node-gyp resolves these
+ *      to locate native addon include dirs).
  *
- * Without help, knip reports every package used only via (1) or (2) as unused.
- * To work around this, we scan source + info.json files at config-load time,
- * extract the package names, and add them to `ignoreDependencies` so knip
- * leaves them alone. See https://github.com/webpro-nl/knip/issues/641 and
+ * Without help, knip reports every package used only via (1)–(3) as unused.
+ * To work around this, we scan those files at config-load time, extract the
+ * package names, and add them to `ignoreDependencies` so knip leaves them
+ * alone. See https://github.com/webpro-nl/knip/issues/641 and
  * https://github.com/webpro-nl/knip/pull/1220 for the upstream feature gap.
  *
  * On top of the auto-collected set, three manually maintained lists cover
@@ -123,11 +125,24 @@ const sourceFileDependencies = (
   )
 ).flat();
 
+// Collect packages referenced by `require('pkg')` in `binding.gyp` files
+// (node-gyp resolves these to find native addon include dirs).
+const bindingGypPaths = await globby('packages/*/binding.gyp');
+const bindingGypRegex = /require\(\s*'([^']*)'\s*\)/g;
+const bindingGypDependencies = (
+  await Promise.all(
+    bindingGypPaths.map(async (path) => {
+      const content = await readFile(path, 'utf-8');
+      return [...content.matchAll(bindingGypRegex)].map((match) => match[1]);
+    }),
+  )
+).flat();
+
 // Reduce full asset paths down to package names. e.g.
 //   "lodash/lodash.min.js"            -> "lodash"
 //   "@fortawesome/fontawesome/...css" -> "@fortawesome/fontawesome"
 const autoDetectedDeps = new Set<string>(
-  [...infoJsonDependencies, ...sourceFileDependencies].map((dep) => {
+  [...infoJsonDependencies, ...sourceFileDependencies, ...bindingGypDependencies].map((dep) => {
     const parts = dep.split('/');
     if (parts[0].startsWith('@')) {
       return parts.slice(0, 2).join('/');
@@ -144,10 +159,14 @@ for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
 
 const config: KnipConfig = {
   tags: ['-knipignore'],
+  // Fail the build on config hints (e.g. an `ignoreDependencies` entry that
+  // is also imported normally, or a stale entry that no longer matches
+  // anything). Keeps the manual lists below honest.
+  treatConfigHintsAsErrors: true,
   workspaces: {
     '.': {
-      entry: ['scripts/*.{mts,mjs}'],
-      project: ['scripts/*.{mts,mjs}'],
+      entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
+      project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
       ignore: ['vitest.config.ts'],
     },
