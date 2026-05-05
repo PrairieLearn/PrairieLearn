@@ -510,7 +510,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 | `durationMinutes`   | integer | Time limit in minutes.                                                                                      |
 | `password`          | string  | Password required to start the assessment.                                                                  |
 
-`due.credit` defaults to 100. If you set a custom due credit, early deadlines are not allowed, late deadline credits must be lower than the due credit, and `afterLastDeadline.credit` cannot exceed the due credit.
+`due.credit` defaults to 100. If you set a custom due credit, early deadlines are not allowed. Late deadline credits must be lower than both 100% and the due-date credit. `afterLastDeadline.credit` cannot exceed the preceding deadline's credit, and it also cannot exceed the maximum possible due-date credit across the resolved rule.
 
 When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
 
