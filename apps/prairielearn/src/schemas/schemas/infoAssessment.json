@@ -211,17 +211,17 @@
             "canCreateGroup": {
               "description": "Whether students can create groups.",
               "type": "boolean",
-              "default": true
+              "default": false
             },
             "canJoinGroup": {
               "description": "Whether students can join groups.",
               "type": "boolean",
-              "default": true
+              "default": false
             },
             "canLeaveGroup": {
               "description": "Whether students can leave groups.",
               "type": "boolean",
-              "default": true
+              "default": false
             },
             "canNameGroup": {
               "description": "Whether students can choose a group name when creating a group.",
