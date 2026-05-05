@@ -1,0 +1,12 @@
+{
+  "name": "@prairielearn/scripts",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsgo --noEmit"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@typescript/native-preview": "beta"
+  }
+}
