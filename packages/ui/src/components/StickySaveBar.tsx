@@ -1,6 +1,14 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
+import Alert from 'react-bootstrap/Alert';
 
 import { OverlayTrigger } from './OverlayTrigger.js';
+
+export interface StickySaveBarAlert {
+  variant: 'success' | 'danger';
+  message: ReactNode;
+  onDismiss?: () => void;
+}
 
 export interface StickySaveBarProps {
   /** Whether the bar is visible. Typically driven by the form's dirty state. */
@@ -16,6 +24,12 @@ export interface StickySaveBarProps {
    * disabled and a tooltip with this message is shown on hover/focus.
    */
   saveDisabledReason?: string | null;
+  /**
+   * Optional alert rendered inside the sticky region, above the actions row.
+   * Use this for save success/error feedback so it stays visible regardless
+   * of the user's scroll position.
+   */
+  alert?: StickySaveBarAlert | null;
 }
 
 export function StickySaveBar({
@@ -24,6 +38,7 @@ export function StickySaveBar({
   onCancel,
   formId,
   saveDisabledReason,
+  alert,
 }: StickySaveBarProps) {
   const isSaveDisabled = isSaving || Boolean(saveDisabledReason);
 
@@ -40,6 +55,16 @@ export function StickySaveBar({
 
   return (
     <div className="pl-ui-sticky-save-bar">
+      {alert && (
+        <Alert
+          className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+          variant={alert.variant}
+          dismissible={Boolean(alert.onDismiss)}
+          onClose={alert.onDismiss}
+        >
+          {alert.message}
+        </Alert>
+      )}
       <div
         className={clsx(
           'container align-items-center justify-content-between gap-2 py-3',

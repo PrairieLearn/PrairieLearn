@@ -1,8 +1,8 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { SplitPane, StickySaveBar, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -51,7 +51,7 @@ export function AccessControlForm({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentId: string;
   isSaving?: boolean;
-  alert?: ReactNode;
+  alert?: StickySaveBarAlert | null;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -332,12 +332,12 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                {alert}
                 <StickySaveBar
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
                   onCancel={() => reset()}
+                  alert={alert}
                 />
               </>
             ),
