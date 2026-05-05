@@ -90,8 +90,14 @@ describe('Auto-test questions in exampleCourse', () => {
 
     afterAll(helperServer.after);
 
-    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
-      helperQuestion.autoTestQuestion(locals, qid),
-    );
+    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) => {
+      it.concurrent(`auto-test ${qid}`, async () => {
+        await helperQuestion.autoTestQuestion({
+          questionBaseUrl: locals.questionBaseUrl,
+          questionPreviewTabUrl: locals.questionPreviewTabUrl,
+          qid,
+        });
+      });
+    });
   });
 });
