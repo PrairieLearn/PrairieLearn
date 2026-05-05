@@ -6,7 +6,7 @@ import noHydrateResLocals from './rules/no-hydrate-reslocals.js';
 import noUnusedSqlBlocks from './rules/no-unused-sql-blocks.js';
 import safeDbTypes from './rules/safe-db-types.js';
 
-export const rules = {
+const rules = {
   'aws-client-mandatory-config': awsClientMandatoryConfig,
   'aws-client-shared-config': awsClientSharedConfig,
   'jsx-no-dollar-interpolation': jsxNoDollarInterpolation,
@@ -15,3 +15,5 @@ export const rules = {
   'no-unused-sql-blocks': noUnusedSqlBlocks,
   'safe-db-types': safeDbTypes,
 };
+
+export default { rules };

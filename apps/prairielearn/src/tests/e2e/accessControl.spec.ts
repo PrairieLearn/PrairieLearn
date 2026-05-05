@@ -93,8 +93,8 @@ test.describe('Access control UI', () => {
     // Verify Section A override card is visible with its student label badge
     await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
-    // Save button should be disabled (no unsaved changes)
-    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
+    // Save bar is hidden when there are no unsaved changes
+    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeHidden();
   });
 
   test('can add a student-label override, configure it, and save', async ({

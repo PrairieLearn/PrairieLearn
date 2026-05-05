@@ -217,7 +217,7 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
