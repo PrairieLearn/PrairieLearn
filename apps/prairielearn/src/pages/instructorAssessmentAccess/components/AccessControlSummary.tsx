@@ -9,9 +9,10 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import clsx from 'clsx';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { type FieldErrors, useFormState } from 'react-hook-form';
+import { useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
@@ -142,7 +143,7 @@ function DefaultRuleSummaryContent({
             exams={rule.prairieTestExams}
             initialMetadata={prairieTestExamMetadata}
             ptHost={ptHost}
-            formErrors={formErrors as FieldErrors<DefaultRuleData> | undefined}
+            formErrors={formErrors}
           />
         </div>
       )}
@@ -206,7 +207,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (enrollment must stay before student_label)
+    // Prevent reordering across override types; each target type has its own precedence section.
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -299,22 +300,21 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstEnrollment =
-                  index === 0 && override.appliesTo.targetType === 'enrollment';
-                const isFirstLabel =
-                  override.appliesTo.targetType === 'student_label' &&
-                  (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
+                const isFirstOfSection =
+                  index === 0 ||
+                  overrides[index - 1].appliesTo.targetType !== override.appliesTo.targetType;
+                const sectionLabel =
+                  override.appliesTo.targetType === 'enrollment'
+                    ? 'Overrides for specific students'
+                    : 'Overrides for student labels';
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstEnrollment && (
-                      <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for specific students
-                      </small>
-                    )}
-                    {isFirstLabel && (
-                      <small className="text-muted fw-semibold d-block mb-2 mt-3">
-                        Overrides for student labels
+                    {isFirstOfSection && (
+                      <small
+                        className={clsx('text-muted fw-semibold d-block mb-2', index > 0 && 'mt-3')}
+                      >
+                        {sectionLabel}
                       </small>
                     )}
                     <SortableOverrideCard

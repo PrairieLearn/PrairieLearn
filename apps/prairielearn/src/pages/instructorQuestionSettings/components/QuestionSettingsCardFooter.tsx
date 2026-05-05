@@ -1,7 +1,8 @@
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.types.js';
@@ -57,15 +58,17 @@ function DeleteQuestionModal({
   csrfToken,
   show,
   onHide,
+  onExited,
 }: {
   qid: string;
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
   show: boolean;
   onHide: () => void;
+  onExited: () => void;
 }) {
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>Delete question</Modal.Title>
       </Modal.Header>
@@ -124,6 +127,7 @@ export function QuestionSettingsCardFooter({
   qid,
   assessmentsWithQuestion,
   csrfToken,
+  questionGHLink,
 }: {
   canEdit: boolean;
   canCopy: boolean;
@@ -132,53 +136,129 @@ export function QuestionSettingsCardFooter({
   qid: string;
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
+  questionGHLink: string | null;
 }) {
   const [showCopyPopover, setShowCopyPopover] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deleteModalState = useModalState();
 
-  return (
-    <div className="card-footer d-flex flex-wrap gap-2">
-      {canCopy && (
-        <OverlayTrigger
-          trigger="click"
-          placement="auto"
-          show={showCopyPopover}
-          popover={{
-            props: { id: 'copyQuestionPopover' },
-            header: 'Copy this question',
-            body: (
-              <CopyQuestionPopover
-                editableCourses={editableCourses}
-                courseId={courseId}
-                csrfToken={csrfToken}
-                onCancel={() => setShowCopyPopover(false)}
-              />
-            ),
-          }}
-          onToggle={setShowCopyPopover}
-        >
-          <button type="button" className="btn btn-sm btn-primary" id="copyQuestionButton">
-            <i className="fa fa-clone" aria-hidden="true" /> Make a copy of this question
-          </button>
-        </OverlayTrigger>
-      )}
-      {canEdit && (
+  if (!questionGHLink && !canCopy && !canEdit) return null;
+
+  const rows: { key: string; node: React.ReactNode }[] = [];
+
+  if (questionGHLink) {
+    rows.push({
+      key: 'github',
+      node: (
         <>
+          <div>
+            <div className="fw-semibold">View source on GitHub</div>
+            <div className="text-muted small">
+              Open this question's source files in the course's repository.
+            </div>
+          </div>
+          <a
+            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 ms-3"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View on GitHub"
+            href={questionGHLink}
+          >
+            <i className="bi bi-github" aria-hidden="true" />
+            View on GitHub
+          </a>
+        </>
+      ),
+    });
+  }
+
+  if (canCopy) {
+    rows.push({
+      key: 'copy',
+      node: (
+        <>
+          <div>
+            <div className="fw-semibold">Make a copy of this question</div>
+            <div className="text-muted small">
+              Create a duplicate of this question to use as a starting point.
+            </div>
+          </div>
+          <OverlayTrigger
+            trigger="click"
+            placement="auto"
+            show={showCopyPopover}
+            popover={{
+              props: { id: 'copyQuestionPopover' },
+              header: 'Copy this question',
+              body: (
+                <CopyQuestionPopover
+                  editableCourses={editableCourses}
+                  courseId={courseId}
+                  csrfToken={csrfToken}
+                  onCancel={() => setShowCopyPopover(false)}
+                />
+              ),
+            }}
+            onToggle={setShowCopyPopover}
+          >
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary ms-3"
+              id="copyQuestionButton"
+            >
+              <i className="bi bi-copy me-1" aria-hidden="true" /> Make a copy
+            </button>
+          </OverlayTrigger>
+        </>
+      ),
+    });
+  }
+
+  if (canEdit) {
+    rows.push({
+      key: 'delete',
+      node: (
+        <>
+          <div>
+            <div className="fw-semibold">Delete this question</div>
+            <div className="text-muted small">Permanently remove this question.</div>
+          </div>
           <button
             type="button"
-            className="btn btn-sm btn-primary"
-            onClick={() => setShowDeleteModal(true)}
+            className="btn btn-sm btn-outline-danger ms-3"
+            onClick={() => deleteModalState.showWithData(null)}
           >
-            <i className="fa fa-times" aria-hidden="true" /> Delete this question
+            <i className="bi bi-trash me-1" aria-hidden="true" /> Delete
           </button>
-          <DeleteQuestionModal
-            qid={qid}
-            assessmentsWithQuestion={assessmentsWithQuestion}
-            csrfToken={csrfToken}
-            show={showDeleteModal}
-            onHide={() => setShowDeleteModal(false)}
-          />
         </>
+      ),
+    });
+  }
+
+  return (
+    <div className="card">
+      <div className="card-body p-0">
+        <h2 className="h5 card-title mb-0 px-3 py-3">Manage question</h2>
+        {rows.map((row, index) => (
+          <div
+            key={row.key}
+            className={clsx(
+              'd-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-3',
+              index > 0 && 'border-top',
+            )}
+          >
+            {row.node}
+          </div>
+        ))}
+      </div>
+      {canEdit && (
+        <DeleteQuestionModal
+          qid={qid}
+          assessmentsWithQuestion={assessmentsWithQuestion}
+          csrfToken={csrfToken}
+          show={deleteModalState.show}
+          onHide={deleteModalState.hide}
+          onExited={deleteModalState.onExited}
+        />
       )}
     </div>
   );

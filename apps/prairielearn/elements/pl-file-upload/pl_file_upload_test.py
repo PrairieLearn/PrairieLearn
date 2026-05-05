@@ -1,3 +1,4 @@
+import fnmatch
 import hashlib
 import importlib
 
@@ -103,6 +104,70 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
 def test_glob_to_regex_errors(glob_pattern: str) -> None:
     with pytest.raises(ValueError) as _:  # noqa: PT011
         file_upload.glob_to_regex(glob_pattern)
+
+
+@pytest.mark.parametrize(
+    ("pattern", "expected_output"),
+    [
+        ("*.py", "test_file.py"),
+        ("test_?.txt", "test_x.txt"),
+        ("data[0-9].csv", "data0.csv"),
+        ("file[a-z].txt", "filea.txt"),
+        ("report.pdf", "report.pdf"),
+        ("*", "test_file"),
+        ("**", "test_file"),
+        ("**.py", "test_file.py"),
+        ("???.log", "xxx.log"),
+        ("test.[ch]", "test.c"),
+        ("[abc]_file.txt", "a_file.txt"),
+        ("[!a]*.txt", "btest_file.txt"),
+        ("[!abc]_file.txt", "d_file.txt"),
+        ("[!!]test.txt", "atest.txt"),
+        ("[!a-z0-9].txt", "A.txt"),
+        ("[*].txt", "*.txt"),
+        ("[?].txt", "?.txt"),
+        ("[*?].txt", "*.txt"),
+    ],
+)
+def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> None:
+    output = file_upload.generate_filename_from_pattern(pattern)
+    assert output == expected_output
+    assert fnmatch.fnmatch(output, pattern)
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns"),
+    [
+        (["report.pdf"], ["report.pdf"]),
+        (["test_file.py"], ["*.py"]),
+        ([], ["?.txt", "?.txt"]),
+        ([], ["[abc].txt", "[abc].txt"]),
+    ],
+)
+def test_generate_unique_filenames_raises_on_collision(
+    literal_names: list[str], patterns: list[str]
+) -> None:
+    with pytest.raises(ValueError, match="Cannot generate distinct filenames"):
+        file_upload._generate_unique_filenames(literal_names, patterns)
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns", "expected_output"),
+    [
+        ([], ["*.py", "*.py"], ["test_file.py", "test_file_1.py"]),
+        ([], ["**", "**"], ["test_file", "test_file_1"]),
+        (
+            ["foo.txt"],
+            ["*.py", "*.py", "*.txt"],
+            ["foo.txt", "test_file.py", "test_file_1.py", "test_file.txt"],
+        ),
+    ],
+)
+def test_generate_unique_filenames_repeats_wildcard_pattern(
+    literal_names: list[str], patterns: list[str], expected_output: list[str]
+) -> None:
+    output = file_upload._generate_unique_filenames(literal_names, patterns)
+    assert output == expected_output
 
 
 # Function must be backward compatible (i.e., if only file-names is defined, it should
