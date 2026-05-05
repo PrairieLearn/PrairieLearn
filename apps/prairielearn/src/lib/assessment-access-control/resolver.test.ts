@@ -285,6 +285,20 @@ describe('resolveAccessControl', () => {
         expect: { authorized: false, credit: 0, submittable: false },
       },
       {
+        name: 'after due date with explicit afterLastDeadline: null: no access (same as omitted)',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: null,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: false, credit: 0, submittable: false },
+      },
+      {
         name: 'after release date with indefinite due: 100% credit forever',
         rules: [
           makeDefaultRule({
@@ -614,6 +628,26 @@ describe('resolveAccessControl', () => {
           ),
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: false, submittable: false, credit: 0 },
+      },
+      {
+        name: 'override with explicit afterLastDeadline: null denies access after due',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { allowSubmissions: false },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { afterLastDeadline: null } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
         expect: { authorized: false, submittable: false, credit: 0 },
       },
