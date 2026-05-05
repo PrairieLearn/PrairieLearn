@@ -464,7 +464,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'later review window without intermediate hidden window is unsupported',
+      name: 'later review window without intermediate hidden window is approximated',
       rules: [
         {
           active: false,
@@ -482,9 +482,18 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        accessControl: {},
-        errors: ['Delayed review windows without showClosedAssessment:false are not supported.'],
-        notes: [],
+        accessControl: {
+          beforeRelease: { listed: true },
+          dateControl: {
+            release: { date: '2020-01-01T00:00:01' },
+            due: { date: '2020-12-31T23:59:59' },
+            lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
+          },
+        },
+        errors: [],
+        notes: [
+          'Post-deadline access gap approximated: assessment may be listed before the later review window.',
+        ],
         hasUidRules: false,
       },
     },

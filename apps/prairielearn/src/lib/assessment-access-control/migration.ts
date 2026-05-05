@@ -779,12 +779,9 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
   }
 
   if (hasDelayedReviewWithoutHiddenWindow(schedulingRules)) {
-    return {
-      errors: ['Delayed review windows without showClosedAssessment:false are not supported.'],
-      notes,
-      hasUidRules,
-      results: null,
-    };
+    notes.push(
+      'Post-deadline access gap approximated: assessment may be listed before the later review window.',
+    );
   }
 
   const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
