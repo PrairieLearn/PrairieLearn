@@ -35,7 +35,7 @@ import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
-  createContext,
+  type createContext,
   requireCourseInstancePermissionEdit,
   requireCoursePermissionEdit,
   t,
@@ -205,7 +205,10 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
   return { notAssigned };
 });
 
-type SyncJobFailedError = { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+interface SyncJobFailedError {
+  code: 'SYNC_JOB_FAILED';
+  jobSequenceId: string;
+}
 
 /**
  * Saves the `groups` block of an assessment's `infoAssessment.json`. Centralizes
