@@ -6,7 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 export function CopyButton({
   text,
   label = '',
-  ariaLabel = 'Copy',
+  ariaLabel = label || 'Copy to clipboard',
   className,
 }: {
   text: string;
