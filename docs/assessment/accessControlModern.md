@@ -4,11 +4,11 @@
 
     This feature is under active development and is not yet available for general use. The documentation here is for internal reference only.
 
-Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific exceptions from the assessment **Access** page. Most settings are stored in `infoAssessment.json`; individual-student overrides are stored in PrairieLearn's database because they target enrolled students, not course content files.
+Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific exceptions from the assessment **Access** page.
 
 !!! note
 
-    The two-level access check still applies: students must first have access to the **course instance** through [publishing controls](../courseInstance/index.md#publishing-controls), and then must also have access to the specific **assessment** through modern access control. See [Access control checks](accessControl.md#access-control-checks) for details.
+    Students must first have access to the **course instance** through [publishing controls](../courseInstance/index.md#publishing-controls), and then must also have access to the specific **assessment** through modern access control. See [Access control checks](accessControl.md#access-control-checks) for details.
 
 ## Open the Access page
 
@@ -18,6 +18,9 @@ From an assessment, open the **Access** tab. The page has two sections:
 - **Overrides**: settings that apply only to selected student labels or individual students.
 
 ![Modern access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
+/// caption
+The Access page summarizes the active configuration and lists every override that applies to the assessment.
+///
 
 The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save and sync** to persist the changes.
 
@@ -26,6 +29,9 @@ The summary card shows the current access state, the release/due timeline, credi
 Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
 ![Defaults editor panel for modern access control](accessControlModern/02-defaults-editor.png)
+/// caption
+Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
+///
 
 ### Date control
 
@@ -41,7 +47,7 @@ Set a **Due date** option:
 - **No due date**: students can submit indefinitely after release.
 - **Due on date**: students receive the due-date credit until that date.
 
-By default, the due date is worth 100% credit. Click **Change** next to the due credit if you need a different on-time credit value. This is uncommon; if the goal is to reward early submissions, use an early deadline instead.
+By default, the due date is worth 100% credit. Click **Change** next to the due credit if you need a different on-time credit value. This is uncommon — most courses keep the on-time value at 100% and use an **early deadline** to reward early submissions or [bonus points](configuration.md#assessment-points) to let students exceed 100% by doing additional work.
 
 #### Early and late deadlines
 
@@ -54,6 +60,10 @@ For each deadline, choose:
 
 Deadlines form one chronological credit timeline. For example, an assessment might be worth 110% until an early deadline, 100% until the due date, 80% until a late deadline, and then 0% or practice credit after that.
 
+!!! tip
+
+    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit and late credits must fall below it.
+
 #### After last deadline
 
 Use **After last deadline** to decide what happens after the final due or late deadline:
@@ -64,17 +74,21 @@ Use **After last deadline** to decide what happens after the final due or late d
 
 #### Time limits and passwords
 
-Enable **Time limit** to give each student a fixed amount of working time after they start the assessment. If a student starts close to the due date, PrairieLearn caps the timer at the remaining available time.
+Enable **Time limit** to give each student a fixed amount of working time after they start the assessment. The timer is independent of deadlines: a student who starts close to a deadline gets the full time limit, but the credit they earn shifts as each deadline passes during the attempt. For example, a student with a 60-minute time limit who starts 1 minute before the due date works for the full 60 minutes — the first minute earns the on-time credit, and the remainder earns the next late-deadline credit.
 
 Enable **Password** to require a password before a student can start the assessment. This is typically used for proctored exams.
+
+!!! info
+
+    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit, and PrairieTest exams do not support a separate password.
 
 ### PrairieTest
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-While a matching reservation is active, PrairieTest controls the scheduled access window and time limit. PrairieTest does not enforce a separate password — passwords configured under date control do not apply during a reservation. The top-level date control, before-release behavior, and after-completion visibility apply outside the active reservation.
+While a matching reservation is active, PrairieTest controls the scheduled access window and time limit. The top-level date control, before-release behavior, and after-completion visibility apply outside the active reservation.
 
-For each PrairieTest exam, configure what students see after they finish while the reservation is still active:
+For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
 
 - **Show questions and score**: students can review questions and see their score.
 - **Show score only**: students can see their score, but not the questions.
@@ -84,7 +98,7 @@ These per-exam settings do not support reveal dates. Use the top-level **After c
 
 You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations.
 
-If both PrairieTest and date control are configured, an active matching PrairieTest reservation grants access through PrairieTest. Outside that reservation, date control can still grant normal PrairieLearn access unless the assessment type and surrounding exam setup prevent it. For an exam that should only be available through PrairieTest, avoid configuring an ordinary date-control access window that would also open the assessment outside PrairieTest.
+When both PrairieTest and date control are configured, an active matching reservation **takes precedence**: access is granted through PrairieTest using its own scheduling and time limit. Outside the reservation, date control determines access. To restrict an exam to PrairieTest only, leave date control disabled so students cannot open the assessment outside the reservation.
 
 ### Before release
 
@@ -126,7 +140,7 @@ Choose who the override applies to:
 - **Specific students**: select individual enrolled students.
 - **Students by label**: select one or more student labels, such as "Section A" or "Extra time".
 
-Student labels are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
+[Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
 
 After choosing the target, click **Override** next to each field you want to customize. Fields that you do not override continue to inherit from the defaults.
 
@@ -142,6 +156,9 @@ Common override uses include:
 Existing overrides appear as cards under **Overrides for student labels** or **Overrides for specific students**. Click **Edit** to change the target or overridden fields.
 
 ![Student-specific override editor with an overridden release date](accessControlModern/03-student-override.png)
+/// caption
+Each override starts with every field inherited from the defaults; click **Override** next to a field to set a different value just for the targeted students.
+///
 
 When an override field is active, the detail panel shows **Remove override** for that field. Removing the override does not clear the default value; it makes the rule inherit that field again.
 
@@ -155,7 +172,12 @@ If a student matches more than one override, PrairieLearn resolves the rules in 
 
 Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over overrides higher in the list. Use the drag handle to reorder overrides when priority matters.
 
-For example, if a student has both "Section A" and "Extra time" labels, and both labels have overrides, PrairieLearn combines the two matching label overrides. If both set the same field, the lower override wins. If one sets the due date and the other sets the time limit, the student gets both changes.
+For example, suppose a student has both the "Section A" and "Extended time" labels:
+
+- The **Section A** override sets a later **due date** (Feb 20).
+- The **Extended time** override sets a longer **time limit** (90 minutes) and an earlier **release date** (Jan 14).
+
+The student inherits both overrides on top of the defaults: due date Feb 20, time limit 90 minutes, release date Jan 14. If both overrides set the same field — say, both set the due date — the override lower in the list wins.
 
 ## Save changes
 
@@ -195,9 +217,9 @@ In the UI:
 5. Leave due-date credit at the default 100%.
 6. Set **After last deadline** to **No submissions allowed**.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -221,9 +243,9 @@ In the UI:
 3. Set **Release** to **Released** (or **Scheduled for release** with a release date).
 4. Set **Due date** to **No due date**.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -258,9 +280,9 @@ In the UI:
 5. Add **Late deadlines** on Feb 22 with 80% credit and Mar 1 with 50% credit.
 6. Set **After last deadline** to **Allow practice submissions**.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -296,9 +318,9 @@ In the UI:
 6. Under **After completion**, set **Question visibility** to **Hide questions permanently**.
 7. Set **Score visibility** to **Hide score until date** and enter Mar 12.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -330,9 +352,9 @@ In the UI:
 5. Use the top-level **After completion** settings for what students can see after the reservation ends.
 6. Do not configure an ordinary date-control access window unless students should also be able to access the assessment outside PrairieTest.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -363,9 +385,9 @@ In the UI:
 5. Click **Override** next to **Time limit** and enter the longer duration.
 6. Leave every other field inherited.
 
-??? info "Advanced JSON"
+??? info "JSON"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -418,7 +440,7 @@ Most instructors should use the Access page. The JSON format is useful when you 
 
 The `accessControl` field is an array in `infoAssessment.json`:
 
-```json
+```json title="infoAssessment.json"
 {
   "accessControl": [
     {
@@ -444,7 +466,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 
 ### Full JSON skeleton
 
-```json
+```json title="infoAssessment.json"
 {
   "accessControl": [
     {
@@ -580,7 +602,7 @@ There are a few important details:
 
 === "Legacy `allowAccess`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "allowAccess": [
         {
@@ -594,7 +616,7 @@ There are a few important details:
 
 === "Modern `accessControl`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -611,7 +633,7 @@ There are a few important details:
 
 === "Legacy `allowAccess`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "allowAccess": [
         {
@@ -635,7 +657,7 @@ There are a few important details:
 
 === "Modern `accessControl`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -654,7 +676,7 @@ There are a few important details:
 
 === "Legacy `allowAccess`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "allowAccess": [
         {
@@ -669,7 +691,7 @@ There are a few important details:
 
 === "Modern `accessControl`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
@@ -687,7 +709,7 @@ There are a few important details:
 
 === "Legacy `allowAccess`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "allowAccess": [
         {
@@ -702,7 +724,7 @@ There are a few important details:
 
 === "Modern `accessControl`"
 
-    ```json
+    ```json title="infoAssessment.json"
     {
       "accessControl": [
         {
