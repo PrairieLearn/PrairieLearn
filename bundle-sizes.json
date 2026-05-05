@@ -195,9 +195,9 @@
     "brotli": 93
   },
   "stylesheets/instructorAssessmentAccess.css": {
-    "raw": 220,
-    "gzip": 190,
-    "brotli": 154
+    "raw": 477,
+    "gzip": 304,
+    "brotli": 247
   },
   "stylesheets/instructorAssessmentManualGradingAssessmentQuestion.css": {
     "raw": 9962,
@@ -205,9 +205,9 @@
     "brotli": 2157
   },
   "stylesheets/instructorAssessmentQuestions.css": {
-    "raw": 1530,
-    "gzip": 645,
-    "brotli": 518
+    "raw": 1691,
+    "gzip": 717,
+    "brotli": 575
   },
   "stylesheets/instructorIssues.css": {
     "raw": 149,
@@ -340,9 +340,9 @@
     "brotli": 555705
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1436951,
-    "gzip": 426812,
-    "brotli": 351539
+    "raw": 1436936,
+    "gzip": 426799,
+    "brotli": 351509
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 946816,
@@ -410,9 +410,9 @@
     "brotli": 640462
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1254152,
-    "gzip": 377199,
-    "brotli": 327034
+    "raw": 1254586,
+    "gzip": 377291,
+    "brotli": 327127
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
     "raw": 1322944,
