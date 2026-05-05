@@ -1533,19 +1533,19 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, timeLimitMin: 60 },
       },
       {
-        // 30 minutes until deadline, minus 31 seconds = 1769s / 60 = 29.48 → 29
+        // 10 minutes until deadline, minus 31 seconds = 569s / 60 = 9.48 → 9
         name: 'caps time limit by seconds until next deadline',
         rules: [
           makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              due: { date: '2025-03-15T12:30:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
               durationMinutes: 60,
             },
           }),
         ],
-        date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: true, timeLimitMin: 29 },
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, timeLimitMin: 9 },
       },
       {
         name: 'returns null in Exam mode',
@@ -1591,6 +1591,62 @@ describe('resolveAccessControl', () => {
           }),
         ],
         expect: { authorized: true, submittable: true, timeLimitMin: null },
+      },
+      {
+        // Pins current behavior: the time limit caps at the *next* deadline
+        // (the due date), even when a submittable late window follows. A
+        // student starting 10 minutes before the due date has only ~9 minutes
+        // on their 60-minute clock — remaining minutes do not roll into the
+        // late window. This diverges from the design intent that the time
+        // limit should span access windows (100% for 10 min, then 80% for the
+        // rest, up to 60 min total).
+        name: 'caps at next deadline even when a submittable late window follows',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 9 },
+      },
+      {
+        // Once inside the late window, the cap is the late deadline. With 6+
+        // days of headroom, the full 60-minute duration is available at 80%.
+        name: 'late window: full duration available, capped by late deadline',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-16T12:00:00Z'),
+        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 60 },
+      },
+      {
+        // Approaching the final late deadline, the cap shrinks to the time
+        // remaining in the late window (30 min minus 31s legacy buffer = 29).
+        name: 'caps at late deadline as it approaches',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-22T11:30:00Z'),
+        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 29 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
