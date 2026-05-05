@@ -531,7 +531,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | nul
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push((parts.length > 0 ? 's' : 'S') + 'ubmissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
   } else {
     parts.push('Closed');
   }
