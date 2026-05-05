@@ -13,7 +13,7 @@ import { type GroupConfig, GroupConfigSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const GroupUsersRowSchema = z.object({
+const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),

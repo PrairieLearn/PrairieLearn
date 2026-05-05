@@ -1,5 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
@@ -847,16 +848,12 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
             // eslint-disable-next-line @eslint-react/no-array-index-key
             <tr key={index}>
               <td
-                style={{
-                  ...tdStyle,
-                  paddingLeft: '1rem',
-                  borderTop: 0,
-                  borderRight: 0,
-                  borderBottom: 0,
-                  borderLeft: `6px solid ${
-                    row.current ? `var(--bs-${row.currentVariant ?? 'primary'})` : 'transparent'
-                  }`,
-                }}
+                className={clsx(
+                  'border-0 position-relative ps-3',
+                  row.current &&
+                    `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
+                )}
+                style={tdStyle}
               >
                 <div className="text-nowrap">
                   {row.label && (
@@ -1123,6 +1120,7 @@ export function OverrideRuleSummaryCard({
   displayTimezone,
   formErrors,
   dragHandleProps,
+  isActive = false,
 }: {
   rule: OverrideData;
   title: string;
@@ -1131,6 +1129,7 @@ export function OverrideRuleSummaryCard({
   formErrors?: RuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
+  isActive?: boolean;
 }) {
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
@@ -1138,7 +1137,11 @@ export function OverrideRuleSummaryCard({
     rule.appliesTo.targetType === 'student_label' ? rule.appliesTo.studentLabels : [];
 
   return (
-    <Card className="mb-3" data-testid="override-card">
+    <Card
+      className={clsx('mb-3', isActive && 'border-primary border-2')}
+      data-testid="override-card"
+      aria-current={isActive ? 'true' : undefined}
+    >
       <Card.Header className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
         <div className="d-flex align-items-center gap-2 flex-wrap">
           {dragHandleProps && (
