@@ -148,13 +148,24 @@ export interface AccessControlFormData {
 }
 
 /**
- * The default rule has a completion mechanism when date control is enabled
- * or PrairieTest exams are configured. Used to gate after-complete UI and
- * serialization on the default rule, mirroring the server-side check in
- * validateRuleStructuralDependencyIssues (Constraint 5).
+ * The default rule has a completion mechanism when something can actually
+ * close the assessment: a due date, a late deadline, a duration limit, or a
+ * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
+ * with only a release date or password has date control "on" but nothing to
+ * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
+ * in `validation.ts`. Used to gate after-complete UI and serialization on
+ * the default rule.
  */
-function defaultRuleHasCompletionMechanism(rule: DefaultRuleData): boolean {
-  return rule.dateControlEnabled || rule.prairieTestExams.length > 0;
+export function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  >,
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
 }
 
 /**

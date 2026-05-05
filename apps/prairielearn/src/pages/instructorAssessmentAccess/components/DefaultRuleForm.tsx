@@ -6,7 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
 import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
-import type { AccessControlFormData } from './types.js';
+import { type AccessControlFormData, defaultRuleHasCompletionMechanism } from './types.js';
 
 const beforeReleasePopoverConfig = {
   header: 'What does "before release" mean?',
@@ -33,10 +33,23 @@ export function DefaultRuleForm({
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
   });
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({ name: 'defaultRule.due' });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
+  });
   const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
     name: 'defaultRule.prairieTestExams',
   });
-  const hasCompletionMechanism = dateControlEnabled || prairieTestExams.length > 0;
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism({
+    dateControlEnabled,
+    due,
+    lateDeadlines,
+    durationMinutes,
+    prairieTestExams,
+  });
 
   return (
     <div className="d-flex flex-column gap-3">
