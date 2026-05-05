@@ -112,6 +112,9 @@ async function prepareScreenshotDom(page: Page, replacements: ScreenshotTextRepl
       if (divider?.classList.contains('dropdown-divider')) divider.remove();
       adminToggle.remove();
     }
+    // querySelectorAll('main *') matches the save bar plus every ancestor up
+    // to <main> (text content propagates up); sort by height ascending and
+    // remove the smallest to drop just the bar itself.
     Array.from(document.querySelectorAll<HTMLElement>('main *'))
       .filter((element) => {
         const text = element.textContent;
@@ -144,6 +147,10 @@ async function shootMainContent(
 ) {
   await prepareScreenshotDom(page, replacements);
   const filePath = path.join(OUT_DIR, `${name}.png`);
+  // Custom clip rather than fullPage: crops out the side nav (start at
+  // <main>'s left edge) and clamps the bottom to the taller of the summary
+  // column or detail panel, capped at the viewport so the split pane's
+  // internal scroll doesn't stretch the image.
   const clip = await page.evaluate(() => {
     const main = document.querySelector<HTMLElement>('main');
     const leftContent = document.querySelector<HTMLElement>('main .p-3');
@@ -262,6 +269,10 @@ async function seedRealisticOverrides({
     enrollments.slice(7, 10).map((e) => e.id),
   );
 
+  // Sort by UID before zipping with display names so the override card lists
+  // the same names in the same order as the UI, which renders enrollment
+  // overrides sorted by UID. The Section A slice is matched in enrollment
+  // order because that group appears as a label, not individual rows.
   const screenshotStudentEntries: [string, ScreenshotStudent][] = [
     ...users
       .slice(0, 4)
