@@ -489,6 +489,32 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'contiguous review window without intermediate hidden window is supported',
+      rules: [
+        {
+          startDate: '2023-02-07T13:00:00',
+          endDate: '2023-02-27T23:59:00',
+          credit: 100,
+        },
+        {
+          startDate: '2023-02-28T00:00:00',
+          endDate: '2023-05-15T23:59:00',
+          active: false,
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2023-02-07T13:00:00' },
+            due: { date: '2023-02-27T23:59:00' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'late deadline preserved when open-ended credit is lower than due-date credit',
       rules: [
         { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },

@@ -300,6 +300,9 @@ function hasDelayedReviewWithoutHiddenWindow(rules: AssessmentAccessRuleJson[]):
   const firstQuestionRevealDate = questionRevealDates[0];
   if (!firstQuestionRevealDate) return false;
 
+  const gapMs = new Date(firstQuestionRevealDate).getTime() - new Date(lastCreditEndDate).getTime();
+  if (gapMs <= MAX_CONTIGUOUS_GAP_MS) return false;
+
   return !rules.some(
     (r) =>
       r.showClosedAssessment === false && (!r.startDate || r.startDate < firstQuestionRevealDate),
