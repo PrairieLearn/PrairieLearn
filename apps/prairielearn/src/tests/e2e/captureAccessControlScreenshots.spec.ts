@@ -301,8 +301,8 @@ async function seedRealisticOverrides({
     const screenshotStudent = screenshotStudentsByUid.get(user.uid);
     if (!screenshotStudent) throw new Error(`Could not find screenshot student for ${user.uid}`);
     return [
-      { from: user.name ?? user.uid, to: screenshotStudent.name },
       { from: user.uid, to: screenshotStudent.uid },
+      ...(user.name ? [{ from: user.name, to: screenshotStudent.name }] : []),
       ...(user.email ? [{ from: user.email, to: screenshotStudent.uid }] : []),
     ];
   });
