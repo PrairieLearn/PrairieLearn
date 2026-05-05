@@ -282,7 +282,11 @@ export function TreeQuestionRow({
                 {renderedTitle}
               </a>
               {!hasTitle && (
-                <CopyButton text={question.id} ariaLabel="Copy QID" className="hover-show ms-1" />
+                <CopyButton
+                  text={question.id}
+                  ariaLabel="Copy QID"
+                  className="btn-xs btn-ghost hover-show ms-1"
+                />
               )}
             </>
           ) : (
@@ -317,7 +321,11 @@ export function TreeQuestionRow({
             style={{ fontSize: '0.75rem' }}
           >
             <span className="text-truncate">{question.id}</span>
-            <CopyButton text={question.id} ariaLabel="Copy QID" className="hover-show ms-1" />
+            <CopyButton
+              text={question.id}
+              ariaLabel="Copy QID"
+              className="btn-xs btn-ghost hover-show ms-1"
+            />
           </div>
         )}
         {viewType === 'detailed' && questionData && (

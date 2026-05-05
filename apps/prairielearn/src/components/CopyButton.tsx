@@ -38,7 +38,7 @@ export function CopyButton({
     >
       <button
         type="button"
-        className={clsx('btn btn-xs btn-ghost', className)}
+        className={clsx('btn', className)}
         aria-label={ariaLabel}
         onClick={(e) => {
           e.stopPropagation();

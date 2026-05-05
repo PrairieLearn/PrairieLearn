@@ -334,7 +334,11 @@ export function QuestionDetailPanel({
                       titleContent
                     )}
                     {!hasTitle && (
-                      <CopyButton text={question.id} ariaLabel="Copy QID" className="ms-1" />
+                      <CopyButton
+                        text={question.id}
+                        ariaLabel="Copy QID"
+                        className="btn-xs btn-ghost ms-1"
+                      />
                     )}
                   </>
                 );
@@ -349,7 +353,11 @@ export function QuestionDetailPanel({
                 style={{ fontSize: '0.75rem' }}
               >
                 {question.id}
-                <CopyButton text={question.id} ariaLabel="Copy QID" className="ms-1" />
+                <CopyButton
+                  text={question.id}
+                  ariaLabel="Copy QID"
+                  className="btn-xs btn-ghost ms-1"
+                />
               </span>
             )}
             <div>
