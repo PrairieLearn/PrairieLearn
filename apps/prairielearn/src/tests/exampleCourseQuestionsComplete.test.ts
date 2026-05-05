@@ -17,6 +17,7 @@ import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -291,7 +292,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
   beforeAll(async function () {
     config.features['process-questions-in-server'] = false;
-    await helperServer.before()();
+    await withConfig({ workersCount: 8 }, async () => {
+      await helperServer.before()();
+    });
   });
 
   afterAll(async function () {
