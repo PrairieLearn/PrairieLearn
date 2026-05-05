@@ -26,7 +26,10 @@ import {
   VariantSchema,
   ZoneSchema,
 } from '../../../../lib/db-types.js';
-import { AssessmentInstanceDataSchema } from '../courseInstanceAssessments/index.js';
+import {
+  AssessmentInstanceDataSchema,
+  formatAssessmentInstanceDataForResponse,
+} from '../courseInstanceAssessments/index.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
@@ -132,7 +135,7 @@ router.get(
     if (data == null) {
       res.status(404).send({ message: 'Not Found' });
     } else {
-      res.status(200).send(data);
+      res.status(200).send(formatAssessmentInstanceDataForResponse(data, res.locals));
     }
   }),
 );

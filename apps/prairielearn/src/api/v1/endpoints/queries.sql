@@ -49,23 +49,13 @@ SELECT
   ai.score_perc,
   ai.number AS assessment_instance_number,
   ai.open,
-  format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
+  ai.modified_at,
   gi.id AS group_id,
   gi.name AS group_name,
   gi.uid_list AS group_uids,
-  CASE
-    WHEN ai.open
-    AND ai.date_limit IS NOT NULL THEN greatest(
-      0,
-      floor(
-        DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
-      )
-    )::text || ' min'
-    WHEN ai.open THEN 'Open'
-    ELSE 'Closed'
-  END AS time_remaining,
-  format_date_iso8601 (ai.date, ci.display_timezone) AS start_date,
-  DATE_PART('epoch', ai.duration) AS duration_seconds,
+  ai.date_limit,
+  ai.date,
+  ai.duration,
   (
     row_number() OVER (
       PARTITION BY

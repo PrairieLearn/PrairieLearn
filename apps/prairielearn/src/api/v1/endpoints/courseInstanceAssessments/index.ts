@@ -4,6 +4,11 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
+import {
+  MINUTE_IN_MILLISECONDS,
+  SECOND_IN_MILLISECONDS,
+  formatDateISO,
+} from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -75,15 +80,33 @@ export const AssessmentInstanceDataSchema = z.object({
   score_perc: AssessmentInstanceSchema.shape.score_perc,
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   open: AssessmentInstanceSchema.shape.open,
-  modified_at: z.string(),
+  modified_at: AssessmentInstanceSchema.shape.modified_at,
   group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
   group_name: SprocTeamInfoSchema.shape.name.nullable(),
   group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
-  time_remaining: z.string(),
-  start_date: z.string().nullable(),
-  duration_seconds: z.number(),
+  date_limit: AssessmentInstanceSchema.shape.date_limit,
+  date: AssessmentInstanceSchema.shape.date,
+  duration: AssessmentInstanceSchema.shape.duration,
   highest_score: z.boolean(),
 });
+
+export function formatAssessmentInstanceDataForResponse(
+  data: z.infer<typeof AssessmentInstanceDataSchema>,
+  resLocals: Record<string, any>,
+) {
+  const { date_limit, date, duration, modified_at, ...instance } = data;
+  return {
+    ...instance,
+    modified_at: formatDateISO(modified_at, resLocals.course_instance.display_timezone),
+    time_remaining: instance.open
+      ? date_limit
+        ? Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS) + ' min'
+        : 'Open'
+      : 'Closed',
+    start_date: formatDateISO(date!, resLocals.course_instance.display_timezone),
+    duration_seconds: duration ? duration / SECOND_IN_MILLISECONDS : null,
+  };
+}
 
 router.get(
   '/',
@@ -131,7 +154,9 @@ router.get(
       },
       AssessmentInstanceDataSchema,
     );
-    res.status(200).send(data);
+    res
+      .status(200)
+      .send(data.map((row) => formatAssessmentInstanceDataForResponse(row, res.locals)));
   }),
 );
 
