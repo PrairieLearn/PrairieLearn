@@ -1644,9 +1644,10 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 29 },
       },
       {
-        // afterLastDeadline allowing submissions has no end, so submissions
-        // remain open indefinitely — the duration cap doesn't shrink.
-        name: 'no cap when afterLastDeadline allows submissions',
+        // afterLastDeadline allowing submissions has no end, so the duration
+        // runs uncapped against the configured 60 min: 10 min at 100% credit
+        // before the due date, then 50 min at 25% credit afterwards.
+        name: 'spans through afterLastDeadline when submissions are allowed',
         rules: [
           makeDefaultRule({
             dateControl: {
