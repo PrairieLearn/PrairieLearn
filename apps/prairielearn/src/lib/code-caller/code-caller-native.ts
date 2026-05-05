@@ -290,7 +290,10 @@ export class CodeCallerNative implements CodeCaller {
             resolve(true);
           }
         };
-        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 1000);
+        // The fast path returns immediately when the confirmation arrives;
+        // this is just a defensive ceiling, raised slightly to absorb
+        // event-loop stalls under heavy concurrent test load.
+        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 2000);
 
         // Before reporting the restart as successful, we need to wait
         // for a confirmation message to ensure that control has actually
