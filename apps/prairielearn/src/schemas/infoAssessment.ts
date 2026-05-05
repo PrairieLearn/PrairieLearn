@@ -490,6 +490,10 @@ export const AssessmentJsonSchema = z
         'Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.',
       )
       .optional(),
+    showQuestionTitles: z
+      .boolean()
+      .describe('Whether to show question titles in the student view.')
+      .optional(),
     groupWork: z
       .boolean()
       .describe(

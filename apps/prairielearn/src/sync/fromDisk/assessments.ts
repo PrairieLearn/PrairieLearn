@@ -446,6 +446,7 @@ function getParamsForAssessment(
     // Needed when deleting unused alternative pools
     lastAlternativePoolNumber: alternativePoolNumber,
     share_source_publicly: assessment.shareSourcePublicly,
+    show_question_titles: assessment.showQuestionTitles ?? assessment.type === 'Homework',
   };
 }
 
