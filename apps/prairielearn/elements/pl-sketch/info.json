@@ -1,0 +1,9 @@
+{
+  "controller": "pl-sketch.py",
+  "dependencies": {
+    "nodeModulesScripts": ["@prairielearn/sketchresponse/dist/sketchresponse.min.js"],
+    "nodeModulesStyles": ["@prairielearn/sketchresponse/dist/sketchresponse.min.css"],
+    "elementScripts": ["pl-sketch.js"],
+    "elementStyles": ["pl-sketch.css"]
+  }
+}

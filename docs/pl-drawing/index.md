@@ -1,5 +1,9 @@
 # Elements for drawing
 
+A canvas for auto-gradeable drawings.
+
+Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
+
 ## Elements to create drawing canvas
 
 ### `pl-drawing` element

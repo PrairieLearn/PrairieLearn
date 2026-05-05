@@ -18,6 +18,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
@@ -25,8 +26,8 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -101,6 +102,11 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const enhancedAccessControlEnabled = await features.enabledFromLocals(
+      'enhanced-access-control',
+      res.locals,
+    );
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getCourseInstanceTrpcUrl(courseInstance.id),
@@ -140,6 +146,7 @@ router.get(
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                enhancedAccessControlEnabled={enhancedAccessControlEnabled}
               />
             </Hydrate>
             <Hydrate>
@@ -266,6 +273,11 @@ router.post(
             }
           : undefined;
 
+      const enhancedAccessControlEnabled = await features.enabledFromLocals(
+        'enhanced-access-control',
+        res.locals,
+      );
+
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
@@ -278,7 +290,7 @@ router.post(
           selfEnrollment: resolvedSelfEnrollment,
         },
         accessControlMigration: {
-          strategy: access_control_strategy,
+          strategy: enhancedAccessControlEnabled ? access_control_strategy : 'keep',
           clearIncompatible: clear_incompatible,
         },
       });

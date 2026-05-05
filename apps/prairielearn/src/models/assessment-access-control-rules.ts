@@ -37,8 +37,9 @@ export interface EnrollmentAccessControlRuleData {
   id?: string;
   beforeReleaseListed: boolean | null;
   releaseDate: string | null;
-  dueDateOverridden: boolean;
+  dueOverridden: boolean;
   dueDate: string | null;
+  dueCredit: number | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
@@ -83,7 +84,14 @@ const RuleRowSchema = z.object({
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
-    .array(AssessmentAccessControlPrairietestExamSchema.pick({ uuid: true, read_only: true }))
+    .array(
+      AssessmentAccessControlPrairietestExamSchema.pick({
+        uuid: true,
+        read_only: true,
+        after_complete_questions_hidden: true,
+        after_complete_score_hidden: true,
+      }),
+    )
     .nullable(),
 });
 
@@ -97,10 +105,13 @@ function dbBaseRowToAccessControlJson(
   const dateControl: AccessControlJson['dateControl'] = {};
 
   if (rule.date_control_release_date) {
-    dateControl.releaseDate = rule.date_control_release_date.toISOString();
+    dateControl.release = { date: rule.date_control_release_date.toISOString() };
   }
-  if (rule.date_control_due_date_overridden) {
-    dateControl.dueDate = rule.date_control_due_date?.toISOString() ?? null;
+  if (rule.date_control_due_overridden) {
+    dateControl.due = {
+      date: rule.date_control_due_date?.toISOString() ?? null,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
+    };
   }
   if (rule.date_control_early_deadlines_overridden) {
     dateControl.earlyDeadlines = row.early_deadlines ?? [];
@@ -168,8 +179,8 @@ function dbBaseRowToAccessControlJson(
     afterComplete.score = score;
   }
 
-  const isMainRule = rule.number === 0 && rule.target_type === 'none';
-  const beforeReleaseListed = isMainRule
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
+  const beforeReleaseListed = isDefaultRule
     ? (rule.before_release_listed ?? false)
     : rule.before_release_listed;
 
@@ -203,10 +214,20 @@ export function dbRowToAccessControlJson(
   const integrations: AccessControlJson['integrations'] = {};
   if (row.prairietest_exams && row.prairietest_exams.length > 0) {
     integrations.prairieTest = {
-      exams: row.prairietest_exams.map((e) => ({
-        examUuid: e.uuid,
-        readOnly: e.read_only,
-      })),
+      exams: row.prairietest_exams.map((e) => {
+        const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+        if (e.after_complete_questions_hidden) {
+          afterComplete.questions = { hidden: true };
+        }
+        if (e.after_complete_score_hidden) {
+          afterComplete.score = { hidden: true };
+        }
+        return {
+          examUuid: e.uuid,
+          readOnly: e.read_only,
+          ...(Object.keys(afterComplete).length > 0 ? { afterComplete } : {}),
+        };
+      }),
     };
   }
 
@@ -230,6 +251,26 @@ export async function selectAccessControlRules(
   return rows.map(dbRowToAccessControlJson);
 }
 
+const PrairieTestExamMetadataSchema = z.object({
+  uuid: z.string(),
+  pt_exam_id: z.string().nullable(),
+  pt_exam_name: z.string().nullable(),
+  pt_course_id: z.string().nullable(),
+  pt_course_name: z.string().nullable(),
+});
+export type PrairieTestExamMetadata = z.infer<typeof PrairieTestExamMetadataSchema>;
+
+export async function selectPrairieTestExamMetadataByUuids(
+  examUuids: string[],
+): Promise<PrairieTestExamMetadata[]> {
+  if (examUuids.length === 0) return [];
+  return await queryRows(
+    sql.select_prairietest_exam_metadata_by_uuids,
+    { exam_uuids: examUuids },
+    PrairieTestExamMetadataSchema,
+  );
+}
+
 /**
  * Creates or updates an enrollment-based access control rule (targeting individual students).
  * These rules are stored in the database with target_type = 'enrollment'.
@@ -243,8 +284,9 @@ export async function syncEnrollmentAccessControl(
     id: ruleData.id ?? null,
     before_release_listed: ruleData.beforeReleaseListed,
     date_control_release_date: ruleData.releaseDate,
-    date_control_due_date_overridden: ruleData.dueDateOverridden,
+    date_control_due_overridden: ruleData.dueOverridden,
     date_control_due_date: ruleData.dueDate,
+    date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
     date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,

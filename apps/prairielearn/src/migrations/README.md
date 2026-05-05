@@ -53,20 +53,26 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 **General note:** When validating constraints on multiple tables/columns, always use a **separate migration for each validation**. `VALIDATE CONSTRAINT` and `ALTER COLUMN ... SET NOT NULL` take `ACCESS EXCLUSIVE` locks, so batching them into a single transaction will hold locks on all tables simultaneously and block reads/writes for the duration.
 
+**General note on backfills:** Before enqueueing a batched migration to backfill a column, all running application code must already be writing correct values to that column. Otherwise, during a rolling deploy, an un-deployed server can insert a new row with the column's default (incorrect) value _after_ the backfill has already processed that range, leaving a permanently-wrong row that the backfill will never revisit. This means the PR that adds the column and updates write paths must be **fully deployed** before the PR that enqueues the backfill is merged.
+
 ### Add column with default value
 
 - Use a **single migration**
 
 ### Add column with backfill and no constraints
 
-- First PR: add the new column
-- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- First PR: add the column and update writes
+  - Add the new column with a default value
+  - Update all write paths (sync code, inserts, etc.) to compute and write the correct value for new rows
+- Second PR: enqueue a batched migration to backfill the column with appropriate values for existing rows
 - Third PR: finalize the batched migration
 
 ### Add column with backfill and constraints
 
-- First PR: add the column without the constraints
-- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- First PR: add the column and update writes
+  - Add the column without the constraints, with a default value
+  - Update all write paths to compute and write the correct value for new rows
+- Second PR: enqueue a batched migration to backfill the column with appropriate values for existing rows
 - Third PR: finalize and add constraints
   - Finalize the batched migration
   - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)

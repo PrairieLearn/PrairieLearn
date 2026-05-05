@@ -194,7 +194,7 @@ def log(logfile: typing.TextIO, message: str):
 
 
 def local_iso_time():
-    utc_dt = datetime.datetime.now(datetime.timezone.utc)
+    utc_dt = datetime.datetime.now(datetime.UTC)
     dt = utc_dt.astimezone()
     return dt.isoformat()
 
