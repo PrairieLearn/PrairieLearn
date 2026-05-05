@@ -41,6 +41,7 @@
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@reteps/tree-sitter-htmlmustache": "^0.9.3",
+    "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",
     "dependency-cruiser": "^17.4.0",
     "eslint": "^10.3.0",

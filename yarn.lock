@@ -17517,6 +17517,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"
     async: "npm:^3.2.6"
     dependency-cruiser: "npm:^17.4.0"

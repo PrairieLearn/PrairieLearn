@@ -89,6 +89,7 @@ const CLI_ONLY_DEPS = [
   's3rver',
   '@postgres-language-server/cli',
   '@reteps/tree-sitter-htmlmustache',
+  '@typescript/native-preview',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
