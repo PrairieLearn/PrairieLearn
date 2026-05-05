@@ -1209,12 +1209,12 @@ function InstructorAssessmentSettingsInner({
           <StickySaveBar
             visible={isDirty}
             isSaving={isSubmitting || saveMutation.isPending}
+            alert={saveAlert}
             onCancel={() => {
               reset();
               setUseCustomMaxPoints(getValues('max_points') !== '');
               saveMutation.reset();
             }}
-            alert={saveAlert}
           />
         )}
       </form>

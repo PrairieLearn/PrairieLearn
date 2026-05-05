@@ -336,8 +336,8 @@ export function AccessControlForm({
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
-                  onCancel={() => reset()}
                   alert={alert}
+                  onCancel={() => reset()}
                 />
               </>
             ),
