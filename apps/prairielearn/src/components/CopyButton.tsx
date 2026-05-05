@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -16,7 +16,7 @@ export function CopyButton({
 }) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [tooltipId] = useState(() => `copy-button-tooltip-${crypto.randomUUID()}`);
+  const tooltipId = useId();
 
   useEffect(() => {
     return () => {
