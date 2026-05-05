@@ -278,7 +278,7 @@ function pickEffectiveRule(
   );
 }
 
-export interface Visibility {
+interface Visibility {
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
 }

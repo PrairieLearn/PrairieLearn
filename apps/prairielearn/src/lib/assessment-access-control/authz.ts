@@ -37,7 +37,7 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
-export function resolverResultToAuthzAssessment(
+function resolverResultToAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode,
   displayTimezone: string,
@@ -215,27 +215,6 @@ interface ModernAssessmentAccessBatchInput {
   userId: string;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
-}
-
-export async function resolveModernAssessmentAccessBatch({
-  courseInstance,
-  userId,
-  authzData,
-  reqDate,
-}: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
-  const results = await resolveModernAssessmentAccessResultBatch({
-    courseInstance,
-    userId,
-    authzData,
-    reqDate,
-  });
-
-  return new Map(
-    [...results].map(([assessmentId, result]) => [
-      assessmentId,
-      resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
-    ]),
-  );
 }
 
 export async function resolveModernAssessmentAccessResultBatch({
