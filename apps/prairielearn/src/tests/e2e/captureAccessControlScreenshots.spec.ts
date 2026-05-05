@@ -104,7 +104,12 @@ async function writeScreenshotAssessmentConfig({
 }
 
 async function prepareScreenshotDom(page: Page, replacements: ScreenshotTextReplacement[]) {
+  await page.mouse.move(0, 0);
   await page.evaluate((replacements) => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     document.querySelector('#navbar-load-from-disk')?.remove();
     const adminToggle = document.querySelector('#navbar-administrator-toggle');
     if (adminToggle) {
@@ -149,18 +154,27 @@ async function shootMainContent(
   const filePath = path.join(OUT_DIR, `${name}.png`);
   // Custom clip rather than fullPage: crops out the side nav (start at
   // <main>'s left edge) and clamps the bottom to the taller of the summary
-  // column or detail panel, capped at the viewport so the split pane's
+  // column or detail panel content, capped at the viewport so the split pane's
   // internal scroll doesn't stretch the image.
   const clip = await page.evaluate(() => {
     const main = document.querySelector<HTMLElement>('main');
     const leftContent = document.querySelector<HTMLElement>('main .p-3');
     const detailPanel = document.querySelector<HTMLElement>('#pl-ui-split-pane-detail');
+    const detailContent = document.querySelector<HTMLElement>(
+      '.pl-ui-split-pane__right-body > :first-child',
+    );
     if (!main || !leftContent) throw new Error('Could not find main content region');
 
     const mainRect = main.getBoundingClientRect();
     const leftRect = leftContent.getBoundingClientRect();
-    const detailRect = detailPanel?.getBoundingClientRect();
-    const bottom = Math.max(leftRect.bottom, detailRect?.bottom ?? 0);
+    const detailBottom =
+      detailPanel && detailContent
+        ? Math.min(
+            detailPanel.getBoundingClientRect().bottom,
+            detailContent.getBoundingClientRect().bottom,
+          )
+        : 0;
+    const bottom = Math.max(leftRect.bottom, detailBottom);
 
     return {
       x: mainRect.left,
