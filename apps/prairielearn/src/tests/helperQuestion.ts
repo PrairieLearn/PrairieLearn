@@ -675,10 +675,6 @@ export async function autoTestQuestion({
   const csrfToken = csrfElems[0].attribs.value;
   assert.isString(csrfToken);
 
-  // Manually graded questions don't support test_once because their elements
-  // typically don't implement test().
-  if (question.grading_method === 'Manual') return;
-
   const testUrl = questionBaseUrl + '/' + question.id + '/settings/test';
   const testResponse = await fetch(testUrl, {
     method: 'POST',
