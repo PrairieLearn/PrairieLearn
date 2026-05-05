@@ -211,6 +211,14 @@ const validateHtml = async (html: string) => {
   }
 };
 
+// axe-core relies on module-level globals (`window`, `document`, `axe._running`)
+let axeQueue: Promise<unknown> = Promise.resolve();
+const runAxeSerially = <T>(fn: () => Promise<T>): Promise<T> => {
+  const next = axeQueue.then(fn, fn);
+  axeQueue = next.catch(() => {});
+  return next;
+};
+
 const validateAxe = async (html: string) => {
   const virtualConsole = new VirtualConsole();
   const jsdom = new JSDOM(html, {
@@ -218,19 +226,21 @@ const validateAxe = async (html: string) => {
   });
 
   const messages: string[] = [];
-  const axeResults = await axe.run(jsdom.window.document.documentElement, {
-    rules: {
-      // document-level rules that don't apply
-      'document-title': { enabled: false },
-      'html-has-lang': { enabled: false },
-      region: { enabled: false },
-      // pl-dataframe emits empty headers
-      'empty-table-header': { enabled: false },
-      // TODO: see h37 above
-      'role-img-alt': { enabled: false },
-      'image-alt': { enabled: false },
-    },
-  });
+  const axeResults = await runAxeSerially(() =>
+    axe.run(jsdom.window.document.documentElement, {
+      rules: {
+        // document-level rules that don't apply
+        'document-title': { enabled: false },
+        'html-has-lang': { enabled: false },
+        region: { enabled: false },
+        // pl-dataframe emits empty headers
+        'empty-table-header': { enabled: false },
+        // TODO: see h37 above
+        'role-img-alt': { enabled: false },
+        'image-alt': { enabled: false },
+      },
+    }),
+  );
   if (axeResults.violations.length > 0) {
     const err = new A11yError(
       axeResults.violations,
@@ -290,7 +300,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
-    it(`should succeed for ${relativePath}`, async () => {
+    it.concurrent(`should succeed for ${relativePath}`, async () => {
       const question = {
         options: info.options ?? {},
         preferences_schema: info.preferences ?? null,
@@ -345,10 +355,12 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
       // Validate HTML
-      await validateHtml(questionHtml);
+      if (!process.env.SKIP_HTML_VALIDATE) {
+        await validateHtml(questionHtml);
+      }
 
       // Validate accessibility
-      if (!accessibilitySkip.has(relativePath)) {
+      if (!process.env.SKIP_AXE && !accessibilitySkip.has(relativePath)) {
         await validateAxe(questionHtml);
       }
 
