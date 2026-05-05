@@ -7,7 +7,7 @@ import noUnusedSqlBlocks from './rules/no-unused-sql-blocks.js';
 import requireTrpcPermissionMiddleware from './rules/require-trpc-permission-middleware.js';
 import safeDbTypes from './rules/safe-db-types.js';
 
-export const rules = {
+const rules = {
   'aws-client-mandatory-config': awsClientMandatoryConfig,
   'aws-client-shared-config': awsClientSharedConfig,
   'jsx-no-dollar-interpolation': jsxNoDollarInterpolation,
@@ -17,3 +17,5 @@ export const rules = {
   'require-trpc-permission-middleware': requireTrpcPermissionMiddleware,
   'safe-db-types': safeDbTypes,
 };
+
+export default { rules };
