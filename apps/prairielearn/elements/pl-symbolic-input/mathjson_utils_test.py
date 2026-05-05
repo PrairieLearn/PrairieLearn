@@ -298,7 +298,7 @@ def test_rejects_mathjson_parse_errors() -> None:
         ["Error"],
     ],
 )
-def test_validate_rejects_invalid_mathjson_shapes_before_conversion(
+def test_runtime_checks_reject_invalid_mathjson_shapes_before_conversion(
     mathjson: object,
 ) -> None:
     with pytest.raises((TypeError, ValueError)):

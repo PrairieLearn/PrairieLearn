@@ -8,20 +8,12 @@ from typing import cast
 
 import sympy
 import sympy.logic.boolalg
-from mathjson import (
-    MathJsonBinaryFunctionSymbol,
-    MathJsonExpression,
-    MathJsonFunctionExpression,
-    MathJsonRelationsFunctionSymbol,
-    MathJsonUnaryFunctionSymbol,
-    MathJsonVariadicFunctionSymbol,
-)
+from mathjson import MathJsonExpression
 from sympy.core.symbol import Str
-from validate import validate
 
 
 class MathJsonParseError(ValueError):
-    """Raised when a validated MathJSON expression contains parser errors."""
+    """Raised when a MathJSON expression contains parser errors."""
 
 
 _CONSTANTS: dict[str, sympy.Basic] = {
@@ -46,7 +38,7 @@ _CONSTANTS: dict[str, sympy.Basic] = {
 # PEP0764 PLEASE
 # Pylance follows SymPy's dynamic Function.__new__ annotations too literally
 # for these function classes, so narrow their results after invocation.
-_UNARY_FUNCTIONS: dict[MathJsonUnaryFunctionSymbol, Callable[[sympy.Expr], object]] = {
+_UNARY_FUNCTIONS: dict[str, Callable[[sympy.Expr], object]] = {
     "Abs": sympy.Abs,
     "AiryAi": sympy.airyai,
     "AiryBi": sympy.airybi,
@@ -109,9 +101,7 @@ _UNARY_FUNCTIONS: dict[MathJsonUnaryFunctionSymbol, Callable[[sympy.Expr], objec
     "Zeta": sympy.zeta,
 }
 
-_BINARY_FUNCTIONS: dict[
-    MathJsonBinaryFunctionSymbol, Callable[[sympy.Expr, sympy.Expr], object]
-] = {
+_BINARY_FUNCTIONS: dict[str, Callable[[sympy.Expr, sympy.Expr], object]] = {
     "BesselI": sympy.besseli,
     "BesselJ": sympy.besselj,
     "BesselK": sympy.besselk,
@@ -122,9 +112,7 @@ _BINARY_FUNCTIONS: dict[
     "PolyGamma": sympy.polygamma,
 }
 
-_VARIADIC_FUNCTIONS: dict[
-    MathJsonVariadicFunctionSymbol, Callable[..., sympy.Basic]
-] = {
+_VARIADIC_FUNCTIONS: dict[str, Callable[..., sympy.Basic]] = {
     "And": sympy.And,
     "GCD": sympy.gcd,
     "LCM": sympy.lcm,
@@ -134,9 +122,7 @@ _VARIADIC_FUNCTIONS: dict[
     "Xor": sympy.Xor,
 }
 
-_RELATIONS: dict[
-    MathJsonRelationsFunctionSymbol, Callable[[sympy.Expr, sympy.Expr], sympy.Basic]
-] = {
+_RELATIONS: dict[str, Callable[[sympy.Expr, sympy.Expr], sympy.Basic]] = {
     "Equal": sympy.Eq,
     "Greater": sympy.StrictGreaterThan,
     "GreaterEqual": sympy.GreaterThan,
@@ -234,7 +220,7 @@ def sympy_expr_to_raw_mathjson(expr: sympy.Basic) -> str:
 
 
 def mathjson_to_sympy_expr(expr: object) -> sympy.Basic:
-    """Validate a deserialized MathJSON value and convert it to a SymPy object.
+    """Check a deserialized MathJSON value and convert it to a SymPy object.
 
     Examples:
         ``["Add", "x", 1]`` becomes ``x + 1``.
@@ -246,9 +232,8 @@ def mathjson_to_sympy_expr(expr: object) -> sympy.Basic:
     Returns:
         The converted SymPy object.
     """
-    validated: MathJsonExpression = validate(expr, MathJsonExpression)
-    _raise_mathjson_errors(validated)
-    return _mathjson_to_sympy_expr(validated)
+    _raise_mathjson_errors(expr)
+    return _mathjson_to_sympy_expr(expr)
 
 
 def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
@@ -329,7 +314,7 @@ def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
     raise TypeError(f"unsupported SymPy object: {expr}")
 
 
-def _mathjson_to_sympy_expr(expr: MathJsonExpression) -> sympy.Basic:
+def _mathjson_to_sympy_expr(expr: object) -> sympy.Basic:
     if expr is True:
         return sympy.S.true
     if expr is False:
@@ -342,19 +327,35 @@ def _mathjson_to_sympy_expr(expr: MathJsonExpression) -> sympy.Basic:
         return _string_number_or_symbol(expr)
 
     if isinstance(expr, dict):
-        if "num" in expr:
-            return _number(expr["num"])
-        if "sym" in expr:
-            return _symbol(expr["sym"])
-        if "fn" in expr:
-            return _function(expr["fn"])
-        if "str" in expr:
-            return _string(expr["str"])
-        if "dict" in expr:
-            raise TypeError("MathJSON dictionary objects cannot be converted to SymPy")
-        raise AssertionError("validated MathJSON object has no conversion branch")
+        return _mathjson_object_to_sympy_expr(expr)
 
-    return _function(expr)
+    if isinstance(expr, list | tuple):
+        return _function(expr)
+
+    raise TypeError(f"invalid MathJSON expression: {expr!r}")
+
+
+def _mathjson_object_to_sympy_expr(expr: dict[object, object]) -> sympy.Basic:
+    if "num" in expr:
+        num = expr["num"]
+        if not isinstance(num, str):
+            raise TypeError("MathJSON number object expects a string value")
+        return _number(num)
+    if "sym" in expr:
+        sym = expr["sym"]
+        if not isinstance(sym, str):
+            raise TypeError("MathJSON symbol object expects a string value")
+        return _symbol(sym)
+    if "fn" in expr:
+        return _function(expr["fn"])
+    if "str" in expr:
+        string = expr["str"]
+        if not isinstance(string, str):
+            raise TypeError("MathJSON string object expects a string value")
+        return _string(string)
+    if "dict" in expr:
+        raise TypeError("MathJSON dictionary objects cannot be converted to SymPy")
+    raise TypeError("unsupported MathJSON object")
 
 
 def _number(value: str) -> sympy.Basic:
@@ -415,79 +416,109 @@ def _string_number_or_symbol(value: str) -> sympy.Basic:
     return _symbol(_symbol_shorthand_value(value))
 
 
-def _function(expr: MathJsonFunctionExpression) -> sympy.Basic:
-    head = expr[0]
+def _function(expr: object) -> sympy.Basic:
+    if not isinstance(expr, list | tuple):
+        raise TypeError("expected MathJSON function expression")
+    if len(expr) == 0:
+        raise ValueError("MathJSON function expression cannot be empty")
 
-    match expr:
-        case ("Error", *_):
+    head = expr[0]
+    if not isinstance(head, str):
+        raise TypeError("MathJSON function head must be a string")
+
+    raw_args = tuple(expr[1:])
+
+    match head:
+        case "Error":
+            _require_arity(head, raw_args, 1, 2)
             raise MathJsonParseError(f"MathJSON parse error: {_format_error(expr)}")
-        case ("Symbol", symbol_expr):
-            symbol_name = _symbol_name(symbol_expr)
+        case "Symbol":
+            if len(raw_args) != 1:
+                raise TypeError("Symbol expects a single symbol argument")
+            symbol_name = _symbol_name(raw_args[0])
             return sympy.Symbol(symbol_name)
-        case ("Symbol", *_):
-            raise TypeError("Symbol expects a single symbol argument")
-        case ("String", *_):
+        case "String":
             raise TypeError("MathJSON string expressions cannot be converted to SymPy")
-        case ("Apply", symbol_expr, *apply_args):
+        case "Apply":
+            _require_arity(head, raw_args, 1, None)
+            symbol_expr, *apply_args = raw_args
             return _undefined_function(_symbol_name(symbol_expr))(
                 *_as_exprs(tuple(_mathjson_to_sympy_expr(arg) for arg in apply_args))
             )
         case _:
             pass
 
-    args = tuple(_mathjson_to_sympy_expr(arg) for arg in expr[1:])
+    args = tuple(_mathjson_to_sympy_expr(arg) for arg in raw_args)
 
     match head:
         case "Add":
+            _require_arity(head, args, 1, None)
             return sympy.Add(*_as_exprs(args))
         case "Subtract":
+            _require_arity(head, args, 1, None)
             if len(args) == 1:
                 return sympy.Mul(-1, _as_expr(args[0]))
             left, *rest = args
             return sympy.Add(_as_expr(left), *(-_as_expr(arg) for arg in rest))
         case "Multiply":
+            _require_arity(head, args, 1, None)
             return sympy.Mul(*_as_exprs(args))
         case "Divide":
+            _require_arity(head, args, 2, None)
             return functools.reduce(_divide, args)
         case "Power":
+            _require_arity(head, args, 2)
             return sympy.Pow(_as_expr(args[0]), _as_expr(args[1]))
         case "Root":
+            _require_arity(head, args, 2)
             return sympy.root(_as_expr(args[0]), _as_expr(args[1]))
         case "Rational":
+            _require_arity(head, args, 1, 2)
             if len(args) == 1:
                 return sympy.Rational(_as_expr(args[0]))
             return sympy.Rational(_as_expr(args[0]), _as_expr(args[1]))
         case "Arctan2":
+            _require_arity(head, args, 2)
             return _as_sympy_basic(sympy.atan2(_as_expr(args[0]), _as_expr(args[1])))
         case "Log" | "Ln":
+            _require_arity(head, args, 1, 2)
             if len(args) == 1:
                 return _as_sympy_basic(sympy.log(_as_expr(args[0])))
             return _as_sympy_basic(sympy.log(_as_expr(args[0]), _as_expr(args[1])))
         case "Not":
+            _require_arity(head, args, 1)
             return sympy.Not(_as_boolean(args[0]))
         case "List" | "Tuple":
             return sympy.Tuple(*args)
         case "Single":
+            _require_arity(head, args, 1)
             return sympy.Tuple(args[0])
         case "Pair":
+            _require_arity(head, args, 2)
             return sympy.Tuple(args[0], args[1])
         case "Triple":
+            _require_arity(head, args, 3)
             return sympy.Tuple(args[0], args[1], args[2])
         case "Set":
             return sympy.FiniteSet(*args)
         case "Union":
+            _require_arity(head, args, 1, None)
             return sympy.Union(*args)
         case "Intersection":
+            _require_arity(head, args, 1, None)
             return sympy.Intersection(*args)
         case "Interval":
+            _require_arity(head, args, 2)
             return sympy.Interval(_as_expr(args[0]), _as_expr(args[1]))
         case _:
             pass
 
     if head in _UNARY_FUNCTIONS:
+        _require_arity(head, args, 1)
         return _as_sympy_basic(_UNARY_FUNCTIONS[head](_as_expr(args[0])))
 
     if head in _BINARY_FUNCTIONS:
+        _require_arity(head, args, 2)
         return _as_sympy_basic(
             _BINARY_FUNCTIONS[head](_as_expr(args[0]), _as_expr(args[1]))
         )
@@ -498,21 +529,52 @@ def _function(expr: MathJsonFunctionExpression) -> sympy.Basic:
         return _as_sympy_basic(sympy.KroneckerDelta(*_as_exprs(args)))
 
     if head in _VARIADIC_FUNCTIONS:
+        _require_arity(head, args, 1, None)
         return _VARIADIC_FUNCTIONS[head](*args)
 
     if head in _RELATIONS:
+        _require_arity(head, args, 2, None)
         return _relation(head, args)
 
     return _undefined_function(head)(*args)
+
+
+def _require_arity(
+    head: str,
+    args: tuple[object, ...],
+    min_count: int,
+    max_count: int | None = -1,
+) -> None:
+    if max_count == -1:
+        max_count = min_count
+
+    if max_count is None:
+        if len(args) < min_count:
+            raise TypeError(
+                f"{head} expects at least {min_count} {_pluralize_arg(min_count)}"
+            )
+        return
+
+    if min_count == max_count:
+        if len(args) != min_count:
+            raise TypeError(
+                f"{head} expects exactly {min_count} {_pluralize_arg(min_count)}"
+            )
+        return
+
+    if len(args) < min_count or len(args) > max_count:
+        raise TypeError(f"{head} expects between {min_count} and {max_count} arguments")
+
+
+def _pluralize_arg(count: int) -> str:
+    return "argument" if count == 1 else "arguments"
 
 
 def _divide(left: sympy.Basic, right: sympy.Basic) -> sympy.Basic:
     return sympy.Mul(_as_expr(left), sympy.Pow(_as_expr(right), -1))
 
 
-def _relation(
-    head: MathJsonRelationsFunctionSymbol, args: tuple[sympy.Basic, ...]
-) -> sympy.Basic:
+def _relation(head: str, args: tuple[sympy.Basic, ...]) -> sympy.Basic:
     relation = _RELATIONS[head]
     return sympy.And(
         *(
@@ -522,7 +584,7 @@ def _relation(
     )
 
 
-def _raise_mathjson_errors(expr: MathJsonExpression) -> None:
+def _raise_mathjson_errors(expr: object) -> None:
     errors = _collect_mathjson_errors(expr)
     if len(errors) == 1:
         raise MathJsonParseError(f"MathJSON parse error: {errors[0]}")
@@ -530,7 +592,7 @@ def _raise_mathjson_errors(expr: MathJsonExpression) -> None:
         raise MathJsonParseError(f"MathJSON parse errors: {'; '.join(errors)}")
 
 
-def _collect_mathjson_errors(expr: MathJsonExpression) -> list[str]:
+def _collect_mathjson_errors(expr: object) -> list[str]:
     if isinstance(expr, bool | int | float | str):
         return []
 
@@ -539,16 +601,16 @@ def _collect_mathjson_errors(expr: MathJsonExpression) -> list[str]:
             return _collect_mathjson_errors(expr["fn"])
         return []
 
-    match expr:
-        case ("Error", *_):
-            return [_format_error(expr)]
-        case _:
-            pass
+    if not isinstance(expr, list | tuple) or len(expr) == 0:
+        return []
+
+    if expr[0] == "Error":
+        return [_format_error(expr)]
 
     return [error for arg in expr[1:] for error in _collect_mathjson_errors(arg)]
 
 
-def _format_error(expr: MathJsonFunctionExpression) -> str:
+def _format_error(expr: object) -> str:
     match expr:
         case ("Error", code_expr):
             return _format_error_part(code_expr)
@@ -557,21 +619,21 @@ def _format_error(expr: MathJsonFunctionExpression) -> str:
             detail = _format_error_part(detail_expr)
             return f"{code}: {detail}"
         case _:
-            raise AssertionError("validated MathJSON error has no error branch")
+            raise TypeError("expected MathJSON error expression")
 
 
-def _format_error_part(expr: MathJsonExpression) -> str:
+def _format_error_part(expr: object) -> str:
     if isinstance(expr, bool | int | float):
         return str(expr)
     if isinstance(expr, str):
         return _strip_mathjson_string_quotes(expr)
 
     if isinstance(expr, dict):
-        if "str" in expr:
+        if "str" in expr and isinstance(expr["str"], str):
             return _strip_mathjson_string_quotes(expr["str"])
-        if "sym" in expr:
+        if "sym" in expr and isinstance(expr["sym"], str):
             return _strip_mathjson_string_quotes(expr["sym"])
-        if "num" in expr:
+        if "num" in expr and isinstance(expr["num"], str):
             return expr["num"]
         if "fn" in expr:
             return _format_error_part(expr["fn"])
@@ -651,12 +713,12 @@ def _normalize_number(value: str) -> str:
 
 def _as_expr(value: sympy.Basic) -> sympy.Expr:
     """Require a scalar-ish SymPy expression for algebraic operators."""
-    # MathJSON operands are typed as generic expressions, so values like sets
-    # and tuples can validate structurally but still be invalid in `Add`,
-    # `Power`, `Sin`, and similar SymPy expression positions. SymPy's `Expr`
-    # hierarchy is the practical boundary here: it excludes containers like
-    # `FiniteSet` and non-algebraic atoms like `Str`, which SymPy deprecates in
-    # `Add`/`Mul` and does not handle consistently.
+    # MathJSON operands are broad recursive values, so sets and tuples can be
+    # well-formed MathJSON but still invalid in `Add`, `Power`, `Sin`, and
+    # similar SymPy expression positions. SymPy's `Expr` hierarchy is the
+    # practical boundary here: it excludes containers like `FiniteSet` and
+    # non-algebraic atoms like `Str`, which SymPy deprecates in `Add`/`Mul` and
+    # does not handle consistently.
     if not isinstance(value, sympy.Expr):
         raise TypeError(f"expected SymPy expression, got {type(value)}")
     return value
@@ -683,10 +745,10 @@ def _as_sympy_basic(value: object) -> sympy.Basic:
     return value
 
 
-def _symbol_name(expr: MathJsonExpression) -> str:
+def _symbol_name(expr: object) -> str:
     if isinstance(expr, str) and _matches_symbol(expr):
         return _normalize_symbol(_symbol_shorthand_value(expr))
-    if isinstance(expr, dict) and "sym" in expr:
+    if isinstance(expr, dict) and "sym" in expr and isinstance(expr["sym"], str):
         return _normalize_symbol(expr["sym"])
     raise TypeError("expected a MathJSON symbol expression")
 
