@@ -144,9 +144,6 @@ for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
 
 const config: KnipConfig = {
   tags: ['-knipignore'],
-  // Fail the build on config hints (e.g. an `ignoreDependencies` entry that
-  // is also imported normally, or a stale entry that no longer matches
-  // anything). Keeps the manual lists below honest.
   treatConfigHintsAsErrors: true,
   workspaces: {
     '.': {
