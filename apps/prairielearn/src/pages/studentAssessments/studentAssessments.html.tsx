@@ -37,6 +37,7 @@ export const StudentAssessmentsRowSchema = z.object({
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
+  assessment_instance_date_limit: AssessmentInstanceSchema.shape.date_limit.nullable(),
   link: z.string(),
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: z.string(),

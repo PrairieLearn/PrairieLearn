@@ -37,7 +37,7 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
-function resolverResultToAuthzAssessment(
+export function resolverResultToAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode,
   displayTimezone: string,
@@ -66,19 +66,39 @@ function resolverResultToAuthzAssessment(
   };
 }
 
-export async function resolveModernAssessmentAccess({
+function applyInstanceCompletion(
+  result: AccessControlResolverResult,
+  {
+    instanceOpen,
+    timeLimitExpired,
+  }: {
+    instanceOpen: boolean | null;
+    timeLimitExpired: boolean;
+  },
+): AccessControlResolverResult {
+  if (result.usesPrairieTestVisibility) return result;
+  if (instanceOpen !== false && !timeLimitExpired) return result;
+
+  return {
+    ...result,
+    ...result.afterCompleteVisibility,
+    complete: true,
+  };
+}
+
+async function resolveModernAssessmentAccessResult({
   assessment,
   userId,
   courseInstance,
   authzData,
   reqDate,
-}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
+}: ModernAssessmentAccessInput): Promise<AccessControlResolverResult> {
   const [rules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForAssessment(assessment),
     selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
-  const result = resolveAccessControl({
+  return resolveAccessControl({
     rules,
     enrollment,
     date: reqDate,
@@ -87,6 +107,22 @@ export async function resolveModernAssessmentAccess({
     courseRole: authzData.course_role,
     courseInstanceRole: authzData.course_instance_role,
     prairieTestReservations,
+  });
+}
+
+export async function resolveModernAssessmentAccess({
+  assessment,
+  userId,
+  courseInstance,
+  authzData,
+  reqDate,
+}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
+  const result = await resolveModernAssessmentAccessResult({
+    assessment,
+    userId,
+    courseInstance,
+    authzData,
+    reqDate,
   });
 
   return resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone);
@@ -97,6 +133,7 @@ interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInpu
     id: string;
     user_id: string | null;
     team_id: string | null;
+    open: boolean | null;
     date_limit: Date | null;
   };
 }
@@ -137,12 +174,22 @@ export async function resolveModernAssessmentInstanceAccess({
   assessmentInstance,
   ...assessmentInput
 }: ModernAssessmentInstanceAccessInput): Promise<SprocAuthzAssessmentInstance> {
-  const assessmentResult = await resolveModernAssessmentAccess(assessmentInput);
-
   const { assessment, authzData, reqDate } = assessmentInput;
 
   const timeLimitExpired =
     assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
+  const result = applyInstanceCompletion(
+    await resolveModernAssessmentAccessResult(assessmentInput),
+    {
+      instanceOpen: assessmentInstance.open,
+      timeLimitExpired,
+    },
+  );
+  const assessmentResult = resolverResultToAuthzAssessment(
+    result,
+    authzData.mode,
+    assessmentInput.courseInstance.display_timezone,
+  );
 
   // Determine if the effective user owns this assessment instance.
   // For group work, check that the user is in an active group matching
@@ -176,12 +223,33 @@ export async function resolveModernAssessmentAccessBatch({
   authzData,
   reqDate,
 }: ModernAssessmentAccessBatchInput): Promise<Map<string, SprocAuthzAssessment>> {
+  const results = await resolveModernAssessmentAccessResultBatch({
+    courseInstance,
+    userId,
+    authzData,
+    reqDate,
+  });
+
+  return new Map(
+    [...results].map(([assessmentId, result]) => [
+      assessmentId,
+      resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
+    ]),
+  );
+}
+
+export async function resolveModernAssessmentAccessResultBatch({
+  courseInstance,
+  userId,
+  authzData,
+  reqDate,
+}: ModernAssessmentAccessBatchInput): Promise<Map<string, AccessControlResolverResult>> {
   const [allRules, { enrollment, prairieTestReservations }] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectUserAccessContext(userId, courseInstance, reqDate),
   ]);
 
-  const results = new Map<string, SprocAuthzAssessment>();
+  const results = new Map<string, AccessControlResolverResult>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
@@ -195,11 +263,37 @@ export async function resolveModernAssessmentAccessBatch({
       prairieTestReservations,
     });
 
-    results.set(
-      assessmentId,
-      resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
-    );
+    results.set(assessmentId, result);
   }
 
   return results;
+}
+
+export function resolverResultToAuthzAssessmentForInstance({
+  result,
+  authzMode,
+  displayTimezone,
+  assessmentInstance,
+  reqDate,
+}: {
+  result: AccessControlResolverResult;
+  authzMode: EnumMode;
+  displayTimezone: string;
+  assessmentInstance: { open: boolean | null; date_limit: Date | null } | null;
+  reqDate: Date;
+}): SprocAuthzAssessment {
+  if (assessmentInstance == null) {
+    return resolverResultToAuthzAssessment(result, authzMode, displayTimezone);
+  }
+
+  const timeLimitExpired =
+    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
+  return resolverResultToAuthzAssessment(
+    applyInstanceCompletion(result, {
+      instanceOpen: assessmentInstance.open,
+      timeLimitExpired,
+    }),
+    authzMode,
+    displayTimezone,
+  );
 }

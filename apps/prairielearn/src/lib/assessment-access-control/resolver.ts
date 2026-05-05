@@ -106,6 +106,22 @@ export interface AccessControlResolverResult {
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
   /**
+   * Top-level after-complete visibility policy, evaluated against the current
+   * date. This is applied only once the assessment is complete.
+   */
+  afterCompleteVisibility: Visibility;
+  /**
+   * True when date control has reached a non-submittable after-last-deadline
+   * segment. Instance-specific completion, such as a closed instance or
+   * expired time limit, is applied in the modern authz layer.
+   */
+  complete: boolean;
+  /**
+   * True when a live PrairieTest reservation is controlling visibility. In
+   * that state, per-PT-exam settings govern instead of top-level afterComplete.
+   */
+  usesPrairieTestVisibility: boolean;
+  /**
    * When the assessment is gated behind a PrairieTest reservation, this is
    * the reservation's `accessEnd` timestamp. Used to determine whether the
    * student is still in an active exam session (i.e. mode should be 'Exam').
@@ -141,6 +157,12 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   submittable: false,
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
+  afterCompleteVisibility: {
+    showClosedAssessment: true,
+    showClosedAssessmentScore: true,
+  },
+  complete: false,
+  usesPrairieTestVisibility: false,
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: [],
@@ -156,6 +178,12 @@ const STAFF_OVERRIDE_RESULT: AccessControlResolverResult = {
   submittable: true,
   showClosedAssessment: true,
   showClosedAssessmentScore: true,
+  afterCompleteVisibility: {
+    showClosedAssessment: true,
+    showClosedAssessmentScore: true,
+  },
+  complete: false,
+  usesPrairieTestVisibility: false,
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: [],
@@ -250,10 +278,15 @@ function pickEffectiveRule(
   );
 }
 
-interface Visibility {
+export interface Visibility {
   showClosedAssessment: boolean;
   showClosedAssessmentScore: boolean;
 }
+
+const VISIBLE: Visibility = {
+  showClosedAssessment: true,
+  showClosedAssessmentScore: true,
+};
 
 /**
  * `questions.hidden` defaults to `true` for exam security (an async exam over
@@ -307,6 +340,16 @@ export function resolveVisibility(
   if (!visibleFromDate || date < visibleFromDate) return false;
   if (visibleUntilDate && date >= visibleUntilDate) return false;
   return true;
+}
+
+function withCompletionVisibility(
+  result: Omit<AccessControlResolverResult, 'showClosedAssessment' | 'showClosedAssessmentScore'>,
+): AccessControlResolverResult {
+  const visibility = result.complete ? result.afterCompleteVisibility : VISIBLE;
+  return {
+    ...result,
+    ...visibility,
+  };
 }
 
 export function formatDateShort(date: Date, timezone: string): string {
@@ -383,7 +426,7 @@ export function resolveAccessControl(
   const rule = pickEffectiveRule(rules, enrollment);
   if (!rule) return UNAUTHORIZED_RESULT;
 
-  const visibility = computeTopLevelVisibility(rule.afterComplete, date);
+  const afterCompleteVisibility = computeTopLevelVisibility(rule.afterComplete, date);
   const accessTimeline = buildAccessTimeline(rule.dateControl, date);
 
   // In Exam mode, the only access path is a matching PrairieTest reservation;
@@ -396,7 +439,13 @@ export function resolveAccessControl(
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
     );
     if (!matched) {
-      return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
+      return {
+        ...UNAUTHORIZED_RESULT,
+        ...afterCompleteVisibility,
+        afterCompleteVisibility,
+        complete: true,
+        accessTimeline,
+      };
     }
 
     const reservations = prairieTestReservations.filter((r) => r.examUuid === matched.uuid);
@@ -417,6 +466,9 @@ export function resolveAccessControl(
       password: null,
       submittable,
       ...examVisibility,
+      afterCompleteVisibility,
+      complete: matched.readOnly,
+      usesPrairieTestVisibility: true,
       examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
       // The PT reservation governs access; the date-control timeline is
@@ -432,17 +484,29 @@ export function resolveAccessControl(
   // No DC release configured: either PT-gated (review-only once visibility
   // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
   if (!hasRelease) {
-    if (rule.prairieTestExams.length > 0 && visibility.showClosedAssessment) {
+    if (rule.prairieTestExams.length > 0) {
+      if (afterCompleteVisibility.showClosedAssessment) {
+        return {
+          ...UNAUTHORIZED_RESULT,
+          authorized: true,
+          ...afterCompleteVisibility,
+          afterCompleteVisibility,
+          complete: true,
+          accessTimeline,
+        };
+      }
       return {
         ...UNAUTHORIZED_RESULT,
-        authorized: true,
-        ...visibility,
+        ...afterCompleteVisibility,
+        afterCompleteVisibility,
+        complete: true,
         accessTimeline,
+        showBeforeRelease: shouldShowBeforeRelease,
       };
     }
     return {
       ...UNAUTHORIZED_RESULT,
-      ...visibility,
+      afterCompleteVisibility,
       accessTimeline,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: null,
@@ -452,20 +516,20 @@ export function resolveAccessControl(
   // Treat degenerate windows as fully unauthorized.
   const current = accessTimeline.find((e) => e.current);
   if (!current) {
-    return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
+    return { ...UNAUTHORIZED_RESULT, afterCompleteVisibility, accessTimeline };
   }
 
   if (current.startDate === null) {
     return {
       ...UNAUTHORIZED_RESULT,
-      ...visibility,
+      afterCompleteVisibility,
       accessTimeline,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: current.endDate,
     };
   }
 
-  return {
+  return withCompletionVisibility({
     authorized: true,
     credit: current.credit,
     creditDateString: formatCreditDateString(
@@ -482,10 +546,12 @@ export function resolveAccessControl(
     ),
     password: rule.dateControl?.password ?? null,
     submittable: current.submittable,
-    ...visibility,
+    afterCompleteVisibility,
+    complete: current.kind === 'afterLastDeadline' && !current.submittable,
+    usesPrairieTestVisibility: false,
     examAccessEnd: null,
     showBeforeRelease: false,
     accessTimeline,
     nextActiveDate: null,
-  };
+  });
 }
