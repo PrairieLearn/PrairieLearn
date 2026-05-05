@@ -6,7 +6,7 @@ import { courseStaffRouter } from './course-staff.js';
 import { createContext, t } from './init.js';
 import { sharingRouter } from './sharing.js';
 
-export const courseRouter = t.router({
+const courseRouter = t.router({
   courseStaff: courseStaffRouter,
   sharing: sharingRouter,
 });

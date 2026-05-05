@@ -8,7 +8,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectCanChooseSharingName, updateCourseSharingName } from '../../models/course.js';

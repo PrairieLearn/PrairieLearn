@@ -8,6 +8,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -15,12 +16,11 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { selectAssessmentByUuid } from '../../models/assessment.js';
+import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -33,7 +33,10 @@ export interface AssessmentSettingsError {
   UpdateAssessment:
     | { code: 'INVALID_SHORT_NAME' }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  CopyAssessment:
+    | { code: 'INVALID_SHORT_NAME' }
+    | { code: 'DUPLICATE_SHORT_NAME' }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -307,33 +310,69 @@ const updateAssessment = t.procedure
     return { origHash: newHash };
   });
 
-const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
-  const { course_instance, locals } = ctx;
+const copyAssessment = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(
+    z.object({
+      aid: z.string().trim().min(1, 'Short name is required'),
+      title: z.string().trim().min(1, 'Long name is required'),
+      number: z.string().trim(),
+      set: z.string(),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const { course_instance, locals } = ctx;
 
-  const editor = new AssessmentCopyEditor({ locals });
-  const serverJob = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    throwAppError<AssessmentSettingsError['CopyAssessment']>({
-      code: 'SYNC_JOB_FAILED',
-      message: 'Failed to copy assessment',
-      jobSequenceId: serverJob.jobSequenceId,
+    const { aid, title, number, set } = input;
+
+    const shortNameValidation = validateShortName(aid);
+    if (!shortNameValidation.valid) {
+      throwAppError<AssessmentSettingsError['CopyAssessment']>({
+        code: 'INVALID_SHORT_NAME',
+        message: shortNameValidation.lowercaseMessage,
+      });
+    }
+
+    const existingAssessments = await selectAssessments({
+      course_instance_id: course_instance.id,
     });
-  }
+    if (existingAssessments.some((a) => a.tid === aid)) {
+      throwAppError<AssessmentSettingsError['CopyAssessment']>({
+        code: 'DUPLICATE_SHORT_NAME',
+        message: `An assessment with the short name "${aid}" already exists.`,
+      });
+    }
 
-  const copiedAssessment = await selectAssessmentByUuid({
-    uuid: editor.uuid,
-    course_instance_id: course_instance.id,
+    const editor = new AssessmentCopyEditor({
+      locals,
+      tid_new: aid,
+      title_new: title,
+      number_new: number,
+      set_new: set,
+    });
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<AssessmentSettingsError['CopyAssessment']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to copy assessment',
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+
+    const copiedAssessment = await selectAssessmentByUuid({
+      uuid: editor.uuid,
+      course_instance_id: course_instance.id,
+    });
+
+    flash(
+      'success',
+      'Assessment copied successfully. You are now viewing your copy of the assessment.',
+    );
+
+    return { assessmentId: copiedAssessment.id };
   });
-
-  flash(
-    'success',
-    'Assessment copied successfully. You are now viewing your copy of the assessment.',
-  );
-
-  return { assessmentId: copiedAssessment.id };
-});
 
 const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
   const { locals } = ctx;

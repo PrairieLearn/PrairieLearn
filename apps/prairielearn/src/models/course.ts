@@ -31,7 +31,7 @@ const CourseWithPermissionsSchema = z.object({
   course: CourseSchema,
   course_role: EnumCourseRoleSchema,
 });
-export type CourseWithPermissions = Course & {
+type CourseWithPermissions = Course & {
   permissions_course: {
     course_role: EnumCourseRole;
     has_course_permission_own: boolean;
@@ -220,7 +220,7 @@ export async function selectCoursesWithStaffAccess({
       // Administrators have Owner permission in all courses, so we can skip the
       // complex query and just return all courses
       const courses = await queryRows(sql.select_all_courses, CourseSchema);
-      return courses.map((course) => ({ course, course_role: 'Owner' as EnumCourseRole }));
+      return courses.map((course) => ({ course, course_role: 'Owner' as const }));
     }
 
     return await queryRows(

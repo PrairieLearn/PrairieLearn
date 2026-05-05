@@ -9,7 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';

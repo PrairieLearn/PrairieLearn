@@ -32,7 +32,7 @@ export const AssessmentInstanceScoreResultSchema = z.object({
   assessment_instance_id: AssessmentInstanceSchema.shape.id,
 });
 
-export const OtherGroupUserSchema = z.object({
+const OtherGroupUserSchema = z.object({
   uid: UserSchema.shape.uid,
   enrollment_id: EnrollmentSchema.shape.id.nullable(),
 });

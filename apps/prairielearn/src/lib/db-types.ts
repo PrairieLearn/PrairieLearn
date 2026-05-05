@@ -7,6 +7,8 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
+import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -141,6 +143,7 @@ export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -154,10 +157,12 @@ export const SprocAuthzAssessmentSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
+  access_timeline: z.array(AccessTimelineEntrySchema),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -173,6 +178,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_expired: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
+export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
@@ -231,8 +237,9 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
-  date_control_due_date_overridden: z.boolean(),
+  date_control_due_overridden: z.boolean(),
   date_control_duration_minutes: z.number().nullable(),
   date_control_duration_minutes_overridden: z.boolean(),
   date_control_early_deadlines_overridden: z.boolean(),
@@ -244,7 +251,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   id: IdSchema,
   number: z.number(),
 
-  // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
+  // Target type: 'none' for default rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
   target_type: z.enum(['none', 'student_label', 'enrollment']),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;

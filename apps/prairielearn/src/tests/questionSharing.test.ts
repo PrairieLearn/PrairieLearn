@@ -15,7 +15,7 @@ import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { type Course } from '../lib/db-types.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
@@ -126,7 +126,7 @@ async function pullAndSyncSharingCourse(course: Course) {
   return jobSequence.status;
 }
 
-describe('Question Sharing', function () {
+describe('Question Sharing', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);

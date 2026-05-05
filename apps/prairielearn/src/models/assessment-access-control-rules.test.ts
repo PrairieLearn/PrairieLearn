@@ -10,8 +10,9 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     target_type: 'none' as const,
     before_release_listed: null,
     date_control_release_date: null,
+    date_control_due_credit: null,
     date_control_due_date: null,
-    date_control_due_date_overridden: false,
+    date_control_due_overridden: false,
     date_control_early_deadlines_overridden: false,
     date_control_late_deadlines_overridden: false,
     date_control_after_last_deadline_allow_submissions: null,
@@ -112,7 +113,7 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for main rule afterLastDeadline when not set', () => {
+  it('omits credit for default rule afterLastDeadline when not set', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {

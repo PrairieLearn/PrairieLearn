@@ -17,7 +17,8 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -166,7 +167,7 @@ router.get(
                 assessmentToolDefaults={assessmentToolDefaults}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                  pageContext.authz_data.has_course_instance_permission_edit
                 }
                 canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
@@ -187,7 +188,7 @@ router.get(
                 assessmentNumber={pageContext.assessment.number}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                  pageContext.authz_data.has_course_instance_permission_edit
                 }
                 csrfToken={res.locals.__csrf_token}
                 switchViewUrl={toggleUrl}
