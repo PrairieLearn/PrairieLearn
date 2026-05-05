@@ -22,7 +22,7 @@ export const fillInBlanksHandler: TransformHandler<QTI12ParsedItem> = {
       const id = lid.materialText ?? lid.ident;
       if (!correctText) {
         warnings.push(
-          `Blank "${id}" has no correct answer — the blank will accept any input. Review and edit info.json.`,
+          `Blank "${id}" has no correct answer — the blank will accept any input. Review and edit question.html.`,
         );
       }
       return {
@@ -36,7 +36,9 @@ export const fillInBlanksHandler: TransformHandler<QTI12ParsedItem> = {
     // surface as Manual so the question still appears, with a warning.
     const allMissing = blanks.length > 0 && blanks.every((b) => !b.correctText);
     if (allMissing) {
-      warnings.push('No correct answers for any blank; emitting as a manually-graded question.');
+      warnings.push(
+        'No correct answers found. Set the correct answers in question.html, or leave as manually graded.',
+      );
     }
 
     return {

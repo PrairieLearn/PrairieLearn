@@ -30,12 +30,10 @@ Embedded images and other non-video media files referenced by questions are also
 
 ## What isn't imported
 
-Some content doesn't carry over from QTI exports, either because the format doesn't include it or because it's better configured anew in PrairieLearn:
-
 - **Access rules** — Time limits, passwords, and start/end dates are not imported. These should be configured in PrairieLearn's [access control](assessment/accessControl.md) system.
-- **Rubrics** — QTI quiz-only exports don't include rubric definitions. Even in full course exports, rubric data isn't carried into PrairieLearn.
+- **Rubrics** — Rubric definitions are not imported from QTI exports.
 - **Video files** — Video content (`.mp4`, `.webm`, `.mov`, etc.) is excluded from the import due to file size. The import review screen will list any skipped video files so you can re-host them separately.
-- **Question banks / pools** — In quiz-only exports, Canvas question banks referenced by a quiz are not included. Only questions that appear directly in the quiz are exported. Full course exports (`.imscc`) may include question bank content.
+- **Question banks / pools** — Canvas question banks are only included in full course exports (`.imscc`), not quiz-only exports, and won't be imported to PrairieLearn unless an imported quiz includes them.
 - **Student data** — Submissions, grades, and enrollment data are not part of QTI exports.
 
 The import review screen will tell you specifically what was and wasn't included for each upload.
