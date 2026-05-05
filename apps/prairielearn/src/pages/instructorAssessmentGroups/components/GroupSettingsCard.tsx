@@ -13,6 +13,12 @@ import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-confi
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+const numberOrNull = (v: unknown): number | null => {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+};
+
 const RECOMMENDED_ROLES: GroupSettingsFormValues['roles'] = [
   makeRole({ name: 'Manager', minAssignees: 1, maxAssignees: 1, canAssignRoles: true }),
   makeRole({ name: 'Recorder', minAssignees: 1, maxAssignees: 1 }),
@@ -175,35 +181,24 @@ export function GroupSettingsCard({
   });
 
   const onSubmit = (data: GroupSettingsFormValues) => {
-    const nanToNull = (v: number | null) => (v != null && Number.isNaN(v) ? null : v);
-    const normalized: GroupSettingsFormValues = {
-      ...data,
-      minMembers: nanToNull(data.minMembers),
-      maxMembers: nanToNull(data.maxMembers),
-      roles: data.roles.map((r) => ({
-        ...r,
-        minAssignees: nanToNull(r.minAssignees),
-        maxAssignees: nanToNull(r.maxAssignees),
-      })),
-    };
     mutation.mutate(
       {
         origHash,
-        canCreateGroup: normalized.studentPermissions.canCreateGroup,
-        canJoinGroup: normalized.studentPermissions.canJoinGroup,
-        canLeaveGroup: normalized.studentPermissions.canLeaveGroup,
-        canNameGroup: normalized.studentPermissions.canNameGroup,
-        minMembers: normalized.minMembers,
-        maxMembers: normalized.maxMembers,
-        roles: normalized.roles,
+        canCreateGroup: data.studentPermissions.canCreateGroup,
+        canJoinGroup: data.studentPermissions.canJoinGroup,
+        canLeaveGroup: data.studentPermissions.canLeaveGroup,
+        canNameGroup: data.studentPermissions.canNameGroup,
+        minMembers: data.minMembers,
+        maxMembers: data.maxMembers,
+        roles: data.roles,
       },
       {
         onSuccess: ({ origHash: newHash }) => {
           onOrigHashChange(newHash);
-          onGroupSizeSaved(normalized.minMembers, normalized.maxMembers);
+          onGroupSizeSaved(data.minMembers, data.maxMembers);
           reset({
-            ...normalized,
-            roles: normalized.roles.map((r) => ({ ...r, origName: r.name })),
+            ...data,
+            roles: data.roles.map((r) => ({ ...r, origName: r.name })),
           });
         },
       },
@@ -322,7 +317,7 @@ export function GroupSettingsCard({
                     type="number"
                     className={clsx('form-control', errors.minMembers && 'is-invalid')}
                     id="groupSettings-minMembers"
-                    placeholder="0"
+                    placeholder="None"
                     aria-invalid={errors.minMembers ? 'true' : undefined}
                     aria-errormessage={
                       errors.minMembers ? 'groupSettings-minMembersError' : undefined
@@ -331,12 +326,12 @@ export function GroupSettingsCard({
                       groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? ''
                     }
                     {...register('minMembers', {
-                      valueAsNumber: true,
+                      setValueAs: numberOrNull,
                       min: { value: 1, message: 'Must be at least 1.' },
                       onChange: (e) => {
-                        const newMin = e.target.valueAsNumber;
+                        const newMin = numberOrNull(e.target.value);
                         const currentMax = getValues('maxMembers');
-                        if (!Number.isNaN(newMin) && currentMax != null && newMin > currentMax) {
+                        if (newMin != null && currentMax != null && newMin > currentMax) {
                           setValue('maxMembers', newMin, {
                             shouldDirty: true,
                             shouldValidate: true,
@@ -360,7 +355,7 @@ export function GroupSettingsCard({
                     type="number"
                     className={clsx('form-control', errors.maxMembers && 'is-invalid')}
                     id="groupSettings-maxMembers"
-                    placeholder="0"
+                    placeholder="None"
                     aria-invalid={errors.maxMembers ? 'true' : undefined}
                     aria-errormessage={
                       errors.maxMembers ? 'groupSettings-maxMembersError' : undefined
@@ -369,7 +364,7 @@ export function GroupSettingsCard({
                       groupSettingsDefaults?.maxMembers ?? groupConfigInfo.maximum ?? ''
                     }
                     {...register('maxMembers', {
-                      valueAsNumber: true,
+                      setValueAs: numberOrNull,
                       min: { value: 1, message: 'Must be at least 1.' },
                       validate: (value) => {
                         const min = getValues('minMembers');
@@ -522,13 +517,13 @@ export function GroupSettingsCard({
                                     'form-control form-control-sm',
                                     !!minError && 'is-invalid',
                                   )}
-                                  placeholder="0"
+                                  placeholder="None"
                                   defaultValue={field.minAssignees ?? ''}
                                   aria-label={`Min assignees for role ${rowNumber}`}
                                   aria-invalid={minError ? 'true' : undefined}
                                   aria-errormessage={minError ? minErrorId : undefined}
                                   {...register(`roles.${index}.minAssignees`, {
-                                    valueAsNumber: true,
+                                    setValueAs: numberOrNull,
                                     deps: [`roles.${index}.maxAssignees`, 'maxMembers'],
                                     min: { value: 0, message: 'Must be ≥ 0.' },
                                     validate: (value) => {
@@ -547,10 +542,10 @@ export function GroupSettingsCard({
                                       return true;
                                     },
                                     onChange: (e) => {
-                                      const newMin = e.target.valueAsNumber;
+                                      const newMin = numberOrNull(e.target.value);
                                       const currentMax = getValues(`roles.${index}.maxAssignees`);
                                       if (
-                                        !Number.isNaN(newMin) &&
+                                        newMin != null &&
                                         currentMax != null &&
                                         newMin > currentMax
                                       ) {
@@ -570,13 +565,13 @@ export function GroupSettingsCard({
                                     'form-control form-control-sm',
                                     !!maxError && 'is-invalid',
                                   )}
-                                  placeholder="0"
+                                  placeholder="None"
                                   defaultValue={field.maxAssignees ?? ''}
                                   aria-label={`Max assignees for role ${rowNumber}`}
                                   aria-invalid={maxError ? 'true' : undefined}
                                   aria-errormessage={maxError ? maxErrorId : undefined}
                                   {...register(`roles.${index}.maxAssignees`, {
-                                    valueAsNumber: true,
+                                    setValueAs: numberOrNull,
                                     deps: [`roles.${index}.minAssignees`, 'maxMembers'],
                                     min: { value: 1, message: 'Must be ≥ 1.' },
                                     validate: (value) => {

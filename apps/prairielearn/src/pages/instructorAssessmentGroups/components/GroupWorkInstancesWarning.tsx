@@ -9,10 +9,13 @@ export function GroupWorkInstancesWarning({
   assessmentStudentsUrl: string;
   className?: string;
 }) {
+  const subject = action === 'enabling' ? 'Some students' : 'Some groups';
+  const instanceKind = action === 'enabling' ? 'individual' : 'group';
   return (
     <Alert variant="warning" className={className}>
-      Some students have already started this assessment. Remove their progress from the{' '}
-      <Alert.Link href={assessmentStudentsUrl}>Students tab</Alert.Link> before {action} group work.
+      {subject} have already started this assessment. Delete all {instanceKind} assessment instances
+      on the <Alert.Link href={assessmentStudentsUrl}>Students tab</Alert.Link> before {action}{' '}
+      group work.
     </Alert>
   );
 }

@@ -34,7 +34,14 @@ import {
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
-import { requireCourseInstancePermissionEdit, requireCoursePermissionEdit, t } from './init.js';
+import {
+  createContext,
+  requireCourseInstancePermissionEdit,
+  requireCoursePermissionEdit,
+  t,
+} from './init.js';
+
+type AssessmentTrpcCtx = ReturnType<typeof createContext>;
 
 const MAX_UIDS = 50;
 
@@ -198,69 +205,99 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
   return { notAssigned };
 });
 
+type SyncJobFailedError = { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+
+/**
+ * Saves the `groups` block of an assessment's `infoAssessment.json`. Centralizes
+ * the boilerplate shared by `enableGroupWork` / `disableGroupWork` /
+ * `updateGroupConfig`: assessment dir/path construction, the `saveJsonFile`
+ * args, and conflict / sync-failed error mapping.
+ */
+async function saveAssessmentGroupsBlock({
+  ctx,
+  origHash,
+  applyChanges,
+  syncFailedMessage,
+  noInstancesMessage,
+}: {
+  ctx: AssessmentTrpcCtx;
+  origHash: string | null;
+  applyChanges: (json: AssessmentJsonInput) => AssessmentJsonInput;
+  syncFailedMessage: string;
+  /**
+   * If provided, the save is rejected with this message when the assessment
+   * already has instances. Omit for the update-config path, which is allowed
+   * to write while instances exist.
+   */
+  noInstancesMessage?: string;
+}): Promise<{ newHash: string; jsonData: AssessmentJsonInput }> {
+  if (noInstancesMessage && (await selectAssessmentHasInstances(ctx.assessment.id))) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: noInstancesMessage });
+  }
+
+  const assessmentDir = path.join(
+    ctx.course.path,
+    'courseInstances',
+    ctx.course_instance.short_name,
+    'assessments',
+    ctx.assessment.tid!,
+  );
+  const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+  const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    applyChanges,
+    jsonPath: assessmentPath,
+    conflictCheck: {
+      origHash,
+      scope: (json) => json.groups ?? {},
+    },
+    locals: {
+      authz_data: ctx.authz_data,
+      course: ctx.course,
+      user: ctx.authn_user,
+    },
+    container: {
+      rootPath: assessmentDir,
+      invalidRootPaths: [],
+    },
+  });
+
+  if (!saveResult.success) {
+    if (saveResult.reason === 'conflict') {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+      });
+    }
+    throwAppError<SyncJobFailedError>({
+      code: 'SYNC_JOB_FAILED',
+      message: syncFailedMessage,
+      jobSequenceId: saveResult.jobSequenceId,
+    });
+  }
+
+  return { newHash: saveResult.newHash, jsonData: saveResult.jsonData };
+}
+
 const enableGroupWork = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
-    const { origHash } = input;
-
-    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message:
-          'Cannot enable group work while students have assessment instances. Remove their progress from the Students tab first.',
-      });
-    }
-
-    const assessmentDir = path.join(
-      ctx.course.path,
-      'courseInstances',
-      ctx.course_instance.short_name,
-      'assessments',
-      ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    let savedJson: AssessmentJsonInput | null = null;
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    const { newHash, jsonData } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
       applyChanges: (json) => {
         const existing = normalizeGroupSettings(json);
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: true })
           : { enabled: true };
-        savedJson = stripLegacyGroupKeys(json);
-        return savedJson;
+        return stripLegacyGroupKeys(json);
       },
-      jsonPath: assessmentPath,
-      conflictCheck: {
-        origHash,
-        scope: (json) => json.groups ?? {},
-      },
-      locals: {
-        authz_data: ctx.authz_data,
-        course: ctx.course,
-        user: ctx.authn_user,
-      },
-      container: {
-        rootPath: assessmentDir,
-        invalidRootPaths: [],
-      },
+      syncFailedMessage: 'Failed to enable group work.',
+      noInstancesMessage:
+        'Cannot enable group work while students have assessment instances. Remove their progress from the Students tab first.',
     });
-
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<AssessmentGroupsError['EnableGroupWork']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to enable group work.',
-        jobSequenceId: saveResult.jobSequenceId,
-      });
-    }
 
     const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
     if (!groupConfig) {
@@ -271,9 +308,9 @@ const enableGroupWork = t.procedure
     }
 
     return {
-      origHash: saveResult.newHash,
+      origHash: newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
-      groupSettingsDefaults: normalizeGroupSettings(savedJson!),
+      groupSettingsDefaults: normalizeGroupSettings(jsonData),
     };
   });
 
@@ -302,8 +339,6 @@ const updateGroupConfig = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const { origHash } = input;
-
     if (
       input.minMembers != null &&
       input.maxMembers != null &&
@@ -346,16 +381,9 @@ const updateGroupConfig = t.procedure
       }
     }
 
-    const assessmentDir = path.join(
-      ctx.course.path,
-      'courseInstances',
-      ctx.course_instance.short_name,
-      'assessments',
-      ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    const { newHash } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
       applyChanges: (json) => {
         cascadeRoleRenamesToZones(json, roles);
         json.groups = serializeGroupSettings(
@@ -372,110 +400,36 @@ const updateGroupConfig = t.procedure
           },
           { enabled: true },
         );
-        const stripped = stripLegacyGroupKeys(json);
-        return stripped;
+        return stripLegacyGroupKeys(json);
       },
-      jsonPath: assessmentPath,
-      conflictCheck: {
-        origHash,
-        scope: (json) => json.groups ?? {},
-      },
-      locals: {
-        authz_data: ctx.authz_data,
-        course: ctx.course,
-        user: ctx.authn_user,
-      },
-      container: {
-        rootPath: assessmentDir,
-        invalidRootPaths: [],
-      },
+      syncFailedMessage: 'Failed to update group configuration.',
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<AssessmentGroupsError['UpdateGroupConfig']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to update group configuration.',
-        jobSequenceId: saveResult.jobSequenceId,
-      });
-    }
-
-    return { origHash: saveResult.newHash };
+    return { origHash: newHash };
   });
 
 const disableGroupWork = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
-    const { origHash } = input;
-
-    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message:
-          'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
-      });
-    }
-
-    const assessmentDir = path.join(
-      ctx.course.path,
-      'courseInstances',
-      ctx.course_instance.short_name,
-      'assessments',
-      ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    let savedJson: AssessmentJsonInput | null = null;
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    const { newHash, jsonData } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
       applyChanges: (json) => {
         const existing = normalizeGroupSettings(json);
         json.groups = existing
           ? serializeGroupSettings(existing, { enabled: false })
           : { enabled: false };
-        savedJson = stripLegacyGroupKeys(json);
-        return savedJson;
+        return stripLegacyGroupKeys(json);
       },
-      jsonPath: assessmentPath,
-      conflictCheck: {
-        origHash,
-        scope: (json) => json.groups ?? {},
-      },
-      locals: {
-        authz_data: ctx.authz_data,
-        course: ctx.course,
-        user: ctx.authn_user,
-      },
-      container: {
-        rootPath: assessmentDir,
-        invalidRootPaths: [],
-      },
+      syncFailedMessage: 'Failed to disable group work.',
+      noInstancesMessage:
+        'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<AssessmentGroupsError['DisableGroupWork']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to disable group work.',
-        jobSequenceId: saveResult.jobSequenceId,
-      });
-    }
-
     return {
-      origHash: saveResult.newHash,
-      groupSettingsDefaults: normalizeGroupSettings(savedJson!),
+      origHash: newHash,
+      groupSettingsDefaults: normalizeGroupSettings(jsonData),
     };
   });
 

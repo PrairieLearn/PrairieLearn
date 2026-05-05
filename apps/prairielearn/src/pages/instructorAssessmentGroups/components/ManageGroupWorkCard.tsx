@@ -31,8 +31,8 @@ function DisableGroupWorkModal({
       </Modal.Header>
       <Modal.Body>
         <p className="mb-2">
-          Students will no longer be able to access this assessment as a group. Existing groups will
-          stop receiving credit until group work is re-enabled.
+          Students will no longer be able to access this assessment as a group, and existing groups
+          will be unable to submit until group work is re-enabled.
         </p>
         <p className="mb-0 text-muted small">
           The current group configuration will be preserved and restored if you re-enable group work

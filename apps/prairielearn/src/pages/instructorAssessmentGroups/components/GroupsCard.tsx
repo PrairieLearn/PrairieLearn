@@ -286,8 +286,10 @@ function RandomAssessmentGroupsModal({
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    getValues,
+    formState: { isSubmitting, errors, isValid },
   } = useForm<{ minGroupSize: number; maxGroupSize: number }>({
+    mode: 'onChange',
     values: { minGroupSize, maxGroupSize },
   });
 
@@ -328,13 +330,30 @@ function RandomAssessmentGroupsModal({
               </label>
               <input
                 type="number"
-                min="1"
-                className="form-control"
+                className={clsx('form-control', errors.minGroupSize && 'is-invalid')}
                 id="formMin"
                 defaultValue={minGroupSize}
-                required
-                {...register('minGroupSize', { valueAsNumber: true })}
+                aria-invalid={errors.minGroupSize ? 'true' : undefined}
+                aria-errormessage={errors.minGroupSize ? 'formMinError' : undefined}
+                {...register('minGroupSize', {
+                  valueAsNumber: true,
+                  required: 'Required.',
+                  min: { value: 1, message: 'Must be at least 1.' },
+                  deps: ['maxGroupSize'],
+                  validate: (value) => {
+                    const max = getValues('maxGroupSize');
+                    if (Number.isFinite(value) && Number.isFinite(max) && value > max) {
+                      return 'Must be ≤ max members.';
+                    }
+                    return true;
+                  },
+                })}
               />
+              {errors.minGroupSize && (
+                <div id="formMinError" className="text-danger small">
+                  {errors.minGroupSize.message}
+                </div>
+              )}
             </div>
             <div className="col-6">
               <label className="form-label" htmlFor="formMax">
@@ -342,13 +361,30 @@ function RandomAssessmentGroupsModal({
               </label>
               <input
                 type="number"
-                min="1"
-                className="form-control"
+                className={clsx('form-control', errors.maxGroupSize && 'is-invalid')}
                 id="formMax"
                 defaultValue={maxGroupSize}
-                required
-                {...register('maxGroupSize', { valueAsNumber: true })}
+                aria-invalid={errors.maxGroupSize ? 'true' : undefined}
+                aria-errormessage={errors.maxGroupSize ? 'formMaxError' : undefined}
+                {...register('maxGroupSize', {
+                  valueAsNumber: true,
+                  required: 'Required.',
+                  min: { value: 1, message: 'Must be at least 1.' },
+                  deps: ['minGroupSize'],
+                  validate: (value) => {
+                    const min = getValues('minGroupSize');
+                    if (Number.isFinite(value) && Number.isFinite(min) && value < min) {
+                      return 'Must be ≥ min members.';
+                    }
+                    return true;
+                  },
+                })}
               />
+              {errors.maxGroupSize && (
+                <div id="formMaxError" className="text-danger small">
+                  {errors.maxGroupSize.message}
+                </div>
+              )}
             </div>
           </div>
         </Modal.Body>
@@ -359,7 +395,7 @@ function RandomAssessmentGroupsModal({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending}
+            disabled={!isValid || isSubmitting || mutation.isPending}
           >
             Assign
           </button>
