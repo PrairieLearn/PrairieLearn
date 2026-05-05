@@ -355,12 +355,10 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
       // Validate HTML
-      if (!process.env.SKIP_HTML_VALIDATE) {
-        await validateHtml(questionHtml);
-      }
+      await validateHtml(questionHtml);
 
       // Validate accessibility
-      if (!process.env.SKIP_AXE && !accessibilitySkip.has(relativePath)) {
+      if (!accessibilitySkip.has(relativePath)) {
         await validateAxe(questionHtml);
       }
 
