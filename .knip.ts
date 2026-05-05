@@ -195,6 +195,11 @@ const config: KnipConfig = {
     'packages/bind-mount': {
       ignoreDependencies: ['nan'],
     },
+    'packages/eslint-config': {
+      // Loaded dynamically by eslint-plugin-import-x via the
+      // `'import-x/resolver': { typescript: true }` setting.
+      ignoreDependencies: ['eslint-import-resolver-typescript'],
+    },
     'packages/tsconfig': {
       entry: [],
       project: [],

@@ -31,6 +31,7 @@
     "@tanstack/eslint-plugin-query": "^5.100.9",
     "@typescript-eslint/utils": "^8.59.2",
     "@vitest/eslint-plugin": "^1.6.16",
+    "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-x": "^4.16.2",
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-jsx-a11y-x": "^0.1.1",
