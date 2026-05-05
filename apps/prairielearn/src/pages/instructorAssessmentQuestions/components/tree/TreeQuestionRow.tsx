@@ -238,8 +238,9 @@ export function TreeQuestionRow({
       role="button"
       tabIndex={0}
       className={clsx(
-        'tree-row d-flex align-items-center py-1 border-bottom',
+        'tree-row d-flex align-items-center py-1 border-bottom position-relative',
         isSelected ? 'tree-row-selected' : 'list-group-item-action',
+        hasManualGradingAutoPointsWarning && 'tree-row-warning-indicator',
       )}
       style={{
         paddingLeft: indent,
@@ -248,9 +249,6 @@ export function TreeQuestionRow({
         // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
         paddingRight: '1.5rem',
         cursor: 'pointer',
-        ...(hasManualGradingAutoPointsWarning && {
-          borderLeft: '6px solid var(--bs-warning)',
-        }),
       }}
       onClick={(e) => {
         e.stopPropagation();
