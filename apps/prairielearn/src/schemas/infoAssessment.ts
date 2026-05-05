@@ -60,17 +60,17 @@ const GroupsStudentPermissionsJsonSchema = z
       .boolean()
       .describe('Whether students can create groups.')
       .optional()
-      .default(false),
+      .default(true),
     canJoinGroup: z
       .boolean()
       .describe('Whether students can join groups.')
       .optional()
-      .default(false),
+      .default(true),
     canLeaveGroup: z
       .boolean()
       .describe('Whether students can leave groups.')
       .optional()
-      .default(false),
+      .default(true),
     canNameGroup: z
       .boolean()
       .describe('Whether students can choose a group name when creating a group.')

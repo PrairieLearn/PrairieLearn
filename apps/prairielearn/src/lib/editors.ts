@@ -2515,20 +2515,24 @@ export class MultiEditor extends Editor {
 
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
 
-type PrepareJsonFileEditorResult =
+type PrepareJsonFileEditorResult<T extends Record<string, unknown>> =
   | {
       success: true;
       editor: FileModifyEditor;
       /** Hash of the scoped section after the write. */
       newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
     }
   | { success: false; reason: 'conflict' };
 
-type SaveJsonFileResult =
+type SaveJsonFileResult<T extends Record<string, unknown>> =
   | {
       success: true;
       /** Hash of the scoped section after the write. */
       newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
     }
   | { success: false; reason: 'conflict' }
   | { success: false; reason: 'sync_failed'; jobSequenceId: string };
@@ -2558,7 +2562,7 @@ export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
   conflictCheck,
   locals,
   container,
-}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult> {
+}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult<T>> {
   // Read file once for conflict check, content modification, and TOCTOU hash.
   const rawContents = await fs.readFile(jsonPath, 'utf8');
   const fullFileHash = computeFileContentHash(rawContents);
@@ -2585,12 +2589,12 @@ export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
   });
 
   const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
-  return { success: true, editor, newHash };
+  return { success: true, editor, newHash, jsonData: modifiedJsonContents };
 }
 
 export async function saveJsonFile<T extends Record<string, unknown>>(
   args: JsonFileEdit<T>,
-): Promise<SaveJsonFileResult> {
+): Promise<SaveJsonFileResult<T>> {
   const prepared = await prepareJsonFileEditor(args);
   if (!prepared.success) return prepared;
 
@@ -2601,7 +2605,7 @@ export async function saveJsonFile<T extends Record<string, unknown>>(
     return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
   }
 
-  return { success: true, newHash: prepared.newHash };
+  return { success: true, newHash: prepared.newHash, jsonData: prepared.jsonData };
 }
 
 /**

@@ -9,6 +9,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
   type AssessmentJson,
@@ -21,7 +22,7 @@ import {
   QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
