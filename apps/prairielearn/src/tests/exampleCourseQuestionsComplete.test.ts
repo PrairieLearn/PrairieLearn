@@ -247,7 +247,7 @@ const validateAxe = async (html: string) => {
 // Find all question directories
 const allQuestionDirs = findQuestionDirectories(questionsPath);
 
-// Filter for questions that don't use Manual or External grading
+// Filter for questions that don't use External grading
 const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
@@ -261,7 +261,7 @@ const internallyGradedQuestions = allQuestionDirs
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
-      !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
+      !['External'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
 const course = {
@@ -270,9 +270,6 @@ const course = {
 } as unknown as Course;
 
 const questionModule = questionServers.getModule('Freeform');
-
-// TODO: support '_files'
-const unsupportedQuestions = new Set(['element/fileEditor', 'element/codeDocumentation']);
 
 const accessibilitySkip = new Set([
   // Extremely large question
@@ -293,10 +290,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
-    it(`should succeed for ${relativePath}`, async function (context) {
-      if (unsupportedQuestions.has(relativePath)) {
-        context.skip();
-      }
+    it(`should succeed for ${relativePath}`, async () => {
       const question = {
         options: info.options ?? {},
         preferences_schema: info.preferences ?? null,

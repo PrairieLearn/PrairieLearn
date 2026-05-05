@@ -123,17 +123,17 @@ $(function() {
       </div>
       {{#retake_menu_enabled}}
         <div class="js-capture-buttons-dropdown dropdown d-none">
-          <button 
-            id="retake-dropdown-button" 
-            type="button" 
-            class="btn btn-sm btn-info dropdown-toggle" 
-            aria-expanded="false" 
-            data-bs-toggle="dropdown" 
+          <button
+            id="retake-dropdown-button-{{uuid}}"
+            type="button"
+            class="btn btn-sm btn-info dropdown-toggle"
+            aria-expanded="false"
+            data-bs-toggle="dropdown"
             data-bs-auto-close="outside"
           >
             Retake...
           </button>
-          <ul class="dropdown-menu" aria-labelledby="retake-dropdown-button">
+          <ul class="dropdown-menu" aria-labelledby="retake-dropdown-button-{{uuid}}">
             <li>
               <button
                 type="button"
