@@ -24,7 +24,6 @@ import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
   IndeterminateCheckbox,
-  MultiSelectColumnFilter,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
@@ -841,7 +840,7 @@ function StudentsCard({
             }) => {
               const labelIds = studentLabels.map((l) => l.id);
               return (
-                <MultiSelectColumnFilter
+                <CategoricalColumnFilter
                   column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
