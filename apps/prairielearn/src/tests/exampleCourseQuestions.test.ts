@@ -9,7 +9,6 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-import { withConfig } from './utils/config.js';
 
 const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 
@@ -82,13 +81,17 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
+    const originalWorkersCount = config.workersCount;
+
     beforeAll(async () => {
-      await withConfig({ workersCount: 8 }, async () => {
-        await helperServer.before(EXAMPLE_COURSE_PATH)();
-      });
+      config.workersCount = 4;
+      await helperServer.before(EXAMPLE_COURSE_PATH)();
     });
 
-    afterAll(helperServer.after);
+    afterAll(async () => {
+      await helperServer.after();
+      config.workersCount = originalWorkersCount;
+    });
 
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) => {
       it.concurrent(`auto-test ${qid}`, async () => {
