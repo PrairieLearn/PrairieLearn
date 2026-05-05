@@ -5,7 +5,7 @@ import { handleTrpcError } from '../../lib/trpc.js';
 import { createContext, t } from './init.js';
 import { manualGradingRouter } from './manual-grading.js';
 
-export const assessmentQuestionRouter = t.router({
+const assessmentQuestionRouter = t.router({
   manualGrading: manualGradingRouter,
 });
 

@@ -1,6 +1,5 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -843,7 +842,7 @@ function StudentsCard({
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
-                  column={header.column as Column<StudentRow, unknown>}
+                  column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
                     const label = studentLabels.find((l) => l.id === String(value));

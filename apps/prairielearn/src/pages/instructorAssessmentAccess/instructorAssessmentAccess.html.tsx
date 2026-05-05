@@ -13,7 +13,10 @@ import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import type { AccessControlJsonWithId } from '../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../models/assessment-access-control-rules.js';
 
 import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
 
@@ -360,11 +363,15 @@ export function InstructorAssessmentAccessNew({
   origHash,
   trpcCsrfToken,
   initialData,
+  prairieTestExamMetadata,
+  ptHost,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string | null;
   trpcCsrfToken: string;
   initialData: AccessControlJsonWithId[];
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }) {
   const pageContext = extractPageContext(resLocals, {
     pageType: 'courseInstance',
@@ -395,6 +402,8 @@ export function InstructorAssessmentAccessNew({
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
           initialData={initialData}
+          prairieTestExamMetadata={prairieTestExamMetadata}
+          ptHost={ptHost}
         />
       </Hydrate>
     ),

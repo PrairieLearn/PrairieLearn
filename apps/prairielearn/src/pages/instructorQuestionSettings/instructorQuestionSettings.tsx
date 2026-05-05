@@ -8,6 +8,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import {
   ArrayFromStringOrArraySchema,
@@ -15,7 +16,16 @@ import {
   IntegerFromStringOrEmptySchema,
 } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import {
+  StaffCourseInstanceSchema,
+  StaffQuestionSchema,
+  StaffTagSchema,
+  StaffTopicSchema,
+} from '../../lib/client/safe-db-types.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
@@ -45,8 +55,9 @@ import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.
 import { selectTopicsByCourseId } from '../../models/topics.js';
 import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
-import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
+import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {
+  EditableCourseSchema,
   SelectedAssessmentsSchema,
   type SharingSetRow,
   SharingSetRowSchema,
@@ -527,7 +538,20 @@ router.post(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    if (res.locals.question.course_id !== res.locals.course.id) {
+    const { course, authz_data, __csrf_token, authn_user, is_administrator } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'course',
+        accessType: 'instructor',
+      },
+    );
+    const question = StaffQuestionSchema.parse(res.locals.question);
+    const topic = StaffTopicSchema.parse(res.locals.topic);
+    const courseInstance =
+      StaffCourseInstanceSchema.nullish().parse(res.locals.course_instance) ?? null;
+    const userId = res.locals.user.id;
+
+    if (question.course_id !== course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
     // Construct the path of the question test route. We'll do this based on
@@ -544,29 +568,22 @@ router.get(
     // here because this form will actually post to a different route, not `req.originalUrl`.
     const questionTestCsrfToken = generateCsrfToken({
       url: questionTestPath,
-      authnUserId: res.locals.authn_user.id,
+      authnUserId: authn_user.id,
     });
 
-    const questionGHLink = courseRepoContentUrl(
-      res.locals.course,
-      `questions/${res.locals.question.qid}`,
-    );
+    const questionGHLink = courseRepoContentUrl(course, `questions/${question.qid}`);
 
-    const qids = await sqldb.queryScalars(
-      sql.qids,
-      { course_id: res.locals.course.id },
-      z.string(),
-    );
+    const qids = await sqldb.queryScalars(sql.qids, { course_id: course.id }, z.string());
 
     const assessmentsWithQuestion = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,
-      { question_id: res.locals.question.id },
+      { question_id: question.id },
       SelectedAssessmentsSchema,
     );
 
-    const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
-    const courseTags = await selectTagsByCourseId(res.locals.course.id);
-    const questionTags = await selectTagsByQuestionId(res.locals.question.id);
+    const courseTopics = await selectTopicsByCourseId(course.id);
+    const courseTags = await selectTagsByCourseId(course.id);
+    const questionTags = await selectTagsByQuestionId(question.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
@@ -575,42 +592,64 @@ router.get(
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,
         {
-          question_id: res.locals.question.id,
-          course_id: res.locals.course.id,
+          question_id: question.id,
+          course_id: course.id,
         },
         SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
-      user_id: res.locals.user.id,
-      is_administrator: res.locals.is_administrator,
+      user_id: userId,
+      is_administrator,
     });
-    const infoPath = path.join('questions', res.locals.question.qid!, 'info.json');
-    const fullInfoPath = path.join(res.locals.course.path, infoPath);
+    const fullInfoPath = path.join(course.path, 'questions', question.qid!, 'info.json');
 
     const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
 
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+    const hasCoursePermissionView = authz_data.has_course_permission_view;
+
+    const parsedCourseTopics = z.array(StaffTopicSchema).parse(courseTopics);
+    const parsedCourseTags = z.array(StaffTagSchema).parse(courseTags);
+    const parsedQuestionTags = z.array(StaffTagSchema).parse(questionTags);
+    const parsedEditableCourses = z.array(EditableCourseSchema).parse(editableCourses);
 
     res.send(
-      InstructorQuestionSettings({
+      PageLayout({
         resLocals: res.locals,
-        questionTestPath,
-        questionTestCsrfToken,
-        questionGHLink,
-        questionTags,
-        qids,
-        assessmentsWithQuestion,
-        sharingEnabled,
-        sharingSetsIn,
-        editableCourses,
-        infoPath,
-        origHash,
-        canEdit,
-        courseTopics,
-        courseTags,
+        pageTitle: 'Settings',
+        headContent: [compiledStylesheetTag('instructorQuestionSettings.css')],
+        navContext: {
+          type: 'instructor',
+          page: 'question',
+          subPage: 'settings',
+        },
+        options: {
+          pageNote: question.qid!,
+        },
+        content: (
+          <Hydrate>
+            <InstructorQuestionSettingsForm
+              question={question}
+              topic={topic}
+              courseInstance={courseInstance}
+              csrfToken={__csrf_token}
+              questionGHLink={questionGHLink}
+              questionTest={{ path: questionTestPath, csrfToken: questionTestCsrfToken }}
+              questionTags={parsedQuestionTags}
+              qids={qids}
+              assessmentsWithQuestion={assessmentsWithQuestion}
+              sharing={{ enabled: sharingEnabled, setsIn: sharingSetsIn ?? [] }}
+              editableCourses={parsedEditableCourses}
+              origHash={origHash}
+              canEdit={canEdit}
+              hasCoursePermissionView={hasCoursePermissionView}
+              courseTopics={parsedCourseTopics}
+              courseTags={parsedCourseTags}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),

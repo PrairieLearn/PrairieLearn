@@ -15,7 +15,22 @@ export interface RuntimeDateControl {
   password?: string | null;
 }
 
+/**
+ * Discriminator for which structural slot a segment fills:
+ * - `beforeRelease`: pre-release segment (always entries[0])
+ * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
+ * - `afterLastDeadline`: trailing segment when at least one deadline exists; credit/submittable come from `afterLastDeadline`
+ * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
+ */
+const AccessTimelineEntryKindSchema = z.enum([
+  'beforeRelease',
+  'deadline',
+  'afterLastDeadline',
+  'noDeadline',
+]);
+
 export const AccessTimelineEntrySchema = z.object({
+  kind: AccessTimelineEntryKindSchema,
   credit: z.number(),
   startDate: z.date().nullable(),
   endDate: z.date().nullable(),
@@ -124,6 +139,7 @@ export function buildAccessTimeline(
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
   const entries: AccessTimelineEntry[] = [
     {
+      kind: 'beforeRelease',
       startDate: null,
       endDate: releaseDate,
       credit: 0,
@@ -135,6 +151,7 @@ export function buildAccessTimeline(
   let segStart = releaseDate;
   for (const deadline of deadlines) {
     entries.push({
+      kind: 'deadline',
       startDate: segStart,
       endDate: deadline.date,
       credit: deadline.credit,
@@ -144,24 +161,18 @@ export function buildAccessTimeline(
     segStart = deadline.date;
   }
 
-  if (dueIsIndefinite) {
+  if (dueIsIndefinite || deadlines.length === 0) {
     entries.push({
+      kind: 'noDeadline',
       startDate: segStart,
       endDate: null,
-      credit: dueCredit,
-      current: isCurrent(segStart, null),
-      submittable: true,
-    });
-  } else if (deadlines.length === 0) {
-    entries.push({
-      startDate: segStart,
-      endDate: null,
-      credit: 100,
+      credit: dueIsIndefinite ? dueCredit : 100,
       current: isCurrent(segStart, null),
       submittable: true,
     });
   } else {
     entries.push({
+      kind: 'afterLastDeadline',
       startDate: segStart,
       endDate: null,
       credit: dateControl.afterLastDeadline?.credit ?? 0,
