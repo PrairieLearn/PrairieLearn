@@ -1167,9 +1167,7 @@ describe('resolveAccessControl', () => {
           {
             // Top-level afterComplete visibility has unlocked, so the resolver
             // grants a review-only path: authorized=true lets the middleware
-            // serve the page, active=false prevents submissions. Pins the full
-            // result shape so a future refactor can't silently change defaults
-            // (e.g., leaking a credit string or a non-null nextActiveDate).
+            // serve the page, active=false prevents submissions.
             name: 'at home after visible date: review-only',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Public',
@@ -1533,8 +1531,8 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, timeLimitMin: 60 },
       },
       {
-        // 10 minutes until deadline, minus 31 seconds = 569s / 60 = 9.48 → 9
-        name: 'caps time limit by seconds until next deadline',
+        // 10 minutes until the only deadline, minus 31 seconds = 569s / 60 = 9.48 → 9
+        name: 'caps time limit by seconds until the last submittable deadline',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -1593,14 +1591,11 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, timeLimitMin: null },
       },
       {
-        // Pins current behavior: the time limit caps at the *next* deadline
-        // (the due date), even when a submittable late window follows. A
-        // student starting 10 minutes before the due date has only ~9 minutes
-        // on their 60-minute clock — remaining minutes do not roll into the
-        // late window. This diverges from the design intent that the time
-        // limit should span access windows (100% for 10 min, then 80% for the
-        // rest, up to 60 min total).
-        name: 'caps at next deadline even when a submittable late window follows',
+        // Time limit spans submittable access windows: a student starting 10
+        // minutes before the due date keeps the full 60-minute clock, with
+        // 100% credit for the first 10 minutes (until the due date) and 80%
+        // for the remaining 50 minutes (until the late deadline 7 days out).
+        name: 'spans into late window: full duration, 100% credit currently',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -1612,7 +1607,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T11:50:00Z'),
-        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 9 },
+        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
       },
       {
         // Once inside the late window, the cap is the late deadline. With 6+
@@ -1647,6 +1642,23 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-22T11:30:00Z'),
         expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 29 },
+      },
+      {
+        // afterLastDeadline allowing submissions has no end, so submissions
+        // remain open indefinitely — the duration cap doesn't shrink.
+        name: 'no cap when afterLastDeadline allows submissions',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
