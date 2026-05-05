@@ -15,10 +15,8 @@ import type { KnipConfig } from 'knip';
  *   2. `dependencies.nodeModulesScripts` / `nodeModulesStyles` /
  *      `dynamicDependencies.nodeModulesScripts` entries in element / question
  *      `info.json` files.
- *   3. `require('pkg')` calls inside `binding.gyp` (node-gyp resolves these
- *      to locate native addon include dirs).
  *
- * Without help, knip reports every package used only via (1)–(3) as unused.
+ * Without help, knip reports every package used only via 1 or 2 as unused.
  * To work around this, we scan those files at config-load time, extract the
  * package names, and add them to `ignoreDependencies` so knip leaves them
  * alone. See https://github.com/webpro-nl/knip/issues/641 and
@@ -125,24 +123,11 @@ const sourceFileDependencies = (
   )
 ).flat();
 
-// Collect packages referenced by `require('pkg')` in `binding.gyp` files
-// (node-gyp resolves these to find native addon include dirs).
-const bindingGypPaths = await globby('packages/*/binding.gyp');
-const bindingGypRegex = /require\(\s*'([^']*)'\s*\)/g;
-const bindingGypDependencies = (
-  await Promise.all(
-    bindingGypPaths.map(async (path) => {
-      const content = await readFile(path, 'utf-8');
-      return [...content.matchAll(bindingGypRegex)].map((match) => match[1]);
-    }),
-  )
-).flat();
-
 // Reduce full asset paths down to package names. e.g.
 //   "lodash/lodash.min.js"            -> "lodash"
 //   "@fortawesome/fontawesome/...css" -> "@fortawesome/fontawesome"
 const autoDetectedDeps = new Set<string>(
-  [...infoJsonDependencies, ...sourceFileDependencies, ...bindingGypDependencies].map((dep) => {
+  [...infoJsonDependencies, ...sourceFileDependencies].map((dep) => {
     const parts = dep.split('/');
     if (parts[0].startsWith('@')) {
       return parts.slice(0, 2).join('/');
@@ -169,6 +154,7 @@ const config: KnipConfig = {
       project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
       ignore: ['vitest.config.ts'],
+      ignoreDependencies: ['@prairielearn/tsconfig', ...CLI_ONLY_DEPS],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
@@ -189,6 +175,8 @@ const config: KnipConfig = {
         'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
+      // Tell knip not to flag these as unused.
+      ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
     'apps/workspace-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
@@ -207,6 +195,9 @@ const config: KnipConfig = {
       entry: ['src/test-utils.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    'packages/bind-mount': {
+      ignoreDependencies: ['nan'],
+    },
     'packages/tsconfig': {
       entry: [],
       project: [],
@@ -216,15 +207,7 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
-  // Tell knip not to flag these as unused. Order matches the explanation at
-  // the top of the file: auto-detected runtime asset deps, then the three
-  // manual buckets.
-  ignoreDependencies: [
-    ...autoDetectedDeps,
-    ...EXTERNAL_ELEMENT_DEPS,
-    ...CLI_ONLY_DEPS,
-    ...DEPS_OF_DEAD_CODE,
-  ],
+
   // TODO: enable these features
   exclude: ['binaries'],
 };
