@@ -4,9 +4,11 @@ const { findVariable } = ASTUtils;
 
 /**
  * tRPC procedures must enforce their own authorization via a `require*`
- * permission middleware in the chain. Page-level Express middleware skips
- * tRPC requests (so HTML error pages don't break JSON clients), so the
- * procedure is the only authz gate.
+ * permission middleware in the chain.
+ * Individual procedures often need stricter permissions than the page they're
+ * mounted under (e.g. an Edit-only mutation under a route that allows View).
+ * Requiring an explicit permission middleware per procedure makes the
+ * authz gate visible at the call site and helps prevent missing permission checks.
  *
  * Bad:
  * ```ts
