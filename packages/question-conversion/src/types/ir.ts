@@ -24,7 +24,7 @@ export interface IRBlank {
 }
 
 /** A blank with dropdown choices for multiple-dropdowns questions. */
-export interface IRDropdownBlank {
+interface IRDropdownBlank {
   id: string;
   choices: IRChoice[];
 }
@@ -45,7 +45,7 @@ export interface IRNumericAnswer {
 }
 
 /** Integer answer specification. */
-export interface IRIntegerAnswer {
+interface IRIntegerAnswer {
   correctValue: number;
 }
 

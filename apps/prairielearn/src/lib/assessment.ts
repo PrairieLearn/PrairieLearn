@@ -31,7 +31,7 @@ import { createServerJob } from './server-jobs.js';
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
   event_date: DateFromISOString,

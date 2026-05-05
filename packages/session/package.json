@@ -37,13 +37,13 @@
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.2",
-    "express": "^4.22.1",
+    "@vitest/coverage-v8": "^4.1.5",
+    "express": "^4.22.1 <5",
     "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
     "set-cookie-parser": "^3.1.0",
     "source-map-support": "^0.5.21",
     "tsx": "^4.21.0",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.5"
   }
 }

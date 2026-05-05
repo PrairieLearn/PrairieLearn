@@ -12,7 +12,7 @@ export const MAX_ACCESS_CONTROL_RULES = 50;
  */
 export const MAX_ENROLLMENT_RULES = 100;
 
-export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
   rule: AccessControlJson;
@@ -20,7 +20,7 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
-export type AccessControlIssuePath =
+type AccessControlIssuePath =
   | ['dateControl', 'release', 'date']
   | ['dateControl', 'due', 'date']
   | ['dateControl', 'due', 'credit']
