@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import clsx from 'clsx';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
 import { useFormState } from 'react-hook-form';
@@ -44,12 +45,14 @@ function SortableOverrideCard({
   displayTimezone,
   onEdit,
   onRemove,
+  isActive,
 }: {
   id: string;
   override: OverrideData;
   formErrors: RuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
+  isActive: boolean;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -70,6 +73,7 @@ function SortableOverrideCard({
         title={title}
         displayTimezone={displayTimezone}
         formErrors={formErrors}
+        isActive={isActive}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
@@ -164,6 +168,7 @@ function DefaultRuleSummaryContent({
 export function AccessControlSummary({
   defaultRule,
   overrides,
+  selectedOverrideIndex,
   getOverrideName,
   onAddOverride,
   onRemoveOverride,
@@ -177,6 +182,7 @@ export function AccessControlSummary({
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+  selectedOverrideIndex: number | null;
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
@@ -206,7 +212,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (enrollment must stay before student_label)
+    // Prevent reordering across override types; each target type has its own precedence section.
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -299,22 +305,21 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstEnrollment =
-                  index === 0 && override.appliesTo.targetType === 'enrollment';
-                const isFirstLabel =
-                  override.appliesTo.targetType === 'student_label' &&
-                  (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
+                const isFirstOfSection =
+                  index === 0 ||
+                  overrides[index - 1].appliesTo.targetType !== override.appliesTo.targetType;
+                const sectionLabel =
+                  override.appliesTo.targetType === 'enrollment'
+                    ? 'Overrides for specific students'
+                    : 'Overrides for student labels';
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstEnrollment && (
-                      <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for specific students
-                      </small>
-                    )}
-                    {isFirstLabel && (
-                      <small className="text-muted fw-semibold d-block mb-2 mt-3">
-                        Overrides for student labels
+                    {isFirstOfSection && (
+                      <small
+                        className={clsx('text-muted fw-semibold d-block mb-2', index > 0 && 'mt-3')}
+                      >
+                        {sectionLabel}
                       </small>
                     )}
                     <SortableOverrideCard
@@ -323,6 +328,7 @@ export function AccessControlSummary({
                       formErrors={errors.overrides?.[index]}
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
+                      isActive={selectedOverrideIndex === index}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />
