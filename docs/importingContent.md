@@ -47,7 +47,7 @@ The import review screen will tell you specifically what was and wasn't included
    - **Course** — exports everything as an `.imscc` file (this is the better option if you want to import multiple quizzes at once)
 4. Download the export file when it's ready.
 
-Other LMS platforms have similar export features — look for "QTI export" or "IMS Common Cartridge export" in your platform's documentation.
+Other LMS platforms may have similar export features — look for "QTI export" or "IMS Common Cartridge export" in your platform's documentation.
 
 ## Importing into PrairieLearn
 
