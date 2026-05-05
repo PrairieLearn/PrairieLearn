@@ -5,10 +5,24 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../components/PageLayout.js';
+import {
+  CourseInstancePageAuthzDataSchema,
+  CoursePageAuthzDataSchema,
+} from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
-import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
+import {
+  AuthzAccessMismatch,
+  type CheckablePermissionKeys,
+  getErrorExplanation,
+} from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
+
+const REQUIRED_PERMISSIONS: CheckablePermissionKeys[] = [
+  'has_course_permission_preview',
+  'has_course_instance_permission_view',
+];
 
 export async function authzHasCoursePreviewOrInstanceView(
   req: Request,
@@ -46,7 +60,17 @@ export async function authzHasCoursePreviewOrInstanceView(
     const pageContext = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'instructor',
+      withAuthzData: false,
     });
+
+    // This middleware runs on both course-only and course-instance routes.
+    // The upstream `authzCourseOrInstance` middleware only populates CI authz
+    // fields on `res.locals.authz_data` when `course_instance_id` is in the
+    // route params, so we use that param to pick the matching schema.
+    const authzSchema = req.params.course_instance_id
+      ? CourseInstancePageAuthzDataSchema
+      : CoursePageAuthzDataSchema;
+    const authzData = authzSchema.parse(res.locals.authz_data);
     return {
       type: 'body',
       html: PageLayout({
@@ -59,13 +83,11 @@ export async function authzHasCoursePreviewOrInstanceView(
         content: (
           <Hydrate>
             <AuthzAccessMismatch
-              oneOfPermissionKeys={[
-                'has_course_permission_preview',
-                'has_course_instance_permission_view',
-              ]}
-              authzData={pageContext.authz_data}
+              errorExplanation={getErrorExplanation(REQUIRED_PERMISSIONS)}
+              oneOfPermissionKeys={REQUIRED_PERMISSIONS}
+              authzData={authzData}
               authnUser={pageContext.authn_user}
-              authzUser={pageContext.authz_data.user}
+              authzUser={authzData.user}
             />
           </Hydrate>
         ),
@@ -82,6 +104,9 @@ export async function authzHasCoursePreviewOrInstanceView(
 export default asyncHandler(async (req, res, next) => {
   const result = await authzHasCoursePreviewOrInstanceView(req, res);
   if (result.type === 'body') {
+    if (isTrpcRequest(req)) {
+      throw new error.HttpStatusError(403, getErrorExplanation(REQUIRED_PERMISSIONS));
+    }
     res.status(403).send(result.html);
   } else if (result.type === 'redirect') {
     res.redirect(result.url);

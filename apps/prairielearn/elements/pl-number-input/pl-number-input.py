@@ -1,13 +1,12 @@
 import random
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -104,7 +103,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
-) -> str:
+) -> str | None:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
     if correct_answer is not None and correct_answer != "":
         # Get format and comparison parameters

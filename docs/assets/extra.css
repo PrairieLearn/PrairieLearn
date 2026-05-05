@@ -161,3 +161,9 @@ code.doc-symbol-json::after {
 .muted {
   color: var(--md-default-fg-color--light);
 }
+
+/* Frame screenshots so they don't blend into the page background. */
+.md-typeset img[src*='/screenshots/'] {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+}

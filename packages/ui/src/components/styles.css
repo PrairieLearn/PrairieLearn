@@ -139,9 +139,9 @@ body.pl-ui-no-user-select {
   display: none;
 }
 
-/* ── StickyActionBar ─────────────────────────────────────────────────── */
+/* ── StickySaveBar ─────────────────────────────────────────────────── */
 
-.pl-ui-sticky-action-bar {
+.pl-ui-sticky-save-bar {
   position: sticky;
   bottom: 0;
   background-color: var(--bs-body-bg);

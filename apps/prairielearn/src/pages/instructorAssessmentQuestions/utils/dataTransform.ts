@@ -261,7 +261,7 @@ export function createZoneWithTrackingId(
   return {
     ...zone,
     trackingId: createTrackingId(),
-  } as ZoneAssessmentForm;
+  };
 }
 
 /**
@@ -311,7 +311,7 @@ export function createAltPoolWithTrackingId(): AltPoolBlockForm {
     alternatives: [],
     canSubmit: [],
     canView: [],
-  } as AltPoolBlockForm;
+  };
 }
 
 /**
@@ -340,7 +340,7 @@ export function alternativeToQuestionBlock(
     merged.gradeRateMinutes ??= parentPool.gradeRateMinutes;
     merged.allowRealTimeGrading ??= parentPool.allowRealTimeGrading;
   }
-  return omitUndefined(merged) as StandaloneQuestionBlockForm;
+  return omitUndefined(merged);
 }
 
 /**
