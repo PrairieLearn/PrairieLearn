@@ -1661,6 +1661,23 @@ describe('resolveAccessControl', () => {
         date: new Date('2025-03-15T11:50:00Z'),
         expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
       },
+      {
+        // Same rule, started after the due date: full duration available at
+        // the afterLastDeadline credit (25%).
+        name: 'after due in afterLastDeadline: full duration at reduced credit',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-16T00:00:00Z'),
+        expect: { authorized: true, submittable: true, credit: 25, timeLimitMin: 60 },
+      },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
     });
