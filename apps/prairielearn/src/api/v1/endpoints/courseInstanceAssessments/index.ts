@@ -44,11 +44,10 @@ const AssessmentAccessRuleDataSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
   assessment_name: AssessmentSchema.shape.tid,
   assessment_title: AssessmentSchema.shape.title,
-  assessment_label: z.string(),
   assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
   assessment_number: AssessmentSchema.shape.number,
   credit: AssessmentAccessRuleSchema.shape.credit,
-  end_date: z.string().nullable(),
+  end_date: AssessmentAccessRuleSchema.shape.end_date,
   exam_uuid: AssessmentAccessRuleSchema.shape.exam_uuid,
   assessment_access_rule_id: AssessmentAccessRuleSchema.shape.id,
   mode: AssessmentAccessRuleSchema.shape.mode,
@@ -56,7 +55,7 @@ const AssessmentAccessRuleDataSchema = z.object({
   password: AssessmentAccessRuleSchema.shape.password,
   show_closed_assessment: AssessmentAccessRuleSchema.shape.show_closed_assessment,
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
-  start_date: z.string().nullable(),
+  start_date: AssessmentAccessRuleSchema.shape.start_date,
   time_limit_min: AssessmentAccessRuleSchema.shape.time_limit_min,
   uids: AssessmentAccessRuleSchema.shape.uids,
 });
@@ -171,7 +170,20 @@ router.get(
       },
       AssessmentAccessRuleDataSchema,
     );
-    res.status(200).send(data);
+    res.status(200).send(
+      data.map(({ start_date, end_date, ...row }) => ({
+        ...row,
+        assessment_label: row.assessment_set_abbreviation + row.assessment_number,
+        start_date:
+          start_date == null
+            ? null
+            : formatDateISO(start_date, res.locals.course_instance.display_timezone),
+        end_date:
+          end_date == null
+            ? null
+            : formatDateISO(end_date, res.locals.course_instance.display_timezone),
+      })),
+    );
   }),
 );
 

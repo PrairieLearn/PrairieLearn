@@ -104,7 +104,7 @@ WITH
       s.max_points,
       s.points,
       s.date,
-      s.seconds,
+      s.duration,
       s.assessment_instance_id
     FROM
       course_users AS u

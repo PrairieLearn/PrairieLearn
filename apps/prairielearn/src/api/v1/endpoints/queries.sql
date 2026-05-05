@@ -95,11 +95,10 @@ SELECT
   a.id AS assessment_id,
   a.tid AS assessment_name,
   a.title AS assessment_title,
-  (aset.abbreviation || a.number) AS assessment_label,
   aset.abbreviation AS assessment_set_abbreviation,
   a.number AS assessment_number,
   aar.credit,
-  format_date_iso8601 (aar.end_date, ci.display_timezone) AS end_date,
+  aar.end_date,
   aar.exam_uuid,
   aar.id AS assessment_access_rule_id,
   aar.mode,
@@ -107,7 +106,7 @@ SELECT
   aar.password,
   aar.show_closed_assessment,
   aar.show_closed_assessment_score,
-  format_date_iso8601 (aar.start_date, ci.display_timezone) AS start_date,
+  aar.start_date,
   aar.time_limit_min,
   aar.uids
 FROM
