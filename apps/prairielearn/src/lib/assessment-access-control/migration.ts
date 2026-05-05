@@ -288,6 +288,24 @@ function buildAfterComplete(
   return result;
 }
 
+function hasDelayedReviewWithoutHiddenWindow(rules: AssessmentAccessRuleJson[]): boolean {
+  const lastCreditEndDate = findLastCreditEndDate(rules);
+  if (!lastCreditEndDate) return false;
+
+  const questionRevealDates = getVisibilityRules(rules)
+    .filter((r) => r.showClosedAssessment !== false)
+    .map((r) => r.startDate)
+    .filter((date): date is string => !!date && date > lastCreditEndDate)
+    .sort();
+  const firstQuestionRevealDate = questionRevealDates[0];
+  if (!firstQuestionRevealDate) return false;
+
+  return !rules.some(
+    (r) =>
+      r.showClosedAssessment === false && (!r.startDate || r.startDate < firstQuestionRevealDate),
+  );
+}
+
 function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   const firstCreditStartDate = findFirstCreditStartDate(rules);
   if (!firstCreditStartDate) return false;
@@ -751,6 +769,15 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
       errors: [
         'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
       ],
+      notes,
+      hasUidRules,
+      results: null,
+    };
+  }
+
+  if (hasDelayedReviewWithoutHiddenWindow(schedulingRules)) {
+    return {
+      errors: ['Delayed review windows without showClosedAssessment:false are not supported.'],
       notes,
       hasUidRules,
       results: null,

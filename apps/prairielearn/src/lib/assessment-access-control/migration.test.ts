@@ -464,6 +464,31 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'later review window without intermediate hidden window is unsupported',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          startDate: '1999-01-01T00:00:01',
+          endDate: '2019-12-31T23:59:59',
+        },
+        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
+        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
+        {
+          active: false,
+          credit: 0,
+          startDate: '2040-01-01T00:00:01',
+          endDate: '2049-12-31T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: ['Delayed review windows without showClosedAssessment:false are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'late deadline preserved when open-ended credit is lower than due-date credit',
       rules: [
         { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },
