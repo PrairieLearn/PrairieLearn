@@ -13,6 +13,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
+
 import { assertNever } from '@prairielearn/utils';
 
 import {
@@ -49,6 +51,11 @@ export interface AssessmentMigrationAnalysis {
 interface CourseInstanceMigrationAnalysis {
   assessments: AssessmentMigrationAnalysis[];
   hasLegacyRules: boolean;
+}
+
+interface QuestionReviewWindow {
+  visibleFromDate: string;
+  visibleUntilDate?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +98,10 @@ function normalizeDateForInputDate(date: string): string {
   const dateParts = /([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})/.exec(date);
   if (!dateParts) return date;
   return `${dateParts[1]}T${dateParts[2]}`;
+}
+
+function addOneSecondToInputDate(date: string): string {
+  return Temporal.PlainDateTime.from(date).add({ seconds: 1 }).toString();
 }
 
 function normalizeRuleDates(rule: AssessmentAccessRuleJson): AssessmentAccessRuleJson {
@@ -256,23 +267,32 @@ function buildAfterComplete(
 ): AccessControlJsonInput['afterComplete'] | undefined {
   const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
   const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
-  if (!hidesAssessment && !hidesScore) return undefined;
+  const questionReviewWindows = getQuestionReviewWindows(rules);
+
+  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) return undefined;
 
   const result: AccessControlJsonInput['afterComplete'] = {};
-  if (hidesAssessment) result.questions = { hidden: true };
+  if (hidesAssessment || questionReviewWindows.length > 0) result.questions = { hidden: true };
   if (hidesScore) result.score = { hidden: true };
 
   const lastCreditEndDate = findLastCreditEndDate(rules);
-  if (lastCreditEndDate) {
-    const visibilityRules = getVisibilityRules(rules);
+  const visibilityRules = getVisibilityRules(rules);
+  const questionReviewWindow = questionReviewWindows[0];
+  const visibleUntilDate =
+    questionReviewWindows.length === 1 ? questionReviewWindow.visibleUntilDate : undefined;
 
-    if (hidesAssessment && result.questions) {
+  const questions = result.questions;
+  if (lastCreditEndDate && questions) {
+    if (questionReviewWindows.length > 0) {
+      questions.visibleFromDate = questionReviewWindow.visibleFromDate;
+      if (visibleUntilDate) questions.visibleUntilDate = visibleUntilDate;
+    } else if (hidesAssessment) {
       const questionRevealDates = visibilityRules
         .filter((r) => r.showClosedAssessment !== false)
         .map((r) => r.startDate)
         .filter((date): date is string => !!date && date > lastCreditEndDate)
         .sort();
-      if (questionRevealDates[0]) result.questions.visibleFromDate = questionRevealDates[0];
+      if (questionRevealDates[0]) questions.visibleFromDate = questionRevealDates[0];
     }
 
     if (hidesScore && result.score) {
@@ -288,25 +308,66 @@ function buildAfterComplete(
   return result;
 }
 
-function hasDelayedReviewWithoutHiddenWindow(rules: AssessmentAccessRuleJson[]): boolean {
+function getQuestionReviewWindows(rules: AssessmentAccessRuleJson[]): QuestionReviewWindow[] {
+  // Legacy active:false rules can create bounded review-only windows after the
+  // last deadline. In accessControl, completed questions are hidden by default,
+  // so model that window as hidden except visible starting at that window. If
+  // there is exactly one bounded review window, preserve its end date too.
   const lastCreditEndDate = findLastCreditEndDate(rules);
-  if (!lastCreditEndDate) return false;
+  if (lastCreditEndDate == null) return [];
 
-  const questionRevealDates = getVisibilityRules(rules)
-    .filter((r) => r.showClosedAssessment !== false)
-    .map((r) => r.startDate)
-    .filter((date): date is string => !!date && date > lastCreditEndDate)
-    .sort();
-  const firstQuestionRevealDate = questionRevealDates[0];
-  if (!firstQuestionRevealDate) return false;
+  const windows = getVisibilityRules(rules)
+    .filter(
+      (r) =>
+        r.showClosedAssessment !== false &&
+        ((r.startDate != null && r.startDate > lastCreditEndDate) ||
+          (r.endDate != null && r.endDate > lastCreditEndDate)),
+    )
+    .map((r) => {
+      // afterComplete dates must be strictly post-deadline, so clamp legacy
+      // review windows that started before or exactly at the final deadline.
+      const visibleFromDate =
+        r.startDate && r.startDate > lastCreditEndDate
+          ? r.startDate
+          : addOneSecondToInputDate(lastCreditEndDate);
+      return { visibleFromDate, visibleUntilDate: r.endDate };
+    })
+    .filter(
+      (window) =>
+        window.visibleUntilDate == null || window.visibleFromDate < window.visibleUntilDate,
+    )
+    .sort((a, b) => a.visibleFromDate.localeCompare(b.visibleFromDate));
 
-  const gapMs = new Date(firstQuestionRevealDate).getTime() - new Date(lastCreditEndDate).getTime();
-  if (gapMs <= MAX_CONTIGUOUS_GAP_MS) return false;
+  return mergeQuestionReviewWindows(windows);
+}
 
-  return !rules.some(
-    (r) =>
-      r.showClosedAssessment === false && (!r.startDate || r.startDate < firstQuestionRevealDate),
-  );
+function mergeQuestionReviewWindows(windows: QuestionReviewWindow[]): QuestionReviewWindow[] {
+  const merged: QuestionReviewWindow[] = [];
+
+  for (const window of windows) {
+    const previous = merged.at(-1);
+    if (previous == null) {
+      merged.push(window);
+      continue;
+    }
+
+    if (previous.visibleUntilDate == null) continue;
+
+    const contiguousVisibleUntilDate = addOneSecondToInputDate(previous.visibleUntilDate);
+    // Overlapping or immediately adjacent legacy review rules are still one representable window.
+    // Separate windows remain separate so the caller can warn about the gap.
+    if (window.visibleFromDate <= contiguousVisibleUntilDate) {
+      if (window.visibleUntilDate == null) {
+        delete previous.visibleUntilDate;
+      } else if (window.visibleUntilDate > previous.visibleUntilDate) {
+        previous.visibleUntilDate = window.visibleUntilDate;
+      }
+    } else {
+      merged.push(window);
+    }
+  }
+
+  return merged;
 }
 
 function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
@@ -778,12 +839,6 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
     };
   }
 
-  if (hasDelayedReviewWithoutHiddenWindow(schedulingRules)) {
-    notes.push(
-      'Post-deadline access gap approximated: assessment may be listed before the later review window.',
-    );
-  }
-
   const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
   const hasModeOnly =
     !hasCreditRules &&
@@ -811,6 +866,13 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
 
   if (errors.length > 0) {
     return { errors, notes, hasUidRules, results: null };
+  }
+
+  const questionReviewWindowCount = getQuestionReviewWindows(schedulingRules).length;
+  if (questionReviewWindowCount > 1) {
+    notes.push(
+      `${questionReviewWindowCount} completed-question review windows collapsed into a single visibility window.`,
+    );
   }
 
   // No-op detection: when nothing produced a dateControl, password, or
