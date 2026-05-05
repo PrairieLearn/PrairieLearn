@@ -350,9 +350,9 @@
     "brotli": 244649
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
-    "raw": 260210,
-    "gzip": 82015,
-    "brotli": 70899
+    "raw": 259902,
+    "gzip": 81855,
+    "brotli": 70764
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
     "raw": 742891,
