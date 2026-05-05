@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalars } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type QtiImportAssessmentData, QtiImportEditor } from '../../lib/editors.js';
@@ -76,26 +76,24 @@ const create = t.procedure
     }
 
     // Look up the created assessment IDs by their UUIDs.
-    const assessmentIds: string[] = [];
-    for (const assessment of input.assessments) {
-      try {
-        const id = await queryScalar(
-          sql.select_assessment_id_from_uuid,
-          {
-            uuid: assessment.infoJson.uuid,
-            course_instance_id: ctx.course_instance.id,
-          },
-          IdSchema,
-        );
-        assessmentIds.push(id);
-      } catch {
-        // Assessment may not have synced correctly; skip it.
-      }
-    }
+    const uuids = input.assessments.map((a) => a.infoJson.uuid);
+    const assessmentIds = await queryScalars(
+      sql.select_assessment_ids_from_uuids,
+      {
+        uuids,
+        course_instance_id: ctx.course_instance.id,
+      },
+      IdSchema,
+    );
 
     const count = assessmentIds.length;
+    const expected = input.assessments.length;
     if (count > 0) {
-      flash('success', `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`);
+      const warning = count < expected ? ` (${expected - count} failed to sync)` : '';
+      flash(
+        'success',
+        `${count} assessment${count !== 1 ? 's' : ''} imported successfully.${warning}`,
+      );
     }
 
     return { jobSequenceId: serverJob.jobSequenceId, assessmentIds };

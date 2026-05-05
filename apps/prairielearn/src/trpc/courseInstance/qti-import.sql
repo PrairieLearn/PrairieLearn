@@ -1,9 +1,9 @@
--- BLOCK select_assessment_id_from_uuid
+-- BLOCK select_assessment_ids_from_uuids
 SELECT
-  a.id AS assessment_id
+  a.id
 FROM
   assessments AS a
 WHERE
-  a.uuid = $uuid
+  a.uuid = ANY ($uuids::uuid[])
   AND a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL;

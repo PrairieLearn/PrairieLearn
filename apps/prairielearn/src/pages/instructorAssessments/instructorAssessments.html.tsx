@@ -87,6 +87,7 @@ export function InstructorAssessments({
                           class="btn btn-sm btn-light"
                           data-bs-toggle="modal"
                           data-bs-target="#createAssessmentModal"
+                          aria-label="Add assessment"
                         >
                           <i class="fa fa-plus" aria-hidden="true"></i>
                           <span class="d-none d-sm-inline">Add assessment</span>
