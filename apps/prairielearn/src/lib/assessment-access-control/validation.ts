@@ -590,20 +590,15 @@ export function validateGlobalCreditConsistencyIssues(
   return issues;
 }
 
-interface EffectiveAfterCompleteQuestions {
-  hidden: boolean;
-  visibleFromDate?: string;
-  visibleUntilDate?: string;
-}
-interface EffectiveAfterCompleteScore {
-  hidden: boolean;
-  visibleFromDate?: string;
-}
+type AfterCompleteQuestions = NonNullable<
+  NonNullable<AccessControlJson['afterComplete']>['questions']
+>;
+type AfterCompleteScore = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
 
 function resolveEffectiveAfterComplete(
   rule: AccessControlJson,
   defaultRule: AccessControlJson | undefined,
-): { questions: EffectiveAfterCompleteQuestions; score: EffectiveAfterCompleteScore } {
+): { questions: AfterCompleteQuestions; score: AfterCompleteScore } {
   const ruleAc = rule.afterComplete;
   const defaultAc = defaultRule?.afterComplete;
   // Defaults: questions hidden, score visible. An override that doesn't
@@ -614,8 +609,8 @@ function resolveEffectiveAfterComplete(
 }
 
 function getAfterCompleteCrossFieldMessage(
-  questions: EffectiveAfterCompleteQuestions,
-  score: EffectiveAfterCompleteScore,
+  questions: AfterCompleteQuestions,
+  score: AfterCompleteScore,
 ): string | null {
   if (score.hidden && !questions.hidden) {
     return 'Score cannot be hidden while questions are visible. Choose "Show score after completion" or hide questions too.';
