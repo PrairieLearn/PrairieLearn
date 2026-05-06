@@ -543,10 +543,6 @@ export class CodeCallerNative implements CodeCaller {
     // https://nodejs.org/api/timers.html#setimmediatecallback-args
     setImmediate(() => {
       if (this.state !== RESTARTING) return;
-      if (this._restartWasSuccessful()) {
-        this._restartIsFinished();
-        return;
-      }
       const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
       this.timeoutID = null;
       this.child?.kill('SIGTERM');
