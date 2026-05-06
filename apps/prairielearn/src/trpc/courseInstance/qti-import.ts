@@ -7,6 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { type QtiImportAssessmentData, QtiImportEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
@@ -16,8 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const SafeDirectoryName = z
   .string()
   .min(1)
-  .regex(/^[A-Za-z0-9._\-/]+$/, 'Directory name contains invalid characters')
-  .refine((s) => !s.includes('..'), 'Directory name must not contain ".."');
+  .regex(SHORT_NAME_REGEX, 'Directory name contains invalid characters');
 
 const QuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
@@ -25,6 +25,7 @@ const QuestionDataSchema = z.object({
   questionHtml: z.string(),
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string()),
+  overwrite: z.boolean().optional(),
 });
 
 const AssessmentDataSchema = z.object({

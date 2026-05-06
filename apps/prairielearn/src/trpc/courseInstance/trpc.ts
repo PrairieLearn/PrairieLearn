@@ -7,7 +7,6 @@ import { instanceAdminSettingsRouter } from './instance-admin-settings.js';
 import { qtiImportRouter } from './qti-import.js';
 import { studentLabelsRouter } from './student-labels.js';
 
-
 export const courseInstanceRouter = t.router({
   qtiImport: qtiImportRouter,
   instanceAdminSettings: instanceAdminSettingsRouter,
