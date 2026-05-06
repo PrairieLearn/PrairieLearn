@@ -3,6 +3,7 @@ from typing import cast
 
 import pytest
 import sympy
+from mathjson import MathJsonExpression
 from mathjson_utils import (
     MathJsonParseError,
     mathjson_to_sympy_expr,
@@ -12,7 +13,7 @@ from mathjson_utils import (
 from sympy.core.symbol import Str
 
 
-def _raw_mathjson(mathjson: object) -> str:
+def _raw_mathjson(mathjson: MathJsonExpression) -> str:
     return json.dumps(mathjson)
 
 
@@ -44,7 +45,7 @@ def test_converts_arithmetic_expression() -> None:
     ],
 )
 def test_converts_json_number_primitives(
-    mathjson: object,
+    mathjson: MathJsonExpression,
     expected: sympy.Basic,
 ) -> None:
     assert mathjson_to_sympy_expr(mathjson) == expected
@@ -151,6 +152,27 @@ def test_round_trips_sympy_sets_to_raw_mathjson() -> None:
     assert raw_mathjson_to_sympy_expr(
         sympy_expr_to_raw_mathjson(sympy.FiniteSet(sympy.EmptySet))
     ) == sympy.FiniteSet(sympy.EmptySet)
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected_mathjson"),
+    [
+        (sympy.Interval.Lopen(1, 2), ["Interval", ["Open", 1], 2]),
+        (sympy.Interval.Ropen(1, 2), ["Interval", 1, ["Open", 2]]),
+        (
+            sympy.Interval.open(1, 2),
+            ["Interval", ["Open", 1], ["Open", 2]],
+        ),
+    ],
+)
+def test_serializes_open_interval_endpoints_to_raw_mathjson(
+    expr: sympy.Interval,
+    expected_mathjson: MathJsonExpression,
+) -> None:
+    raw_mathjson = sympy_expr_to_raw_mathjson(expr)
+
+    assert json.loads(raw_mathjson) == expected_mathjson
+    assert raw_mathjson_to_sympy_expr(raw_mathjson) == expr
 
 
 def test_converts_open_interval_endpoints() -> None:
@@ -313,7 +335,7 @@ def test_rejects_mathjson_parse_errors() -> None:
     ],
 )
 def test_runtime_checks_reject_invalid_mathjson_shapes_before_conversion(
-    mathjson: object,
+    mathjson: MathJsonExpression,
 ) -> None:
     with pytest.raises((TypeError, ValueError)):
         mathjson_to_sympy_expr(mathjson)
