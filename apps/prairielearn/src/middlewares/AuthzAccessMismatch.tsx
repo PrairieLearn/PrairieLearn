@@ -179,11 +179,8 @@ export function AuthzAccessMismatch({
   authnUser,
   authzUser,
 }: {
-  /**
-   * A sentence-like description of why the user can't access the page. If not provided,
-   * one will be generated from `oneOfPermissionKeys`.
-   */
-  errorExplanation?: string;
+  /** A sentence-like description of why the user can't access the page. */
+  errorExplanation: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
   authzData: PageAuthzData;
   authnUser: StudentUser | StaffUser;
@@ -225,7 +222,7 @@ export function AuthzAccessMismatch({
           <h1>Effective user has insufficient access</h1>
         </div>
         <div className="card-body">
-          <p>{errorExplanation ?? getErrorExplanation(oneOfPermissionKeys)}</p>
+          <p>{errorExplanation}</p>
           {hasEffectiveUser ? (
             <p>
               The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
