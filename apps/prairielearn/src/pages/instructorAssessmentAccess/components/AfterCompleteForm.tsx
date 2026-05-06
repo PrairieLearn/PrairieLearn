@@ -5,10 +5,11 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import type {
-  AccessControlFormData,
-  QuestionVisibilityValue,
-  ScoreVisibilityValue,
+import {
+  type AccessControlFormData,
+  type QuestionVisibilityValue,
+  type ScoreVisibilityValue,
+  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -92,7 +93,7 @@ function QuestionVisibilityInput({
   onChange,
   idPrefix,
   hasPrairieTest = false,
-  hasActiveCompletion = true,
+  hasCompletionMechanism = true,
   errorMessage,
   visibleFromDateError,
   visibleUntilDateError,
@@ -102,7 +103,7 @@ function QuestionVisibilityInput({
   onChange: (value: QuestionVisibilityValue) => void;
   idPrefix: string;
   hasPrairieTest?: boolean;
-  hasActiveCompletion?: boolean;
+  hasCompletionMechanism?: boolean;
   errorMessage?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
@@ -255,7 +256,7 @@ function QuestionVisibilityInput({
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
-      {!hasPrairieTest && hasActiveCompletion && hideQuestionsMode !== 'show_questions' && (
+      {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
           completion" so students can review their work.
@@ -440,23 +441,27 @@ export function DefaultAfterCompleteForm({
   )?.message;
   const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
-  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
-    name: 'defaultRule.prairieTestExams',
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
   });
-  const hasPrairieTest = prairieTestExams.length > 0;
-
-  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({
-    name: 'defaultRule.due',
-  });
-  const dueDate = due.date;
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({ name: 'defaultRule.due' });
   const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
     name: 'defaultRule.lateDeadlines',
   });
   const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
     name: 'defaultRule.durationMinutes',
   });
-  const hasActiveCompletion =
-    hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
+  });
+  const hasPrairieTest = prairieTestExams.length > 0;
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism({
+    dateControlEnabled,
+    due,
+    lateDeadlines,
+    durationMinutes,
+    prairieTestExams,
+  });
 
   return (
     <AfterCompleteCard title={title}>
@@ -468,7 +473,7 @@ export function DefaultAfterCompleteForm({
           value={qvField.value}
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
-          hasActiveCompletion={hasActiveCompletion}
+          hasCompletionMechanism={hasCompletionMechanism}
           errorMessage={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
