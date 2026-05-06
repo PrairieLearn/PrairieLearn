@@ -311,7 +311,7 @@ export function AdministratorCourseFormFields({
             aria-errormessage={
               errors.repository_short_name ? 'courseFormRepositoryName-error' : undefined
             }
-            {...register('repository_short_name', { required: 'Enter a repository name' })}
+            {...register('repository_short_name')}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger

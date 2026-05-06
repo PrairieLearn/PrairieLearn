@@ -237,7 +237,7 @@ VALUES
     $title,
     $display_timezone,
     $path,
-    $repository,
+    NULLIF($repository, ''),
     $branch,
     $institution_id,
     TRUE

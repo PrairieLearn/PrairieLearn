@@ -324,7 +324,9 @@ function CourseInsertModal({
         shortName: data.short_name,
         institutionId: data.institution_id,
         displayTimezone: data.display_timezone,
-        repository: `git@github.com:PrairieLearn/${data.repository_short_name}.git`,
+        repository: data.repository_short_name
+          ? `git@github.com:PrairieLearn/${data.repository_short_name}.git`
+          : null,
       },
       { onSuccess: () => window.location.reload() },
     );

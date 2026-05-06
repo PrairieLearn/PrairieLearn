@@ -31,19 +31,21 @@ const insert = t.procedure
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
-      repository: z.string(), // Optional
+      repository: z.string().nullable(),
       branch: z.string().min(1, 'Branch is required'),
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    const repoExists = await checkCourseRepositoryUrlExists(input.repository);
-    if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
+    if (input.repository) {
+      const repoExists = await checkCourseRepositoryUrlExists(input.repository);
+      if (repoExists) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A course with this repository already exists.',
+        });
+      }
     }
 
     const pathExists = await checkCoursePathExists(normalizedPath);
@@ -99,7 +101,7 @@ const updateColumn = t.procedure
           value: z.string().min(1, 'Value is required'),
         }),
         z.object({
-          columnName: z.enum(['repository']),
+          columnName: z.literal('repository'),
           value: z.string(), // Optional
         }),
       ]),
