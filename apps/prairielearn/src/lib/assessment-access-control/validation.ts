@@ -613,15 +613,15 @@ function getAfterCompleteCrossFieldMessage(
   score: AfterCompleteScore,
 ): string | null {
   if (score.hidden && !questions.hidden) {
-    return 'Score cannot be hidden while questions are visible. Choose "Show score after completion" or hide questions too.';
+    return 'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.';
   }
   if (!questions.hidden || questions.visibleFromDate === undefined) return null;
   if (!score.hidden) return null;
   if (score.visibleFromDate === undefined) {
-    return 'Score must become visible by the time questions do. Choose "Show score after completion" or "Hide score until date" with a date on or before the questions show date.';
+    return 'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).';
   }
   if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
-    return 'Show score date must be on or before the show questions date.';
+    return 'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).';
   }
   return null;
 }

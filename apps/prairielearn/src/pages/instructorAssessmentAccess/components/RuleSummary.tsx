@@ -643,15 +643,6 @@ function generateOverrideFieldItems(
     });
   }
 
-  const qvCrossFieldError = formErrors?.questionVisibility?.message;
-  if (!overriddenFields.has('questionVisibility') && qvCrossFieldError) {
-    items.push({
-      label: 'Question visibility',
-      value: 'Inherited',
-      error: qvCrossFieldError,
-    });
-  }
-
   if (overriddenFields.has('questionVisibility')) {
     const qv = rule.questionVisibility;
     const qvError =
