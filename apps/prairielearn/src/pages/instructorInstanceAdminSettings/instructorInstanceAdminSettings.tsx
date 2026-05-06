@@ -15,7 +15,11 @@ import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstance
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import {
+  getCourseInstanceEditErrorUrl,
+  getCourseInstanceTrpcUrl,
+  getSelfEnrollmentLinkUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
@@ -55,10 +59,9 @@ router.get(
       course,
       institution,
       authz_data,
-      urlPrefix,
-      navPage,
       __csrf_token,
       is_administrator: isAdministrator,
+      urlPrefix,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -88,12 +91,12 @@ router.get(
     ).href;
     const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
 
-    const infoCourseInstancePath = path.join(
+    const fullInfoCourseInstancePath = path.join(
+      course.path,
       'courseInstances',
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
     const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
@@ -131,6 +134,11 @@ router.get(
           page: 'instance_admin',
           subPage: 'settings',
         },
+        options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
+        },
         content: (
           <>
             <Hydrate>
@@ -138,7 +146,6 @@ router.get(
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
                 urlPrefix={urlPrefix}
-                navPage={navPage}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -150,7 +157,6 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
@@ -177,7 +183,6 @@ router.post(
     const {
       course_instance: courseInstance,
       course,
-      urlPrefix,
       authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -339,7 +344,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         res.redirect(`/pl/course/${course.id}/course_admin/instances`);
       } catch {
-        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId));
       }
     } else if (req.body.__action === 'update_configuration') {
       const infoCourseInstancePath = path.join(
@@ -506,7 +511,9 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(
+          getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId),
+        );
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);
