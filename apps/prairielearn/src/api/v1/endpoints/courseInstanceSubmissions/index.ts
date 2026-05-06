@@ -5,7 +5,10 @@ import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { SubmissionDataSchema } from '../courseInstanceAssessmentInstances/index.js';
+import {
+  SubmissionDataSchema,
+  formatSubmissionDataForResponse,
+} from '../courseInstanceAssessmentInstances/index.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
@@ -25,7 +28,7 @@ router.get(
     if (data == null) {
       res.status(404).send({ message: 'Not Found' });
     } else {
-      res.status(200).send(data);
+      res.status(200).send(formatSubmissionDataForResponse(data, res.locals));
     }
   }),
 );

@@ -92,14 +92,14 @@ export const SubmissionDataSchema = z.object({
   params: VariantSchema.shape.params,
   true_answer: VariantSchema.shape.true_answer,
   options: VariantSchema.shape.options,
-  date: z.string().nullable(),
+  date: SubmissionSchema.shape.date,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   partial_scores: SubmissionSchema.shape.partial_scores,
   override_score: SubmissionSchema.shape.override_score,
   credit: SubmissionSchema.shape.credit,
   mode: SubmissionSchema.shape.mode,
-  grading_requested_at: z.string().nullable(),
-  graded_at: z.string().nullable(),
+  grading_requested_at: SubmissionSchema.shape.grading_requested_at,
+  graded_at: SubmissionSchema.shape.graded_at,
   score: SubmissionSchema.shape.score,
   correct: SubmissionSchema.shape.correct,
   feedback: SubmissionSchema.shape.feedback,
@@ -119,6 +119,23 @@ export const SubmissionDataSchema = z.object({
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
 });
+
+export function formatSubmissionDataForResponse(
+  data: z.infer<typeof SubmissionDataSchema>,
+  locals: Record<string, any>,
+) {
+  const { date, grading_requested_at, graded_at, ...submission } = data;
+  return {
+    ...submission,
+    date: date == null ? null : formatDateISO(date, locals.course_instance.display_timezone),
+    grading_requested_at:
+      grading_requested_at == null
+        ? null
+        : formatDateISO(grading_requested_at, locals.course_instance.display_timezone),
+    graded_at:
+      graded_at == null ? null : formatDateISO(graded_at, locals.course_instance.display_timezone),
+  };
+}
 
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)',
@@ -167,7 +184,7 @@ router.get(
       },
       SubmissionDataSchema,
     );
-    res.status(200).send(data);
+    res.status(200).send(data.map((row) => formatSubmissionDataForResponse(row, res.locals)));
   }),
 );
 
