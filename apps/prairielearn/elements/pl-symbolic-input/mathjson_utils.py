@@ -516,10 +516,10 @@ def _function(
             return sympy.Add(*_as_exprs(args))
         case "Subtract":
             _require_arity(head, args, 1, None)
-            if allow_sets and all(isinstance(arg, sympy.Set) for arg in args):
-                return functools.reduce(sympy.Complement, args)
             if len(args) == 1:
                 return sympy.Mul(-1, _as_expr(args[0]))
+            if allow_sets and all(isinstance(arg, sympy.Set) for arg in args):
+                return functools.reduce(sympy.Complement, args)
             left, *rest = args
             return sympy.Add(_as_expr(left), *(-_as_expr(arg) for arg in rest))
         # Invisible operation is always interpreted as multiplication
