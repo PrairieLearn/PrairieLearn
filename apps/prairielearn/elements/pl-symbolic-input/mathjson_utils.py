@@ -319,8 +319,12 @@ def _sympy_expr_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
     if isinstance(expr, sympy.Interval):
         return _mathjson_function(
             "Interval",
-            _sympy_expr_to_mathjson(expr.start),
-            _sympy_expr_to_mathjson(expr.end),
+            ["Open", _sympy_expr_to_mathjson(expr.start)]
+            if expr.left_open
+            else _sympy_expr_to_mathjson(expr.start),
+            ["Open", _sympy_expr_to_mathjson(expr.end)]
+            if expr.right_open
+            else _sympy_expr_to_mathjson(expr.end),
         )
     if expr.is_Function:
         head = _SYMPY_FUNCTIONS.get(expr.func)
