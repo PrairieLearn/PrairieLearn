@@ -363,3 +363,30 @@ describe('validateHTML panel nesting', () => {
     assert.deepEqual(warnings, []);
   });
 });
+
+describe('validateHTML pl-multiple-choice builtin-grading', () => {
+  it('accepts builtin-grading="true"', () => {
+    const { errors } = validateHTML(
+      '<pl-multiple-choice answers-name="mc" builtin-grading="true"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  it('accepts builtin-grading="false"', () => {
+    const { errors } = validateHTML(
+      '<pl-multiple-choice answers-name="mc" builtin-grading="false"><pl-answer correct="true">A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects invalid builtin-grading value', () => {
+    const { errors } = validateHTML(
+      '<pl-multiple-choice answers-name="mc" builtin-grading="maybe"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('builtin-grading')));
+  });
+});
