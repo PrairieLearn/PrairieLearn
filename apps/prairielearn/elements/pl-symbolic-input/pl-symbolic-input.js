@@ -374,7 +374,7 @@
   const latexSyntaxCache = new Map();
 
   /**
-   * @param {HTMLInputElement} el
+   * @param {HTMLElement} el
    * @returns {import('@cortex-js/compute-engine').LatexSyntax} The LatexSyntax instance
    */
   function createSyntax(el) {
@@ -454,13 +454,27 @@
   }
 
   /**
+   *
+   * @param {import('@cortex-js/compute-engine').LatexSyntax} ls
+   * @param {string} latex
+   * @returns {import('@cortex-js/compute-engine').MathJsonExpression} parsed MathJSON expression
+   */
+  function parseLatex(ls, latex) {
+    try {
+      return ls.parse(latex) ?? 'Nothing';
+    } catch {
+      return ['Error', 'Unknown parse error'];
+    }
+  }
+
+  /**
    * @param {HTMLInputElement} el
    * @param {HTMLInputElement} jsonEl
    */
   // @ts-expect-error - Window assignment
   window.syncMathJSON = function (el, jsonEl) {
     const ls = createSyntax(el);
-    jsonEl.value = JSON.stringify(ls.parse(el.value) ?? '');
+    jsonEl.value = JSON.stringify(parseLatex(ls, el.value));
   };
 
   /**
@@ -740,7 +754,11 @@
     const updateSubmissionData = function () {
       $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
       $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
-      $('#symbolic-input-json-' + name).val(mf.getValue('math-json'));
+
+      // Use the custom syntax parser with the same settings
+      const ls = createSyntax(mf);
+      const json = parseLatex(ls, mf.getValue('latex-unstyled'));
+      $('#symbolic-input-json-' + name).val(JSON.stringify(json));
     };
 
     updateSubmissionData();
