@@ -1,8 +1,8 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { SplitPane, StickySaveBar, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -47,11 +47,11 @@ export function AccessControlForm({
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  onSubmit: (data: AccessControlJsonWithId[]) => void;
+  onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentId: string;
   isSaving?: boolean;
-  alert?: ReactNode;
+  alert?: StickySaveBarAlert | null;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -126,8 +126,9 @@ export function AccessControlForm({
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
-  const handleFormSubmit = (data: AccessControlFormData) => {
-    onSubmit(formDataToJson(data));
+  const handleFormSubmit = async (data: AccessControlFormData) => {
+    await onSubmit(formDataToJson(data));
+    reset(data);
   };
 
   const addOverride = () => {
@@ -332,11 +333,12 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                {alert}
                 <StickySaveBar
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
+                  alert={alert}
+                  fullWidth
                   onCancel={() => reset()}
                 />
               </>

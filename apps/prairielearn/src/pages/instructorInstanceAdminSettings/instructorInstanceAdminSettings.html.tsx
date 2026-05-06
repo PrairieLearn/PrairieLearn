@@ -181,15 +181,21 @@ export function InstructorInstanceAdminSettings({
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={clsx('form-control', errors.long_name && 'is-invalid')}
                   id="long_name"
                   disabled={!canEdit}
                   aria-describedby="long_name-help"
+                  aria-invalid={errors.long_name ? 'true' : 'false'}
+                  {...(errors.long_name ? { 'aria-errormessage': 'long_name-error' } : {})}
                   defaultValue={defaultValues.long_name}
-                  required
-                  {...register('long_name')}
+                  {...register('long_name', { required: 'Long name is required' })}
                   name="long_name"
                 />
+                {errors.long_name && (
+                  <div id="long_name-error" className="invalid-feedback">
+                    {errors.long_name.message}
+                  </div>
+                )}
                 <small id="long_name-help" className="form-text text-muted">
                   The long name of this course instance (e.g., 'Spring 2015').
                 </small>
