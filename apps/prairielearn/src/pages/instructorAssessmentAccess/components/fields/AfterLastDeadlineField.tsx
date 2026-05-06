@@ -200,8 +200,7 @@ function AfterLastDeadlineInput({
                     if (v == null || Number.isNaN(v)) return 'Credit is required';
                     if (!Number.isFinite(v)) return 'Credit must be a finite number';
                     if (!Number.isInteger(v)) return 'Credit must be an integer';
-                    if (v < 0 || v > 200) return 'Must be 0\u2013200%';
-                    if (v >= 100) return 'Credit after the due date must be less than 100%';
+                    if (v < 0 || v >= 100) return 'Credit after the due date must be 0\u201399%';
                     const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
                       formValues,
                       overrideIndex,

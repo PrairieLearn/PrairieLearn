@@ -299,10 +299,8 @@ function DeadlineArrayInput({
     if (isEarly) {
       if (value < 0 || value > 200) return 'Credit must be 0-200%';
       if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
-    } else if (value < 0 || value > 200) {
-      return 'Credit must be 0-200%';
-    } else if (value >= 100) {
-      return 'Credit after the due date must be less than 100%';
+    } else if (value < 0 || value >= 100) {
+      return 'Credit after the due date must be 0-99%';
     }
     const currentDeadlines = deadlinesRef.current;
     if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {

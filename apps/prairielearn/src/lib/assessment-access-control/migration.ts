@@ -468,12 +468,11 @@ function simplifyTimeline(
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {
-    const collapseCredit = afterLastCredit;
-    if (collapseCredit === 100 && !dateControl.earlyDeadlines?.length) {
+    if (afterLastCredit === 100 && !dateControl.earlyDeadlines?.length) {
       delete dateControl.due;
     } else {
       dateControl.due =
-        collapseCredit === 100 ? { date: null } : { date: null, credit: collapseCredit };
+        afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     }
     delete dateControl.afterLastDeadline;
   }
