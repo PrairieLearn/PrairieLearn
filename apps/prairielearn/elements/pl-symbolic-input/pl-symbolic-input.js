@@ -370,79 +370,84 @@
     return /** @type {T} */ (wrapWithProxy(proxiedObject));
   };
 
-  /** @type {Map<string, Promise<import('@cortex-js/compute-engine').LatexSyntax>>} */
+  /** @type {Map<string, import('@cortex-js/compute-engine').LatexSyntax>} */
   const latexSyntaxCache = new Map();
 
   /**
    * @param {HTMLInputElement} el
-   * @returns {Promise<import('@cortex-js/compute-engine').LatexSyntax>} The LatexSyntax instance
+   * @returns {import('@cortex-js/compute-engine').LatexSyntax} The LatexSyntax instance
    */
-  async function createSyntax(el) {
+  function createSyntax(el) {
+    const customFunctions = el.getAttribute('custom-functions')?.split(',') ?? [];
     const allowTrig = el.hasAttribute('allow-trig');
     const allowSets = el.hasAttribute('allow-sets');
     const cacheKey = `${allowTrig}:${allowSets}`;
     let latexSyntax = latexSyntaxCache.get(cacheKey);
     if (!latexSyntax) {
-      latexSyntax = (async () => {
-        const {
-          LatexSyntax,
-          CORE_DICTIONARY,
-          SYMBOLS_DICTIONARY,
-          ALGEBRA_DICTIONARY,
-          LOGIC_DICTIONARY,
-          SETS_DICTIONARY,
-          INEQUALITIES_DICTIONARY,
-          ARITHMETIC_DICTIONARY,
-          COMPLEX_DICTIONARY,
-          TRIGONOMETRY_DICTIONARY,
-          CALCULUS_DICTIONARY,
-          LINEAR_ALGEBRA_DICTIONARY,
-          STATISTICS_DICTIONARY,
-          UNITS_DICTIONARY,
-          OTHERS_DICTIONARY,
-        } = await import('@cortex-js/compute-engine');
+      const {
+        LatexSyntax,
+        CORE_DICTIONARY,
+        SYMBOLS_DICTIONARY,
+        ALGEBRA_DICTIONARY,
+        LOGIC_DICTIONARY,
+        SETS_DICTIONARY,
+        INEQUALITIES_DICTIONARY,
+        ARITHMETIC_DICTIONARY,
+        COMPLEX_DICTIONARY,
+        TRIGONOMETRY_DICTIONARY,
+        CALCULUS_DICTIONARY,
+        LINEAR_ALGEBRA_DICTIONARY,
+        STATISTICS_DICTIONARY,
+        UNITS_DICTIONARY,
+        OTHERS_DICTIONARY,
+        // @ts-expect-error - Load UMD module
+      } = /** @type {import('@cortex-js/compute-engine')} */ (window.ComputeEngine);
 
-        // https://github.com/cortex-js/compute-engine/blob/b8db7dbf7ebd39d65b1c9f071936226ee2ce4885/src/compute-engine/latex-syntax/dictionary/default-dictionary.ts#L82-L103
-        return new LatexSyntax({
-          parseStrict: false,
-          dictionary: [
-            ...CORE_DICTIONARY,
-            ...SYMBOLS_DICTIONARY,
-            ...ALGEBRA_DICTIONARY,
-            ...LOGIC_DICTIONARY,
-            ...INEQUALITIES_DICTIONARY,
-            ...ARITHMETIC_DICTIONARY,
-            ...COMPLEX_DICTIONARY,
-            ...CALCULUS_DICTIONARY,
-            ...LINEAR_ALGEBRA_DICTIONARY,
-            ...STATISTICS_DICTIONARY,
-            ...UNITS_DICTIONARY,
-            ...OTHERS_DICTIONARY,
-            ...['oo', 'inf', 'infty', 'infinity'].map((latexTrigger) => ({
-              latexTrigger,
-              parse: 'PositiveInfinity',
-            })),
-            ...(allowTrig ? TRIGONOMETRY_DICTIONARY : []),
-            ...(allowSets
-              ? [
-                  ...SETS_DICTIONARY,
-                  ...['|', 'u', 'U', 'cup'].map((latexTrigger) => ({
-                    latexTrigger,
-                    kind: /** @type {'infix'} */ ('infix'),
-                    precedence: 350,
-                    parse: 'Union',
-                  })),
-                  ...['&', 'cap'].map((latexTrigger) => ({
-                    latexTrigger,
-                    kind: /** @type {'infix'} */ ('infix'),
-                    precedence: 350,
-                    parse: 'Intersection',
-                  })),
-                ]
-              : []),
-          ],
-        });
-      })();
+      // https://github.com/cortex-js/compute-engine/blob/b8db7dbf7ebd39d65b1c9f071936226ee2ce4885/src/compute-engine/latex-syntax/dictionary/default-dictionary.ts#L82-L103
+      latexSyntax = new LatexSyntax({
+        parseStrict: false,
+        dictionary: [
+          ...CORE_DICTIONARY,
+          ...SYMBOLS_DICTIONARY,
+          ...ALGEBRA_DICTIONARY,
+          ...LOGIC_DICTIONARY,
+          ...INEQUALITIES_DICTIONARY,
+          ...ARITHMETIC_DICTIONARY,
+          ...COMPLEX_DICTIONARY,
+          ...CALCULUS_DICTIONARY,
+          ...LINEAR_ALGEBRA_DICTIONARY,
+          ...STATISTICS_DICTIONARY,
+          ...UNITS_DICTIONARY,
+          ...OTHERS_DICTIONARY,
+          ...['oo', 'inf', 'infty', 'infinity'].map((latexTrigger) => ({
+            latexTrigger,
+            parse: 'PositiveInfinity',
+          })),
+          ...customFunctions.map((fun) => ({
+            kind: 'function',
+            latexTrigger: fun,
+            parse: fun,
+          })),
+          ...(allowTrig ? TRIGONOMETRY_DICTIONARY : []),
+          ...(allowSets
+            ? [
+                ...SETS_DICTIONARY,
+                ...['|', 'u', 'U', 'cup'].map((latexTrigger) => ({
+                  latexTrigger,
+                  kind: /** @type {'infix'} */ ('infix'),
+                  precedence: 350,
+                  parse: 'Union',
+                })),
+                ...['&', 'cap'].map((latexTrigger) => ({
+                  latexTrigger,
+                  kind: /** @type {'infix'} */ ('infix'),
+                  precedence: 350,
+                  parse: 'Intersection',
+                })),
+              ]
+            : []),
+        ],
+      });
       latexSyntaxCache.set(cacheKey, latexSyntax);
     }
     return latexSyntax;
@@ -453,8 +458,8 @@
    * @param {HTMLInputElement} jsonEl
    */
   // @ts-expect-error - Window assignment
-  window.syncMathJSON = async function (el, jsonEl) {
-    const ls = await createSyntax(el);
+  window.syncMathJSON = function (el, jsonEl) {
+    const ls = createSyntax(el);
     jsonEl.value = JSON.stringify(ls.parse(el.value) ?? '');
   };
 
