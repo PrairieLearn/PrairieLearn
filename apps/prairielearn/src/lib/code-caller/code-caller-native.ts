@@ -61,6 +61,9 @@ export interface ErrorData {
   outputBoth: string;
   outputData: string;
   outputRestart: string;
+  fd4ReadableLength: number | null;
+  fd4PendingRead: string | null;
+  restartElapsedMs: number | null;
   stack: string;
   lastCallData: any;
 }
@@ -107,6 +110,7 @@ export class CodeCallerNative implements CodeCaller {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
+  restartStartTime: number | null;
 
   /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
@@ -148,6 +152,7 @@ export class CodeCallerNative implements CodeCaller {
 
     // for error logging
     this.lastCallData = null;
+    this.restartStartTime = null;
 
     this.coursePath = null;
     this.forbiddenModules = [];
@@ -283,6 +288,7 @@ export class CodeCallerNative implements CodeCaller {
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);
       this.debug('exit restart()');
       this.state = RESTARTING;
+      this.restartStartTime = Date.now();
       return new Promise((resolve, reject) => {
         this.callback = (err) => {
           if (err) {
@@ -538,6 +544,16 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState([RESTARTING]);
     this.timeoutID = null;
     const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
+    // Capture the post-poll-phase state on the next tick so we can tell whether
+    // the restart confirmation arrived just after the timer fired (event-loop
+    // stall) vs. never arrived at all (process-level scheduling delay).
+    const elapsedMs = this.restartStartTime != null ? Date.now() - this.restartStartTime : null;
+    setImmediate(() => {
+      this.options.errorLogger('restart timeout post-tick state', {
+        outputRestart: this.outputRestart,
+        restartElapsedMs: elapsedMs,
+      });
+    });
     this.child?.kill('SIGTERM');
     this.state = EXITING;
     this._callCallback(err);
@@ -630,6 +646,17 @@ export class CodeCallerNative implements CodeCaller {
 
   _errorData(): ErrorData {
     const errForStack = new Error();
+    const fd4 = this.child?.stdio[4] as
+      | (NodeJS.ReadableStream & { readableLength?: number })
+      | undefined;
+    const fd4ReadableLength = fd4?.readableLength ?? null;
+    let fd4PendingRead: string | null = null;
+    try {
+      const peek = fd4?.read?.();
+      if (peek != null) fd4PendingRead = peek.toString();
+    } catch {
+      fd4PendingRead = null;
+    }
     return {
       state: this.state,
       childIsNull: this.child == null,
@@ -640,6 +667,9 @@ export class CodeCallerNative implements CodeCaller {
       outputBoth: this.outputBoth.join(''),
       outputData: this.outputData.join(''),
       outputRestart: this.outputRestart,
+      fd4ReadableLength,
+      fd4PendingRead,
+      restartElapsedMs: this.restartStartTime != null ? Date.now() - this.restartStartTime : null,
       stack: errForStack.stack ?? '',
       lastCallData: this.lastCallData,
     };
