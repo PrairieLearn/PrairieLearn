@@ -1,14 +1,16 @@
+import clsx from 'clsx';
 import hljs from 'highlight.js/lib/core';
 import hljsJson from 'highlight.js/lib/languages/json';
 import hljsPython from 'highlight.js/lib/languages/python';
 import hljsHtml from 'highlight.js/lib/languages/xml';
 import { useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Collapse, Form, Spinner } from 'react-bootstrap';
+import { Alert, Button, Card, Collapse, Form, Spinner } from 'react-bootstrap';
 
 hljs.registerLanguage('html', hljsHtml);
 hljs.registerLanguage('json', hljsJson);
 hljs.registerLanguage('python', hljsPython);
 
+import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
 import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 import type {
   ParseWarning,
@@ -159,12 +161,10 @@ function resolveRenamedDir(originalDir: string, existingDirs: Set<string>): stri
 }
 
 export function QtiImportForm({
-  urlPrefix,
   courseInstanceId,
   csrfToken,
   trpcCsrfToken,
 }: {
-  urlPrefix: string;
   courseInstanceId: string;
   csrfToken: string;
   trpcCsrfToken: string;
@@ -193,7 +193,8 @@ export function QtiImportForm({
 
     try {
       const formData = new FormData(e.currentTarget);
-      const response = await fetch(`${urlPrefix}/instance_admin/qti_import/upload`, {
+      const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+      const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
         method: 'POST',
         headers: {
           'X-CSRF-Token': csrfToken,
@@ -254,27 +255,49 @@ export function QtiImportForm({
         .map((result, i) => ({ result, override: overrides[i] }))
         .filter(({ override }) => override.included);
 
-      // Track all allocated directory names so that multiple renames within
-      // the same import don't collide with each other.
+      // Deduplicate assessment directory names so two assessments with the
+      // same title don't overwrite each other.
+      const allocatedAssessmentDirs = new Set<string>();
+      const resolvedAssessmentDirNames = new Map<string, string>();
+      for (const { result } of includedAssessments) {
+        let dirName = result.assessment.directoryName;
+        if (allocatedAssessmentDirs.has(dirName)) {
+          let n = 2;
+          while (allocatedAssessmentDirs.has(`${dirName}-${n}`)) n++;
+          dirName = `${dirName}-${n}`;
+        }
+        allocatedAssessmentDirs.add(dirName);
+        resolvedAssessmentDirNames.set(result.assessment.directoryName, dirName);
+      }
+
+      // Pre-compute final directory names for all renamed questions so that
+      // the same question shared across multiple assessments gets a single
+      // consistent name rather than re-resolving per assessment.
       const allocatedDirs = new Set(existingDirs);
+      const resolvedDirNames = new Map<string, string>();
+      for (const { result } of includedAssessments) {
+        for (const q of result.questions) {
+          if (resolvedDirNames.has(q.directoryName)) continue;
+          const qOverride = questionOverrides.get(q.directoryName);
+          if (qOverride?.included === false) continue;
+          let dirName = q.directoryName;
+          if (qOverride?.collides && qOverride.collisionStrategy === 'rename') {
+            dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
+          }
+          allocatedDirs.add(dirName);
+          resolvedDirNames.set(q.directoryName, dirName);
+        }
+      }
 
       const payload = {
         assessments: includedAssessments.map(({ result, override }) => {
-          // Build a mapping from original question directory → final directory
-          // so we can rewrite zone question IDs to match.
-          const qidMap = new Map<string, string>();
           const includedQuestionDirs = new Set<string>();
 
           const questions = result.questions
             .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
             .map((q) => {
               const qOverride = questionOverrides.get(q.directoryName);
-              let dirName = q.directoryName;
-              if (qOverride?.collides && qOverride.collisionStrategy === 'rename') {
-                dirName = resolveRenamedDir(qOverride.originalDirName, allocatedDirs);
-              }
-              allocatedDirs.add(dirName);
-              qidMap.set(q.directoryName, dirName);
+              const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
               includedQuestionDirs.add(dirName);
               return {
                 directoryName: dirName,
@@ -289,6 +312,7 @@ export function QtiImportForm({
                 questionHtml: q.questionHtml,
                 serverPy: q.serverPy,
                 clientFiles: q.clientFiles,
+                overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
               };
             });
 
@@ -299,7 +323,7 @@ export function QtiImportForm({
               ...zone,
               questions: zone.questions
                 .map((zq) => {
-                  const id = qidMap.get(zq.id) ?? zq.id;
+                  const id = resolvedDirNames.get(zq.id) ?? zq.id;
                   return includedQuestionDirs.has(id) ? { ...zq, id } : null;
                 })
                 .filter((zq): zq is NonNullable<typeof zq> => zq !== null),
@@ -307,7 +331,9 @@ export function QtiImportForm({
             .filter((zone) => zone.questions.length > 0);
 
           return {
-            directoryName: result.assessment.directoryName,
+            directoryName:
+              resolvedAssessmentDirNames.get(result.assessment.directoryName) ??
+              result.assessment.directoryName,
             infoJson: {
               ...result.assessment.infoJson,
               title: override.title,
@@ -332,7 +358,7 @@ export function QtiImportForm({
       }
 
       await trpcClient.qtiImport.create.mutate(payload);
-      window.location.href = `${urlPrefix}/instance_admin/assessments`;
+      window.location.href = `${getCourseInstanceBaseUrl(courseInstanceId)}/instructor/instance_admin/assessments`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create assessments');
       setStep('review');
@@ -489,9 +515,19 @@ export function QtiImportForm({
                     <AssessmentQuestionsSection
                       questions={result.questions}
                       questionOverrides={questionOverrides}
+                      existingDirs={existingDirs}
                       expandedQuestions={expandedQuestions}
                       onToggleExpand={toggleExpandedQuestion}
-                      onSetExpanded={setExpandedQuestions}
+                      onExpandAll={(dirNames) =>
+                        setExpandedQuestions((prev) => new Set([...prev, ...dirNames]))
+                      }
+                      onCollapseAll={(dirNames) =>
+                        setExpandedQuestions((prev) => {
+                          const next = new Set(prev);
+                          for (const d of dirNames) next.delete(d);
+                          return next;
+                        })
+                      }
                       onUpdateOverride={updateQuestionOverride}
                     />
                   </Card.Body>
@@ -510,7 +546,7 @@ export function QtiImportForm({
                 disabled={includedCount === 0}
                 onClick={() => void handleCreate()}
               >
-                Create {includedCount} assessment{includedCount !== 1 ? 's' : ''}
+                Import {includedCount} assessment{includedCount !== 1 ? 's' : ''}
               </Button>
             </div>
           </>
@@ -669,9 +705,8 @@ function UploadStep({
   return (
     <form encType="multipart/form-data" onSubmit={onSubmit}>
       <p>
-        Import quiz and question content from Canvas or other learning management systems. Upload a
-        quiz export (<code>.zip</code>) or a full course export (<code>.imscc</code>) to get
-        started. (Supports the QTI 1.2 interchange format.){' '}
+        Import quiz and question content from Canvas or another LMS. Upload a quiz export (
+        <code>.zip</code>) or a full course export (<code>.imscc</code>) in the QTI 1.2 format.{' '}
         <a href="https://docs.prairielearn.com/importingContent/" target="_blank" rel="noreferrer">
           Learn more about importing content into PrairieLearn
         </a>
@@ -708,16 +743,20 @@ function UploadStep({
 function AssessmentQuestionsSection({
   questions,
   questionOverrides,
+  existingDirs,
   expandedQuestions,
   onToggleExpand,
-  onSetExpanded,
+  onExpandAll,
+  onCollapseAll,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
   questionOverrides: Map<string, QuestionOverrides>;
+  existingDirs: Set<string>;
   expandedQuestions: Set<string>;
   onToggleExpand: (dirName: string) => void;
-  onSetExpanded: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onExpandAll: (dirNames: string[]) => void;
+  onCollapseAll: (dirNames: string[]) => void;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
 }) {
   const conflictingQuestions = questions.filter(
@@ -766,20 +805,14 @@ function AssessmentQuestionsSection({
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() => onSetExpanded((prev) => new Set([...prev, ...allDirNames]))}
+            onClick={() => onExpandAll(allDirNames)}
           >
             Expand all
           </button>
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() =>
-              onSetExpanded((prev) => {
-                const next = new Set(prev);
-                for (const d of allDirNames) next.delete(d);
-                return next;
-              })
-            }
+            onClick={() => onCollapseAll(allDirNames)}
           >
             Collapse all
           </button>
@@ -792,6 +825,7 @@ function AssessmentQuestionsSection({
               question={q}
               questionNumber={qi + 1}
               overrides={questionOverrides.get(q.directoryName)}
+              existingDirs={existingDirs}
               isExpanded={expandedQuestions.has(q.directoryName)}
               onToggleExpand={() => onToggleExpand(q.directoryName)}
               onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
@@ -807,6 +841,7 @@ function QuestionReviewPanel({
   question: q,
   questionNumber,
   overrides: qo,
+  existingDirs,
   isExpanded,
   onToggleExpand,
   onUpdateOverride,
@@ -814,11 +849,13 @@ function QuestionReviewPanel({
   question: SerializedQuestionOutput;
   questionNumber: number;
   overrides: QuestionOverrides | undefined;
+  existingDirs: Set<string>;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onUpdateOverride: (updates: Partial<QuestionOverrides>) => void;
 }) {
   const [selectedFile, setSelectedFile] = useState<string | null>('question.html');
+  const [rawTags, setRawTags] = useState<string | null>(null);
   const questionType = detectQuestionType(q.questionHtml);
   const included = qo?.included ?? true;
 
@@ -857,6 +894,7 @@ function QuestionReviewPanel({
     fileEntries.push({
       name,
       path: `clientFilesQuestion/${name}`,
+      // Base64 encodes 3 bytes into 4 characters; reverse to estimate original size.
       content: `(binary file — ${Math.ceil((q.clientFiles[name].length * 3) / 4)} bytes)`,
       icon: 'bi-file-earmark-image',
     });
@@ -865,7 +903,7 @@ function QuestionReviewPanel({
   const selectedContent = fileEntries.find((f) => f.path === selectedFile)?.content ?? null;
 
   return (
-    <Card className={!included ? 'opacity-50' : ''}>
+    <Card className={clsx(!included && 'opacity-50')}>
       <Card.Header className="d-flex align-items-center gap-2 py-2">
         <Form.Check
           id={`q-include-${q.directoryName}`}
@@ -890,7 +928,10 @@ function QuestionReviewPanel({
             }
           }}
         >
-          <i className={`bi bi-chevron-${isExpanded ? 'down' : 'right'}`} aria-hidden="true" />
+          <i
+            className={clsx('bi', isExpanded ? 'bi-chevron-down' : 'bi-chevron-right')}
+            aria-hidden="true"
+          />
           <span className="text-muted">{questionNumber}.</span>
           <span className="fw-medium">{qo?.title ?? q.infoJson.title}</span>
           {q.skippedVideos.length > 0 && (
@@ -901,13 +942,11 @@ function QuestionReviewPanel({
             />
           )}
         </div>
-        <Badge bg="primary" className="fw-normal">
-          {questionType}
-        </Badge>
+        <span className="badge color-blue3">{questionType}</span>
         {(qo?.tags ?? q.infoJson.tags).map((tag) => (
-          <Badge key={tag} bg="secondary" className="fw-normal">
+          <span key={tag} className="badge color-gray2">
             {tag}
-          </Badge>
+          </span>
         ))}
       </Card.Header>
       {qo?.collides && included && (
@@ -926,9 +965,14 @@ function QuestionReviewPanel({
             }
             onClick={(e) => e.stopPropagation()}
           >
-            <option value="overwrite">Overwrite existing</option>
-            <option value="rename">Create with new name</option>
+            <option value="overwrite">Replace existing question</option>
+            <option value="rename">Keep both</option>
           </Form.Select>
+          {qo.collisionStrategy === 'rename' && (
+            <code className="text-muted">
+              {qo.originalDirName} &rarr; {resolveRenamedDir(qo.originalDirName, existingDirs)}
+            </code>
+          )}
         </div>
       )}
       <Collapse in={isExpanded && included}>
@@ -981,15 +1025,19 @@ function QuestionReviewPanel({
                     id={`q-tags-${q.directoryName}`}
                     size="sm"
                     type="text"
-                    value={qo?.tags.join(', ') ?? ''}
-                    onChange={(e) =>
-                      onUpdateOverride({
-                        tags: e.target.value
-                          .split(',')
-                          .map((t) => t.trim())
-                          .filter(Boolean),
-                      })
-                    }
+                    value={rawTags ?? qo?.tags.join(', ') ?? ''}
+                    onChange={(e) => setRawTags(e.target.value)}
+                    onBlur={() => {
+                      if (rawTags !== null) {
+                        onUpdateOverride({
+                          tags: rawTags
+                            .split(',')
+                            .map((t) => t.trim())
+                            .filter(Boolean),
+                        });
+                        setRawTags(null);
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -1216,7 +1264,10 @@ function TreeNodes({
         <div key={node.path ?? node.name}>
           {node.path ? (
             <div
-              className={`px-2 py-1 rounded d-flex align-items-center gap-1 ${selectedFile === node.path ? 'bg-primary text-white' : 'text-body'}`}
+              className={clsx(
+                'px-2 py-1 rounded d-flex align-items-center gap-1',
+                selectedFile === node.path ? 'bg-primary text-white' : 'text-body',
+              )}
               style={{ cursor: 'pointer', marginLeft: `${depth * 16}px` }}
               role="button"
               tabIndex={0}

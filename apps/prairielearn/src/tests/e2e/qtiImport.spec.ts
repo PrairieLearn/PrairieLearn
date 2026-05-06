@@ -136,7 +136,7 @@ test.describe('QTI Import', () => {
     await expect(page.getByLabel('Include E2E Import Quiz')).toBeChecked();
 
     // Verify the create button reflects the included count
-    await expect(page.getByRole('button', { name: 'Create 1 assessment' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
   });
 
   test('can complete the full import flow', async ({
@@ -162,10 +162,10 @@ test.describe('QTI Import', () => {
 
     // Review step — verify assessment is listed and included
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Create 1 assessment' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
 
     // Create — should redirect to assessments page with a success flash
-    await page.getByRole('button', { name: 'Create 1 assessment' }).click();
+    await page.getByRole('button', { name: 'Import 1 assessment' }).click();
     await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
     await expect(page.getByText('1 assessment imported successfully.')).toBeVisible();
@@ -194,13 +194,13 @@ test.describe('QTI Import', () => {
 
     // Verify the assessment starts checked with the create button enabled
     await expect(page.getByLabel('Include E2E Import Quiz')).toBeChecked();
-    await expect(page.getByRole('button', { name: 'Create 1 assessment' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
 
     // Uncheck the assessment
     await page.getByLabel('Include E2E Import Quiz').uncheck();
 
     // Create button should reflect 0 assessments and be disabled
-    await expect(page.getByRole('button', { name: 'Create 0 assessments' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Import 0 assessments' })).toBeDisabled();
   });
 
   test('shows conflict UI when importing questions that already exist', async ({
@@ -222,7 +222,7 @@ test.describe('QTI Import', () => {
     await page.getByLabel('Export file').setInputFiles(zipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: 'Create 1 assessment' }).click();
+    await page.getByRole('button', { name: 'Import 1 assessment' }).click();
     await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
     // Second import: same zip again — should trigger conflict
