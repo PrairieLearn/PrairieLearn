@@ -144,7 +144,6 @@ export function InstructorInstanceAdminSettings({
                   {...(errors.ciid ? { 'aria-errormessage': 'ciid-error' } : {})}
                   disabled={!canEdit}
                   defaultValue={defaultValues.ciid}
-                  required
                   {...register('ciid', {
                     required: 'Short name is required',
                     validate: {
