@@ -159,9 +159,13 @@ export function getGlobalDateValidationErrors(
   for (const issues of [
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
-    validateAfterCompleteCrossFieldIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
+    // Run the "no completion mechanism" check before the cross-field check —
+    // both target the same questionVisibility path, but the mechanism error
+    // is more fundamental (cross-field consistency is moot when there's no
+    // mechanism at all).
     validateGlobalAfterCompleteIssues(validationRules),
+    validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);
