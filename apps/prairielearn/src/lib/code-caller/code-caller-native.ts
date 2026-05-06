@@ -544,15 +544,23 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('enter _restartTimeout()');
     this._checkState([RESTARTING]);
     this.timeoutID = null;
-    // Defer the kill decision by one tick. The Node event-loop processes
-    // the timers phase before the poll phase, so fd 4 data already buffered
-    // in the kernel won't have been delivered yet when this timer fires.
-    // Yielding via setImmediate forces the poll phase to run first; if the
-    // restart confirmation was waiting there, _handleStdio4Data will fire
-    // and transition us out of RESTARTING. We only kill if we're still
-    // stuck in RESTARTING after that opportunity.
+    // Defer the kill decision by one tick so the poll phase has a chance
+    // to deliver any pending fd 4 data. Also recheck outputRestart directly
+    // in case the confirmation arrived but _handleStdio4Data didn't
+    // transition state (e.g., chunked delivery without a newline yet).
     setImmediate(() => {
       if (this.state !== RESTARTING) return;
+      // Diagnostic: capture outputRestart at the *start* of the deferred
+      // callback so we can distinguish "data was already there" from "data
+      // arrived during the kill path."
+      const outputRestartAtStart = this.outputRestart;
+      if (this._restartWasSuccessful()) {
+        this._restartIsFinished();
+        return;
+      }
+      this.options.errorLogger('outputRestart at start of deferred kill', {
+        outputRestartAtStart,
+      });
       const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
       this.child?.kill('SIGTERM');
       this.state = EXITING;
