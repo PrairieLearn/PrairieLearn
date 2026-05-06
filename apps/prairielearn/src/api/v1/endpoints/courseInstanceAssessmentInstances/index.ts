@@ -167,14 +167,12 @@ router.get(
       },
       InstanceQuestionDataSchema,
     );
-    res
-      .status(200)
-      .send(
-        data.map(({ duration, ...row }) => ({
-          ...row,
-          duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
-        })),
-      );
+    res.status(200).send(
+      data.map(({ duration, ...row }) => ({
+        ...row,
+        duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
+      })),
+    );
   }),
 );
 
