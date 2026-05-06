@@ -102,6 +102,24 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
   return undefined;
 }
 
+function getCreditInputMax({
+  type,
+  index,
+  deadlines,
+  dueCredit,
+}: {
+  type: 'early' | 'late';
+  index: number;
+  deadlines: DeadlineEntry[];
+  dueCredit: number;
+}): number {
+  const previousCredit = index > 0 ? deadlines[index - 1]?.credit : undefined;
+  if (previousCredit != null && Number.isFinite(previousCredit)) {
+    return Math.min(200, previousCredit);
+  }
+  return type === 'early' ? 200 : Math.min(200, dueCredit);
+}
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -280,7 +298,7 @@ function DeadlineArrayInput({
       return 'Credit must be 0-200%';
     }
     const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && value >= (currentDeadlines.at(index - 1)?.credit ?? 0)) {
+    if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {
       return 'Credit must be less than previous deadline';
     }
     if (!isEarly && index === 0 && value >= dueCreditRef.current) {
@@ -376,7 +394,7 @@ function DeadlineArrayInput({
                   }
                   placeholder="100"
                   min={isEarly ? Math.max(0, dueCredit) : '0'}
-                  max="200"
+                  max={getCreditInputMax({ type, index, deadlines, dueCredit })}
                   onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
