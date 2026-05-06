@@ -290,6 +290,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
           usedNoneOfTheAboveFeedback = true;
           break;
         case 'allow-blank':
+        case 'builtin-grading':
           assertBool('pl-multiple-choice', key, val, errors);
           break;
         case 'size':
