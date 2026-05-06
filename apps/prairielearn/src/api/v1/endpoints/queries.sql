@@ -143,11 +143,11 @@ SELECT
   ci.short_name AS course_instance_short_name,
   ci.long_name AS course_instance_long_name,
   ci.course_id AS course_instance_course_id,
-  format_date_iso8601 (ciar.end_date, ci.display_timezone) AS end_date,
+  ciar.end_date,
   ciar.id AS course_instance_access_rule_id,
   ciar.institution,
   ciar.number AS course_instance_access_rule_number,
-  format_date_iso8601 (ciar.start_date, ci.display_timezone) AS start_date,
+  ciar.start_date,
   ciar.uids
 FROM
   course_instances AS ci
