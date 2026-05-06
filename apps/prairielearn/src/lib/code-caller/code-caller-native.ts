@@ -542,8 +542,7 @@ export class CodeCallerNative implements CodeCaller {
     // callback and kill a worker that had already restarted cleanly.
     // https://nodejs.org/api/timers.html#setimmediatecallback-args
     setImmediate(() => {
-      // The intervening poll phase (plus microtasks chained off the resolved
-      // restart promise) may have transitioned us out of RESTARTING — e.g.
+      // The intervening poll phase may have transitioned us out of RESTARTING — e.g.
       // _handleStdio4Data finishing the restart, or follow-up code starting
       // a new call.
       if (this.state !== RESTARTING) return;
