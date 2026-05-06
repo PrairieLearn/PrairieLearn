@@ -13,6 +13,8 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
+
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -104,24 +106,6 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
     return 'Early deadlines require credit above due credit, but due date credit is already 200%.';
   }
   return undefined;
-}
-
-function getCreditInputMax({
-  type,
-  index,
-  deadlines,
-  dueCredit,
-}: {
-  type: 'early' | 'late';
-  index: number;
-  deadlines: DeadlineEntry[];
-  dueCredit: number;
-}): number {
-  const previousCredit = index > 0 ? deadlines[index - 1]?.credit : undefined;
-  if (previousCredit != null && Number.isFinite(previousCredit)) {
-    return clampCredit(previousCredit - 1, type);
-  }
-  return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
 }
 
 function DeadlineArrayInput({
@@ -399,7 +383,13 @@ function DeadlineArrayInput({
                   }
                   placeholder={isEarly ? '120' : '80'}
                   min={isEarly ? clampCredit(dueCredit + 1, 'early') : '0'}
-                  max={getCreditInputMax({ type, index, deadlines, dueCredit })}
+                  max={run(() => {
+                    const previousCredit = index > 0 ? deadlines[index - 1]?.credit : undefined;
+                    if (previousCredit != null && Number.isFinite(previousCredit)) {
+                      return clampCredit(previousCredit - 1, type);
+                    }
+                    return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
+                  })}
                   step={1}
                   onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
