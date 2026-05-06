@@ -7,6 +7,7 @@ import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
@@ -27,26 +28,30 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'course'>(async (req, res) => {
+    const { course, authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const sharingSets = await selectSharingSetsForCourse({ course_id: res.locals.course.id });
+    const sharingSets = await selectSharingSetsForCourse({ course_id: course.id });
+    const sharingToken = res.locals.course.sharing_token;
 
     const host = getCanonicalHost(req);
-    const publicSharingLink = new URL(`/pl/public/course/${res.locals.course.id}/questions`, host)
-      .href;
+    const publicSharingLink = new URL(`/pl/public/course/${course.id}/questions`, host).href;
 
-    const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+    const canChooseSharingName = await selectCanChooseSharingName(course);
 
-    const infoCoursePath = path.join(res.locals.course.path, 'infoCourse.json');
+    const infoCoursePath = path.join(course.path, 'infoCourse.json');
     const origHash = (await getOriginalHash(infoCoursePath)) ?? '';
 
-    const canEdit =
-      res.locals.authz_data.has_course_permission_own && !res.locals.course.example_course;
+    const canEdit = authzData.has_course_permission_own && !course.example_course;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
-      { url: getCourseTrpcUrl(res.locals.course.id), authn_user_id: res.locals.authn_user.id },
+      { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },
       config.secretKey,
     );
 
@@ -62,14 +67,14 @@ router.get(
         content: (
           <Hydrate>
             <InstructorCourseAdminSharing
-              sharingName={res.locals.course.sharing_name}
-              sharingToken={res.locals.course.sharing_token}
+              sharingName={course.sharing_name}
+              sharingToken={sharingToken}
               sharingSets={sharingSets}
               publicSharingLink={publicSharingLink}
               canChooseSharingName={canChooseSharingName}
               canEdit={canEdit}
               origHash={origHash}
-              courseId={res.locals.course.id}
+              courseId={course.id}
               trpcCsrfToken={trpcCsrfToken}
               isDevMode={config.devMode}
             />

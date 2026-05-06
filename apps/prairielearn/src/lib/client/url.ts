@@ -178,6 +178,17 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
 
+export function getQuestionSettingsUrl({
+  questionId,
+  courseInstanceId,
+  courseId,
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  return `${urlPrefix}/question/${questionId}/settings`;
+}
+
 // tRPC scope URLs
 
 export function getAdministratorTrpcUrl(): string {

@@ -61,7 +61,6 @@ router.get(
       authz_data,
       __csrf_token,
       is_administrator: isAdministrator,
-      urlPrefix,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -145,7 +144,6 @@ router.get(
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
-                urlPrefix={urlPrefix}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}

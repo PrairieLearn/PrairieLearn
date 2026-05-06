@@ -25,13 +25,6 @@ export const SelectedAssessmentsSchema = z.object({
 });
 export type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
 
-export const SharingSetRowSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  in_set: z.boolean(),
-});
-export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
-
 export const EditableCourseSchema = z.object({
   id: RawStaffCourseSchema.shape.id,
   short_name: RawStaffCourseSchema.shape.short_name,

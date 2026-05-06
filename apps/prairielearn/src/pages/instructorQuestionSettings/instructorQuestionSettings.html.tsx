@@ -18,6 +18,7 @@ import type {
 } from '../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { validateShortName } from '../../lib/short-name.js';
+import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
 import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
 
 import { PreferencesTable } from './components/PreferencesTable.js';
@@ -28,7 +29,6 @@ import type {
   PreferenceField,
   QuestionSettingsFormValues,
   SelectedAssessments,
-  SharingSetRow,
 } from './instructorQuestionSettings.types.js';
 
 function AssessmentBadges({
@@ -113,7 +113,7 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView: boolean;
   editableCourses: EditableCourse[];
   questionGHLink: string | null;
-  sharing: { enabled: boolean; sets: SharingSetRow[] };
+  sharing: { enabled: boolean; sets: QuestionSharingSetRow[] };
   questionTest: { path: string; csrfToken: string };
 }) => {
   const canCopy = editableCourses.length > 0 && hasCoursePermissionView;
@@ -915,6 +915,9 @@ export const InstructorQuestionSettingsForm = ({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">Sharing</h2>
+              {/* The visible checkboxes below are disabled once a value is locked in (already shared),
+                  and disabled inputs are not submitted. These hidden inputs preserve the locked-in
+                  `true` value on submit; they must mirror the disabled condition exactly. */}
               {question.share_publicly && <input type="hidden" name="share_publicly" value="on" />}
               <Form.Check
                 type="checkbox"

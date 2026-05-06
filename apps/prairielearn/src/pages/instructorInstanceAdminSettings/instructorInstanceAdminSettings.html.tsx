@@ -12,6 +12,7 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
@@ -24,7 +25,6 @@ import type { SettingsFormValues } from './instructorInstanceAdminSettings.types
 export function InstructorInstanceAdminSettings({
   csrfToken,
   trpcCsrfToken,
-  urlPrefix,
   canEdit,
   course,
   courseInstance,
@@ -43,7 +43,6 @@ export function InstructorInstanceAdminSettings({
 }: {
   csrfToken: string;
   trpcCsrfToken: string;
-  urlPrefix: string;
   canEdit: boolean;
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
@@ -298,7 +297,14 @@ export function InstructorInstanceAdminSettings({
                     {nonPublicAssessmentsInCourseInstance.map((a, i) => (
                       <span key={a.id}>
                         {i > 0 && ', '}
-                        <a href={`${urlPrefix}/assessment/${a.id}/settings`}>{a.tid}</a>
+                        <a
+                          href={getAssessmentSettingsUrl({
+                            assessmentId: a.id,
+                            courseInstanceId: courseInstance.id,
+                          })}
+                        >
+                          {a.tid}
+                        </a>
                       </span>
                     ))}
                     .

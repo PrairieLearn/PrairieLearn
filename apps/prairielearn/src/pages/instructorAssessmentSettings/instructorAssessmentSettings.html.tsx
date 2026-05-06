@@ -18,6 +18,7 @@ import type {
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
@@ -1167,7 +1168,14 @@ function InstructorAssessmentSettingsInner({
                   {nonPublicQuestionsInAssessment.map((q, i) => (
                     <span key={q.id}>
                       {i > 0 && ', '}
-                      <a href={`${urlPrefix}/question/${q.id}/settings`}>{q.qid}</a>
+                      <a
+                        href={getQuestionSettingsUrl({
+                          questionId: q.id,
+                          courseInstanceId: assessment.course_instance_id,
+                        })}
+                      >
+                        {q.qid}
+                      </a>
                     </span>
                   ))}
                   .

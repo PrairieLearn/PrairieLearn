@@ -1,3 +1,23 @@
+-- BLOCK select_sharing_sets_for_question
+WITH
+  sharing_set_questions AS (
+    SELECT
+      *
+    FROM
+      sharing_set_questions
+    WHERE
+      question_id = $question_id
+  )
+SELECT
+  ss.id,
+  ss.name,
+  ssq.question_id IS NOT NULL AS in_set
+FROM
+  sharing_sets AS ss
+  LEFT OUTER JOIN sharing_set_questions AS ssq ON ssq.sharing_set_id = ss.id
+WHERE
+  ss.course_id = $course_id;
+
 -- BLOCK select_sharing_set_usage
 SELECT
   (

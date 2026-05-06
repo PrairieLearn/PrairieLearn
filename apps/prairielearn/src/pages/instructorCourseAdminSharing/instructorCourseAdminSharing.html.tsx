@@ -1,16 +1,18 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
 
+import { CopyButton } from '../../components/CopyButton.js';
 import { getAppError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl } from '../../lib/client/url.js';
+import type { SharingSetRow } from '../../models/sharing-set.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
-import type { SharingError, SharingSetRow } from '../../trpc/course/sharing.js';
+import type { SharingError } from '../../trpc/course/sharing.js';
 
 interface InstructorCourseAdminSharingProps {
   sharingName: string | null;
@@ -174,7 +176,11 @@ function InstructorCourseAdminSharingInner({
                 <th>Sharing Token</th>
                 <td>
                   {sharingToken}
-                  <CopyButton text={sharingToken} />
+                  <CopyButton
+                    text={sharingToken}
+                    label="Copy"
+                    className="btn-xs btn-secondary mx-2"
+                  />
                   <RegenerateSharingTokenButton onRegenerated={setSharingToken} />
                 </td>
               </tr>
@@ -184,7 +190,11 @@ function InstructorCourseAdminSharingInner({
                   <a href={publicSharingLink} target="_blank" rel="noreferrer">
                     {publicSharingLink}
                   </a>
-                  <CopyButton text={publicSharingLink} />
+                  <CopyButton
+                    text={publicSharingLink}
+                    label="Copy"
+                    className="btn-xs btn-secondary mx-2"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -297,38 +307,6 @@ function InstructorCourseAdminSharingInner({
         </div>
       </div>
     </>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  return (
-    <button
-      type="button"
-      className="btn btn-xs btn-secondary mx-2"
-      aria-label="Copy"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => setCopied(false), 1500);
-        } catch {
-          // Clipboard API unavailable; silently ignore.
-        }
-      }}
-    >
-      <i className={copied ? 'bi bi-clipboard-check' : 'bi bi-clipboard'} aria-hidden="true" />{' '}
-      <span>{copied ? 'Copied' : 'Copy'}</span>
-    </button>
   );
 }
 

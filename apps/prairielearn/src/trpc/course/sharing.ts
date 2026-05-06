@@ -14,7 +14,6 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectCanChooseSharingName, updateCourseSharingName } from '../../models/course.js';
 import {
-  type SharingSetRow,
   deleteSharingSet as deleteSharingSetModel,
   selectSharingSetUsage,
   selectSharingSetsForCourse,
@@ -37,8 +36,6 @@ export interface SharingError {
     | { code: 'NOT_FOUND'; name: string }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
-
-export type { SharingSetRow };
 
 const SharingSetNameSchema = z
   .string()

@@ -21,6 +21,7 @@ WHERE
   consuming_course.sharing_token = $unsafe_course_sharing_token
   AND ss.id = $unsafe_sharing_set_id
   AND sharing_course.id = $sharing_course_id
+  -- Idempotent: a no-op UPDATE so RETURNING fires for both new and existing rows.
 ON CONFLICT (sharing_set_id, course_id) DO UPDATE
 SET
   course_id = EXCLUDED.course_id

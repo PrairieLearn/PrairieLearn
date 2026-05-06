@@ -51,6 +51,10 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import {
+  type QuestionSharingSetRow,
+  selectSharingSetsForQuestion,
+} from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
@@ -59,8 +63,6 @@ import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.htm
 import {
   EditableCourseSchema,
   SelectedAssessmentsSchema,
-  type SharingSetRow,
-  SharingSetRowSchema,
 } from './instructorQuestionSettings.types.js';
 
 const router = Router();
@@ -267,11 +269,10 @@ router.post(
           );
         }
 
-        const sharingSetRows = await sqldb.queryRows(
-          sql.select_sharing_sets,
-          { question_id: res.locals.question.id, course_id: res.locals.course.id },
-          SharingSetRowSchema,
-        );
+        const sharingSetRows = await selectSharingSetsForQuestion({
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        });
         const validSetNames = new Set(sharingSetRows.map((r) => r.name));
         const currentSetNames = new Set(sharingSetRows.filter((r) => r.in_set).map((r) => r.name));
         const requestedSetNames = new Set(body.sharing_sets);
@@ -646,16 +647,12 @@ router.get(
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSets: SharingSetRow[] | undefined;
+    let sharingSets: QuestionSharingSetRow[] | undefined;
     if (sharingEnabled) {
-      sharingSets = await sqldb.queryRows(
-        sql.select_sharing_sets,
-        {
-          question_id: question.id,
-          course_id: course.id,
-        },
-        SharingSetRowSchema,
-      );
+      sharingSets = await selectSharingSetsForQuestion({
+        question_id: question.id,
+        course_id: course.id,
+      });
     }
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: userId,

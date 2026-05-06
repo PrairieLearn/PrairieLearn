@@ -13,6 +13,13 @@ const SharingSetRowSchema = z.object({
 });
 export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
+const QuestionSharingSetRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  in_set: z.boolean(),
+});
+export type QuestionSharingSetRow = z.infer<typeof QuestionSharingSetRowSchema>;
+
 export async function selectSharingSetsForCourse({
   course_id,
 }: {
@@ -22,6 +29,20 @@ export async function selectSharingSetsForCourse({
     sql.select_sharing_sets_for_course,
     { course_id },
     SharingSetRowSchema,
+  );
+}
+
+export async function selectSharingSetsForQuestion({
+  question_id,
+  course_id,
+}: {
+  question_id: string;
+  course_id: string;
+}): Promise<QuestionSharingSetRow[]> {
+  return await sqldb.queryRows(
+    sql.select_sharing_sets_for_question,
+    { question_id, course_id },
+    QuestionSharingSetRowSchema,
   );
 }
 
