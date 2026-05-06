@@ -29,7 +29,11 @@ for bin in /usr/lib/postgresql/16/bin/*; do
 done
 
 # We need graphviz for the python dependencies.
-apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
+# Run as separate commands rather than chaining with && — bash's set -e does
+# not abort on a non-final operand of an && list, so an update failure would
+# silently skip the install.
+apt-get update -qq
+apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector
 
 # Load nvm
 . /opt/nvm/nvm.sh
