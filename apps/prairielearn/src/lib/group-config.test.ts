@@ -511,7 +511,6 @@ describe('serializeGroupSettings', () => {
       canSubmit: ['Recorder'],
     });
   });
-
 });
 
 describe('stripLegacyGroupKeys', () => {
