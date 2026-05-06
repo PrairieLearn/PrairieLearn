@@ -736,12 +736,6 @@
       $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
       $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
       $('#symbolic-input-json-' + name).val(mf.getValue('math-json'));
-      // eslint-disable-next-line no-console
-      console.log({
-        plaintext: mf.getValue('plain-text'),
-        LaTeX: mf.getValue('latex'),
-        MathJSON: mf.getValue('math-json'),
-      });
     };
 
     updateSubmissionData();
