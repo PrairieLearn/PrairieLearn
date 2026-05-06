@@ -108,7 +108,7 @@
       "type": "string"
     },
     "showQuestionTitles": {
-      "description": "Whether to show question titles to students during the exam",
+      "description": "Whether to show question titles in the student view.",
       "type": "boolean"
     },
     "groupWork": {
