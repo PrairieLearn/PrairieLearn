@@ -49,7 +49,7 @@ function AssessmentAccessControlInner({
     }),
   );
 
-  const handleFormSubmit = (data: AccessControlJsonWithId[]) => {
+  const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
@@ -59,7 +59,7 @@ function AssessmentAccessControlInner({
         ruleJson,
       }));
 
-    saveMutation.mutate({
+    await saveMutation.mutateAsync({
       rules: jsonRules,
       enrollmentRules,
       origHash,
