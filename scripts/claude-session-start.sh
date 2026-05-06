@@ -28,11 +28,8 @@ for bin in /usr/lib/postgresql/16/bin/*; do
     ln -sf "$bin" /usr/local/bin/
 done
 
-# We need graphviz for the python dependencies.
-# Run as separate commands rather than chaining with && — bash's set -e does
-# not abort on a non-final operand of an && list, so an update failure would
-# silently skip the install.
 apt-get update -qq
+# We need graphviz for the python dependencies.
 apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector
 
 # Load nvm
@@ -43,10 +40,7 @@ nvm install 24
 nvm alias default 24
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
-# `uv self update` doesn't work because the binary's internal metadata still
-# points at the standalone installer's path (`/root/.local/bin`) even though
-# the image now ships uv at `/usr/local/bin/uv`, so we update via pip.
-# https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
+# Self-update w/o using pip fails: https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
 (cd /tmp && uv pip install --system --reinstall uv)
 
 # Run commands independently for better timeout control
