@@ -182,7 +182,7 @@ Do not write variables{{^allow_fractions}}, fractions like <code>3/2</code>,{{/a
 {{/format}}
 
 {{#shortformat}}
-{{#allow_complex}}real or complex{{/allow_complex}}{{^allow_complex}}number{{/allow_complex}} {{#relabs}}{{#show_tolerance}}({{#nonzero_rtol}}{{#show_atol}}±({{rtol_pct}}% + {{atol}}){{/show_atol}}{{^show_atol}}±{{rtol_pct}}%{{/show_atol}}{{/nonzero_rtol}}{{^nonzero_rtol}}±{{atol}}{{/nonzero_rtol}}){{/show_tolerance}}{{^show_tolerance}}(exact){{/show_tolerance}}{{/relabs}}{{#sigfig}}({{digits}} sig fig{{#digits_plural}}s{{/digits_plural}}){{/sigfig}}{{#decdig}}({{digits}} decimal place{{#digits_plural}}s{{/digits_plural}}){{/decdig}}
+{{#allow_complex}}real or complex{{/allow_complex}}{{^allow_complex}}number{{/allow_complex}} {{#relabs}}{{#show_tolerance}}{{#nonzero_rtol}}{{#show_atol}}±({{rtol_pct}}% + {{atol}}){{/show_atol}}{{^show_atol}}±{{rtol_pct}}%{{/show_atol}}{{/nonzero_rtol}}{{^nonzero_rtol}}±{{atol}}{{/nonzero_rtol}}{{/show_tolerance}}{{^show_tolerance}}(exact){{/show_tolerance}}{{/relabs}}{{#sigfig}}({{digits}} sig fig{{#digits_plural}}s{{/digits_plural}}){{/sigfig}}{{#decdig}}({{digits}} decimal place{{#digits_plural}}s{{/digits_plural}}){{/decdig}}
 {{/shortformat}}
 
 {{#format_error}}
