@@ -268,6 +268,38 @@ def test_formula_editor_test_submission_includes_mathjson() -> None:
     )
 
 
+def test_mathjson_submission_reapplies_variable_checks() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(submitted_answers={"test": "y", "test-json": '"y"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
+
+
+def test_mathjson_submission_reapplies_custom_function_checks() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "f(x)", "test-json": '["Apply", "f", "x"]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
+
+
+def test_mathjson_submission_respects_blank_value() -> None:
+    element_html = build_element_html('allow-blank="true"', 'blank-value="0"')
+    data = make_question_data(submitted_answers={"test": "", "test-json": '"x"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 0
+
+
 def test_formula_editor_set_test_submission_includes_mathjson() -> None:
     expected = sympy.Union(
         sympy.Interval(-sympy.oo, sympy.Rational(-1, 2)),

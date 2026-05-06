@@ -4,5 +4,10 @@
     "nodeModulesScripts": ["mathlive/mathlive.min.js"],
     "elementScripts": ["pl-symbolic-input.js"],
     "elementStyles": ["pl-symbolic-input.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "@cortex-js/compute-engine": "@cortex-js/compute-engine/dist/compute-engine.min.esm.js"
+    }
   }
 }

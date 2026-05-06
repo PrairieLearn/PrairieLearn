@@ -28,7 +28,8 @@
     "editor.formatOnSave": true
   },
   "[json]": {
-    "files.insertFinalNewline": true
+    "files.insertFinalNewline": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "files.associations": {
     "**/exampleCourse/questions/**/question.html": "htmlmustache",
