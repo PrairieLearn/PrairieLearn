@@ -47,9 +47,7 @@ class MathJsonDictionaryObject(MathJsonAttributes):
 type MathJsonPrimitive = bool | int | float | str
 type MathJsonSymbol = str
 type MathJsonSymbolExpression = MathJsonSymbolObject | str
-type MathJsonFunctionExpression = (
-    list[MathJsonExpression] | tuple[MathJsonExpression, ...]
-)
+type MathJsonFunctionExpression = list[MathJsonExpression]
 type DictionaryValue = MathJsonPrimitive | ExpressionObject | list[DictionaryValue]
 type ExpressionObject = (
     MathJsonNumberObject

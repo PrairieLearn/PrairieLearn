@@ -153,6 +153,20 @@ def test_round_trips_sympy_sets_to_raw_mathjson() -> None:
     ) == sympy.FiniteSet(sympy.EmptySet)
 
 
+def test_converts_open_interval_endpoints() -> None:
+    assert mathjson_to_sympy_expr(["Interval", ["Open", 1], 2]) == sympy.Interval.Lopen(
+        1, 2
+    )
+    assert mathjson_to_sympy_expr(["Interval", 1, ["Open", 2]]) == sympy.Interval.Ropen(
+        1, 2
+    )
+    assert mathjson_to_sympy_expr([
+        "Interval",
+        ["Open", 1],
+        ["Open", 2],
+    ]) == sympy.Interval.open(1, 2)
+
+
 def test_converts_native_sympy_unary_functions() -> None:
     x = sympy.Symbol("x")
 

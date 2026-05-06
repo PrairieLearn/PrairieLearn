@@ -449,12 +449,40 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     assert_never(data["panel"])
 
 
+def _apply_parse_constraints_to_sympy_expr(
+    expr: sympy.Basic,
+    *,
+    variables: list[str],
+    custom_functions: list[str],
+    assumptions: psu.AssumptionsDictT | None,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_trig: bool,
+    simplify_expression: bool,
+) -> sympy.Basic:
+    expr_json = psu.sympy_to_json(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig,
+    )
+    expr_json["_variables"] = variables
+    expr_json["_custom_functions"] = custom_functions
+    if assumptions is not None:
+        expr_json["_assumptions"] = assumptions
+
+    return psu.json_to_sympy(
+        expr_json,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
+    )
+
+
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
-    )
 
     variables = _get_variables_with_fallback(element, data, name)
 
@@ -478,22 +506,57 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     submitted_answer = data["submitted_answers"].get(name, None)
+    use_mathjson = f"{name}-json" in data["submitted_answers"]
 
-    if formula_editor:
+    if submitted_answer is None:
+        data["format_errors"][name] = "No submitted answer."
+        data["submitted_answers"][name] = None
+        return
+
+    if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
+        if allow_blank:
+            submitted_answer = blank_value
+            use_mathjson = False
+            if submitted_answer.strip() == "":
+                data["submitted_answers"][name] = ""
+                return
+        else:
+            data["format_errors"][name] = "No submitted answer."
+            data["submitted_answers"][name] = None
+            return
+
+    assumptions_dict: psu.AssumptionsDictT | None = None
+    a_tru = data["correct_answers"].get(name, {})
+    if isinstance(a_tru, dict):
+        assumptions_dict = a_tru.get("_assumptions", {})
+
+    a_sub_parsed = None
+
+    if use_mathjson:
         from mathjson_utils import raw_mathjson_to_sympy_expr
 
         try:
-            # TODO: just do some validation here and move the actual sympy parsing to grade?
             raw_mathjson = data["submitted_answers"].get(f"{name}-json")
             if raw_mathjson is None:
                 raise ValueError("No MathJSON submission.")
             if not isinstance(raw_mathjson, str):
                 raise TypeError("MathJSON submission must be a string.")
-            result = raw_mathjson_to_sympy_expr(raw_mathjson)
+            sympy_expr = raw_mathjson_to_sympy_expr(
+                raw_mathjson, allow_sets=allow_sets, allow_trig=allow_trig
+            )
+            result = _apply_parse_constraints_to_sympy_expr(
+                sympy_expr,
+                variables=variables,
+                custom_functions=custom_functions,
+                assumptions=assumptions_dict,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig=allow_trig,
+                simplify_expression=simplify_expression,
+            )
         except Exception as e:
             # TODO: produce more informative error messages for students
-            # TODO: handle allow_sets
-            data["format_errors"][name] = f"Error parsing MathJSON: {e}"
+            data["format_errors"][name] = f"Parse error: {e}"
             data["submitted_answers"][name] = None
             return
         a_sub_parsed = result
@@ -508,26 +571,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
         if a_sub is None:
+            # this branch should not be taken
             data["format_errors"][name] = "No submitted answer."
             data["submitted_answers"][name] = None
             return
-
-        if isinstance(a_sub, str) and a_sub.strip() == "":
-            if allow_blank:
-                a_sub = blank_value
-                if a_sub.strip() == "":  # Handle blank case
-                    data["submitted_answers"][name] = ""
-                    return
-            else:
-                data["format_errors"][name] = "No submitted answer."
-                data["submitted_answers"][name] = None
-                return
-
-        # Retrieve variable assumptions encoded in correct answer
-        assumptions_dict = None
-        a_tru = data["correct_answers"].get(name, {})
-        if isinstance(a_tru, dict):
-            assumptions_dict = a_tru.get("_assumptions")
 
         result = psu.try_parse_string_as_sympy(
             a_sub,
@@ -545,7 +592,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if isinstance(result, psu.SympyParseFailure):
             data["format_errors"][name] = result.error
             data["submitted_answers"][name] = None
-            # print(f"SymPy failed to parse the submission: {result.error}")
             return
 
         a_sub_parsed = result.expr
@@ -556,6 +602,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub_parsed,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
         )
 
         # Convert safely to sympy
@@ -563,6 +610,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub_json,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
             simplify_expression=simplify_expression,
         )
 
