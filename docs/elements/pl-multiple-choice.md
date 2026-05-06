@@ -46,6 +46,10 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `"correct"`: the corresponding choice will always be shown and will always be the correct answer.
 - `"incorrect"`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
 
+!!! warning "Using `builtin-grading="false"`"
+
+    Setting `builtin-grading="false"` means the element will display choices and collect submissions, but it will **not** award any points. In order for these usages to be automatically graded, you must supply a `grade()` function in `server.py`. Otherwise, all submissions will score zero, and the answer panel will appear blank.
+
 ### :pencil: Notes
 
 - "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
