@@ -29,7 +29,9 @@ import { selectAssessmentHasInstances } from '../../models/assessment-instance.j
 import {
   selectGroupById,
   selectGroupConfigForAssessment,
+  selectGroupsForConfig,
   selectNotAssignedForAssessment,
+  selectUidsNotInGroup,
 } from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
@@ -37,6 +39,7 @@ import { throwAppError } from '../app-errors.js';
 import {
   type createContext,
   requireCourseInstancePermissionEdit,
+  requireCourseInstancePermissionView,
   requireCoursePermissionEdit,
   t,
 } from './init.js';
@@ -291,10 +294,7 @@ const enableGroupWork = t.procedure
       ctx,
       origHash: input.origHash,
       applyChanges: (json) => {
-        const existing = normalizeGroupSettings(json);
-        json.groups = existing
-          ? serializeGroupSettings(existing, { enabled: true })
-          : { enabled: true };
+        json.groups = {};
         return stripLegacyGroupKeys(json);
       },
       syncFailedMessage: 'Failed to enable group work.',
@@ -389,20 +389,17 @@ const updateGroupConfig = t.procedure
       origHash: input.origHash,
       applyChanges: (json) => {
         cascadeRoleRenamesToZones(json, roles);
-        json.groups = serializeGroupSettings(
-          {
-            studentPermissions: {
-              canCreateGroup: input.canCreateGroup,
-              canJoinGroup: input.canJoinGroup,
-              canLeaveGroup: input.canLeaveGroup,
-              canNameGroup: input.canNameGroup,
-            },
-            minMembers: input.minMembers,
-            maxMembers: input.maxMembers,
-            roles,
+        json.groups = serializeGroupSettings({
+          studentPermissions: {
+            canCreateGroup: input.canCreateGroup,
+            canJoinGroup: input.canJoinGroup,
+            canLeaveGroup: input.canLeaveGroup,
+            canNameGroup: input.canNameGroup,
           },
-          { enabled: true },
-        );
+          minMembers: input.minMembers,
+          maxMembers: input.maxMembers,
+          roles,
+        });
         return stripLegacyGroupKeys(json);
       },
       syncFailedMessage: 'Failed to update group configuration.',
@@ -415,14 +412,11 @@ const disableGroupWork = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
-    const { newHash, jsonData } = await saveAssessmentGroupsBlock({
+    const { newHash } = await saveAssessmentGroupsBlock({
       ctx,
       origHash: input.origHash,
       applyChanges: (json) => {
-        const existing = normalizeGroupSettings(json);
-        json.groups = existing
-          ? serializeGroupSettings(existing, { enabled: false })
-          : { enabled: false };
+        delete json.groups;
         return stripLegacyGroupKeys(json);
       },
       syncFailedMessage: 'Failed to disable group work.',
@@ -430,10 +424,24 @@ const disableGroupWork = t.procedure
         'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
     });
 
-    return {
-      origHash: newHash,
-      groupSettingsDefaults: normalizeGroupSettings(jsonData),
-    };
+    return { origHash: newHash };
+  });
+
+const refreshGroups = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .mutation(async ({ ctx }) => {
+    const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+    if (!groupConfig) {
+      return { groups: [], notAssigned: [] };
+    }
+    const [groups, notAssigned] = await Promise.all([
+      selectGroupsForConfig(groupConfig.id),
+      selectUidsNotInGroup({
+        group_config_id: groupConfig.id,
+        course_instance_id: groupConfig.course_instance_id,
+      }),
+    ]);
+    return { groups, notAssigned };
   });
 
 const randomizeGroups = t.procedure
@@ -473,4 +481,5 @@ export const assessmentGroupsRouter = t.router({
   disableGroupWork,
   updateGroupConfig,
   randomizeGroups,
+  refreshGroups,
 });

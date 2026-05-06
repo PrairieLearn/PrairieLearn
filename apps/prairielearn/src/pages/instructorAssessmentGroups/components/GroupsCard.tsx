@@ -1,7 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
-import { Alert, ButtonGroup, Dropdown, DropdownButton, Modal } from 'react-bootstrap';
+import { formatDistance } from 'date-fns';
+import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Dropdown,
+  DropdownButton,
+  Modal,
+  Spinner,
+} from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
@@ -676,6 +685,23 @@ export function GroupsCard({
 }) {
   const [groups, setGroups] = useState(initialGroups);
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const trpc = useTRPC();
+  const refreshMutation = useMutation(
+    trpc.assessmentGroups.refreshGroups.mutationOptions({
+      onSuccess: ({ groups: newGroups, notAssigned: newNotAssigned }) => {
+        setGroups(newGroups);
+        setNotAssigned(newNotAssigned);
+        setLastRefreshedAt(Date.now());
+      },
+    }),
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const uploadModal = useModalState<null>();
   const randomModal = useModalState<null>();
   const addModal = useModalState<null>();
@@ -779,6 +805,8 @@ export function GroupsCard({
                   }
                   return `${assignedCount} assigned · ${unassignedCount} unassigned`;
                 })}
+                {' · Updated '}
+                {formatDistance(lastRefreshedAt, now, { addSuffix: true })}
               </div>
             </div>
             <div className="d-flex gap-2">
@@ -824,6 +852,18 @@ export function GroupsCard({
                   Delete all
                 </Dropdown.Item>
               </DropdownButton>
+              <Button
+                variant="outline-secondary"
+                aria-label="Refresh groups"
+                disabled={refreshMutation.isPending}
+                onClick={() => refreshMutation.mutate()}
+              >
+                {refreshMutation.isPending ? (
+                  <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                )}
+              </Button>
             </div>
           </div>
 

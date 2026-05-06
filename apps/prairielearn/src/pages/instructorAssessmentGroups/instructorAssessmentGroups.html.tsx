@@ -20,14 +20,12 @@ import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
 function NoGroupConfigCard({
   origHash,
   canEdit,
-  hasPreservedConfig,
   hasAssessmentInstances,
   assessmentStudentsUrl,
   onEnable,
 }: {
   origHash: string | null;
   canEdit: boolean;
-  hasPreservedConfig: boolean;
   hasAssessmentInstances: boolean;
   assessmentStudentsUrl: string;
   onEnable: (result: {
@@ -40,15 +38,9 @@ function NoGroupConfigCard({
   const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
 
-  const heading = hasPreservedConfig
-    ? 'Group work is disabled.'
-    : 'This is not a group assessment.';
   const description = canEdit
-    ? hasPreservedConfig
-      ? 'Re-enable group work to restore the previous configuration.'
-      : 'Enable group work to allow students to collaborate and submit as teams.'
+    ? 'Enable group work to allow students to collaborate and submit as teams.'
     : 'Group work is not enabled for this assessment.';
-  const buttonLabel = hasPreservedConfig ? 'Re-enable group work' : 'Enable group work';
 
   return (
     <div className="container py-3">
@@ -60,7 +52,7 @@ function NoGroupConfigCard({
             </Alert>
           )}
           <i className="bi bi-people fs-1 mb-2" />
-          <h2 className="h5">{heading}</h2>
+          <h2 className="h5">This is not a group assessment.</h2>
           <div className="text-muted">{description}</div>
           {canEdit && hasAssessmentInstances && (
             <GroupWorkInstancesWarning
@@ -76,7 +68,7 @@ function NoGroupConfigCard({
               disabled={mutation.isPending || hasAssessmentInstances}
               onClick={() => mutation.mutate({ origHash }, { onSuccess: onEnable })}
             >
-              {buttonLabel}
+              Enable group work
             </button>
           )}
         </div>
@@ -172,7 +164,6 @@ function InstructorAssessmentGroupsInner({
       <NoGroupConfigCard
         origHash={origHash}
         canEdit={canEditCourse}
-        hasPreservedConfig={groupSettingsDefaults != null}
         hasAssessmentInstances={hasAssessmentInstances}
         assessmentStudentsUrl={assessmentStudentsUrl}
         onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
@@ -214,9 +205,9 @@ function InstructorAssessmentGroupsInner({
           origHash={origHash}
           hasAssessmentInstances={hasAssessmentInstances}
           assessmentStudentsUrl={assessmentStudentsUrl}
-          onDisable={({ origHash: newHash, groupSettingsDefaults: newDefaults }) => {
+          onDisable={({ origHash: newHash }) => {
             setOrigHash(newHash);
-            setGroupSettingsDefaults(newDefaults);
+            setGroupSettingsDefaults(null);
             setGroupConfigInfo(undefined);
           }}
         />

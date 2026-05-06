@@ -59,10 +59,7 @@ export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): G
   };
 }
 
-export function serializeGroupSettings(
-  settings: GroupSettingsFormValues,
-  { enabled }: { enabled: boolean },
-): GroupsJsonInput {
+export function serializeGroupSettings(settings: GroupSettingsFormValues): GroupsJsonInput {
   const roles = settings.roles;
   const canAssignRoles = roles.filter((r) => r.canAssignRoles).map((r) => r.name);
   const canView = roles.filter((r) => r.canView).map((r) => r.name);
@@ -75,7 +72,6 @@ export function serializeGroupSettings(
   };
 
   return {
-    enabled,
     minMembers: settings.minMembers ?? undefined,
     maxMembers: settings.maxMembers ?? undefined,
     studentPermissions: {

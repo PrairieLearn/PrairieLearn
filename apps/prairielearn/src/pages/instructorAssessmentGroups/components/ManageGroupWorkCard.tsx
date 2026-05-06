@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { getAppError } from '../../../lib/client/errors.js';
-import { type GroupSettingsFormValues } from '../../../lib/group-config.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
@@ -31,12 +30,11 @@ function DisableGroupWorkModal({
       </Modal.Header>
       <Modal.Body>
         <p className="mb-2">
-          Students will no longer be able to access this assessment as a group, and existing groups
-          will be unable to submit until group work is re-enabled.
+          All groups, group assignments, and the group configuration for this assessment will be
+          permanently removed.
         </p>
         <p className="mb-0 text-muted small">
-          The current group configuration will be preserved and restored if you re-enable group work
-          later.
+          Students will need to be re-grouped if you enable group work again later.
         </p>
         {hasAssessmentInstances && (
           <GroupWorkInstancesWarning
@@ -67,10 +65,7 @@ export function ManageGroupWorkCard({
   origHash: string | null;
   hasAssessmentInstances: boolean;
   assessmentStudentsUrl: string;
-  onDisable: (result: {
-    origHash: string;
-    groupSettingsDefaults: GroupSettingsFormValues | null;
-  }) => void;
+  onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
   const trpc = useTRPC();
@@ -108,7 +103,8 @@ export function ManageGroupWorkCard({
           <div className="flex-grow-1">
             <div className="fw-bold">Disable group work</div>
             <div className="text-muted small">
-              The current configuration will be preserved and can be restored later.
+              All groups, group assignments, and the group configuration will be permanently
+              removed.
             </div>
           </div>
           <Button

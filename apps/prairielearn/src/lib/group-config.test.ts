@@ -437,95 +437,81 @@ describe('serializeGroupSettings', () => {
   };
 
   it('produces a schema-valid block for a minimal config', () => {
-    const result = serializeGroupSettings(baseFormValues, { enabled: true });
-    assert.equal(result.enabled, true);
+    const result = serializeGroupSettings(baseFormValues);
     assert.doesNotThrow(() => GroupsJsonSchema.parse(result));
   });
 
   it('omits rolePermissions entirely when no roles are configured', () => {
-    const result = serializeGroupSettings(baseFormValues, { enabled: true });
+    const result = serializeGroupSettings(baseFormValues);
     assert.isUndefined(result.rolePermissions);
   });
 
   it('omits rolePermissions when all role permissions are at defaults', () => {
-    const result = serializeGroupSettings(
-      {
-        ...baseFormValues,
-        roles: [
-          {
-            name: 'Worker',
-            origName: 'Worker',
-            minAssignees: null,
-            maxAssignees: null,
-            canAssignRoles: false,
-            canView: true,
-            canSubmit: true,
-          },
-        ],
-      },
-      { enabled: true },
-    );
+    const result = serializeGroupSettings({
+      ...baseFormValues,
+      roles: [
+        {
+          name: 'Worker',
+          origName: 'Worker',
+          minAssignees: null,
+          maxAssignees: null,
+          canAssignRoles: false,
+          canView: true,
+          canSubmit: true,
+        },
+      ],
+    });
     assert.isUndefined(result.rolePermissions);
   });
 
   it('omits canView/canSubmit from rolePermissions when all roles are permitted', () => {
-    const result = serializeGroupSettings(
-      {
-        ...baseFormValues,
-        roles: [
-          {
-            name: 'Manager',
-            origName: 'Manager',
-            minAssignees: 1,
-            maxAssignees: 1,
-            canAssignRoles: true,
-            canView: true,
-            canSubmit: true,
-          },
-        ],
-      },
-      { enabled: true },
-    );
+    const result = serializeGroupSettings({
+      ...baseFormValues,
+      roles: [
+        {
+          name: 'Manager',
+          origName: 'Manager',
+          minAssignees: 1,
+          maxAssignees: 1,
+          canAssignRoles: true,
+          canView: true,
+          canSubmit: true,
+        },
+      ],
+    });
     assert.deepEqual(result.rolePermissions, { canAssignRoles: ['Manager'] });
   });
 
   it('emits canView/canSubmit only for the subset of roles that have them', () => {
-    const result = serializeGroupSettings(
-      {
-        ...baseFormValues,
-        roles: [
-          {
-            name: 'Manager',
-            origName: 'Manager',
-            minAssignees: 1,
-            maxAssignees: 1,
-            canAssignRoles: true,
-            canView: true,
-            canSubmit: false,
-          },
-          {
-            name: 'Recorder',
-            origName: 'Recorder',
-            minAssignees: 1,
-            maxAssignees: 1,
-            canAssignRoles: false,
-            canView: true,
-            canSubmit: true,
-          },
-        ],
-      },
-      { enabled: true },
-    );
+    const result = serializeGroupSettings({
+      ...baseFormValues,
+      roles: [
+        {
+          name: 'Manager',
+          origName: 'Manager',
+          minAssignees: 1,
+          maxAssignees: 1,
+          canAssignRoles: true,
+          canView: true,
+          canSubmit: false,
+        },
+        {
+          name: 'Recorder',
+          origName: 'Recorder',
+          minAssignees: 1,
+          maxAssignees: 1,
+          canAssignRoles: false,
+          canView: true,
+          canSubmit: true,
+        },
+      ],
+    });
     assert.deepEqual(result.rolePermissions, {
       canAssignRoles: ['Manager'],
       canSubmit: ['Recorder'],
     });
   });
 
-  it('passes through enabled: false', () => {
-    const result = serializeGroupSettings(baseFormValues, { enabled: false });
-    assert.equal(result.enabled, false);
-  });
 });
 
 describe('stripLegacyGroupKeys', () => {
@@ -630,11 +616,10 @@ describe('legacy → normalize → serialize round-trip', () => {
     const normalized = normalizeGroupSettings(legacyAssessment);
     assert.isNotNull(normalized);
 
-    const serialized = serializeGroupSettings(normalized, { enabled: true });
+    const serialized = serializeGroupSettings(normalized);
     const stripped = stripLegacyGroupKeys({ ...legacyAssessment, groups: serialized });
 
     const parsed = AssessmentJsonSchema.parse(stripped);
-    assert.equal(parsed.groups?.enabled, true);
     assert.equal(parsed.groups?.minMembers, 2);
     assert.equal(parsed.groups?.maxMembers, 4);
     assert.deepEqual(
