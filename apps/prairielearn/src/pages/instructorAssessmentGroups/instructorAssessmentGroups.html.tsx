@@ -32,6 +32,8 @@ function NoGroupConfigCard({
     origHash: string;
     groupConfig: StaffGroupConfig;
     groupSettingsDefaults: GroupSettingsFormValues | null;
+    groups: GroupUsersRow[];
+    notAssigned: string[];
   }) => void;
 }) {
   const trpc = useTRPC();
@@ -138,8 +140,8 @@ function InstructorAssessmentGroupsInner({
   pageContext,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
-  groups,
-  notAssigned,
+  groups: initialGroups,
+  notAssigned: initialNotAssigned,
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
   hasAssessmentInstances,
@@ -152,6 +154,8 @@ function InstructorAssessmentGroupsInner({
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [groups, setGroups] = useState(initialGroups);
+  const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
   const [minGroupSize, setMinGroupSize] = useState(
     groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
   );
@@ -166,10 +170,18 @@ function InstructorAssessmentGroupsInner({
         canEdit={canEditCourse}
         hasAssessmentInstances={hasAssessmentInstances}
         assessmentStudentsUrl={assessmentStudentsUrl}
-        onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
+        onEnable={({
+          origHash: newHash,
+          groupConfig,
+          groupSettingsDefaults: newDefaults,
+          groups: newGroups,
+          notAssigned: newNotAssigned,
+        }) => {
           setOrigHash(newHash);
           setGroupConfigInfo(groupConfig);
           setGroupSettingsDefaults(newDefaults);
+          setGroups(newGroups);
+          setNotAssigned(newNotAssigned);
         }}
       />
     );
@@ -209,6 +221,8 @@ function InstructorAssessmentGroupsInner({
             setOrigHash(newHash);
             setGroupSettingsDefaults(null);
             setGroupConfigInfo(undefined);
+            setGroups([]);
+            setNotAssigned([]);
           }}
         />
       )}

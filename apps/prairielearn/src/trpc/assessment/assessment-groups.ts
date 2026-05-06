@@ -310,10 +310,20 @@ const enableGroupWork = t.procedure
       });
     }
 
+    const [groups, notAssigned] = await Promise.all([
+      selectGroupsForConfig(groupConfig.id),
+      selectUidsNotInGroup({
+        group_config_id: groupConfig.id,
+        course_instance_id: groupConfig.course_instance_id,
+      }),
+    ]);
+
     return {
       origHash: newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
       groupSettingsDefaults: normalizeGroupSettings(jsonData),
+      groups,
+      notAssigned,
     };
   });
 
@@ -412,6 +422,16 @@ const disableGroupWork = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
+    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
+      });
+    }
+
+    await deleteAllGroups(ctx.assessment.id, ctx.authn_user.id);
+
     const { newHash } = await saveAssessmentGroupsBlock({
       ctx,
       origHash: input.origHash,
@@ -420,8 +440,6 @@ const disableGroupWork = t.procedure
         return stripLegacyGroupKeys(json);
       },
       syncFailedMessage: 'Failed to disable group work.',
-      noInstancesMessage:
-        'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
     });
 
     return { origHash: newHash };
