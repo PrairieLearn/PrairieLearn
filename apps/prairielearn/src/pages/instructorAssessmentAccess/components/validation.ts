@@ -1,6 +1,7 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
@@ -18,8 +19,10 @@ export type AccessControlFormFieldPath =
   | `defaultRule.lateDeadlines.${number}.date`
   | `defaultRule.lateDeadlines.${number}.credit`
   | 'defaultRule.afterLastDeadline.credit'
+  | 'defaultRule.questionVisibility'
   | 'defaultRule.questionVisibility.visibleFromDate'
   | 'defaultRule.questionVisibility.visibleUntilDate'
+  | 'defaultRule.scoreVisibility'
   | 'defaultRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.release.date`
   | `overrides.${number}.due.date`
@@ -28,8 +31,10 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
+  | `overrides.${number}.questionVisibility`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
+  | `overrides.${number}.scoreVisibility`
   | `overrides.${number}.scoreVisibility.visibleFromDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
@@ -67,6 +72,7 @@ function mapIssueToFormFieldPath(
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
+        if (issue.path.length === 2) return `${prefix}.questionVisibility`;
         switch (issue.path[2]) {
           case 'visibleFromDate':
             return `${prefix}.questionVisibility.visibleFromDate`;
@@ -78,6 +84,7 @@ function mapIssueToFormFieldPath(
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (issue.path[1] === 'score') {
+        if (issue.path.length === 2) return `${prefix}.scoreVisibility`;
         switch (issue.path[2]) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           case 'visibleFromDate':
@@ -152,6 +159,7 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
+    validateGlobalAfterCompleteIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);

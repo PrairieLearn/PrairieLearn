@@ -52,8 +52,9 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
-            release: { date: '2024-01-01T00:00:00' },
+            release: { date: '2024-02-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
         },
@@ -421,6 +422,124 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'pre-release listing, late-credit window, and later hidden review window',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          startDate: '1999-01-01T00:00:01',
+          endDate: '2019-12-31T23:59:59',
+        },
+        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
+        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
+        {
+          active: false,
+          credit: 0,
+          showClosedAssessment: false,
+          startDate: '2035-01-01T00:00:01',
+          endDate: '2039-12-31T23:59:59',
+        },
+        {
+          active: false,
+          credit: 0,
+          startDate: '2040-01-01T00:00:01',
+          endDate: '2049-12-31T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          beforeRelease: { listed: true },
+          dateControl: {
+            release: { date: '2020-01-01T00:00:01' },
+            due: { date: '2020-12-31T23:59:59' },
+            lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2040-01-01T00:00:01',
+              visibleUntilDate: '2049-12-31T23:59:59',
+            },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'later bounded review window is preserved',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          startDate: '1999-01-01T00:00:01',
+          endDate: '2019-12-31T23:59:59',
+        },
+        { credit: 100, startDate: '2020-01-01T00:00:01', endDate: '2020-12-31T23:59:59' },
+        { credit: 75, startDate: '2021-01-01T00:00:00', endDate: '2030-12-31T23:59:59' },
+        {
+          active: false,
+          credit: 0,
+          startDate: '2040-01-01T00:00:01',
+          endDate: '2049-12-31T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          beforeRelease: { listed: true },
+          dateControl: {
+            release: { date: '2020-01-01T00:00:01' },
+            due: { date: '2020-12-31T23:59:59' },
+            lateDeadlines: [{ date: '2030-12-31T23:59:59', credit: 75 }],
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2040-01-01T00:00:01',
+              visibleUntilDate: '2049-12-31T23:59:59',
+            },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'contiguous review window without intermediate hidden window is supported',
+      rules: [
+        {
+          startDate: '2023-02-07T13:00:00',
+          endDate: '2023-02-27T23:59:00',
+          credit: 100,
+        },
+        {
+          startDate: '2023-02-28T00:00:00',
+          endDate: '2023-05-15T23:59:00',
+          active: false,
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2023-02-07T13:00:00' },
+            due: { date: '2023-02-27T23:59:00' },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2023-02-28T00:00:00',
+              visibleUntilDate: '2023-05-15T23:59:00',
+            },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'late deadline preserved when open-ended credit is lower than due-date credit',
       rules: [
         { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },
@@ -597,6 +716,75 @@ describe('migrateAllowAccess', () => {
           afterComplete: {
             questions: { hidden: true, visibleFromDate: '2024-09-01T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-09-01T00:00:00' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'bounded review followed by unbounded reveal keeps questions visible',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01T00:00:00',
+          endDate: '2024-06-01T00:00:00',
+          showClosedAssessment: false,
+        },
+        {
+          active: false,
+          startDate: '2024-07-01T00:00:00',
+          endDate: '2024-08-01T00:00:00',
+        },
+        { active: false, startDate: '2024-09-01T00:00:00' },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00' },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-07-01T00:00:00' },
+          },
+        },
+        errors: [],
+        notes: ['2 completed-question review windows collapsed into a single visibility window.'],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'adjacent bounded review windows merge without a note',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2025-03-14T17:00:00',
+          endDate: '2025-03-28T23:59:59',
+        },
+        {
+          active: false,
+          startDate: '2025-03-30T00:00:00',
+          endDate: '2025-04-01T21:59:59',
+        },
+        {
+          active: false,
+          startDate: '2025-04-01T22:00:00',
+          endDate: '2025-05-12T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2025-03-14T17:00:00' },
+            due: { date: '2025-03-28T23:59:59' },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2025-03-30T00:00:00',
+              visibleUntilDate: '2025-05-12T23:59:59',
+            },
           },
         },
         errors: [],
@@ -852,7 +1040,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'password-gated with practice window',
+      name: 'password-gated with view-only window extending past the deadline',
       rules: [
         {
           startDate: '2021-10-21T14:00:00',
@@ -869,12 +1057,19 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
             password: 'password',
             release: { date: '2021-10-21T14:00:00' },
             due: { date: '2021-10-21T15:15:00' },
             durationMinutes: 55,
-            afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2021-10-21T15:15:01',
+              visibleUntilDate: '2021-12-19T15:15:00',
+            },
           },
         },
         errors: [],
@@ -890,6 +1085,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
+          beforeRelease: { listed: true },
           dateControl: {
             password: 'secret',
             release: { date: '2024-02-01T00:00:00' },

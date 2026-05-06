@@ -1,7 +1,6 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
-import './lib/clipboardPopover.js';
 
 onDocumentReady(() => {
   const courseSettingsForm = document.querySelector<HTMLFormElement>(
