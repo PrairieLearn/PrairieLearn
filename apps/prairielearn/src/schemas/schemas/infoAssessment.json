@@ -833,7 +833,7 @@
                   "type": "boolean"
                 },
                 "credit": {
-                  "type": "number",
+                  "type": "integer",
                   "minimum": 0,
                   "maximum": 200
                 }
@@ -971,8 +971,8 @@
           "$ref": "#/definitions/DatetimeLocalStringSchema"
         },
         "credit": {
-          "description": "Amount of credit as a percent to allow",
-          "type": "number",
+          "description": "Integer credit percentage to allow",
+          "type": "integer",
           "minimum": 0,
           "maximum": 200
         }

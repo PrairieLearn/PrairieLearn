@@ -188,6 +188,7 @@ function AfterLastDeadlineInput({
                 }
                 min="0"
                 max="200"
+                step={1}
                 placeholder="100"
                 isInvalid={!!creditError}
                 onWheel={({ currentTarget }) => currentTarget.blur()}
@@ -198,6 +199,7 @@ function AfterLastDeadlineInput({
                   validate: (v, formValues) => {
                     if (v == null || Number.isNaN(v)) return 'Credit is required';
                     if (!Number.isFinite(v)) return 'Credit must be a finite number';
+                    if (!Number.isInteger(v)) return 'Credit must be an integer';
                     if (v < 0 || v > 200) return 'Must be 0\u2013200%';
                     const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
                       formValues,

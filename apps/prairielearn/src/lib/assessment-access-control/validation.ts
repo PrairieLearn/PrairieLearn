@@ -68,18 +68,14 @@ function findDueMs(rule: AccessControlJson): number | null {
 function findDueState(rule: AccessControlJson): {
   hasConfiguredDue: boolean;
   dueMs: number | null;
-  dueCredit: number;
-  hasCustomCredit: boolean;
 } {
   const dateControl = rule.dateControl;
   if (dateControl?.due === undefined) {
-    return { hasConfiguredDue: false, dueMs: null, dueCredit: 100, hasCustomCredit: false };
+    return { hasConfiguredDue: false, dueMs: null };
   }
   return {
     hasConfiguredDue: true,
     dueMs: dateControl.due.date ? new Date(dateControl.due.date).getTime() : null,
-    dueCredit: dateControl.due.credit ?? 100,
-    hasCustomCredit: dateControl.due.credit !== undefined,
   };
 }
 
@@ -510,10 +506,8 @@ export function validateGlobalDateConsistencyIssues(
 }
 
 /**
- * Cross-rule credit consistency checks.
- *
- * 1. Each override's effective deadline sequence, after inheriting default
- *    fields, must strictly decrease.
+ * Checks each override's effective deadline sequence, after inheriting default
+ * fields, for strictly decreasing credit.
  */
 export function validateGlobalCreditConsistencyIssues(
   validationRules: AccessControlValidationRule[],

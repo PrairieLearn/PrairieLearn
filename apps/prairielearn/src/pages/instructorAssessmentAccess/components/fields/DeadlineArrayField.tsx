@@ -291,6 +291,7 @@ function DeadlineArrayInput({
   const validateCredit = (value: number, index: number) => {
     if (Number.isNaN(value)) return 'Credit is required';
     if (!Number.isFinite(value)) return 'Credit must be a finite number';
+    if (!Number.isInteger(value)) return 'Credit must be an integer';
     if (isEarly) {
       if (value < 0 || value > 200) return 'Credit must be 0-200%';
       if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
@@ -395,6 +396,7 @@ function DeadlineArrayInput({
                   placeholder="100"
                   min={isEarly ? Math.max(0, dueCredit) : '0'}
                   max={getCreditInputMax({ type, index, deadlines, dueCredit })}
+                  step={1}
                   onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
