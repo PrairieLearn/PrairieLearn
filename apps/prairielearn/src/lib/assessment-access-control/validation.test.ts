@@ -770,6 +770,16 @@ describe('Credit monotonicity validation', () => {
       },
       errorMatch: 'Deadline credits must strictly decrease over time.',
     },
+    {
+      label: 'late deadline credit equal to custom due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleCreditMonotonicity(rule);
@@ -806,6 +816,15 @@ describe('Credit monotonicity validation', () => {
       },
     },
     {
+      label: 'late deadline credit just below custom due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 79 }],
+        },
+      },
+    },
+    {
       label: 'afterLastDeadline credit less than last late deadline',
       config: {
         dateControl: {
@@ -832,61 +851,6 @@ describe('Credit monotonicity validation', () => {
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
     assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
-  });
-
-  describe('custom due credit', () => {
-    it('rejects a late deadline equal to the custom due credit', () => {
-      const rule = AccessControlJsonSchema.parse({
-        dateControl: {
-          due: { date: '2024-03-21T00:00:00', credit: 80 },
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
-        },
-      });
-      assert.isTrue(
-        validateRuleCreditMonotonicity(rule).includes(
-          'Deadline credits must strictly decrease over time.',
-        ),
-      );
-    });
-
-    it('accepts a late deadline just below the custom due credit', () => {
-      const rule = AccessControlJsonSchema.parse({
-        dateControl: {
-          due: { date: '2024-03-21T00:00:00', credit: 80 },
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 79 }],
-        },
-      });
-      assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
-    });
-
-    it('accepts early deadlines when custom due credit is at least 100%', () => {
-      const rule = AccessControlJsonSchema.parse({
-        dateControl: {
-          release: { date: '2024-03-01T00:00:00' },
-          due: { date: '2024-03-21T00:00:00', credit: 110 },
-          earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 120 }],
-        },
-      });
-      assert.deepEqual(validateRule(rule, 'none'), []);
-    });
-
-    it('rejects early deadlines when due credit is below 100%', () => {
-      const errors = validateRule(
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-01T00:00:00' },
-            due: { date: '2024-03-21T00:00:00', credit: 80 },
-            earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 110 }],
-          },
-        }),
-        'none',
-      );
-      assert.isTrue(
-        errors.some((e) =>
-          e.includes('Early deadlines are not allowed when due date credit is below 100%'),
-        ),
-      );
-    });
   });
 });
 
@@ -1485,6 +1449,15 @@ describe('Structural field dependency validation', () => {
         },
       },
     },
+    {
+      label: 'early deadlines when custom due credit is at least 100%',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 120 }],
+        },
+      },
+    },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const issues = validateRuleStructuralDependencyIssues({
@@ -1493,6 +1466,25 @@ describe('Structural field dependency validation', () => {
       ruleIndex: 0,
     });
     assert.deepEqual(issues, []);
+  });
+
+  it('should reject early deadlines when due credit is below 100%', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: '2024-03-21T00:00:00', credit: 80 },
+        earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 110 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some(
+        (i) => i.message === 'Early deadlines are not allowed when due date credit is below 100%.',
+      ),
+    );
   });
 
   it('should surface structural errors through validateAccessControlRules', () => {

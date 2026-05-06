@@ -40,7 +40,6 @@ export function AccessControlForm({
   ptHost,
   onSubmit,
   courseInstance,
-  assessmentId,
   isSaving = false,
   alert,
 }: {
@@ -49,7 +48,6 @@ export function AccessControlForm({
   ptHost: string;
   onSubmit: (data: AccessControlJsonWithId[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentId: string;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
 }) {
@@ -249,11 +247,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'default' ? (
       <div className="px-3 pb-3">
-        <DefaultRuleForm
-          displayTimezone={displayTimezone}
-          assessmentId={assessmentId}
-          courseInstanceId={courseInstance.id}
-        />
+        <DefaultRuleForm displayTimezone={displayTimezone} />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -269,12 +263,7 @@ export function AccessControlForm({
                 handleOverrideTargetTypeChange(selectedRule.index, targetType)
               }
             />
-            <OverrideRuleContent
-              index={selectedRule.index}
-              displayTimezone={displayTimezone}
-              assessmentId={assessmentId}
-              courseInstanceId={courseInstance.id}
-            />
+            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
           </div>
         );
       })()
