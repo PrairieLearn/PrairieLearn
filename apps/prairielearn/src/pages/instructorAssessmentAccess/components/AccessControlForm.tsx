@@ -337,6 +337,7 @@ export function AccessControlForm({
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
                   alert={alert}
+                  fullWidth
                   onCancel={() => reset()}
                 />
               </>

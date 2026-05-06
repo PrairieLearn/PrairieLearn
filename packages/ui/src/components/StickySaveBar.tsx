@@ -30,6 +30,13 @@ export interface StickySaveBarProps {
    * of the user's scroll position.
    */
   alert?: StickySaveBarAlert | null;
+  /**
+   * When true, the actions row spans the full width of the bar's container
+   * (using `container-fluid`) instead of being capped at the Bootstrap
+   * breakpoint max-widths. Use on full-width pages so the bar aligns with
+   * edge-to-edge page content.
+   */
+  fullWidth?: boolean;
 }
 
 export function StickySaveBar({
@@ -39,6 +46,7 @@ export function StickySaveBar({
   formId,
   saveDisabledReason,
   alert,
+  fullWidth,
 }: StickySaveBarProps) {
   const isSaveDisabled = isSaving || Boolean(saveDisabledReason);
 
@@ -67,7 +75,8 @@ export function StickySaveBar({
       )}
       <div
         className={clsx(
-          'container align-items-center justify-content-between gap-2 py-3',
+          fullWidth ? 'container-fluid' : 'container',
+          'align-items-center justify-content-between gap-2 py-3',
           visible ? 'd-flex' : 'd-none',
         )}
       >
