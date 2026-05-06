@@ -297,9 +297,10 @@ export class CodeCallerNative implements CodeCaller {
             resolve(true);
           }
         };
-        // The fast path returns immediately when the confirmation arrives;
-        // this is just a defensive ceiling.
-        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 2000);
+        // TEMPORARY: lowered to 500ms to deliberately trigger restart-timeout
+        // flakes so the diagnostics added in this branch capture data.
+        // Restore to 2000ms before merging.
+        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 500);
 
         // Before reporting the restart as successful, we need to wait
         // for a confirmation message to ensure that control has actually

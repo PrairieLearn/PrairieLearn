@@ -292,7 +292,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
   beforeAll(async function () {
     config.features['process-questions-in-server'] = false;
-    config.workersCount = 4;
+    // TEMPORARY: bumped to 8 to trigger restart-timeout flakes for diagnostics.
+    // Restore to 4 before merging.
+    config.workersCount = 8;
     await helperServer.before()();
   });
 
