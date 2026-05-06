@@ -2523,6 +2523,8 @@ export interface QtiImportQuestionData {
   serverPy?: string;
   /** Map of filename -> base64-encoded content. */
   clientFiles: Record<string, string>;
+  /** Whether this question should overwrite an existing question directory. */
+  overwrite?: boolean;
 }
 
 /** A single assessment to import, including its questions. */
@@ -2647,12 +2649,11 @@ export class QtiImportEditor extends Editor {
       for (const question of assessment.questions) {
         const qDir = path.join(questionsBaseDir, question.directoryName);
 
-        // Clear managed files before writing so that stale artifacts
+        // When overwriting, wipe the entire directory so stale artifacts
         // (e.g. a previous server.py or old clientFilesQuestion entries)
-        // don't persist when overwriting an existing question.
-        if (await fs.pathExists(qDir)) {
-          await fs.remove(path.join(qDir, 'server.py'));
-          await fs.remove(path.join(qDir, 'clientFilesQuestion'));
+        // don't persist alongside the fresh import.
+        if (question.overwrite && (await fs.pathExists(qDir))) {
+          await fs.remove(qDir);
         }
 
         const qInfoJson = { ...question.infoJson };
