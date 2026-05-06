@@ -304,8 +304,12 @@ export async function syncEnrollmentAccessControl(
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
     date_control_after_last_deadline_overridden: ruleData.afterLastDeadlineOverridden,
-    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
-    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineCredit,
+    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineOverridden
+      ? ruleData.afterLastDeadlineAllowSubmissions
+      : null,
+    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineOverridden
+      ? ruleData.afterLastDeadlineCredit
+      : null,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
