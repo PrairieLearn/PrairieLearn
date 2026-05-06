@@ -55,6 +55,7 @@ EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
+BUILTIN_GRADING_DEFAULT = True
 SIZE_DEFAULT = None
 PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
@@ -212,6 +213,7 @@ def prepare_answers_to_display(
     nota_feedback: str | None,
     order_type: OrderType,
     display_type: DisplayType,
+    builtin_grading: bool,
 ) -> list[AnswerTuple]:
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -228,7 +230,11 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
         )
 
-    if nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE} and len_correct < 1:
+    if (
+        builtin_grading
+        and nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE}
+        and len_correct < 1
+    ):
         # There must be a correct answer
         raise ValueError(
             'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
@@ -316,7 +322,7 @@ def prepare_answers_to_display(
         number_correct = 0
         number_incorrect = number_answers
     else:
-        number_correct = 1
+        number_correct = min(1, len_correct)
         number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
@@ -415,6 +421,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "size",
         "placeholder",
         "aria-label",
+        "builtin-grading",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -434,6 +441,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(f"Duplicate params variable name: {name}")
     if name in data["correct_answers"]:
         raise ValueError(f"Duplicate correct_answers variable name: {name}")
+
+    builtin_grading = pl.get_boolean_attrib(
+        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+    )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 
@@ -471,6 +482,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         ),
         order_type=get_order_type(element),
         display_type=get_display_type(element),
+        builtin_grading=builtin_grading,
     )
 
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
@@ -610,8 +622,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif data["panel"] == "answer":
         correct_answer = data["correct_answers"].get(name, None)
 
-        if correct_answer is None:
+        builtin_grading = pl.get_boolean_attrib(
+            element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+        )
+
+        if correct_answer is None and builtin_grading:
             raise ValueError("No true answer.")
+
+        if correct_answer is None:
+            return ""
 
         html_params = {
             "answer": True,
@@ -654,6 +673,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+
+    builtin_grading = pl.get_boolean_attrib(
+        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+    )
+    if not builtin_grading:
+        return
+
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     submitted_key = data["submitted_answers"].get(name, None)
@@ -679,22 +705,36 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    correct_key = data["correct_answers"][name].get("key", None)
-    if correct_key is None:
+    correct_answer = data["correct_answers"].get(name)
+    correct_key = correct_answer.get("key", None) if correct_answer else None
+
+    builtin_grading = pl.get_boolean_attrib(
+        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+    )
+    if correct_key is None and builtin_grading:
         raise ValueError("could not determine correct_key")
 
     number_answers = len(data["params"][name])
     all_keys = list(it.islice(pl.iter_keys(), number_answers))
-    incorrect_keys = list(set(all_keys) - {correct_key})
+    incorrect_keys = list(
+        set(all_keys) - {correct_key} if correct_key else set(all_keys)
+    )
 
     result = data["test_type"]
     if result == "correct":
-        data["raw_submitted_answers"][name] = data["correct_answers"][name]["key"]
-        data["partial_scores"][name] = {"score": 1.0, "weight": weight}
+        if correct_key is None:
+            # No correct answer exists (builtin_grading is disabled);
+            # treat as an invalid submission for testing purposes.
+            data["raw_submitted_answers"][name] = "0"
+            data["format_errors"][name] = "INVALID choice"
+        else:
+            assert correct_answer is not None
+            data["raw_submitted_answers"][name] = correct_answer["key"]
+            data["partial_scores"][name] = {"score": 1.0, "weight": weight}
 
-        feedback = data["correct_answers"][name].get("feedback", None)
-        if feedback is not None:
-            data["partial_scores"][name]["feedback"] = feedback
+            feedback = correct_answer.get("feedback", None)
+            if feedback is not None:
+                data["partial_scores"][name]["feedback"] = feedback
 
     elif result == "incorrect":
         if len(incorrect_keys) > 0:
