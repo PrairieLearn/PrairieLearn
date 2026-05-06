@@ -311,16 +311,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   function showCalculationError() {
     calculatorInputGroup.classList.add('error');
     calculatorOutput.value = '';
-    copyButton.onclick = null;
+    copyButton.dataset.clipboardText = '';
   }
 
   function calculate(addToHistory = false) {
     const input = calculatorInputElement.value;
     if (input.length === 0) {
       calculatorOutput.value = '';
-      copyButton.onclick = function () {
-        void navigator.clipboard.writeText('');
-      };
+      copyButton.dataset.clipboardText = '';
       calculatorInputGroup.classList.remove('error');
       return;
     }
@@ -355,10 +353,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.onclick = function () {
-      window.bootstrap.Tooltip.getInstance(copyButton)?.hide();
-      void navigator.clipboard.writeText(ce.parse(displayed).toString());
-    };
+    copyButton.dataset.clipboardText = ce.parse(displayed).toString();
 
     // Add to history
     if (addToHistory) {
@@ -711,14 +706,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(inputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(input));
-    });
-    outputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(outputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(outputField.value.replace(/^=/, '')));
-    });
+    inputCopyBtn.dataset.clipboardText = normalizeLatex(input);
+    outputCopyBtn.dataset.clipboardText = normalizeLatex(outputField.value.replace(/^=/, ''));
 
     // Insert buttons
     const inputInsertBtn = ensureElement(

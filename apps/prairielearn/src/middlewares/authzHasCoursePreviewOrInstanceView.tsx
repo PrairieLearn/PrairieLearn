@@ -10,9 +10,19 @@ import {
   CoursePageAuthzDataSchema,
 } from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
-import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
+import {
+  AuthzAccessMismatch,
+  type CheckablePermissionKeys,
+  getErrorExplanation,
+} from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
+
+const REQUIRED_PERMISSIONS: CheckablePermissionKeys[] = [
+  'has_course_permission_preview',
+  'has_course_instance_permission_view',
+];
 
 export async function authzHasCoursePreviewOrInstanceView(
   req: Request,
@@ -73,10 +83,8 @@ export async function authzHasCoursePreviewOrInstanceView(
         content: (
           <Hydrate>
             <AuthzAccessMismatch
-              oneOfPermissionKeys={[
-                'has_course_permission_preview',
-                'has_course_instance_permission_view',
-              ]}
+              errorExplanation={getErrorExplanation(REQUIRED_PERMISSIONS)}
+              oneOfPermissionKeys={REQUIRED_PERMISSIONS}
               authzData={authzData}
               authnUser={pageContext.authn_user}
               authzUser={authzData.user}
@@ -96,6 +104,9 @@ export async function authzHasCoursePreviewOrInstanceView(
 export default asyncHandler(async (req, res, next) => {
   const result = await authzHasCoursePreviewOrInstanceView(req, res);
   if (result.type === 'body') {
+    if (isTrpcRequest(req)) {
+      throw new error.HttpStatusError(403, getErrorExplanation(REQUIRED_PERMISSIONS));
+    }
     res.status(403).send(result.html);
   } else if (result.type === 'redirect') {
     res.redirect(result.url);
