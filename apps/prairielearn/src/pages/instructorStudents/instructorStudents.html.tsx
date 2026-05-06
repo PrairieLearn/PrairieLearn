@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
@@ -22,14 +22,17 @@ import z from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
-  CategoricalColumnFilter,
   IndeterminateCheckbox,
+  MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
+  applyMultiSelectFilter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsSortingState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
@@ -74,7 +77,11 @@ const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
 
-const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
+const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -228,13 +235,11 @@ function StudentsCard({
   );
   const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
     'status',
-    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
-      DEFAULT_ENROLLMENT_STATUS_FILTER,
-    ),
+    parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_ENROLLMENT_STATUS_FILTER),
   );
   const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
     'student_labels',
-    parseAsArrayOf(parseAsString).withDefault([]),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_STUDENT_LABELS_FILTER),
   );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -494,10 +499,9 @@ function StudentsCard({
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
           const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
-          return filterValues.includes(current);
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
         },
       }),
       columnHelper.accessor((row) => row.user?.uin, {
@@ -560,10 +564,11 @@ function StudentsCard({
             </div>
           );
         },
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
           const labelIdSet = new Set(row.getValue<StudentRow['student_label_ids']>(columnId));
-          return filterValues.some((filterId) => labelIdSet.has(filterId));
+          return applyMultiSelectFilter(filter, (values) =>
+            values.some((id) => labelIdSet.has(id)),
+          );
         },
       }),
       columnHelper.accessor((row) => row.enrollment.first_joined_at, {
@@ -825,7 +830,7 @@ function StudentsCard({
             }: {
               header: Header<StudentRow, StudentRow['enrollment']['status']>;
             }) => (
-              <CategoricalColumnFilter
+              <MultiSelectColumnFilter
                 column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
@@ -840,7 +845,7 @@ function StudentsCard({
             }) => {
               const labelIds = studentLabels.map((l) => l.id);
               return (
-                <CategoricalColumnFilter
+                <MultiSelectColumnFilter
                   column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
