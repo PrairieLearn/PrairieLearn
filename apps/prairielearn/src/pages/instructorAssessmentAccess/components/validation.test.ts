@@ -160,4 +160,38 @@ describe('getGlobalDateValidationErrors', () => {
 
     expect(errors.find((e) => e.path === 'overrides.0.release.date')).toBeUndefined();
   });
+
+  it('maps after-complete mechanism errors to visible override fields', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData(
+        [
+          makeOverride({
+            overriddenFields: ['questionVisibility', 'scoreVisibility'],
+            questionVisibility: { hidden: false },
+            scoreVisibility: { hidden: true },
+          }),
+        ],
+        {
+          dateControlEnabled: false,
+          due: { date: null, credit: null, customCredit: false },
+        },
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.questionVisibility',
+      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
+    });
+    expect(errors).toContainEqual({
+      path: 'overrides.0.scoreVisibility',
+      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility.visibleFromDate')).toBe(
+      undefined,
+    );
+    expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility.visibleFromDate')).toBe(
+      undefined,
+    );
+  });
 });
