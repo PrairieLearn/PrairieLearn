@@ -569,6 +569,14 @@ export function validateGlobalCreditConsistencyIssues(
 
 type CreditEntryKind = 'earlyDeadline' | 'due' | 'lateDeadline' | 'afterLastDeadline';
 
+/**
+ * One credit-bearing point in a rule's deadline timeline. The list of entries
+ * for a rule, in chronological order, is the model the credit validators
+ * operate on: post-due credit must be < 100% and credits must strictly
+ * decrease across the list. `validationRule` records which rule supplied the
+ * entry — under inheritance the source may differ from the rule being
+ * validated, and the path is relative to that source.
+ */
 interface CreditEntry {
   kind: CreditEntryKind;
   credit: number;
@@ -576,29 +584,26 @@ interface CreditEntry {
   path: AccessControlIssuePath;
 }
 
-function getEffectiveCreditEntries(
-  validationRules: AccessControlValidationRule[],
-  validationRuleIndex: number,
-): CreditEntry[] {
-  const validationRule = validationRules[validationRuleIndex];
-  const defaultValidationRule =
-    validationRules.find((rule) => rule.targetType === 'none') ?? validationRules[0];
-  const entries: CreditEntry[] = [];
+type DateControlField = keyof NonNullable<AccessControlJson['dateControl']>;
 
-  const sourceForField = <K extends keyof NonNullable<AccessControlJson['dateControl']>>(
-    field: K,
-  ): AccessControlValidationRule => {
-    for (let i = validationRuleIndex; i >= 0; i--) {
-      const sourceRule = validationRules[i];
-      if (
-        sourceRule.rule.dateControl?.[field] !== undefined &&
-        couldCascadeToValidationRule(sourceRule, validationRule)
-      ) {
-        return sourceRule;
-      }
-    }
-    return defaultValidationRule;
-  };
+/**
+ * Builds the chronological credit timeline for a rule. `sourceForField`
+ * resolves where each `dateControl` field comes from: the rule itself for
+ * per-rule validation, or the nearest cascading rule (default → matching
+ * student-label → self) for cross-rule validation.
+ *
+ * When `synthesizeImplicitDue` is true and the rule has any other credit
+ * field set without a `due`, an implicit 100% due entry is inserted so the
+ * monotonicity check has an anchor. Per-rule validation only synthesizes for
+ * the default rule (overrides may legitimately omit `due` and inherit it);
+ * cross-rule validation always synthesizes since any override's effective
+ * timeline includes the inherited due.
+ */
+function buildCreditTimeline(
+  sourceForField: <K extends DateControlField>(field: K) => AccessControlValidationRule,
+  synthesizeImplicitDue: boolean,
+): CreditEntry[] {
+  const entries: CreditEntry[] = [];
 
   const earlySource = sourceForField('earlyDeadlines');
   for (const [index, deadline] of (earlySource.rule.dateControl?.earlyDeadlines ?? []).entries()) {
@@ -616,14 +621,13 @@ function getEffectiveCreditEntries(
   const lateSource = sourceForField('lateDeadlines');
   const lateDeadlines = lateSource.rule.dateControl?.lateDeadlines ?? [];
 
-  const afterLastDeadlineSource = sourceForField('afterLastDeadline');
-  const afterLastDeadline = afterLastDeadlineSource.rule.dateControl?.afterLastDeadline;
+  const afterLastSource = sourceForField('afterLastDeadline');
+  const afterLast = afterLastSource.rule.dateControl?.afterLastDeadline;
+  const afterLastCredit = afterLast?.allowSubmissions === true ? afterLast.credit : undefined;
 
-  const afterLastDeadlineHasCredit =
-    afterLastDeadline?.allowSubmissions === true && afterLastDeadline.credit !== undefined;
-  const afterLastDeadlineCredit = afterLastDeadlineHasCredit ? afterLastDeadline.credit : undefined;
   const needsImplicitDue =
-    entries.length > 0 || lateDeadlines.length > 0 || afterLastDeadlineHasCredit;
+    synthesizeImplicitDue &&
+    (entries.length > 0 || lateDeadlines.length > 0 || afterLastCredit !== undefined);
   if (due !== undefined || needsImplicitDue) {
     entries.push({
       kind: 'due',
@@ -642,11 +646,11 @@ function getEffectiveCreditEntries(
     });
   }
 
-  if (afterLastDeadlineCredit !== undefined) {
+  if (afterLastCredit !== undefined) {
     entries.push({
       kind: 'afterLastDeadline',
-      credit: afterLastDeadlineCredit,
-      validationRule: afterLastDeadlineSource,
+      credit: afterLastCredit,
+      validationRule: afterLastSource,
       path: ['dateControl', 'afterLastDeadline', 'credit'],
     });
   }
@@ -654,64 +658,49 @@ function getEffectiveCreditEntries(
   return entries;
 }
 
+/** Per-rule credit timeline: every field is sourced from the rule itself. */
 function getRuleCreditEntries(validationRule: AccessControlValidationRule): CreditEntry[] {
-  const dc = validationRule.rule.dateControl;
-  if (!dc) return [];
-
-  const entries: CreditEntry[] = [];
-
-  for (const [index, deadline] of (dc.earlyDeadlines ?? []).entries()) {
-    entries.push({
-      kind: 'earlyDeadline',
-      credit: deadline.credit,
-      validationRule,
-      path: ['dateControl', 'earlyDeadlines', index, 'credit'],
-    });
-  }
-
-  const afterLastDeadlineHasCredit =
-    dc.afterLastDeadline?.allowSubmissions === true && dc.afterLastDeadline.credit !== undefined;
-  const afterLastDeadlineCredit = afterLastDeadlineHasCredit
-    ? dc.afterLastDeadline?.credit
-    : undefined;
-  const hasLaterCredit = (dc.lateDeadlines?.length ?? 0) > 0 || afterLastDeadlineHasCredit;
-  // Single-rule view: there is no inheritance, so only the default rule
-  // synthesizes an implicit 100% due to anchor stray deadlines. Overrides
-  // without their own `due` get the implicit anchor in the global validator
-  // (`getEffectiveCreditEntries`) instead.
-  if (
-    dc.due !== undefined ||
-    (validationRule.targetType === 'none' && (entries.length > 0 || hasLaterCredit))
-  ) {
-    entries.push({
-      kind: 'due',
-      credit: dc.due?.credit ?? 100,
-      validationRule,
-      path: ['dateControl', 'due', 'credit'],
-    });
-  }
-
-  for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
-    entries.push({
-      kind: 'lateDeadline',
-      credit: deadline.credit,
-      validationRule,
-      path: ['dateControl', 'lateDeadlines', index, 'credit'],
-    });
-  }
-
-  if (afterLastDeadlineCredit !== undefined) {
-    entries.push({
-      kind: 'afterLastDeadline',
-      credit: afterLastDeadlineCredit,
-      validationRule,
-      path: ['dateControl', 'afterLastDeadline', 'credit'],
-    });
-  }
-
-  return entries;
+  if (!validationRule.rule.dateControl) return [];
+  return buildCreditTimeline(() => validationRule, validationRule.targetType === 'none');
 }
 
+/**
+ * Effective credit timeline for an override after inheritance: each field
+ * resolves to the nearest preceding rule that sets it and could cascade to
+ * this override.
+ */
+function getEffectiveCreditEntries(
+  validationRules: AccessControlValidationRule[],
+  validationRuleIndex: number,
+): CreditEntry[] {
+  const validationRule = validationRules[validationRuleIndex];
+  const defaultValidationRule =
+    validationRules.find((rule) => rule.targetType === 'none') ?? validationRules[0];
+
+  const sourceForField = <K extends DateControlField>(field: K): AccessControlValidationRule => {
+    for (let i = validationRuleIndex; i >= 0; i--) {
+      const sourceRule = validationRules[i];
+      if (
+        sourceRule.rule.dateControl?.[field] !== undefined &&
+        couldCascadeToValidationRule(sourceRule, validationRule)
+      ) {
+        return sourceRule;
+      }
+    }
+    return defaultValidationRule;
+  };
+
+  return buildCreditTimeline(sourceForField, true);
+}
+
+/**
+ * Whether `sourceRule` could supply an inherited field to `validationRule` at
+ * runtime. Defaults always cascade, a rule cascades to itself, and
+ * student-label rules cascade to other student-label rules they share a label
+ * with. Enrollment rules conservatively only inherit from defaults and
+ * themselves: this rule-only validator does not know which labels the target
+ * enrollments have, so accepting any label rule would create false positives.
+ */
 function couldCascadeToValidationRule(
   sourceRule: AccessControlValidationRule,
   validationRule: AccessControlValidationRule,
@@ -724,11 +713,6 @@ function couldCascadeToValidationRule(
       labelsOverlap(sourceRule.rule.labels, validationRule.rule.labels)
     );
   }
-  // Enrollment rules also cascade after matching student-label rules at
-  // runtime, but this rule-only validator does not know which labels the
-  // target enrollments have. Treating every label rule as applicable creates
-  // false positives, so enrollment checks are limited to defaults and the
-  // enrollment rule itself here.
   return false;
 }
 
@@ -737,19 +721,23 @@ function labelsOverlap(a: string[] | undefined, b: string[] | undefined): boolea
   return a.some((label) => b.includes(label));
 }
 
+/**
+ * Picks which credit entry to attach a cross-rule error to. If both endpoints
+ * of a violation belong to the current override, returns null — the per-rule
+ * validator already reports the same issue against that rule. Otherwise
+ * attributes the error to whichever endpoint is from the current rule, so
+ * the form highlights the field the author can actually edit.
+ */
 function chooseEffectiveIssueEntry(
   currentValidationRule: AccessControlValidationRule,
   preferredEntry: CreditEntry | undefined,
   fallbackEntry: CreditEntry | undefined,
 ): CreditEntry | null {
-  if (
-    preferredEntry?.validationRule === currentValidationRule &&
-    fallbackEntry?.validationRule === currentValidationRule
-  ) {
-    return null;
-  }
-  if (preferredEntry?.validationRule === currentValidationRule) return preferredEntry;
-  if (fallbackEntry?.validationRule === currentValidationRule) return fallbackEntry;
+  const preferredFromCurrent = preferredEntry?.validationRule === currentValidationRule;
+  const fallbackFromCurrent = fallbackEntry?.validationRule === currentValidationRule;
+  if (preferredFromCurrent && fallbackFromCurrent) return null;
+  if (preferredFromCurrent) return preferredEntry ?? null;
+  if (fallbackFromCurrent) return fallbackEntry ?? null;
   return null;
 }
 
