@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useMemo, useRef } from 'react';
+import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
@@ -914,55 +915,40 @@ export const InstructorQuestionSettingsForm = ({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">Sharing</h2>
-              <small className="text-muted d-block mb-3">
-                Share this question publicly or with specific courses via sharing sets. Once shared,
-                these settings cannot be undone.
+              {question.share_publicly && <input type="hidden" name="share_publicly" value="on" />}
+              <Form.Check
+                type="checkbox"
+                id="share_publicly"
+                label="Share publicly"
+                className="mb-1"
+                disabled={!canEdit || question.share_publicly}
+                defaultChecked={defaultValues.share_publicly}
+                {...register('share_publicly')}
+              />
+              <small className="form-text text-muted d-block mb-2">
+                Any course may import this question.
+                {question.share_publicly && ' This question is already publicly shared.'}
               </small>
 
-              <div className="form-check mb-2">
-                {question.share_publicly && (
-                  <input type="hidden" name="share_publicly" value="on" />
-                )}
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="share_publicly"
-                  disabled={!canEdit || question.share_publicly}
-                  defaultChecked={defaultValues.share_publicly}
-                  {...register('share_publicly')}
-                />
-                <label className="form-check-label" htmlFor="share_publicly">
-                  Share publicly
-                </label>
-                <div className="small text-muted">
-                  Any course may import this question.
-                  {question.share_publicly && ' This question is already publicly shared.'}
-                </div>
-              </div>
+              {question.share_source_publicly && (
+                <input type="hidden" name="share_source_publicly" value="on" />
+              )}
+              <Form.Check
+                type="checkbox"
+                id="share_source_publicly"
+                label="Share source publicly"
+                className="mb-1"
+                disabled={!canEdit || question.share_source_publicly}
+                defaultChecked={defaultValues.share_source_publicly}
+                {...register('share_source_publicly')}
+              />
+              <small className="form-text text-muted d-block mb-3">
+                The question's source is publicly shared.
+                {question.share_source_publicly &&
+                  ' This question already has publicly shared source.'}
+              </small>
 
-              <div className="form-check mb-3">
-                {question.share_source_publicly && (
-                  <input type="hidden" name="share_source_publicly" value="on" />
-                )}
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="share_source_publicly"
-                  disabled={!canEdit || question.share_source_publicly}
-                  defaultChecked={defaultValues.share_source_publicly}
-                  {...register('share_source_publicly')}
-                />
-                <label className="form-check-label" htmlFor="share_source_publicly">
-                  Share source publicly
-                </label>
-                <div className="small text-muted">
-                  The question's source is publicly shared.
-                  {question.share_source_publicly &&
-                    ' This question already has publicly shared source.'}
-                </div>
-              </div>
-
-              <div className="mb-3">
+              <div>
                 <label id="sharing-sets-label" className="form-label" htmlFor="sharing_sets">
                   Sharing sets
                 </label>

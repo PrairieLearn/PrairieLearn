@@ -702,47 +702,6 @@ function InstructorAssessmentSettingsInner({
                 studentLink={studentLink}
                 studentLinkMessage="The link that students will use to access this assessment."
               />
-
-              <p className="form-label">Sharing</p>
-              <Form.Check
-                type="checkbox"
-                id="share_source_publicly"
-                label="Share source publicly"
-                className="mb-1"
-                disabled={
-                  !canEdit ||
-                  assessment.share_source_publicly ||
-                  nonPublicQuestionsInAssessment.length > 0
-                }
-                defaultChecked={defaultValues.share_source_publicly}
-                {...register('share_source_publicly')}
-              />
-              <small className="form-text text-muted d-block mb-2">
-                The assessment's JSON configuration and question list become available for others to
-                view and copy.
-                {assessment.share_source_publicly &&
-                  ' This assessment already has publicly shared source and cannot be un-shared.'}
-              </small>
-              {nonPublicQuestionsInAssessment.length > 0 && !assessment.share_source_publicly && (
-                <Alert variant="warning" className="small mb-2">
-                  Cannot share this assessment publicly until the following questions are also
-                  shared publicly:{' '}
-                  {nonPublicQuestionsInAssessment.map((q, i) => (
-                    <span key={q.id}>
-                      {i > 0 && ', '}
-                      <a href={`${urlPrefix}/question/${q.id}/settings`}>{q.qid}</a>
-                    </span>
-                  ))}
-                  .
-                </Alert>
-              )}
-              {assessment.share_source_publicly && (
-                <PublicLinkSharing
-                  publicLink={publicLink}
-                  sharingMessage="This assessment's source is publicly shared."
-                  publicLinkMessage="The link that other instructors can use to view this assessment."
-                />
-              )}
             </div>
           </div>
 
@@ -1157,6 +1116,51 @@ function InstructorAssessmentSettingsInner({
                   </label>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-body">
+              <h2 className="h5 card-title mb-3">Sharing</h2>
+              <Form.Check
+                type="checkbox"
+                id="share_source_publicly"
+                label="Share source publicly"
+                className="mb-1"
+                disabled={
+                  !canEdit ||
+                  assessment.share_source_publicly ||
+                  nonPublicQuestionsInAssessment.length > 0
+                }
+                defaultChecked={defaultValues.share_source_publicly}
+                {...register('share_source_publicly')}
+              />
+              <small className="form-text text-muted d-block mb-2">
+                The assessment's JSON configuration and question list become available for others to
+                view and copy.
+                {assessment.share_source_publicly &&
+                  ' This assessment already has publicly shared source and cannot be un-shared.'}
+              </small>
+              {nonPublicQuestionsInAssessment.length > 0 && !assessment.share_source_publicly && (
+                <Alert variant="warning" className="small mb-2">
+                  Cannot share this assessment publicly until the following questions are also
+                  shared publicly:{' '}
+                  {nonPublicQuestionsInAssessment.map((q, i) => (
+                    <span key={q.id}>
+                      {i > 0 && ', '}
+                      <a href={`${urlPrefix}/question/${q.id}/settings`}>{q.qid}</a>
+                    </span>
+                  ))}
+                  .
+                </Alert>
+              )}
+              {assessment.share_source_publicly && (
+                <PublicLinkSharing
+                  publicLink={publicLink}
+                  sharingMessage="This assessment's source is publicly shared."
+                  publicLinkMessage="The link that other instructors can use to view this assessment."
+                />
+              )}
             </div>
           </div>
 
