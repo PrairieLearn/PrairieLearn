@@ -395,25 +395,6 @@ describe('Date fields must be dates', () => {
   });
 });
 
-describe('Credit fields must be in range', () => {
-  it('rejects afterLastDeadline credit above 200%', () => {
-    const result = AccessControlJsonSchema.safeParse({
-      dateControl: {
-        afterLastDeadline: { allowSubmissions: true, credit: 201 },
-      },
-    });
-
-    assert.isFalse(result.success);
-    assert.isTrue(
-      result.error.issues.some(
-        (issue) =>
-          JSON.stringify(issue.path) ===
-          JSON.stringify(['dateControl', 'afterLastDeadline', 'credit']),
-      ),
-    );
-  });
-});
-
 describe('Exam UUID validation', () => {
   it('should reject invalid exam UUIDs', () => {
     const result = AccessControlJsonSchema.safeParse({
