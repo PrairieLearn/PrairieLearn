@@ -14,10 +14,10 @@ import {
   QTI12AssessmentParser,
   type QtiFileEntry,
   findQtiFilesFromManifest,
-  findQtiXmlFiles,
   parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
+import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
@@ -109,27 +109,23 @@ router.post(
         throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
       }
 
-      // Find QTI assessment files.
-      const manifestEntries = await findQtiFilesFromManifest(tempDir);
-      const entries: QtiFileEntry[] =
-        manifestEntries.length > 0
-          ? manifestEntries
-          : (await findQtiXmlFiles(tempDir)).map((p) => ({
-              qtiPath: p,
-              assessmentDir: path.dirname(p),
-            }));
-
+      // Find QTI assessment files from the manifest.
+      const entries = await findQtiFilesFromManifest(tempDir);
       if (entries.length === 0) {
-        throw new HttpStatusError(400, 'No QTI assessment files found in the uploaded archive');
+        throw new HttpStatusError(
+          400,
+          'No QTI assessment files found in the uploaded archive. The archive must include a valid imsmanifest.xml.',
+        );
       }
 
-      // Try to read rubrics from course_settings/rubrics.xml.
-      let rubricsXml: string | undefined;
-      try {
-        rubricsXml = await readFile(path.join(tempDir, 'course_settings', 'rubrics.xml'), 'utf-8');
-      } catch {
-        // Not present in quiz-only exports.
-      }
+      // Try to read rubrics from course_settings/rubrics.xml (not present in quiz-only exports).
+      const rubricsXml = await run(async () => {
+        try {
+          return await readFile(path.join(tempDir, 'course_settings', 'rubrics.xml'), 'utf-8');
+        } catch {
+          return undefined;
+        }
+      });
 
       // Convert each assessment, deduplicating slugs so that same-titled
       // assessments (e.g. two "Quiz 1") don't collide on question prefixes.
@@ -138,10 +134,10 @@ router.post(
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
         const result = await convertEntry(entry, rubricsXml, usedSlugs);
-        if ('filename' in result) {
-          parseWarnings.push(result);
+        if (result.ok) {
+          results.push(result.value);
         } else {
-          results.push(result);
+          parseWarnings.push(result.warning);
         }
       }
 
@@ -201,12 +197,16 @@ router.post(
   }),
 );
 
+type ConvertEntryResult =
+  | { ok: true; value: SerializedConversionResult }
+  | { ok: false; warning: ParseWarning };
+
 /** Convert a single QTI assessment entry to a serialized result. */
 async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
   usedSlugs: Set<string>,
-): Promise<SerializedConversionResult | ParseWarning> {
+): Promise<ConvertEntryResult> {
   const xmlContent = await readFile(entry.qtiPath, 'utf-8');
 
   // Resolve web_resources: check inside assessmentDir first (root-level
@@ -237,8 +237,11 @@ async function convertEntry(
     ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
   } catch (err) {
     return {
-      filename: path.basename(entry.qtiPath),
-      message: err instanceof Error ? err.message : String(err),
+      ok: false,
+      warning: {
+        filename: path.basename(entry.qtiPath),
+        message: err instanceof Error ? err.message : String(err),
+      },
     };
   }
 
@@ -258,9 +261,13 @@ async function convertEntry(
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: questionPrefix,
+    excludeFileExtensions: VIDEO_EXTENSIONS,
   });
 
-  return serializeConversionResult(result, questionPrefix, webResourcesDir);
+  return {
+    ok: true,
+    value: await serializeConversionResult(result, questionPrefix, webResourcesDir),
+  };
 }
 
 /** Resolve the web_resources directory, checking assessmentDir first. */
@@ -288,10 +295,7 @@ async function serializeConversionResult(
       // The converter emits local directory names (e.g. "q1"), but on disk
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
-      const { files, skippedVideos, missingFiles } = await serializeClientFiles(
-        q.clientFiles,
-        webResourcesDir,
-      );
+      const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
           questionId: `${questionPrefix}/${q.directoryName}`,
@@ -300,8 +304,8 @@ async function serializeConversionResult(
         });
       }
       const questionHtml =
-        skippedVideos.length > 0
-          ? commentOutVideoReferences(q.questionHtml, skippedVideos)
+        q.skippedFiles.length > 0
+          ? commentOutVideoReferences(q.questionHtml, q.skippedFiles)
           : q.questionHtml;
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
@@ -310,7 +314,7 @@ async function serializeConversionResult(
         questionHtml,
         serverPy: q.serverPy,
         clientFiles: files,
-        skippedVideos,
+        skippedVideos: q.skippedFiles,
       };
     }),
   );
@@ -351,7 +355,7 @@ export function commentOutVideoReferences(html: string, skippedVideos: string[])
         const lastCommentClose = before.lastIndexOf('-->');
         if (lastCommentOpen > lastCommentClose) return args[0];
 
-        return `<!-- TODO: Update the video URL below and uncomment to restore this video.\n${args[0]}\n-->`;
+        return `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${args[0]}\n-->`;
       });
     }
   }
@@ -370,24 +374,14 @@ const VIDEO_EXTENSIONS = new Set([
   '.flv',
 ]);
 
-function isVideoFile(filename: string): boolean {
-  const ext = path.extname(filename).toLowerCase();
-  return VIDEO_EXTENSIONS.has(ext);
-}
-
 /** Convert a Map<string, Buffer|string> to Record<string, string> (base64-encoded). */
 export async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
-): Promise<{ files: Record<string, string>; skippedVideos: string[]; missingFiles: string[] }> {
+): Promise<{ files: Record<string, string>; missingFiles: string[] }> {
   const files: Record<string, string> = {};
-  const skippedVideos: string[] = [];
   const missingFiles: string[] = [];
   for (const [name, content] of clientFiles) {
-    if (isVideoFile(name)) {
-      skippedVideos.push(name);
-      continue;
-    }
     if (Buffer.isBuffer(content)) {
       files[name] = content.toString('base64');
     } else {
@@ -405,7 +399,7 @@ export async function serializeClientFiles(
       }
     }
   }
-  return { files, skippedVideos, missingFiles };
+  return { files, missingFiles };
 }
 
 export default router;

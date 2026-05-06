@@ -10,16 +10,21 @@ describe('commentOutVideoReferences', () => {
   it('comments out a self-closing img tag referencing a video', () => {
     const html = '<img src="clientFilesQuestion/video.mp4" />';
     const result = commentOutVideoReferences(html, ['video.mp4']);
-    expect(result).toContain('<!--');
-    expect(result).toContain('-->');
-    expect(result).toContain('video.mp4');
+    expect(result).toBe(
+      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<img src="clientFilesQuestion/video.mp4" />\n' +
+        '-->',
+    );
   });
 
   it('comments out an open/close tag pair', () => {
     const html = '<a href="clientFilesQuestion/clip.webm">Watch</a>';
     const result = commentOutVideoReferences(html, ['clip.webm']);
-    expect(result).toContain('<!--');
-    expect(result).toContain('Watch');
+    expect(result).toBe(
+      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<a href="clientFilesQuestion/clip.webm">Watch</a>\n' +
+        '-->',
+    );
   });
 
   it('does not modify HTML without matching video references', () => {
@@ -53,20 +58,8 @@ describe('commentOutVideoReferences', () => {
 describe('serializeClientFiles', () => {
   it('encodes buffer content as base64', async () => {
     const files = new Map<string, Buffer | string>([['image.png', Buffer.from('fake png data')]]);
-    const { files: result, skippedVideos } = await serializeClientFiles(files, '/nonexistent');
+    const { files: result } = await serializeClientFiles(files, '/nonexistent');
     expect(result['image.png']).toBe(Buffer.from('fake png data').toString('base64'));
-    expect(skippedVideos).toEqual([]);
-  });
-
-  it('skips video files and reports them', async () => {
-    const files = new Map<string, Buffer | string>([
-      ['clip.mp4', Buffer.from('video')],
-      ['image.png', Buffer.from('png')],
-    ]);
-    const { files: result, skippedVideos } = await serializeClientFiles(files, '/nonexistent');
-    expect(result).not.toHaveProperty('clip.mp4');
-    expect(result).toHaveProperty('image.png');
-    expect(skippedVideos).toEqual(['clip.mp4']);
   });
 
   it('reads string content from web_resources directory', async () => {
