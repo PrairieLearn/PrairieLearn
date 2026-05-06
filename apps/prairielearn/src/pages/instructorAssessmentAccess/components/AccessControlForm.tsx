@@ -127,12 +127,8 @@ export function AccessControlForm({
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
-    try {
-      await onSubmit(formDataToJson(data));
-      reset(data);
-    } catch {
-      // Mutation errors are surfaced via the `alert` prop.
-    }
+    await onSubmit(formDataToJson(data));
+    reset(data);
   };
 
   const addOverride = () => {
