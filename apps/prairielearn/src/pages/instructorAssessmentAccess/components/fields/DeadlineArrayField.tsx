@@ -397,7 +397,7 @@ function DeadlineArrayInput({
                       ? `${idPrefix}-${type}-deadline-${index}-credit-error`
                       : undefined
                   }
-                  placeholder={isEarly ? '100' : '0'}
+                  placeholder={isEarly ? '120' : '80'}
                   min={isEarly ? clampCredit(dueCredit + 1, 'early') : '0'}
                   max={getCreditInputMax({ type, index, deadlines, dueCredit })}
                   step={1}
