@@ -60,6 +60,7 @@ export interface ErrorData {
   outputStderr: string;
   outputBoth: string;
   outputData: string;
+  outputRestart: string;
   stack: string;
   lastCallData: any;
 }
@@ -638,6 +639,7 @@ export class CodeCallerNative implements CodeCaller {
       outputStderr: this.outputStderr.join(''),
       outputBoth: this.outputBoth.join(''),
       outputData: this.outputData.join(''),
+      outputRestart: this.outputRestart,
       stack: errForStack.stack ?? '',
       lastCallData: this.lastCallData,
     };
