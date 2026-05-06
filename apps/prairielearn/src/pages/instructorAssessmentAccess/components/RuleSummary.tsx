@@ -1173,13 +1173,25 @@ export function OverrideRuleSummaryCard({
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
-            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEdit}>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              aria-label="Edit"
+              onClick={onEdit}
+              className="d-inline-flex align-items-center"
+            >
               <i className="bi bi-pencil" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
           )}
           {onRemove && (
-            <Button variant="outline-danger" size="sm" aria-label="Remove" onClick={onRemove}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              aria-label="Remove"
+              onClick={onRemove}
+              className="d-inline-flex align-items-center"
+            >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Remove</span>
             </Button>
