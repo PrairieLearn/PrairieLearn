@@ -1177,8 +1177,8 @@ export function OverrideRuleSummaryCard({
               variant="outline-primary"
               size="sm"
               aria-label="Edit"
-              onClick={onEdit}
               className="d-inline-flex align-items-center"
+              onClick={onEdit}
             >
               <i className="bi bi-pencil" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Edit</span>
@@ -1189,8 +1189,8 @@ export function OverrideRuleSummaryCard({
               variant="outline-danger"
               size="sm"
               aria-label="Remove"
-              onClick={onRemove}
               className="d-inline-flex align-items-center"
+              onClick={onRemove}
             >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Remove</span>
