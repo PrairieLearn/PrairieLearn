@@ -8,6 +8,8 @@ import { IdSchema } from '@prairielearn/zod';
 import { type QtiImportAssessmentData, QtiImportEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
+import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
@@ -19,9 +21,12 @@ const SafeDirectoryName = z
   .min(1)
   .regex(SHORT_NAME_REGEX, 'Directory name contains invalid characters');
 
+const QuestionInfoJsonSchema = QuestionJsonSchema.passthrough();
+const AssessmentInfoJsonSchema = AssessmentJsonSchema.passthrough();
+
 const QuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
-  infoJson: z.object({ uuid: z.string().uuid(), title: z.string() }).passthrough(),
+  infoJson: QuestionInfoJsonSchema,
   questionHtml: z.string(),
   serverPy: z.string().optional(),
   clientFiles: z.record(z.string()),
@@ -30,7 +35,7 @@ const QuestionDataSchema = z.object({
 
 const AssessmentDataSchema = z.object({
   directoryName: SafeDirectoryName,
-  infoJson: z.object({ uuid: z.string().uuid(), title: z.string() }).passthrough(),
+  infoJson: AssessmentInfoJsonSchema,
   questions: z.array(QuestionDataSchema),
 });
 
