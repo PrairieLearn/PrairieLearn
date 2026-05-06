@@ -534,11 +534,13 @@ export class CodeCallerNative implements CodeCaller {
   _restartTimeout() {
     this.debug('enter _restartTimeout()');
     this._checkState([RESTARTING]);
-    // Defer the kill via setImmediate so any fd 4 data already in the kernel
-    // pipe gets delivered in the poll phase first; otherwise the timer (timers
-    // phase) would race ahead of the I/O callback and kill a worker that had
-    // already restarted cleanly. See the loop-phase ordering at
-    // https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick.
+    // Defer the kill via setImmediate so any fd 4 data already buffered in
+    // the kernel is delivered first. Per Node's docs, setImmediate "schedules
+    // the 'immediate' execution of the callback after I/O events' callbacks",
+    // which lets _handleStdio4Data transition us out of RESTARTING before
+    // this runs. Without the deferral, the timer can race ahead of the I/O
+    // callback and kill a worker that had already restarted cleanly.
+    // https://nodejs.org/api/timers.html#setimmediatecallback-args
     setImmediate(() => {
       if (this.state !== RESTARTING) return;
       if (this._restartWasSuccessful()) {
