@@ -132,8 +132,10 @@ export const htmlMustacheConfig: Config = {
     },
     {
       id: 'pl-prefer-pl-file-download',
+      // Only fire on extensions that are unambiguously downloads.
+      // Notably, pdfs, images, and html files may be meant to be previewed instead of downloaded.
       selector:
-        'a[href*="client_files_course_url"], a[href*="client_files_question_url"], a[href*="client_files_question_dynamic_url"]',
+        ':is(a[href*="client_files_course_url"], a[href*="client_files_question_url"], a[href*="client_files_question_dynamic_url"]):is([href$=".zip"], [href$=".tar"], [href$=".tgz"], [href$=".gz"], [href$=".docx"], [href$=".xlsx"], [href$=".pptx"], [href$=".csv"], [href$=".ipynb"])',
       message:
         'Prefer pl-file-download over a plain <a> link for downloadable files. See https://docs.prairielearn.com/elements/pl-file-download/.',
       severity: 'warning',
