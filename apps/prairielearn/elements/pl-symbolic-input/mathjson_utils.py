@@ -471,7 +471,7 @@ def _function(
             "Delimiter",
             ["Sequence", *raw_args],
             {"str": ","},
-        ]:
+        ] if allow_sets:
             return sympy.FiniteSet(
                 *(
                     _mathjson_to_sympy_expr(arg, allow_sets=allow_sets)
