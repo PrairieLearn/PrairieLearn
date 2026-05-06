@@ -400,9 +400,9 @@
     "brotli": 640441
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1256693,
-    "gzip": 377798,
-    "brotli": 327540
+    "raw": 1256727,
+    "gzip": 377818,
+    "brotli": 327542
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
     "raw": 1323169,
