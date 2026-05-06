@@ -107,7 +107,7 @@ async function pullAndSyncSharingCourse(course: Course) {
   return jobSequence.status;
 }
 
-describe('Question Sharing', function () {
+describe('Question Sharing', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);

@@ -251,7 +251,7 @@ export async function selectAccessControlRules(
   return rows.map(dbRowToAccessControlJson);
 }
 
-export const PrairieTestExamMetadataSchema = z.object({
+const PrairieTestExamMetadataSchema = z.object({
   uuid: z.string(),
   pt_exam_id: z.string().nullable(),
   pt_exam_name: z.string().nullable(),

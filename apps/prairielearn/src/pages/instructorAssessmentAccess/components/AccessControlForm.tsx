@@ -1,9 +1,8 @@
-import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -17,6 +16,7 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
+  type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
   jsonToDefaultRuleFormData,
@@ -51,7 +51,7 @@ export function AccessControlForm({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentId: string;
   isSaving?: boolean;
-  alert?: ReactNode;
+  alert?: StickySaveBarAlert | null;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -76,6 +76,7 @@ export function AccessControlForm({
     getFieldState,
     handleSubmit,
     setError,
+    setValue,
     watch,
     reset,
     formState: { isDirty, isValid, errors },
@@ -85,7 +86,6 @@ export function AccessControlForm({
     append: appendOverride,
     remove: removeOverride,
     move: moveOverride,
-    insert: insertOverride,
   } = useFieldArray({
     control,
     name: 'overrides',
@@ -132,17 +132,32 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
-    // Enrollment overrides are inserted before student-label overrides
-    const firstLabelIndex = watchedData.overrides.findIndex(
-      (o) => o.appliesTo.targetType === 'student_label',
-    );
-    if (firstLabelIndex === -1) {
-      appendOverride(newOverride);
-      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
-    } else {
-      insertOverride(firstLabelIndex, newOverride);
-      setSelectedRule({ type: 'override', index: firstLabelIndex });
+    appendOverride(newOverride);
+    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+  };
+
+  const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
+    if (watchedData.overrides[index].appliesTo.targetType === targetType) return;
+
+    const labelCount = watchedData.overrides.filter(
+      (o, i) => i !== index && o.appliesTo.targetType === 'student_label',
+    ).length;
+    const newIndex = targetType === 'student_label' ? labelCount : watchedData.overrides.length - 1;
+
+    if (newIndex !== index) {
+      moveOverride(index, newIndex);
     }
+
+    setValue(
+      `overrides.${newIndex}.appliesTo`,
+      {
+        targetType,
+        enrollments: [],
+        studentLabels: [],
+      },
+      { shouldDirty: true, shouldValidate: true },
+    );
+    setSelectedRule({ type: 'override', index: newIndex });
   };
 
   const handleDeleteClick = (index: number) => {
@@ -162,6 +177,20 @@ export function AccessControlForm({
       removeOverride(deletedIndex);
     }
     deleteModal.hide();
+  };
+
+  const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    moveOverride(fromIndex, toIndex);
+
+    if (selectedRule?.type !== 'override') return;
+
+    if (selectedRule.index === fromIndex) {
+      setSelectedRule({ type: 'override', index: toIndex });
+    } else if (fromIndex < selectedRule.index && selectedRule.index <= toIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
+    } else if (toIndex <= selectedRule.index && selectedRule.index < fromIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index + 1 });
+    }
   };
 
   const getOverrideName = (index: number): string => {
@@ -193,23 +222,11 @@ export function AccessControlForm({
 
   const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
 
-  const saveDisabledReason = isSaving
-    ? 'Saving...'
-    : !isDirty
-      ? 'No changes to save'
-      : !isValid || hasManualErrors
-        ? 'Fix validation errors before saving'
-        : null;
-
-  const saveButton = (
-    <button
-      className={clsx('btn btn-sm', saveDisabledReason ? 'btn-outline-secondary' : 'btn-primary')}
-      type="submit"
-      disabled={saveDisabledReason !== null}
-    >
-      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
-    </button>
-  );
+  const saveDisabledReason = !isDirty
+    ? 'No changes to save'
+    : !isValid || hasManualErrors
+      ? 'Fix validation errors before saving'
+      : null;
 
   const rightTitle =
     selectedRule?.type === 'default'
@@ -248,6 +265,9 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              onTargetTypeChange={(targetType) =>
+                handleOverrideTargetTypeChange(selectedRule.index, targetType)
+              }
             />
             <OverrideRuleContent
               index={selectedRule.index}
@@ -283,17 +303,19 @@ export function AccessControlForm({
             content: (
               <>
                 <div className="p-3">
-                  {alert}
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
                     defaultRule={watchedData.defaultRule}
                     overrides={watchedData.overrides}
+                    selectedOverrideIndex={
+                      selectedRule?.type === 'override' ? selectedRule.index : null
+                    }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
-                    onMoveOverride={moveOverride}
+                    onMoveOverride={handleMoveOverride}
                     onEditDefaultRule={() => setSelectedRule({ type: 'default' })}
                     onClearDefaultRule={() =>
                       reset(
@@ -310,29 +332,13 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickyActionBar
-                  message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
-                  actions={
-                    <>
-                      <button
-                        className="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        disabled={isSaving || !isDirty}
-                        onClick={() => reset()}
-                      >
-                        Cancel
-                      </button>
-                      {saveDisabledReason ? (
-                        <OverlayTrigger
-                          tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
-                        >
-                          <span className="d-inline-block">{saveButton}</span>
-                        </OverlayTrigger>
-                      ) : (
-                        saveButton
-                      )}
-                    </>
-                  }
+                <StickySaveBar
+                  visible={isDirty}
+                  isSaving={isSaving}
+                  saveDisabledReason={saveDisabledReason}
+                  alert={alert}
+                  fullWidth
+                  onCancel={() => reset()}
                 />
               </>
             ),

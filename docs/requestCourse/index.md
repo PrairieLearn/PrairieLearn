@@ -1,10 +1,13 @@
 # Request your course space
 
-To request your PrairieLearn course space, you can use the "Request course" links on the PrairieLearn home page or in the main dropdown menu.
+To start using PrairieLearn as an instructor, you first need a course space. Open the user menu in the top right of any PrairieLearn page and click **Course Requests**.
 
-![Request course button](./requestCourseButton.png)
-![Request course menu dropdown](./requestCourseDropdown.png)
+![User menu showing the Course Requests link](./requestCourseDropdown.png)
 
-This will bring you to a web form where you can request your course.
+That takes you to the course request form. Fill it in with your institution, course name, and a brief description; the PrairieLearn team will review and follow up by email.
 
-This would also be a good opportunity to join the PrairieLearn Slack, if you haven't already: [:fontawesome-brands-slack: https://prairielearn.com/slack](https://prairielearn.com/slack). The Slack is a great place to ask questions and get help from the PrairieLearn community.
+![Course request form](./requestCourseForm.png)
+
+While you wait, this is also a good time to join the [PrairieLearn Slack](https://prairielearn.com/slack). This forum is a great place to ask questions and get help from the PrairieLearn community.
+
+When your request is approved, you'll be granted **Owner** access to a fresh course in PrairieLearn and a dedicated GitHub repository for its content. From there, jump to [Getting started](../getting-started/index.md).

@@ -99,6 +99,7 @@ export function TreeZoneNode({
             isSelected
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',
+            (zoneChooseExceeds || zonePointsMismatch != null) && 'tree-row-warning-indicator',
           )}
           style={{
             // Extra right padding prevents macOS overlay scrollbars
@@ -109,9 +110,6 @@ export function TreeZoneNode({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...(zoneChooseExceeds || zonePointsMismatch != null
-              ? { borderLeft: '6px solid var(--bs-warning)' }
-              : {}),
           }}
           onClick={(e) => {
             e.stopPropagation();

@@ -146,7 +146,7 @@ Each item in PrairieLearn (questions, assessments, etc.) has associated metadata
 
 ## Next steps
 
-Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](../getStarted.md) creating your course.
+Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](../getting-started/index.md) creating your course.
 
 You can also:
 
