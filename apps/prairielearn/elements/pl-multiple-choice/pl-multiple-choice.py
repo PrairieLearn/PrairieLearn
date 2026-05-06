@@ -705,36 +705,28 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    correct_answer = data["correct_answers"].get(name)
-    correct_key = correct_answer.get("key", None) if correct_answer else None
-
     builtin_grading = pl.get_boolean_attrib(
         element, "builtin-grading", BUILTIN_GRADING_DEFAULT
     )
-    if correct_key is None and builtin_grading:
+    if not builtin_grading:
+        return
+
+    correct_key = data["correct_answers"][name].get("key", None)
+    if correct_key is None:
         raise ValueError("could not determine correct_key")
 
     number_answers = len(data["params"][name])
     all_keys = list(it.islice(pl.iter_keys(), number_answers))
-    incorrect_keys = list(
-        set(all_keys) - {correct_key} if correct_key else set(all_keys)
-    )
+    incorrect_keys = list(set(all_keys) - {correct_key})
 
     result = data["test_type"]
     if result == "correct":
-        if correct_key is None:
-            # No correct answer exists (builtin_grading is disabled);
-            # treat as an invalid submission for testing purposes.
-            data["raw_submitted_answers"][name] = "0"
-            data["format_errors"][name] = "INVALID choice"
-        else:
-            assert correct_answer is not None
-            data["raw_submitted_answers"][name] = correct_answer["key"]
-            data["partial_scores"][name] = {"score": 1.0, "weight": weight}
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]["key"]
+        data["partial_scores"][name] = {"score": 1.0, "weight": weight}
 
-            feedback = correct_answer.get("feedback", None)
-            if feedback is not None:
-                data["partial_scores"][name]["feedback"] = feedback
+        feedback = data["correct_answers"][name].get("feedback", None)
+        if feedback is not None:
+            data["partial_scores"][name]["feedback"] = feedback
 
     elif result == "incorrect":
         if len(incorrect_keys) > 0:
