@@ -59,8 +59,18 @@ async function buildQtiZip(destPath: string): Promise<void> {
   </assessment>
 </questestinterop>`;
 
+  const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="test_manifest" xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1">
+  <resources>
+    <resource identifier="test_assess_1" type="imsqti_xmlv1p2/imscc_xmlv1p1/assessment">
+      <file href="test_assess_1/test_assess_1.xml"/>
+    </resource>
+  </resources>
+</manifest>`;
+
   const archive = archiver('zip');
   const output = createWriteStream(destPath);
+  archive.append(manifest, { name: 'imsmanifest.xml' });
   archive.append(qtiXml, { name: 'test_assess_1/test_assess_1.xml' });
   void archive.finalize();
   await pipeline(archive, output);
