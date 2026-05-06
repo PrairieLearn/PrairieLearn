@@ -834,7 +834,8 @@
                 },
                 "credit": {
                   "type": "number",
-                  "minimum": 0
+                  "minimum": 0,
+                  "maximum": 200
                 }
               }
             },

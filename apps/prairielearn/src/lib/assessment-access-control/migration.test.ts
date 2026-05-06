@@ -392,9 +392,8 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           dateControl: {
             release: { date: '2024-01-01T00:00:00' },
-            due: { date: '2024-03-01T00:00:00' },
+            due: { date: null },
             earlyDeadlines: [{ date: '2024-02-01T00:00:00', credit: 110 }],
-            afterLastDeadline: { allowSubmissions: true, credit: 100 },
           },
         },
         errors: [],

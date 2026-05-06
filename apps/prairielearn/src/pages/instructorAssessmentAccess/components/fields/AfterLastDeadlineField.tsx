@@ -205,8 +205,8 @@ function AfterLastDeadlineInput({
                     );
                     const precedingCredit =
                       lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-                    if (precedingCredit != null && v > precedingCredit) {
-                      return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
+                    if (precedingCredit != null && v >= precedingCredit) {
+                      return `Must be less than ${precedingCredit}% (the preceding deadline's credit)`;
                     }
                     return true;
                   },

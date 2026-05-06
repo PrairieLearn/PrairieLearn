@@ -12,7 +12,7 @@ export const DeadlineEntryJsonSchema = z
 const AfterLastDeadlineJsonSchema = z
   .object({
     allowSubmissions: z.boolean(),
-    credit: z.number().min(0).optional(),
+    credit: z.number().min(0).max(200).optional(),
   })
   .strict();
 

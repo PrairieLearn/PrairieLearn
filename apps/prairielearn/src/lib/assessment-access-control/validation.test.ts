@@ -6,6 +6,7 @@ import {
 } from '../../schemas/accessControl.js';
 
 import {
+  type AccessControlValidationRule,
   validateAccessControlRules,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
@@ -394,6 +395,25 @@ describe('Date fields must be dates', () => {
   });
 });
 
+describe('Credit fields must be in range', () => {
+  it('rejects afterLastDeadline credit above 200%', () => {
+    const result = AccessControlJsonSchema.safeParse({
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true, credit: 201 },
+      },
+    });
+
+    assert.isFalse(result.success);
+    assert.isTrue(
+      result.error.issues.some(
+        (issue) =>
+          JSON.stringify(issue.path) ===
+          JSON.stringify(['dateControl', 'afterLastDeadline', 'credit']),
+      ),
+    );
+  });
+});
+
 describe('Exam UUID validation', () => {
   it('should reject invalid exam UUIDs', () => {
     const result = AccessControlJsonSchema.safeParse({
@@ -702,16 +722,6 @@ describe('Date ordering validation', () => {
 describe('Credit monotonicity validation', () => {
   it.each([
     {
-      label: 'early deadline credit at 80% (below 101%)',
-      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }] } },
-      errorMatch: 'Early deadline credit must be between 101% and 200%, got 80%.',
-    },
-    {
-      label: 'early deadline credit at 100% (below 101%)',
-      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] } },
-      errorMatch: 'Early deadline credit must be between 101% and 200%, got 100%.',
-    },
-    {
       label: 'increasing early deadline credits',
       config: {
         dateControl: {
@@ -721,13 +731,7 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'Early deadline credits must be monotonically decreasing.',
-    },
-    {
-      label: 'late deadline credit at 100% (above 99%)',
-      config: { dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] } },
-      errorMatch:
-        'Late deadline credit must be between 0% and 99% (strictly less than 100%), got 100%.',
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
       label: 'increasing late deadline credits',
@@ -739,7 +743,46 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'Late deadline credits must be monotonically decreasing.',
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'due credit exceeding previous early deadline credit',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 90 }],
+          due: { date: '2024-03-21T00:00:00' },
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'due credit equal to previous early deadline credit',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }],
+          due: { date: '2024-03-21T00:00:00' },
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'early deadline credit equal to implicit due credit',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }],
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'late deadline credit exceeding due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 90 }],
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
       label: 'afterLastDeadline credit exceeding last late deadline',
@@ -753,8 +796,18 @@ describe('Credit monotonicity validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 60 },
         },
       },
-      errorMatch:
-        "After-last-deadline credit (60%) must not exceed the preceding deadline's credit (50%).",
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'afterLastDeadline credit equal to last late deadline',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00' },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 50 },
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
       label: 'afterLastDeadline credit exceeding 100 when no late deadlines',
@@ -764,8 +817,7 @@ describe('Credit monotonicity validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 110 },
         },
       },
-      errorMatch:
-        "After-last-deadline credit (110%) must not exceed the preceding deadline's credit (100%).",
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
@@ -774,6 +826,19 @@ describe('Credit monotonicity validation', () => {
   });
 
   it.each([
+    {
+      label: 'early deadline credit above default due credit',
+      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 110 }] } },
+    },
+    {
+      label: 'late deadline credit at 100% under bonus due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+        },
+      },
+    },
     {
       label: 'valid decreasing early + late credits',
       config: {
@@ -786,16 +851,6 @@ describe('Credit monotonicity validation', () => {
             { date: '2024-03-25T00:00:00', credit: 80 },
             { date: '2024-03-28T00:00:00', credit: 50 },
           ],
-        },
-      },
-    },
-    {
-      label: 'afterLastDeadline credit equal to last late deadline',
-      config: {
-        dateControl: {
-          due: { date: '2024-03-21T00:00:00' },
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-          afterLastDeadline: { allowSubmissions: true, credit: 50 },
         },
       },
     },
@@ -829,17 +884,16 @@ describe('Credit monotonicity validation', () => {
   });
 
   describe('custom due credit', () => {
-    it('caps late deadline credit at the custom due credit when it is below 100', () => {
+    it('rejects a late deadline equal to the custom due credit', () => {
       const rule = AccessControlJsonSchema.parse({
         dateControl: {
           due: { date: '2024-03-21T00:00:00', credit: 80 },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
       });
-      const errors = validateRuleCreditMonotonicity(rule);
       assert.isTrue(
-        errors.some((e) =>
-          e.includes('Late deadline credit must be between 0% and 79% (strictly less than 80%'),
+        validateRuleCreditMonotonicity(rule).includes(
+          'Deadline credits must strictly decrease over time.',
         ),
       );
     });
@@ -854,7 +908,18 @@ describe('Credit monotonicity validation', () => {
       assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
     });
 
-    it('rejects early deadlines when custom due credit is set', () => {
+    it('accepts early deadlines when custom due credit is at least 100%', () => {
+      const rule = AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-01T00:00:00' },
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 120 }],
+        },
+      });
+      assert.deepEqual(validateRule(rule, 'none'), []);
+    });
+
+    it('rejects early deadlines when due credit is below 100%', () => {
       const errors = validateRule(
         AccessControlJsonSchema.parse({
           dateControl: {
@@ -866,7 +931,9 @@ describe('Credit monotonicity validation', () => {
         'none',
       );
       assert.isTrue(
-        errors.some((e) => e.includes('Early deadlines are not allowed when custom due credit')),
+        errors.some((e) =>
+          e.includes('Early deadlines are not allowed when due date credit is below 100%'),
+        ),
       );
     });
   });
@@ -1051,186 +1118,162 @@ describe('Global temporal validation', () => {
 });
 
 describe('Global credit validation', () => {
-  it('rejects a late deadline credit that is greater than the max possible due credit', () => {
-    const messages = validateGlobalCreditConsistencyIssues([
+  const validationRule = (
+    rule: AccessControlJsonInput,
+    ruleIndex: number,
+  ): AccessControlValidationRule => ({
+    rule: AccessControlJsonSchema.parse(rule),
+    targetType: ruleIndex === 0 ? 'none' : 'student_label',
+    ruleIndex,
+  });
+
+  const messagesFor = (...rules: AccessControlJsonInput[]) =>
+    validateGlobalCreditConsistencyIssues(
+      rules.map((rule, ruleIndex) => validationRule(rule, ruleIndex)),
+    ).map((issue) => issue.message);
+
+  it('rejects inherited due credit below 100% with override early deadlines', () => {
+    const messages = messagesFor(
       {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 90 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
       },
       {
-        rule: AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 110 }],
+        },
+      },
+    );
+
+    assert.isTrue(
+      messages.includes('Early deadlines are not allowed when due date credit is below 100%.'),
+    );
+  });
+
+  it('rejects override late deadline credit equal to inherited due credit', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 80 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+  });
+
+  it('uses earlier matching overrides when checking inherited due credit', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 110 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 120 }],
+        },
+      },
+    );
+
+    assert.isTrue(
+      messages.includes('Early deadlines are not allowed when due date credit is below 100%.'),
+    );
+  });
+
+  it('accepts an override late deadline credit above 100% when inherited due credit is higher', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-04-01T00:00:00' },
+            due: { date: '2024-04-10T00:00:00', credit: 110 },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 105 }],
+          },
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.errors, []);
+  });
+
+  it('rejects override early deadline credit equal to an implicit inherited due credit', () => {
+    const messages = messagesFor(
+      {},
+      {
+        labels: ['Section A'],
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 100 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+  });
+
+  it('does not check enrollment rules against unrelated student-label overrides', () => {
+    const issues = validateGlobalCreditConsistencyIssues([
+      validationRule({ dateControl: { due: { date: '2024-04-10T00:00:00', credit: 110 } } }, 0),
+      validationRule(
+        {
           labels: ['Section A'],
           dateControl: {
             due: { date: '2024-04-10T00:00:00', credit: 80 },
           },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
-      },
+        },
+        1,
+      ),
       {
-        // Override inherits due credit (90 from default) but sets a late credit
-        // above it — no possible timeline can make this monotonic.
         rule: AccessControlJsonSchema.parse({
-          labels: ['Section B'],
           dateControl: {
-            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 95 }],
+            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 100 }],
           },
         }),
-        targetType: 'student_label',
+        targetType: 'enrollment',
         ruleIndex: 2,
       },
-    ]).map((issue) => issue.message);
-
-    assert.isTrue(
-      messages.includes(
-        'Late deadline credit (95%) must be strictly less than the maximum possible due-date credit (90%).',
-      ),
-    );
-  });
-
-  it('rejects a late deadline credit equal to the max possible due credit', () => {
-    const messages = validateGlobalCreditConsistencyIssues([
-      {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 80 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
-      },
-      {
-        rule: AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 80 }],
-          },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
-      },
-    ]).map((issue) => issue.message);
-
-    assert.isTrue(
-      messages.includes(
-        'Late deadline credit (80%) must be strictly less than the maximum possible due-date credit (80%).',
-      ),
-    );
-  });
-
-  it('accepts a late deadline credit below the max possible due credit', () => {
-    const issues = validateGlobalCreditConsistencyIssues([
-      {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 90 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
-      },
-      {
-        rule: AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 85 }],
-          },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
-      },
     ]);
 
     assert.deepEqual(issues, []);
   });
 
-  it('rejects afterLastDeadline credit greater than max possible due credit', () => {
-    const messages = validateGlobalCreditConsistencyIssues([
+  it('rejects afterLastDeadline credit equal to an inherited late deadline', () => {
+    const messages = messagesFor(
       {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 50 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00' },
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 50 }],
+        },
       },
       {
-        // Override inherits due credit (50) and sets afterLastDeadline above it.
-        // Per-rule check misses this because dc.due is undefined on the override.
-        rule: AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            afterLastDeadline: { allowSubmissions: true, credit: 80 },
-          },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
+        labels: ['Section A'],
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 50 },
+        },
       },
-    ]).map((issue) => issue.message);
-
-    assert.isTrue(
-      messages.includes(
-        'After-last-deadline credit (80%) must not exceed the maximum possible due-date credit (50%).',
-      ),
     );
-  });
 
-  it('accepts afterLastDeadline credit equal to max possible due credit', () => {
-    const issues = validateGlobalCreditConsistencyIssues([
-      {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 80 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
-      },
-      {
-        rule: AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            afterLastDeadline: { allowSubmissions: true, credit: 80 },
-          },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
-      },
-    ]);
-
-    assert.deepEqual(issues, []);
-  });
-
-  it('accepts afterLastDeadline credit below max possible due credit', () => {
-    const issues = validateGlobalCreditConsistencyIssues([
-      {
-        rule: AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-04-10T00:00:00', credit: 90 },
-          },
-        }),
-        targetType: 'none',
-        ruleIndex: 0,
-      },
-      {
-        rule: AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            afterLastDeadline: { allowSubmissions: true, credit: 70 },
-          },
-        }),
-        targetType: 'student_label',
-        ruleIndex: 1,
-      },
-    ]);
-
-    assert.deepEqual(issues, []);
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
   });
 });
 

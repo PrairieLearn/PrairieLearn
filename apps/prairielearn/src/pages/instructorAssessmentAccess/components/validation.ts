@@ -16,6 +16,7 @@ export type AccessControlFormFieldPath =
   | 'defaultRule.due.date'
   | 'defaultRule.due.credit'
   | `defaultRule.earlyDeadlines.${number}.date`
+  | `defaultRule.earlyDeadlines.${number}.credit`
   | `defaultRule.lateDeadlines.${number}.date`
   | `defaultRule.lateDeadlines.${number}.credit`
   | 'defaultRule.afterLastDeadline.credit'
@@ -28,6 +29,7 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.due.date`
   | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.earlyDeadlines.${number}.credit`
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
@@ -59,7 +61,9 @@ function mapIssueToFormFieldPath(
         case 'due':
           return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
-          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.earlyDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
           return issue.path[3] === 'credit'
             ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`

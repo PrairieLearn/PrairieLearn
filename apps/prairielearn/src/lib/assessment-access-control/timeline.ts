@@ -52,9 +52,9 @@ interface Deadline {
  * with `dueCredit`. Deadlines sharing a timestamp are collapsed to one
  * (insertion order early → due → late wins).
  *
- * Early-deadline credits are floored at `dueCredit` and late-deadline credits
- * are capped at `dueCredit`, so the timeline never crosses the base credit on
- * the wrong side of the due date.
+ * Validation normally rejects deadline credits that would cross the due-date
+ * credit on the wrong side of the due date. The floor/cap below keeps resolved
+ * timelines sane if older data or inherited overrides still produce that shape.
  */
 function buildDeadlines(
   dateControl: RuntimeDateControl,

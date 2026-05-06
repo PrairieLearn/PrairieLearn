@@ -532,7 +532,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 | `durationMinutes`   | integer | Time limit in minutes.                                                                                      |
 | `password`          | string  | Password required to start the assessment.                                                                  |
 
-`due.credit` defaults to 100. If you set a custom due credit, early deadlines are not allowed. Late deadline credits must be lower than both 100% and the due-date credit. `afterLastDeadline.credit` cannot exceed the preceding deadline's credit, and it also cannot exceed the maximum possible due-date credit across the resolved rule.
+`due.credit` defaults to 100. Deadline credits may use any percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines may be 100% or more only when they are below the due-date credit and any previous late deadline. `afterLastDeadline.credit` must be below the preceding deadline's credit.
 
 When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
 
@@ -541,9 +541,9 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 | Field              | Type    | Default | Description                                                    |
 | ------------------ | ------- | ------- | -------------------------------------------------------------- |
 | `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | number  | `0`     | Credit percentage after the last deadline.                     |
+| `credit`           | number  | `0`     | Credit percentage after the last deadline, from 0 to 200.      |
 
-If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit.
+If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below the preceding deadline's credit.
 
 ### `beforeRelease`
 
