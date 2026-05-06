@@ -94,7 +94,7 @@ export function InstructorInstanceAdminSettings({
     reset,
     control,
     trigger,
-    formState: { isDirty, errors, isValid, isSubmitting },
+    formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -102,6 +102,17 @@ export function InstructorInstanceAdminSettings({
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <CopyCourseInstanceModal
+          show={showCopyModal}
+          csrfToken={csrfToken}
+          courseShortName={course.short_name}
+          courseInstance={courseInstance}
+          isAdministrator={isAdministrator}
+          enhancedAccessControlEnabled={enhancedAccessControlEnabled}
+          onHide={() => setShowCopyModal(false)}
+        />
+      </TRPCProvider>
       <form
         method="POST"
         name="edit-course-instance-settings-form"
@@ -328,21 +339,7 @@ export function InstructorInstanceAdminSettings({
           )}
         </div>
 
-        {canEdit && (
-          <StickySaveBar visible={isDirty} isSaving={isSubmitting} onCancel={() => reset()} />
-        )}
-
-        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <CopyCourseInstanceModal
-            show={showCopyModal}
-            csrfToken={csrfToken}
-            courseShortName={course.short_name}
-            courseInstance={courseInstance}
-            isAdministrator={isAdministrator}
-            enhancedAccessControlEnabled={enhancedAccessControlEnabled}
-            onHide={() => setShowCopyModal(false)}
-          />
-        </TRPCProvider>
+        {canEdit && <StickySaveBar visible={isDirty} isSaving={false} onCancel={() => reset()} />}
       </form>
     </QueryClientProviderDebug>
   );
