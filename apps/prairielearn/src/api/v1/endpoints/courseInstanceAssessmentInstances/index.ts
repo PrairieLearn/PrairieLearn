@@ -4,7 +4,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { formatDate, formatDateISO } from '@prairielearn/formatter';
+import { SECOND_IN_MILLISECONDS, formatDate, formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -51,7 +51,7 @@ const InstanceQuestionDataSchema = z.object({
   highest_submission_score: InstanceQuestionSchema.shape.highest_submission_score,
   last_submission_score: InstanceQuestionSchema.shape.last_submission_score,
   number_attempts: InstanceQuestionSchema.shape.number_attempts,
-  duration_seconds: z.number(),
+  duration: InstanceQuestionSchema.shape.duration,
 });
 
 export const SubmissionDataSchema = z.object({
@@ -167,7 +167,14 @@ router.get(
       },
       InstanceQuestionDataSchema,
     );
-    res.status(200).send(data);
+    res
+      .status(200)
+      .send(
+        data.map(({ duration, ...row }) => ({
+          ...row,
+          duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
+        })),
+      );
   }),
 );
 

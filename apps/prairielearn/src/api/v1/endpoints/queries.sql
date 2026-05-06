@@ -176,7 +176,7 @@ SELECT
   iq.highest_submission_score,
   iq.last_submission_score,
   iq.number_attempts,
-  DATE_PART('epoch', iq.duration) AS duration_seconds
+  iq.duration
 FROM
   assessment_instances AS ai
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
