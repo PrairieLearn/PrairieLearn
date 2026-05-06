@@ -16,8 +16,6 @@ export function InstructorQtiImport({
   csrfToken: string;
   trpcCsrfToken: string;
 }) {
-  const { urlPrefix, course_instance } = resLocals;
-
   return PageLayout({
     resLocals,
     pageTitle: 'Import QTI content',
@@ -28,16 +26,12 @@ export function InstructorQtiImport({
     },
     options: {},
     headContent: html`
-      <link
-        href="${nodeModulesAssetPath('highlight.js/styles/github-dark-dimmed.min.css')}"
-        rel="stylesheet"
-      />
+      <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
     `,
     content: (
       <Hydrate>
         <QtiImportForm
-          urlPrefix={urlPrefix}
-          courseInstanceId={course_instance.id}
+          courseInstanceId={resLocals.course_instance.id}
           csrfToken={csrfToken}
           trpcCsrfToken={trpcCsrfToken}
         />
