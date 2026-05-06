@@ -10,21 +10,21 @@ If you're migrating from Canvas or another learning management system, you can i
 
 The import tool supports both individual quiz exports (`.zip` files) and full course exports (`.imscc` files). It handles most standard question types:
 
-| QTI question type             | PrairieLearn element               |
-| ----------------------------- | ---------------------------------- |
-| Multiple choice               | `pl-multiple-choice`               |
-| True/false                    | `pl-multiple-choice`               |
-| Multiple answers (select all) | `pl-checkbox`                      |
-| Fill in the blank             | `pl-string-input`                  |
-| Fill in multiple blanks       | `pl-string-input` (inline)         |
-| Multiple dropdowns            | `pl-dropdown` (inline)             |
-| Matching                      | `pl-matching`                      |
-| Numerical answer              | `pl-number-input`                  |
-| Calculated / formula          | `pl-number-input` with `server.py` |
-| Essay / free response         | `pl-rich-text-editor`              |
-| File upload                   | `pl-file-upload`                   |
-| Ordering                      | `pl-order-blocks`                  |
-| Text-only (no response)       | Prompt only                        |
+| QTI question type             | PrairieLearn element                                              |
+| ----------------------------- | ----------------------------------------------------------------- |
+| Multiple choice               | [`pl-multiple-choice`](elements/pl-multiple-choice.md)            |
+| True/false                    | [`pl-multiple-choice`](elements/pl-multiple-choice.md)            |
+| Multiple answers (select all) | [`pl-checkbox`](elements/pl-checkbox.md)                          |
+| Fill in the blank             | [`pl-string-input`](elements/pl-string-input.md)                  |
+| Fill in multiple blanks       | [`pl-string-input`](elements/pl-string-input.md) (inline)         |
+| Multiple dropdowns            | [`pl-dropdown`](elements/pl-dropdown.md) (inline)                 |
+| Matching                      | [`pl-matching`](elements/pl-matching.md)                          |
+| Numerical answer              | [`pl-number-input`](elements/pl-number-input.md)                  |
+| Calculated / formula          | [`pl-number-input`](elements/pl-number-input.md) with `server.py` |
+| Essay / free response         | [`pl-rich-text-editor`](elements/pl-rich-text-editor.md)          |
+| File upload                   | [`pl-file-upload`](elements/pl-file-upload.md)                    |
+| Ordering                      | [`pl-order-blocks`](elements/pl-order-blocks.md)                  |
+| Text-only (no response)       | Prompt only                                                       |
 
 Embedded images and other non-video media files referenced by questions are also imported.
 

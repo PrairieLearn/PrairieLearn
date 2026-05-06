@@ -209,7 +209,8 @@ nav:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
-      - 'Importing content from other platforms': 'importingContent.md'
+      # Hidden until the qti-content-import feature flag is generally available:
+      # - 'Importing content from other platforms': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
