@@ -61,9 +61,6 @@ export interface ErrorData {
   outputBoth: string;
   outputData: string;
   outputRestart: string;
-  fd4ReadableLength: number | null;
-  fd4PendingRead: string | null;
-  restartElapsedMs: number | null;
   stack: string;
   lastCallData: any;
 }
@@ -110,7 +107,6 @@ export class CodeCallerNative implements CodeCaller {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
-  restartStartTime: number | null;
 
   /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
@@ -152,7 +148,6 @@ export class CodeCallerNative implements CodeCaller {
 
     // for error logging
     this.lastCallData = null;
-    this.restartStartTime = null;
 
     this.coursePath = null;
     this.forbiddenModules = [];
@@ -288,7 +283,6 @@ export class CodeCallerNative implements CodeCaller {
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);
       this.debug('exit restart()');
       this.state = RESTARTING;
-      this.restartStartTime = Date.now();
       return new Promise((resolve, reject) => {
         this.callback = (err) => {
           if (err) {
@@ -297,10 +291,7 @@ export class CodeCallerNative implements CodeCaller {
             resolve(true);
           }
         };
-        // TEMPORARY: lowered to 500ms to deliberately trigger restart-timeout
-        // flakes so the diagnostics added in this branch capture data.
-        // Restore to 2000ms before merging.
-        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 500);
+        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 1000);
 
         // Before reporting the restart as successful, we need to wait
         // for a confirmation message to ensure that control has actually
@@ -543,12 +534,11 @@ export class CodeCallerNative implements CodeCaller {
   _restartTimeout() {
     this.debug('enter _restartTimeout()');
     this._checkState([RESTARTING]);
-    // Note: do NOT null timeoutID here. The state-machine invariant in
-    // _checkState requires timeoutID to be non-null while state is RESTARTING.
-    // We're staying in RESTARTING across the deferred setImmediate below, so
-    // any incoming fd 4 data still needs to find a valid invariant. The
-    // handlers (_restartIsFinished or the kill branch) null timeoutID once
-    // they commit to a state transition.
+    // Defer the kill via setImmediate so any fd 4 data already in the kernel
+    // pipe gets delivered in the poll phase first; otherwise the timer (timers
+    // phase) would race ahead of the I/O callback and kill a worker that had
+    // already restarted cleanly. See the loop-phase ordering at
+    // https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick.
     setImmediate(() => {
       if (this.state !== RESTARTING) return;
       if (this._restartWasSuccessful()) {
@@ -650,17 +640,6 @@ export class CodeCallerNative implements CodeCaller {
 
   _errorData(): ErrorData {
     const errForStack = new Error();
-    const fd4 = this.child?.stdio[4] as
-      | (NodeJS.ReadableStream & { readableLength?: number })
-      | undefined;
-    const fd4ReadableLength = fd4?.readableLength ?? null;
-    let fd4PendingRead: string | null = null;
-    try {
-      const peek = fd4?.read?.();
-      if (peek != null) fd4PendingRead = peek.toString();
-    } catch {
-      fd4PendingRead = null;
-    }
     return {
       state: this.state,
       childIsNull: this.child == null,
@@ -671,9 +650,6 @@ export class CodeCallerNative implements CodeCaller {
       outputBoth: this.outputBoth.join(''),
       outputData: this.outputData.join(''),
       outputRestart: this.outputRestart,
-      fd4ReadableLength,
-      fd4PendingRead,
-      restartElapsedMs: this.restartStartTime != null ? Date.now() - this.restartStartTime : null,
       stack: errForStack.stack ?? '',
       lastCallData: this.lastCallData,
     };

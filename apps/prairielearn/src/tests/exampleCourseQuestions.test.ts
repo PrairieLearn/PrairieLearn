@@ -84,8 +84,6 @@ describe('Auto-test questions in exampleCourse', () => {
     const originalWorkersCount = config.workersCount;
 
     beforeAll(async () => {
-      // TEMPORARY: bumped to 8 to trigger restart-timeout flakes for diagnostics.
-      // Restore to 4 before merging.
       config.workersCount = 8;
       await helperServer.before(EXAMPLE_COURSE_PATH)();
     });
