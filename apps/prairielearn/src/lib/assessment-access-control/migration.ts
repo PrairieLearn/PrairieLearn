@@ -454,23 +454,43 @@ function normalizeCreditDeadlines(
  *
  * When late deadlines exist, skip the collapse so we don't drop those windows
  * on the floor. Early deadlines can be preserved with `due: { date: null }`.
+ * If an open-ended full-credit-or-bonus rule follows a higher-credit due
+ * window, preserve the higher-credit due window as an early deadline instead
+ * of emitting post-due credit at or above 100%.
  */
 function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
+  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
   if (
     dateControl.afterLastDeadline &&
     !dateControl.lateDeadlines?.length &&
-    (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
+    afterLastCredit >= dueDateCredit
   ) {
-    const collapseCredit = dateControl.afterLastDeadline.credit ?? 0;
+    const collapseCredit = afterLastCredit;
     if (collapseCredit === 100 && !dateControl.earlyDeadlines?.length) {
       delete dateControl.due;
     } else {
       dateControl.due =
         collapseCredit === 100 ? { date: null } : { date: null, credit: collapseCredit };
     }
+    delete dateControl.afterLastDeadline;
+  }
+
+  if (
+    dateControl.afterLastDeadline &&
+    !dateControl.lateDeadlines?.length &&
+    afterLastCredit >= 100 &&
+    dateControl.due?.date &&
+    dueDateCredit > afterLastCredit
+  ) {
+    dateControl.earlyDeadlines = [
+      ...(dateControl.earlyDeadlines ?? []),
+      { date: dateControl.due.date, credit: dueDateCredit },
+    ];
+    dateControl.due =
+      afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     delete dateControl.afterLastDeadline;
   }
 }

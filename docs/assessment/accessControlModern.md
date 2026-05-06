@@ -62,7 +62,7 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
 !!! tip
 
-    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit and late credits must fall below it.
+    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit, and all credit after the due date must be below 100%.
 
 #### After last deadline
 
@@ -532,7 +532,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 | `durationMinutes`   | integer | Time limit in minutes.                                                                                           |
 | `password`          | string  | Password required to start the assessment.                                                                       |
 
-`due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines may be 100% or more only when they are below the due-date credit and any previous late deadline. `afterLastDeadline.credit` must be below the preceding deadline's credit.
+`due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
 When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
 
@@ -541,9 +541,9 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 | Field              | Type    | Default | Description                                                    |
 | ------------------ | ------- | ------- | -------------------------------------------------------------- |
 | `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 200.      |
+| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 99.       |
 
-If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below the preceding deadline's credit.
+If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
 
 ### `beforeRelease`
 

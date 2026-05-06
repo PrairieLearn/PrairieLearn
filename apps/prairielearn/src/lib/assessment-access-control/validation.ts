@@ -12,6 +12,8 @@ export const MAX_ACCESS_CONTROL_RULES = 50;
  */
 export const MAX_ENROLLMENT_RULES = 100;
 
+const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
+
 type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
@@ -507,7 +509,7 @@ export function validateGlobalDateConsistencyIssues(
 
 /**
  * Checks each override's effective deadline sequence, after inheriting default
- * fields, for strictly decreasing credit.
+ * fields, for post-due credit below 100% and strictly decreasing credit.
  */
 export function validateGlobalCreditConsistencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -532,6 +534,17 @@ export function validateGlobalCreditConsistencyIssues(
           'Early deadlines are not allowed when due date credit is below 100%.',
         );
       }
+    }
+
+    const postDueEntry = effectiveEntries.find(
+      (entry) =>
+        (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
+        entry.credit >= 100 &&
+        entry.validationRule === validationRule,
+    );
+    if (postDueEntry) {
+      pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+      continue;
     }
 
     for (let i = 1; i < effectiveEntries.length; i++) {
@@ -634,6 +647,64 @@ function getEffectiveCreditEntries(
       kind: 'afterLastDeadline',
       credit: afterLastDeadlineCredit,
       validationRule: afterLastDeadlineSource,
+      path: ['dateControl', 'afterLastDeadline', 'credit'],
+    });
+  }
+
+  return entries;
+}
+
+function getRuleCreditEntries(validationRule: AccessControlValidationRule): CreditEntry[] {
+  const dc = validationRule.rule.dateControl;
+  if (!dc) return [];
+
+  const entries: CreditEntry[] = [];
+
+  for (const [index, deadline] of (dc.earlyDeadlines ?? []).entries()) {
+    entries.push({
+      kind: 'earlyDeadline',
+      credit: deadline.credit,
+      validationRule,
+      path: ['dateControl', 'earlyDeadlines', index, 'credit'],
+    });
+  }
+
+  const afterLastDeadlineHasCredit =
+    dc.afterLastDeadline?.allowSubmissions === true && dc.afterLastDeadline.credit !== undefined;
+  const afterLastDeadlineCredit = afterLastDeadlineHasCredit
+    ? dc.afterLastDeadline?.credit
+    : undefined;
+  const hasLaterCredit = (dc.lateDeadlines?.length ?? 0) > 0 || afterLastDeadlineHasCredit;
+  // Single-rule view: there is no inheritance, so only the default rule
+  // synthesizes an implicit 100% due to anchor stray deadlines. Overrides
+  // without their own `due` get the implicit anchor in the global validator
+  // (`getEffectiveCreditEntries`) instead.
+  if (
+    dc.due !== undefined ||
+    (validationRule.targetType === 'none' && (entries.length > 0 || hasLaterCredit))
+  ) {
+    entries.push({
+      kind: 'due',
+      credit: dc.due?.credit ?? 100,
+      validationRule,
+      path: ['dateControl', 'due', 'credit'],
+    });
+  }
+
+  for (const [index, deadline] of (dc.lateDeadlines ?? []).entries()) {
+    entries.push({
+      kind: 'lateDeadline',
+      credit: deadline.credit,
+      validationRule,
+      path: ['dateControl', 'lateDeadlines', index, 'credit'],
+    });
+  }
+
+  if (afterLastDeadlineCredit !== undefined) {
+    entries.push({
+      kind: 'afterLastDeadline',
+      credit: afterLastDeadlineCredit,
+      validationRule,
       path: ['dateControl', 'afterLastDeadline', 'credit'],
     });
   }
@@ -747,47 +818,49 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
 
 /**
  * Validates credit monotonicity within a single access control rule.
+ */
+export function validateRuleCreditMonotonicityIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const entries = getRuleCreditEntries(validationRule);
+
+  const postDueEntry = entries.find(
+    (entry) =>
+      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') && entry.credit >= 100,
+  );
+  if (postDueEntry) {
+    pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+    return issues;
+  }
+
+  for (let i = 1; i < entries.length; i++) {
+    if (entries[i].credit < entries[i - 1].credit) continue;
+    pushIssue(
+      issues,
+      validationRule,
+      entries[i].path,
+      'Deadline credits must strictly decrease over time.',
+    );
+    break;
+  }
+
+  return issues;
+}
+
+/**
+ * Validates credit monotonicity within a single access control rule.
  * Returns an array of error messages (empty if valid).
  */
 export function validateRuleCreditMonotonicity(
   rule: AccessControlJson,
   targetType: AccessControlRuleTargetType = 'none',
 ): string[] {
-  const errors: string[] = [];
-  const dc = rule.dateControl;
-  if (!dc) return errors;
-
-  const dueCredit = dc.due?.credit ?? 100;
-
-  const afterCredit =
-    dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
-
-  const credits: number[] = [];
-  for (const deadline of dc.earlyDeadlines ?? []) {
-    credits.push(deadline.credit);
-  }
-  const hasLaterCredit = (dc.lateDeadlines?.length ?? 0) > 0 || afterCredit != null;
-  if (
-    dc.due !== undefined ||
-    (targetType === 'none' && ((dc.earlyDeadlines?.length ?? 0) > 0 || hasLaterCredit))
-  ) {
-    credits.push(dueCredit);
-  }
-  for (const deadline of dc.lateDeadlines ?? []) {
-    credits.push(deadline.credit);
-  }
-  if (afterCredit != null) {
-    credits.push(afterCredit);
-  }
-
-  for (let i = 1; i < credits.length; i++) {
-    if (credits[i] >= credits[i - 1]) {
-      errors.push('Deadline credits must strictly decrease over time.');
-      break;
-    }
-  }
-
-  return errors;
+  return validateRuleCreditMonotonicityIssues({
+    rule,
+    targetType,
+    ruleIndex: 0,
+  }).map((issue) => issue.message);
 }
 
 /**

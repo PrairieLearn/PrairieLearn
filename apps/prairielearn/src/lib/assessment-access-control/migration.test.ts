@@ -402,6 +402,25 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'bonus closed window followed by full-credit open-ended window becomes early deadline',
+      rules: [
+        { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
+        { credit: 100, startDate: '2024-02-01T00:00:00' },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: null },
+            earlyDeadlines: [{ date: '2024-02-01T00:00:00', credit: 110 }],
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'late deadline preserved when no open-ended rule exists to trigger simplification',
       rules: [
         { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-03-01T00:00:00' },

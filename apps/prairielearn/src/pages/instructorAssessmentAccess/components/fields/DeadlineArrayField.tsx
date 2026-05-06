@@ -26,6 +26,10 @@ type DeadlineArrayFieldName =
   | `overrides.${number}.earlyDeadlines`
   | `overrides.${number}.lateDeadlines`;
 
+function clampCredit(value: number, type: 'early' | 'late'): number {
+  return Math.max(0, Math.min(type === 'early' ? 200 : 99, value));
+}
+
 function computeNextDeadline({
   type,
   deadlines,
@@ -85,10 +89,10 @@ function computeNextDeadline({
   const previousCredit = deadlines.at(-1)?.credit;
   const defaultCredit =
     previousCredit !== undefined
-      ? Math.max(0, previousCredit - 1)
+      ? clampCredit(previousCredit - 1, type)
       : isEarly
-        ? Math.min(200, dueCredit + 10)
-        : Math.max(0, dueCredit - 10);
+        ? clampCredit(dueCredit + 10, 'early')
+        : clampCredit(dueCredit - 10, 'late');
   return { date: defaultDate, credit: defaultCredit };
 }
 
@@ -115,9 +119,9 @@ function getCreditInputMax({
 }): number {
   const previousCredit = index > 0 ? deadlines[index - 1]?.credit : undefined;
   if (previousCredit != null && Number.isFinite(previousCredit)) {
-    return Math.min(200, previousCredit);
+    return clampCredit(previousCredit - 1, type);
   }
-  return type === 'early' ? 200 : Math.min(200, dueCredit);
+  return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
 }
 
 function DeadlineArrayInput({
@@ -297,6 +301,8 @@ function DeadlineArrayInput({
       if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
     } else if (value < 0 || value > 200) {
       return 'Credit must be 0-200%';
+    } else if (value >= 100) {
+      return 'Credit after the due date must be less than 100%';
     }
     const currentDeadlines = deadlinesRef.current;
     if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {
@@ -393,8 +399,8 @@ function DeadlineArrayInput({
                       ? `${idPrefix}-${type}-deadline-${index}-credit-error`
                       : undefined
                   }
-                  placeholder="100"
-                  min={isEarly ? Math.max(0, dueCredit) : '0'}
+                  placeholder={isEarly ? '100' : '0'}
+                  min={isEarly ? clampCredit(dueCredit + 1, 'early') : '0'}
                   max={getCreditInputMax({ type, index, deadlines, dueCredit })}
                   step={1}
                   onWheel={({ currentTarget }) => currentTarget.blur()}

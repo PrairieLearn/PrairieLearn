@@ -835,7 +835,7 @@
                 "credit": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 200
+                  "maximum": 99
                 }
               }
             },
