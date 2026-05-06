@@ -128,14 +128,14 @@ SELECT
   ci.short_name AS course_instance_short_name,
   ci.course_id AS course_instance_course_id,
   ci.display_timezone,
-  format_date_iso8601 (ci.deleted_at, ci.display_timezone) AS deleted_at,
   pl_c.title AS course_title,
   pl_c.short_name AS course_short_name
 FROM
   course_instances AS ci
   JOIN courses AS pl_c ON (pl_c.id = ci.course_id)
 WHERE
-  ci.id = $course_instance_id;
+  ci.id = $course_instance_id
+  AND ci.deleted_at IS NULL;
 
 -- BLOCK select_course_instance_access_rules
 SELECT
