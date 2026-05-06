@@ -8,7 +8,7 @@ observe('.js-copy-button[data-clipboard-text], .js-copy-button[data-clipboard-ta
       const { clipboardText, clipboardTarget } = button.dataset;
 
       let text: string;
-      if (clipboardText != null) {
+      if (clipboardText) {
         text = clipboardText;
       } else if (clipboardTarget) {
         text = Array.from(document.querySelectorAll(clipboardTarget))
