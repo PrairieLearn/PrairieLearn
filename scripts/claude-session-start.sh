@@ -39,9 +39,11 @@ nvm install 24
 nvm alias default 24
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
+# `uv self update` doesn't work because the binary's internal metadata still
+# points at the standalone installer's path (`/root/.local/bin`) even though
+# the image now ships uv at `/usr/local/bin/uv`, so we update via pip.
 # https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
 (cd /tmp && uv pip install --system --reinstall uv)
-rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 # Run commands independently for better timeout control
 make python-deps
