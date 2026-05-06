@@ -1437,8 +1437,11 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject after-complete dates without any deadline', () => {
+  it('should reject after-complete dates when dateControl exists but has no deadlines', () => {
     const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+      },
       afterComplete: {
         questions: {
           hidden: true,
@@ -1476,8 +1479,9 @@ describe('Structural field dependency validation', () => {
 
   it.each([
     {
-      label: 'after-complete boolean fields without deadlines',
+      label: 'after-complete boolean fields with dateControl but no deadlines',
       config: {
+        dateControl: { release: { date: '2024-03-14T00:01:00' } },
         afterComplete: {
           questions: { hidden: true },
           score: { hidden: true },
@@ -2222,4 +2226,296 @@ describe('afterComplete cross-field validation', () => {
       }
     },
   );
+});
+
+describe('Global afterComplete validation', () => {
+  const completionMechanismMessage =
+    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete with score hidden on main rule without dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          afterComplete: {
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          integrations: {
+            prairieTest: {
+              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            },
+          },
+          afterComplete: {
+            questions: { hidden: true },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on overrides when main rule has dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          integrations: {
+            prairieTest: {
+              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override that has its own dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on main rule when dateControl has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+          afterComplete: {
+            questions: { hidden: true },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with durationMinutes', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on overrides when default rule has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it("rejects afterComplete on an override that explicitly clears the default's only completion mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it("accepts an override that clears the default's due when the default still provides another mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+            durationMinutes: 60,
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when only another override has dateControl', () => {
+    // Globally we count any rule's mechanism, since overrides stack at runtime
+    // and the contributing rule may apply to the same student.
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when another override provides duration', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only globally-available mechanism (duration)', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: null },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only global mechanism contributed by another override', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
 });
