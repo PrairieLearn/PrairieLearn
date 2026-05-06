@@ -52,8 +52,7 @@ router.get(
         ...user,
         assessments: assessments.map(({ date, duration, ...assessment }) => ({
           ...assessment,
-          start_date:
-            date == null ? null : formatDateISO(date, res.locals.course_instance.display_timezone),
+          start_date: formatDateISO(date, res.locals.course_instance.display_timezone),
           duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
         })),
       })),

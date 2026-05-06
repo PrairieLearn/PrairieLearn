@@ -102,7 +102,7 @@ export function formatAssessmentInstanceDataForResponse(
         ? Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS) + ' min'
         : 'Open'
       : 'Closed',
-    start_date: formatDateISO(date!, resLocals.course_instance.display_timezone),
+    start_date: formatDateISO(date, resLocals.course_instance.display_timezone),
     duration_seconds: duration ? duration / SECOND_IN_MILLISECONDS : null,
   };
 }
@@ -174,14 +174,8 @@ router.get(
       data.map(({ start_date, end_date, ...row }) => ({
         ...row,
         assessment_label: row.assessment_set_abbreviation + row.assessment_number,
-        start_date:
-          start_date == null
-            ? null
-            : formatDateISO(start_date, res.locals.course_instance.display_timezone),
-        end_date:
-          end_date == null
-            ? null
-            : formatDateISO(end_date, res.locals.course_instance.display_timezone),
+        start_date: formatDateISO(start_date, res.locals.course_instance.display_timezone),
+        end_date: formatDateISO(end_date, res.locals.course_instance.display_timezone),
       })),
     );
   }),

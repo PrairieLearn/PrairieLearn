@@ -33,21 +33,13 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       CourseInstanceAccessRuleDataSchema,
     );
-    res
-      .status(200)
-      .send(
-        accessRules.map(({ start_date, end_date, ...rule }) => ({
-          ...rule,
-          start_date:
-            start_date == null
-              ? null
-              : formatDateISO(start_date, res.locals.course_instance.display_timezone),
-          end_date:
-            end_date == null
-              ? null
-              : formatDateISO(end_date, res.locals.course_instance.display_timezone),
-        })),
-      );
+    res.status(200).send(
+      accessRules.map(({ start_date, end_date, ...rule }) => ({
+        ...rule,
+        start_date: formatDateISO(start_date, res.locals.course_instance.display_timezone),
+        end_date: formatDateISO(end_date, res.locals.course_instance.display_timezone),
+      })),
+    );
   }),
 );
 

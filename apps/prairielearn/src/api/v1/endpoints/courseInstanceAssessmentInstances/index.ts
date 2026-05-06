@@ -127,13 +127,12 @@ export function formatSubmissionDataForResponse(
   const { date, grading_requested_at, graded_at, ...submission } = data;
   return {
     ...submission,
-    date: date == null ? null : formatDateISO(date, locals.course_instance.display_timezone),
-    grading_requested_at:
-      grading_requested_at == null
-        ? null
-        : formatDateISO(grading_requested_at, locals.course_instance.display_timezone),
-    graded_at:
-      graded_at == null ? null : formatDateISO(graded_at, locals.course_instance.display_timezone),
+    date: formatDateISO(date, locals.course_instance.display_timezone),
+    grading_requested_at: formatDateISO(
+      grading_requested_at,
+      locals.course_instance.display_timezone,
+    ),
+    graded_at: formatDateISO(graded_at, locals.course_instance.display_timezone),
   };
 }
 
