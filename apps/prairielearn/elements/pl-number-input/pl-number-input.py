@@ -7,6 +7,7 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from prairielearn.to_precision import to_precision
 
 
 class DisplayType(Enum):
@@ -260,9 +261,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
                 raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
-            # Hide the default atol (1e-8) since it's too small to be useful
-            # context for students. Show any explicitly-set non-zero value.
-            show_atol = atol != ATOL_DEFAULT and atol > 0
+            # Hide the default atol since it's too small to be useful context
+            # for students. Show any explicitly-set non-zero value.
+            show_atol = pl.has_attrib(element, "atol") and atol > 0
             example_true = 100
             rtol_term = f"{example_true * rtol:g}"
             atol_term = f"{atol:g}"
@@ -291,7 +292,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "sigfig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 1)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 1)), 2),
                 "digits_plural": digits > 1,
             }
         elif comparison is ComparisonType.DECDIG:
@@ -302,7 +303,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "decdig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 0)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 0)), 2),
                 "digits_plural": digits > 1,
             }
         else:
