@@ -725,6 +725,38 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'bounded question window cleared when score stays hidden forever',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01T00:00:00',
+          endDate: '2024-06-01T00:00:00',
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        {
+          active: false,
+          startDate: '2024-07-01T00:00:00',
+          endDate: '2024-08-01T00:00:00',
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00' },
+          },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
+        errors: [],
+        notes: [
+          'Questions reveal date 2024-07-01T00:00:00 was removed because score remains hidden after completion.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'same reveal date when both questions and scores reveal together',
       rules: [
         {

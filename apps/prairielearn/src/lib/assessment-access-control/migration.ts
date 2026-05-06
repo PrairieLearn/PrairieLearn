@@ -315,15 +315,21 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
   const questionsFrom = result.questions?.visibleFromDate;
   const scoreFrom = result.score?.visibleFromDate;
   if (result.questions?.hidden === true && result.score?.hidden === true && questionsFrom) {
+    const questionsUntil = result.questions.visibleUntilDate;
     if (!scoreFrom) {
       delete result.questions.visibleFromDate;
+      delete result.questions.visibleUntilDate;
       notes.push(
         `Questions reveal date ${questionsFrom} was removed because score remains hidden after completion.`,
       );
     } else if (scoreFrom > questionsFrom) {
       result.questions.visibleFromDate = scoreFrom;
+      // The original review-window end is no longer meaningful once the start
+      // is pushed forward; drop it to keep the migrated config valid.
+      delete result.questions.visibleUntilDate;
+      const untilNote = questionsUntil ? ` (review-window end ${questionsUntil} dropped)` : '';
       notes.push(
-        `Questions reveal date changed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden.`,
+        `Questions reveal date changed from ${questionsFrom} to ${scoreFrom} so questions do not become visible while the score is still hidden${untilNote}.`,
       );
     }
   }
