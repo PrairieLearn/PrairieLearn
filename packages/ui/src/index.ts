@@ -33,7 +33,11 @@ export {
 export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
-export { StickySaveBar, type StickySaveBarProps } from './components/StickySaveBar.js';
+export {
+  StickySaveBar,
+  type StickySaveBarAlert,
+  type StickySaveBarProps,
+} from './components/StickySaveBar.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
 export { useResizeHandle } from './hooks/use-resize-handle.js';
