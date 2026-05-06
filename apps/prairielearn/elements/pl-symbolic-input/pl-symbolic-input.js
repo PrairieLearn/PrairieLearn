@@ -381,7 +381,7 @@
     const customFunctions = el.getAttribute('custom-functions')?.split(',') ?? [];
     const allowTrig = el.hasAttribute('allow-trig');
     const allowSets = el.hasAttribute('allow-sets');
-    const cacheKey = `${allowTrig}:${allowSets}`;
+    const cacheKey = `${allowTrig}:${allowSets}:${customFunctions.toSorted().join(',')}`;
     let latexSyntax = latexSyntaxCache.get(cacheKey);
     if (!latexSyntax) {
       const {
