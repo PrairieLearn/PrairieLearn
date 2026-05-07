@@ -449,16 +449,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if not builtin_grading:
         if pl.has_attrib(element, "weight"):
             raise ValueError(
-                '"weight" should not be set when builtin-grading is false, '
-                "as the element will not contribute to the grading score."
+                '"weight" should not be set when builtin-grading is false.'
             )
         if (
             get_nota_aota_attrib(element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT)
             is not AotaNotaType.FALSE
         ):
             raise ValueError(
-                '"all-of-the-above" should not be set when builtin-grading is false, '
-                "as it affects answer correctness which is not used without built-in grading."
+                '"all-of-the-above" should not be set when builtin-grading is false.'
             )
         if (
             get_nota_aota_attrib(
@@ -467,25 +465,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             is not AotaNotaType.FALSE
         ):
             raise ValueError(
-                '"none-of-the-above" should not be set when builtin-grading is false, '
-                "as it affects answer correctness which is not used without built-in grading."
+                '"none-of-the-above" should not be set when builtin-grading is false.'
             )
         if pl.has_attrib(element, "hide-score-badge"):
             raise ValueError(
-                '"hide-score-badge" should not be set when builtin-grading is false, '
-                "as no score badges are produced without built-in grading."
+                '"hide-score-badge" should not be set when builtin-grading is false.'
             )
         for child in element:
             if child.tag in {"pl-answer", "pl_answer"}:
                 if pl.has_attrib(child, "score"):
                     raise ValueError(
-                        '"score" on pl-answer should not be set when builtin-grading is false, '
-                        "as it is only used by the built-in grading logic."
+                        '"score" on pl-answer should not be set when builtin-grading is false.'
                     )
                 if pl.has_attrib(child, "feedback"):
                     raise ValueError(
-                        '"feedback" on pl-answer should not be set when builtin-grading is false, '
-                        "as it is only used by the built-in grading logic."
+                        '"feedback" on pl-answer should not be set when builtin-grading is false.'
                     )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
@@ -662,11 +656,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-        builtin_grading = pl.get_boolean_attrib(
+        if not pl.get_boolean_attrib(
             element, "builtin-grading", BUILTIN_GRADING_DEFAULT
-        )
-
-        if not builtin_grading:
+        ):
             return ""
 
         correct_answer = data["correct_answers"].get(name, None)
@@ -716,10 +708,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    builtin_grading = pl.get_boolean_attrib(
-        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
-    )
-    if not builtin_grading:
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
         return
 
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -746,14 +735,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    builtin_grading = pl.get_boolean_attrib(
-        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
-    )
-
     number_answers = len(data["params"][name])
     all_keys = list(it.islice(pl.iter_keys(), number_answers))
 
-    if not builtin_grading:
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
         # Still test that valid and invalid submissions are handled correctly
         result = data["test_type"]
         if result in {"correct", "incorrect"}:
