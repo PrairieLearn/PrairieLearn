@@ -13,6 +13,7 @@ import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
+  CourseInstanceSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,
@@ -26,10 +27,7 @@ import {
   VariantSchema,
   ZoneSchema,
 } from '../../../../lib/db-types.js';
-import {
-  AssessmentInstanceDataSchema,
-  formatAssessmentInstanceDataForResponse,
-} from '../courseInstanceAssessments/index.js';
+import { AssessmentInstanceDataSchema } from '../courseInstanceAssessments/index.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
@@ -54,87 +52,79 @@ const InstanceQuestionDataSchema = z.object({
   duration: InstanceQuestionSchema.shape.duration,
 });
 
-export const SubmissionDataSchema = z.object({
-  submission_id: SubmissionSchema.shape.id,
-  // left join users table
-  user_id: UserSchema.shape.id.nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  user_uin: UserSchema.shape.uin.nullable(),
-  user_name: UserSchema.shape.name.nullable(),
-  user_role: SprocUsersGetDisplayedRoleSchema,
+export const SubmissionDataSchema = z
+  .object({
+    submission_id: SubmissionSchema.shape.id,
+    // left join users table
+    user_id: UserSchema.shape.id.nullable(),
+    user_uid: UserSchema.shape.uid.nullable(),
+    user_uin: UserSchema.shape.uin.nullable(),
+    user_name: UserSchema.shape.name.nullable(),
+    user_role: SprocUsersGetDisplayedRoleSchema,
 
-  // left join team_info sproc
-  group_id: SprocTeamInfoSchema.shape.id.nullable(),
-  group_name: SprocTeamInfoSchema.shape.name.nullable(),
-  group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
+    // left join team_info sproc
+    group_id: SprocTeamInfoSchema.shape.id.nullable(),
+    group_name: SprocTeamInfoSchema.shape.name.nullable(),
+    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
 
-  assessment_id: AssessmentSchema.shape.id,
-  assessment_name: AssessmentSchema.shape.tid,
-  assessment_label: z.string(),
-  assessment_instance_id: AssessmentInstanceSchema.shape.id,
-  assessment_instance_number: AssessmentInstanceSchema.shape.number,
-  question_id: QuestionSchema.shape.id,
-  question_name: QuestionSchema.shape.qid,
-  question_topic: TopicSchema.shape.name,
-  question_tags: z.array(TagSchema.shape.name),
-  instance_question_id: InstanceQuestionSchema.shape.id,
-  instance_question_number: InstanceQuestionSchema.shape.number,
-  assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
-  assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-  assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-  instance_question_points: InstanceQuestionSchema.shape.points,
-  instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
-  instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
-  instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
-  variant_id: VariantSchema.shape.id,
-  variant_number: VariantSchema.shape.number,
-  variant_seed: VariantSchema.shape.variant_seed,
-  params: VariantSchema.shape.params,
-  true_answer: VariantSchema.shape.true_answer,
-  options: VariantSchema.shape.options,
-  date: SubmissionSchema.shape.date,
-  submitted_answer: SubmissionSchema.shape.submitted_answer,
-  partial_scores: SubmissionSchema.shape.partial_scores,
-  override_score: SubmissionSchema.shape.override_score,
-  credit: SubmissionSchema.shape.credit,
-  mode: SubmissionSchema.shape.mode,
-  grading_requested_at: SubmissionSchema.shape.grading_requested_at,
-  graded_at: SubmissionSchema.shape.graded_at,
-  score: SubmissionSchema.shape.score,
-  correct: SubmissionSchema.shape.correct,
-  feedback: SubmissionSchema.shape.feedback,
-  // left join rubric_gradings table
-  rubric_grading_computed_points: RubricGradingSchema.shape.computed_points.nullable(),
-  rubric_grading_adjust_points: RubricGradingSchema.shape.adjust_points.nullable(),
-  rubric_grading_items: z
-    .array(
-      z.object({
-        rubric_item_id: RubricGradingItemSchema.shape.rubric_item_id,
-        text: RubricGradingItemSchema.shape.description,
-        points: RubricGradingItemSchema.shape.points,
-      }),
-    )
-    .nullable(),
+    assessment_id: AssessmentSchema.shape.id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_label: z.string(),
+    assessment_instance_id: AssessmentInstanceSchema.shape.id,
+    assessment_instance_number: AssessmentInstanceSchema.shape.number,
+    question_id: QuestionSchema.shape.id,
+    question_name: QuestionSchema.shape.qid,
+    question_topic: TopicSchema.shape.name,
+    question_tags: z.array(TagSchema.shape.name),
+    instance_question_id: InstanceQuestionSchema.shape.id,
+    instance_question_number: InstanceQuestionSchema.shape.number,
+    assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
+    assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+    assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+    instance_question_points: InstanceQuestionSchema.shape.points,
+    instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
+    instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
+    instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
+    variant_id: VariantSchema.shape.id,
+    variant_number: VariantSchema.shape.number,
+    variant_seed: VariantSchema.shape.variant_seed,
+    params: VariantSchema.shape.params,
+    true_answer: VariantSchema.shape.true_answer,
+    options: VariantSchema.shape.options,
+    date: SubmissionSchema.shape.date,
+    submitted_answer: SubmissionSchema.shape.submitted_answer,
+    partial_scores: SubmissionSchema.shape.partial_scores,
+    override_score: SubmissionSchema.shape.override_score,
+    credit: SubmissionSchema.shape.credit,
+    mode: SubmissionSchema.shape.mode,
+    grading_requested_at: SubmissionSchema.shape.grading_requested_at,
+    graded_at: SubmissionSchema.shape.graded_at,
+    score: SubmissionSchema.shape.score,
+    correct: SubmissionSchema.shape.correct,
+    feedback: SubmissionSchema.shape.feedback,
+    // left join rubric_gradings table
+    rubric_grading_computed_points: RubricGradingSchema.shape.computed_points.nullable(),
+    rubric_grading_adjust_points: RubricGradingSchema.shape.adjust_points.nullable(),
+    rubric_grading_items: z
+      .array(
+        z.object({
+          rubric_item_id: RubricGradingItemSchema.shape.rubric_item_id,
+          text: RubricGradingItemSchema.shape.description,
+          points: RubricGradingItemSchema.shape.points,
+        }),
+      )
+      .nullable(),
 
-  final_submission_per_variant: z.boolean(),
-  best_submission_per_variant: z.boolean(),
-});
-
-export function formatSubmissionDataForResponse(
-  data: z.infer<typeof SubmissionDataSchema>,
-  locals: Record<string, any>,
-) {
-  const { date, grading_requested_at, graded_at, ...submission } = data;
-  return {
+    final_submission_per_variant: z.boolean(),
+    best_submission_per_variant: z.boolean(),
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+  })
+  .transform(({ date, grading_requested_at, graded_at, display_timezone, ...submission }) => ({
     ...submission,
-    date: formatDateISO(date, locals.course_instance.display_timezone),
-    grading_requested_at: formatDateISO(
-      grading_requested_at,
-      locals.course_instance.display_timezone,
-    ),
-    graded_at: formatDateISO(graded_at, locals.course_instance.display_timezone),
-  };
-}
+    date: formatDateISO(date, display_timezone),
+    grading_requested_at: formatDateISO(grading_requested_at, display_timezone),
+    graded_at: formatDateISO(graded_at, display_timezone),
+  }));
 
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)',
@@ -151,7 +141,7 @@ router.get(
     if (data == null) {
       res.status(404).send({ message: 'Not Found' });
     } else {
-      res.status(200).send(formatAssessmentInstanceDataForResponse(data, res.locals));
+      res.status(200).send(data);
     }
   }),
 );
@@ -188,7 +178,7 @@ router.get(
       },
       SubmissionDataSchema,
     );
-    res.status(200).send(data.map((row) => formatSubmissionDataForResponse(row, res.locals)));
+    res.status(200).send(data);
   }),
 );
 

@@ -65,7 +65,8 @@ SELECT
         ai.number DESC,
         ai.id DESC
     )
-  ) = 1 AS highest_score
+  ) = 1 AS highest_score,
+  ci.display_timezone
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -284,7 +285,8 @@ SELECT
         s.date DESC,
         s.id DESC
     )
-  ) = 1 AS best_submission_per_variant
+  ) = 1 AS best_submission_per_variant,
+  ci.display_timezone
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

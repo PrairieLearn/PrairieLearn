@@ -16,6 +16,7 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  CourseInstanceSchema,
   SprocTeamInfoSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
@@ -60,53 +61,48 @@ const AssessmentAccessRuleDataSchema = z.object({
   uids: AssessmentAccessRuleSchema.shape.uids,
 });
 
-export const AssessmentInstanceDataSchema = z.object({
-  assessment_instance_id: AssessmentInstanceSchema.shape.id,
-  assessment_id: AssessmentInstanceSchema.shape.assessment_id,
-  assessment_name: AssessmentSchema.shape.tid,
-  assessment_title: AssessmentSchema.shape.title,
-  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
-  assessment_number: AssessmentSchema.shape.number,
-  user_id: UserSchema.shape.id.nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  user_uin: UserSchema.shape.uin.nullable(),
-  user_name: UserSchema.shape.name.nullable(),
-  user_role: SprocUsersGetDisplayedRoleSchema,
-  max_points: AssessmentInstanceSchema.shape.max_points,
-  max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
-  points: AssessmentInstanceSchema.shape.points,
-  score_perc: AssessmentInstanceSchema.shape.score_perc,
-  assessment_instance_number: AssessmentInstanceSchema.shape.number,
-  open: AssessmentInstanceSchema.shape.open,
-  modified_at: AssessmentInstanceSchema.shape.modified_at,
-  group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
-  group_name: SprocTeamInfoSchema.shape.name.nullable(),
-  group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
-  date_limit: AssessmentInstanceSchema.shape.date_limit,
-  date: AssessmentInstanceSchema.shape.date,
-  duration: AssessmentInstanceSchema.shape.duration,
-  highest_score: z.boolean(),
-});
-
-export function formatAssessmentInstanceDataForResponse(
-  data: z.infer<typeof AssessmentInstanceDataSchema>,
-  resLocals: Record<string, any>,
-) {
-  const { date_limit, date, duration, modified_at, ...instance } = data;
-  return {
+export const AssessmentInstanceDataSchema = z
+  .object({
+    assessment_instance_id: AssessmentInstanceSchema.shape.id,
+    assessment_id: AssessmentInstanceSchema.shape.assessment_id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_title: AssessmentSchema.shape.title,
+    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+    assessment_number: AssessmentSchema.shape.number,
+    user_id: UserSchema.shape.id.nullable(),
+    user_uid: UserSchema.shape.uid.nullable(),
+    user_uin: UserSchema.shape.uin.nullable(),
+    user_name: UserSchema.shape.name.nullable(),
+    user_role: SprocUsersGetDisplayedRoleSchema,
+    max_points: AssessmentInstanceSchema.shape.max_points,
+    max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
+    points: AssessmentInstanceSchema.shape.points,
+    score_perc: AssessmentInstanceSchema.shape.score_perc,
+    assessment_instance_number: AssessmentInstanceSchema.shape.number,
+    open: AssessmentInstanceSchema.shape.open,
+    modified_at: AssessmentInstanceSchema.shape.modified_at,
+    group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
+    group_name: SprocTeamInfoSchema.shape.name.nullable(),
+    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
+    date_limit: AssessmentInstanceSchema.shape.date_limit,
+    date: AssessmentInstanceSchema.shape.date,
+    duration: AssessmentInstanceSchema.shape.duration,
+    highest_score: z.boolean(),
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+  })
+  .transform(({ date_limit, date, duration, modified_at, display_timezone, ...instance }) => ({
     ...instance,
     assessment_label: instance.assessment_set_abbreviation + instance.assessment_number,
-    modified_at: formatDateISO(modified_at, resLocals.course_instance.display_timezone),
+    modified_at: formatDateISO(modified_at, display_timezone),
     time_remaining: instance.open
       ? date_limit
         ? Math.max(0, Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS)) +
           ' min'
         : 'Open'
       : 'Closed',
-    start_date: formatDateISO(date, resLocals.course_instance.display_timezone),
+    start_date: formatDateISO(date, display_timezone),
     duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
-  };
-}
+  }));
 
 router.get(
   '/',
@@ -154,9 +150,7 @@ router.get(
       },
       AssessmentInstanceDataSchema,
     );
-    res
-      .status(200)
-      .send(data.map((row) => formatAssessmentInstanceDataForResponse(row, res.locals)));
+    res.status(200).send(data);
   }),
 );
 
