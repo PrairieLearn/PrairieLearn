@@ -1943,7 +1943,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 0,
           message:
-            /afterComplete\.score\.hidden: true requires afterComplete\.questions\.hidden: true/,
+            /score cannot be hidden after completion while questions are visible/,
         },
       ],
     },
@@ -1961,7 +1961,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 0,
           message:
-            /afterComplete\.questions\.visibleFromDate requires the score to be visible by then/,
+            /Questions cannot become visible after completion while the score remains hidden/,
         },
       ],
     },
@@ -1979,7 +1979,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 0,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2012,7 +2012,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2034,7 +2034,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2110,7 +2110,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2124,7 +2124,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.hidden: true requires afterComplete\.questions\.hidden: true/,
+            /score cannot be hidden after completion while questions are visible/,
         },
       ],
     },
@@ -2147,7 +2147,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 0,
           message:
-            /afterComplete\.questions\.visibleFromDate requires the score to be visible by then/,
+            /Questions cannot become visible after completion while the score remains hidden/,
         },
       ],
     },
@@ -2173,7 +2173,7 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.questions\.visibleFromDate requires the score to be visible by then/,
+            /Questions cannot become visible after completion while the score remains hidden/,
         },
       ],
     },
@@ -2192,12 +2192,12 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 0,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2227,12 +2227,12 @@ describe('afterComplete cross-field validation', () => {
         {
           ruleIndex: 1,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
         {
           ruleIndex: 3,
           message:
-            /afterComplete\.score\.visibleFromDate must be on or before afterComplete\.questions\.visibleFromDate/,
+            /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2272,7 +2272,7 @@ describe('Global afterComplete validation', () => {
     });
 
     const matches = result.errors.filter((e) =>
-      e.includes('afterComplete.questions.visibleFromDate requires the score to be visible'),
+      e.includes('Questions cannot become visible after completion while the score remains hidden'),
     );
     assert.lengthOf(matches, 1);
   });

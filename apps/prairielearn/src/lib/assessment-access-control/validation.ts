@@ -681,7 +681,7 @@ export function getAfterCompleteCrossFieldIssue(
   if (score.hidden && !questions.hidden) {
     return {
       kind: 'score_hidden_requires_questions_hidden',
-      message: 'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.',
+      message: 'The score cannot be hidden after completion while questions are visible.',
     };
   }
   if (!questions.hidden || questions.visibleFromDate === undefined) return null;
@@ -690,14 +690,13 @@ export function getAfterCompleteCrossFieldIssue(
     return {
       kind: 'questions_reveal_requires_score_reveal',
       message:
-        'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
+        'Questions cannot become visible after completion while the score remains hidden. Either make the score visible after completion, or reveal the score on or before the question reveal date.',
     };
   }
   if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
     return {
       kind: 'score_reveal_after_questions_reveal',
-      message:
-        'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).',
+      message: 'The score must become visible on or before the question reveal date.',
     };
   }
   return null;
