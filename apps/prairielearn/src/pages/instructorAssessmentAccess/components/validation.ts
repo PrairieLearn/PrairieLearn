@@ -5,7 +5,7 @@ import {
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
-  validateRuleCreditMonotonicityIssues,
+  validateRuleCreditOrderingIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
@@ -177,10 +177,10 @@ export function getGlobalDateValidationErrors(
   for (const validationRule of validationRules) {
     const dateIssues = validateRuleDateOrderingIssues(validationRule);
     const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
-    // Credit monotonicity assumes deadlines are chronological; skip if dates
-    // are out of order to avoid misleading "credits must strictly decrease" errors.
+    // Credit ordering assumes deadlines are chronological; skip if dates are
+    // out of order to avoid misleading "credits must strictly decrease" errors.
     if (dateIssues.length === 0) {
-      issueGroups.push(validateRuleCreditMonotonicityIssues(validationRule));
+      issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
     }
     for (const issues of issueGroups) {
       for (const issue of issues) {

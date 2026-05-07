@@ -12,7 +12,7 @@ import {
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
   validateRule,
-  validateRuleCreditMonotonicity,
+  validateRuleCreditOrdering,
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
@@ -700,7 +700,7 @@ describe('Date ordering validation', () => {
   });
 });
 
-describe('Credit monotonicity validation', () => {
+describe('Credit ordering validation', () => {
   it.each([
     {
       label: 'increasing early deadline credits',
@@ -782,7 +782,7 @@ describe('Credit monotonicity validation', () => {
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    const errors = validateRuleCreditMonotonicity(rule);
+    const errors = validateRuleCreditOrdering(rule);
     assert.isTrue(errors.includes(errorMatch));
   });
 
@@ -850,7 +850,7 @@ describe('Credit monotonicity validation', () => {
     },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
+    assert.deepEqual(validateRuleCreditOrdering(rule), []);
   });
 });
 
@@ -1065,15 +1065,9 @@ describe('Global credit validation', () => {
     assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
   });
 
-  it('uses matching inherited due credit to reject override early deadlines', () => {
+  it('uses inherited default due credit to reject override early deadlines', () => {
     const messages = messagesFor(
       {
-        dateControl: {
-          due: { date: '2024-04-10T00:00:00', credit: 110 },
-        },
-      },
-      {
-        labels: ['Section A'],
         dateControl: {
           due: { date: '2024-04-10T00:00:00', credit: 80 },
         },
@@ -1081,7 +1075,7 @@ describe('Global credit validation', () => {
       {
         labels: ['Section A'],
         dateControl: {
-          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 120 }],
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 90 }],
         },
       },
     );

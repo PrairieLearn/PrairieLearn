@@ -589,15 +589,14 @@ type DateControlField = keyof NonNullable<AccessControlJson['dateControl']>;
 /**
  * Builds the chronological credit timeline for a rule. `sourceForField`
  * resolves where each `dateControl` field comes from: the rule itself for
- * per-rule validation, or the nearest cascading rule (default → matching
- * student-label → self) for cross-rule validation.
+ * per-rule validation, or self-or-default for cross-rule validation.
  *
  * When `synthesizeImplicitDue` is true and the rule has any other credit
  * field set without a `due`, an implicit 100% due entry is inserted so the
- * monotonicity check has an anchor. Per-rule validation only synthesizes for
- * the default rule (overrides may legitimately omit `due` and inherit it);
- * cross-rule validation always synthesizes since any override's effective
- * timeline includes the inherited due.
+ * strict-decrease check has an anchor. Per-rule validation only synthesizes
+ * for the default rule (overrides may legitimately omit `due` and inherit
+ * it); cross-rule validation always synthesizes since any override's
+ * effective timeline includes the inherited due.
  */
 function buildCreditTimeline(
   sourceForField: <K extends DateControlField>(field: K) => AccessControlValidationRule,
@@ -666,8 +665,10 @@ function getRuleCreditEntries(validationRule: AccessControlValidationRule): Cred
 
 /**
  * Effective credit timeline for an override after inheritance: each field
- * resolves to the nearest preceding rule that sets it and could cascade to
- * this override.
+ * comes from the override itself if it sets it, otherwise from the default
+ * rule. We deliberately do not model label-on-label cascade — the other
+ * global validators are similarly coarse, and the enrollment case can't be
+ * modeled accurately without knowing each student's labels.
  */
 function getEffectiveCreditEntries(
   validationRules: AccessControlValidationRule[],
@@ -677,48 +678,10 @@ function getEffectiveCreditEntries(
   const defaultValidationRule =
     validationRules.find((rule) => rule.targetType === 'none') ?? validationRules[0];
 
-  const sourceForField = <K extends DateControlField>(field: K): AccessControlValidationRule => {
-    for (let i = validationRuleIndex; i >= 0; i--) {
-      const sourceRule = validationRules[i];
-      if (
-        sourceRule.rule.dateControl?.[field] !== undefined &&
-        couldCascadeToValidationRule(sourceRule, validationRule)
-      ) {
-        return sourceRule;
-      }
-    }
-    return defaultValidationRule;
-  };
+  const sourceForField = <K extends DateControlField>(field: K): AccessControlValidationRule =>
+    validationRule.rule.dateControl?.[field] !== undefined ? validationRule : defaultValidationRule;
 
   return buildCreditTimeline(sourceForField, true);
-}
-
-/**
- * Whether `sourceRule` could supply an inherited field to `validationRule` at
- * runtime. Defaults always cascade, a rule cascades to itself, and
- * student-label rules cascade to other student-label rules they share a label
- * with. Enrollment rules conservatively only inherit from defaults and
- * themselves: this rule-only validator does not know which labels the target
- * enrollments have, so accepting any label rule would create false positives.
- */
-function couldCascadeToValidationRule(
-  sourceRule: AccessControlValidationRule,
-  validationRule: AccessControlValidationRule,
-): boolean {
-  if (sourceRule.targetType === 'none') return true;
-  if (sourceRule === validationRule) return true;
-  if (validationRule.targetType === 'student_label') {
-    return (
-      sourceRule.targetType === 'student_label' &&
-      labelsOverlap(sourceRule.rule.labels, validationRule.rule.labels)
-    );
-  }
-  return false;
-}
-
-function labelsOverlap(a: string[] | undefined, b: string[] | undefined): boolean {
-  if (!a || !b) return false;
-  return a.some((label) => b.includes(label));
 }
 
 /**
@@ -805,9 +768,11 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
 }
 
 /**
- * Validates credit monotonicity within a single access control rule.
+ * Validates credit ordering within a single access control rule: post-due
+ * credits must be below 100%, and credits must strictly decrease across the
+ * timeline.
  */
-export function validateRuleCreditMonotonicityIssues(
+export function validateRuleCreditOrderingIssues(
   validationRule: AccessControlValidationRule,
 ): AccessControlValidationIssue[] {
   const issues: AccessControlValidationIssue[] = [];
@@ -837,14 +802,14 @@ export function validateRuleCreditMonotonicityIssues(
 }
 
 /**
- * Validates credit monotonicity within a single access control rule.
+ * Validates credit ordering within a single access control rule.
  * Returns an array of error messages (empty if valid).
  */
-export function validateRuleCreditMonotonicity(
+export function validateRuleCreditOrdering(
   rule: AccessControlJson,
   targetType: AccessControlRuleTargetType = 'none',
 ): string[] {
-  return validateRuleCreditMonotonicityIssues({
+  return validateRuleCreditOrderingIssues({
     rule,
     targetType,
     ruleIndex: 0,
@@ -853,7 +818,7 @@ export function validateRuleCreditMonotonicity(
 
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
- * credit monotonicity, and target-type constraints (e.g. integrations and
+ * credit ordering, and target-type constraints (e.g. integrations and
  * beforeRelease are only valid on the default rule).
  *
  * @param rule The access control rule to validate.
@@ -958,10 +923,10 @@ export function validateRule(
 
   const dateErrors = validateRuleDateOrdering(rule);
   errors.push(...dateErrors);
-  // Credit monotonicity assumes deadlines are chronological; skip if dates
-  // are out of order to avoid misleading "credits must strictly decrease" errors.
+  // Credit ordering assumes deadlines are chronological; skip if dates are
+  // out of order to avoid misleading "credits must strictly decrease" errors.
   if (dateErrors.length === 0) {
-    errors.push(...validateRuleCreditMonotonicity(rule, targetType));
+    errors.push(...validateRuleCreditOrdering(rule, targetType));
   }
 
   return errors;
