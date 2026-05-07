@@ -375,14 +375,14 @@
     "brotli": 542540
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
-    "raw": 1072079,
-    "gzip": 326970,
-    "brotli": 283879
+    "raw": 1072127,
+    "gzip": 326990,
+    "brotli": 283899
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
-    "raw": 1063901,
-    "gzip": 324636,
-    "brotli": 281801
+    "raw": 1064034,
+    "gzip": 324680,
+    "brotli": 281837
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionSsoForm.ts": {
     "raw": 256827,
