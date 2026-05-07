@@ -626,19 +626,17 @@ export function validateGlobalCreditConsistencyIssues(
   return issues;
 }
 
-export type AfterCompleteQuestions = NonNullable<
+type AfterCompleteQuestions = NonNullable<
   NonNullable<AccessControlJson['afterComplete']>['questions']
 >;
-export type AfterCompleteScore = NonNullable<
-  NonNullable<AccessControlJson['afterComplete']>['score']
->;
+type AfterCompleteScore = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
 
-export type AfterCompleteCrossFieldIssueKind =
+type AfterCompleteCrossFieldIssueKind =
   | 'score_hidden_requires_questions_hidden'
   | 'questions_reveal_requires_score_reveal'
   | 'score_reveal_after_questions_reveal';
 
-export interface AfterCompleteCrossFieldIssue {
+interface AfterCompleteCrossFieldIssue {
   kind: AfterCompleteCrossFieldIssueKind;
   message: string;
 }
