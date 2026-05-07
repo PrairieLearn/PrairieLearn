@@ -883,7 +883,7 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
 }
 
 interface CurrentIndicator {
-  variant: 'success' | 'primary';
+  variant: 'success' | 'primary' | 'secondary';
   icon: string;
   text: ReactNode;
 }
@@ -933,6 +933,10 @@ function buildDefaultRuleCurrentIndicator(
       icon: 'bi-eye-slash',
       text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
     };
+  }
+
+  if (!segment.accessible) {
+    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
   }
 
   if (!segment.submittable) {
