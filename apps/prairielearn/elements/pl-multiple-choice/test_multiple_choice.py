@@ -36,16 +36,30 @@ WEIGHT_WITH_NO_BUILTIN_GRADING_HTML = """
 </pl-multiple-choice>
 """
 
-AOTA_WITH_NO_BUILTIN_GRADING_HTML = """
-<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="random" order="fixed">
+AOTA_CORRECT_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="correct" order="fixed">
   <pl-answer correct="true">Option A</pl-answer>
   <pl-answer correct="true">Option B</pl-answer>
 </pl-multiple-choice>
 """
 
-NOTA_WITH_NO_BUILTIN_GRADING_HTML = """
-<pl-multiple-choice answers-name="survey" builtin-grading="false" none-of-the-above="random" order="fixed">
+NOTA_CORRECT_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" none-of-the-above="correct" order="fixed">
   <pl-answer correct="true">Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+AOTA_BOOLEAN_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="true" order="fixed">
+  <pl-answer>Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+NOTA_BOOLEAN_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" none-of-the-above="true" order="fixed">
+  <pl-answer>Option A</pl-answer>
   <pl-answer>Option B</pl-answer>
 </pl-multiple-choice>
 """
@@ -188,18 +202,32 @@ def test_prepare_rejects_weight_with_no_builtin_grading() -> None:
         pl_multiple_choice.prepare(WEIGHT_WITH_NO_BUILTIN_GRADING_HTML, data)
 
 
-def test_prepare_rejects_aota_with_no_builtin_grading() -> None:
-    """Test that prepare() raises when all-of-the-above is set alongside builtin-grading='false'."""
+def test_prepare_rejects_aota_correctness_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when all-of-the-above has correctness semantics alongside builtin-grading='false'."""
     data = _make_question_data()
-    with pytest.raises(ValueError, match=r"all-of-the-above.*should not be set"):
-        pl_multiple_choice.prepare(AOTA_WITH_NO_BUILTIN_GRADING_HTML, data)
+    with pytest.raises(ValueError, match=r"all-of-the-above.*true or false"):
+        pl_multiple_choice.prepare(AOTA_CORRECT_WITH_NO_BUILTIN_GRADING_HTML, data)
 
 
-def test_prepare_rejects_nota_with_no_builtin_grading() -> None:
-    """Test that prepare() raises when none-of-the-above is set alongside builtin-grading='false'."""
+def test_prepare_rejects_nota_correctness_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when none-of-the-above has correctness semantics alongside builtin-grading='false'."""
     data = _make_question_data()
-    with pytest.raises(ValueError, match=r"none-of-the-above.*should not be set"):
-        pl_multiple_choice.prepare(NOTA_WITH_NO_BUILTIN_GRADING_HTML, data)
+    with pytest.raises(ValueError, match=r"none-of-the-above.*true or false"):
+        pl_multiple_choice.prepare(NOTA_CORRECT_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_allows_aota_boolean_with_no_builtin_grading() -> None:
+    """Test that prepare() allows all-of-the-above='true' alongside builtin-grading='false'."""
+    data = _make_question_data()
+    pl_multiple_choice.prepare(AOTA_BOOLEAN_WITH_NO_BUILTIN_GRADING_HTML, data)
+    assert len(data["params"]["survey"]) == 3
+
+
+def test_prepare_allows_nota_boolean_with_no_builtin_grading() -> None:
+    """Test that prepare() allows none-of-the-above='true' alongside builtin-grading='false'."""
+    data = _make_question_data()
+    pl_multiple_choice.prepare(NOTA_BOOLEAN_WITH_NO_BUILTIN_GRADING_HTML, data)
+    assert len(data["params"]["survey"]) == 3
 
 
 def test_prepare_rejects_hide_score_badge_with_no_builtin_grading() -> None:

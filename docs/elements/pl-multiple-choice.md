@@ -60,7 +60,8 @@ When `builtin-grading="false"` is set:
 - The element does **not** produce a score. To grade submissions automatically, you must supply a [`grade()` function in `server.py`](../question/server.md#step-5-grade) or be evaluated by an [external grader](../externalGrading.md). Without one, the score will be based on other gradable elements in the question (or receive a score of zero if there are no other elements).
 - The **answer panel** will not display a correct answer, even if one is marked with `correct="true"`.
 - **Score badges** are not shown by default, since no score is produced by the element.
-- The `weight`, `all-of-the-above`, `none-of-the-above`, and `hide-score-badge` attributes **cannot** be used alongside `builtin-grading="false"`, as they are specific to the built-in grading behavior. Similarly, `score` and `feedback` on individual `pl-answer` children are not permitted.
+- The `weight` and `hide-score-badge` attributes **cannot** be used alongside `builtin-grading="false"`. Similarly, `score` and `feedback` on individual `pl-answer` children are not permitted.
+- The `all-of-the-above` and `none-of-the-above` attributes are restricted to boolean `true`/`false` when `builtin-grading="false"`. Setting them to `true` shows the option without any correctness semantics (always displayed last, always included when `number-answers` limits display). Values like `"correct"`, `"incorrect"`, or `"random"` are not allowed.
 
 Note that even when built-in grading is disabled, the `correct="true"` attribute on a `pl-answer` still controls which single answer is selected when the element prepares its display. If there is truly no correct answer (e.g., a survey), you can omit `correct="true"` from all choices.
 

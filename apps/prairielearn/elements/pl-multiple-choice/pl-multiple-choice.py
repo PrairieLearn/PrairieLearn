@@ -224,6 +224,14 @@ def prepare_answers_to_display(
             "pl-multiple-choice element must have at least 1 answer choice."
         )
 
+    # When builtin grading is disabled, NOTA/AOTA just controls display
+    # (show/hide) with no correctness semantics.
+    if not builtin_grading:
+        if aota is not AotaNotaType.FALSE:
+            aota = AotaNotaType.INCORRECT
+        if nota is not AotaNotaType.FALSE:
+            nota = AotaNotaType.INCORRECT
+
     if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
         raise ValueError(
             'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'
@@ -456,21 +464,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(
                 '"weight" should not be set when builtin-grading is false.'
             )
-        if (
-            get_nota_aota_attrib(element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT)
-            is not AotaNotaType.FALSE
-        ):
+        if get_nota_aota_attrib(
+            element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT
+        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT}:
             raise ValueError(
-                '"all-of-the-above" should not be set when builtin-grading is false.'
+                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
             )
-        if (
-            get_nota_aota_attrib(
-                element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
-            )
-            is not AotaNotaType.FALSE
-        ):
+        if get_nota_aota_attrib(
+            element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
+        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT}:
             raise ValueError(
-                '"none-of-the-above" should not be set when builtin-grading is false.'
+                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
             )
         if pl.has_attrib(element, "hide-score-badge"):
             raise ValueError(
