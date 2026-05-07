@@ -886,11 +886,12 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
  *
  * @param rule The access control rule to validate.
  * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
- * @param options.includeAfterCompleteCrossField Whether to include the
- *   afterComplete cross-field check (defaults to `true`). Callers that also
- *   run {@link validateAfterCompleteCrossFieldIssues} across all rules should
- *   pass `false` to avoid duplicate errors, since that validator already
- *   covers the same constraint and additionally handles inheritance.
+ * @param options Optional flags.
+ * @param options.includeAfterCompleteCrossField Whether to include the afterComplete
+ * cross-field check (defaults to `true`). Callers that also run
+ * {@link validateAfterCompleteCrossFieldIssues} across all rules should pass `false`
+ * to avoid duplicate errors, since that validator already covers the same constraint
+ * and additionally handles inheritance.
  */
 export function validateRule(
   rule: AccessControlJson,
