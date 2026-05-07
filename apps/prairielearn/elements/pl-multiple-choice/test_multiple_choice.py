@@ -29,6 +29,48 @@ NO_CORRECT_DEFAULT_ELEMENT_HTML = """
 </pl-multiple-choice>
 """
 
+WEIGHT_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" weight="2" order="fixed">
+  <pl-answer>Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+AOTA_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="random" order="fixed">
+  <pl-answer correct="true">Option A</pl-answer>
+  <pl-answer correct="true">Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+NOTA_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" none-of-the-above="random" order="fixed">
+  <pl-answer correct="true">Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+HIDE_SCORE_BADGE_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" hide-score-badge="true" order="fixed">
+  <pl-answer>Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+SCORE_ON_ANSWER_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" order="fixed">
+  <pl-answer score="0.5">Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
+FEEDBACK_ON_ANSWER_WITH_NO_BUILTIN_GRADING_HTML = """
+<pl-multiple-choice answers-name="survey" builtin-grading="false" order="fixed">
+  <pl-answer feedback="Nice try">Option A</pl-answer>
+  <pl-answer>Option B</pl-answer>
+</pl-multiple-choice>
+"""
+
 
 def _make_question_data() -> dict[str, Any]:
     return {
@@ -64,12 +106,13 @@ def _prepare_with_defaults(
     incorrect: list[str],
     *,
     builtin_grading: bool = True,
+    number_answers: int | None = None,
 ) -> list[Any]:
     correct_answers, incorrect_answers = make_answers(correct, incorrect)
     return prepare_answers_to_display(
         correct_answers,
         incorrect_answers,
-        number_answers=None,
+        number_answers=number_answers,
         aota=AotaNotaType.FALSE,
         nota=AotaNotaType.FALSE,
         aota_feedback=None,
@@ -106,6 +149,14 @@ def test_builtin_grading_true_is_default_behavior() -> None:
         _prepare_with_defaults([], ["A", "B"], builtin_grading=True)
 
 
+def test_number_answers_exceeding_total_with_no_correct() -> None:
+    """Test that number-answers larger than available answers doesn't cause INTERNAL ERROR."""
+    result = _prepare_with_defaults(
+        [], ["A", "B", "C"], builtin_grading=False, number_answers=4
+    )
+    assert len(result) == 3
+
+
 def test_prepare_no_correct_answers_from_html() -> None:
     """Test that prepare() succeeds with builtin-grading='false' and no correct answers."""
     data = _make_question_data()
@@ -122,6 +173,50 @@ def test_prepare_no_correct_answers_default_raises() -> None:
         pl_multiple_choice.prepare(NO_CORRECT_DEFAULT_ELEMENT_HTML, data)
 
 
+def test_prepare_rejects_weight_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when weight is set alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"weight.*should not be set"):
+        pl_multiple_choice.prepare(WEIGHT_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_rejects_aota_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when all-of-the-above is set alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"all-of-the-above.*should not be set"):
+        pl_multiple_choice.prepare(AOTA_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_rejects_nota_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when none-of-the-above is set alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"none-of-the-above.*should not be set"):
+        pl_multiple_choice.prepare(NOTA_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_rejects_hide_score_badge_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when hide-score-badge is set alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"hide-score-badge.*should not be set"):
+        pl_multiple_choice.prepare(HIDE_SCORE_BADGE_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_rejects_score_on_answer_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when score is set on pl-answer alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"score.*should not be set"):
+        pl_multiple_choice.prepare(SCORE_ON_ANSWER_WITH_NO_BUILTIN_GRADING_HTML, data)
+
+
+def test_prepare_rejects_feedback_on_answer_with_no_builtin_grading() -> None:
+    """Test that prepare() raises when feedback is set on pl-answer alongside builtin-grading='false'."""
+    data = _make_question_data()
+    with pytest.raises(ValueError, match=r"feedback.*should not be set"):
+        pl_multiple_choice.prepare(
+            FEEDBACK_ON_ANSWER_WITH_NO_BUILTIN_GRADING_HTML, data
+        )
+
+
 def test_grade_skipped_when_builtin_grading_false() -> None:
     """Test that grade() is a no-op when builtin-grading='false'."""
     data = _make_question_data()
@@ -133,8 +228,8 @@ def test_grade_skipped_when_builtin_grading_false() -> None:
     assert "survey" not in data["partial_scores"]
 
 
-def test_render_answer_panel_empty_when_no_correct() -> None:
-    """Test that the answer panel renders empty when no correct answer exists."""
+def test_render_answer_panel_empty_when_builtin_grading_false() -> None:
+    """Test that the answer panel always renders empty when builtin-grading='false'."""
     data = _make_question_data()
     pl_multiple_choice.prepare(NO_CORRECT_ELEMENT_HTML, data)
     data["panel"] = "answer"
@@ -145,13 +240,43 @@ def test_render_answer_panel_empty_when_no_correct() -> None:
     assert result == ""
 
 
-def test_test_skipped_when_builtin_grading_false() -> None:
-    """Test that test() is a no-op when builtin-grading='false'."""
+def test_render_answer_panel_empty_even_with_correct_answer() -> None:
+    """Test that the answer panel is empty when builtin-grading='false' even if a correct answer exists."""
+    html = """
+    <pl-multiple-choice answers-name="q" builtin-grading="false" order="fixed">
+      <pl-answer correct="true">Right</pl-answer>
+      <pl-answer>Wrong</pl-answer>
+    </pl-multiple-choice>
+    """
+    data = _make_question_data()
+    pl_multiple_choice.prepare(html, data)
+    assert data["correct_answers"]["q"] is not None
+
+    data["panel"] = "answer"
+    data["editable"] = False
+    result = pl_multiple_choice.render(html, data)
+    assert result == ""
+
+
+def test_test_submits_valid_answer_when_builtin_grading_false() -> None:
+    """Test that test() submits a valid answer without setting scores when builtin-grading='false'."""
     data = _make_question_data()
     pl_multiple_choice.prepare(NO_CORRECT_ELEMENT_HTML, data)
     data["test_type"] = "correct"
 
     pl_multiple_choice.test(NO_CORRECT_ELEMENT_HTML, data)
 
-    assert "survey" not in data["raw_submitted_answers"]
+    assert "survey" in data["raw_submitted_answers"]
     assert "survey" not in data["partial_scores"]
+
+
+def test_test_invalid_submission_when_builtin_grading_false() -> None:
+    """Test that test() handles invalid submission correctly when builtin-grading='false'."""
+    data = _make_question_data()
+    pl_multiple_choice.prepare(NO_CORRECT_ELEMENT_HTML, data)
+    data["test_type"] = "invalid"
+
+    pl_multiple_choice.test(NO_CORRECT_ELEMENT_HTML, data)
+
+    assert data["raw_submitted_answers"]["survey"] == "0"
+    assert "survey" in data["format_errors"]
