@@ -1114,10 +1114,11 @@ export function validateAccessControlRules({
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
-    // The mechanism check must run before the cross-field check: both target
-    // the same questionVisibility path, but the mechanism error is more
+    // Run the "no completion mechanism" check before the cross-field check,
+    // matching the form-side validator. The mechanism error is more
     // fundamental (cross-field consistency is moot when there's no completion
-    // mechanism at all). Matches the order in the form-side validator.
+    // mechanism at all), so surface it first. Errors here are concatenated
+    // rather than deduped by path, so this is purely presentational.
     ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
     ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
