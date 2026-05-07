@@ -8,6 +8,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -15,7 +16,6 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -81,7 +81,7 @@ const updateAssessment = t.procedure
     const infoAssessmentPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       assessment.tid!,
       'infoAssessment.json',
@@ -105,7 +105,7 @@ const updateAssessment = t.procedure
     const rootPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       assessment.tid!,
     );
@@ -266,7 +266,7 @@ const updateAssessment = t.procedure
     const newInfoAssessmentPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'assessments',
       tid_new,
       'infoAssessment.json',

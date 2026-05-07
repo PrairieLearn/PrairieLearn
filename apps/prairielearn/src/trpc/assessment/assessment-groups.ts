@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -9,7 +8,7 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   cascadeRoleRenamesToZones,
   normalizeGroupSettings,
@@ -26,15 +25,26 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
   selectGroupById,
   selectGroupConfigForAssessment,
+  selectGroupsForConfig,
   selectNotAssignedForAssessment,
+  selectUidsNotInGroup,
 } from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
-import { requireCourseInstancePermissionEdit, t } from './init.js';
+import {
+  type createContext,
+  requireCourseInstancePermissionEdit,
+  requireCourseInstancePermissionView,
+  requireCoursePermissionEdit,
+  t,
+} from './init.js';
+
+type AssessmentTrpcCtx = ReturnType<typeof createContext>;
 
 const MAX_UIDS = 50;
 
@@ -43,6 +53,7 @@ export interface AssessmentGroupsError {
   EditGroup: { code: 'GROUP_OPERATION_FAILED' };
   DeleteGroup: { code: 'GROUP_OPERATION_FAILED' };
   EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -50,7 +61,7 @@ const addGroup = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_name: z.string(),
+      groupName: z.string(),
       uids: z.string(),
     }),
   )
@@ -62,7 +73,7 @@ const addGroup = t.procedure
       const group = await createGroup({
         course_instance,
         assessment,
-        group_name: input.group_name || null,
+        group_name: input.groupName || null,
         uids: parseUniqueValuesFromString(input.uids, MAX_UIDS),
         authn_user_id: authn_user.id,
         authzData: authz_data,
@@ -92,7 +103,7 @@ const editGroup = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_id: IdSchema,
+      groupId: IdSchema,
       uids: z.string(),
     }),
   )
@@ -102,7 +113,7 @@ const editGroup = t.procedure
     const desiredUids = parseUniqueValuesFromString(input.uids, MAX_UIDS);
 
     const currentGroup = await selectGroupById({
-      group_id: input.group_id,
+      group_id: input.groupId,
       assessment_id: assessment.id,
     });
     const desiredSet = new Set(desiredUids);
@@ -115,7 +126,7 @@ const editGroup = t.procedure
     await runInTransactionAsync(async () => {
       for (const user of toRemove) {
         try {
-          await leaveGroup(assessment.id, user.id, authn_user.id, input.group_id);
+          await leaveGroup(assessment.id, user.id, authn_user.id, input.groupId);
         } catch (err) {
           if (err instanceof GroupOperationError || err instanceof HttpStatusError) {
             failures.push({ uid: user.uid, message: err.message });
@@ -130,7 +141,7 @@ const editGroup = t.procedure
           await addUserToGroup({
             course_instance,
             assessment,
-            group_id: input.group_id,
+            group_id: input.groupId,
             uid,
             authn_user_id: authn_user.id,
             enforceGroupSize: false,
@@ -147,7 +158,7 @@ const editGroup = t.procedure
     });
 
     const [group, notAssigned] = await Promise.all([
-      selectGroupById({ group_id: input.group_id, assessment_id: assessment.id }),
+      selectGroupById({ group_id: input.groupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
         assessment_id: assessment.id,
         course_instance_id: course_instance.id,
@@ -160,14 +171,14 @@ const deleteGroupProcedure = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      group_id: IdSchema,
+      groupId: IdSchema,
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const { assessment, authn_user, course_instance } = ctx;
 
     try {
-      await deleteGroup(assessment.id, input.group_id, authn_user.id);
+      await deleteGroup(assessment.id, input.groupId, authn_user.id);
     } catch (err) {
       if (err instanceof GroupOperationError) {
         throwAppError<AssessmentGroupsError['DeleteGroup']>({
@@ -197,59 +208,99 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
   return { notAssigned };
 });
 
-const enableGroupWork = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .input(z.object({ origHash: z.string().nullable() }))
-  .mutation(async ({ input, ctx }) => {
-    const { origHash } = input;
-    const assessmentDir = path.join(
-      ctx.course.path,
-      'courseInstances',
-      ctx.course_instance.short_name!,
-      'assessments',
-      ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+interface SyncJobFailedError {
+  code: 'SYNC_JOB_FAILED';
+  jobSequenceId: string;
+}
 
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
-      applyChanges: (json) => {
-        const existing = normalizeGroupSettings(json);
-        json.groups = existing
-          ? serializeGroupSettings(existing, { enabled: true })
-          : { enabled: true };
-        stripLegacyGroupKeys(json);
-        return json;
-      },
-      jsonPath: assessmentPath,
-      conflictCheck: {
-        origHash,
-        scope: (json) => json.groups ?? null,
-      },
-      locals: {
-        authz_data: ctx.authz_data,
-        course: ctx.course,
-        user: ctx.authn_user,
-      },
-      container: {
-        rootPath: assessmentDir,
-        invalidRootPaths: [],
-      },
-    });
+/**
+ * Saves the `groups` block of an assessment's `infoAssessment.json`. Centralizes
+ * the boilerplate shared by `enableGroupWork` / `disableGroupWork` /
+ * `updateGroupConfig`: assessment dir/path construction, the `saveJsonFile`
+ * args, and conflict / sync-failed error mapping.
+ */
+async function saveAssessmentGroupsBlock({
+  ctx,
+  origHash,
+  applyChanges,
+  syncFailedMessage,
+  noInstancesMessage,
+}: {
+  ctx: AssessmentTrpcCtx;
+  origHash: string | null;
+  applyChanges: (json: AssessmentJsonInput) => AssessmentJsonInput;
+  syncFailedMessage: string;
+  /**
+   * If provided, the save is rejected with this message when the assessment
+   * already has instances. Omit for the update-config path, which is allowed
+   * to write while instances exist.
+   */
+  noInstancesMessage?: string;
+}): Promise<{ newHash: string; jsonData: AssessmentJsonInput }> {
+  if (noInstancesMessage && (await selectAssessmentHasInstances(ctx.assessment.id))) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: noInstancesMessage });
+  }
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<AssessmentGroupsError['EnableGroupWork']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to enable group work.',
-        jobSequenceId: saveResult.jobSequenceId,
+  const assessmentDir = path.join(
+    ctx.course.path,
+    'courseInstances',
+    ctx.course_instance.short_name,
+    'assessments',
+    ctx.assessment.tid!,
+  );
+  const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+  const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    applyChanges,
+    jsonPath: assessmentPath,
+    conflictCheck: {
+      origHash,
+      scope: (json) => json.groups ?? {},
+    },
+    locals: {
+      authz_data: ctx.authz_data,
+      course: ctx.course,
+      user: ctx.authn_user,
+    },
+    container: {
+      rootPath: assessmentDir,
+      invalidRootPaths: [],
+    },
+  });
+
+  if (!saveResult.success) {
+    if (saveResult.reason === 'conflict') {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The group configuration has been modified since you loaded this page. Please refresh and try again.',
       });
     }
+    throwAppError<SyncJobFailedError>({
+      code: 'SYNC_JOB_FAILED',
+      message: syncFailedMessage,
+      jobSequenceId: saveResult.jobSequenceId,
+    });
+  }
+
+  return { newHash: saveResult.newHash, jsonData: saveResult.jsonData };
+}
+
+const enableGroupWork = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.object({ origHash: z.string().nullable() }))
+  .mutation(async ({ input, ctx }) => {
+    const { newHash, jsonData } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
+      applyChanges: (json) => {
+        json.groups = {};
+        return stripLegacyGroupKeys(json);
+      },
+      syncFailedMessage: 'Failed to enable group work.',
+      noInstancesMessage:
+        'Cannot enable group work while students have assessment instances. Remove their progress from the Students tab first.',
+    });
 
     const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
     if (!groupConfig) {
@@ -259,16 +310,25 @@ const enableGroupWork = t.procedure
       });
     }
 
-    const savedJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
+    const [groups, notAssigned] = await Promise.all([
+      selectGroupsForConfig(groupConfig.id),
+      selectUidsNotInGroup({
+        group_config_id: groupConfig.id,
+        course_instance_id: groupConfig.course_instance_id,
+      }),
+    ]);
+
     return {
-      origHash: saveResult.newHash,
+      origHash: newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
-      groupSettingsDefaults: normalizeGroupSettings(savedJson),
+      groupSettingsDefaults: normalizeGroupSettings(jsonData),
+      groups,
+      notAssigned,
     };
   });
 
 const updateGroupConfig = t.procedure
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(
     z.object({
       origHash: z.string().nullable(),
@@ -292,8 +352,6 @@ const updateGroupConfig = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const { origHash } = input;
-
     if (
       input.minMembers != null &&
       input.maxMembers != null &&
@@ -336,79 +394,84 @@ const updateGroupConfig = t.procedure
       }
     }
 
-    const assessmentDir = path.join(
-      ctx.course.path,
-      'courseInstances',
-      ctx.course_instance.short_name!,
-      'assessments',
-      ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    const { newHash } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
       applyChanges: (json) => {
         cascadeRoleRenamesToZones(json, roles);
-        json.groups = serializeGroupSettings(
-          {
-            studentPermissions: {
-              canCreateGroup: input.canCreateGroup,
-              canJoinGroup: input.canJoinGroup,
-              canLeaveGroup: input.canLeaveGroup,
-              canNameGroup: input.canNameGroup,
-            },
-            minMembers: input.minMembers,
-            maxMembers: input.maxMembers,
-            roles,
+        json.groups = serializeGroupSettings({
+          studentPermissions: {
+            canCreateGroup: input.canCreateGroup,
+            canJoinGroup: input.canJoinGroup,
+            canLeaveGroup: input.canLeaveGroup,
+            canNameGroup: input.canNameGroup,
           },
-          { enabled: true },
-        );
-        stripLegacyGroupKeys(json);
-        return json;
+          minMembers: input.minMembers,
+          maxMembers: input.maxMembers,
+          roles,
+        });
+        return stripLegacyGroupKeys(json);
       },
-      jsonPath: assessmentPath,
-      conflictCheck: {
-        origHash,
-        scope: (json) => json.groups ?? null,
-      },
-      locals: {
-        authz_data: ctx.authz_data,
-        course: ctx.course,
-        user: ctx.authn_user,
-      },
-      container: {
-        rootPath: assessmentDir,
-        invalidRootPaths: [],
-      },
+      syncFailedMessage: 'Failed to update group configuration.',
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<AssessmentGroupsError['UpdateGroupConfig']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to update group configuration.',
-        jobSequenceId: saveResult.jobSequenceId,
+    return { origHash: newHash };
+  });
+
+const disableGroupWork = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.object({ origHash: z.string().nullable() }))
+  .mutation(async ({ input, ctx }) => {
+    if (await selectAssessmentHasInstances(ctx.assessment.id)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Cannot disable group work while students have assessment instances. Remove their progress from the Students tab first.',
       });
     }
 
-    return { origHash: saveResult.newHash };
+    await deleteAllGroups(ctx.assessment.id, ctx.authn_user.id);
+
+    const { newHash } = await saveAssessmentGroupsBlock({
+      ctx,
+      origHash: input.origHash,
+      applyChanges: (json) => {
+        delete json.groups;
+        return stripLegacyGroupKeys(json);
+      },
+      syncFailedMessage: 'Failed to disable group work.',
+    });
+
+    return { origHash: newHash };
+  });
+
+const refreshGroups = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .mutation(async ({ ctx }) => {
+    const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+    if (!groupConfig) {
+      return { groups: [], notAssigned: [] };
+    }
+    const [groups, notAssigned] = await Promise.all([
+      selectGroupsForConfig(groupConfig.id),
+      selectUidsNotInGroup({
+        group_config_id: groupConfig.id,
+        course_instance_id: groupConfig.course_instance_id,
+      }),
+    ]);
+    return { groups, notAssigned };
   });
 
 const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      min_group_size: z.number().int().min(1),
-      max_group_size: z.number().int().min(2),
+      minGroupSize: z.number().int().min(1),
+      maxGroupSize: z.number().int().min(1),
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    if (input.min_group_size > input.max_group_size) {
+    if (input.minGroupSize > input.maxGroupSize) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Minimum group size cannot be greater than maximum group size.',
@@ -420,8 +483,8 @@ const randomizeGroups = t.procedure
       assessment: ctx.assessment,
       user_id: ctx.authn_user.id,
       authn_user_id: ctx.authn_user.id,
-      min_group_size: input.min_group_size,
-      max_group_size: input.max_group_size,
+      min_group_size: input.minGroupSize,
+      max_group_size: input.maxGroupSize,
       authzData: ctx.authz_data,
     });
     return { jobSequenceId };
@@ -433,6 +496,8 @@ export const assessmentGroupsRouter = t.router({
   deleteGroup: deleteGroupProcedure,
   deleteAll,
   enableGroupWork,
+  disableGroupWork,
   updateGroupConfig,
   randomizeGroups,
+  refreshGroups,
 });

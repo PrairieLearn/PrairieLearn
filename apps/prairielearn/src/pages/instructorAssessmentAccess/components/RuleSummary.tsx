@@ -9,24 +9,24 @@ import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
 
-type RuleData = MainRuleData | OverrideData;
+type RuleData = DefaultRuleData | OverrideData;
 
 /** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<MainRuleData> | FieldErrors<OverrideData>;
+export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
 
-function isMainRuleData(rule: RuleData): rule is MainRuleData {
+function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
   return 'dateControlEnabled' in rule;
 }
 
 function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isMainRuleData(rule)) return true;
+  if (isDefaultRuleData(rule)) return true;
   return rule.overriddenFields.includes(fieldName);
 }
 
@@ -37,8 +37,8 @@ interface DateTableRow {
   error?: string;
 }
 
-export function generateMainRuleDateTableRows(
-  rule: MainRuleData,
+export function generateDefaultRuleDateTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
 ): DateTableRow[] {
@@ -46,8 +46,9 @@ export function generateMainRuleDateTableRows(
 
   const rows: DateTableRow[] = [];
 
-  const releaseDate = rule.releaseDate;
-  const dueDate = rule.dueDate;
+  const releaseDate = rule.release.date;
+  const dueDate = rule.due.date;
+  const dueCredit = rule.due.credit ?? 100;
   const earlyDeadlines = rule.earlyDeadlines;
   const lateDeadlines = rule.lateDeadlines;
 
@@ -89,6 +90,10 @@ export function generateMainRuleDateTableRows(
     });
   });
 
+  const dueDateErr = formErrors?.due?.date?.message;
+  const dueCreditErr = formErrors?.due?.credit?.message;
+  const dueError = [dueDateErr, dueCreditErr].filter(Boolean).join('; ') || undefined;
+
   if (dueDate) {
     rows.push({
       date: (
@@ -100,22 +105,23 @@ export function generateMainRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: '100%',
-      error: formErrors?.dueDate?.message,
+      credit: `${dueCredit}%`,
+      error: dueError,
     });
   } else if (dueDate === null) {
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: '100%',
+      credit: `${dueCredit}%`,
+      error: dueError,
     });
   } else {
     // dueDate is an empty string — "Due on date" selected but no date entered
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: '100%',
-      error: formErrors?.dueDate?.message,
+      credit: `${dueCredit}%`,
+      error: dueError,
     });
   }
 
@@ -140,7 +146,7 @@ export function generateMainRuleDateTableRows(
   });
 
   // Show "After last deadline" only when there is a deadline it can apply to.
-  const hasAnyDeadline = rule.dueDate || rule.lateDeadlines.some((d) => d.date);
+  const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
@@ -173,8 +179,8 @@ export function generateRuleSummary(
   const items: SummaryItem[] = [];
 
   // Show "before release" chip when release date is in the future.
-  if (isMainRuleData(rule) && rule.dateControlEnabled && rule.releaseDate) {
-    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.releaseDate);
+  if (isDefaultRuleData(rule) && rule.dateControlEnabled && rule.release.date) {
+    const releasePlainDateTime = Temporal.PlainDateTime.from(rule.release.date);
     const nowInTimezone = Temporal.Now.plainDateTimeISO(displayTimezone);
 
     if (Temporal.PlainDateTime.compare(releasePlainDateTime, nowInTimezone) > 0) {
@@ -212,11 +218,11 @@ export function generateRuleSummary(
     }
   }
 
-  if (isMainRuleData(rule) && rule.prairieTestExams.length > 0) {
-    const mainErrors = formErrors as FieldErrors<MainRuleData> | undefined;
+  if (isDefaultRuleData(rule) && rule.prairieTestExams.length > 0) {
+    const defaultRuleErrors = formErrors as FieldErrors<DefaultRuleData> | undefined;
     const examErrors: string[] = [];
     for (let i = 0; i < rule.prairieTestExams.length; i++) {
-      const msg = mainErrors?.prairieTestExams?.[i]?.examUuid?.message;
+      const msg = defaultRuleErrors?.prairieTestExams?.[i]?.examUuid?.message;
       if (msg) examErrors.push(`Exam ${i + 1}: ${msg}`);
     }
     const error = examErrors.length > 0 ? examErrors.join('; ') : undefined;
@@ -230,9 +236,9 @@ export function generateRuleSummary(
     });
   }
 
-  const isMain = isMainRuleData(rule);
-  const hasDateControl = isMain ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isMain ? rule.prairieTestExams.length > 0 : false;
+  const isDefault = isDefaultRuleData(rule);
+  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
+  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
@@ -394,14 +400,14 @@ function generateOverrideFieldItems(
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
 
-  if (overriddenFields.has('releaseDate')) {
+  if (overriddenFields.has('release')) {
     // A null/empty release date means "not released" (resolver returns active: false).
     // TODO: enforce non-null release dates on overrides so this case goes away.
     items.push({
       label: 'Release date',
-      value: rule.releaseDate ? (
+      value: rule.release.date ? (
         <FriendlyDate
-          date={Temporal.PlainDateTime.from(rule.releaseDate)}
+          date={Temporal.PlainDateTime.from(rule.release.date)}
           timezone={displayTimezone}
           options={{ includeTz: false }}
           tooltip
@@ -429,20 +435,26 @@ function generateOverrideFieldItems(
     );
   }
 
-  if (overriddenFields.has('dueDate')) {
+  if (overriddenFields.has('due')) {
+    const creditLabel = rule.due.credit != null ? ` (${rule.due.credit}%)` : '';
+    const dueDateErr = formErrors?.due?.date?.message;
+    const dueCreditErr = formErrors?.due?.credit?.message;
     items.push({
       label: 'Due date',
-      value: rule.dueDate ? (
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(rule.dueDate)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-          tooltip
-        />
+      value: rule.due.date ? (
+        <>
+          <FriendlyDate
+            date={Temporal.PlainDateTime.from(rule.due.date)}
+            timezone={displayTimezone}
+            options={{ includeTz: false }}
+            tooltip
+          />
+          {creditLabel}
+        </>
       ) : (
         'No due date'
       ),
-      error: formErrors?.dueDate?.message,
+      error: [dueDateErr, dueCreditErr].filter(Boolean).join('; ') || undefined,
     });
   }
 

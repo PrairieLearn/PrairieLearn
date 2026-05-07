@@ -8,7 +8,12 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { computeScopedJsonHash, saveJsonFile } from '../../lib/editorUtil.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
+import {
+  MultiEditor,
+  prepareAccessControlLabelRewriteEditors,
+  prepareJsonFileEditor,
+} from '../../lib/editors.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -65,7 +70,7 @@ const list = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -91,7 +96,7 @@ const listDefinitions = t.procedure
     const courseInstanceJsonPath = path.join(
       course.path,
       'courseInstances',
-      course_instance.short_name!,
+      course_instance.short_name,
       'infoCourseInstance.json',
     );
     const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -146,8 +151,16 @@ const upsert = t.procedure
       : null;
 
     const labelUuid = existingLabel?.uuid ?? crypto.randomUUID();
+    const isRename = existingLabel != null && existingLabel.name !== name;
 
-    const saveResult = await saveJsonFile<CourseInstanceJsonInput>({
+    const courseInstanceJsonPath = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name,
+      'infoCourseInstance.json',
+    );
+
+    const prepared = await prepareJsonFileEditor<CourseInstanceJsonInput>({
       applyChanges: (jsonContents) => {
         const studentLabels = jsonContents.studentLabels ?? [];
 
@@ -179,13 +192,8 @@ const upsert = t.procedure
         jsonContents.studentLabels = studentLabels;
         return jsonContents;
       },
-      jsonPath: path.join(
-        course.path,
-        'courseInstances',
-        course_instance.short_name!,
-        'infoCourseInstance.json',
-      ),
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      jsonPath: courseInstanceJsonPath,
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],
@@ -193,23 +201,48 @@ const upsert = t.procedure
       locals,
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The file has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
+    if (!prepared.success) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The file has been modified since you loaded this page. Please refresh and try again.',
+      });
+    }
+
+    const assessmentEditors = isRename
+      ? await prepareAccessControlLabelRewriteEditors({
+          course,
+          courseInstanceId: course_instance.id,
+          labelName: existingLabel.name,
+          // Dedupe in case an assessment already had an orphaned entry for the new name.
+          transform: (labels) => [
+            ...new Set(labels.map((l) => (l === existingLabel.name ? name : l))),
+          ],
+          locals,
+        })
+      : [];
+
+    const editor = new MultiEditor(
+      {
+        locals,
+        description: `${course_instance.short_name}: ${existingLabel ? 'Update' : 'Create'} student label ${name}`,
+      },
+      [prepared.editor, ...assessmentEditors],
+    );
+
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
       throwAppError<StudentLabelError>({
         code: 'SYNC_JOB_FAILED',
         message: 'Failed to save course instance configuration',
-        jobSequenceId: saveResult.jobSequenceId,
+        jobSequenceId: serverJob.jobSequenceId,
       });
     }
 
     if (rawUids === undefined) {
-      return { origHash: saveResult.newHash };
+      return { origHash: prepared.newHash };
     }
 
     const uids = [...new Set(rawUids)];
@@ -272,7 +305,7 @@ const upsert = t.procedure
         : 'The label was created, but assigning students failed. Edit the label to retry.';
     }
 
-    return { origHash: saveResult.newHash, enrollmentWarning };
+    return { origHash: prepared.newHash, enrollmentWarning };
   });
 
 const destroy = t.procedure
@@ -293,7 +326,14 @@ const destroy = t.procedure
       courseInstance: course_instance,
     });
 
-    const saveResult = await saveJsonFile<CourseInstanceJsonInput>({
+    const courseInstanceJsonPath = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name,
+      'infoCourseInstance.json',
+    );
+
+    const prepared = await prepareJsonFileEditor<CourseInstanceJsonInput>({
       applyChanges: (jsonContents) => {
         const studentLabels = jsonContents.studentLabels ?? [];
         const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
@@ -307,13 +347,8 @@ const destroy = t.procedure
         jsonContents.studentLabels = studentLabels;
         return jsonContents;
       },
-      jsonPath: path.join(
-        course.path,
-        'courseInstances',
-        course_instance.short_name!,
-        'infoCourseInstance.json',
-      ),
-      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
+      jsonPath: courseInstanceJsonPath,
+      container: getCourseInstanceContainer(course.path, course_instance.short_name),
       conflictCheck: {
         origHash,
         scope: (json) => json.studentLabels ?? [],
@@ -321,22 +356,42 @@ const destroy = t.procedure
       locals,
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The file has been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
-      throwAppError<StudentLabelError>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to save course instance configuration',
-        jobSequenceId: saveResult.jobSequenceId,
+    if (!prepared.success) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The file has been modified since you loaded this page. Please refresh and try again.',
       });
     }
 
-    return { origHash: saveResult.newHash };
+    const assessmentEditors = await prepareAccessControlLabelRewriteEditors({
+      course,
+      courseInstanceId: course_instance.id,
+      labelName: label.name,
+      transform: (labels) => labels.filter((l) => l !== label.name),
+      locals,
+    });
+
+    const editor = new MultiEditor(
+      {
+        locals,
+        description: `${course_instance.short_name}: Delete student label ${label.name}`,
+      },
+      [prepared.editor, ...assessmentEditors],
+    );
+
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<StudentLabelError>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to save course instance configuration',
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+
+    return { origHash: prepared.newHash };
   });
 
 const batchAdd = t.procedure

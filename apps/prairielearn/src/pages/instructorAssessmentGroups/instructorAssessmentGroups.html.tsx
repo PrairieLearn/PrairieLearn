@@ -13,24 +13,36 @@ import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
 import { GroupSettingsCard } from './components/GroupSettingsCard.js';
+import { GroupWorkInstancesWarning } from './components/GroupWorkInstancesWarning.js';
 import { GroupsCard } from './components/GroupsCard.js';
+import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
 
 function NoGroupConfigCard({
   origHash,
   canEdit,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
   onEnable,
 }: {
   origHash: string | null;
   canEdit: boolean;
+  hasAssessmentInstances: boolean;
+  assessmentStudentsUrl: string;
   onEnable: (result: {
     origHash: string;
     groupConfig: StaffGroupConfig;
     groupSettingsDefaults: GroupSettingsFormValues | null;
+    groups: GroupUsersRow[];
+    notAssigned: string[];
   }) => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
+
+  const description = canEdit
+    ? 'Enable group work to allow students to collaborate and submit as teams.'
+    : 'Group work is not enabled for this assessment.';
 
   return (
     <div className="container py-3">
@@ -43,16 +55,19 @@ function NoGroupConfigCard({
           )}
           <i className="bi bi-people fs-1 mb-2" />
           <h2 className="h5">This is not a group assessment.</h2>
-          <div className="text-muted">
-            {canEdit
-              ? 'Enable group work to allow students to collaborate and submit as teams.'
-              : 'Group work is not enabled for this assessment.'}
-          </div>
+          <div className="text-muted">{description}</div>
+          {canEdit && hasAssessmentInstances && (
+            <GroupWorkInstancesWarning
+              action="enabling"
+              assessmentStudentsUrl={assessmentStudentsUrl}
+              className="mt-3 mb-0"
+            />
+          )}
           {canEdit && (
             <button
               type="button"
               className="btn btn-outline-primary mt-3"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || hasAssessmentInstances}
               onClick={() => mutation.mutate({ origHash }, { onSuccess: onEnable })}
             >
               Enable group work
@@ -74,6 +89,8 @@ interface InstructorAssessmentGroupsProps {
   isDevMode: boolean;
   origHash: string | null;
   groupSettingsDefaults: GroupSettingsFormValues | null;
+  hasAssessmentInstances: boolean;
+  assessmentStudentsUrl: string;
 }
 
 export function InstructorAssessmentGroups({
@@ -86,6 +103,8 @@ export function InstructorAssessmentGroups({
   isDevMode,
   origHash,
   groupSettingsDefaults,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -107,6 +126,8 @@ export function InstructorAssessmentGroups({
           notAssigned={notAssigned}
           origHash={origHash}
           groupSettingsDefaults={groupSettingsDefaults}
+          hasAssessmentInstances={hasAssessmentInstances}
+          assessmentStudentsUrl={assessmentStudentsUrl}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -119,21 +140,26 @@ function InstructorAssessmentGroupsInner({
   pageContext,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
-  groups,
-  notAssigned,
+  groups: initialGroups,
+  notAssigned: initialNotAssigned,
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
+  hasAssessmentInstances,
+  assessmentStudentsUrl,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
-  const canEdit =
-    (authz_data.has_course_instance_permission_edit ?? false) && !course.example_course;
+  const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
+  const canEditCourseInstance =
+    authz_data.has_course_instance_permission_edit && !course.example_course;
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
-  const [groupMin, setGroupMin] = useState(
+  const [groups, setGroups] = useState(initialGroups);
+  const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
+  const [minGroupSize, setMinGroupSize] = useState(
     groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
   );
-  const [groupMax, setGroupMax] = useState(
+  const [maxGroupSize, setMaxGroupSize] = useState(
     groupSettingsDefaults?.maxMembers ?? groupConfigInfo?.maximum ?? 4,
   );
 
@@ -141,11 +167,21 @@ function InstructorAssessmentGroupsInner({
     return (
       <NoGroupConfigCard
         origHash={origHash}
-        canEdit={canEdit}
-        onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
+        canEdit={canEditCourse}
+        hasAssessmentInstances={hasAssessmentInstances}
+        assessmentStudentsUrl={assessmentStudentsUrl}
+        onEnable={({
+          origHash: newHash,
+          groupConfig,
+          groupSettingsDefaults: newDefaults,
+          groups: newGroups,
+          notAssigned: newNotAssigned,
+        }) => {
           setOrigHash(newHash);
           setGroupConfigInfo(groupConfig);
           setGroupSettingsDefaults(newDefaults);
+          setGroups(newGroups);
+          setNotAssigned(newNotAssigned);
         }}
       />
     );
@@ -157,11 +193,11 @@ function InstructorAssessmentGroupsInner({
         groupConfigInfo={groupConfigInfo}
         groupSettingsDefaults={groupSettingsDefaults}
         origHash={origHash}
-        canEdit={canEdit}
+        canEdit={canEditCourse}
         onOrigHashChange={setOrigHash}
         onGroupSizeSaved={(min, max) => {
-          setGroupMin(min ?? 2);
-          setGroupMax(max ?? 4);
+          setMinGroupSize(min ?? 2);
+          setMaxGroupSize(max ?? 4);
         }}
       />
       <GroupsCard
@@ -172,10 +208,24 @@ function InstructorAssessmentGroupsInner({
         assessmentSet={assessmentSet}
         courseInstanceId={pageContext.course_instance.id}
         csrfToken={pageContext.__csrf_token}
-        canEdit={canEdit}
-        groupMin={groupMin}
-        groupMax={groupMax}
+        canEdit={canEditCourseInstance}
+        minGroupSize={minGroupSize}
+        maxGroupSize={maxGroupSize}
       />
+      {canEditCourse && (
+        <ManageGroupWorkCard
+          origHash={origHash}
+          hasAssessmentInstances={hasAssessmentInstances}
+          assessmentStudentsUrl={assessmentStudentsUrl}
+          onDisable={({ origHash: newHash }) => {
+            setOrigHash(newHash);
+            setGroupSettingsDefaults(null);
+            setGroupConfigInfo(undefined);
+            setGroups([]);
+            setNotAssigned([]);
+          }}
+        />
+      )}
     </div>
   );
 }

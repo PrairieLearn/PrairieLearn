@@ -10,7 +10,11 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
-import { getAssessmentTrpcUrl, getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
+import {
+  getAssessmentStudentsUrl,
+  getAssessmentTrpcUrl,
+  getCourseInstanceJobSequenceUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
 import { uploadInstanceGroups } from '../../lib/group-update.js';
@@ -18,6 +22,7 @@ import { computeStableHash } from '../../lib/json.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
   selectGroupConfigForAssessment,
   selectGroupsForConfig,
@@ -35,7 +40,7 @@ function getAssessmentPath(
   return path.join(
     resLocals.course.path,
     'courseInstances',
-    resLocals.course_instance.short_name!,
+    resLocals.course_instance.short_name,
     'assessments',
     resLocals.assessment.tid!,
     'infoAssessment.json',
@@ -89,11 +94,17 @@ router.get(
     let groupSettingsDefaults: GroupSettingsFormValues | null = null;
     try {
       const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
-      origHash = computeStableHash(rawJson.groups ?? null);
+      origHash = computeStableHash(rawJson.groups ?? {});
       groupSettingsDefaults = normalizeGroupSettings(rawJson);
     } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
     }
+
+    const hasAssessmentInstances = await selectAssessmentHasInstances(assessment.id);
+    const assessmentStudentsUrl = getAssessmentStudentsUrl({
+      urlPrefix: res.locals.urlPrefix,
+      assessmentId: assessment.id,
+    });
 
     res.send(
       PageLayout({
@@ -119,6 +130,8 @@ router.get(
               isDevMode={config.devMode}
               origHash={origHash}
               groupSettingsDefaults={groupSettingsDefaults}
+              hasAssessmentInstances={hasAssessmentInstances}
+              assessmentStudentsUrl={assessmentStudentsUrl}
             />
           </Hydrate>
         ),

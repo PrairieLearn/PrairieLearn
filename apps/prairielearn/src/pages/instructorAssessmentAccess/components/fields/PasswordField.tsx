@@ -3,10 +3,30 @@ import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
-function PasswordInput({
+function PasswordToggle({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  idPrefix: string;
+}) {
+  return (
+    <ToggleTitle
+      id={`${idPrefix}-password-enabled`}
+      label="Password"
+      checked={value !== null}
+      onChange={(checked) => onChange(checked ? '' : null)}
+    />
+  );
+}
+
+function PasswordDetails({
   value,
   onChange,
   idPrefix,
@@ -20,14 +40,7 @@ function PasswordInput({
   const errorId = `${idPrefix}-password-error`;
 
   return (
-    <Form.Group>
-      <Form.Check
-        type="checkbox"
-        id={`${idPrefix}-password-enabled`}
-        label={<strong>Password</strong>}
-        checked={value !== null}
-        onChange={({ currentTarget }) => onChange(currentTarget.checked ? '' : null)}
-      />
+    <>
       {value !== null && (
         <>
           <InputGroup className="mt-2">
@@ -65,22 +78,27 @@ function PasswordInput({
           ? 'This password will be required to start the assessment.'
           : 'Require a password in order to start the assessment.'}
       </Form.Text>
+    </>
+  );
+}
+
+export function DefaultPasswordField() {
+  const { field } = useController<AccessControlFormData, 'defaultRule.password'>({
+    name: 'defaultRule.password',
+    rules: { validate: (v) => v !== '' || 'Password is required' },
+  });
+
+  return (
+    <Form.Group>
+      <PasswordToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
+      <PasswordDetails value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
     </Form.Group>
   );
 }
 
-export function MainPasswordField() {
-  const { field } = useController<AccessControlFormData, 'mainRule.password'>({
-    name: 'mainRule.password',
-    rules: { validate: (v) => v !== '' || 'Password is required' },
-  });
-
-  return <PasswordInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
-}
-
 export function OverridePasswordField({ index }: { index: number }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.password'>({
-    name: 'mainRule.password',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.password'>({
+    name: 'defaultRule.password',
   });
 
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
@@ -94,13 +112,20 @@ export function OverridePasswordField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Password"
+      headerToggle={
+        <PasswordToggle
+          value={field.value}
+          idPrefix={`overrides-${index}`}
+          onChange={field.onChange}
+        />
+      }
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
-      <PasswordInput
+      <PasswordDetails
         value={field.value}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}

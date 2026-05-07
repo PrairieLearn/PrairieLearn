@@ -1,7 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
-import { Alert, ButtonGroup, Dropdown, DropdownButton, Modal } from 'react-bootstrap';
+import { formatDistance } from 'date-fns';
+import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Dropdown,
+  DropdownButton,
+  Modal,
+  Spinner,
+} from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
@@ -44,7 +53,7 @@ function EditGroupModal({
 
   const onSubmit = (data: { uids: string }) => {
     mutation.mutate(
-      { group_id: row.group_id, uids: data.uids },
+      { groupId: row.group_id, uids: data.uids },
       {
         onSuccess: ({ group, notAssigned, failures }) => {
           onGroupEdited(group, notAssigned);
@@ -170,7 +179,7 @@ function DeleteGroupModal({
         onSubmit={(e) => {
           e.preventDefault();
           mutation.mutate(
-            { group_id: row.group_id },
+            { groupId: row.group_id },
             {
               onSuccess: ({ notAssigned }) => {
                 onGroupDeleted(row.group_id, notAssigned);
@@ -267,14 +276,14 @@ function UploadAssessmentGroupsModal({
 }
 
 function RandomAssessmentGroupsModal({
-  groupMin,
-  groupMax,
+  minGroupSize,
+  maxGroupSize,
   courseInstanceId,
   show,
   onHide,
 }: {
-  groupMin: number;
-  groupMax: number;
+  minGroupSize: number;
+  maxGroupSize: number;
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
@@ -286,12 +295,14 @@ function RandomAssessmentGroupsModal({
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
-  } = useForm<{ min_group_size: number; max_group_size: number }>({
-    values: { min_group_size: groupMin, max_group_size: groupMax },
+    getValues,
+    formState: { isSubmitting, errors, isValid },
+  } = useForm<{ minGroupSize: number; maxGroupSize: number }>({
+    mode: 'onChange',
+    values: { minGroupSize, maxGroupSize },
   });
 
-  const onSubmit = (data: { min_group_size: number; max_group_size: number }) => {
+  const onSubmit = (data: { minGroupSize: number; maxGroupSize: number }) => {
     mutation.mutate(data, {
       onSuccess: ({ jobSequenceId }) => {
         window.location.href = getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId);
@@ -300,7 +311,7 @@ function RandomAssessmentGroupsModal({
   };
 
   const handleHide = () => {
-    reset({ min_group_size: groupMin, max_group_size: groupMax });
+    reset({ minGroupSize, maxGroupSize });
     mutation.reset();
     onHide();
   };
@@ -328,13 +339,30 @@ function RandomAssessmentGroupsModal({
               </label>
               <input
                 type="number"
-                min="1"
-                className="form-control"
+                className={clsx('form-control', errors.minGroupSize && 'is-invalid')}
                 id="formMin"
-                defaultValue={groupMin}
-                required
-                {...register('min_group_size', { valueAsNumber: true })}
+                defaultValue={minGroupSize}
+                aria-invalid={errors.minGroupSize ? 'true' : undefined}
+                aria-errormessage={errors.minGroupSize ? 'formMinError' : undefined}
+                {...register('minGroupSize', {
+                  valueAsNumber: true,
+                  required: 'Required.',
+                  min: { value: 1, message: 'Must be at least 1.' },
+                  deps: ['maxGroupSize'],
+                  validate: (value) => {
+                    const max = getValues('maxGroupSize');
+                    if (Number.isFinite(value) && Number.isFinite(max) && value > max) {
+                      return 'Must be ≤ max members.';
+                    }
+                    return true;
+                  },
+                })}
               />
+              {errors.minGroupSize && (
+                <div id="formMinError" className="text-danger small">
+                  {errors.minGroupSize.message}
+                </div>
+              )}
             </div>
             <div className="col-6">
               <label className="form-label" htmlFor="formMax">
@@ -342,13 +370,30 @@ function RandomAssessmentGroupsModal({
               </label>
               <input
                 type="number"
-                min="1"
-                className="form-control"
+                className={clsx('form-control', errors.maxGroupSize && 'is-invalid')}
                 id="formMax"
-                defaultValue={groupMax}
-                required
-                {...register('max_group_size', { valueAsNumber: true })}
+                defaultValue={maxGroupSize}
+                aria-invalid={errors.maxGroupSize ? 'true' : undefined}
+                aria-errormessage={errors.maxGroupSize ? 'formMaxError' : undefined}
+                {...register('maxGroupSize', {
+                  valueAsNumber: true,
+                  required: 'Required.',
+                  min: { value: 1, message: 'Must be at least 1.' },
+                  deps: ['minGroupSize'],
+                  validate: (value) => {
+                    const min = getValues('minGroupSize');
+                    if (Number.isFinite(value) && Number.isFinite(min) && value < min) {
+                      return 'Must be ≥ min members.';
+                    }
+                    return true;
+                  },
+                })}
               />
+              {errors.maxGroupSize && (
+                <div id="formMaxError" className="text-danger small">
+                  {errors.maxGroupSize.message}
+                </div>
+              )}
             </div>
           </div>
         </Modal.Body>
@@ -359,7 +404,7 @@ function RandomAssessmentGroupsModal({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending}
+            disabled={!isValid || isSubmitting || mutation.isPending}
           >
             Assign
           </button>
@@ -387,11 +432,11 @@ function AddGroupModal({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<{ group_name: string; uids: string }>({
-    defaultValues: { group_name: '', uids: '' },
+  } = useForm<{ groupName: string; uids: string }>({
+    defaultValues: { groupName: '', uids: '' },
   });
 
-  const onSubmit = (data: { group_name: string; uids: string }) => {
+  const onSubmit = (data: { groupName: string; uids: string }) => {
     mutation.mutate(data, {
       onSuccess: ({ group, notAssigned }) => {
         onGroupAdded(group, notAssigned);
@@ -425,14 +470,14 @@ function AddGroupModal({
             </label>
             <input
               type="text"
-              className={clsx('form-control', errors.group_name && 'is-invalid')}
+              className={clsx('form-control', errors.groupName && 'is-invalid')}
               id="formName"
               aria-describedby="addGroupNameHelp"
-              aria-invalid={errors.group_name ? 'true' : undefined}
-              {...(errors.group_name ? { 'aria-errormessage': 'addGroupNameError' } : {})}
+              aria-invalid={errors.groupName ? 'true' : undefined}
+              {...(errors.groupName ? { 'aria-errormessage': 'addGroupNameError' } : {})}
               maxLength={30}
               defaultValue=""
-              {...register('group_name', {
+              {...register('groupName', {
                 pattern: {
                   value: /^[0-9a-zA-Z]*$/,
                   message: 'Only letters and numbers are allowed.',
@@ -440,9 +485,9 @@ function AddGroupModal({
                 maxLength: { value: 30, message: 'Use at most 30 characters.' },
               })}
             />
-            {errors.group_name && (
+            {errors.groupName && (
               <div id="addGroupNameError" className="invalid-feedback">
-                {errors.group_name.message}
+                {errors.groupName.message}
               </div>
             )}
             <small id="addGroupNameHelp" className="form-text text-muted">
@@ -624,8 +669,8 @@ export function GroupsCard({
   courseInstanceId,
   csrfToken,
   canEdit,
-  groupMin,
-  groupMax,
+  minGroupSize,
+  maxGroupSize,
 }: {
   groupsCsvFilename?: string;
   initialGroups?: GroupUsersRow[];
@@ -635,11 +680,28 @@ export function GroupsCard({
   courseInstanceId: string;
   csrfToken: string;
   canEdit: boolean;
-  groupMin: number;
-  groupMax: number;
+  minGroupSize: number;
+  maxGroupSize: number;
 }) {
   const [groups, setGroups] = useState(initialGroups);
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const trpc = useTRPC();
+  const refreshMutation = useMutation(
+    trpc.assessmentGroups.refreshGroups.mutationOptions({
+      onSuccess: ({ groups: newGroups, notAssigned: newNotAssigned }) => {
+        setGroups(newGroups);
+        setNotAssigned(newNotAssigned);
+        setLastRefreshedAt(Date.now());
+      },
+    }),
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const uploadModal = useModalState<null>();
   const randomModal = useModalState<null>();
   const addModal = useModalState<null>();
@@ -677,8 +739,8 @@ export function GroupsCard({
             onHide={uploadModal.hide}
           />
           <RandomAssessmentGroupsModal
-            groupMin={groupMin}
-            groupMax={groupMax}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
             courseInstanceId={courseInstanceId}
             show={randomModal.show}
             onHide={randomModal.hide}
@@ -735,12 +797,16 @@ export function GroupsCard({
                 {run(() => {
                   const unassignedCount = notAssigned?.length ?? 0;
                   const assignedCount = groups?.reduce((sum, g) => sum + g.size, 0) ?? 0;
+                  const totalStudents = unassignedCount + assignedCount;
+                  if (totalStudents === 0) return 'No students enrolled';
                   if (unassignedCount === 0) return 'All students are assigned';
                   if (assignedCount === 0) {
                     return `${unassignedCount} student${unassignedCount === 1 ? '' : 's'} unassigned`;
                   }
                   return `${assignedCount} assigned · ${unassignedCount} unassigned`;
                 })}
+                {' · Updated '}
+                {formatDistance(lastRefreshedAt, now, { addSuffix: true })}
               </div>
             </div>
             <div className="d-flex gap-2">
@@ -753,7 +819,7 @@ export function GroupsCard({
                   <i className="bi bi-plus-lg" aria-hidden="true" /> Add group
                 </button>
               )}
-              <DropdownButton as={ButtonGroup} title="Actions" variant="light">
+              <DropdownButton as={ButtonGroup} title="Actions" variant="outline-secondary">
                 <Dropdown.Item
                   as="button"
                   type="button"
@@ -786,6 +852,18 @@ export function GroupsCard({
                   Delete all
                 </Dropdown.Item>
               </DropdownButton>
+              <Button
+                variant="outline-secondary"
+                aria-label="Refresh groups"
+                disabled={refreshMutation.isPending}
+                onClick={() => refreshMutation.mutate()}
+              >
+                {refreshMutation.isPending ? (
+                  <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                )}
+              </Button>
             </div>
           </div>
 
@@ -830,15 +908,24 @@ export function GroupsCard({
                 </tr>
               </thead>
               <tbody>
-                {groups?.map((row) => (
-                  <GroupRow
-                    key={row.group_id}
-                    row={row}
-                    canEdit={canEdit}
-                    onEdit={editModal.showWithData}
-                    onDelete={deleteModal.showWithData}
-                  />
-                ))}
+                {groups && groups.length > 0 ? (
+                  groups.map((row) => (
+                    <GroupRow
+                      key={row.group_id}
+                      row={row}
+                      canEdit={canEdit}
+                      onEdit={editModal.showWithData}
+                      onDelete={deleteModal.showWithData}
+                    />
+                  ))
+                ) : (
+                  <tr className="text-center text-muted">
+                    <td colSpan={canEdit ? 4 : 3} className="py-4">
+                      <i className="bi bi-people me-2" aria-hidden="true" />
+                      No groups created
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

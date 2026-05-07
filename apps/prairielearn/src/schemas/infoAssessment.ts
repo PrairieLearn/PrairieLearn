@@ -60,17 +60,17 @@ const GroupsStudentPermissionsJsonSchema = z
       .boolean()
       .describe('Whether students can create groups.')
       .optional()
-      .default(false),
+      .default(true),
     canJoinGroup: z
       .boolean()
       .describe('Whether students can join groups.')
       .optional()
-      .default(false),
+      .default(true),
     canLeaveGroup: z
       .boolean()
       .describe('Whether students can leave groups.')
       .optional()
-      .default(false),
+      .default(true),
     canNameGroup: z
       .boolean()
       .describe('Whether students can choose a group name when creating a group.')
@@ -487,7 +487,7 @@ export const AssessmentJsonSchema = z
     honorCode: z
       .string()
       .describe(
-        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+        'Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.',
       )
       .optional(),
     groupWork: z

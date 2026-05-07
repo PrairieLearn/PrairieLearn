@@ -13,6 +13,12 @@ import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-confi
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+const numberOrNull = (v: unknown): number | null => {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+};
+
 const RECOMMENDED_ROLES: GroupSettingsFormValues['roles'] = [
   makeRole({ name: 'Manager', minAssignees: 1, maxAssignees: 1, canAssignRoles: true }),
   makeRole({ name: 'Recorder', minAssignees: 1, maxAssignees: 1 }),
@@ -25,7 +31,7 @@ function HelpTooltip({ body, id, ariaLabel }: { body: string; id: string; ariaLa
     <OverlayTrigger placement="top" tooltip={{ body, props: { id } }}>
       <button
         type="button"
-        className="btn btn-xs btn-ghost p-0 align-baseline"
+        className="btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle"
         aria-label={ariaLabel}
       >
         <i className="bi bi-question-circle text-muted" aria-hidden="true" />
@@ -116,9 +122,9 @@ export function GroupSettingsCard({
     mode: 'onChange',
     defaultValues: {
       studentPermissions: groupSettingsDefaults?.studentPermissions ?? {
-        canCreateGroup: false,
-        canJoinGroup: false,
-        canLeaveGroup: false,
+        canCreateGroup: true,
+        canJoinGroup: true,
+        canLeaveGroup: true,
         canNameGroup: true,
       },
       minMembers: groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? null,
@@ -131,6 +137,7 @@ export function GroupSettingsCard({
 
   const watchedMin = watch('minMembers');
   const watchedRoles = watch('roles');
+  const watchedCanCreateGroup = watch('studentPermissions.canCreateGroup');
 
   const formLevelRoleErrors = run(() => {
     if (watchedRoles.length === 0) return [];
@@ -140,7 +147,7 @@ export function GroupSettingsCard({
     );
     if (!hasAssigner) {
       errors.push(
-        'When custom roles are defined, at least one role with "Can assign roles" enabled must have a minimum of 1 member.',
+        'No roles with the "Can assign roles" permission have a minimum member count of 1 or more.',
       );
     }
     if (!watchedRoles.some((r) => r.canView)) {
@@ -174,35 +181,24 @@ export function GroupSettingsCard({
   });
 
   const onSubmit = (data: GroupSettingsFormValues) => {
-    const nanToNull = (v: number | null) => (v != null && Number.isNaN(v) ? null : v);
-    const normalized: GroupSettingsFormValues = {
-      ...data,
-      minMembers: nanToNull(data.minMembers),
-      maxMembers: nanToNull(data.maxMembers),
-      roles: data.roles.map((r) => ({
-        ...r,
-        minAssignees: nanToNull(r.minAssignees),
-        maxAssignees: nanToNull(r.maxAssignees),
-      })),
-    };
     mutation.mutate(
       {
         origHash,
-        canCreateGroup: normalized.studentPermissions.canCreateGroup,
-        canJoinGroup: normalized.studentPermissions.canJoinGroup,
-        canLeaveGroup: normalized.studentPermissions.canLeaveGroup,
-        canNameGroup: normalized.studentPermissions.canNameGroup,
-        minMembers: normalized.minMembers,
-        maxMembers: normalized.maxMembers,
-        roles: normalized.roles,
+        canCreateGroup: data.studentPermissions.canCreateGroup,
+        canJoinGroup: data.studentPermissions.canJoinGroup,
+        canLeaveGroup: data.studentPermissions.canLeaveGroup,
+        canNameGroup: data.studentPermissions.canNameGroup,
+        minMembers: data.minMembers,
+        maxMembers: data.maxMembers,
+        roles: data.roles,
       },
       {
         onSuccess: ({ origHash: newHash }) => {
           onOrigHashChange(newHash);
-          onGroupSizeSaved(normalized.minMembers, normalized.maxMembers);
+          onGroupSizeSaved(data.minMembers, data.maxMembers);
           reset({
-            ...normalized,
-            roles: normalized.roles.map((r) => ({ ...r, origName: r.name })),
+            ...data,
+            roles: data.roles.map((r) => ({ ...r, origName: r.name })),
           });
         },
       },
@@ -219,11 +215,12 @@ export function GroupSettingsCard({
           setShowRecommendedRolesModal(false);
         }}
       />
-      <div className="card-body">
-        <h5 className="mb-1">Group settings</h5>
-        <div className="text-muted small mb-4">Configure how groups work for this assessment.</div>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="card-body">
+          <h5 className="mb-1">Group settings</h5>
+          <div className="text-muted small mb-4">
+            Configure how groups work for this assessment.
+          </div>
           {appError && (
             <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
               {appError.message}
@@ -243,8 +240,16 @@ export function GroupSettingsCard({
                   type="checkbox"
                   className="form-check-input"
                   id="studentPermissions-canCreateGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canCreateGroup ?? false}
-                  {...register('studentPermissions.canCreateGroup')}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canCreateGroup ?? true}
+                  {...register('studentPermissions.canCreateGroup', {
+                    onChange: (e) => {
+                      if (!e.target.checked) {
+                        setValue('studentPermissions.canNameGroup', false, {
+                          shouldDirty: true,
+                        });
+                      }
+                    },
+                  })}
                 />
                 <label htmlFor="studentPermissions-canCreateGroup" className="form-check-label">
                   Can create group
@@ -256,8 +261,26 @@ export function GroupSettingsCard({
                 <input
                   type="checkbox"
                   className="form-check-input"
+                  id="studentPermissions-canNameGroup"
+                  disabled={!watchedCanCreateGroup}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canNameGroup ?? true}
+                  {...register('studentPermissions.canNameGroup')}
+                />
+                <label htmlFor="studentPermissions-canNameGroup" className="form-check-label">
+                  Can name group
+                </label>
+                <div className="text-muted small">
+                  Allow students to choose a group name when creating a group. If set to false, a
+                  default name will be used.
+                </div>
+              </div>
+
+              <div className="form-check mb-2">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
                   id="studentPermissions-canJoinGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canJoinGroup ?? false}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canJoinGroup ?? true}
                   {...register('studentPermissions.canJoinGroup')}
                 />
                 <label htmlFor="studentPermissions-canJoinGroup" className="form-check-label">
@@ -273,30 +296,13 @@ export function GroupSettingsCard({
                   type="checkbox"
                   className="form-check-input"
                   id="studentPermissions-canLeaveGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canLeaveGroup ?? false}
+                  defaultChecked={groupSettingsDefaults?.studentPermissions.canLeaveGroup ?? true}
                   {...register('studentPermissions.canLeaveGroup')}
                 />
                 <label htmlFor="studentPermissions-canLeaveGroup" className="form-check-label">
                   Can leave group
                 </label>
                 <div className="text-muted small">Allow students to leave groups.</div>
-              </div>
-
-              <div className="form-check mb-2">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id="studentPermissions-canNameGroup"
-                  defaultChecked={groupSettingsDefaults?.studentPermissions.canNameGroup ?? true}
-                  {...register('studentPermissions.canNameGroup')}
-                />
-                <label htmlFor="studentPermissions-canNameGroup" className="form-check-label">
-                  Can name group
-                </label>
-                <div className="text-muted small">
-                  Allow students to choose a group name when creating a group. If set to false, a
-                  default name will be used.
-                </div>
               </div>
             </div>
 
@@ -311,7 +317,7 @@ export function GroupSettingsCard({
                     type="number"
                     className={clsx('form-control', errors.minMembers && 'is-invalid')}
                     id="groupSettings-minMembers"
-                    placeholder="0"
+                    placeholder="None"
                     aria-invalid={errors.minMembers ? 'true' : undefined}
                     aria-errormessage={
                       errors.minMembers ? 'groupSettings-minMembersError' : undefined
@@ -320,12 +326,12 @@ export function GroupSettingsCard({
                       groupSettingsDefaults?.minMembers ?? groupConfigInfo.minimum ?? ''
                     }
                     {...register('minMembers', {
-                      valueAsNumber: true,
+                      setValueAs: numberOrNull,
                       min: { value: 1, message: 'Must be at least 1.' },
                       onChange: (e) => {
-                        const newMin = e.target.valueAsNumber;
+                        const newMin = numberOrNull(e.target.value);
                         const currentMax = getValues('maxMembers');
-                        if (!Number.isNaN(newMin) && currentMax != null && newMin > currentMax) {
+                        if (newMin != null && currentMax != null && newMin > currentMax) {
                           setValue('maxMembers', newMin, {
                             shouldDirty: true,
                             shouldValidate: true,
@@ -349,7 +355,7 @@ export function GroupSettingsCard({
                     type="number"
                     className={clsx('form-control', errors.maxMembers && 'is-invalid')}
                     id="groupSettings-maxMembers"
-                    placeholder="0"
+                    placeholder="None"
                     aria-invalid={errors.maxMembers ? 'true' : undefined}
                     aria-errormessage={
                       errors.maxMembers ? 'groupSettings-maxMembersError' : undefined
@@ -358,7 +364,7 @@ export function GroupSettingsCard({
                       groupSettingsDefaults?.maxMembers ?? groupConfigInfo.maximum ?? ''
                     }
                     {...register('maxMembers', {
-                      valueAsNumber: true,
+                      setValueAs: numberOrNull,
                       min: { value: 1, message: 'Must be at least 1.' },
                       validate: (value) => {
                         const min = getValues('minMembers');
@@ -385,7 +391,7 @@ export function GroupSettingsCard({
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => append(makeRole({ canAssignRoles: true }))}
+                  onClick={() => append(makeRole({ canAssignRoles: true, minAssignees: 1 }))}
                 >
                   <i className="bi bi-plus-lg" aria-hidden="true" /> Add role
                 </button>
@@ -450,7 +456,7 @@ export function GroupSettingsCard({
                   <tbody>
                     {fields.length === 0 ? (
                       <tr className="text-center text-muted">
-                        <td colSpan={7}>
+                        <td colSpan={7} className="py-3">
                           <div>
                             <i className="bi bi-person-badge me-2" aria-hidden="true" />
                             No roles configured
@@ -511,13 +517,13 @@ export function GroupSettingsCard({
                                     'form-control form-control-sm',
                                     !!minError && 'is-invalid',
                                   )}
-                                  placeholder="0"
+                                  placeholder="None"
                                   defaultValue={field.minAssignees ?? ''}
                                   aria-label={`Min assignees for role ${rowNumber}`}
                                   aria-invalid={minError ? 'true' : undefined}
                                   aria-errormessage={minError ? minErrorId : undefined}
                                   {...register(`roles.${index}.minAssignees`, {
-                                    valueAsNumber: true,
+                                    setValueAs: numberOrNull,
                                     deps: [`roles.${index}.maxAssignees`, 'maxMembers'],
                                     min: { value: 0, message: 'Must be ≥ 0.' },
                                     validate: (value) => {
@@ -525,17 +531,21 @@ export function GroupSettingsCard({
                                       if (value != null && max != null && value > max) {
                                         return 'Must be ≤ max assignees.';
                                       }
-                                      const groupMax = getValues('maxMembers');
-                                      if (value != null && groupMax != null && value > groupMax) {
-                                        return `Must be ≤ group maximum (${groupMax}).`;
+                                      const maxMembers = getValues('maxMembers');
+                                      if (
+                                        value != null &&
+                                        maxMembers != null &&
+                                        value > maxMembers
+                                      ) {
+                                        return `Must be ≤ group maximum (${maxMembers}).`;
                                       }
                                       return true;
                                     },
                                     onChange: (e) => {
-                                      const newMin = e.target.valueAsNumber;
+                                      const newMin = numberOrNull(e.target.value);
                                       const currentMax = getValues(`roles.${index}.maxAssignees`);
                                       if (
-                                        !Number.isNaN(newMin) &&
+                                        newMin != null &&
                                         currentMax != null &&
                                         newMin > currentMax
                                       ) {
@@ -555,13 +565,13 @@ export function GroupSettingsCard({
                                     'form-control form-control-sm',
                                     !!maxError && 'is-invalid',
                                   )}
-                                  placeholder="0"
+                                  placeholder="None"
                                   defaultValue={field.maxAssignees ?? ''}
                                   aria-label={`Max assignees for role ${rowNumber}`}
                                   aria-invalid={maxError ? 'true' : undefined}
                                   aria-errormessage={maxError ? maxErrorId : undefined}
                                   {...register(`roles.${index}.maxAssignees`, {
-                                    valueAsNumber: true,
+                                    setValueAs: numberOrNull,
                                     deps: [`roles.${index}.minAssignees`, 'maxMembers'],
                                     min: { value: 1, message: 'Must be ≥ 1.' },
                                     validate: (value) => {
@@ -569,9 +579,13 @@ export function GroupSettingsCard({
                                       if (value != null && min != null && min > value) {
                                         return 'Must be ≥ min assignees.';
                                       }
-                                      const groupMax = getValues('maxMembers');
-                                      if (value != null && groupMax != null && value > groupMax) {
-                                        return `Must be ≤ group maximum (${groupMax}).`;
+                                      const maxMembers = getValues('maxMembers');
+                                      if (
+                                        value != null &&
+                                        maxMembers != null &&
+                                        value > maxMembers
+                                      ) {
+                                        return `Must be ≤ group maximum (${maxMembers}).`;
                                       }
                                       return true;
                                     },
@@ -691,29 +705,29 @@ export function GroupSettingsCard({
               )}
             </div>
           </fieldset>
-          {canEdit && (
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                disabled={!isDirty}
-                onClick={() => reset()}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={
-                  !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
-                }
-              >
-                Save and sync
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
+        </div>
+        {canEdit && (
+          <div className="card-footer d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              disabled={!isDirty}
+              onClick={() => reset()}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={
+                !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
+              }
+            >
+              Save and sync
+            </button>
+          </div>
+        )}
+      </form>
     </div>
   );
 }
