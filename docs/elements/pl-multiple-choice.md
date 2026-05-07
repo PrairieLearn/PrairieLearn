@@ -57,7 +57,7 @@ Setting `builtin-grading="false"` causes the element to display choices and coll
 When `builtin-grading="false"` is set:
 
 - The element does **not** require any answer to have `correct="true"`.
-- The element does **not** produce a score. To grade submissions automatically, you must supply a `grade()` function in `server.py`. Without one, all submissions will receive a score of zero.
+- The element does **not** produce a score. To grade submissions automatically, you must supply a [`grade()` function in `server.py`](../question/server.md#step-5-grade) or be evaluated by an [external grader](../externalGrading.md). Without one, the score will be based on other gradable elements in the question (or receive a score of zero if there are no other elements).
 - The **answer panel** will not display a correct answer, even if one is marked with `correct="true"`.
 - **Score badges** are not shown by default, since no score is produced by the element.
 - The `weight`, `all-of-the-above`, `none-of-the-above`, and `hide-score-badge` attributes **cannot** be used alongside `builtin-grading="false"`, as they are specific to the built-in grading behavior. Similarly, `score` and `feedback` on individual `pl-answer` children are not permitted.
