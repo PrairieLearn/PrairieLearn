@@ -8,6 +8,7 @@ import {
 import {
   type AccessControlValidationRule,
   validateAccessControlRules,
+  validateAfterCompleteCrossFieldIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
@@ -1866,9 +1867,361 @@ describe('afterComplete hidden/visibility validation', () => {
   });
 });
 
+describe('afterComplete cross-field validation', () => {
+  interface ExpectedIssue {
+    ruleIndex: number;
+    message: RegExp;
+  }
+
+  function buildRules(jsons: AccessControlJsonInput[]): AccessControlValidationRule[] {
+    return jsons.map((json, ruleIndex) => ({
+      rule: AccessControlJsonSchema.parse(json),
+      targetType: ruleIndex === 0 ? 'none' : 'student_label',
+      ruleIndex,
+    }));
+  }
+
+  it.each([
+    {
+      label: 'empty rule list',
+      rules: [],
+      issues: [],
+    },
+    {
+      label: 'default rule with all-default visibility',
+      rules: [{}],
+      issues: [],
+    },
+    {
+      label: 'default rule: score hidden but questions visible',
+      rules: [{ afterComplete: { questions: { hidden: false }, score: { hidden: true } } }],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score cannot be hidden after completion while questions are visible/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: questions reveal but score never becomes visible',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: score reveals after questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: score reveals on the same date questions do (boundary)',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score conflicts with inherited questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override-questions earlier than inherited score',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-06T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override-questions later than inherited score',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-12T00:00:00' } },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score earlier than inherited questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both consistent',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-18T00:00:00' },
+          },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both with score reveal after questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override flips questions visible while inheriting hidden-forever score',
+      rules: [
+        { afterComplete: { score: { hidden: true } } },
+        { labels: ['A'], afterComplete: { questions: { hidden: false } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score cannot be hidden after completion while questions are visible/,
+        },
+      ],
+    },
+    {
+      // afterComplete.questions is inherited as a whole object, not
+      // field-by-field: an override that sets questions without dates does
+      // NOT inherit the default's visibleFromDate, so the override's
+      // effective questions has no reveal date and no conflict.
+      label: 'override replaces questions wholesale (does not inherit visibleFromDate)',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true },
+          },
+        },
+        { labels: ['A'], afterComplete: { questions: { hidden: true } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'override-score hidden forever with both effectively hidden forever',
+      rules: [
+        { afterComplete: { questions: { hidden: true } } },
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score hidden forever conflicts with inherited questions reveal date',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'override that does not touch afterComplete inherits a conflict on both rules',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          },
+        },
+        { labels: ['A'] },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score must become visible on or before the question reveal date/,
+        },
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'multiple overrides report independently',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
+        },
+        {
+          labels: ['B'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' } },
+        },
+        {
+          labels: ['C'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+        {
+          ruleIndex: 3,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+  ] satisfies { label: string; rules: AccessControlJsonInput[]; issues: ExpectedIssue[] }[])(
+    '$label',
+    ({ rules, issues: expectedIssues }) => {
+      const actualIssues = validateAfterCompleteCrossFieldIssues(buildRules(rules));
+      assert.lengthOf(actualIssues, expectedIssues.length);
+      for (const expected of expectedIssues) {
+        const issue = actualIssues.find((i) => i.ruleIndex === expected.ruleIndex);
+        assert.isDefined(issue);
+        assert.deepEqual(issue.path, ['afterComplete', 'questions']);
+        assert.match(issue.message, expected.message);
+      }
+    },
+  );
+});
+
 describe('Global afterComplete validation', () => {
   const completionMechanismMessage =
     'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  it('does not duplicate direct afterComplete cross-field errors', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-03-25T00:00:00' },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+
+    const matches = result.errors.filter((e) =>
+      e.includes('Questions cannot become visible after completion while the score remains hidden'),
+    );
+    assert.lengthOf(matches, 1);
+  });
 
   it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
     const result = validateAccessControlRules({

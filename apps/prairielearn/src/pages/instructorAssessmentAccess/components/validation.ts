@@ -1,6 +1,7 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateAfterCompleteCrossFieldIssues,
   validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
@@ -164,7 +165,12 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
+    // Run the "no completion mechanism" check before the cross-field check —
+    // both target the same questionVisibility path, but the mechanism error
+    // is more fundamental (cross-field consistency is moot when there's no
+    // mechanism at all).
     validateGlobalAfterCompleteIssues(validationRules),
+    validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
       const path = mapIssueToFormFieldPath(issue);

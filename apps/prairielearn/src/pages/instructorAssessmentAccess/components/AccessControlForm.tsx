@@ -46,7 +46,7 @@ export function AccessControlForm({
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  onSubmit: (data: AccessControlJsonWithId[]) => void;
+  onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
@@ -124,8 +124,9 @@ export function AccessControlForm({
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
-  const handleFormSubmit = (data: AccessControlFormData) => {
-    onSubmit(formDataToJson(data));
+  const handleFormSubmit = async (data: AccessControlFormData) => {
+    await onSubmit(formDataToJson(data));
+    reset(data);
   };
 
   const addOverride = () => {

@@ -1,5 +1,11 @@
 # @prairielearn/run
 
+## 2.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 2.0.3
 
 ### Patch Changes
