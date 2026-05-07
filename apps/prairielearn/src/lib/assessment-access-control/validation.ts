@@ -626,10 +626,22 @@ export function validateGlobalCreditConsistencyIssues(
   return issues;
 }
 
-type AfterCompleteQuestions = NonNullable<
+export type AfterCompleteQuestions = NonNullable<
   NonNullable<AccessControlJson['afterComplete']>['questions']
 >;
-type AfterCompleteScore = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
+export type AfterCompleteScore = NonNullable<
+  NonNullable<AccessControlJson['afterComplete']>['score']
+>;
+
+export type AfterCompleteCrossFieldIssueKind =
+  | 'score_hidden_requires_questions_hidden'
+  | 'questions_reveal_requires_score_reveal'
+  | 'score_reveal_after_questions_reveal';
+
+export interface AfterCompleteCrossFieldIssue {
+  kind: AfterCompleteCrossFieldIssueKind;
+  message: string;
+}
 
 function resolveEffectiveAfterComplete(
   rule: AccessControlJson,
@@ -639,25 +651,56 @@ function resolveEffectiveAfterComplete(
   const defaultAc = defaultRule?.afterComplete;
   // Defaults: questions hidden, score visible. An override that doesn't
   // include questions/score inherits the default rule's effective value.
+  // Inheritance is whole-object, not field-by-field: an override that sets
+  // `questions: { hidden: true }` (without dates) does NOT inherit the
+  // default's `visibleFromDate`.
   const questions = ruleAc?.questions ?? defaultAc?.questions ?? { hidden: true };
   const score = ruleAc?.score ?? defaultAc?.score ?? { hidden: false };
   return { questions, score };
 }
 
-function getAfterCompleteCrossFieldMessage(
+/**
+ * Checks the cross-field invariant between `afterComplete.questions` and
+ * `afterComplete.score`: questions cannot become visible while the score
+ * remains hidden. Returns `null` when the pair is consistent, otherwise an
+ * issue with a `kind` discriminator and a human-readable message. The kinds
+ * are:
+ *
+ * - `score_hidden_requires_questions_hidden`: score is hidden after completion
+ *   but questions are visible.
+ * - `questions_reveal_requires_score_reveal`: questions have a reveal date but
+ *   the score stays hidden forever.
+ * - `score_reveal_after_questions_reveal`: both reveal, but the score's reveal
+ *   date is after the questions' reveal date.
+ *
+ * Used by both the per-rule validator and the legacy migration's fix-up
+ * step, so the two stay aligned on what counts as a conflict.
+ */
+export function getAfterCompleteCrossFieldIssue(
   questions: AfterCompleteQuestions,
   score: AfterCompleteScore,
-): string | null {
+): AfterCompleteCrossFieldIssue | null {
   if (score.hidden && !questions.hidden) {
-    return 'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.';
+    return {
+      kind: 'score_hidden_requires_questions_hidden',
+      message: 'afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.',
+    };
   }
   if (!questions.hidden || questions.visibleFromDate === undefined) return null;
   if (!score.hidden) return null;
   if (score.visibleFromDate === undefined) {
-    return 'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).';
+    return {
+      kind: 'questions_reveal_requires_score_reveal',
+      message:
+        'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
+    };
   }
   if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
-    return 'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).';
+    return {
+      kind: 'score_reveal_after_questions_reveal',
+      message:
+        'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).',
+    };
   }
   return null;
 }
@@ -679,9 +722,9 @@ export function validateAfterCompleteCrossFieldIssues(
 
   for (const validationRule of validationRules) {
     const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, defaultRule);
-    const message = getAfterCompleteCrossFieldMessage(questions, score);
-    if (message) {
-      pushIssue(issues, validationRule, ['afterComplete', 'questions'], message);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) {
+      pushIssue(issues, validationRule, ['afterComplete', 'questions'], issue.message);
     }
   }
 
@@ -843,12 +886,19 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
  *
  * @param rule The access control rule to validate.
  * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
+ * @param options.includeAfterCompleteCrossField Whether to include the
+ *   afterComplete cross-field check (defaults to `true`). Callers that also
+ *   run {@link validateAfterCompleteCrossFieldIssues} across all rules should
+ *   pass `false` to avoid duplicate errors, since that validator already
+ *   covers the same constraint and additionally handles inheritance.
  */
 export function validateRule(
   rule: AccessControlJson,
   targetType: 'none' | 'student_label' | 'enrollment',
+  options: { includeAfterCompleteCrossField?: boolean } = {},
 ): string[] {
   const errors: string[] = [];
+  const includeAfterCompleteCrossField = options.includeAfterCompleteCrossField ?? true;
 
   if (targetType === 'none') {
     if (rule.dateControl && !rule.dateControl.release) {
@@ -926,35 +976,10 @@ export function validateRule(
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
   }
 
-  if (
-    rule.afterComplete?.score?.hidden === true &&
-    rule.afterComplete.questions?.hidden === false
-  ) {
-    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
-  }
-
-  if (
-    rule.afterComplete?.questions?.hidden === true &&
-    rule.afterComplete.questions.visibleFromDate !== undefined &&
-    rule.afterComplete.score?.hidden === true &&
-    rule.afterComplete.score.visibleFromDate === undefined
-  ) {
-    errors.push(
-      'afterComplete.questions.visibleFromDate requires the score to be visible by then: set afterComplete.score.hidden: false or afterComplete.score.visibleFromDate (questions cannot become visible while score remains hidden).',
-    );
-  }
-
-  if (
-    rule.afterComplete?.questions?.hidden === true &&
-    rule.afterComplete.questions.visibleFromDate !== undefined &&
-    rule.afterComplete.score?.hidden === true &&
-    rule.afterComplete.score.visibleFromDate !== undefined &&
-    new Date(rule.afterComplete.score.visibleFromDate).getTime() >
-      new Date(rule.afterComplete.questions.visibleFromDate).getTime()
-  ) {
-    errors.push(
-      'afterComplete.score.visibleFromDate must be on or before afterComplete.questions.visibleFromDate (questions cannot become visible while score remains hidden).',
-    );
+  if (includeAfterCompleteCrossField) {
+    const { questions, score } = resolveEffectiveAfterComplete(rule, undefined);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) errors.push(issue.message);
   }
 
   errors.push(
@@ -1073,7 +1098,7 @@ export function validateAccessControlRules({
       ruleIndex: validationRules.length,
     });
 
-    errors.push(...validateRule(rule, targetType));
+    errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
 
   for (const rule of enrollmentRules ?? []) {
@@ -1082,15 +1107,19 @@ export function validateAccessControlRules({
       targetType: 'enrollment',
       ruleIndex: validationRules.length,
     });
-    errors.push(...validateRule(rule, 'enrollment'));
+    errors.push(...validateRule(rule, 'enrollment', { includeAfterCompleteCrossField: false }));
   }
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
-    ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
+    // The mechanism check must run before the cross-field check: both target
+    // the same questionVisibility path, but the mechanism error is more
+    // fundamental (cross-field consistency is moot when there's no completion
+    // mechanism at all). Matches the order in the form-side validator.
     ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
+    ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

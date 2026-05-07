@@ -2129,6 +2129,29 @@ describe('afterComplete cross-field validation', () => {
       ],
     },
     {
+      // afterComplete.questions is inherited as a whole object, not
+      // field-by-field: an override that sets questions without dates does
+      // NOT inherit the default's visibleFromDate, so the override's
+      // effective questions has no reveal date and no conflict.
+      label: 'override replaces questions wholesale (does not inherit visibleFromDate)',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true },
+          },
+        },
+        { labels: ['A'], afterComplete: { questions: { hidden: true } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message:
+            /afterComplete\.questions\.visibleFromDate requires the score to be visible by then/,
+        },
+      ],
+    },
+    {
       label: 'override-score hidden forever with both effectively hidden forever',
       rules: [
         { afterComplete: { questions: { hidden: true } } },
@@ -2231,6 +2254,28 @@ describe('afterComplete cross-field validation', () => {
 describe('Global afterComplete validation', () => {
   const completionMechanismMessage =
     'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  it('does not duplicate direct afterComplete cross-field errors', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-03-25T00:00:00' },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+
+    const matches = result.errors.filter((e) =>
+      e.includes('afterComplete.questions.visibleFromDate requires the score to be visible'),
+    );
+    assert.lengthOf(matches, 1);
+  });
 
   it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
     const result = validateAccessControlRules({

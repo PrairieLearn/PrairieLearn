@@ -1578,6 +1578,42 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
+  it('includes notes for visibility changes during analysis', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              {
+                credit: 100,
+                startDate: '2024-01-01T00:00:00',
+                endDate: '2024-06-01T00:00:00',
+                showClosedAssessment: false,
+                showClosedAssessmentScore: false,
+              },
+              {
+                active: false,
+                startDate: '2024-07-01T00:00:00',
+                showClosedAssessmentScore: false,
+              },
+            ],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        assert.isNotNull(result);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, [
+          'Questions reveal date 2024-07-01T00:00:00 was removed because score remains hidden after completion.',
+        ]);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('returns null for empty allowAccess array', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
