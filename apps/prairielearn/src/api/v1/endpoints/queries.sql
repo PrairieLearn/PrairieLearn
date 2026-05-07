@@ -144,6 +144,7 @@ SELECT
   ci.short_name AS course_instance_short_name,
   ci.long_name AS course_instance_long_name,
   ci.course_id AS course_instance_course_id,
+  ci.display_timezone,
   ciar.end_date,
   ciar.id AS course_instance_access_rule_id,
   ciar.institution,

@@ -12,18 +12,25 @@ import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../../.
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
 
-const CourseInstanceAccessRuleDataSchema = z.object({
-  course_instance_id: CourseInstanceSchema.shape.id,
-  course_instance_short_name: CourseInstanceSchema.shape.short_name,
-  course_instance_long_name: z.string(),
-  course_instance_course_id: CourseInstanceSchema.shape.course_id,
-  end_date: CourseInstanceAccessRuleSchema.shape.end_date,
-  course_instance_access_rule_id: CourseInstanceAccessRuleSchema.shape.id,
-  institution: CourseInstanceAccessRuleSchema.shape.institution,
-  course_instance_access_rule_number: CourseInstanceAccessRuleSchema.shape.number,
-  start_date: CourseInstanceAccessRuleSchema.shape.start_date,
-  uids: CourseInstanceAccessRuleSchema.shape.uids,
-});
+const CourseInstanceAccessRuleDataSchema = z
+  .object({
+    course_instance_id: CourseInstanceSchema.shape.id,
+    course_instance_short_name: CourseInstanceSchema.shape.short_name,
+    course_instance_long_name: z.string(),
+    course_instance_course_id: CourseInstanceSchema.shape.course_id,
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+    end_date: CourseInstanceAccessRuleSchema.shape.end_date,
+    course_instance_access_rule_id: CourseInstanceAccessRuleSchema.shape.id,
+    institution: CourseInstanceAccessRuleSchema.shape.institution,
+    course_instance_access_rule_number: CourseInstanceAccessRuleSchema.shape.number,
+    start_date: CourseInstanceAccessRuleSchema.shape.start_date,
+    uids: CourseInstanceAccessRuleSchema.shape.uids,
+  })
+  .transform(({ start_date, end_date, display_timezone, ...rule }) => ({
+    ...rule,
+    start_date: formatDateISO(start_date, display_timezone),
+    end_date: formatDateISO(end_date, display_timezone),
+  }));
 
 router.get(
   '/',
@@ -33,13 +40,7 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       CourseInstanceAccessRuleDataSchema,
     );
-    res.status(200).send(
-      accessRules.map(({ start_date, end_date, ...rule }) => ({
-        ...rule,
-        start_date: formatDateISO(start_date, res.locals.course_instance.display_timezone),
-        end_date: formatDateISO(end_date, res.locals.course_instance.display_timezone),
-      })),
-    );
+    res.status(200).send(accessRules);
   }),
 );
 

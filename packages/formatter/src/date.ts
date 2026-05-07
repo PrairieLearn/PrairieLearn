@@ -63,7 +63,7 @@ export function formatDate(
 export function formatDateISO(
   date: Date | Temporal.PlainDateTime,
   timeZone: string,
-  { includeTz, includeMs }?: { includeTz?: boolean; includeMs?: boolean },
+  options?: { includeTz?: boolean; includeMs?: boolean },
 ): string;
 /**
  * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
@@ -78,7 +78,7 @@ export function formatDateISO(
 export function formatDateISO(
   date: null,
   timeZone: string,
-  { includeTz, includeMs }?: { includeTz?: boolean; includeMs?: boolean },
+  options?: { includeTz?: boolean; includeMs?: boolean },
 ): null;
 /**
  * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
@@ -93,7 +93,7 @@ export function formatDateISO(
 export function formatDateISO(
   date: Date | Temporal.PlainDateTime | null,
   timeZone: string,
-  { includeTz, includeMs }?: { includeTz?: boolean; includeMs?: boolean },
+  options?: { includeTz?: boolean; includeMs?: boolean },
 ): string | null;
 export function formatDateISO(
   date: Date | Temporal.PlainDateTime | null,
