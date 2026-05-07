@@ -219,6 +219,11 @@ def prepare_answers_to_display(
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
+    if len_total == 0:
+        raise ValueError(
+            "pl-multiple-choice element must have at least 1 answer choice."
+        )
+
     if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
         raise ValueError(
             'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'

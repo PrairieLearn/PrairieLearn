@@ -123,6 +123,14 @@ def _prepare_with_defaults(
     )
 
 
+def test_zero_answers_raises() -> None:
+    """Test that at least 1 answer choice is required regardless of builtin_grading."""
+    with pytest.raises(ValueError, match="at least 1 answer choice"):
+        _prepare_with_defaults([], [])
+    with pytest.raises(ValueError, match="at least 1 answer choice"):
+        _prepare_with_defaults([], [], builtin_grading=False)
+
+
 def test_no_correct_answers_raises_with_builtin_grading() -> None:
     """Test that the default (builtin_grading=True) requires at least one correct answer."""
     with pytest.raises(ValueError, match="at least 1 correct answer"):
