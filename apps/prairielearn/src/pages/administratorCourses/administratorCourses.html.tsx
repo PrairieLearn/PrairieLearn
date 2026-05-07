@@ -352,6 +352,7 @@ function CourseInsertModal({
               coursesRoot={coursesRoot}
               prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
+              repositoryRequired={false}
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseAddInputBranch">
