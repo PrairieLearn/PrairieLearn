@@ -1942,8 +1942,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 0,
-          message:
-            /score cannot be hidden after completion while questions are visible/,
+          message: /score cannot be hidden after completion while questions are visible/,
         },
       ],
     },
@@ -1978,8 +1977,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 0,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2011,8 +2009,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2033,8 +2030,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2109,8 +2105,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2123,8 +2118,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message:
-            /score cannot be hidden after completion while questions are visible/,
+          message: /score cannot be hidden after completion while questions are visible/,
         },
       ],
     },
@@ -2191,13 +2185,11 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 0,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
         {
           ruleIndex: 1,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
@@ -2226,13 +2218,11 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
         {
           ruleIndex: 3,
-          message:
-            /score must become visible on or before the question reveal date/,
+          message: /score must become visible on or before the question reveal date/,
         },
       ],
     },
