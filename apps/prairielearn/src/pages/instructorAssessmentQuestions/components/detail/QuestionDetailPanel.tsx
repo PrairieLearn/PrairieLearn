@@ -593,54 +593,60 @@ export function QuestionDetailPanel({
       {!isAlternative && groupsConfigured && (
         <>
           <DetailSectionHeader>Role permissions</DetailSectionHeader>
-          <Wrapper className={clsx(!editMode && 'mb-0')}>
-            <InheritableRolesField
-              id={`${idPrefix}-canView`}
-              label="Can view"
-              helpText="Roles allowed to view this question."
-              editMode={editMode}
-              isInherited={!canViewOverridden}
-              inheritedValue={canViewParent.value}
-              inheritedFromLabel={canViewParent.source}
-              allRoles={groupRoles}
-              value={watch('canView') ?? []}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canView', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanViewOverridden(true);
-                setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setCanViewOverridden(false);
-                resetAndSave('canView');
-              }}
-            />
-            <InheritableRolesField
-              id={`${idPrefix}-canSubmit`}
-              label="Can submit"
-              helpText="Roles allowed to submit answers to this question."
-              editMode={editMode}
-              isInherited={!canSubmitOverridden}
-              inheritedValue={canSubmitParent.value}
-              inheritedFromLabel={canSubmitParent.source}
-              allRoles={groupRoles}
-              value={watch('canSubmit') ?? []}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanSubmitOverridden(true);
-                setValue('canSubmit', canSubmitParent.value ?? groupRoles, {
-                  shouldDirty: true,
-                });
-              }}
-              onReset={() => {
-                setCanSubmitOverridden(false);
-                resetAndSave('canSubmit');
-              }}
-            />
-          </Wrapper>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view this question."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watch('canView') ?? []}
+                hasRoles={hasRoles}
+                groupsPageUrl={groupsPageUrl}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() => {
+                  setCanViewOverridden(true);
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true });
+                }}
+                onReset={() => {
+                  setCanViewOverridden(false);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to this question."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watch('canSubmit') ?? []}
+                hasRoles={hasRoles}
+                groupsPageUrl={groupsPageUrl}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() => {
+                  setCanSubmitOverridden(true);
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, {
+                    shouldDirty: true,
+                  });
+                }}
+                onReset={() => {
+                  setCanSubmitOverridden(false);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
         </>
       )}
 

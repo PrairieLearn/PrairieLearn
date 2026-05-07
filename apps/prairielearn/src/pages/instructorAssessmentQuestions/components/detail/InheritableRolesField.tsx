@@ -1,18 +1,14 @@
-import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
+import clsx from 'clsx';
 
 import type { InheritanceSource } from '../../types.js';
 
-function describeRoleList(roles: string[] | undefined): string {
-  if (roles === undefined) return 'All roles';
-  if (roles.length === 0) return 'No roles';
-  return roles.join(', ');
-}
-
 /**
  * Multi-select editor for a `canView` / `canSubmit` array with inheritance
- * from a parent scope (assessment → zone → pool). When inherited, the
- * dropdown is disabled and an "Override" link seeds the override from the
- * inherited value; when overridden, a reset control falls back to the parent.
+ * from a parent scope (assessment → zone → pool). Renders an inline list of
+ * roles so all options and their selection state are visible without opening
+ * a popover. When inherited, the list is read-only and an "Override" link
+ * seeds the override from the inherited value; when overridden, a reset
+ * control falls back to the parent.
  */
 export function InheritableRolesField({
   id,
@@ -45,8 +41,6 @@ export function InheritableRolesField({
   hasRoles: boolean;
   groupsPageUrl: string;
 }) {
-  const items: FilterItem[] = allRoles.map((name) => ({ id: name, name }));
-
   if (!editMode) {
     if (!hasRoles) {
       return (
@@ -56,16 +50,18 @@ export function InheritableRolesField({
         </>
       );
     }
-    const displayValue = isInherited ? inheritedValue : value;
-    const suffix = isInherited ? (
-      <span className="text-muted"> (inherited from {inheritedFromLabel})</span>
-    ) : null;
+    const displayValue = isInherited ? (inheritedValue ?? allRoles) : value;
+    const selectedSet = new Set(displayValue);
     return (
       <>
-        <dt>{label}</dt>
+        <dt>
+          {label}
+          {isInherited && (
+            <span className="text-muted fw-normal"> (inherited from {inheritedFromLabel})</span>
+          )}
+        </dt>
         <dd>
-          {describeRoleList(displayValue)}
-          {suffix}
+          <RoleChecklist allRoles={allRoles} selectedSet={selectedSet} ariaLabel={label} readOnly />
         </dd>
       </>
     );
@@ -74,20 +70,8 @@ export function InheritableRolesField({
   if (!hasRoles) {
     return (
       <div className="mb-3">
-        <label htmlFor={id} className="form-label">
-          {label}
-        </label>
-        <div>
-          <FilterDropdown
-            label={label}
-            items={[]}
-            selectedIds={new Set()}
-            aria-label={label}
-            disabled
-            onChange={() => {}}
-          />
-        </div>
-        <small id={`${id}-help`} className="form-text text-muted">
+        <div className="form-label">{label}</div>
+        <small className="form-text text-muted">
           No custom group roles defined.{' '}
           <a href={groupsPageUrl}>Configure roles on the Groups page</a> to set per-zone or
           per-question permissions.
@@ -96,71 +80,99 @@ export function InheritableRolesField({
     );
   }
 
-  if (isInherited) {
-    return (
-      <div className="mb-3">
-        <label htmlFor={id} className="form-label">
-          {label}
-        </label>
-        <div>
-          <FilterDropdown
-            label={describeRoleList(inheritedValue)}
-            items={items}
-            selectedIds={new Set(inheritedValue ?? allRoles)}
-            aria-label={`${label} (inherited)`}
-            disabled
-            onChange={() => {}}
-          />
-        </div>
-        <small id={`${id}-help`} className="form-text text-muted">
-          Inherited from {inheritedFromLabel}.{' '}
-          <button
-            type="button"
-            className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={onOverride}
-          >
-            Override
-          </button>
-        </small>
-      </div>
-    );
-  }
-
-  const summary =
-    value.length === allRoles.length ? 'All roles' : `${value.length} selected`;
+  const displayValue = isInherited ? (inheritedValue ?? allRoles) : value;
+  const selectedSet = new Set(displayValue);
 
   return (
     <div className="mb-3">
-      <label htmlFor={id} className="form-label">
-        {label}
-      </label>
-      <div className="d-flex align-items-center gap-2">
-        <FilterDropdown
-          label={summary}
-          items={items}
-          selectedIds={new Set(value)}
-          aria-label={label}
-          onChange={(next) => {
-            // Prevent overrides from ending up with zero roles — deselecting
-            // every role would hide the question from all students. To go back
-            // to the inherited value, use the reset button.
-            if (next.size === 0) return;
-            onChange(Array.from(next));
-          }}
-        />
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          title={`Reset to ${inheritedFromLabel} value`}
-          onClick={onReset}
-        >
-          <i className="bi bi-arrow-counterclockwise" aria-hidden="true" />
-          <span className="visually-hidden">Reset to {inheritedFromLabel} value</span>
-        </button>
+      <div className="d-flex align-items-center justify-content-between mb-1">
+        <span className="form-label mb-0" id={`${id}-label`}>
+          {label}
+          {isInherited && (
+            <span className="text-muted fw-normal"> (inherited from {inheritedFromLabel})</span>
+          )}
+        </span>
+        {!isInherited && (
+          <button type="button" className="btn btn-link btn-sm p-0" onClick={onReset}>
+            Reset to {inheritedFromLabel}
+          </button>
+        )}
       </div>
+      <RoleChecklist
+        allRoles={allRoles}
+        selectedSet={selectedSet}
+        ariaLabel={label}
+        readOnly={isInherited}
+        idPrefix={id}
+        onToggle={(role, checked) => {
+          const next = new Set(selectedSet);
+          if (checked) next.add(role);
+          else next.delete(role);
+          // Prevent overrides from ending up with zero roles — deselecting
+          // every role would hide the question from all students. To go back
+          // to the inherited value, use the reset button.
+          if (next.size === 0) return;
+          onChange(Array.from(next));
+        }}
+      />
       <small id={`${id}-help`} className="form-text text-muted">
-        {helpText}
+        {isInherited ? (
+          <>
+            Inherited from {inheritedFromLabel}.{' '}
+            <button
+              type="button"
+              className="btn btn-link btn-sm p-0 align-baseline"
+              onClick={onOverride}
+            >
+              Override
+            </button>
+          </>
+        ) : (
+          helpText
+        )}
       </small>
+    </div>
+  );
+}
+
+function RoleChecklist({
+  allRoles,
+  selectedSet,
+  ariaLabel,
+  readOnly,
+  idPrefix,
+  onToggle,
+}: {
+  allRoles: string[];
+  selectedSet: Set<string>;
+  ariaLabel: string;
+  readOnly: boolean;
+  idPrefix?: string;
+  onToggle?: (role: string, checked: boolean) => void;
+}) {
+  return (
+    <div className={clsx('list-group', readOnly && 'bg-light')} role="group" aria-label={ariaLabel}>
+      {allRoles.map((role) => {
+        const checkboxId = `${idPrefix}-${role}`;
+        const selected = selectedSet.has(role);
+        return (
+          <label
+            key={role}
+            htmlFor={checkboxId}
+            className={clsx('list-group-item py-1 px-2 m-0', readOnly && 'text-muted')}
+          >
+            <input
+              id={checkboxId}
+              type="checkbox"
+              className="form-check-input me-2"
+              checked={selected}
+              disabled={readOnly}
+              onChange={(e) => onToggle?.(role, e.target.checked)}
+            />
+            {role}
+          </label>
+        );
+      })}
     </div>
   );
 }
