@@ -41,25 +41,33 @@ const AssessmentDataSchema = z.object({
   assessment_set_color: AssessmentSetSchema.shape.color,
 });
 
-const AssessmentAccessRuleDataSchema = z.object({
-  assessment_id: AssessmentSchema.shape.id,
-  assessment_name: AssessmentSchema.shape.tid,
-  assessment_title: AssessmentSchema.shape.title,
-  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
-  assessment_number: AssessmentSchema.shape.number,
-  credit: AssessmentAccessRuleSchema.shape.credit,
-  end_date: AssessmentAccessRuleSchema.shape.end_date,
-  exam_uuid: AssessmentAccessRuleSchema.shape.exam_uuid,
-  assessment_access_rule_id: AssessmentAccessRuleSchema.shape.id,
-  mode: AssessmentAccessRuleSchema.shape.mode,
-  assessment_access_rule_number: AssessmentAccessRuleSchema.shape.number,
-  password: AssessmentAccessRuleSchema.shape.password,
-  show_closed_assessment: AssessmentAccessRuleSchema.shape.show_closed_assessment,
-  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
-  start_date: AssessmentAccessRuleSchema.shape.start_date,
-  time_limit_min: AssessmentAccessRuleSchema.shape.time_limit_min,
-  uids: AssessmentAccessRuleSchema.shape.uids,
-});
+const AssessmentAccessRuleDataSchema = z
+  .object({
+    assessment_id: AssessmentSchema.shape.id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_title: AssessmentSchema.shape.title,
+    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+    assessment_number: AssessmentSchema.shape.number,
+    credit: AssessmentAccessRuleSchema.shape.credit,
+    end_date: AssessmentAccessRuleSchema.shape.end_date,
+    exam_uuid: AssessmentAccessRuleSchema.shape.exam_uuid,
+    assessment_access_rule_id: AssessmentAccessRuleSchema.shape.id,
+    mode: AssessmentAccessRuleSchema.shape.mode,
+    assessment_access_rule_number: AssessmentAccessRuleSchema.shape.number,
+    password: AssessmentAccessRuleSchema.shape.password,
+    show_closed_assessment: AssessmentAccessRuleSchema.shape.show_closed_assessment,
+    show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
+    start_date: AssessmentAccessRuleSchema.shape.start_date,
+    time_limit_min: AssessmentAccessRuleSchema.shape.time_limit_min,
+    uids: AssessmentAccessRuleSchema.shape.uids,
+    display_timezone: CourseInstanceSchema.shape.display_timezone,
+  })
+  .transform(({ start_date, end_date, display_timezone, ...row }) => ({
+    ...row,
+    assessment_label: row.assessment_set_abbreviation + row.assessment_number,
+    start_date: formatDateISO(start_date, display_timezone),
+    end_date: formatDateISO(end_date, display_timezone),
+  }));
 
 export const AssessmentInstanceDataSchema = z
   .object({
@@ -165,14 +173,7 @@ router.get(
       },
       AssessmentAccessRuleDataSchema,
     );
-    res.status(200).send(
-      data.map(({ start_date, end_date, ...row }) => ({
-        ...row,
-        assessment_label: row.assessment_set_abbreviation + row.assessment_number,
-        start_date: formatDateISO(start_date, res.locals.course_instance.display_timezone),
-        end_date: formatDateISO(end_date, res.locals.course_instance.display_timezone),
-      })),
-    );
+    res.status(200).send(data);
   }),
 );
 
