@@ -32,25 +32,30 @@ import { AssessmentInstanceDataSchema } from '../courseInstanceAssessments/index
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
 
-const InstanceQuestionDataSchema = z.object({
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-  question_id: QuestionSchema.shape.id,
-  question_name: QuestionSchema.shape.qid,
-  instance_question_id: InstanceQuestionSchema.shape.id,
-  instance_question_number: InstanceQuestionSchema.shape.number,
-  assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
-  assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-  assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-  instance_question_points: InstanceQuestionSchema.shape.points,
-  instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
-  instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
-  instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
-  highest_submission_score: InstanceQuestionSchema.shape.highest_submission_score,
-  last_submission_score: InstanceQuestionSchema.shape.last_submission_score,
-  number_attempts: InstanceQuestionSchema.shape.number_attempts,
-  duration: InstanceQuestionSchema.shape.duration,
-});
+const InstanceQuestionDataSchema = z
+  .object({
+    zone_number: ZoneSchema.shape.number,
+    zone_title: ZoneSchema.shape.title,
+    question_id: QuestionSchema.shape.id,
+    question_name: QuestionSchema.shape.qid,
+    instance_question_id: InstanceQuestionSchema.shape.id,
+    instance_question_number: InstanceQuestionSchema.shape.number,
+    assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
+    assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+    assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+    instance_question_points: InstanceQuestionSchema.shape.points,
+    instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
+    instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
+    instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
+    highest_submission_score: InstanceQuestionSchema.shape.highest_submission_score,
+    last_submission_score: InstanceQuestionSchema.shape.last_submission_score,
+    number_attempts: InstanceQuestionSchema.shape.number_attempts,
+    duration: InstanceQuestionSchema.shape.duration,
+  })
+  .transform(({ duration, ...row }) => ({
+    ...row,
+    duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
+  }));
 
 export const SubmissionDataSchema = z
   .object({
@@ -157,12 +162,7 @@ router.get(
       },
       InstanceQuestionDataSchema,
     );
-    res.status(200).send(
-      data.map(({ duration, ...row }) => ({
-        ...row,
-        duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
-      })),
-    );
+    res.status(200).send(data);
   }),
 );
 
