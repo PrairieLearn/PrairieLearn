@@ -756,7 +756,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if not builtin_grading:
         # Still test that valid and invalid submissions are handled correctly
         result = data["test_type"]
-        if result in {"correct", "incorrect"}:
+        if result == "correct":
+            data["raw_submitted_answers"][name] = random.choice(all_keys)
+        elif result == "incorrect":
             data["raw_submitted_answers"][name] = random.choice(all_keys)
         elif result == "invalid":
             data["raw_submitted_answers"][name] = "0"
