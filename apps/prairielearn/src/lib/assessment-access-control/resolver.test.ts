@@ -2080,6 +2080,150 @@ describe('resolveAccessControl', () => {
       expect(result.accessTimeline.length).toBeGreaterThan(0);
     });
   });
+
+  // Validation only models self-or-default cascade (validation.ts), so a
+  // student matching multiple student_label overrides can produce a merged
+  // dateControl that the validator never saw — e.g., one override sets a low
+  // late-deadline credit and a second sets a higher afterLastDeadline credit.
+  // buildAccessTimeline floors each post-release segment's credit to its
+  // predecessor as a backstop. Tests pin the full timeline so the post-merge
+  // shape is visible and structural details (dates, current, submittable)
+  // are regression-checked alongside the credit invariant.
+  describe('multi-override stacks produce non-increasing accessTimeline', () => {
+    it('clamps afterLastDeadline credit when one override adds it above another override-supplied late deadline', () => {
+      // Without the cross-segment clamp the timeline would climb 50 → 80 in
+      // the trailing segment.
+      const result = runCase({
+        name: 'late from one override + higher afterLast from another',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }] },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { afterLastDeadline: { allowSubmissions: true, credit: 80 } },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-2'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
+        date: new Date('2025-04-10T00:00:00Z'),
+        expect: { authorized: true, submittable: true },
+      });
+      expect(result.accessTimeline).toEqual([
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 50,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-08T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 50,
+          startDate: new Date('2025-04-08T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+        },
+      ]);
+    });
+
+    it('clamps a higher late-deadline credit when stacked over an override-supplied lower due credit', () => {
+      // The per-deadline cap in buildDeadlines (Math.min against dueCredit)
+      // handles this one — the late deadline's 90 is clipped to 60 before
+      // the cross-segment clamp runs. Pin the timeline so that floor logic
+      // doesn't silently regress.
+      const result = runCase({
+        name: 'low due credit from one override + higher late from another',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { due: { date: '2025-04-01T00:00:00Z', credit: 60 } } },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 90 }] },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-2'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
+        date: new Date('2025-04-05T00:00:00Z'),
+        expect: { authorized: true, submittable: true },
+      });
+      expect(result.accessTimeline).toEqual([
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+        },
+        {
+          kind: 'deadline',
+          credit: 60,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 60,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-08T00:00:00Z'),
+          current: true,
+          submittable: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-08T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+        },
+      ]);
+    });
+  });
 });
 
 describe('mergeRules', () => {

@@ -53,8 +53,10 @@ interface Deadline {
  * (insertion order early → due → late wins).
  *
  * Validation normally rejects deadline credits that would cross the due-date
- * credit on the wrong side of the due date. The floor/cap below keeps resolved
- * timelines sane when inherited overrides still produce that shape.
+ * credit on the wrong side of the due date. The floor/cap below keeps each
+ * deadline's credit on the correct side of `dueCredit` when stacked overrides
+ * still produce a crossed shape; `buildAccessTimeline` then enforces a
+ * non-increasing credit timeline across all segments as a final backstop.
  */
 function buildDeadlines(
   dateControl: RuntimeDateControl,
@@ -179,6 +181,20 @@ export function buildAccessTimeline(
       current: isCurrent(segStart, null),
       submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
     });
+  }
+
+  // Floor each post-release segment's credit to its predecessor so a stacked
+  // override that leaves credit climbing — non-decreasing early deadlines,
+  // non-decreasing late deadlines, an afterLastDeadline above the last late
+  // — still produces a non-increasing timeline. Validation prevents these
+  // shapes per-rule and against defaults; this is a defensive backstop for
+  // multi-override merges that the validator deliberately doesn't model.
+  // beforeRelease (index 0, credit 0) is excluded so the first real segment
+  // isn't clamped to 0.
+  for (let i = 2; i < entries.length; i++) {
+    if (entries[i].credit > entries[i - 1].credit) {
+      entries[i] = { ...entries[i], credit: entries[i - 1].credit };
+    }
   }
 
   return entries;
