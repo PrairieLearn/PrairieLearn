@@ -783,6 +783,10 @@ export function DateTableView({
   rule: DefaultRuleData;
   formErrors: FieldErrors<DefaultRuleData> | undefined;
 }) {
+  // The footer (time limit, password) renders inside this table, so it only
+  // appears when the table itself does. That's intentional: setting either
+  // field flips `dateControlEnabled` to true, which always produces at least
+  // one row (a "No due date" row, if nothing else).
   if (rows.length === 0) return null;
 
   const footerItems: ReactNode[] = [];
