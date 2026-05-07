@@ -14,14 +14,16 @@ function DisableGroupWorkModal({
   onConfirm,
   isPending,
   hasAssessmentInstances,
-  assessmentStudentsUrl,
+  courseInstanceId,
+  assessmentId,
 }: {
   show: boolean;
   onHide: () => void;
   onConfirm: () => void;
   isPending: boolean;
   hasAssessmentInstances: boolean;
-  assessmentStudentsUrl: string;
+  courseInstanceId: string;
+  assessmentId: string;
 }) {
   return (
     <Modal show={show} onHide={onHide}>
@@ -39,7 +41,8 @@ function DisableGroupWorkModal({
         {hasAssessmentInstances && (
           <GroupWorkInstancesWarning
             action="disabling"
-            assessmentStudentsUrl={assessmentStudentsUrl}
+            courseInstanceId={courseInstanceId}
+            assessmentId={assessmentId}
             className="mt-3 mb-0"
           />
         )}
@@ -59,12 +62,14 @@ function DisableGroupWorkModal({
 export function ManageGroupWorkCard({
   origHash,
   hasAssessmentInstances,
-  assessmentStudentsUrl,
+  courseInstanceId,
+  assessmentId,
   onDisable,
 }: {
   origHash: string | null;
   hasAssessmentInstances: boolean;
-  assessmentStudentsUrl: string;
+  courseInstanceId: string;
+  assessmentId: string;
   onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -78,7 +83,8 @@ export function ManageGroupWorkCard({
         show={showDisableModal}
         isPending={mutation.isPending}
         hasAssessmentInstances={hasAssessmentInstances}
-        assessmentStudentsUrl={assessmentStudentsUrl}
+        courseInstanceId={courseInstanceId}
+        assessmentId={assessmentId}
         onHide={() => setShowDisableModal(false)}
         onConfirm={() =>
           mutation.mutate(

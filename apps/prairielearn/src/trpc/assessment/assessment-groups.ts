@@ -294,7 +294,7 @@ const enableGroupWork = t.procedure
       ctx,
       origHash: input.origHash,
       applyChanges: (json) => {
-        json.groups = {};
+        json.groups = json.groups ?? {};
         return stripLegacyGroupKeys(json);
       },
       syncFailedMessage: 'Failed to enable group work.',
@@ -352,6 +352,14 @@ const updateGroupConfig = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    const existingGroupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+    if (!existingGroupConfig) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Group work must be enabled before updating the group configuration.',
+      });
+    }
+
     if (
       input.minMembers != null &&
       input.maxMembers != null &&
@@ -430,16 +438,18 @@ const disableGroupWork = t.procedure
       });
     }
 
-    await deleteAllGroups(ctx.assessment.id, ctx.authn_user.id);
+    const { newHash } = await runInTransactionAsync(async () => {
+      await deleteAllGroups(ctx.assessment.id, ctx.authn_user.id);
 
-    const { newHash } = await saveAssessmentGroupsBlock({
-      ctx,
-      origHash: input.origHash,
-      applyChanges: (json) => {
-        delete json.groups;
-        return stripLegacyGroupKeys(json);
-      },
-      syncFailedMessage: 'Failed to disable group work.',
+      return await saveAssessmentGroupsBlock({
+        ctx,
+        origHash: input.origHash,
+        applyChanges: (json) => {
+          delete json.groups;
+          return stripLegacyGroupKeys(json);
+        },
+        syncFailedMessage: 'Failed to disable group work.',
+      });
     });
 
     return { origHash: newHash };

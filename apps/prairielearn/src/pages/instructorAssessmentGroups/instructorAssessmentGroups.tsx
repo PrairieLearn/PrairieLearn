@@ -10,15 +10,11 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
-import {
-  getAssessmentStudentsUrl,
-  getAssessmentTrpcUrl,
-  getCourseInstanceJobSequenceUrl,
-} from '../../lib/client/url.js';
+import { getAssessmentTrpcUrl, getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
 import { uploadInstanceGroups } from '../../lib/group-update.js';
-import { computeStableHash } from '../../lib/json.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -58,7 +54,10 @@ router.get(
       pageType: 'assessment',
       accessType: 'instructor',
     });
-    const { assessment, assessment_set, course, course_instance } = pageContext;
+    const { assessment, assessment_set, course, course_instance, authz_data } = pageContext;
+    const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
+    const canEditCourseInstance =
+      authz_data.has_course_instance_permission_edit && !course.example_course;
 
     const groupsCsvFilename =
       assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) + 'groups.csv';
@@ -90,21 +89,19 @@ router.get(
     );
 
     const assessmentPath = getAssessmentPath(res.locals);
-    let origHash: string | null = null;
+    const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
+      assessmentPath,
+      (json) => json.groups ?? {},
+    );
     let groupSettingsDefaults: GroupSettingsFormValues | null = null;
     try {
       const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
-      origHash = computeStableHash(rawJson.groups ?? {});
       groupSettingsDefaults = normalizeGroupSettings(rawJson);
     } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
     }
 
     const hasAssessmentInstances = await selectAssessmentHasInstances(assessment.id);
-    const assessmentStudentsUrl = getAssessmentStudentsUrl({
-      urlPrefix: res.locals.urlPrefix,
-      assessmentId: assessment.id,
-    });
 
     res.send(
       PageLayout({
@@ -116,12 +113,19 @@ router.get(
           subPage: 'groups',
         },
         options: {
-          fullWidth: true,
+          // Disabled so the sticky save alert can span the full viewport width.
+          // The page content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
         },
         content: (
           <Hydrate>
             <InstructorAssessmentGroups
-              pageContext={pageContext}
+              courseInstanceId={course_instance.id}
+              assessment={assessment}
+              assessmentSet={assessment_set}
+              canEditCourse={canEditCourse}
+              canEditCourseInstance={canEditCourseInstance}
+              csrfToken={pageContext.__csrf_token}
               groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
@@ -131,7 +135,6 @@ router.get(
               origHash={origHash}
               groupSettingsDefaults={groupSettingsDefaults}
               hasAssessmentInstances={hasAssessmentInstances}
-              assessmentStudentsUrl={assessmentStudentsUrl}
             />
           </Hydrate>
         ),

@@ -3,8 +3,11 @@ import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { getAppError } from '../../lib/client/errors.js';
-import type { PageContext } from '../../lib/client/page-context.js';
-import type { StaffGroupConfig } from '../../lib/client/safe-db-types.js';
+import type {
+  StaffAssessment,
+  StaffAssessmentSet,
+  StaffGroupConfig,
+} from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { type GroupSettingsFormValues } from '../../lib/group-config.js';
 import type { GroupUsersRow } from '../../models/group.js';
@@ -21,13 +24,15 @@ function NoGroupConfigCard({
   origHash,
   canEdit,
   hasAssessmentInstances,
-  assessmentStudentsUrl,
+  courseInstanceId,
+  assessment,
   onEnable,
 }: {
   origHash: string | null;
   canEdit: boolean;
   hasAssessmentInstances: boolean;
-  assessmentStudentsUrl: string;
+  courseInstanceId: string;
+  assessment: StaffAssessment;
   onEnable: (result: {
     origHash: string;
     groupConfig: StaffGroupConfig;
@@ -59,7 +64,8 @@ function NoGroupConfigCard({
           {canEdit && hasAssessmentInstances && (
             <GroupWorkInstancesWarning
               action="enabling"
-              assessmentStudentsUrl={assessmentStudentsUrl}
+              courseInstanceId={courseInstanceId}
+              assessmentId={assessment.id}
               className="mt-3 mb-0"
             />
           )}
@@ -80,7 +86,12 @@ function NoGroupConfigCard({
 }
 
 interface InstructorAssessmentGroupsProps {
-  pageContext: PageContext<'assessment', 'instructor'>;
+  courseInstanceId: string;
+  assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  canEditCourse: boolean;
+  canEditCourseInstance: boolean;
+  csrfToken: string;
   groupsCsvFilename?: string;
   groupConfigInfo?: StaffGroupConfig;
   groups?: GroupUsersRow[];
@@ -90,11 +101,15 @@ interface InstructorAssessmentGroupsProps {
   origHash: string | null;
   groupSettingsDefaults: GroupSettingsFormValues | null;
   hasAssessmentInstances: boolean;
-  assessmentStudentsUrl: string;
 }
 
 export function InstructorAssessmentGroups({
-  pageContext,
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  canEditCourse,
+  canEditCourseInstance,
+  csrfToken,
   groupsCsvFilename,
   groupConfigInfo,
   groups,
@@ -104,14 +119,13 @@ export function InstructorAssessmentGroups({
   origHash,
   groupSettingsDefaults,
   hasAssessmentInstances,
-  assessmentStudentsUrl,
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
-      courseInstanceId: pageContext.course_instance.id,
-      assessmentId: pageContext.assessment.id,
+      courseInstanceId,
+      assessmentId: assessment.id,
     }),
   );
 
@@ -119,7 +133,12 @@ export function InstructorAssessmentGroups({
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentGroupsInner
-          pageContext={pageContext}
+          courseInstanceId={courseInstanceId}
+          assessment={assessment}
+          assessmentSet={assessmentSet}
+          canEditCourse={canEditCourse}
+          canEditCourseInstance={canEditCourseInstance}
+          csrfToken={csrfToken}
           groupsCsvFilename={groupsCsvFilename}
           groupConfigInfo={groupConfigInfo}
           groups={groups}
@@ -127,7 +146,6 @@ export function InstructorAssessmentGroups({
           origHash={origHash}
           groupSettingsDefaults={groupSettingsDefaults}
           hasAssessmentInstances={hasAssessmentInstances}
-          assessmentStudentsUrl={assessmentStudentsUrl}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -137,7 +155,12 @@ export function InstructorAssessmentGroups({
 InstructorAssessmentGroups.displayName = 'InstructorAssessmentGroups';
 
 function InstructorAssessmentGroupsInner({
-  pageContext,
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  canEditCourse,
+  canEditCourseInstance,
+  csrfToken,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
   groups: initialGroups,
@@ -145,12 +168,7 @@ function InstructorAssessmentGroupsInner({
   origHash: initialOrigHash,
   groupSettingsDefaults: initialGroupSettingsDefaults,
   hasAssessmentInstances,
-  assessmentStudentsUrl,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
-  const { assessment, assessment_set: assessmentSet, course, authz_data } = pageContext;
-  const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
-  const canEditCourseInstance =
-    authz_data.has_course_instance_permission_edit && !course.example_course;
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -162,6 +180,9 @@ function InstructorAssessmentGroupsInner({
   const [maxGroupSize, setMaxGroupSize] = useState(
     groupSettingsDefaults?.maxMembers ?? groupConfigInfo?.maximum ?? 4,
   );
+  const [saveStatus, setSaveStatus] = useState<
+    { kind: 'success' } | { kind: 'error'; message: string } | null
+  >(null);
 
   if (!groupConfigInfo) {
     return (
@@ -169,7 +190,8 @@ function InstructorAssessmentGroupsInner({
         origHash={origHash}
         canEdit={canEditCourse}
         hasAssessmentInstances={hasAssessmentInstances}
-        assessmentStudentsUrl={assessmentStudentsUrl}
+        courseInstanceId={courseInstanceId}
+        assessment={assessment}
         onEnable={({
           origHash: newHash,
           groupConfig,
@@ -188,44 +210,74 @@ function InstructorAssessmentGroupsInner({
   }
 
   return (
-    <div className="container d-flex flex-column gap-3">
-      <GroupSettingsCard
-        groupConfigInfo={groupConfigInfo}
-        groupSettingsDefaults={groupSettingsDefaults}
-        origHash={origHash}
-        canEdit={canEditCourse}
-        onOrigHashChange={setOrigHash}
-        onGroupSizeSaved={(min, max) => {
-          setMinGroupSize(min ?? 2);
-          setMaxGroupSize(max ?? 4);
-        }}
-      />
-      <GroupsCard
-        groupsCsvFilename={groupsCsvFilename}
-        initialGroups={groups}
-        initialNotAssigned={notAssigned}
-        assessment={assessment}
-        assessmentSet={assessmentSet}
-        courseInstanceId={pageContext.course_instance.id}
-        csrfToken={pageContext.__csrf_token}
-        canEdit={canEditCourseInstance}
-        minGroupSize={minGroupSize}
-        maxGroupSize={maxGroupSize}
-      />
-      {canEditCourse && (
-        <ManageGroupWorkCard
+    <>
+      <div className="container d-flex flex-column gap-3 py-3">
+        <GroupSettingsCard
+          groupConfigInfo={groupConfigInfo}
+          groupSettingsDefaults={groupSettingsDefaults}
           origHash={origHash}
-          hasAssessmentInstances={hasAssessmentInstances}
-          assessmentStudentsUrl={assessmentStudentsUrl}
-          onDisable={({ origHash: newHash }) => {
-            setOrigHash(newHash);
-            setGroupSettingsDefaults(null);
-            setGroupConfigInfo(undefined);
-            setGroups([]);
-            setNotAssigned([]);
+          canEdit={canEditCourse}
+          onOrigHashChange={setOrigHash}
+          onGroupSizeSaved={(min, max) => {
+            setMinGroupSize(min ?? 2);
+            setMaxGroupSize(max ?? 4);
           }}
+          onSaved={() => setSaveStatus({ kind: 'success' })}
+          onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
+          onClearSaveStatus={() => setSaveStatus(null)}
         />
+        <GroupsCard
+          groupsCsvFilename={groupsCsvFilename}
+          initialGroups={groups}
+          initialNotAssigned={notAssigned}
+          assessment={assessment}
+          assessmentSet={assessmentSet}
+          courseInstanceId={courseInstanceId}
+          csrfToken={csrfToken}
+          canEdit={canEditCourseInstance}
+          minGroupSize={minGroupSize}
+          maxGroupSize={maxGroupSize}
+        />
+        {canEditCourse && (
+          <ManageGroupWorkCard
+            origHash={origHash}
+            hasAssessmentInstances={hasAssessmentInstances}
+            courseInstanceId={courseInstanceId}
+            assessmentId={assessment.id}
+            onDisable={({ origHash: newHash }) => {
+              setOrigHash(newHash);
+              setGroupSettingsDefaults(null);
+              setGroupConfigInfo(undefined);
+              setGroups([]);
+              setNotAssigned([]);
+            }}
+          />
+        )}
+      </div>
+      {canEditCourse && saveStatus && (
+        <div className="position-sticky bottom-0 z-3 bg-body border-top">
+          {saveStatus.kind === 'success' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="success"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              Group configuration saved.
+            </Alert>
+          )}
+          {saveStatus.kind === 'error' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="danger"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              {saveStatus.message}
+            </Alert>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 }
