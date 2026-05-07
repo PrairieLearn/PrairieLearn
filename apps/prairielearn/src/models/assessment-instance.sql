@@ -15,7 +15,7 @@ SELECT
       assessment_instances
     WHERE
       assessment_id = $assessment_id
-  ) AS has_instances;
+  );
 
 -- BLOCK insert_group_assessment_instance
 INSERT INTO

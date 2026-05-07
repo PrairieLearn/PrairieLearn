@@ -1,17 +1,19 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
 
+import { HelpTooltip } from '../../../components/HelpTooltip.js';
 import { getAppError } from '../../../lib/client/errors.js';
 import { type StaffGroupConfig } from '../../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-config.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+
+const SAVE_FAILED_FALLBACK = 'Failed to save group configuration.';
 
 const numberOrNull = (v: unknown): number | null => {
   if (v === '' || v == null) return null;
@@ -25,20 +27,6 @@ const RECOMMENDED_ROLES: GroupSettingsFormValues['roles'] = [
   makeRole({ name: 'Reflector', minAssignees: 1, maxAssignees: 1 }),
   makeRole({ name: 'Contributor' }),
 ];
-
-function HelpTooltip({ body, id, ariaLabel }: { body: string; id: string; ariaLabel: string }) {
-  return (
-    <OverlayTrigger placement="top" tooltip={{ body, props: { id } }}>
-      <button
-        type="button"
-        className="btn btn-xs btn-ghost p-0 border-0 lh-1 align-middle"
-        aria-label={ariaLabel}
-      >
-        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
-      </button>
-    </OverlayTrigger>
-  );
-}
 
 function ApplyRecommendedRolesModal({
   show,
@@ -96,6 +84,9 @@ export function GroupSettingsCard({
   canEdit,
   onOrigHashChange,
   onGroupSizeSaved,
+  onSaved,
+  onSaveError,
+  onClearSaveStatus,
 }: {
   groupConfigInfo: StaffGroupConfig;
   groupSettingsDefaults: GroupSettingsFormValues | null;
@@ -103,11 +94,13 @@ export function GroupSettingsCard({
   canEdit: boolean;
   onOrigHashChange: (hash: string | null) => void;
   onGroupSizeSaved: (min: number | null, max: number | null) => void;
+  onSaved: () => void;
+  onSaveError: (message: string) => void;
+  onClearSaveStatus: () => void;
 }) {
   const [showRecommendedRolesModal, setShowRecommendedRolesModal] = useState(false);
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.updateGroupConfig.mutationOptions());
-  const appError = getAppError<AssessmentGroupsError['UpdateGroupConfig']>(mutation.error);
 
   const {
     register,
@@ -116,6 +109,8 @@ export function GroupSettingsCard({
     reset,
     watch,
     setValue,
+    setError,
+    clearErrors,
     getValues,
     formState: { isDirty, isValid, errors },
   } = useForm<GroupSettingsFormValues>({
@@ -139,33 +134,49 @@ export function GroupSettingsCard({
   const watchedRoles = watch('roles');
   const watchedCanCreateGroup = watch('studentPermissions.canCreateGroup');
 
-  const formLevelRoleErrors = run(() => {
-    if (watchedRoles.length === 0) return [];
-    const errors: string[] = [];
-    const hasAssigner = watchedRoles.some(
-      (role) => role.canAssignRoles && (role.minAssignees ?? 0) >= 1,
-    );
-    if (!hasAssigner) {
-      errors.push(
-        'No roles with the "Can assign roles" permission have a minimum member count of 1 or more.',
+  useEffect(() => {
+    const violations: Record<string, string> = {};
+    if (watchedRoles.length > 0) {
+      const hasAssigner = watchedRoles.some(
+        (role) => role.canAssignRoles && (role.minAssignees ?? 0) >= 1,
       );
+      if (!hasAssigner) {
+        violations.noAssigner =
+          'No roles with the "Can assign roles" permission have a minimum member count of 1 or more.';
+      }
+      if (!watchedRoles.some((r) => r.canView)) {
+        violations.noViewer = 'At least one role must be able to view questions.';
+      }
+      if (!watchedRoles.some((r) => r.canSubmit)) {
+        violations.noSubmitter = 'At least one role must be able to submit answers.';
+      }
+      watchedRoles.forEach((r, idx) => {
+        if (!r.canView && !r.canSubmit && !r.canAssignRoles) {
+          const name = r.name || '(unnamed)';
+          violations[`roleNoPermissions${idx}`] =
+            `"${name}" has no permissions — students with this role won't be able to view, submit, or assign roles.`;
+        }
+      });
     }
-    if (!watchedRoles.some((r) => r.canView)) {
-      errors.push('At least one role must be able to view questions.');
-    }
-    if (!watchedRoles.some((r) => r.canSubmit)) {
-      errors.push('At least one role must be able to submit answers.');
-    }
-    for (const r of watchedRoles) {
-      const name = r.name || '(unnamed)';
-      if (!r.canView && !r.canSubmit && !r.canAssignRoles) {
-        errors.push(
-          `"${name}" has no permissions — students with this role won't be able to view, submit, or assign roles.`,
-        );
+
+    const possibleKeys = [
+      'noAssigner',
+      'noViewer',
+      'noSubmitter',
+      ...watchedRoles.map((_, i) => `roleNoPermissions${i}`),
+    ];
+    for (const key of possibleKeys) {
+      if (violations[key]) {
+        setError(`root.${key}`, { type: 'manual', message: violations[key] });
+      } else {
+        clearErrors(`root.${key}`);
       }
     }
-    return errors;
-  });
+  }, [watchedRoles, setError, clearErrors]);
+
+  const formLevelRoleErrors = Object.values(errors.root ?? {})
+    .map((e) => (typeof e === 'object' ? e.message : null))
+    .filter((m): m is string => typeof m === 'string');
   const roleWarnings = run(() => {
     if (watchedRoles.length === 0) return [];
     const warnings: string[] = [];
@@ -200,10 +211,21 @@ export function GroupSettingsCard({
             ...data,
             roles: data.roles.map((r) => ({ ...r, origName: r.name })),
           });
+          onSaved();
+        },
+        onError: (err) => {
+          const appError = getAppError<AssessmentGroupsError['UpdateGroupConfig']>(err);
+          onSaveError(appError?.message ?? SAVE_FAILED_FALLBACK);
         },
       },
     );
   };
+
+  const wasDirtyRef = useRef(isDirty);
+  useEffect(() => {
+    if (isDirty && !wasDirtyRef.current) onClearSaveStatus();
+    wasDirtyRef.current = isDirty;
+  }, [isDirty, onClearSaveStatus]);
 
   return (
     <div className="card">
@@ -221,16 +243,6 @@ export function GroupSettingsCard({
           <div className="text-muted small mb-4">
             Configure how groups work for this assessment.
           </div>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
-          {mutation.isSuccess && !isDirty && (
-            <Alert variant="success" dismissible onClose={() => mutation.reset()}>
-              Group configuration saved.
-            </Alert>
-          )}
           <fieldset disabled={!canEdit}>
             <div className="mb-4">
               <h6>Student permissions</h6>
