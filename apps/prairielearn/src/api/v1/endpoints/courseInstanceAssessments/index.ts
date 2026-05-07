@@ -99,11 +99,12 @@ export function formatAssessmentInstanceDataForResponse(
     modified_at: formatDateISO(modified_at, resLocals.course_instance.display_timezone),
     time_remaining: instance.open
       ? date_limit
-        ? Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS) + ' min'
+        ? Math.max(0, Math.floor((date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS)) +
+          ' min'
         : 'Open'
       : 'Closed',
     start_date: formatDateISO(date, resLocals.course_instance.display_timezone),
-    duration_seconds: duration ? duration / SECOND_IN_MILLISECONDS : null,
+    duration_seconds: duration == null ? null : duration / SECOND_IN_MILLISECONDS,
   };
 }
 

@@ -46,7 +46,7 @@ describe('date formatting', () => {
   });
 
   describe('formatDateISO', () => {
-    it('a null date returns null', () => {
+    it('returns null for a null date', () => {
       assert.isNull(formatDateISO(null, 'UTC'));
     });
 
