@@ -736,8 +736,8 @@ function chooseEffectiveIssueEntry(
   const preferredFromCurrent = preferredEntry?.validationRule === currentValidationRule;
   const fallbackFromCurrent = fallbackEntry?.validationRule === currentValidationRule;
   if (preferredFromCurrent && fallbackFromCurrent) return null;
-  if (preferredFromCurrent) return preferredEntry ?? null;
-  if (fallbackFromCurrent) return fallbackEntry ?? null;
+  if (preferredFromCurrent) return preferredEntry;
+  if (fallbackFromCurrent) return fallbackEntry;
   return null;
 }
 
