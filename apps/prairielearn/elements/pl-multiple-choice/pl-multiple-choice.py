@@ -295,7 +295,7 @@ def prepare_answers_to_display(
         #   to one correct answer and as many incorrect answers as needed.
         # - If 'All of the above' is random, we choose the lower bound, so that
         #   the number of answers is stable regardless of the random choice.
-        number_answers = min(1 + len_incorrect, number_answers)
+        number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
 
     if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
         # Either 'None of the above' or 'All of the above' is correct
@@ -445,6 +445,48 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     builtin_grading = pl.get_boolean_attrib(
         element, "builtin-grading", BUILTIN_GRADING_DEFAULT
     )
+
+    if not builtin_grading:
+        if pl.has_attrib(element, "weight"):
+            raise ValueError(
+                '"weight" should not be set when builtin-grading is false, '
+                "as the element will not contribute to the grading score."
+            )
+        if (
+            get_nota_aota_attrib(element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT)
+            is not AotaNotaType.FALSE
+        ):
+            raise ValueError(
+                '"all-of-the-above" should not be set when builtin-grading is false, '
+                "as it affects answer correctness which is not used without built-in grading."
+            )
+        if (
+            get_nota_aota_attrib(
+                element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
+            )
+            is not AotaNotaType.FALSE
+        ):
+            raise ValueError(
+                '"none-of-the-above" should not be set when builtin-grading is false, '
+                "as it affects answer correctness which is not used without built-in grading."
+            )
+        if pl.has_attrib(element, "hide-score-badge"):
+            raise ValueError(
+                '"hide-score-badge" should not be set when builtin-grading is false, '
+                "as no score badges are produced without built-in grading."
+            )
+        for child in element:
+            if child.tag in {"pl-answer", "pl_answer"}:
+                if pl.has_attrib(child, "score"):
+                    raise ValueError(
+                        '"score" on pl-answer should not be set when builtin-grading is false, '
+                        "as it is only used by the built-in grading logic."
+                    )
+                if pl.has_attrib(child, "feedback"):
+                    raise ValueError(
+                        '"feedback" on pl-answer should not be set when builtin-grading is false, '
+                        "as it is only used by the built-in grading logic."
+                    )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 
@@ -620,17 +662,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-        correct_answer = data["correct_answers"].get(name, None)
-
         builtin_grading = pl.get_boolean_attrib(
             element, "builtin-grading", BUILTIN_GRADING_DEFAULT
         )
 
-        if correct_answer is None and builtin_grading:
-            raise ValueError("No true answer.")
+        if not builtin_grading:
+            return ""
+
+        correct_answer = data["correct_answers"].get(name, None)
 
         if correct_answer is None:
-            return ""
+            raise ValueError("No true answer.")
 
         html_params = {
             "answer": True,
@@ -703,20 +745,32 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     builtin_grading = pl.get_boolean_attrib(
         element, "builtin-grading", BUILTIN_GRADING_DEFAULT
     )
+
+    number_answers = len(data["params"][name])
+    all_keys = list(it.islice(pl.iter_keys(), number_answers))
+
     if not builtin_grading:
+        # Still test that valid and invalid submissions are handled correctly
+        result = data["test_type"]
+        if result in {"correct", "incorrect"}:
+            data["raw_submitted_answers"][name] = random.choice(all_keys)
+        elif result == "invalid":
+            data["raw_submitted_answers"][name] = "0"
+            data["format_errors"][name] = "INVALID choice"
+        else:
+            assert_never(result)
         return
+
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     correct_key = data["correct_answers"][name].get("key", None)
     if correct_key is None:
         raise ValueError("could not determine correct_key")
 
-    number_answers = len(data["params"][name])
-    all_keys = list(it.islice(pl.iter_keys(), number_answers))
     incorrect_keys = list(set(all_keys) - {correct_key})
 
     result = data["test_type"]
