@@ -17,11 +17,13 @@ import { useFormState } from 'react-hook-form';
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
+  AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
+  generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
   generateRuleSummary,
 } from './RuleSummary.js';
@@ -126,8 +128,9 @@ function DefaultRuleSummaryContent({
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
+  const summaryItems = generateRuleSummary(rule, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
+  const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
   const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
@@ -144,6 +147,7 @@ function DefaultRuleSummaryContent({
         <div className="mb-2">
           <PrairieTestExamsTable
             exams={rule.prairieTestExams}
+            beforeReleaseListed={rule.beforeReleaseListed}
             initialMetadata={prairieTestExamMetadata}
             ptHost={ptHost}
             formErrors={formErrors}
@@ -151,16 +155,25 @@ function DefaultRuleSummaryContent({
         </div>
       )}
 
-      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
-
-      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
-        <div
-          className="rounded text-center py-3 text-body-secondary"
-          style={{ border: '2px dashed var(--bs-border-color)' }}
-        >
-          No access settings configured.
+      {afterCompleteTableRows.length > 0 && (
+        <div className="mb-2">
+          <AfterCompleteTableView rows={afterCompleteTableRows} />
         </div>
       )}
+
+      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
+
+      {dateTableRows.length === 0 &&
+        !hasPrairieTestExams &&
+        afterCompleteTableRows.length === 0 &&
+        summaryItems.length === 0 && (
+          <div
+            className="rounded text-center py-3 text-body-secondary"
+            style={{ border: '2px dashed var(--bs-border-color)' }}
+          >
+            No access settings configured.
+          </div>
+        )}
     </div>
   );
 }

@@ -21,7 +21,6 @@ import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
   type DefaultRuleData,
-  type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
@@ -33,27 +32,20 @@ function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
 }
 
-type RuleData = DefaultRuleData | OverrideData;
-
 /** react-hook-form error subtree for a single access control rule. */
 export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
-
-function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
-  return 'dateControlEnabled' in rule;
-}
-
-function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isDefaultRuleData(rule)) return true;
-  return rule.overriddenFields.includes(fieldName);
-}
 
 interface DateTableRow {
   date: ReactNode;
   label: string;
-  credit: string;
+  access: string;
   error?: string;
   current?: boolean;
   currentVariant?: 'success' | 'primary';
+}
+
+function formatListedForStudents(listed: boolean): string {
+  return listed ? 'Listed for students' : 'Hidden from students';
 }
 
 /**
@@ -192,6 +184,14 @@ export function generateDefaultRuleDateTableRows(
     }
   };
 
+  rows.push({
+    date: '',
+    label: 'Before release',
+    access: formatListedForStudents(rule.beforeReleaseListed),
+    current: isBeforeReleaseSegment,
+    currentVariant,
+  });
+
   if (releaseDate || releaseDateError) {
     rows.push({
       date: releaseDate ? (
@@ -205,9 +205,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: 'Release',
-      credit: '—',
-      current: isBeforeReleaseSegment,
-      currentVariant,
+      access: '—',
       error: releaseDateError,
     });
   }
@@ -227,7 +225,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Early ${index + 1}`,
-      credit: formatCreditPercent(deadline.credit),
+      access: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -249,7 +247,7 @@ export function generateDefaultRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
       current: isDeadlineCurrent(dueDate),
       currentVariant,
@@ -258,7 +256,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
       current: isNoDeadlineSegment,
       currentVariant,
@@ -268,7 +266,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
     });
   }
@@ -288,7 +286,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Late ${index + 1}`,
-      credit: formatCreditPercent(deadline.credit),
+      access: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -302,7 +300,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: 'After last deadline',
-      credit: afterLastDeadline?.allowSubmissions
+      access: afterLastDeadline?.allowSubmissions
         ? afterLastDeadline.credit != null
           ? formatCreditPercent(afterLastDeadline.credit)
           : 'Practice'
@@ -323,165 +321,230 @@ interface SummaryItem {
   error?: string;
 }
 
-export function generateRuleSummary(
-  rule: RuleData,
+interface AfterCompleteTableRow {
+  key: string;
+  timeRange: ReactNode;
+  questionsVisible: boolean;
+  scoreVisible: boolean;
+  errors?: string[];
+}
+
+interface AfterCompleteVisibilityEvent {
+  date: string;
+  questionsVisible?: boolean;
+  scoreVisible?: boolean;
+}
+
+type SummaryBadgeVariant = 'success' | 'danger' | 'warning' | 'info' | 'muted';
+
+function SummaryBadge({
+  children,
+  icon,
+  variant = 'muted',
+}: {
+  children: ReactNode;
+  icon?: string;
+  variant?: SummaryBadgeVariant;
+}) {
+  const className = run(() => {
+    switch (variant) {
+      case 'success':
+        return 'bg-success-subtle border border-success-subtle text-success-emphasis';
+      case 'danger':
+        return 'bg-danger-subtle border border-danger-subtle text-danger-emphasis';
+      case 'warning':
+        return 'bg-warning-subtle border border-warning-subtle text-warning-emphasis';
+      case 'info':
+        return 'bg-info-subtle border border-info-subtle text-info-emphasis';
+      case 'muted':
+        return 'bg-body-tertiary border text-body-secondary';
+    }
+  });
+
+  return (
+    <span
+      className={`badge rounded-pill d-inline-flex align-items-center gap-1 fw-medium ${className}`}
+    >
+      {icon && <i className={`bi ${icon}`} aria-hidden="true" />}
+      {children}
+    </span>
+  );
+}
+
+function VisibilityBadge({ visible }: { visible: boolean }) {
+  return (
+    <SummaryBadge
+      variant={visible ? 'success' : 'danger'}
+      icon={visible ? 'bi-eye' : 'bi-eye-slash'}
+    >
+      {visible ? 'Shown' : 'Hidden'}
+    </SummaryBadge>
+  );
+}
+
+function AfterCompleteDate({
+  date,
+  displayTimezone,
+}: {
+  date: string | undefined;
+  displayTimezone: string;
+}) {
+  if (date === undefined) return <span className="text-body-secondary">—</span>;
+  if (!date) return 'No date set';
+  return (
+    <FriendlyDate
+      date={Temporal.PlainDateTime.from(date)}
+      timezone={displayTimezone}
+      options={{ includeTz: false }}
+      tooltip
+    />
+  );
+}
+
+function AfterCompleteTimeRange({
+  date,
+  displayTimezone,
+}: {
+  date: string;
+  displayTimezone: string;
+}) {
+  return (
+    <>
+      After <AfterCompleteDate date={date} displayTimezone={displayTimezone} />
+    </>
+  );
+}
+
+function compareAfterCompleteEvents(
+  a: AfterCompleteVisibilityEvent,
+  b: AfterCompleteVisibilityEvent,
+) {
+  try {
+    return Temporal.PlainDateTime.compare(
+      Temporal.PlainDateTime.from(a.date),
+      Temporal.PlainDateTime.from(b.date),
+    );
+  } catch {
+    if (!a.date && b.date) return 1;
+    if (a.date && !b.date) return -1;
+    return 0;
+  }
+}
+
+function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterCompleteVisibilityEvent[] {
+  const events: AfterCompleteVisibilityEvent[] = [];
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+
+  if (qv.hidden && qv.visibleFromDate !== undefined) {
+    events.push({
+      date: qv.visibleFromDate,
+      questionsVisible: true,
+    });
+    if (qv.visibleUntilDate !== undefined) {
+      events.push({
+        date: qv.visibleUntilDate,
+        questionsVisible: false,
+      });
+    }
+  }
+
+  if (sv.hidden && sv.visibleFromDate !== undefined) {
+    events.push({
+      date: sv.visibleFromDate,
+      scoreVisible: true,
+    });
+  }
+
+  return events.sort(compareAfterCompleteEvents);
+}
+
+export function generateAfterCompleteTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
   formErrors?: RuleFormErrors,
-): SummaryItem[] {
-  const items: SummaryItem[] = [];
-
-  if (isDefaultRuleData(rule)) {
-    const listed = rule.beforeReleaseListed;
-    const text = run(() => {
-      const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
-      if (releaseDate) {
-        return listed ? 'Listed before release' : 'Hidden before release';
-      }
-      if (rule.prairieTestExams.length > 0) {
-        return listed ? 'Listed before exam' : 'Hidden before exam';
-      }
-      return listed ? 'Always listed' : 'Always hidden';
-    });
-    items.push({
-      key: 'before-release',
-      icon: listed ? 'bi-eye' : 'bi-eye-slash',
-      text,
-    });
-  }
-
-  if (isOverrideFieldActive(rule, 'durationMinutes')) {
-    const durationMinutes = rule.durationMinutes;
-    if (durationMinutes !== null) {
-      const error = formErrors?.durationMinutes?.message;
-      items.push({
-        key: 'duration',
-        icon: 'bi-clock',
-        text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
-        error,
-      });
-    }
-  }
-
-  if (isOverrideFieldActive(rule, 'password')) {
-    const password = rule.password;
-    if (password !== null) {
-      const error = formErrors?.password?.message;
-      items.push({
-        key: 'password',
-        icon: 'bi-lock',
-        text: error ? 'Missing password' : 'Password protected',
-        error,
-      });
-    }
-  }
-
-  const isDefault = isDefaultRuleData(rule);
-  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
+): AfterCompleteTableRow[] {
+  const hasDateControl = rule.dateControlEnabled;
+  const hasPrairieTest = rule.prairieTestExams.length > 0;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
   const svNonDefault = isNonDefaultScoreVisibility(rule.scoreVisibility);
+  const showQuestions = showAfterComplete || qvNonDefault;
+  const showScore = showAfterComplete || svNonDefault;
 
-  if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
-    const qv = rule.questionVisibility;
-    const qvError =
-      formErrors?.questionVisibility?.visibleFromDate?.message ||
-      formErrors?.questionVisibility?.visibleUntilDate?.message ||
-      formErrors?.questionVisibility?.message;
-    if (!qv.hidden) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye',
-        text: 'Questions visible after completion',
-        error: qvError,
-      });
-    } else if (qv.visibleFromDate && qv.visibleUntilDate) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Questions hidden after completion, shown{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-            {' – '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: qvError,
-      });
-    } else if (qv.visibleFromDate) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Questions hidden after completion until{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: qvError,
-      });
-    } else {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: 'Questions hidden after completion',
-        error: qvError,
-      });
+  if (!showQuestions && !showScore) return [];
+
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+  const errors = [
+    formErrors?.questionVisibility?.visibleFromDate?.message,
+    formErrors?.questionVisibility?.visibleUntilDate?.message,
+    formErrors?.questionVisibility?.message,
+    formErrors?.scoreVisibility?.visibleFromDate?.message,
+    formErrors?.scoreVisibility?.message,
+  ].filter((error): error is string => !!error);
+
+  let questionsVisible = !qv.hidden;
+  let scoreVisible = !sv.hidden;
+  const rows: AfterCompleteTableRow[] = [
+    {
+      key: 'immediately',
+      timeRange: 'Immediately after completion',
+      questionsVisible,
+      scoreVisible,
+      errors,
+    },
+  ];
+
+  const events = buildAfterCompleteVisibilityEvents(rule);
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    if (event.questionsVisible !== undefined) questionsVisible = event.questionsVisible;
+    if (event.scoreVisible !== undefined) scoreVisible = event.scoreVisible;
+    while (events[i + 1]?.date === event.date) {
+      i++;
+      const nextEvent = events[i];
+      if (nextEvent.questionsVisible !== undefined) questionsVisible = nextEvent.questionsVisible;
+      if (nextEvent.scoreVisible !== undefined) scoreVisible = nextEvent.scoreVisible;
     }
+    rows.push({
+      key: `after-${event.date || i}`,
+      timeRange: <AfterCompleteTimeRange date={event.date} displayTimezone={displayTimezone} />,
+      questionsVisible,
+      scoreVisible,
+    });
   }
-  if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
-    const sv = rule.scoreVisibility;
-    const svError =
-      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hidden && sv.visibleFromDate) {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Score hidden after completion until{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: svError,
-      });
-    } else if (sv.hidden) {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye-slash',
-        text: 'Score hidden after completion',
-        error: svError,
-      });
-    } else {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye',
-        text: 'Score visible after completion',
-        error: svError,
-      });
-    }
+
+  return rows;
+}
+
+export function generateRuleSummary(
+  rule: DefaultRuleData,
+  formErrors?: RuleFormErrors,
+): SummaryItem[] {
+  const items: SummaryItem[] = [];
+
+  const durationMinutes = rule.durationMinutes;
+  if (durationMinutes !== null) {
+    const error = formErrors?.durationMinutes?.message;
+    items.push({
+      key: 'duration',
+      icon: 'bi-clock',
+      text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
+      error,
+    });
+  }
+
+  const password = rule.password;
+  if (password !== null) {
+    const error = formErrors?.password?.message;
+    items.push({
+      key: 'password',
+      icon: 'bi-lock',
+      text: error ? 'Missing password' : 'Password protected',
+      error,
+    });
   }
 
   return items;
@@ -785,32 +848,38 @@ function CreditBadge({ credit }: { credit: string }) {
   if (!credit) return null;
 
   const numericValue = Number.parseInt(credit, 10);
-  let className: string;
+  let variant: SummaryBadgeVariant;
 
   if (Number.isNaN(numericValue)) {
-    className = 'bg-body-tertiary text-body-secondary';
+    variant = 'muted';
   } else if (numericValue > 100) {
-    className = 'bg-info-subtle text-info-emphasis';
+    variant = 'info';
   } else if (numericValue === 100) {
-    className = 'bg-success-subtle text-success-emphasis';
+    variant = 'success';
   } else if (numericValue === 0) {
-    className = 'bg-danger-subtle text-danger-emphasis';
+    variant = 'danger';
   } else {
-    className = 'bg-warning-subtle text-warning-emphasis';
+    variant = 'warning';
   }
 
-  return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
+  return <SummaryBadge variant={variant}>{credit}</SummaryBadge>;
 }
 
 function YesNoBadge({ value }: { value: boolean | null }) {
   if (value === null) {
     return <span className="text-body-secondary">—</span>;
   }
-  const className = value
-    ? 'bg-success-subtle text-success-emphasis'
-    : 'bg-warning-subtle text-warning-emphasis';
   return (
-    <span className={`badge rounded-pill fw-medium ${className}`}>{value ? 'Yes' : 'No'}</span>
+    <SummaryBadge variant={value ? 'success' : 'warning'}>{value ? 'Yes' : 'No'}</SummaryBadge>
+  );
+}
+
+function SummaryTableHeader({ icon, title }: { icon: string; title: string }) {
+  return (
+    <div className="d-flex align-items-center gap-2 border-bottom bg-body-tertiary px-3 py-2">
+      <i className={`bi ${icon} text-body-secondary`} aria-hidden="true" />
+      <h6 className="mb-0 fw-semibold">{title}</h6>
+    </div>
   );
 }
 
@@ -818,9 +887,10 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div
-      className="border rounded-top overflow-hidden"
+      className="border rounded overflow-hidden"
       style={{ borderColor: 'var(--bs-border-color)' }}
     >
+      <SummaryTableHeader icon="bi-calendar3" title="Date control" />
       <table className="table table-sm mb-0">
         <thead>
           <tr>
@@ -828,14 +898,13 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
               className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
               style={thStyle}
             >
-              <i className="bi bi-calendar3 me-1" aria-hidden="true" />
               Date
             </th>
             <th
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
               style={thStyle}
             >
-              Credit
+              Access
             </th>
           </tr>
         </thead>
@@ -868,12 +937,76 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
                 )}
               </td>
               <td className="border-0" style={tdStyle}>
-                <CreditBadge credit={row.credit} />
+                <CreditBadge credit={row.access} />
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[] }) {
+  if (rows.length === 0) return null;
+  const errors = Array.from(new Set(rows.flatMap((row) => row.errors ?? [])));
+  return (
+    <div
+      className="border rounded overflow-hidden"
+      style={{ borderColor: 'var(--bs-border-color)' }}
+    >
+      <SummaryTableHeader icon="bi-check2-circle" title="After completion" />
+      <div className="table-responsive">
+        <table className="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th
+                className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
+                style={thStyle}
+              >
+                Time range
+              </th>
+              <th
+                className="fw-semibold text-body-secondary text-nowrap border-bottom"
+                style={thStyle}
+              >
+                Question visibility
+              </th>
+              <th
+                className="fw-semibold text-body-secondary text-nowrap border-bottom"
+                style={thStyle}
+              >
+                Score visibility
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key}>
+                <td className="border-0 ps-3" style={tdStyle}>
+                  {row.timeRange}
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  <VisibilityBadge visible={row.questionsVisible} />
+                </td>
+                <td className="border-0 text-nowrap" style={tdStyle}>
+                  <VisibilityBadge visible={row.scoreVisible} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {errors.length > 0 && (
+        <div className="border-top px-3 py-2 text-danger small">
+          {errors.map((error) => (
+            <div key={error}>
+              <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -990,11 +1123,13 @@ const tdStyle = {
 
 export function PrairieTestExamsTable({
   exams,
+  beforeReleaseListed,
   initialMetadata,
   ptHost,
   formErrors,
 }: {
   exams: DefaultRuleData['prairieTestExams'];
+  beforeReleaseListed: boolean;
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
   formErrors?: FieldErrors<DefaultRuleData>;
@@ -1028,6 +1163,7 @@ export function PrairieTestExamsTable({
       className="border rounded overflow-hidden"
       style={{ borderColor: 'var(--bs-border-color)' }}
     >
+      <SummaryTableHeader icon="bi-pc-display" title="PrairieTest" />
       <table className="table table-sm mb-0">
         <thead>
           <tr>
@@ -1035,8 +1171,7 @@ export function PrairieTestExamsTable({
               className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
               style={thStyle}
             >
-              <i className="bi bi-pc-display me-1" aria-hidden="true" />
-              PrairieTest exams
+              Exam
             </th>
             <th
               className="fw-semibold text-body-secondary text-nowrap border-bottom"
@@ -1104,6 +1239,9 @@ export function PrairieTestExamsTable({
           })}
         </tbody>
       </table>
+      <div className="border-top px-3 py-2 text-body-secondary small">
+        {formatListedForStudents(beforeReleaseListed)} before the exam
+      </div>
     </div>
   );
 }
