@@ -25,7 +25,7 @@ import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
 
-import { validateAccessControlRules } from './validation.js';
+import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './validation.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,6 +56,12 @@ interface CourseInstanceMigrationAnalysis {
 interface QuestionReviewWindow {
   visibleFromDate: string;
   visibleUntilDate?: string;
+}
+
+interface VisibilityMigration {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  beforeRelease: AccessControlJsonInput['beforeRelease'] | undefined;
+  notes: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -262,14 +268,17 @@ function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
 // Visibility helpers (afterComplete, listBeforeRelease)
 // ---------------------------------------------------------------------------
 
-function buildAfterComplete(
-  rules: AssessmentAccessRuleJson[],
-): AccessControlJsonInput['afterComplete'] | undefined {
+function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  notes: string[];
+} {
   const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
   const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
   const questionReviewWindows = getQuestionReviewWindows(rules);
 
-  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) return undefined;
+  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) {
+    return { afterComplete: undefined, notes: [] };
+  }
 
   const result: AccessControlJsonInput['afterComplete'] = {};
   if (hidesAssessment || questionReviewWindows.length > 0) result.questions = { hidden: true };
@@ -305,7 +314,36 @@ function buildAfterComplete(
     }
   }
 
-  return result;
+  // Enforce the same afterComplete cross-field invariant used by sync/UI.
+  // If the legacy rules revealed questions before the score, push questions'
+  // reveal forward to match the score's reveal date. The migration only ever
+  // constructs questions/score with hidden=true, so the third issue kind
+  // (score_hidden_requires_questions_hidden) is unreachable here.
+  const notes: string[] = [];
+  if (result.questions !== undefined && result.score !== undefined) {
+    const issue = getAfterCompleteCrossFieldIssue(result.questions, result.score);
+    if (issue?.kind === 'questions_reveal_requires_score_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      delete result.questions.visibleFromDate;
+      delete result.questions.visibleUntilDate;
+      notes.push(
+        `Questions reveal date ${questionsFrom} was removed because score remains hidden after completion.`,
+      );
+    } else if (issue?.kind === 'score_reveal_after_questions_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      const questionsUntil = result.questions.visibleUntilDate;
+      result.questions.visibleFromDate = result.score.visibleFromDate;
+      // The original review-window end is no longer meaningful once the start
+      // is pushed forward; drop it to keep the migrated config valid.
+      delete result.questions.visibleUntilDate;
+      const untilNote = questionsUntil ? ` (review-window end ${questionsUntil} dropped)` : '';
+      notes.push(
+        `Questions reveal date changed from ${questionsFrom} to ${result.score.visibleFromDate} so questions do not become visible while the score is still hidden${untilNote}.`,
+      );
+    }
+  }
+
+  return { afterComplete: result, notes };
 }
 
 function getQuestionReviewWindows(rules: AssessmentAccessRuleJson[]): QuestionReviewWindow[] {
@@ -386,13 +424,19 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   });
 }
 
+function buildVisibilityMigration(rules: AssessmentAccessRuleJson[]): VisibilityMigration {
+  const { afterComplete, notes } = buildAfterComplete(rules);
+  const beforeRelease = shouldListBeforeRelease(rules) ? { listed: true as const } : undefined;
+  return { afterComplete, beforeRelease, notes };
+}
+
 function applyVisibilityMigration(
   accessControl: AccessControlJsonInput,
-  rules: AssessmentAccessRuleJson[],
+  visibilityMigration: VisibilityMigration,
 ): void {
-  const afterComplete = buildAfterComplete(rules);
+  const { afterComplete, beforeRelease } = visibilityMigration;
   if (afterComplete) accessControl.afterComplete = afterComplete;
-  if (shouldListBeforeRelease(rules)) accessControl.beforeRelease = { listed: true };
+  if (beforeRelease) accessControl.beforeRelease = beforeRelease;
 }
 
 // ---------------------------------------------------------------------------
@@ -764,6 +808,7 @@ interface AnalysisResults {
   ptExtract: ReturnType<typeof extractPrairieTest>;
   pwExtract: ReturnType<typeof extractPassword>;
   dateControl: AccessControlJsonInput['dateControl'];
+  visibilityMigration: VisibilityMigration;
 }
 
 interface Analysis {
@@ -885,11 +930,14 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
     }
   }
 
+  const visibilityMigration = buildVisibilityMigration(schedulingRules);
+  notes.push(...visibilityMigration.notes);
+
   return {
     errors: [],
     notes,
     hasUidRules,
-    results: { schedulingRules, ptExtract, pwExtract, dateControl },
+    results: { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration },
   };
 }
 
@@ -903,7 +951,8 @@ export function migrateAllowAccess(
     return { accessControl: {}, errors, notes, hasUidRules };
   }
 
-  const { schedulingRules, ptExtract, pwExtract, dateControl } = analysis.results;
+  const { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration } =
+    analysis.results;
   const { notes, hasUidRules } = analysis;
   const accessControl: AccessControlJsonInput = {};
 
@@ -924,7 +973,7 @@ export function migrateAllowAccess(
     accessControl.dateControl.password = pwExtract.password;
   }
 
-  applyVisibilityMigration(accessControl, schedulingRules);
+  applyVisibilityMigration(accessControl, visibilityMigration);
 
   if (ptExtract) {
     accessControl.integrations = ptExtract.integrations;

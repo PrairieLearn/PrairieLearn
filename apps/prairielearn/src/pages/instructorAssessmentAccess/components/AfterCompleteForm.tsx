@@ -1,5 +1,5 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { get, useController, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -534,6 +534,19 @@ export function OverrideAfterCompleteForm({
   )?.message;
   const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
 
+  const { clearErrors } = useFormContext<AccessControlFormData>();
+
+  const {
+    isOverridden: qvOverridden,
+    addOverride: addQvOverride,
+    removeOverride: removeQvOverride,
+  } = useOverrideField(index, 'questionVisibility');
+  const {
+    isOverridden: svOverridden,
+    addOverride: addSvOverride,
+    removeOverride: removeSvOverride,
+  } = useOverrideField(index, 'scoreVisibility');
+
   const { field: qvField } = useController<
     AccessControlFormData,
     `overrides.${number}.questionVisibility`
@@ -548,17 +561,6 @@ export function OverrideAfterCompleteForm({
     name: `overrides.${index}.scoreVisibility`,
     rules: { validate: validateScoreVisibility },
   });
-
-  const {
-    isOverridden: qvOverridden,
-    addOverride: addQvOverride,
-    removeOverride: removeQvOverride,
-  } = useOverrideField(index, 'questionVisibility');
-  const {
-    isOverridden: svOverridden,
-    addOverride: addSvOverride,
-    removeOverride: removeSvOverride,
-  } = useOverrideField(index, 'scoreVisibility');
 
   return (
     <AfterCompleteCard title={title}>
@@ -592,7 +594,10 @@ export function OverrideAfterCompleteForm({
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
           }}
-          onRemoveOverride={removeSvOverride}
+          onRemoveOverride={() => {
+            removeSvOverride();
+            clearErrors(`overrides.${index}.questionVisibility`);
+          }}
         >
           <ScoreVisibilityInput
             value={svField.value}
