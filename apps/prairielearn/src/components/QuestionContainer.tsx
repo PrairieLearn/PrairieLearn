@@ -240,37 +240,33 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage
-            ? rotationCorrectionApplied
-              ? html`<div class="alert alert-warning mb-3" role="alert">
-                  <p>
-                    One or more images were uploaded in a rotated state by the student (this was an
-                    error by the student). The system corrected their rotation prior to AI grading.
-                  </p>
-                  <div class="card table-responsive mb-0" style="max-width: 800px;">
-                    <table class="table table-sm mb-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th class="text-nowrap">Filename</th>
-                          <th class="text-nowrap">Correction (counterclockwise)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${Object.entries(rotationCorrectionDegrees).map(
-                          ([filename, degrees]) => html`
-                            <tr>
-                              <td class="text-nowrap"><code>${filename}</code></td>
-                              <td>${degrees}&deg;</td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>`
-              : html`<div class="alert alert-info mb-3" role="alert">
-                  None of the submitted images required rotation correction.
-                </div>`
+          ${hasImage && rotationCorrectionApplied
+            ? html`<div class="alert alert-warning mb-3" role="alert">
+                <p>
+                  One or more images were uploaded in a rotated state by the student (this was an
+                  error by the student). The system corrected their rotation prior to AI grading.
+                </p>
+                <div class="card table-responsive mb-0" style="max-width: 800px;">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-nowrap">Filename</th>
+                        <th class="text-nowrap">Correction (counterclockwise)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${Object.entries(rotationCorrectionDegrees).map(
+                        ([filename, degrees]) => html`
+                          <tr>
+                            <td class="text-nowrap"><code>${filename}</code></td>
+                            <td>${degrees}&deg;</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`
             : ''}
           ${explanation
             ? html`
