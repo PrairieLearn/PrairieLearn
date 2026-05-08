@@ -291,11 +291,14 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: 'After last deadline',
-      credit: afterLastDeadline?.allowSubmissions
-        ? afterLastDeadline.credit != null
-          ? formatCreditPercent(afterLastDeadline.credit)
-          : 'Practice'
-        : 'Closed',
+      credit:
+        afterLastDeadline == null
+          ? 'No access'
+          : afterLastDeadline.allowSubmissions
+            ? afterLastDeadline.credit != null
+              ? formatCreditPercent(afterLastDeadline.credit)
+              : 'Practice'
+            : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -478,7 +481,8 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
+  if (afterLastDeadline == null) return 'No access';
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
@@ -488,9 +492,9 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push('submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
   } else {
-    parts.push('closed');
+    parts.push('Closed');
   }
   return parts.join(', ');
 }
@@ -891,7 +895,7 @@ export function DateTableView({
 }
 
 interface CurrentIndicator {
-  variant: 'success' | 'primary';
+  variant: 'success' | 'primary' | 'secondary';
   icon: string;
   text: ReactNode;
 }
@@ -941,6 +945,10 @@ function buildDefaultRuleCurrentIndicator(
       icon: 'bi-eye-slash',
       text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
     };
+  }
+
+  if (!segment.accessible) {
+    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
   }
 
   if (!segment.submittable) {
@@ -1181,13 +1189,25 @@ export function OverrideRuleSummaryCard({
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
-            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEdit}>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              aria-label="Edit"
+              className="d-inline-flex align-items-center"
+              onClick={onEdit}
+            >
               <i className="bi bi-pencil" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
           )}
           {onRemove && (
-            <Button variant="outline-danger" size="sm" aria-label="Remove" onClick={onRemove}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              aria-label="Remove"
+              className="d-inline-flex align-items-center"
+              onClick={onRemove}
+            >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Remove</span>
             </Button>

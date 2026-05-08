@@ -17,9 +17,18 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
-type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
+type AfterLastDeadlineMode =
+  | 'no_access'
+  | 'no_submissions'
+  | 'practice_submissions'
+  | 'partial_credit';
 
 const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
+  {
+    value: 'no_access',
+    label: 'No access',
+    description: 'Students cannot access the assessment after the last deadline',
+  },
   {
     value: 'no_submissions',
     label: 'No submissions allowed',
@@ -38,7 +47,7 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
 ];
 
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
-  if (!value) return 'no_submissions';
+  if (value == null) return 'no_access';
   if (!value.allowSubmissions) return 'no_submissions';
   if (value.credit == null) return 'practice_submissions';
   return 'partial_credit';
@@ -142,6 +151,9 @@ function AfterLastDeadlineInput({
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
+      case 'no_access':
+        onChange(null);
+        break;
       case 'no_submissions':
         onChange({ allowSubmissions: false });
         break;
@@ -276,7 +288,7 @@ export function OverrideAfterLastDeadlineField({
       isOverridden={isOverridden}
       label="After last deadline"
       onOverride={() => {
-        field.onChange(defaultRuleValue ?? { allowSubmissions: false });
+        field.onChange(defaultRuleValue ?? null);
         addOverride();
       }}
       onRemoveOverride={removeOverride}

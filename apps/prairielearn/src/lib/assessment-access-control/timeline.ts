@@ -10,7 +10,7 @@ export interface RuntimeDateControl {
   due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null } | null;
   durationMinutes?: number | null;
   password?: string | null;
 }
@@ -38,6 +38,8 @@ export const AccessTimelineEntrySchema = z.object({
   current: z.boolean(),
   /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
+  /** False when the student has no access at all (afterLastDeadline omitted). Distinct from `submittable: false` which still allows viewing. */
+  accessible: z.boolean(),
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
@@ -145,6 +147,7 @@ export function buildAccessTimeline(
       credit: 0,
       current: isCurrent(null, releaseDate),
       submittable: false,
+      accessible: true,
     },
   ];
 
@@ -157,6 +160,7 @@ export function buildAccessTimeline(
       credit: deadline.credit,
       current: isCurrent(segStart, deadline.date),
       submittable: true,
+      accessible: true,
     });
     segStart = deadline.date;
   }
@@ -169,15 +173,21 @@ export function buildAccessTimeline(
       credit: dueIsIndefinite ? dueCredit : 100,
       current: isCurrent(segStart, null),
       submittable: true,
+      accessible: true,
     });
   } else {
+    // `afterLastDeadline` absent (undefined) or explicitly null = no access.
+    // `{ allowSubmissions: false }` = view-only (accessible but not submittable).
+    const ald = dateControl.afterLastDeadline;
+    const hasAccess = ald != null;
     entries.push({
       kind: 'afterLastDeadline',
       startDate: segStart,
       endDate: null,
-      credit: dateControl.afterLastDeadline?.credit ?? 0,
+      credit: hasAccess ? (ald.credit ?? 0) : 0,
       current: isCurrent(segStart, null),
-      submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
+      submittable: hasAccess && ald.allowSubmissions === true,
+      accessible: hasAccess,
     });
   }
 
