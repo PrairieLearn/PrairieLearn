@@ -242,6 +242,7 @@ export function GradingPanel({
                     ? html`<a
                         href="#ai-grading-explanation"
                         class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
+                        onclick="event.preventDefault(); document.getElementById('ai-grading-explanation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
                       >
                         <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
                       </a>`

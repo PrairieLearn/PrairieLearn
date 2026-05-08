@@ -366,22 +366,8 @@ function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
   );
 }
 
-function BeforeYouGradeSection({
-  items,
-  aiGradingEnabled,
-}: {
-  items: BeforeYouGradeItem[];
-  aiGradingEnabled: boolean;
-}) {
-  if (items.length === 0) {
-    if (!aiGradingEnabled) return null;
-    return (
-      <div className="mt-4 d-flex align-items-center gap-2 small">
-        <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
-        <span>Ready for AI grading</span>
-      </div>
-    );
-  }
+function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
+  if (items.length === 0) return null;
   return (
     <div className="mt-4">
       <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
@@ -730,7 +716,7 @@ export function AiGradingModelSelectionModal({
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
-          <BeforeYouGradeSection items={beforeYouGradeItems} aiGradingEnabled={aiGradingEnabled} />
+          <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 
         <Modal.Footer>

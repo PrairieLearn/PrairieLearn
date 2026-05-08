@@ -42,6 +42,7 @@ import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-rend
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -233,6 +234,11 @@ router.get(
       const lastGrader = res.locals.instance_question.last_grader
         ? await selectUserById(res.locals.instance_question.last_grader)
         : null;
+      const lastHumanGraderName = await sqldb.queryOptionalRow(
+        sql.select_last_manual_grader_for_instance_question,
+        { instance_question_id: res.locals.instance_question.id },
+        z.object({ grader_name: z.string() }),
+      );
 
       const instance_question = res.locals.instance_question;
 
@@ -327,6 +333,7 @@ router.get(
           ...localsForRender,
           assignedGrader,
           lastGrader,
+          lastHumanGraderName: lastHumanGraderName?.grader_name ?? null,
           selectedInstanceQuestionGroup: instanceQuestionGroup,
           instanceQuestionGroups,
           aiGradingEnabled,
@@ -415,15 +422,24 @@ router.get(
     async (req, res) => {
       try {
         const locals = await prepareLocalsForRender({}, res.locals);
+        // The form rendered by GradingPanel POSTs to the parent page URL, not
+        // to /grading_rubric_panels, so re-issue the CSRF token bound to that
+        // URL or the form submission would fail validation.
+        locals.resLocals.__csrf_token = generateCsrfToken({
+          url: req.baseUrl,
+          authnUserId: res.locals.authn_user.id,
+        });
         const rubric_data = await manualGrading.selectRubricData({
           assessment_question: res.locals.assessment_question,
         });
         const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-        const lastGrader = res.locals.instance_question.last_grader
-          ? await selectUserById(res.locals.instance_question.last_grader)
-          : null;
-        const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? null;
+        const lastHumanGrader = await sqldb.queryOptionalRow(
+          sql.select_last_manual_grader_for_instance_question,
+          { instance_question_id: res.locals.instance_question.id },
+          z.object({ grader_name: z.string() }),
+        );
+        const lastHumanGraderName = lastHumanGrader?.grader_name ?? null;
 
         // `prepareLocalsForRender` guarantees a submission exists.
         const submission = res.locals.submission!;
@@ -453,7 +469,7 @@ router.get(
           ...locals,
           context: 'main',
           gradedByAi: aiGradingInfo != null,
-          gradedByHumanName: lastGraderName,
+          gradedByHumanName: lastHumanGraderName,
           aiGradingInfo,
         }).toString();
 
