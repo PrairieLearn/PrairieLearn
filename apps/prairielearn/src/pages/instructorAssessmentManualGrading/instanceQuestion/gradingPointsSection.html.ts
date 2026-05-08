@@ -23,10 +23,7 @@ export function ManualPointsSection({
     show_percentage: !!resLocals.assessment_question.max_points,
     show_input: !resLocals.rubric_data,
     show_input_edit: false,
-    show_rubric_button:
-      context === 'main' &&
-      !resLocals.rubric_data?.replace_auto_points &&
-      resLocals.authz_data.has_course_instance_permission_edit,
+    show_rubric_button: false,
   });
 }
 
@@ -56,8 +53,8 @@ export function AutoPointsSection({
 }
 
 export function TotalPointsSection({
-  context,
-  disable,
+  context: _context,
+  disable: _disable,
   points,
   resLocals,
 }: {
@@ -67,15 +64,6 @@ export function TotalPointsSection({
   resLocals: UntypedResLocals;
 }) {
   return html`
-    ${context === 'main' && resLocals.rubric_data?.replace_auto_points && !disable
-      ? html`
-          <span class="float-end btn-group btn-group-sm ms-1" role="group">
-            <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
-              <i class="fas fa-list-check"></i> Rubric
-            </button>
-          </span>
-        `
-      : ''}
     <div class="mb-3 js-manual-grading-points w-100">
       Total Points:
       <span class="float-end">
