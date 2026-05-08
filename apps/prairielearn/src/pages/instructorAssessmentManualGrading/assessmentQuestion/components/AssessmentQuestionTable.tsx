@@ -55,10 +55,10 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from './AiGradingModelSelectionModal.js';
-import { ReviewSubmissionsAlert } from './FirstGradedSubmissionLink.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
+import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
@@ -97,12 +97,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
-  emptyHint,
+  hint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
-  emptyHint?: React.ReactNode;
+  hint?: string;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -110,9 +110,9 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
-      {numToGrade === 0 && emptyHint && (
+      {hint && (
         <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
-          {emptyHint}
+          {hint}
         </div>
       )}
     </Dropdown.Item>
@@ -651,7 +651,6 @@ export function AssessmentQuestionTable({
           {latestReviewAlertJobId && (
             <ReviewSubmissionsAlert
               key={latestReviewAlertJobId}
-              jobSequenceId={latestReviewAlertJobId}
               onDismiss={() =>
                 setDismissedReviewAlerts((prev) =>
                   prev.has(latestReviewAlertJobId)
@@ -759,8 +758,8 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      emptyHint={
-                        aiGradingCounts.all > 0
+                      hint={
+                        aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
                           ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
                           : undefined
                       }
@@ -775,7 +774,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
-                      emptyHint="Receive at least one submission to perform AI grading."
+                      hint={
+                        aiGradingCounts.all === 0
+                          ? 'Receive at least one submission to perform AI grading.'
+                          : undefined
+                      }
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'all',
@@ -1003,7 +1006,7 @@ export function AssessmentQuestionTable({
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         totalSubmissionCount={aiGradingCounts.all}
-        onAutoSelectForTest={(n) => {
+        onAutoSelectForTestBatch={(n) => {
           const ids = instanceQuestionsInfo.slice(0, n).map((row) => row.instance_question.id);
           const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
           setRowSelection(nextSelection);

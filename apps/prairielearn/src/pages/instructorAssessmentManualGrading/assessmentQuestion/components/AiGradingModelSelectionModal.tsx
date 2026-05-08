@@ -216,6 +216,9 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
   );
 }
 
+// Opens the rubric settings collapse panel (if not already open) and scrolls to
+// the editor. Used by the BeforeYouGradeCard "Create a rubric" action to guide
+// the instructor to the authoring UI after dismissing the modal.
 function expandRubricSettings() {
   const panel = document.getElementById('rubric-setting');
   if (!panel) return;
@@ -245,14 +248,14 @@ function buildBeforeYouGradeItems({
   numToGrade,
   totalSubmissionCount,
   onCreateRubric,
-  onAutoSelectForTest,
+  onAutoSelectForTestBatch,
 }: {
   hasRubric: boolean;
   hasPriorJobs: boolean;
   numToGrade: number;
   totalSubmissionCount: number;
   onCreateRubric: () => void;
-  onAutoSelectForTest: (n: number) => void;
+  onAutoSelectForTestBatch: (n: number) => void;
 }): BeforeYouGradeItem[] {
   const items: BeforeYouGradeItem[] = [];
   if (!hasRubric) {
@@ -269,7 +272,7 @@ function buildBeforeYouGradeItems({
       key: 'test_with_n',
       title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
       description: 'Confirm your rubric works well before running on all submissions.',
-      onClick: () => onAutoSelectForTest(n),
+      onClick: () => onAutoSelectForTestBatch(n),
     });
   }
   return items;
@@ -428,7 +431,7 @@ export function AiGradingModelSelectionModal({
   aiGradingSettingsUrl,
   hasRubric,
   totalSubmissionCount,
-  onAutoSelectForTest,
+  onAutoSelectForTestBatch,
   onSuccess,
   onHide,
 }: {
@@ -440,7 +443,7 @@ export function AiGradingModelSelectionModal({
   aiGradingSettingsUrl: string;
   hasRubric: boolean;
   totalSubmissionCount: number;
-  onAutoSelectForTest: (n: number) => void;
+  onAutoSelectForTestBatch: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -546,7 +549,7 @@ export function AiGradingModelSelectionModal({
         numToGrade: modalState?.numToGrade ?? 0,
         totalSubmissionCount,
         onCreateRubric: handleCreateRubric,
-        onAutoSelectForTest,
+        onAutoSelectForTestBatch,
       })
     : [];
 

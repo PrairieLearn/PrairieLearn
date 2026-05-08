@@ -1,24 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import { Alert } from 'react-bootstrap';
 
-import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
-
-export function ReviewSubmissionsAlert({
-  jobSequenceId,
-  onDismiss,
-}: {
-  jobSequenceId: string;
-  onDismiss?: () => void;
-}) {
-  const trpc = useTRPC();
-  const { data } = useQuery(
-    trpc.manualGrading.firstAiGradedInstanceQuestion.queryOptions({
-      job_sequence_id: jobSequenceId,
-    }),
-  );
-
-  if (!data?.instance_question_id) return null;
-
+export function ReviewSubmissionsAlert({ onDismiss }: { onDismiss?: () => void }) {
   return (
     <Alert variant="info" className="mb-3" dismissible={!!onDismiss} onClose={onDismiss}>
       <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">

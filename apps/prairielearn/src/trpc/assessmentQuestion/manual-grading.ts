@@ -11,7 +11,6 @@ import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-gr
 import {
   deleteAiGradingJobs,
   hasPriorAiGradingJobs,
-  selectFirstAiGradedInstanceQuestion,
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
@@ -246,23 +245,9 @@ const aiGradingAvailabilityInfo = t.procedure
     };
   });
 
-const firstAiGradedInstanceQuestion = t.procedure
-  .use(requireCourseInstancePermissionView)
-  .use(requireAiGradingFeature)
-  .input(z.object({ job_sequence_id: z.string() }))
-  .output(z.object({ instance_question_id: z.string().nullable() }))
-  .query(async (opts) => {
-    const instance_question_id = await selectFirstAiGradedInstanceQuestion({
-      job_sequence_id: opts.input.job_sequence_id,
-      assessment_question_id: opts.ctx.assessment_question.id,
-    });
-    return { instance_question_id };
-  });
-
 export const manualGradingRouter = t.router({
   instances,
   aiGradingAvailabilityInfo,
-  firstAiGradedInstanceQuestion,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
