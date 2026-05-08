@@ -18,14 +18,6 @@ RUN apt-get update \
     # Delete all java.management files to hinder student's ability to retrieve information from the grader
     && rm -rf /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_agent.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_ext.so
 
-COPY libs /javagrader/libs
-COPY JUnitAutograder.java org/prairielearn/autograder/AutograderInfo.java /javagrader/
-
-# Compile the autograder with all warnings enabled, except for serial (missing
-# serialVersionUID) and this-escape (use `this` reference in constructor)
-# warnings
-RUN javac -Xlint:all -Xlint:-serial -Xlint:-this-escape -Werror -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
-
 # Copy the sandbox.c file and compile it into a Landlock-based sandbox executable
 COPY sandbox.c /sandbox.c
 RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
@@ -33,6 +25,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
     && apt-get purge -y gcc libc6-dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* /sandbox.c
+
+COPY libs /javagrader/libs
+COPY JUnitAutograder.java org/prairielearn/autograder/AutograderInfo.java /javagrader/
+
+# Compile the autograder with all warnings enabled, except for serial (missing
+# serialVersionUID) and this-escape (use `this` reference in constructor)
+# warnings
+RUN javac -Xlint:all -Xlint:-serial -Xlint:-this-escape -Werror -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
 
 COPY autograder.sh /bin
 RUN chmod 700 /bin/autograder.sh
