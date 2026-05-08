@@ -90,7 +90,7 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
+  const afterLastDeadlineField = mapField(afterLastDeadline);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -113,10 +113,13 @@ function prepareRuleRow(
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
+    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
     date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineAllowSubmissionsField.value,
+      afterLastDeadlineField.value?.allowSubmissions ?? null,
     date_control_after_last_deadline_credit:
-      afterLastDeadline?.allowSubmissions === true ? (afterLastDeadline.credit ?? null) : null,
+      afterLastDeadlineField.value?.allowSubmissions === true
+        ? (afterLastDeadlineField.value.credit ?? null)
+        : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
