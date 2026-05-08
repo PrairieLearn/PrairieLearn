@@ -216,6 +216,121 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
   );
 }
 
+function expandRubricSettings() {
+  const panel = document.getElementById('rubric-setting');
+  if (!panel) return;
+  const target = document.getElementById('rubric-editor') ?? panel;
+  const scroll = () => target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel.classList.contains('show')) {
+    scroll();
+    return;
+  }
+  // Wait for the Bootstrap collapse animation to finish so the post-expansion
+  // layout is what gets scrolled to, not the pre-expansion (zero-height) one.
+  panel.addEventListener('shown.bs.collapse', scroll, { once: true });
+  const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+  toggle?.click();
+}
+
+interface BeforeYouGradeItem {
+  key: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'warning';
+}
+
+function buildBeforeYouGradeItems({
+  hasRubric,
+  hasPriorJobs,
+  numToGrade,
+  totalSubmissionCount,
+  onCreateRubric,
+  onAutoSelectForTest,
+}: {
+  hasRubric: boolean;
+  hasPriorJobs: boolean;
+  numToGrade: number;
+  totalSubmissionCount: number;
+  onCreateRubric: () => void;
+  onAutoSelectForTest: (n: number) => void;
+}): BeforeYouGradeItem[] {
+  const items: BeforeYouGradeItem[] = [];
+  if (!hasRubric) {
+    items.push({
+      key: 'no_rubric',
+      title: 'Create a rubric',
+      description: 'Rubrics significantly improve accuracy and consistency.',
+      onClick: onCreateRubric,
+      variant: 'warning',
+    });
+  }
+  if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
+    const n = Math.min(5, totalSubmissionCount);
+    items.push({
+      key: 'test_with_n',
+      title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
+      description: 'Confirm your rubric works well before running on all submissions.',
+      onClick: () => onAutoSelectForTest(n),
+      variant: 'warning',
+    });
+  }
+  return items;
+}
+
+function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
+  const isWarning = item.variant === 'warning';
+  const titleNode = item.onClick ? (
+    <div>
+      <Button
+        type="button"
+        variant="link"
+        className="p-0 align-baseline fw-medium text-decoration-none"
+        style={{ fontSize: 'inherit' }}
+        onClick={item.onClick}
+      >
+        {item.title}
+      </Button>
+    </div>
+  ) : (
+    <div className="fw-medium">{item.title}</div>
+  );
+  return (
+    <div
+      className={clsx(
+        'rounded-2 px-3 py-2',
+        isWarning
+          ? 'border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2'
+          : 'border',
+      )}
+    >
+      {isWarning && (
+        <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
+      )}
+      <div className="flex-grow-1">
+        {titleNode}
+        <div className="text-muted small">{item.description}</div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+        <span className="fw-semibold">Before you grade</span>
+      </div>
+      <div className="d-flex flex-column gap-2">
+        {items.map((item) => (
+          <BeforeYouGradeCard key={item.key} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AiGradingAvailabilityAlert({
   state,
   aiGradingSettingsUrl,
@@ -327,6 +442,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
+  hasRubric,
   totalSubmissionCount,
   onAutoSelectForTest,
   onSuccess,
@@ -338,6 +454,7 @@ export function AiGradingModelSelectionModal({
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
+  hasRubric: boolean;
   totalSubmissionCount: number;
   onAutoSelectForTest: (n: number) => void;
   onSuccess: (
@@ -369,6 +486,11 @@ export function AiGradingModelSelectionModal({
     reset();
     onHide();
   }, [onHide, reset, defaultModel]);
+
+  const handleCreateRubric = useCallback(() => {
+    onHide();
+    setTimeout(expandRubricSettings, 250);
+  }, [onHide]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -426,6 +548,17 @@ export function AiGradingModelSelectionModal({
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
+  const beforeYouGradeItems = aiGradingEnabled
+    ? buildBeforeYouGradeItems({
+        hasRubric,
+        hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
+        numToGrade: modalState?.numToGrade ?? 0,
+        totalSubmissionCount,
+        onCreateRubric: handleCreateRubric,
+        onAutoSelectForTest,
+      })
+    : [];
+
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
@@ -441,25 +574,6 @@ export function AiGradingModelSelectionModal({
               void refetchAvailabilityInfo();
             }}
           />
-          {modalState != null &&
-            aiGradingAvailabilityInfo != null &&
-            !aiGradingAvailabilityInfo.has_prior_jobs &&
-            modalState.numToGrade > 5 &&
-            totalSubmissionCount >= 2 && (
-              <Alert variant="warning" className="mb-3 py-2 small">
-                <strong>First AI grading job?</strong> Test with {Math.min(5, totalSubmissionCount)}{' '}
-                submissions first to confirm your rubric works well before running on all
-                submissions.{' '}
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="p-0 align-baseline"
-                  onClick={() => onAutoSelectForTest(Math.min(5, totalSubmissionCount))}
-                >
-                  Test with {Math.min(5, totalSubmissionCount)} submissions
-                </Button>
-              </Alert>
-            )}
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
@@ -467,6 +581,7 @@ export function AiGradingModelSelectionModal({
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
+          <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 
         <Modal.Footer>

@@ -609,12 +609,6 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
-        {aiGradingMode && (rubricData == null || rubricData.rubric_items.length === 0) && (
-          <Alert variant="warning" className="mt-2 mb-0">
-            <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
-            Create a rubric to significantly improve AI grading accuracy and consistency.
-          </Alert>
-        )}
       </div>
       {aiGradingMode && (
         <>
@@ -971,6 +965,7 @@ export function AssessmentQuestionTable({
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         totalSubmissionCount={aiGradingCounts.all}
         onAutoSelectForTest={(n) => {
           const ids = instanceQuestionsInfo.slice(0, n).map((row) => row.instance_question.id);
