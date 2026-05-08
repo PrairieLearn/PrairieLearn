@@ -234,7 +234,10 @@ export class PLEmitter implements OutputEmitter {
 
     const questionHtml = this.renderQuestionHtml(question);
     const serverPy = this.renderServerPy(question);
-    const clientFiles = this.collectClientFiles(question);
+    const { clientFiles, skippedFiles } = this.collectClientFiles(
+      question,
+      options?.excludeFileExtensions,
+    );
 
     return {
       directoryName,
@@ -243,6 +246,7 @@ export class PLEmitter implements OutputEmitter {
       questionHtml,
       serverPy: serverPy || undefined,
       clientFiles,
+      skippedFiles,
     };
   }
 
@@ -314,17 +318,28 @@ export class PLEmitter implements OutputEmitter {
     return parts.join('\n');
   }
 
-  private collectClientFiles(question: IRQuestion): Map<string, Buffer | string> {
-    const files = new Map<string, Buffer | string>();
+  private collectClientFiles(
+    question: IRQuestion,
+    excludeExtensions?: Set<string>,
+  ): { clientFiles: Map<string, Buffer | string>; skippedFiles: string[] } {
+    const clientFiles = new Map<string, Buffer | string>();
+    const skippedFiles: string[] = [];
     for (const [filename, asset] of question.assets) {
+      if (excludeExtensions) {
+        const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
+        if (excludeExtensions.has(ext)) {
+          skippedFiles.push(filename);
+          continue;
+        }
+      }
       if (asset.type === 'base64') {
-        files.set(filename, Buffer.from(asset.value, 'base64'));
+        clientFiles.set(filename, Buffer.from(asset.value, 'base64'));
       } else if (asset.type === 'file-path') {
         // Store the relative path; the CLI resolves it against web_resources/ at write time
-        files.set(filename, asset.value);
+        clientFiles.set(filename, asset.value);
       }
     }
-    return files;
+    return { clientFiles, skippedFiles };
   }
 }
 
