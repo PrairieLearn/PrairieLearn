@@ -464,15 +464,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(
                 '"weight" should not be set when builtin-grading is false.'
             )
-        if get_nota_aota_attrib(
-            element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT
-        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT, AotaNotaType.RANDOM}:
+        restricted_aota_nota_values = {"correct", "incorrect", "random"}
+        aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
+        if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
                 '"all-of-the-above" should be set to true or false when builtin-grading is false.'
             )
-        if get_nota_aota_attrib(
-            element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
-        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT, AotaNotaType.RANDOM}:
+        nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
+        if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
                 '"none-of-the-above" should be set to true or false when builtin-grading is false.'
             )
