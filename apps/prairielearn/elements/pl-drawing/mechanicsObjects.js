@@ -812,6 +812,12 @@ mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
     });
   },
   _render(ctx) {
+    // Fabric.js includes strokeWidth in the bounding box dimensions, so
+    // with originX="left" the render origin is offset by strokeWidth/2
+    // from the anchor point. Shift rendering to compensate, ensuring the
+    // arrow tail aligns exactly with the specified position.
+    ctx.translate(-this.strokeWidth / 2, 0);
+
     const lengthPx = this.width;
     const w = this.strokeWidth;
     const l = 7 * w * this.arrowheadOffsetRatio;
@@ -893,6 +899,9 @@ mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
     });
   },
   _render(ctx) {
+    // Same strokeWidth bounding box compensation as Arrow (see comment there).
+    ctx.translate(-this.strokeWidth / 2, 0);
+
     const lengthPx = this.width;
     const w = this.strokeWidth;
     const l = 6 * w * this.arrowheadOffsetRatio;
@@ -1033,7 +1042,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.image = null;
     this.label = text;
 
-    if (text) {
+    if (text && text.trim()) {
       this.gen_text(this.label, options);
     }
 
@@ -1504,7 +1513,7 @@ mechanicsObjects.makeControlStraightLine = function (x1, y1, x2, y2, options) {
 };
 
 mechanicsObjects.makeControlCurvedLine = function ({ x1, y1, x2, y2, x3, y3, options }) {
-  const line = new fabric.Path('M 0 0 Q 1, 1, 3, 0', {
+  const line = new fabric.Path(`M ${x1} ${y1} Q ${x2} ${y2} ${x3} ${y3}`, {
     fill: '',
     stroke: options.stroke,
     strokeWidth: options.strokeWidth,
@@ -1513,12 +1522,6 @@ mechanicsObjects.makeControlCurvedLine = function ({ x1, y1, x2, y2, x3, y3, opt
     originX: 'center',
     originY: 'center',
   });
-  line.path[0][1] = x1;
-  line.path[0][2] = y1;
-  line.path[1][1] = x2;
-  line.path[1][2] = y2;
-  line.path[1][3] = x3;
-  line.path[1][4] = y3;
   return line;
 };
 
@@ -3533,7 +3536,13 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
       canvas.add(new fabric.Rect(opt));
     }
 
-    if (!submittedAnswer) return [line, c1, c2];
+    if (!submittedAnswer || !options.selectable) {
+      c1.selectable = false;
+      c1.evented = false;
+      c2.selectable = false;
+      c2.evented = false;
+      return [line, c1, c2];
+    }
 
     const subObj = mechanicsObjects.cloneMechanicsObject('pl-controlled-line', options);
 
@@ -3654,7 +3663,15 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
       canvas.add(new fabric.Rect(opt));
     }
 
-    if (!submittedAnswer) return [line, c1, c2, c3];
+    if (!submittedAnswer || !options.selectable) {
+      c1.selectable = false;
+      c1.evented = false;
+      c2.selectable = false;
+      c2.evented = false;
+      c3.selectable = false;
+      c3.evented = false;
+      return [line, c1, c2, c3];
+    }
 
     const subObj = mechanicsObjects.cloneMechanicsObject('pl-controlled-curved-line', options);
 

@@ -333,14 +333,14 @@ def test_traverse_and_replace_angle_brackets() -> None:
     assert html == "<pre><code>&lt;div&gt;</code></pre>"
 
 
-def test_traverse_and_replace_ampersand_followed_by_entity_name() -> None:
+def test_traverse_and_replace_escaped_entities() -> None:
     def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
         if e.tag == "pl-string":
-            return "<div>&amp;lt;div&amp;gt;</div>"
+            return "<div>&amp;lt; &amp;langle;v, w&amp;rangle; &amp;gt;</div>"
         return e
 
     html = traverse_and_replace("<pl-string></pl-string>", replace)
-    assert html == "<div>&amp;lt;div&amp;gt;</div>"
+    assert html == "<div>&amp;lt; &amp;langle;v, w&amp;rangle; &amp;gt;</div>"
 
 
 def test_traverse_and_replace_trailing_entity() -> None:

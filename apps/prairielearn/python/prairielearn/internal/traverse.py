@@ -62,8 +62,6 @@ def get_source_definition(
     return f"<{' '.join((element.tag, *attributes))}>"
 
 
-# Escaping will only escape `&`, `<`, and `>`; it won't escape everything
-# that could possibly be represented by a named entity.
 def prepare_text(text: str) -> str:
     return html_escape(text)
 
