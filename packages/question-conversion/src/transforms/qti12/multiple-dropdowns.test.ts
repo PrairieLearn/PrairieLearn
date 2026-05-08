@@ -93,7 +93,7 @@ describe('multipleDropdownsHandler', () => {
     const result = multipleDropdownsHandler.transform(item);
     assert.equal(result.gradingMethod, 'Manual');
     assert.isArray(result.warnings);
-    assert.isTrue(result.warnings!.some((w) => /manually-graded/.test(w)));
+    assert.isTrue(result.warnings!.some((w) => /No correct answers found/.test(w)));
   });
 
   it('warns for individual blanks missing a correct answer', () => {
