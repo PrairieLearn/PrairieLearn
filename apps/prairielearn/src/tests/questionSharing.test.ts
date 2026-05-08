@@ -22,6 +22,7 @@ import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { selectOptionalSharingSetByName } from '../models/sharing-set.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 import type { SharingError } from '../trpc/course/sharing.js';
@@ -887,10 +888,15 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
 
   describe('Sharing admin gates and CRUD via tRPC', function () {
     const CRUD_SET_NAME = 'crud-tmp-set';
+    const DELETE_REGRESSION_SET_NAME = 'delete-sync-regression-set';
 
     async function getInfoCourseOrigHash() {
       const infoCoursePath = path.join(sharingCourse.path, 'infoCourse.json');
       return (await getOriginalHash(infoCoursePath)) ?? '';
+    }
+
+    async function selectSharingSet(name: string) {
+      return await selectOptionalSharingSetByName({ course_id: sharingCourse.id, name });
     }
 
     test.sequential('non-owner users cannot mutate sharing state', async () => {
@@ -1056,6 +1062,31 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         assert.equal(appError.code, 'IN_USE');
       }
     });
+
+    test.sequential(
+      'deleteSharingSet succeeds when the unused set already exists in the DB',
+      async () => {
+        const client = await sharingTrpcClient(sharingCourse.id);
+        const createResult = await client.sharing.createSharingSet.mutate({
+          name: DELETE_REGRESSION_SET_NAME,
+          origHash: await getInfoCourseOrigHash(),
+        });
+        assert.isNotNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
+
+        const deleteResult = await client.sharing.deleteSharingSet.mutate({
+          name: DELETE_REGRESSION_SET_NAME,
+          origHash: createResult.origHash,
+        });
+        assert.ok(deleteResult.origHash);
+        assert.isNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
+
+        const courseInfo = JSON.parse(
+          await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+        );
+        const sharingSets: { name: string }[] = courseInfo.sharingSets ?? [];
+        assert.isUndefined(sharingSets.find((s) => s.name === DELETE_REGRESSION_SET_NAME));
+      },
+    );
 
     test.sequential('deleteSharingSet removes an unused set from infoCourse.json', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);

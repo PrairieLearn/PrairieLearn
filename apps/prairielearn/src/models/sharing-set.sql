@@ -1,3 +1,12 @@
+-- BLOCK select_sharing_set_by_name
+SELECT
+  *
+FROM
+  sharing_sets
+WHERE
+  course_id = $course_id
+  AND name = $name;
+
 -- BLOCK select_sharing_sets_for_question
 WITH
   sharing_set_questions AS (

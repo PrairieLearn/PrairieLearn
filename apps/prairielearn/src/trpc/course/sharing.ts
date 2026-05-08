@@ -14,7 +14,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectCanChooseSharingName, updateCourseSharingName } from '../../models/course.js';
 import {
-  deleteSharingSet as deleteSharingSetModel,
+  deleteSharingSet,
   selectSharingSetUsage,
   selectSharingSetsForCourse,
 } from '../../models/sharing-set.js';
@@ -307,6 +307,8 @@ const deleteSharingSet = t.procedure
     }
     sharingSets.splice(0, sharingSets.length, ...filtered);
 
+    await deleteSharingSet({ course_id: ctx.course.id, name: input.name });
+
     const result = await writeCourseInfo({
       locals: ctx.locals,
       coursePath: ctx.course.path,
@@ -323,8 +325,6 @@ const deleteSharingSet = t.procedure
         jobSequenceId: result.jobSequenceId,
       });
     }
-
-    await deleteSharingSetModel({ course_id: ctx.course.id, name: input.name });
 
     return { origHash: result.newHash };
   });

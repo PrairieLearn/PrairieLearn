@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { type SharingSet, SharingSetSchema } from '../lib/db-types.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SharingSetRowSchema = z.object({
@@ -12,6 +14,20 @@ const SharingSetRowSchema = z.object({
   question_count: z.number(),
 });
 export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+
+export async function selectOptionalSharingSetByName({
+  course_id,
+  name,
+}: {
+  course_id: string;
+  name: string;
+}): Promise<SharingSet | null> {
+  return await sqldb.queryOptionalRow(
+    sql.select_sharing_set_by_name,
+    { course_id, name },
+    SharingSetSchema,
+  );
+}
 
 const QuestionSharingSetRowSchema = z.object({
   id: z.string(),
