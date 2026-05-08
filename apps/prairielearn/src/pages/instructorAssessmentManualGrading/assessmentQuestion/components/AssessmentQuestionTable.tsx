@@ -55,6 +55,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from './AiGradingModelSelectionModal.js';
+import { ReviewSubmissionsAlert } from './FirstGradedSubmissionLink.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -616,20 +617,27 @@ export function AssessmentQuestionTable({
         )}
       </div>
       {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
+        <>
+          <ServerJobsProgressInfo
+            itemNames="submissions graded"
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            statusIcons={{
+              inProgress: 'bi-stars',
+            }}
+            statusText={{
+              inProgress: 'AI grading in progress',
+              complete: 'AI grading complete',
+              failed: 'AI grading failed',
+            }}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          />
+          {Object.values(serverJobProgress.jobsProgress)
+            .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
+            .map((j) => (
+              <ReviewSubmissionsAlert key={j.job_sequence_id} jobSequenceId={j.job_sequence_id} />
+            ))}
+        </>
       )}
       <QueryErrors<ManualGradingError>
         queries={[

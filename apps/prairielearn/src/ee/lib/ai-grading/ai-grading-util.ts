@@ -17,6 +17,7 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
   queryRow,
   queryRows,
   queryScalar,
@@ -614,6 +615,21 @@ export async function selectHasPriorAiGradingJobs(
   assessment_question_id: string,
 ): Promise<boolean> {
   return await queryScalar(sql.has_prior_ai_grading_jobs, { assessment_question_id }, z.boolean());
+}
+
+export async function selectFirstAiGradedInstanceQuestion({
+  job_sequence_id,
+  assessment_question_id,
+}: {
+  job_sequence_id: string;
+  assessment_question_id: string;
+}): Promise<string | null> {
+  const row = await queryOptionalRow(
+    sql.select_first_ai_graded_instance_question,
+    { job_sequence_id, assessment_question_id },
+    z.object({ instance_question_id: IdSchema }),
+  );
+  return row?.instance_question_id ?? null;
 }
 
 export async function deleteAiGradingJobs({
