@@ -8,9 +8,6 @@ const featureNames = [
   'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
   'ai-grading',
-  // Off by default so the 'Stopping'/'Stopped' enum values aren't written
-  // until every pod has shipped the matching EnumJobStatusSchema.
-  'ai-grading-stop',
   'ai-submission-grouping',
   'disable-public-workspaces',
   'enhanced-access-control',

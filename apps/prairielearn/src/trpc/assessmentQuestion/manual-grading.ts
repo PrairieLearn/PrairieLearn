@@ -22,7 +22,7 @@ import {
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
-import { type FeatureName, features } from '../../lib/features/index.js';
+import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
@@ -41,30 +41,22 @@ import {
 
 export interface ManualGradingError {}
 
-function requireFeature(name: FeatureName, deniedMessage: string) {
-  return t.middleware(async (opts) => {
-    const enabled = await features.enabled(name, {
-      institution_id: opts.ctx.course.institution_id,
-      course_id: opts.ctx.course.id,
-      course_instance_id: opts.ctx.course_instance.id,
-      user_id: opts.ctx.authn_user.id,
-    });
-    if (!enabled) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: deniedMessage });
-    }
-    return opts.next();
+const requireAiGradingFeature = t.middleware(async (opts) => {
+  const enabled = await features.enabled('ai-grading', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+    user_id: opts.ctx.authn_user.id,
   });
-}
 
-const requireAiGradingFeature = requireFeature(
-  'ai-grading',
-  'Access denied (feature not available)',
-);
-
-const requireAiGradingStopFeature = requireFeature(
-  'ai-grading-stop',
-  'Stopping AI grading is not yet enabled.',
-);
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (feature not available)',
+    });
+  }
+  return opts.next();
+});
 
 const instances = t.procedure
   .use(requireCourseInstancePermissionView)
@@ -182,7 +174,6 @@ const aiGradeInstanceQuestionsMutation = t.procedure
 const stopAiGradingJobMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
-  .use(requireAiGradingStopFeature)
   .input(z.object({ job_sequence_id: IdSchema }))
   .mutation(async (opts) => {
     const stopped = await requestStopAiGradingJob({

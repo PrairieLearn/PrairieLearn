@@ -79,7 +79,6 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingStopEnabled: boolean;
   aiSubmissionGroupingEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -121,7 +120,6 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingStopEnabled,
   aiSubmissionGroupingEnabled,
   rubricData,
   instanceQuestionGroups,
@@ -631,7 +629,7 @@ export function AssessmentQuestionTable({
           }
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           onStopJobSequence={
-            hasCourseInstancePermissionEdit && aiGradingStopEnabled
+            hasCourseInstancePermissionEdit
               ? (jobSequenceId) =>
                   stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
               : undefined
