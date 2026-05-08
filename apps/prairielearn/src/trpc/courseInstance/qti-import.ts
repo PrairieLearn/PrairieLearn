@@ -94,10 +94,7 @@ const create = t.procedure
 
     const count = assessmentIds.length;
     if (count > 0) {
-      flash(
-        'success',
-        `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`,
-      );
+      flash('success', `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`);
     }
 
     return { jobSequenceId: serverJob.jobSequenceId, assessmentIds };
