@@ -26,13 +26,13 @@ COPY JUnitAutograder.java org/prairielearn/autograder/AutograderInfo.java /javag
 # warnings
 RUN javac -Xlint:all -Xlint:-serial -Xlint:-this-escape -Werror -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
 
-# Copy the block_proc.c file and compile it into a shared library to be used as a preloaded library to block access to the /proc filesystem
-COPY block_proc.c /block_proc.c
+# Copy the sandbox.c file and compile it into a shared library to be used as a preloaded library to block access to the /proc filesystem
+COPY sandbox.c /sandbox.c
 RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
-    && gcc -shared -fPIC -o /lib/block_proc.so /block_proc.c -ldl \
+    && gcc -O2 -o /usr/local/bin/landlock_sandbox /sandbox.c \
     && apt-get purge -y gcc libc6-dev \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* /block_proc.c
+    && rm -rf /var/lib/apt/lists/* /sandbox.c
 
 COPY autograder.sh /bin
 RUN chmod 700 /bin/autograder.sh
