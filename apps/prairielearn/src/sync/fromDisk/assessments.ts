@@ -393,12 +393,14 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = (groups?.roles ?? []).map((role) => ({
-    role_name: role.name,
-    minimum: role.minMembers,
-    maximum: role.maxMembers,
-    can_assign_roles: groups?.rolePermissions.canAssignRoles.includes(role.name) ?? false,
-  }));
+  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles ?? []);
+  const groupRoles =
+    groups?.roles.map((role) => ({
+      role_name: role.name,
+      minimum: role.minMembers,
+      maximum: role.maxMembers,
+      can_assign_roles: canAssignRoles.has(role.name),
+    })) ?? [];
 
   // If any errors were added during zone/question processing treat as error.
   if (infofile.hasErrors(assessmentInfoFile)) return null;
