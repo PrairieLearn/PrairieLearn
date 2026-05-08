@@ -321,6 +321,7 @@ const FILENAME_LANGUAGE_MAP: Record<string, string> = {
   '.py': 'python',
 };
 
+/** TODO: potentially bolster this with usage of hljs's checker */
 function detectLanguage(filename: string): string | undefined {
   for (const [ext, lang] of Object.entries(FILENAME_LANGUAGE_MAP)) {
     if (filename.endsWith(ext)) return lang;
