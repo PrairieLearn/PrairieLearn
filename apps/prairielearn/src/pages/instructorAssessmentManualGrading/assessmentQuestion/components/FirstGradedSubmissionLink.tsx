@@ -3,7 +3,13 @@ import { Alert } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
-export function ReviewSubmissionsAlert({ jobSequenceId }: { jobSequenceId: string }) {
+export function ReviewSubmissionsAlert({
+  jobSequenceId,
+  onDismiss,
+}: {
+  jobSequenceId: string;
+  onDismiss?: () => void;
+}) {
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.manualGrading.firstAiGradedInstanceQuestion.queryOptions({
@@ -14,7 +20,7 @@ export function ReviewSubmissionsAlert({ jobSequenceId }: { jobSequenceId: strin
   if (!data?.instance_question_id) return null;
 
   return (
-    <Alert variant="info" className="mb-3">
+    <Alert variant="info" className="mb-3" dismissible={!!onDismiss} onClose={onDismiss}>
       <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
         <div className="d-flex align-items-center gap-2 flex-shrink-0">
           <i className="bi bi-stars fs-5" aria-hidden="true" />

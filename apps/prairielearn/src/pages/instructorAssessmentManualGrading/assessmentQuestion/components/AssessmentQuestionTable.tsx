@@ -198,6 +198,13 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
+  // Track which "Review AI-graded submissions" alerts the user has dismissed.
+  // We accumulate completed job sequence IDs in a ref so the Review alert
+  // continues to render after the user dismisses the "AI grading complete"
+  // alert (which removes the job from `serverJobProgress.jobsProgress`).
+  const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
+  const [dismissedReviewAlerts, setDismissedReviewAlerts] = useState<Set<string>>(new Set());
+
   // Controls the AI grading model selection modal: null = hidden, otherwise
   // holds the grading mode ('all', 'human_graded', or 'selected') and count.
   const [modelSelectionModalState, setModelSelectionModalState] =
@@ -362,6 +369,18 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Accumulate completed job sequence IDs during render. Once a job is seen
+  // as completed, it stays in the set even after the user dismisses the
+  // "AI grading complete" alert (which clears it from `jobsProgress`).
+  for (const job of Object.values(serverJobProgress.jobsProgress)) {
+    if (job.num_total > 0 && job.num_complete >= job.num_total && job.num_failed === 0) {
+      seenCompletedJobIdsRef.current.add(job.job_sequence_id);
+    }
+  }
+  const reviewAlertJobIds = Array.from(seenCompletedJobIdsRef.current).filter(
+    (id) => !dismissedReviewAlerts.has(id),
+  );
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -626,11 +645,19 @@ export function AssessmentQuestionTable({
             }}
             onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           />
-          {Object.values(serverJobProgress.jobsProgress)
-            .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
-            .map((j) => (
-              <ReviewSubmissionsAlert key={j.job_sequence_id} jobSequenceId={j.job_sequence_id} />
-            ))}
+          {reviewAlertJobIds.map((id) => (
+            <ReviewSubmissionsAlert
+              key={id}
+              jobSequenceId={id}
+              onDismiss={() =>
+                setDismissedReviewAlerts((prev) => {
+                  const next = new Set(prev);
+                  next.add(id);
+                  return next;
+                })
+              }
+            />
+          ))}
         </>
       )}
       <QueryErrors<ManualGradingError>
