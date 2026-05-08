@@ -48,58 +48,6 @@ describe('server-jobs SQL transitions', () => {
   describe('update_job_on_finish', () => {
     it('Running + Success → Success', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
-      const result = await queryOptionalScalar(
-        sql.update_job_on_finish,
-        {
-          job_sequence_id,
-          job_id,
-          output: '',
-          data: {},
-          status: 'Success',
-        },
-        EnumJobStatusSchema,
-      );
-      assert.equal(result, 'Success');
-      assert.equal(await selectStatus(job_sequence_id), 'Success');
-    });
-
-    it('Stopping + Success → Stopped', async () => {
-      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      const result = await queryOptionalScalar(
-        sql.update_job_on_finish,
-        {
-          job_sequence_id,
-          job_id,
-          output: '',
-          data: {},
-          status: 'Success',
-        },
-        EnumJobStatusSchema,
-      );
-      assert.equal(result, 'Stopped');
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
-    });
-
-    it('Stopping + Error → Error (preserves real failure)', async () => {
-      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      const result = await queryOptionalScalar(
-        sql.update_job_on_finish,
-        {
-          job_sequence_id,
-          job_id,
-          output: '',
-          data: {},
-          status: 'Error',
-        },
-        EnumJobStatusSchema,
-      );
-      assert.equal(result, 'Error');
-      assert.equal(await selectStatus(job_sequence_id), 'Error');
-    });
-
-    it('Already terminal → no row returned (idempotent)', async () => {
-      const { job_sequence_id, job_id } = await insertJobSequence('Running');
-      // First call settles the sequence.
       await execute(sql.update_job_on_finish, {
         job_sequence_id,
         job_id,
@@ -107,19 +55,31 @@ describe('server-jobs SQL transitions', () => {
         data: {},
         status: 'Success',
       });
-      // Second call must not double-update.
-      const result = await queryOptionalScalar(
-        sql.update_job_on_finish,
-        {
-          job_sequence_id,
-          job_id,
-          output: '',
-          data: {},
-          status: 'Success',
-        },
-        EnumJobStatusSchema,
-      );
-      assert.isNull(result);
+      assert.equal(await selectStatus(job_sequence_id), 'Success');
+    });
+
+    it('Running + Error → Error', async () => {
+      const { job_sequence_id, job_id } = await insertJobSequence('Running');
+      await execute(sql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Error',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Error');
+    });
+
+    it('Stopping → no-op (aiGrade owns the Stopping → Stopped transition)', async () => {
+      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
+      await execute(sql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Success',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Stopping');
     });
   });
 

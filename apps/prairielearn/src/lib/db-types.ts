@@ -1234,8 +1234,7 @@ export const JobSequenceSchema = z.object({
   number: z.number(),
   start_date: DateFromISOString.nullable(),
   status: EnumJobStatusSchema.nullable(),
-  stop_requested_at: DateFromISOString.nullable(),
-  stop_requested_by_user_id: IdSchema.nullable(),
+  stop_requested_by_authn_user_id: IdSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });

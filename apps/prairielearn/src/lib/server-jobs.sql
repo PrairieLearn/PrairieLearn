@@ -105,17 +105,10 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  -- Stopping + Success means a clean cancel; preserve real Errors as-is.
-  status = CASE
-    WHEN js.status = 'Stopping'
-    AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
-    ELSE $status::enum_job_status
-  END
+  status = $status::enum_job_status
 WHERE
   js.id = $job_sequence_id
-  AND js.status IN ('Running', 'Stopping')
-RETURNING
-  js.status AS new_status;
+  AND js.status = 'Running'::enum_job_status;
 
 -- BLOCK select_job_output
 SELECT

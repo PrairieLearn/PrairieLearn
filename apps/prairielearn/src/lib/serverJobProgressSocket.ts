@@ -89,8 +89,7 @@ function connection(socket: Socket) {
       item_statuses: progressData.item_statuses,
       total_cost_milli_dollars: progressData.total_cost_milli_dollars,
       num_items_incurred_cost: progressData.num_items_incurred_cost,
-      is_stopping: progressData.is_stopping,
-      is_stopped: progressData.is_stopped,
+      stop_state: progressData.stop_state,
     } satisfies ProgressUpdateMessage);
   });
 }

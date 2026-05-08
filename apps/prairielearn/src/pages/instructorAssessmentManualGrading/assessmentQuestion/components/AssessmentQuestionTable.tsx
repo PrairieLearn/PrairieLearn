@@ -620,13 +620,11 @@ export function AssessmentQuestionTable({
           }}
           statusText={{
             inProgress: 'AI grading in progress',
+            stopping: 'Stopping AI grading…',
+            stopped: 'AI grading stopped',
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
-          isStopPending={(id) =>
-            stopAiGradingJobMutation.isPending &&
-            stopAiGradingJobMutation.variables.job_sequence_id === id
-          }
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           onStopJobSequence={
             hasCourseInstancePermissionEdit

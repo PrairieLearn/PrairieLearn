@@ -19,7 +19,6 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalScalar,
   queryScalar,
   queryScalars,
   runInTransactionAsync,
@@ -45,6 +44,7 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
+  EnumJobStatusSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
@@ -320,7 +320,7 @@ export async function getResumableAiGradingJobSequenceIds(
  * Atomically transitions a Running AI grading sequence into 'Stopping'.
  * Returns true only for the call that actually flipped the row.
  */
-export async function requestStopAiGradingJob({
+export async function stopAiGradingJob({
   job_sequence_id,
   assessment_question_id,
   authn_user_id,
@@ -329,18 +329,18 @@ export async function requestStopAiGradingJob({
   assessment_question_id: string;
   authn_user_id: string;
 }): Promise<boolean> {
-  const updatedId = await queryOptionalScalar(
-    sql.request_stop_ai_grading_job,
-    { job_sequence_id, assessment_question_id, authn_user_id },
-    IdSchema,
-  );
-  if (updatedId == null) return false;
+  const rowCount = await execute(sql.stop_ai_grading_job, {
+    job_sequence_id,
+    assessment_question_id,
+    authn_user_id,
+  });
+  if (rowCount === 0) return false;
   // Best-effort cache patch: the DB transition is authoritative.
   try {
-    await patchServerJobProgress(job_sequence_id, { is_stopping: true });
+    await patchServerJobProgress(job_sequence_id, { stop_state: 'stopping' });
   } catch (err) {
     Sentry.captureException(err);
-    logger.error('requestStopAiGradingJob: failed to patch progress cache', err);
+    logger.error('stopAiGradingJob: failed to patch progress cache', err);
   }
   return true;
 }
@@ -453,19 +453,6 @@ export async function aiGrade({
       courseInstanceId: course_instance.id,
       assessmentId: assessment.id,
       assessmentQuestionId: assessment_question.id,
-      onTerminalStatus: async (status, jobSequenceId) => {
-        // Catches the case where Stop raced our final poll: the generic
-        // finisher transitioned Stopping → Stopped, but the alert needs
-        // the cache patch to flip to the terminal state.
-        if (status === 'Stopped') {
-          try {
-            await patchServerJobProgress(jobSequenceId, { is_stopped: true });
-          } catch (err) {
-            Sentry.captureException(err);
-            logger.error('aiGrade onTerminalStatus: failed to patch progress', err);
-          }
-        }
-      },
     });
   });
 
@@ -1212,15 +1199,15 @@ export async function aiGrade({
     let num_items_incurred_cost = 0;
     // Polled before every per-item dispatch and finally emit so a Stop click
     // can't get masked by a stale local flag.
-    const stopState = { requested: false };
+    let stopRequested = false as boolean;
     const refreshStopRequested = async () => {
-      if (stopState.requested) return;
-      const flag = await queryScalar(
-        sql.select_stop_requested,
+      if (stopRequested) return;
+      const status = await queryScalar(
+        sql.select_job_sequence_status,
         { job_sequence_id: serverJob.jobSequenceId },
-        z.boolean(),
+        EnumJobStatusSchema,
       );
-      if (flag) stopState.requested = true;
+      if (status === 'Stopping' || status === 'Stopped') stopRequested = true;
     };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
@@ -1256,7 +1243,7 @@ export async function aiGrade({
         };
 
         await refreshStopRequested();
-        if (stopState.requested) {
+        if (stopRequested) {
           // Skip queued items entirely so they don't appear graded by this
           // job, leaving any concurrent job's status to win in the table UI.
           delete item_statuses[instance_question.id];
@@ -1301,7 +1288,8 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
-            is_stopping: stopState.requested,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            stop_state: stopRequested ? 'stopping' : undefined,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
@@ -1320,10 +1308,13 @@ export async function aiGrade({
       },
     );
 
-    // One final poll in case Stop was clicked during the last batch.
+    // Final poll: catches Stop clicks that arrived during the last batch.
+    // A Stop click that lands AFTER this poll but BEFORE the inner job's
+    // post-callback finisher may leave the sequence in 'Stopping'; the cron
+    // sweeper will eventually settle it as 'Error'.
     await refreshStopRequested();
 
-    if (stopState.requested) {
+    if (stopRequested) {
       const num_skipped = instance_questions.length - num_complete;
       job.info(
         `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
@@ -1337,8 +1328,7 @@ export async function aiGrade({
         num_failed,
         num_total: instance_questions.length,
         item_statuses,
-        is_stopping: true,
-        is_stopped: true,
+        stop_state: 'stopped',
         ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
       });
       return;

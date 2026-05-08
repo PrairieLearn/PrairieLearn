@@ -5,32 +5,39 @@ import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
+type JobStatus = 'inProgress' | 'stopping' | 'stopped' | 'complete' | 'failed';
+
+interface StatusVisuals {
+  inProgress?: string;
+  stopping?: string;
+  stopped?: string;
+  complete?: string;
+  failed?: string;
+}
+
+function deriveJobStatus(progress: JobProgress): JobStatus {
+  if (progress.stop_state === 'stopped') return 'stopped';
+  if (progress.num_total > 0 && progress.num_complete >= progress.num_total) {
+    return progress.num_failed > 0 ? 'failed' : 'complete';
+  }
+  if (progress.stop_state === 'stopping') return 'stopping';
+  return 'inProgress';
+}
+
 /**
  * Displays progress information for multiple server jobs.
  *
- * This is used alongside the `useServerJobProgress` hook to display live progress information
- * for server jobs, retrieved via WebSocket connections.
+ * Used alongside `useServerJobProgress` to render live progress for jobs
+ * delivered via WebSocket.
  *
  * @param params
- *
- * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
- * @param params.jobsProgress Progress information for each server job.
- * @param params.courseInstanceId The course instance ID of the server jobs.
- *
- * @param params.statusIcons Icons for indicating the server job status.
- * @param params.statusIcons.inProgress Icon for in-progress jobs.
- * @param params.statusIcons.complete Icon for completed jobs.
- * @param params.statusIcons.failed Icon for failed jobs.
- *
- * @param params.statusText Text describing the server job status.
- * @param params.statusText.inProgress Text for in-progress jobs.
- * @param params.statusText.complete Text for completed jobs.
- * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
- *
- * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
- *
- * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button on running jobs.
- * @param params.isStopPending Optional predicate returning true while a stop request is in flight; the Stop button is hidden during that interval.
+ * @param params.itemNames Plural noun for job items (e.g. "submissions graded").
+ * @param params.jobsProgress Per-job progress snapshots.
+ * @param params.courseInstanceId Course instance ID (used to build job-log URLs).
+ * @param params.statusIcons Optional Bootstrap-icon class overrides per status.
+ * @param params.statusText Optional text overrides per status.
+ * @param params.onDismissCompleteJobSequence Called when the user closes a terminal alert.
+ * @param params.onStopJobSequence Optional; when provided, renders a Stop button on running jobs.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -40,37 +47,15 @@ export function ServerJobsProgressInfo({
   statusText = {},
   onDismissCompleteJobSequence,
   onStopJobSequence,
-  isStopPending,
 }: {
   itemNames: string;
   jobsProgress: JobProgress[];
   courseInstanceId: string;
-  statusIcons?: {
-    inProgress?: string;
-    complete?: string;
-    failed?: string;
-  };
-  statusText?: {
-    inProgress?: string;
-    complete?: string;
-    failed?: string;
-  };
+  statusIcons?: StatusVisuals;
+  statusText?: StatusVisuals;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   onStopJobSequence?: (jobSequenceId: string) => void;
-  isStopPending?: (jobSequenceId: string) => boolean;
 }) {
-  const statusIconsSafe = {
-    inProgress: statusIcons.inProgress ?? 'bi-hourglass-split',
-    complete: statusIcons.complete ?? 'bi-check-circle-fill',
-    failed: statusIcons.failed ?? 'bi-exclamation-triangle-fill',
-  };
-
-  const statusTextSafe = {
-    inProgress: statusText.inProgress ?? 'Job in progress',
-    complete: statusText.complete ?? 'Job complete',
-    failed: statusText.failed ?? 'Job failed',
-  };
-
   return (
     <div className={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
       {jobsProgress.map((jobProgress) => (
@@ -78,22 +63,20 @@ export function ServerJobsProgressInfo({
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
           jobSequenceId={jobProgress.job_sequence_id}
           courseInstanceId={courseInstanceId}
+          status={deriveJobStatus(jobProgress)}
           nums={{
             complete: jobProgress.num_complete,
             failed: jobProgress.num_failed,
             total: jobProgress.num_total,
           }}
-          statusIcons={statusIconsSafe}
+          statusIcons={statusIcons}
           statusText={{
-            ...statusTextSafe,
-            failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
+            ...statusText,
+            failed: jobProgress.job_failure_message ?? statusText.failed,
           }}
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
-          isStopping={jobProgress.is_stopping ?? false}
-          isStopped={jobProgress.is_stopped ?? false}
-          isStopPending={isStopPending?.(jobProgress.job_sequence_id) ?? false}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
           onStopJobSequence={onStopJobSequence}
         />
@@ -102,106 +85,47 @@ export function ServerJobsProgressInfo({
   );
 }
 
-/**
- * Displays progress information for a single server job.
- *
- * @param params
- * @param params.jobSequenceId The server job sequence ID to display progress info for.
- * @param params.courseInstanceId The course instance ID of the server job to display.
- * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
- *
- * @param params.nums
- * @param params.nums.complete Number of job items completed (including failed items).
- * @param params.nums.failed Number of job items that failed.
- * @param params.nums.total Total number of items.
- *
- * @param params.statusIcons Icon indicating the server job status.
- * @param params.statusIcons.inProgress Icon for in-progress jobs.
- * @param params.statusIcons.complete Icon for completed jobs.
- * @param params.statusIcons.failed Icon for failed jobs.
- *
- * @param params.statusText Text describing the server job status.
- * @param params.statusText.inProgress Text for in-progress jobs.
- * @param params.statusText.complete Text for completed jobs.
- * @param params.statusText.failed Text for failed jobs.
- *
- * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
- * @param params.numItemsIncurredCost Optional number of items that incurred cost.
- *
- * @param params.isStopping Cancellation requested but not yet settled.
- * @param params.isStopped Terminal: cancellation has fully settled.
- *
- * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert.
- * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button.
- * @param params.isStopPending True while a stop request is in flight; the Stop button is hidden during that interval.
- */
+const DEFAULT_DISPLAY: Record<JobStatus, { text: string; icon: string; variant: string }> = {
+  inProgress: { text: 'Job in progress', icon: 'bi-hourglass-split', variant: 'info' },
+  stopping: { text: 'Stopping…', icon: 'bi-stop-circle-fill', variant: 'secondary' },
+  stopped: { text: 'Stopped', icon: 'bi-stop-circle-fill', variant: 'secondary' },
+  complete: { text: 'Job complete', icon: 'bi-check-circle-fill', variant: 'success' },
+  failed: { text: 'Job failed', icon: 'bi-exclamation-triangle-fill', variant: 'danger' },
+};
+
+/** Displays progress information for a single server job. */
 function ServerJobProgressInfo({
   jobSequenceId,
   courseInstanceId,
   itemNames,
+  status,
   nums,
   statusIcons,
   statusText,
   totalCostMilliDollars,
   numItemsIncurredCost,
-  isStopping,
-  isStopped,
   onDismissCompleteJobSequence,
   onStopJobSequence,
-  isStopPending,
 }: {
   jobSequenceId: string;
   courseInstanceId: string;
   itemNames: string;
-  nums: {
-    complete: number;
-    failed: number;
-    total: number;
-  };
-  statusIcons: {
-    inProgress: string;
-    complete: string;
-    failed: string;
-  };
-  statusText: {
-    inProgress: string;
-    complete: string;
-    failed: string;
-  };
+  status: JobStatus;
+  nums: { complete: number; failed: number; total: number };
+  statusIcons: StatusVisuals;
+  statusText: StatusVisuals;
   totalCostMilliDollars?: number;
   numItemsIncurredCost?: number;
-  isStopping: boolean;
-  isStopped: boolean;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   onStopJobSequence?: (jobSequenceId: string) => void;
-  isStopPending: boolean;
 }) {
   const [showStopConfirm, setShowStopConfirm] = useState(false);
 
-  const jobStatus = useMemo(() => {
-    if (isStopped) return 'stopped';
-    if (nums.total > 0 && nums.complete >= nums.total) {
-      return nums.failed > 0 ? 'failed' : 'complete';
-    }
-    if (isStopping) return 'stopping';
-    return 'inProgress';
-  }, [nums, isStopping, isStopped]);
-
-  const { text, subtext, icon, variant } = useMemo<{
-    text: string;
-    subtext: string | undefined;
-    icon: string;
-    variant: string;
-  }>(() => {
-    const display = {
-      stopped: { text: 'AI grading stopped', icon: 'bi-stop-circle-fill', variant: 'secondary' },
-      stopping: { text: 'Stopping AI grading…', icon: 'bi-stop-circle-fill', variant: 'secondary' },
-      complete: { text: statusText.complete, icon: statusIcons.complete, variant: 'success' },
-      failed: { text: statusText.failed, icon: statusIcons.failed, variant: 'danger' },
-      inProgress: { text: statusText.inProgress, icon: statusIcons.inProgress, variant: 'info' },
-    } as const;
-    return { ...display[jobStatus], subtext: undefined };
-  }, [statusText, statusIcons, jobStatus]);
+  const display = {
+    text: statusText[status] ?? DEFAULT_DISPLAY[status].text,
+    icon: statusIcons[status] ?? DEFAULT_DISPLAY[status].icon,
+    variant: DEFAULT_DISPLAY[status].variant,
+  };
 
   const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;
   const successCount = nums.complete - nums.failed;
@@ -219,7 +143,7 @@ function ServerJobProgressInfo({
   }, [totalCostMilliDollars, numItemsIncurredCost]);
 
   const progressLabel = useMemo(() => {
-    switch (jobStatus) {
+    switch (status) {
       case 'inProgress':
       case 'stopping': {
         const failedSuffix = nums.failed > 0 ? ` (${nums.failed} failed)` : '';
@@ -234,24 +158,22 @@ function ServerJobProgressInfo({
         return `${successCount} ${itemNames}${failedSuffix}`;
       }
     }
-  }, [jobStatus, nums, itemNames, successCount]);
+  }, [status, nums, itemNames, successCount]);
 
-  const isDismissible =
-    jobStatus === 'complete' || jobStatus === 'failed' || jobStatus === 'stopped';
-  const showStopButton =
-    onStopJobSequence != null && (jobStatus === 'inProgress' || jobStatus === 'stopping');
+  const isDismissible = status === 'complete' || status === 'failed' || status === 'stopped';
+  const showStopButton = onStopJobSequence != null && status === 'inProgress';
 
   return (
     <>
       <Alert
-        variant={variant}
+        variant={display.variant}
         className="mb-0"
         dismissible={isDismissible}
         onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
       >
         <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
           <div className="d-flex align-items-center gap-2 flex-shrink-0">
-            {jobStatus === 'stopping' ? (
+            {status === 'stopping' ? (
               <Spinner
                 animation="border"
                 role="status"
@@ -259,22 +181,19 @@ function ServerJobProgressInfo({
                 style={{ width: '1.25rem', height: '1.25rem', borderWidth: '0.18em' }}
               />
             ) : (
-              <i className={`bi ${icon} fs-5`} aria-hidden="true" />
+              <i className={`bi ${display.icon} fs-5`} aria-hidden="true" />
             )}
-            <div className="d-flex flex-column">
-              <strong>{text}</strong>
-              {subtext && <span className="small text-body-secondary">{subtext}</span>}
-            </div>
+            <strong>{display.text}</strong>
           </div>
 
-          {(jobStatus === 'inProgress' || jobStatus === 'stopping') && (
+          {(status === 'inProgress' || status === 'stopping') && (
             <div className="flex-grow-1" style={{ flexBasis: '6rem' }}>
               <ProgressBar>
                 <ProgressBar
                   key="success"
                   now={progressPercent - (nums.total !== 0 ? (nums.failed / nums.total) * 100 : 0)}
-                  variant={jobStatus === 'stopping' ? 'secondary' : 'primary'}
-                  animated={jobStatus === 'inProgress'}
+                  variant={status === 'stopping' ? 'secondary' : 'primary'}
+                  animated={status === 'inProgress'}
                 />
                 {nums.failed > 0 && (
                   <ProgressBar
@@ -322,7 +241,7 @@ function ServerJobProgressInfo({
               View logs <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7em' }} />
             </a>
 
-            {showStopButton && jobStatus === 'inProgress' && !isStopPending && (
+            {showStopButton && (
               <>
                 <span className="text-body-secondary opacity-50" aria-hidden="true">
                   &middot;

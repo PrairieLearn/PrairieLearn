@@ -10,7 +10,6 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
   queryRow,
   queryRows,
   queryScalars,
@@ -24,13 +23,7 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import {
-  type EnumJobStatus,
-  EnumJobStatusSchema,
-  type Job,
-  JobSchema,
-  JobSequenceSchema,
-} from './db-types.js';
+import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
@@ -53,12 +46,6 @@ interface CreateServerJobOptionsBase {
    * `job.fail()`) will be captured and sent to Sentry with job context.
    */
   reportErrorsToSentry?: boolean;
-  /**
-   * Best-effort hook invoked once the sequence reaches a terminal status
-   * (which may differ from the inner job's status). Throwing here is
-   * logged but doesn't fail the job.
-   */
-  onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
 }
 
 type CreateServerJobOptions =
@@ -160,24 +147,17 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private reportErrorsToSentry: boolean;
   private jobType: string;
   private jobDescription: string;
-  private onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
 
   constructor(
     jobSequenceId: string,
     jobId: string,
-    options: {
-      reportErrorsToSentry: boolean;
-      type: string;
-      description: string;
-      onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
-    },
+    options: { reportErrorsToSentry: boolean; type: string; description: string },
   ) {
     this.jobSequenceId = jobSequenceId;
     this.jobId = jobId;
     this.reportErrorsToSentry = options.reportErrorsToSentry;
     this.jobType = options.type;
     this.jobDescription = options.description;
-    this.onTerminalStatus = options.onTerminalStatus;
   }
 
   fail(msg: string): never {
@@ -380,31 +360,17 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    const finishResult = await queryOptionalRow(
-      sql.update_job_on_finish,
-      {
-        job_sequence_id: this.jobSequenceId,
-        job_id: this.jobId,
-        output: this.output,
-        data: this.data,
-        status: err ? 'Error' : 'Success',
-      },
-      z.object({ new_status: EnumJobStatusSchema }),
-    );
+    await execute(sql.update_job_on_finish, {
+      job_sequence_id: this.jobSequenceId,
+      job_id: this.jobId,
+      output: this.output,
+      data: this.data,
+      status: err ? 'Error' : 'Success',
+    });
 
-    // Notify sockets before the optional hook so clients are unblocked
-    // even if the hook throws.
+    // Notify sockets.
     socketServer.io?.to('job-' + this.jobId).emit('update');
     socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
-
-    if (finishResult && this.onTerminalStatus) {
-      try {
-        await this.onTerminalStatus(finishResult.new_status, this.jobSequenceId);
-      } catch (hookErr) {
-        Sentry.captureException(hookErr);
-        logger.error('onTerminalStatus hook threw; ignoring', hookErr);
-      }
-    }
   }
 }
 
@@ -442,7 +408,6 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     reportErrorsToSentry: options.reportErrorsToSentry ?? false,
     type: options.type,
     description: options.description,
-    onTerminalStatus: options.onTerminalStatus,
   });
   liveJobs[job_id] = serverJob;
   return serverJob;

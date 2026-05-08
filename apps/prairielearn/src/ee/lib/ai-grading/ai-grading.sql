@@ -18,23 +18,20 @@ WHERE
   AND type = 'ai_grading'
   AND status IN ('Running', 'Stopping');
 
--- BLOCK request_stop_ai_grading_job
+-- BLOCK stop_ai_grading_job
 UPDATE job_sequences
 SET
   status = 'Stopping',
-  stop_requested_at = CURRENT_TIMESTAMP,
-  stop_requested_by_user_id = $authn_user_id
+  stop_requested_by_authn_user_id = $authn_user_id
 WHERE
   id = $job_sequence_id
   AND assessment_question_id = $assessment_question_id
   AND type = 'ai_grading'
-  AND status = 'Running'
-RETURNING
-  id;
+  AND status = 'Running';
 
--- BLOCK select_stop_requested
+-- BLOCK select_job_sequence_status
 SELECT
-  stop_requested_at IS NOT NULL
+  status
 FROM
   job_sequences
 WHERE

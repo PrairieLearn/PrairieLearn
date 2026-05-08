@@ -8,7 +8,7 @@ import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 
-import { requestStopAiGradingJob } from './ai-grading.js';
+import { stopAiGradingJob } from './ai-grading.js';
 
 async function pickAssessmentQuestionId(): Promise<string> {
   // Any assessment_question from the synced test course works — the SQL
@@ -52,7 +52,7 @@ async function selectStatus(job_sequence_id: string): Promise<string> {
   );
 }
 
-describe('requestStopAiGradingJob', () => {
+describe('stopAiGradingJob', () => {
   let assessment_question_id: string;
   let authn_user_id: string;
 
@@ -86,7 +86,7 @@ describe('requestStopAiGradingJob', () => {
       status: 'Running',
     });
 
-    const first = await requestStopAiGradingJob({
+    const first = await stopAiGradingJob({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,
@@ -96,7 +96,7 @@ describe('requestStopAiGradingJob', () => {
 
     // A redundant click (or a second TA) returns false; UI surfaces a
     // friendly "no longer running" instead of CONFLICT-on-DB-error.
-    const second = await requestStopAiGradingJob({
+    const second = await stopAiGradingJob({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,
@@ -111,7 +111,7 @@ describe('requestStopAiGradingJob', () => {
         assessment_question_id,
         status,
       });
-      const stopped = await requestStopAiGradingJob({
+      const stopped = await stopAiGradingJob({
         job_sequence_id,
         assessment_question_id,
         authn_user_id,
@@ -126,7 +126,7 @@ describe('requestStopAiGradingJob', () => {
       assessment_question_id,
       status: 'Running',
     });
-    const stopped = await requestStopAiGradingJob({
+    const stopped = await stopAiGradingJob({
       job_sequence_id,
       // Mismatched assessment_question_id — the WHERE clause must reject this
       // even though the row's status is Running.
@@ -143,7 +143,7 @@ describe('requestStopAiGradingJob', () => {
       status: 'Running',
       type: 'sync',
     });
-    const stopped = await requestStopAiGradingJob({
+    const stopped = await stopAiGradingJob({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,

@@ -1,1 +1,0 @@
-ALTER TABLE job_sequences VALIDATE CONSTRAINT job_sequences_stop_requested_by_user_id_fkey;

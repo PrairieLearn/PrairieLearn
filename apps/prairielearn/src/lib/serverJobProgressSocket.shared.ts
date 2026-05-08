@@ -47,10 +47,8 @@ export const JobProgressSchema = z.object({
    * succeeds but subsequent persistence fails).
    */
   num_items_incurred_cost: z.number().int().nonnegative().optional(),
-  /** Cancellation requested; in-flight items finish, no new dispatches. */
-  is_stopping: z.boolean().optional(),
-  /** Terminal: cancellation has fully settled. */
-  is_stopped: z.boolean().optional(),
+  /** Cancellation state; absent means the job is not being stopped. */
+  stop_state: z.enum(['stopping', 'stopped']).optional(),
 });
 
 export type JobProgress = z.infer<typeof JobProgressSchema>;

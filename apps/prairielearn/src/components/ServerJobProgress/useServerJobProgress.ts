@@ -63,7 +63,7 @@ export function useServerJobProgress({
       if (!job.item_statuses) {
         continue;
       }
-      const dropQueued = job.is_stopping || job.is_stopped;
+      const dropQueued = job.stop_state != null;
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
         if (!(itemId in merged) || status < merged[itemId]) {
@@ -139,7 +139,8 @@ export function useServerJobProgress({
 
     const jobProgress = jobsProgress[jobSequenceId];
 
-    const isTerminal = jobProgress.num_complete >= jobProgress.num_total || jobProgress.is_stopped;
+    const isTerminal =
+      jobProgress.num_complete >= jobProgress.num_total || jobProgress.stop_state === 'stopped';
     if (!isTerminal) {
       return;
     }
