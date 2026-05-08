@@ -233,6 +233,11 @@ export function InstanceQuestion({
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
                 show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                gradedByAi: aiGradingInfo != null,
+                gradedByHumanName:
+                  aiGradingInfo == null || aiGradingInfo.submissionManuallyGraded
+                    ? (lastGrader?.name ?? lastGrader?.uid ?? null)
+                    : null,
               })}
             </div>
           </div>

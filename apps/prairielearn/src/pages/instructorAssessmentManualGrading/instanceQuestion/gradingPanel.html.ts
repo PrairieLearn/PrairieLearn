@@ -39,6 +39,8 @@ export function GradingPanel({
   instanceQuestionGroups,
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
+  gradedByAi = false,
+  gradedByHumanName = null,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   context: 'main' | 'existing' | 'conflicting';
@@ -55,6 +57,8 @@ export function GradingPanel({
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
+  gradedByAi?: boolean;
+  gradedByHumanName?: string | null;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -221,6 +225,34 @@ export function GradingPanel({
               <li class="list-group-item">
                 <div class="mb-1">Guidelines:</div>
                 <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
+              </li>
+            `
+          : ''}
+        ${gradedByAi || gradedByHumanName
+          ? html`
+              <li class="list-group-item">
+                <div class="d-flex align-items-center flex-wrap gap-1">
+                  <span>Graded by:</span>
+                  ${gradedByAi
+                    ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
+                    : ''}
+                  ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
+                  ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
+                  ${gradedByAi
+                    ? html`<a
+                        href="#ai-grading-explanation-body"
+                        class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
+                        onclick="event.preventDefault(); document.getElementById('ai-grading-explanation-body')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
+                      >
+                        <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
+                      </a>`
+                    : ''}
+                </div>
+                ${gradedByAi && gradedByHumanName
+                  ? html`<div class="text-muted small mt-1">
+                      Human grading always takes priority
+                    </div>`
+                  : ''}
               </li>
             `
           : ''}

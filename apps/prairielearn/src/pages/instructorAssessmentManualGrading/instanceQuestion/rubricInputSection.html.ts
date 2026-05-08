@@ -117,12 +117,13 @@ function RubricItems({
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
-  const ai_selected_rubric_item_ids_set = aiGradingInfo?.submissionManuallyGraded
+  const showAiColumn = aiGradingInfo != null && aiGradingInfo.submissionManuallyGraded;
+  const ai_selected_rubric_item_ids_set = showAiColumn
     ? new Set(aiGradingInfo.selectedRubricItemIds)
     : null;
 
   return html`
-    ${aiGradingInfo?.submissionManuallyGraded
+    ${showAiColumn
       ? html`
           <div
             class="d-flex align-items-center gap-2 text-secondary mb-1"
@@ -131,7 +132,7 @@ function RubricItems({
             <div data-bs-toggle="tooltip" data-bs-title="AI grading">
               <i class="bi bi-stars"></i>
             </div>
-            <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
+            <div data-bs-toggle="tooltip" data-bs-title="Human grading">
               <i class="bi bi-person-fill"></i>
             </div>
           </div>
