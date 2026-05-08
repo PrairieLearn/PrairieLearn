@@ -216,7 +216,7 @@ async function courseInstanceConsistencyCheck({
     const shortNamesInDb = courseInstancesForConsistencyCheck.map((ci) => ci.short_name);
     const shortNamesInDisk = Object.keys(courseInstances);
 
-    const duplicateShortNames = Object.entries(countBy(shortNamesInDb, (name) => name ?? ''))
+    const duplicateShortNames = Object.entries(countBy(shortNamesInDb, (name) => name))
       .filter(([, count]) => count > 1)
       .map(([shortName]) => shortName);
     if (duplicateShortNames.length > 0) {
@@ -243,7 +243,7 @@ async function courseInstanceConsistencyCheck({
     const mismatchedInstanceUuids = courseInstancesForConsistencyCheck
       .map((ci) => ({
         ...ci,
-        diskUuid: courseInstances[ci.short_name!].courseInstance.uuid,
+        diskUuid: courseInstances[ci.short_name].courseInstance.uuid,
       }))
       // PostgreSQL's `uuid` type normalizes stored values to lowercase,
       // but diskUuid is preserved as-is, so we need to compare case-insensitively.

@@ -22,12 +22,31 @@ const ReleaseJsonSchema = z
   })
   .strict();
 
+const DueJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.nullable().describe(
+      'Due date as ISO String, or null for no due date',
+    ),
+    credit: z
+      .number()
+      .int()
+      .min(0)
+      .max(200)
+      .optional()
+      .describe(
+        'Custom credit percentage at the due date (0-200). Omitted means default 100% credit.',
+      ),
+  })
+  .strict();
+
 const DateControlJsonSchema = z
   .object({
     release: ReleaseJsonSchema.optional().describe(
       'Controls when the assessment becomes available to students',
     ),
-    dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
+    due: DueJsonSchema.optional().describe(
+      'Due date configuration. Overrides replace the entire due object atomically.',
+    ),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()

@@ -198,11 +198,10 @@ extra:
 
 nav:
   - Overview: 'index.md'
-  - Getting Started:
-      - getting-started/index.md
+  - Getting started:
+      - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Quick start': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'

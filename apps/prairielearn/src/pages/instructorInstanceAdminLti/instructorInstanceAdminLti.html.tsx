@@ -74,17 +74,6 @@ export function InstructorInstanceAdminLti({
     options: {
       fullWidth: true,
     },
-    preContent: html`
-      <script>
-        function copyToClipboard(element) {
-          var $temp = $('<input>');
-          $('body').append($temp);
-          $temp.val($(element).text()).select();
-          document.execCommand('copy');
-          $temp.remove();
-        }
-      </script>
-    `,
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -166,33 +155,33 @@ function LtiCredentialCard({
                         <code>${config.ltiRedirectUrl}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${config.ltiRedirectUrl}"
                           aria-label="Copy redirect URL to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
                       <td>
                         <code>${tc.consumer_key}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${tc.consumer_key}"
                           aria-label="Copy consumer key to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
                       <td>
                         <code>${tc.secret}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${tc.secret}"
                           aria-label="Copy shared secret to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
                       <td>${tc.created}</td>

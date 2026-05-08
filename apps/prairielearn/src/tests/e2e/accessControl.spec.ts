@@ -93,8 +93,8 @@ test.describe('Access control UI', () => {
     // Verify Section A override card is visible with its student label badge
     await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
-    // Save button should be disabled (no unsaved changes)
-    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
+    // Save bar is hidden when there are no unsaved changes
+    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeHidden();
   });
 
   test('can add a student-label override, configure it, and save', async ({
@@ -208,7 +208,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
-    await panel.getByLabel('Time limit').check();
+    await panel.getByRole('checkbox', { name: 'Time limit' }).check();
 
     // Verify duration input shows default of 60
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
@@ -217,7 +217,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently" from the RichSelect dropdown
-    await panel.getByRole('button', { name: /Question visibility/i }).click();
+    await panel.getByRole('button', { name: 'Question visibility', exact: true }).click();
     await page.getByRole('option', { name: /Hide questions permanently/i }).click();
 
     // Close the detail panel

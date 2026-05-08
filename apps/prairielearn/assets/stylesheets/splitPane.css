@@ -2,10 +2,15 @@
    from @prairielearn/ui. The generic split-pane styles live in the library. */
 
 /* Full-height layout: make the split pane fill remaining space in the
-   app-main-container flex column instead of using a hardcoded viewport offset. */
+   app-main-container flex column instead of using a hardcoded viewport offset.
+   #content is a flex column so siblings of the hydrated component (e.g. the
+   SyncErrorsAndWarnings banner) take their natural height rather than pushing
+   the hydrated component below the clipped region. */
 #content:has([data-split-pane-page]) {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* On wider viewports, prevent overflowing #content so that only the
@@ -19,7 +24,8 @@
 }
 
 #content:has([data-split-pane-page]) > .js-hydrated-component {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Section headers (banded) ─────────────────────────────────────────── */

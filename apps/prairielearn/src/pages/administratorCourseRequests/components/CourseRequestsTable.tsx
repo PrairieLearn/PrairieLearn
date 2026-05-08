@@ -542,6 +542,7 @@ function CourseRequestApproveModalContent({
             emailDomain={request.work_email?.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
+            repositoryRequired={true}
           />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
