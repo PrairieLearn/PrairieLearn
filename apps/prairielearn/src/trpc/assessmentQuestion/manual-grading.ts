@@ -10,8 +10,8 @@ import {
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  hasPriorAiGradingJobs,
   selectFirstAiGradedInstanceQuestion,
-  selectHasPriorAiGradingJobs,
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
@@ -236,7 +236,7 @@ const aiGradingAvailabilityInfo = t.procedure
     const [running_job_count, creditPool, has_prior_jobs] = await Promise.all([
       getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
       selectCreditPool(opts.ctx.course_instance.id),
-      selectHasPriorAiGradingJobs(opts.ctx.assessment_question.id),
+      hasPriorAiGradingJobs(opts.ctx.assessment_question.id),
     ]);
     return {
       running_job_count,
