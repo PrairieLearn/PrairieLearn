@@ -7,11 +7,13 @@ export function ManualPointsSection({
   disable,
   manual_points,
   resLocals,
+  trailing_slot,
 }: {
   context: 'main' | 'existing' | 'conflicting';
   disable: boolean;
   manual_points: number;
   resLocals: UntypedResLocals;
+  trailing_slot?: ReturnType<typeof html> | string;
 }) {
   return GradingPointsSection({
     context,
@@ -24,6 +26,7 @@ export function ManualPointsSection({
     show_input: !resLocals.rubric_data,
     show_input_edit: false,
     show_rubric_button: false,
+    trailing_slot,
   });
 }
 
@@ -93,6 +96,7 @@ function GradingPointsSection({
   disable,
   show_input_edit,
   show_rubric_button,
+  trailing_slot,
 }: {
   type: string;
   type_label: string;
@@ -104,10 +108,11 @@ function GradingPointsSection({
   disable: boolean;
   show_input_edit: boolean;
   show_rubric_button: boolean;
+  trailing_slot?: ReturnType<typeof html> | string;
 }) {
   return html`
     <div class="mb-3">
-      <span class="w-100">
+      <span class="w-100 d-flex align-items-baseline flex-wrap">
         <label
           for="js-${type}-score-value-input-points-${context}"
           class="js-manual-grading-points"
@@ -124,7 +129,7 @@ function GradingPointsSection({
               </label>
             `
           : ''}
-        <span class="ms-1">
+        <span class="ms-1 fw-bold">
           ${!show_input
             ? html`
                 <span class="js-manual-grading-points">
@@ -157,6 +162,7 @@ function GradingPointsSection({
               `
             : ''}
         </span>
+        ${trailing_slot ? html`<span class="ms-auto">${trailing_slot}</span>` : ''}
       </span>
       <div class="js-manual-grading-points">
         <div class="input-group js-${type}-score-value-input ${!show_input ? 'd-none' : ''}">

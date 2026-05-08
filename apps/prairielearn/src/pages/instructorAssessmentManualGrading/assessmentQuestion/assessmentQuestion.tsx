@@ -32,6 +32,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
@@ -298,9 +299,13 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        const rubric_data = await manualGrading.selectRubricData({
-          assessment_question: res.locals.assessment_question,
-        });
+        // Re-fetch assessment_question because `manual_rubric_id` may have been
+        // set/cleared by the update. `res.locals.assessment_question` was loaded
+        // by middleware before the update and is stale.
+        const assessment_question = await selectAssessmentQuestionById(
+          res.locals.assessment_question.id,
+        );
+        const rubric_data = await manualGrading.selectRubricData({ assessment_question });
         res.json({ rubric_data });
       } catch (err) {
         res.status(500).send({ err: String(err) });

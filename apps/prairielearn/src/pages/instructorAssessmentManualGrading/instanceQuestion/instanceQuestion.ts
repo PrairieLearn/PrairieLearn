@@ -6,8 +6,11 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   containsImageCapture,
@@ -25,14 +28,18 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import { config } from '../../../lib/config.js';
 import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -282,6 +289,39 @@ router.get(
       z.object({ position: z.coerce.number() }),
     );
 
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getAssessmentQuestionTrpcUrl({
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+          assessmentQuestionId: res.locals.assessment_question.id,
+        }),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
+    const initialOngoingJobSequenceTokens = await run(async () => {
+      if (!aiGradingEnabled) return null;
+      const ids = await getJobSequenceIds({
+        assessment_question_id: res.locals.assessment_question.id,
+        status: 'Running',
+        type: 'ai_grading',
+      });
+      return ids.reduce<Record<string, string>>((acc, id) => {
+        acc[id] = generateJobSequenceToken(id);
+        return acc;
+      }, {});
+    });
+
+    const availableAiGradingProviders = aiGradingEnabled
+      ? await getAvailableAiGradingProviders(res.locals.course_instance)
+      : [];
+
+    const aiGradingRelativeCosts = aiGradingEnabled
+      ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
+      : {};
+
     res.send(
       InstanceQuestionPage({
         ...localsForRender,
@@ -300,6 +340,11 @@ router.get(
         showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
         submissionCredits,
         manualGradingIndex: manualGradingIndex?.position ?? null,
+        trpcCsrfToken,
+        initialOngoingJobSequenceTokens,
+        availableAiGradingProviders,
+        aiGradingRelativeCosts,
+        isDevMode: config.devMode,
       }),
     );
   }),
@@ -370,11 +415,30 @@ router.get(
       const rubric_data = await manualGrading.selectRubricData({
         assessment_question: res.locals.assessment_question,
       });
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+      const lastGrader = res.locals.instance_question.last_grader
+        ? await selectUserById(res.locals.instance_question.last_grader)
+        : null;
+      const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? null;
+
+      let gradedByAi = false;
+      if (aiGradingEnabled) {
+        const submission_id = await selectLastSubmissionId(res.locals.instance_question.id);
+        const ai_grading_job_data = await sqldb.queryOptionalRow(
+          sql.select_ai_grading_job_data_for_submission,
+          { submission_id },
+          z.object({ id: GradingJobSchema.shape.id }),
+        );
+        gradedByAi = ai_grading_job_data != null;
+      }
+
       const gradingPanel = GradingPanel({
         ...locals,
         context: 'main',
+        gradedByAi,
+        gradedByHumanName: lastGraderName,
       }).toString();
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
       // `prepareLocalsForRender` guarantees a submission exists.
       const submission = res.locals.submission!;

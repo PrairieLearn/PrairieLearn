@@ -30,6 +30,7 @@ import {
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { getJobSequenceIds } from '../../lib/server-jobs.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
@@ -258,6 +259,22 @@ const aiGradingAvailabilityInfo = t.procedure
     };
   });
 
+const ongoingAiGradingJobs = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(z.record(z.string(), z.string()))
+  .query(async (opts) => {
+    const ids = await getJobSequenceIds({
+      assessment_question_id: opts.ctx.assessment_question.id,
+      status: 'Running',
+      type: 'ai_grading',
+    });
+    return ids.reduce<Record<string, string>>((acc, id) => {
+      acc[id] = generateJobSequenceToken(id);
+      return acc;
+    }, {});
+  });
+
 const firstAiGradedInstanceQuestion = t.procedure
   .use(requireCourseInstancePermissionView)
   .use(requireAiGradingFeature)
@@ -299,6 +316,7 @@ const redeemFreeCreditMutation = t.procedure
 export const manualGradingRouter = t.router({
   instances,
   aiGradingAvailabilityInfo,
+  ongoingAiGradingJobs,
   firstAiGradedInstanceQuestion,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,

@@ -247,7 +247,9 @@ export function GradingPanel({
                     : ''}
                 </div>
                 ${gradedByAi && gradedByHumanName
-                  ? html`<div class="text-muted small">Human grading always takes priority</div>`
+                  ? html`<div class="text-muted small mt-1">
+                      Human grading always takes priority
+                    </div>`
                   : ''}
               </li>
             `
@@ -435,7 +437,12 @@ ${submission.feedback?.manual}</textarea
                   >
                     Grade
                   </button>
-                  <button id="ai-grade-button" type="button" class="btn btn-primary ms-1">
+                  <button
+                    id="ai-grade-button"
+                    type="button"
+                    class="btn btn-primary ms-1"
+                    onclick="document.dispatchEvent(new CustomEvent('open-ai-grade-modal'))"
+                  >
                     <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
                   </button>
                 `

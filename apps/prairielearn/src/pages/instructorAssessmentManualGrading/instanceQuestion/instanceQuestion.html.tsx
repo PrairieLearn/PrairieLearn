@@ -16,9 +16,15 @@ import type {
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
+import {
+  type EnumAiGradingProvider,
+  GradingJobSchema,
+  type InstanceQuestionGroup,
+  type User,
+} from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
+import { InstanceQuestionAiGrade } from './components/InstanceQuestionAiGrade.js';
 import { GradingPanel } from './gradingPanel.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
@@ -43,6 +49,11 @@ export function InstanceQuestion({
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
   manualGradingIndex,
+  trpcCsrfToken,
+  initialOngoingJobSequenceTokens,
+  availableAiGradingProviders,
+  aiGradingRelativeCosts,
+  isDevMode,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
@@ -64,6 +75,11 @@ export function InstanceQuestion({
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
   manualGradingIndex: number | null;
+  trpcCsrfToken: string;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
+  availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
+  isDevMode: boolean;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -204,32 +220,47 @@ export function InstanceQuestion({
               variant_true_answer: resLocals.variant.true_answer,
               submission_submitted_answer: resLocals.submission?.submitted_answer,
             }}
+            isInstanceQuestionPage
           />,
         )}
       </div>
+      ${aiGradingEnabled
+        ? hydrateHtml(
+            <InstanceQuestionAiGrade
+              courseInstanceId={resLocals.course_instance.id}
+              assessmentId={resLocals.assessment.id}
+              assessmentQuestionId={resLocals.assessment_question.id}
+              instanceQuestionId={resLocals.instance_question.id}
+              trpcCsrfToken={trpcCsrfToken}
+              isDevMode={isDevMode}
+              hasRubric={rubric_data != null && rubric_data.rubric_items.length > 0}
+              useCustomApiKeys={!!resLocals.course_instance.ai_grading_use_custom_api_keys}
+              aiGradingSettingsUrl={`${resLocals.urlPrefix}/instance_admin/ai_grading`}
+              availableAiGradingProviders={availableAiGradingProviders}
+              aiGradingRelativeCosts={aiGradingRelativeCosts}
+              aiGradingLastSelectedModel={
+                resLocals.assessment_question.ai_grading_last_selected_model ?? null
+              }
+              initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+            />,
+          )
+        : ''}
       ${aiGradingInfo
         ? html`
-            <style>
-              .review-ai-grading-alert {
-                container-type: inline-size;
-                container-name: review-ai-grading-alert;
-              }
-              @container review-ai-grading-alert (max-width: 700px) {
-                .review-ai-grading-alert .review-ai-grading-dot {
-                  display: none;
-                }
-              }
-            </style>
-            <div class="alert alert-info review-ai-grading-alert" role="alert">
-              <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-1">
-                <div class="d-flex align-items-center gap-2">
+            <div class="alert alert-info" role="alert">
+              <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
                   <i class="bi bi-stars fs-5" aria-hidden="true"></i>
                   <strong>Review AI grading</strong>
                 </div>
-                <div class="d-flex flex-wrap column-gap-2">
-                  <span>Ensure the grading aligns with your expectations</span>
-                  <span aria-hidden="true" class="review-ai-grading-dot">·</span>
-                  <span>Edit the rubric for future AI grading runs</span>
+                <div class="d-flex flex-wrap align-items-center gap-2 small">
+                  <span class="text-body-secondary"
+                    >Ensure the grading aligns with your expectations</span
+                  >
+                  <span class="text-body-secondary opacity-50" aria-hidden="true">&middot;</span>
+                  <span class="text-body-secondary"
+                    >Edit the rubric for future AI grading runs</span
+                  >
                 </div>
               </div>
             </div>

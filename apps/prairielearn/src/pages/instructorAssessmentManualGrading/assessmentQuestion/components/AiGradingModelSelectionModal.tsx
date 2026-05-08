@@ -313,17 +313,11 @@ function buildBeforeYouGradeItems({
   if (!hasPriorJobs && numToGrade > 5) {
     items.push({
       key: 'test_first',
-      title: 'Test on 5 submissions first',
+      title: 'Test on ~5 submissions first',
       description: `Confirm your rubric works well before running it on all ${numToGrade} selected.`,
     });
   }
   return items;
-}
-
-function buildCompletedSetupItems({ hasRubric }: { hasRubric: boolean }): string[] {
-  const completed: string[] = [];
-  if (hasRubric) completed.push('Rubric attached and tested');
-  return completed;
 }
 
 function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
@@ -350,22 +344,12 @@ function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
   );
 }
 
-function BeforeYouGradeSection({
-  items,
-  completedItems,
-}: {
-  items: BeforeYouGradeItem[];
-  completedItems: string[];
-}) {
+function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
   if (items.length === 0) {
-    if (completedItems.length === 0) return null;
     return (
       <div className="mb-4 d-flex align-items-center gap-2 small">
         <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
-        <span>
-          Ready for AI grading
-          <span className="text-muted"> &middot; {completedItems.join(' · ')}</span>
-        </span>
+        <span>Ready for AI grading</span>
       </div>
     );
   }
@@ -685,7 +669,6 @@ export function AiGradingModelSelectionModal({
         onCreateRubric: handleCreateRubric,
       })
     : [];
-  const completedSetupItems = aiGradingEnabled ? buildCompletedSetupItems({ hasRubric }) : [];
 
   return (
     <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
@@ -699,12 +682,12 @@ export function AiGradingModelSelectionModal({
             <Alert
               key={alert.key}
               variant={alert.variant}
-              className={clsx('mb-3 py-2', alert.small && 'small')}
+              className={clsx('mb-3', alert.small ? 'py-2 small' : 'py-3')}
             >
               {alert.body}
             </Alert>
           ))}
-          <BeforeYouGradeSection items={beforeYouGradeItems} completedItems={completedSetupItems} />
+          <BeforeYouGradeSection items={beforeYouGradeItems} />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}

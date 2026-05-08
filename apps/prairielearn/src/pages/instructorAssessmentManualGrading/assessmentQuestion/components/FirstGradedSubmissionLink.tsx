@@ -3,13 +3,7 @@ import { Alert } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
-export function ReviewSubmissionsAlert({
-  jobSequenceId,
-  manualGradingUrlPrefix,
-}: {
-  jobSequenceId: string;
-  manualGradingUrlPrefix: string;
-}) {
+export function ReviewSubmissionsAlert({ jobSequenceId }: { jobSequenceId: string }) {
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.manualGrading.firstAiGradedInstanceQuestion.queryOptions({
@@ -24,19 +18,10 @@ export function ReviewSubmissionsAlert({
       <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
         <div className="d-flex align-items-center gap-2 flex-shrink-0">
           <i className="bi bi-stars fs-5" aria-hidden="true" />
-          <strong>
-            <a
-              href={`${manualGradingUrlPrefix}/instance_question/${data.instance_question_id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="alert-link"
-            >
-              Review your submissions
-            </a>
-          </strong>
+          <strong>Review AI-graded submissions</strong>
         </div>
         <span className="small text-body-secondary">
-          Ensure you're satisfied with the AI gradings.
+          Open an instance below to review the AI grading.
         </span>
       </div>
     </Alert>

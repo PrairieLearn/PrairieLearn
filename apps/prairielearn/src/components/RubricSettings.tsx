@@ -60,6 +60,7 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
+  isInstanceQuestionPage = false,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -67,6 +68,7 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
+  isInstanceQuestionPage?: boolean;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -880,6 +882,26 @@ export function RubricSettings({
           >
             <i className="bi bi-check-circle-fill me-1" aria-hidden="true" />
             {successMessage}
+            {isInstanceQuestionPage && successMessage === 'Rubric saved' && (
+              <>
+                <span className="text-success opacity-50 mx-2" aria-hidden="true">
+                  &middot;
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-link p-0 align-baseline"
+                  onClick={() => {
+                    setSuccessMessage(null);
+                    document
+                      .getElementById('grading-panel')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.dispatchEvent(new CustomEvent('open-ai-grade-modal'));
+                  }}
+                >
+                  Rerun AI grading for submission
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="btn-close"

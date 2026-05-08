@@ -102,7 +102,7 @@ function AiGradingOption({
   text: string;
   numToGrade: number;
   onSelect: () => void;
-  emptyHint?: string;
+  emptyHint?: React.ReactNode;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -370,6 +370,44 @@ export function AssessmentQuestionTable({
     },
   });
 
+  // Cross-page sync: poll for ongoing AI grading jobs every 30s and on window
+  // focus. Picks up jobs started elsewhere (e.g., from an instance question
+  // detail page).
+  const ongoingJobsQuery = useQuery({
+    ...trpc.manualGrading.ongoingAiGradingJobs.queryOptions(),
+    enabled: aiGradingMode,
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 30_000,
+  });
+
+  useEffect(() => {
+    if (!ongoingJobsQuery.data) return;
+    for (const [jobSequenceId, jobSequenceToken] of Object.entries(ongoingJobsQuery.data)) {
+      if (!(jobSequenceId in serverJobProgress.jobsProgress)) {
+        serverJobProgress.handleAddOngoingJobSequence(jobSequenceId, jobSequenceToken);
+      }
+    }
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [ongoingJobsQuery.data]);
+
+  // Cross-page sync: BroadcastChannel for instant same-browser sync.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('pl-ai-grading');
+    const handler = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg?.type !== 'job-started') return;
+      if (msg.assessmentQuestionId !== assessmentQuestion.id) return;
+      serverJobProgress.handleAddOngoingJobSequence(msg.jobSequenceId, msg.jobSequenceToken);
+    };
+    channel.addEventListener('message', handler);
+    return () => {
+      channel.removeEventListener('message', handler);
+      channel.close();
+    };
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [assessmentQuestion.id]);
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
@@ -636,11 +674,7 @@ export function AssessmentQuestionTable({
           {Object.values(serverJobProgress.jobsProgress)
             .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
             .map((j) => (
-              <ReviewSubmissionsAlert
-                key={j.job_sequence_id}
-                jobSequenceId={j.job_sequence_id}
-                manualGradingUrlPrefix={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}
-              />
+              <ReviewSubmissionsAlert key={j.job_sequence_id} jobSequenceId={j.job_sequence_id} />
             ))}
         </>
       )}
@@ -740,7 +774,7 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      emptyHint="Use the checkboxes on the left to select submissions. Shift-click to select a range."
+                      emptyHint="Checkboxes on the left select submissions. Shift-click to select a range."
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'selected',
@@ -985,6 +1019,16 @@ export function AssessmentQuestionTable({
           );
           setLastSelectedModel(modelId);
           setRowSelection({});
+          if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('pl-ai-grading');
+            channel.postMessage({
+              type: 'job-started',
+              assessmentQuestionId: assessmentQuestion.id,
+              jobSequenceId: data.job_sequence_id,
+              jobSequenceToken: data.job_sequence_token,
+            });
+            channel.close();
+          }
         }}
         onHide={() => setModelSelectionModalState(null)}
       />
