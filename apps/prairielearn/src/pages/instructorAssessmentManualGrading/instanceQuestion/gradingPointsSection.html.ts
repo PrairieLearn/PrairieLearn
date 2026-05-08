@@ -23,7 +23,6 @@ export function ManualPointsSection({
     show_percentage: !!resLocals.assessment_question.max_points,
     show_input: !resLocals.rubric_data,
     show_input_edit: false,
-    show_rubric_button: false,
   });
 }
 
@@ -48,7 +47,6 @@ export function AutoPointsSection({
     show_percentage: !!resLocals.assessment_question.max_points,
     show_input: false,
     show_input_edit: !disable,
-    show_rubric_button: false,
   });
 }
 
@@ -88,7 +86,6 @@ function GradingPointsSection({
   show_percentage,
   disable,
   show_input_edit,
-  show_rubric_button,
 }: {
   type: string;
   type_label: string;
@@ -99,7 +96,6 @@ function GradingPointsSection({
   show_percentage: boolean;
   disable: boolean;
   show_input_edit: boolean;
-  show_rubric_button: boolean;
 }) {
   return html`
     <div class="mb-3">
@@ -148,16 +144,6 @@ function GradingPointsSection({
                     class="btn btn-outline-secondary js-enable-${type}-score-edit js-${type}-score-value-info"
                   >
                     <i class="fas fa-pencil"></i>
-                  </button>
-                `
-              : ''}
-            ${show_rubric_button
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary js-show-rubric-settings-button"
-                  >
-                    <i class="fas fa-list-check"></i> Rubric
                   </button>
                 `
               : ''}

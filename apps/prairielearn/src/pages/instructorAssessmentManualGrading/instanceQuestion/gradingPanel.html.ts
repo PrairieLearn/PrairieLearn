@@ -228,38 +228,38 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${gradedByAi || gradedByHuman
-          ? html`
-              <li class="list-group-item">
-                <div class="d-flex align-items-center flex-wrap gap-1">
-                  <span>Graded by:</span>
-                  ${gradedByAi
-                    ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
-                    : ''}
-                  ${gradedByAi && gradedByHuman ? html`<span>+</span>` : ''}
-                  ${gradedByHuman ? html`<span>${gradedByHumanName}</span>` : ''}
-                  ${gradedByAi
-                    ? html`<a
-                        href="#ai-grading-explanation"
-                        class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
-                      >
-                        <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
-                      </a>`
-                    : ''}
-                </div>
-                ${gradedByAi && gradedByHuman
-                  ? html`<div class="text-muted small mt-1">
-                      Human grading always takes priority
-                    </div>`
+        ${run(() => {
+          if (!gradedByAi && !gradedByHuman) return '';
+          return html`
+            <li class="list-group-item">
+              <div class="d-flex align-items-center flex-wrap gap-1">
+                <span>Graded by:</span>
+                ${gradedByAi
+                  ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
                   : ''}
-              </li>
-            `
-          : ''}
+                ${gradedByAi && gradedByHuman ? html`<span>+</span>` : ''}
+                ${gradedByHuman ? html`<span>${gradedByHumanName}</span>` : ''}
+                ${gradedByAi
+                  ? html`<a
+                      href="#ai-grading-explanation"
+                      class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
+                      onclick="event.preventDefault(); document.getElementById('ai-grading-explanation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
+                    >
+                      <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
+                    </a>`
+                  : ''}
+              </div>
+              ${gradedByAi && gradedByHuman
+                ? html`<div class="text-muted small mt-1">Human grading always takes priority</div>`
+                : ''}
+            </li>
+          `;
+        })}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable, aiGradingInfo })
+            ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -270,7 +270,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ points, resLocals })}
                 ${resLocals.rubric_data?.rubric.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable, aiGradingInfo })
+                  ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
                   : ''}
               </li>
             `

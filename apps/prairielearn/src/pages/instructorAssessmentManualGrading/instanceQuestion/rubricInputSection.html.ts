@@ -13,10 +13,12 @@ export function RubricInputSection({
   resLocals,
   disable,
   aiGradingInfo,
+  context,
 }: {
   resLocals: UntypedResLocals;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  context: 'main' | 'existing' | 'conflicting';
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
@@ -43,6 +45,7 @@ export function RubricInputSection({
       assessment_question: resLocals.assessment_question,
       disable,
       aiGradingInfo,
+      showEditRubricButton: context === 'main',
     })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
@@ -110,12 +113,14 @@ function RubricItems({
   assessment_question,
   disable,
   aiGradingInfo,
+  showEditRubricButton,
 }: {
   rubric_items: RubricData['rubric_items'][0][] | null | undefined;
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
   assessment_question: AssessmentQuestion;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  showEditRubricButton: boolean;
 }) {
   const showAiColumn = aiGradingInfo?.submissionManuallyGraded;
   const ai_selected_rubric_item_ids_set = showAiColumn
@@ -136,7 +141,7 @@ function RubricItems({
             `
           : ''}
       </div>
-      ${!disable
+      ${!disable && showEditRubricButton
         ? html`
             <button
               type="button"
