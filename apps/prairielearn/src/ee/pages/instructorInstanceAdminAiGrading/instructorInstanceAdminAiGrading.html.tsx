@@ -475,9 +475,7 @@ function CreditPoolSection({
   }, [initialCheckoutStatus, queryClient, trpc]);
 
   const freeCreditStatus = freeCreditStatusQuery.data;
-  const freeCreditStatusLoaded = freeCreditStatus != null;
-  const hasFreeCreditAvailable =
-    freeCreditStatusLoaded && freeCreditStatus.redemptions_remaining > 0;
+  const hasFreeCreditAvailable = (freeCreditStatus?.redemptions_remaining ?? 0) > 0;
 
   return (
     <div className="border-top pt-3 mt-3">
@@ -526,7 +524,7 @@ function CreditPoolSection({
                 Redeem free credit
               </button>
             )}
-            {stripePurchasingEnabled && freeCreditStatusLoaded && (
+            {stripePurchasingEnabled && (
               <button
                 type="button"
                 className="btn btn-sm btn-primary d-flex align-items-center gap-2"

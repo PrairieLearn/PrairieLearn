@@ -217,14 +217,6 @@ const redeemFreeCreditMutation = t.procedure
   .use(requireEditPermission)
   .use(requireAiGradingFeature)
   .mutation(async (opts) => {
-    const redemptionsUsed = await selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id);
-    if (redemptionsUsed >= MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE) {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: `This course has already used all ${MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} free AI grading credit redemptions.`,
-      });
-    }
-
     return await redeemFreeAiGradingCredit({
       course_id: opts.ctx.course.id,
       course_instance_id: opts.ctx.course_instance.id,
