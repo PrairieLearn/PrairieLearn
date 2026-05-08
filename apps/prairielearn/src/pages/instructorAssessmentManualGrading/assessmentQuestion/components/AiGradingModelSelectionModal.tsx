@@ -327,6 +327,8 @@ export function AiGradingModelSelectionModal({
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
+  totalSubmissionCount,
+  onAutoSelectForTest,
   onSuccess,
   onHide,
 }: {
@@ -336,6 +338,8 @@ export function AiGradingModelSelectionModal({
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
+  totalSubmissionCount: number;
+  onAutoSelectForTest: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -437,6 +441,25 @@ export function AiGradingModelSelectionModal({
               void refetchAvailabilityInfo();
             }}
           />
+          {modalState != null &&
+            aiGradingAvailabilityInfo != null &&
+            !aiGradingAvailabilityInfo.has_prior_jobs &&
+            modalState.numToGrade > 5 &&
+            totalSubmissionCount >= 2 && (
+              <Alert variant="warning" className="mb-3 py-2 small">
+                <strong>First AI grading job?</strong> Test with{' '}
+                {Math.min(5, totalSubmissionCount)} submissions first to confirm your rubric works
+                well before running on all submissions.{' '}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 align-baseline"
+                  onClick={() => onAutoSelectForTest(Math.min(5, totalSubmissionCount))}
+                >
+                  Test with {Math.min(5, totalSubmissionCount)} submissions
+                </Button>
+              </Alert>
+            )}
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
