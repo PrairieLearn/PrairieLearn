@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { execute } from '@prairielearn/postgres';
@@ -9,6 +10,7 @@ import { config } from '../lib/config.js';
 import { fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -18,6 +20,34 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 let courseRepo: CourseRepoFixture;
+
+async function setSharingFilesPublic() {
+  const fileUpdates = [
+    {
+      relPath: 'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      properties: ['shareSourcePublicly'],
+    },
+    {
+      relPath: 'questions/test/question/info.json',
+      properties: ['sharePublicly', 'shareSourcePublicly'],
+    },
+  ];
+
+  for (const fileUpdate of fileUpdates) {
+    const absPath = path.join(courseRepo.courseOriginDir, fileUpdate.relPath);
+    const info = await fs.readJSON(absPath);
+    for (const property of fileUpdate.properties) {
+      info[property] = true;
+    }
+    await fs.writeJSON(absPath, info, { spaces: 2 });
+  }
+
+  await commitOriginAndSync(
+    courseRepo,
+    'Share test content',
+    fileUpdates.map((u) => u.relPath),
+  );
+}
 
 describe('Updating a course instance ID', () => {
   beforeAll(async () => {
@@ -111,14 +141,7 @@ describe('Updating a course instance ID', () => {
   test.sequential(
     'ignores course instance source sharing when source is already public',
     async () => {
-      await execute(
-        'UPDATE questions SET share_publicly = TRUE, share_source_publicly = TRUE WHERE course_id = $course_id',
-        { course_id: 1 },
-      );
-      await execute(
-        'UPDATE assessments SET share_source_publicly = TRUE WHERE course_instance_id = $course_instance_id',
-        { course_instance_id: '1' },
-      );
+      await setSharingFilesPublic();
       await execute(
         'UPDATE course_instances SET share_source_publicly = TRUE WHERE id = $course_instance_id',
         { course_instance_id: '1' },
@@ -138,14 +161,6 @@ describe('Updating a course instance ID', () => {
         await execute(
           'UPDATE course_instances SET share_source_publicly = FALSE WHERE id = $course_instance_id',
           { course_instance_id: '1' },
-        );
-        await execute(
-          'UPDATE assessments SET share_source_publicly = FALSE WHERE course_instance_id = $course_instance_id',
-          { course_instance_id: '1' },
-        );
-        await execute(
-          'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
-          { course_id: 1 },
         );
       }
     },

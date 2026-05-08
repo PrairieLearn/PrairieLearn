@@ -23,6 +23,7 @@ import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -48,6 +49,47 @@ function assessmentDevDir() {
 
 async function getOrigHash(infoPath: string) {
   return (await getOriginalHash(infoPath)) ?? '';
+}
+
+async function setQuestionSharingFilesPublic(sharePublicly: boolean) {
+  const questionInfoPath = path.join(
+    courseRepo.courseOriginDir,
+    'questions',
+    'test',
+    'question',
+    'info.json',
+  );
+  const questionInfo = await fs.readJSON(questionInfoPath);
+  if (sharePublicly) {
+    questionInfo.sharePublicly = true;
+    questionInfo.shareSourcePublicly = true;
+  } else {
+    delete questionInfo.sharePublicly;
+    delete questionInfo.shareSourcePublicly;
+  }
+  await fs.writeJSON(questionInfoPath, questionInfo, { spaces: 2 });
+  const filesToAdd = ['questions/test/question/info.json'];
+
+  if (!sharePublicly) {
+    const assessmentInfoPath = path.join(
+      courseRepo.courseOriginDir,
+      'courseInstances',
+      'Fa18',
+      'assessments',
+      'A1',
+      'infoAssessment.json',
+    );
+    const assessmentInfo = await fs.readJSON(assessmentInfoPath);
+    delete assessmentInfo.shareSourcePublicly;
+    await fs.writeJSON(assessmentInfoPath, assessmentInfo, { spaces: 2 });
+    filesToAdd.push('courseInstances/Fa18/assessments/A1/infoAssessment.json');
+  }
+
+  await commitOriginAndSync(
+    courseRepo,
+    sharePublicly ? 'Share test question' : 'Unshare test question',
+    filesToAdd,
+  );
 }
 
 async function createTrpcClient(assessmentId: string) {
@@ -409,10 +451,7 @@ describe('Editing assessment settings', () => {
   );
 
   test.sequential('ignores assessment source sharing when source is already public', async () => {
-    await execute(
-      'UPDATE questions SET share_publicly = TRUE, share_source_publicly = TRUE WHERE course_id = $course_id',
-      { course_id: 1 },
-    );
+    await setQuestionSharingFilesPublic(true);
     await execute('UPDATE assessments SET share_source_publicly = TRUE WHERE tid = $tid', {
       tid: 'A1',
     });
@@ -435,10 +474,7 @@ describe('Editing assessment settings', () => {
       await execute('UPDATE assessments SET share_source_publicly = FALSE WHERE tid = $tid', {
         tid: 'A1',
       });
-      await execute(
-        'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
-        { course_id: 1 },
-      );
+      await setQuestionSharingFilesPublic(false);
     }
   });
 });

@@ -30,6 +30,7 @@ import type { SharingError } from '../trpc/course/sharing.js';
 import { fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -96,15 +97,6 @@ async function accessSharedQuestionAssessment(course_instance_id: string) {
 }
 
 let courseRepo: CourseRepoFixture;
-
-async function commitAndPullSharingCourse() {
-  await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
-  await execa('git', ['commit', '-m', 'Add sharing set'], { cwd: courseRepo.courseOriginDir });
-  await execa('git', ['pull'], { cwd: courseRepo.courseLiveDir });
-  const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-  assert.equal(syncResult.status, 'complete');
-  assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
-}
 
 async function ensureInvalidSharingOperationFailsToSync() {
   let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
@@ -350,7 +342,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         sharingCourseData.questions[SHARING_QUESTION_QID],
       );
 
-      await commitAndPullSharingCourse();
+      await commitOriginAndSync(courseRepo, 'Add sharing set');
     });
 
     test.sequential('Share sharing set with test course', async () => {
@@ -437,7 +429,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
       );
 
-      await commitAndPullSharingCourse();
+      await commitOriginAndSync(courseRepo, 'Publicly share question');
     });
 
     test.sequential(
