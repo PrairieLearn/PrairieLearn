@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -15,10 +14,7 @@ import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import {
-  type AssessmentSettingsError,
-  type assessmentSettingsRouter,
-} from '../trpc/assessment/assessment-settings.js';
+import { type AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -51,44 +47,39 @@ async function getOrigHash(infoPath: string) {
   return (await getOriginalHash(infoPath)) ?? '';
 }
 
-async function setQuestionSharingFilesPublic(sharePublicly: boolean) {
-  const questionInfoPath = path.join(
-    courseRepo.courseOriginDir,
-    'questions',
-    'test',
-    'question',
-    'info.json',
-  );
-  const questionInfo = await fs.readJSON(questionInfoPath);
-  if (sharePublicly) {
-    questionInfo.sharePublicly = true;
-    questionInfo.shareSourcePublicly = true;
-  } else {
-    delete questionInfo.sharePublicly;
-    delete questionInfo.shareSourcePublicly;
-  }
-  await fs.writeJSON(questionInfoPath, questionInfo, { spaces: 2 });
-  const filesToAdd = ['questions/test/question/info.json'];
+async function setQuestionsPrivateForCourse(course_id: string) {
+  await execute(sql.update_questions_sharing_private, { course_id });
+}
 
-  if (!sharePublicly) {
-    const assessmentInfoPath = path.join(
-      courseRepo.courseOriginDir,
-      'courseInstances',
-      'Fa18',
-      'assessments',
-      'A1',
-      'infoAssessment.json',
-    );
-    const assessmentInfo = await fs.readJSON(assessmentInfoPath);
-    delete assessmentInfo.shareSourcePublicly;
-    await fs.writeJSON(assessmentInfoPath, assessmentInfo, { spaces: 2 });
-    filesToAdd.push('courseInstances/Fa18/assessments/A1/infoAssessment.json');
+async function setAssessmentSharingFilesPublic(sharePublicly: boolean) {
+  const fileUpdates = [
+    {
+      relPath: 'questions/test/question/info.json',
+      properties: ['sharePublicly', 'shareSourcePublicly'],
+    },
+    {
+      relPath: 'courseInstances/Fa18/assessments/A1/infoAssessment.json',
+      properties: ['shareSourcePublicly'],
+    },
+  ];
+
+  for (const fileUpdate of fileUpdates) {
+    const absPath = path.join(courseRepo.courseOriginDir, fileUpdate.relPath);
+    const info = await fs.readJSON(absPath);
+    for (const property of fileUpdate.properties) {
+      if (sharePublicly) {
+        info[property] = true;
+      } else {
+        delete info[property];
+      }
+    }
+    await fs.writeJSON(absPath, info, { spaces: 2 });
   }
 
   await commitOriginAndSync(
     courseRepo,
-    sharePublicly ? 'Share test question' : 'Unshare test question',
-    filesToAdd,
+    sharePublicly ? 'Share test assessment' : 'Unshare test assessment',
+    fileUpdates.map((u) => u.relPath),
   );
 }
 
@@ -283,11 +274,10 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'FORBIDDEN',
-        );
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(appError.message, 'Access denied (must be a course editor)');
       }
     });
   });
@@ -309,11 +299,10 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'BAD_REQUEST',
-        );
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(appError.message, 'infoAssessment.json does not exist');
       }
     } finally {
       await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
@@ -421,10 +410,7 @@ describe('Editing assessment settings', () => {
     async () => {
       // Force every question on this course to be non-public, so the gate in the mutation
       // can detect them before reaching the file editor.
-      await execute(
-        'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
-        { course_id: 1 },
-      );
+      await setQuestionsPrivateForCourse('1');
 
       const trpcClient = await createTrpcClient('1');
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
@@ -441,20 +427,19 @@ describe('Editing assessment settings', () => {
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'BAD_REQUEST',
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(
+          appError.message,
+          'Cannot share this assessment publicly because it contains questions that are not publicly shared',
         );
       }
     },
   );
 
   test.sequential('ignores assessment source sharing when source is already public', async () => {
-    await setQuestionSharingFilesPublic(true);
-    await execute('UPDATE assessments SET share_source_publicly = TRUE WHERE tid = $tid', {
-      tid: 'A1',
-    });
+    await setAssessmentSharingFilesPublic(true);
 
     try {
       const trpcClient = await createTrpcClient('1');
@@ -470,11 +455,10 @@ describe('Editing assessment settings', () => {
         origHash: await getOrigHash(assessmentLiveInfoPath),
       });
       assert.ok(result.origHash);
+      const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
     } finally {
-      await execute('UPDATE assessments SET share_source_publicly = FALSE WHERE tid = $tid', {
-        tid: 'A1',
-      });
-      await setQuestionSharingFilesPublic(false);
+      await setAssessmentSharingFilesPublic(false);
     }
   });
 });

@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
-import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { IdSchema } from '@prairielearn/zod';
 
 import { getAppError } from '../lib/client/errors.js';
 import { getCourseTrpcUrl } from '../lib/client/url.js';
@@ -21,8 +19,9 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
-import { selectQuestionByQid } from '../models/question.js';
+import { selectQuestionByQid, updateQuestion } from '../models/question.js';
 import { selectOptionalSharingSetByName } from '../models/sharing-set.js';
+import { selectUserByUid } from '../models/user.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 import type { SharingError } from '../trpc/course/sharing.js';
@@ -63,11 +62,7 @@ let devUserId: string;
 
 async function getDevUserId() {
   if (devUserId) return devUserId;
-  devUserId = await sqldb.queryScalar(
-    "SELECT id FROM users WHERE uid = 'dev@example.com'",
-    {},
-    IdSchema,
-  );
+  devUserId = (await selectUserByUid('dev@example.com')).id;
   return devUserId;
 }
 
@@ -83,6 +78,16 @@ async function sharingTrpcClient(courseId: string) {
 async function setSharingName(courseId: string, name: string) {
   const client = await sharingTrpcClient(courseId);
   await client.sharing.chooseSharingName.mutate({ courseSharingName: name });
+}
+
+async function updateCourseExampleCourse({
+  course_id,
+  example_course,
+}: {
+  course_id: string;
+  example_course: boolean;
+}) {
+  await sqldb.execute(sql.update_course_example_course, { course_id, example_course });
 }
 
 async function accessSharedQuestionAssessment(course_instance_id: string) {
@@ -185,11 +190,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       repository: courseRepo.courseOriginDir,
     });
     sharingCourse = await selectCourseById(syncResults.courseId);
-    sharingCourseInstanceId = await sqldb.queryScalar(
-      sql.select_course_instance,
-      { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: sharingCourse.id },
-      IdSchema,
-    );
+    sharingCourseInstanceId = (
+      await selectCourseInstanceByShortName({
+        course: sharingCourse,
+        shortName: syncUtil.COURSE_INSTANCE_ID,
+      })
+    ).id;
 
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
@@ -211,11 +217,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     ];
     const consumingCourseResults = await syncUtil.writeAndSyncCourseData(consumingCourseData);
     consumingCourse = await selectCourseById(consumingCourseResults.syncResults.courseId);
-    consumingCourseInstanceId = await sqldb.queryScalar(
-      sql.select_course_instance,
-      { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: consumingCourse.id },
-      IdSchema,
-    );
+    consumingCourseInstanceId = (
+      await selectCourseInstanceByShortName({
+        course: consumingCourse,
+        shortName: syncUtil.COURSE_INSTANCE_ID,
+      })
+    ).id;
   });
 
   describe('Test syncing code to identify missing shared question', function () {
@@ -258,14 +265,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
-        const questionId = await sqldb.queryScalar(
-          sql.get_question_id,
-          {
+        const questionId = (
+          await selectQuestionByQid({
             course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
-          },
-          IdSchema,
-        );
+          })
+        ).id;
         const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
         const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
         assert(sharedQuestionPage.ok);
@@ -346,14 +351,14 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     });
 
     test.sequential('Share sharing set with test course', async () => {
-      const sharingSetId = await sqldb.queryScalar(
-        sql.select_sharing_set,
-        { sharing_set_name: SHARING_SET_NAME },
-        IdSchema,
-      );
+      const sharingSet = await selectOptionalSharingSetByName({
+        course_id: sharingCourse.id,
+        name: SHARING_SET_NAME,
+      });
+      assert.isNotNull(sharingSet);
       const client = await sharingTrpcClient(sharingCourse.id);
       await client.sharing.addCourseToSharingSet.mutate({
-        sharingSetId,
+        sharingSetId: sharingSet.id,
         courseSharingToken: testCourseSharingToken!,
       });
 
@@ -401,14 +406,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     let publiclySharedQuestionId: string;
 
     beforeAll(async () => {
-      publiclySharedQuestionId = await sqldb.queryScalar(
-        sql.get_question_id,
-        {
+      publiclySharedQuestionId = (
+        await selectQuestionByQid({
           course_id: sharingCourse.id,
           qid: PUBLICLY_SHARED_QUESTION_QID,
-        },
-        IdSchema,
-      );
+        })
+      ).id;
     });
 
     test.sequential('Fail to Access Questions Not-yet shared publicly', async () => {
@@ -482,18 +485,10 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         'sync should not complete when attempting sync after moving shared question',
       );
 
-      const question_id = await sqldb.queryOptionalScalar(
-        sql.get_question_id,
-        {
-          course_id: sharingCourse.id,
-          qid: SHARING_QUESTION_QID,
-        },
-        IdSchema,
-      );
-      assert(
-        question_id !== null,
-        'Sync of consuming course should not allow renaming a shared question.',
-      );
+      await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
       await fs.rename(questionTempPath, questionPath);
     });
 
@@ -731,11 +726,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     test.sequential(
       'Successfully access publicly shared assessment page for the shared assessment',
       async () => {
-        const sharedAssessmentId = await sqldb.queryScalar(
-          sql.select_assessment,
-          { tid: 'test', course_instance_id: sharingCourseInstanceId },
-          IdSchema,
-        );
+        const sharedAssessmentId = (
+          await selectAssessmentByTid({
+            tid: 'test',
+            course_instance_id: sharingCourseInstanceId,
+          })
+        ).id;
         const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
         const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
@@ -828,14 +824,27 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     );
   });
 
+  async function updateSharingQuestionDeletedAt({
+    qid,
+    deleted_at,
+  }: {
+    qid: string;
+    deleted_at: Date | null;
+  }) {
+    const question = await selectQuestionByQid({ course_id: sharingCourse.id, qid });
+    await updateQuestion({
+      question_id: question.id,
+      patch: { deleted_at },
+    });
+  }
+
   describe('Test that deleted shared questions are excluded from imports', function () {
     test.sequential(
       'Soft-delete a sharing-set question, ensure consuming course sync reports errors',
       async () => {
         await withConfig({ checkSharingOnSync: true }, async () => {
-          await sqldb.execute(sql.set_question_deleted_at, {
+          await updateSharingQuestionDeletedAt({
             deleted_at: new Date(),
-            course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
           });
 
@@ -844,9 +853,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
             syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
           ).toBeTruthy();
 
-          await sqldb.execute(sql.set_question_deleted_at, {
+          await updateSharingQuestionDeletedAt({
             deleted_at: null,
-            course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
           });
         });
@@ -857,9 +865,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       'Soft-delete a publicly shared question, ensure consuming course sync reports errors',
       async () => {
         await withConfig({ checkSharingOnSync: true }, async () => {
-          await sqldb.execute(sql.set_question_deleted_at, {
+          await updateSharingQuestionDeletedAt({
             deleted_at: new Date(),
-            course_id: sharingCourse.id,
             qid: PUBLICLY_SHARED_QUESTION_QID,
           });
 
@@ -868,9 +875,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
             syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
           ).toBeTruthy();
 
-          await sqldb.execute(sql.set_question_deleted_at, {
+          await updateSharingQuestionDeletedAt({
             deleted_at: null,
-            course_id: sharingCourse.id,
             qid: PUBLICLY_SHARED_QUESTION_QID,
           });
         });
@@ -881,6 +887,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
   describe('Sharing admin gates and CRUD via tRPC', function () {
     const CRUD_SET_NAME = 'crud-tmp-set';
     const DELETE_REGRESSION_SET_NAME = 'delete-sync-regression-set';
+    const STALE_DELETE_SET_NAME = 'stale-delete-set';
+    const STALE_DELETE_BUMP_SET_NAME = 'stale-delete-bump-set';
 
     async function getInfoCourseOrigHash() {
       const infoCoursePath = path.join(sharingCourse.path, 'infoCourse.json');
@@ -920,8 +928,10 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
           await client.sharing.regenerateSharingToken.mutate();
           assert.fail('Expected mutation to throw');
         } catch (err: unknown) {
-          assert.instanceOf(err, TRPCClientError);
-          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+          const appError = getAppError<Record<string, never>>(err);
+          assert.isNotNull(appError);
+          assert.equal(appError.code, 'UNKNOWN');
+          assert.include(appError.message, 'Access denied (must be a course owner)');
         }
       });
     });
@@ -937,8 +947,10 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
           await client.sharing.regenerateSharingToken.mutate();
           assert.fail('Expected mutation to throw');
         } catch (err: unknown) {
-          assert.instanceOf(err, TRPCClientError);
-          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+          const appError = getAppError<Record<string, never>>(err);
+          assert.isNotNull(appError);
+          assert.equal(appError.code, 'UNKNOWN');
+          assert.include(appError.message, 'Access denied (feature not available)');
         }
       } finally {
         await features.enable('question-sharing', {
@@ -949,8 +961,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     });
 
     test.sequential('file-editing mutations fail on example courses', async () => {
-      await sqldb.execute('UPDATE courses SET example_course = TRUE WHERE id = $course_id', {
+      await updateCourseExampleCourse({
         course_id: sharingCourse.id,
+        example_course: true,
       });
       try {
         const client = await sharingTrpcClient(sharingCourse.id);
@@ -961,12 +974,15 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
           });
           assert.fail('Expected mutation to throw');
         } catch (err: unknown) {
-          assert.instanceOf(err, TRPCClientError);
-          assert.equal((err as TRPCClientError<any>).data?.code, 'FORBIDDEN');
+          const appError = getAppError<Record<string, never>>(err);
+          assert.isNotNull(appError);
+          assert.equal(appError.code, 'UNKNOWN');
+          assert.include(appError.message, 'Access denied. Cannot make changes to example course.');
         }
       } finally {
-        await sqldb.execute('UPDATE courses SET example_course = FALSE WHERE id = $course_id', {
+        await updateCourseExampleCourse({
           course_id: sharingCourse.id,
+          example_course: false,
         });
       }
     });
@@ -1079,6 +1095,49 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         assert.isUndefined(sharingSets.find((s) => s.name === DELETE_REGRESSION_SET_NAME));
       },
     );
+
+    test.sequential('deleteSharingSet with a stale hash leaves the DB row intact', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      const createResult = await client.sharing.createSharingSet.mutate({
+        name: STALE_DELETE_SET_NAME,
+        origHash: await getInfoCourseOrigHash(),
+      });
+      assert.isNotNull(await selectSharingSet(STALE_DELETE_SET_NAME));
+
+      await client.sharing.createSharingSet.mutate({
+        name: STALE_DELETE_BUMP_SET_NAME,
+        origHash: createResult.origHash,
+      });
+
+      try {
+        await client.sharing.deleteSharingSet.mutate({
+          name: STALE_DELETE_SET_NAME,
+          origHash: createResult.origHash,
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<SharingError['DeleteSharingSet']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(appError.message, 'infoCourse.json changed since this page loaded');
+      }
+
+      assert.isNotNull(await selectSharingSet(STALE_DELETE_SET_NAME));
+      const courseInfo = JSON.parse(
+        await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+      );
+      const sharingSets: { name: string }[] = courseInfo.sharingSets ?? [];
+      assert.ok(sharingSets.find((s) => s.name === STALE_DELETE_SET_NAME));
+
+      const cleanupResult = await client.sharing.deleteSharingSet.mutate({
+        name: STALE_DELETE_SET_NAME,
+        origHash: await getInfoCourseOrigHash(),
+      });
+      await client.sharing.deleteSharingSet.mutate({
+        name: STALE_DELETE_BUMP_SET_NAME,
+        origHash: cleanupResult.origHash,
+      });
+    });
 
     test.sequential('deleteSharingSet removes an unused set from infoCourse.json', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);

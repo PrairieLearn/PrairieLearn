@@ -3,8 +3,6 @@ import * as path from 'path';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { execute } from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -21,15 +19,19 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoFixture;
 
-async function setSharingFilesPublic() {
+async function setSharingFilesPublic(sharePublicly: boolean) {
   const fileUpdates = [
+    {
+      relPath: 'questions/test/question/info.json',
+      properties: ['sharePublicly', 'shareSourcePublicly'],
+    },
     {
       relPath: 'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
       properties: ['shareSourcePublicly'],
     },
     {
-      relPath: 'questions/test/question/info.json',
-      properties: ['sharePublicly', 'shareSourcePublicly'],
+      relPath: 'courseInstances/Fa18/infoCourseInstance.json',
+      properties: ['shareSourcePublicly'],
     },
   ];
 
@@ -37,14 +39,18 @@ async function setSharingFilesPublic() {
     const absPath = path.join(courseRepo.courseOriginDir, fileUpdate.relPath);
     const info = await fs.readJSON(absPath);
     for (const property of fileUpdate.properties) {
-      info[property] = true;
+      if (sharePublicly) {
+        info[property] = true;
+      } else {
+        delete info[property];
+      }
     }
     await fs.writeJSON(absPath, info, { spaces: 2 });
   }
 
   await commitOriginAndSync(
     courseRepo,
-    'Share test content',
+    sharePublicly ? 'Share test content' : 'Unshare test content',
     fileUpdates.map((u) => u.relPath),
   );
 }
@@ -105,7 +111,7 @@ describe('Updating a course instance ID', () => {
       orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
       ciid: 'Fa18',
       long_name: 'Fall 2018',
-      display_timezone: '',
+      display_timezone: 'America/Chicago',
       group_assessments_by: 'Set',
     };
     if (shareSourcePublicly) body.share_source_publicly = 'on';
@@ -141,11 +147,7 @@ describe('Updating a course instance ID', () => {
   test.sequential(
     'ignores course instance source sharing when source is already public',
     async () => {
-      await setSharingFilesPublic();
-      await execute(
-        'UPDATE course_instances SET share_source_publicly = TRUE WHERE id = $course_instance_id',
-        { course_instance_id: '1' },
-      );
+      await setSharingFilesPublic(true);
       try {
         const response = await fetchCheerio(
           `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
@@ -157,11 +159,16 @@ describe('Updating a course instance ID', () => {
           },
         );
         assert.equal(response.status, 200);
-      } finally {
-        await execute(
-          'UPDATE course_instances SET share_source_publicly = FALSE WHERE id = $course_instance_id',
-          { course_instance_id: '1' },
+        const courseInstanceInfoPath = path.join(
+          courseRepo.courseLiveDir,
+          'courseInstances',
+          'Fa18',
+          'infoCourseInstance.json',
         );
+        const courseInstanceInfo = await fs.readJSON(courseInstanceInfoPath);
+        assert.equal(courseInstanceInfo.shareSourcePublicly, true);
+      } finally {
+        await setSharingFilesPublic(false);
       }
     },
   );
