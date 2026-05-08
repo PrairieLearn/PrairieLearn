@@ -236,7 +236,7 @@ const updateAssessment = t.procedure
     }
     assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
       assessmentInfo.shareSourcePublicly,
-      // If the assessment was shared publically, it cannot be unshared, and we ignore the value
+      // If source is already public, preserve that setting regardless of the submitted value.
       assessment.share_source_publicly || (input.share_source_publicly ?? false),
       false,
     );
