@@ -1,8 +1,16 @@
-export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
+import clsx from 'clsx';
+
+export function GitHubButton({
+  gitHubLink,
+  variant = 'light',
+}: {
+  gitHubLink: string | null;
+  variant?: 'light' | 'outline-secondary';
+}) {
   if (!gitHubLink) return null;
   return (
     <a
-      className="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
+      className={clsx('btn btn-sm d-inline-flex align-items-center gap-2', `btn-${variant}`)}
       target="_blank"
       rel="noreferrer"
       aria-label="View on GitHub"

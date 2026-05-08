@@ -575,7 +575,10 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-        questionRenderContext: 'ai_grading',
+        urlPrefix,
+        showCorrectAnswer: false,
+        allowAnswerEditing: false,
+        questionRenderContext: 'ai_grading' as const,
       };
       // Get question html
       const questionModule = questionServers.getModule(question.type);

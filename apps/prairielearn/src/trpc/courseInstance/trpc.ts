@@ -6,7 +6,7 @@ import { createContext, t } from './init.js';
 import { instanceAdminSettingsRouter } from './instance-admin-settings.js';
 import { studentLabelsRouter } from './student-labels.js';
 
-export const courseInstanceRouter = t.router({
+const courseInstanceRouter = t.router({
   instanceAdminSettings: instanceAdminSettingsRouter,
   studentLabels: studentLabelsRouter,
 });

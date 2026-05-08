@@ -9,6 +9,7 @@ import { run } from '@prairielearn/run';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
@@ -39,7 +40,7 @@ export function GradingPanel({
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;

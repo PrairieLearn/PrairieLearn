@@ -6,6 +6,7 @@ import {
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
@@ -755,6 +756,7 @@ export async function loadConfig(paths: string[]) {
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
   ]);
 
   if (config.questionRenderCacheType !== null) {

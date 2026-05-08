@@ -81,8 +81,8 @@ ORDER BY
   aacr.assessment_id,
   CASE aacr.target_type
     WHEN 'none' THEN 0
-    WHEN 'enrollment' THEN 1
-    WHEN 'student_label' THEN 2
+    WHEN 'student_label' THEN 1
+    WHEN 'enrollment' THEN 2
   END,
   aacr.number;
 
