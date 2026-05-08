@@ -447,9 +447,9 @@ export function AiGradingModelSelectionModal({
             modalState.numToGrade > 5 &&
             totalSubmissionCount >= 2 && (
               <Alert variant="warning" className="mb-3 py-2 small">
-                <strong>First AI grading job?</strong> Test with{' '}
-                {Math.min(5, totalSubmissionCount)} submissions first to confirm your rubric works
-                well before running on all submissions.{' '}
+                <strong>First AI grading job?</strong> Test with {Math.min(5, totalSubmissionCount)}{' '}
+                submissions first to confirm your rubric works well before running on all
+                submissions.{' '}
                 <Button
                   variant="link"
                   size="sm"
