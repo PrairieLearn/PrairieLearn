@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
@@ -303,6 +303,16 @@ export function AccessControlForm({
           left={{
             content: (
               <>
+                {alert && (
+                  <Alert
+                    className="mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
+                    variant={alert.variant}
+                    dismissible={Boolean(alert.onDismiss)}
+                    onClose={alert.onDismiss}
+                  >
+                    {alert.message}
+                  </Alert>
+                )}
                 <div className="p-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
@@ -337,7 +347,6 @@ export function AccessControlForm({
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
-                  alert={alert}
                   fullWidth
                   onCancel={() => reset()}
                 />

@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
@@ -34,6 +34,7 @@ function formatCreditPercent(credit: number): string {
 
 /** react-hook-form error subtree for a single access control rule. */
 export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
+type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
   date: ReactNode;
@@ -143,7 +144,7 @@ function getDefaultRuleCurrentState(
 export function generateDefaultRuleDateTableRows(
   rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: DefaultRuleFormErrors,
 ): DateTableRow[] {
   if (!rule.dateControlEnabled) return [];
 
@@ -300,11 +301,14 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: 'After last deadline',
-      access: afterLastDeadline?.allowSubmissions
-        ? afterLastDeadline.credit != null
-          ? formatCreditPercent(afterLastDeadline.credit)
-          : 'Practice'
-        : 'Closed',
+      access:
+        afterLastDeadline == null
+          ? 'No access'
+          : afterLastDeadline.allowSubmissions
+            ? afterLastDeadline.credit != null
+              ? formatCreditPercent(afterLastDeadline.credit)
+              : 'Practice'
+            : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -462,7 +466,7 @@ function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterComplet
 export function generateAfterCompleteTableRows(
   rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: DefaultRuleFormErrors,
 ): AfterCompleteTableRow[] {
   const hasDateControl = rule.dateControlEnabled;
   const hasPrairieTest = rule.prairieTestExams.length > 0;
@@ -520,34 +524,10 @@ export function generateAfterCompleteTableRows(
 }
 
 export function generateRuleSummary(
-  rule: DefaultRuleData,
-  formErrors?: RuleFormErrors,
+  _rule: DefaultRuleData,
+  _formErrors?: DefaultRuleFormErrors,
 ): SummaryItem[] {
-  const items: SummaryItem[] = [];
-
-  const durationMinutes = rule.durationMinutes;
-  if (durationMinutes !== null) {
-    const error = formErrors?.durationMinutes?.message;
-    items.push({
-      key: 'duration',
-      icon: 'bi-clock',
-      text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
-      error,
-    });
-  }
-
-  const password = rule.password;
-  if (password !== null) {
-    const error = formErrors?.password?.message;
-    items.push({
-      key: 'password',
-      icon: 'bi-lock',
-      text: error ? 'Missing password' : 'Password protected',
-      error,
-    });
-  }
-
-  return items;
+  return [];
 }
 
 interface OverrideFieldItem {
@@ -581,7 +561,8 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
+  if (afterLastDeadline == null) return 'No access';
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
@@ -591,9 +572,9 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push('submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
   } else {
-    parts.push('closed');
+    parts.push('Closed');
   }
   return parts.join(', ');
 }
@@ -883,8 +864,49 @@ function SummaryTableHeader({ icon, title }: { icon: string; title: string }) {
   );
 }
 
-export function DateTableView({ rows }: { rows: DateTableRow[] }) {
+export function DateTableView({
+  rows,
+  rule,
+  formErrors,
+}: {
+  rows: DateTableRow[];
+  rule: DefaultRuleData;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
+}) {
+  // The footer (time limit, password) renders inside this table, so it only
+  // appears when the table itself does. That's intentional: setting either
+  // field flips `dateControlEnabled` to true, which always produces at least
+  // one row (a "No due date" row, if nothing else).
   if (rows.length === 0) return null;
+
+  const footerItems: ReactNode[] = [];
+  if (rule.durationMinutes != null) {
+    const error = formErrors?.durationMinutes?.message;
+    if (!error) {
+      footerItems.push(`${rule.durationMinutes} min time limit`);
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing time limit
+        </span>,
+      );
+    }
+  }
+  if (rule.password != null) {
+    const error = formErrors?.password?.message;
+    if (!error) {
+      footerItems.push('Password protected');
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing password
+        </span>,
+      );
+    }
+  }
+
   return (
     <div
       className="border rounded overflow-hidden"
@@ -943,6 +965,17 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           ))}
         </tbody>
       </table>
+      {footerItems.length > 0 && (
+        <div className="border-top px-3 py-2">
+          {footerItems.map((item, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <Fragment key={index}>
+              <span className="text-body-secondary small">{item}</span>
+              {index < footerItems.length - 1 && <span className="mx-1">·</span>}
+            </Fragment>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1012,7 +1045,7 @@ export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[]
 }
 
 interface CurrentIndicator {
-  variant: 'success' | 'primary';
+  variant: 'success' | 'primary' | 'secondary';
   icon: string;
   text: ReactNode;
 }
@@ -1062,6 +1095,10 @@ function buildDefaultRuleCurrentIndicator(
       icon: 'bi-eye-slash',
       text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
     };
+  }
+
+  if (!segment.accessible) {
+    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
   }
 
   if (!segment.submittable) {
@@ -1307,13 +1344,25 @@ export function OverrideRuleSummaryCard({
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
-            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEdit}>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              aria-label="Edit"
+              className="d-inline-flex align-items-center"
+              onClick={onEdit}
+            >
               <i className="bi bi-pencil" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Edit</span>
             </Button>
           )}
           {onRemove && (
-            <Button variant="outline-danger" size="sm" aria-label="Remove" onClick={onRemove}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              aria-label="Remove"
+              className="d-inline-flex align-items-center"
+              onClick={onRemove}
+            >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Remove</span>
             </Button>
