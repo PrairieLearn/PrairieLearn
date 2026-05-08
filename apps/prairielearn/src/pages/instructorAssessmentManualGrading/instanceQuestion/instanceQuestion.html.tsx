@@ -34,6 +34,38 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
+function ReviewAiGradingAlertInner({
+  aiGradingInfo,
+}: {
+  aiGradingInfo: InstanceQuestionAIGradingInfo | undefined;
+}) {
+  if (!aiGradingInfo) return html``;
+  return html`
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <i class="bi bi-stars fs-5" aria-hidden="true"></i>
+          <strong>Review AI grading</strong>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 small">
+          <span class="text-body-secondary">Ensure the grading aligns with your expectations</span>
+          <span class="text-body-secondary opacity-50" aria-hidden="true">&middot;</span>
+          <span class="text-body-secondary">Edit the rubric for future AI grading runs</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  `;
+}
+
+export function ReviewAiGradingAlert({
+  aiGradingInfo,
+}: {
+  aiGradingInfo: InstanceQuestionAIGradingInfo | undefined;
+}) {
+  return ReviewAiGradingAlertInner({ aiGradingInfo });
+}
+
 export function InstanceQuestion({
   resLocals,
   conflict_grading_job,
@@ -246,27 +278,7 @@ export function InstanceQuestion({
             />,
           )
         : ''}
-      ${aiGradingInfo
-        ? html`
-            <div class="alert alert-info" role="alert">
-              <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
-                <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                  <i class="bi bi-stars fs-5" aria-hidden="true"></i>
-                  <strong>Review AI grading</strong>
-                </div>
-                <div class="d-flex flex-wrap align-items-center gap-2 small">
-                  <span class="text-body-secondary"
-                    >Ensure the grading aligns with your expectations</span
-                  >
-                  <span class="text-body-secondary opacity-50" aria-hidden="true">&middot;</span>
-                  <span class="text-body-secondary"
-                    >Edit the rubric for future AI grading runs</span
-                  >
-                </div>
-              </div>
-            </div>
-          `
-        : ''}
+      <div id="js-review-ai-grading-alert">${ReviewAiGradingAlertInner({ aiGradingInfo })}</div>
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,

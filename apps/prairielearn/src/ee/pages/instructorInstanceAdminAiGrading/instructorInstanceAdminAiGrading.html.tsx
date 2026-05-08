@@ -302,13 +302,19 @@ function AiGradingSettingsContent({
             onChange={() => toggleMutation.mutate({ enabled: !useCustomApiKeys })}
           />
           <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
-          <div className="small text-muted">
-            Provide your own API keys instead of using the platform defaults.
-          </div>
+          {canEdit ? (
+            <div className="small text-muted">
+              Provide your own API keys instead of using the platform defaults.
+            </div>
+          ) : (
+            <div className="small text-muted">
+              You must be a course owner to manage custom API keys.
+            </div>
+          )}
         </Form.Check>
 
         {useCustomApiKeys && (
-          <div className="border-top pt-3 mt-3">
+          <div className="border-top pt-3 mt-2">
             <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
               <div>
                 <h2 className="h5 mb-1">API key credentials</h2>
@@ -480,7 +486,7 @@ function CreditPoolSection({
     freeCreditStatusLoaded && freeCreditStatus.redemptions_remaining > 0;
 
   return (
-    <div className="border-top pt-3 mt-3">
+    <div className="pt-3 mt-2 border-top">
       {checkoutStatus === 'success' && (
         <Alert variant="success" dismissible onClose={() => setCheckoutStatus(null)}>
           <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
@@ -503,13 +509,18 @@ function CreditPoolSection({
       )}
       <div
         className={clsx(
-          'd-flex justify-content-between align-items-center flex-wrap gap-2',
-          useCustomApiKeys ? 'mb-1' : 'mb-3',
+          'd-flex justify-content-between align-items-start flex-wrap gap-2',
+          useCustomApiKeys || !canEdit ? 'mb-1' : 'mb-3',
         )}
       >
-        <div className="d-flex align-items-center gap-2">
-          <h2 className="h5 mb-0">AI grading credits</h2>
-          {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+        <div>
+          <div className="d-flex align-items-center gap-2">
+            <h2 className="h5 mb-0">AI grading credits</h2>
+            {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+          </div>
+          {!canEdit && (
+            <div className="text-muted small mt-1">You must be a course owner to add credits.</div>
+          )}
         </div>
         {!isCreditPoolEmpty && (
           <div className="d-flex align-items-center gap-2 flex-wrap">

@@ -51,10 +51,128 @@ import {
   type GradingJobData,
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
+  ReviewAiGradingAlert,
 } from './instanceQuestion.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function buildAiGradingInfo({
+  instance_question_id,
+  submissionHtml,
+}: {
+  instance_question_id: string;
+  submissionHtml: string | null;
+}): Promise<InstanceQuestionAIGradingInfo | undefined> {
+  const submission_id = await selectLastSubmissionId(instance_question_id);
+  const ai_grading_job_data = await sqldb.queryOptionalRow(
+    sql.select_ai_grading_job_data_for_submission,
+    { submission_id },
+    z.object({
+      id: GradingJobSchema.shape.id,
+      manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+      prompt: AiGradingJobSchema.shape.prompt,
+      completion: AiGradingJobSchema.shape.completion,
+      rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
+    }),
+  );
+
+  if (!ai_grading_job_data) return undefined;
+
+  const promptForGradingJob = ai_grading_job_data.prompt;
+  const selectedRubricItems = await selectRubricGradingItems(
+    ai_grading_job_data.manual_rubric_grading_id,
+  );
+
+  const submissionManuallyGraded =
+    (await sqldb.queryOptionalScalar(
+      sql.select_exists_manual_grading_job_for_submission,
+      { submission_id },
+      z.boolean(),
+    )) ?? false;
+
+  const formattedPrompt =
+    promptForGradingJob !== null
+      ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
+          .replaceAll('\\n', '\n')
+          .trimStart()
+      : '';
+
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
+  const explanation = run(() => {
+    const completion = ai_grading_job_data.completion;
+    if (!completion) return null;
+
+    // OpenAI chat completion format
+    if (completion.choices) {
+      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+      return explanation.trim() || null;
+    }
+
+    // OpenAI response format
+    if (completion.output_parsed) {
+      const explanation = completion?.output_parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+      return explanation.trim() || null;
+    }
+
+    // `ai` package format
+    if (completion.object) {
+      const explanation = completion?.object?.explanation;
+      if (typeof explanation !== 'string') return null;
+      return explanation.trim() || null;
+    }
+
+    return null;
+  });
+
+  const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
+  const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
+  const validatedDegrees = parsed.success ? parsed.data : {};
+  const rotationCorrectionDegrees = Object.fromEntries(
+    Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+  );
+
+  const hasPersistedRotationCorrectionData =
+    correctedDegrees != null &&
+    typeof correctedDegrees === 'object' &&
+    Object.keys(correctedDegrees).length > 0;
+
+  // Use persisted rotation metadata to infer image context. This preserves
+  // historical AI grading context even if the current rendered HTML no
+  // longer includes image-capture markers.
+  const hasImage = hasPersistedRotationCorrectionData
+    ? true
+    : submissionHtml != null && containsImageCapture(submissionHtml);
+
+  const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    submissionManuallyGraded,
+    prompt: formattedPrompt,
+    selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+    explanation,
+  };
+
+  if (hasImage) {
+    return {
+      ...aiGradingInfoBase,
+      hasImage: true,
+      rotationCorrectionDegrees,
+    };
+  }
+  return {
+    ...aiGradingInfoBase,
+    hasImage: false,
+    rotationCorrectionDegrees: null,
+  };
+}
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
@@ -142,135 +260,14 @@ router.get(
           })
         : [];
 
-      /**
-       * Contains the prompt and selected rubric items of the AI grader.
-       * If the submission was not graded by AI, this will be undefined.
-       */
-      let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
-
       const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-      if (aiGradingEnabled) {
-        const submission_id = await selectLastSubmissionId(instance_question.id);
-        const ai_grading_job_data = await sqldb.queryOptionalRow(
-          sql.select_ai_grading_job_data_for_submission,
-          {
-            submission_id,
-          },
-          z.object({
-            id: GradingJobSchema.shape.id,
-            manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
-            prompt: AiGradingJobSchema.shape.prompt,
-            completion: AiGradingJobSchema.shape.completion,
-            rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
-          }),
-        );
-
-        if (ai_grading_job_data) {
-          const promptForGradingJob = ai_grading_job_data.prompt;
-          const selectedRubricItems = await selectRubricGradingItems(
-            ai_grading_job_data.manual_rubric_grading_id,
-          );
-
-          /** The submission was also manually graded if a manual grading job exists for it.*/
-          const submissionManuallyGraded =
-            (await sqldb.queryOptionalScalar(
-              sql.select_exists_manual_grading_job_for_submission,
-              { submission_id },
-              z.boolean(),
-            )) ?? false;
-
-          const formattedPrompt =
-            promptForGradingJob !== null
-              ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
-                  .replaceAll('\\n', '\n')
-                  .trimStart()
-              : '';
-
-          // We're dealing with a schemaless JSON blob here. We'll be defensive and
-          // try to avoid errors when extracting the explanation. Note that for some
-          // time, the explanation wasn't included in the completion at all, so it
-          // may legitimately be missing.
-          //
-          // Over the lifetime of this feature, we've changed which APIs/libraries we
-          // use to generate the completion, so we need to handle all formats we've ever
-          // used for backwards-compatibility. Each one is documented below.
-          const explanation = run(() => {
-            const completion = ai_grading_job_data.completion;
-            if (!completion) return null;
-
-            // OpenAI chat completion format
-            if (completion.choices) {
-              const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            // OpenAI response format
-            if (completion.output_parsed) {
-              const explanation = completion?.output_parsed?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            // `ai` package format
-            if (completion.object) {
-              const explanation = completion?.object?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            return null;
-          });
-
-          const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
-          const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
-          const validatedDegrees = parsed.success ? parsed.data : {};
-          const rotationCorrectionDegrees = Object.fromEntries(
-            Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
-          );
-
-          const hasPersistedRotationCorrectionData =
-            correctedDegrees != null &&
-            typeof correctedDegrees === 'object' &&
-            Object.keys(correctedDegrees).length > 0;
-
-          const hasImage = run(() => {
-            // Use persisted rotation metadata to infer image context. This preserves
-            // historical AI grading context even if the current rendered HTML no
-            // longer includes image-capture markers.
-            if (hasPersistedRotationCorrectionData) return true;
-            if (localsForRender.resLocals.submissionHtmls.length > 0) {
-              return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
-            }
-            return false;
-          });
-
-          const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
-            submissionManuallyGraded,
-            prompt: formattedPrompt,
-            selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-            explanation,
-          };
-
-          if (hasImage) {
-            aiGradingInfo = {
-              ...aiGradingInfoBase,
-              hasImage: true,
-              rotationCorrectionDegrees,
-            };
-          } else {
-            aiGradingInfo = {
-              ...aiGradingInfoBase,
-              hasImage: false,
-              rotationCorrectionDegrees: null,
-            };
-          }
-        }
-      }
+      const aiGradingInfo = aiGradingEnabled
+        ? await buildAiGradingInfo({
+            instance_question_id: instance_question.id,
+            submissionHtml: localsForRender.resLocals.submissionHtmls[0] ?? null,
+          })
+        : undefined;
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
       req.session.show_submissions_assigned_to_me_only =
@@ -428,24 +425,6 @@ router.get(
           : null;
         const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? null;
 
-        let gradedByAi = false;
-        if (aiGradingEnabled) {
-          const submission_id = await selectLastSubmissionId(res.locals.instance_question.id);
-          const ai_grading_job_data = await sqldb.queryOptionalRow(
-            sql.select_ai_grading_job_data_for_submission,
-            { submission_id },
-            z.object({ id: GradingJobSchema.shape.id }),
-          );
-          gradedByAi = ai_grading_job_data != null;
-        }
-
-        const gradingPanel = GradingPanel({
-          ...locals,
-          context: 'main',
-          gradedByAi,
-          gradedByHumanName: lastGraderName,
-        }).toString();
-
         // `prepareLocalsForRender` guarantees a submission exists.
         const submission = res.locals.submission!;
         const panels = await renderPanelsForSubmission({
@@ -463,11 +442,29 @@ router.get(
           groupRolePermissions: null,
         });
 
+        const aiGradingInfo = aiGradingEnabled
+          ? await buildAiGradingInfo({
+              instance_question_id: res.locals.instance_question.id,
+              submissionHtml: locals.resLocals.submissionHtmls[0] ?? null,
+            })
+          : undefined;
+
+        const gradingPanel = GradingPanel({
+          ...locals,
+          context: 'main',
+          gradedByAi: aiGradingInfo != null,
+          gradedByHumanName: lastGraderName,
+          aiGradingInfo,
+        }).toString();
+
+        const reviewAiAlert = ReviewAiGradingAlert({ aiGradingInfo }).toString();
+
         res.json({
           gradingPanel,
           rubric_data,
           submissionPanel: panels.submissionPanel,
           submissionId: submission.id,
+          reviewAiAlert,
           aiGradingStats:
             aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
               ? await calculateAiGradingStats(res.locals.assessment_question)

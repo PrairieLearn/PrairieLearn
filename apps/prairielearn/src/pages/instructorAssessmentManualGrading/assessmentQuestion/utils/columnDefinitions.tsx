@@ -423,12 +423,6 @@ export function createColumns({
       cell: (info) => {
         const row = info.row.original;
         const rowId = row.instance_question.id;
-        const isOutdated =
-          row.instance_question.ai_grading_status === 'OutdatedRubric' ||
-          row.instance_question.requires_manual_grading;
-        const outdatedLabel = isOutdated ? (
-          <div className="text-muted small mt-1">Outdated</div>
-        ) : null;
         if (row.instance_question.point_difference === null) {
           return '—';
         }
@@ -438,7 +432,6 @@ export function createColumns({
             return (
               <div>
                 <i className="bi bi-check-square-fill text-success" />
-                {outdatedLabel}
               </div>
             );
           } else {
@@ -449,7 +442,6 @@ export function createColumns({
                   <i className="bi bi-x-square-fill" /> {prefix}
                   {formatPoints(row.instance_question.point_difference)}
                 </span>
-                {outdatedLabel}
               </div>
             );
           }
@@ -466,7 +458,6 @@ export function createColumns({
               >
                 <i className="bi bi-check-square-fill text-success" />
               </OverlayTrigger>
-              {outdatedLabel}
             </div>
           );
         }
@@ -497,7 +488,6 @@ export function createColumns({
                 <span>{item.description}</span>
               </div>
             ))}
-            {outdatedLabel}
           </div>
         );
       },

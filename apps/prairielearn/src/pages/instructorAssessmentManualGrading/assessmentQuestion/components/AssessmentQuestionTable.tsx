@@ -1012,6 +1012,17 @@ export function AssessmentQuestionTable({
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
+        totalSubmissionCount={aiGradingCounts.all}
+        onAutoSelectForTest={(n) => {
+          const ids = instanceQuestionsInfo.slice(0, n).map((row) => row.instance_question.id);
+          const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
+          setRowSelection(nextSelection);
+          setModelSelectionModalState({
+            type: 'selected',
+            ids,
+            numToGrade: ids.length,
+          });
+        }}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,

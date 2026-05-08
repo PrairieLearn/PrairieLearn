@@ -149,7 +149,7 @@ function ModelList({
     <div className="d-flex flex-column gap-4">
       <div>
         <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
-          <span className="fw-semibold">Recommended</span>
+          <span className="fw-semibold">Recommended models</span>
           <span className="text-muted small text-end">
             Relative cost{' '}
             <OverlayTrigger
@@ -288,18 +288,23 @@ interface BeforeYouGradeItem {
   title: React.ReactNode;
   description: React.ReactNode;
   onClick?: () => void;
+  variant?: 'warning';
 }
 
 function buildBeforeYouGradeItems({
   hasRubric,
   hasPriorJobs,
   numToGrade,
+  totalSubmissionCount,
   onCreateRubric,
+  onAutoSelectForTest,
 }: {
   hasRubric: boolean;
   hasPriorJobs: boolean;
   numToGrade: number;
+  totalSubmissionCount: number;
   onCreateRubric: () => void;
+  onAutoSelectForTest: (n: number) => void;
 }): BeforeYouGradeItem[] {
   const items: BeforeYouGradeItem[] = [];
   if (!hasRubric) {
@@ -308,19 +313,24 @@ function buildBeforeYouGradeItems({
       title: 'Create a rubric',
       description: 'Rubrics significantly improve accuracy and consistency.',
       onClick: onCreateRubric,
+      variant: 'warning',
     });
   }
-  if (!hasPriorJobs && numToGrade > 5) {
+  if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
+    const n = Math.min(5, totalSubmissionCount);
     items.push({
-      key: 'test_first',
-      title: 'Test on ~5 submissions first',
-      description: `Confirm your rubric works well before running it on all ${numToGrade} selected.`,
+      key: 'test_with_n',
+      title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
+      description: 'Confirm your rubric works well before running on all submissions.',
+      onClick: () => onAutoSelectForTest(n),
+      variant: 'warning',
     });
   }
   return items;
 }
 
 function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
+  const isWarning = item.variant === 'warning';
   const titleNode = item.onClick ? (
     <div>
       <Button
@@ -337,24 +347,43 @@ function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
     <div className="fw-medium">{item.title}</div>
   );
   return (
-    <div className="rounded-2 border px-3 py-2">
-      {titleNode}
-      <div className="text-muted small">{item.description}</div>
+    <div
+      className={clsx(
+        'rounded-2 px-3 py-2',
+        isWarning
+          ? 'border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2'
+          : 'border',
+      )}
+    >
+      {isWarning && (
+        <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
+      )}
+      <div className="flex-grow-1">
+        {titleNode}
+        <div className="text-muted small">{item.description}</div>
+      </div>
     </div>
   );
 }
 
-function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
+function BeforeYouGradeSection({
+  items,
+  aiGradingEnabled,
+}: {
+  items: BeforeYouGradeItem[];
+  aiGradingEnabled: boolean;
+}) {
   if (items.length === 0) {
+    if (!aiGradingEnabled) return null;
     return (
-      <div className="mb-4 d-flex align-items-center gap-2 small">
+      <div className="mt-4 d-flex align-items-center gap-2 small">
         <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
         <span>Ready for AI grading</span>
       </div>
     );
   }
   return (
-    <div className="mb-4">
+    <div className="mt-4">
       <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
         <span className="fw-semibold">Before you grade</span>
       </div>
@@ -490,6 +519,7 @@ function buildModalAlerts({
         alerts.push({
           key: 'redeem_success',
           variant: 'success',
+          small: true,
           body: (
             <>
               {formatMilliDollars(FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION)} in credit
@@ -524,6 +554,8 @@ export function AiGradingModelSelectionModal({
   useCustomApiKeys,
   aiGradingSettingsUrl,
   hasRubric,
+  totalSubmissionCount,
+  onAutoSelectForTest,
   onSuccess,
   onHide,
 }: {
@@ -534,6 +566,8 @@ export function AiGradingModelSelectionModal({
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
   hasRubric: boolean;
+  totalSubmissionCount: number;
+  onAutoSelectForTest: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -666,7 +700,9 @@ export function AiGradingModelSelectionModal({
         hasRubric,
         hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
         numToGrade: modalState?.numToGrade ?? 0,
+        totalSubmissionCount,
         onCreateRubric: handleCreateRubric,
+        onAutoSelectForTest,
       })
     : [];
 
@@ -687,7 +723,6 @@ export function AiGradingModelSelectionModal({
               {alert.body}
             </Alert>
           ))}
-          <BeforeYouGradeSection items={beforeYouGradeItems} />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
@@ -695,6 +730,7 @@ export function AiGradingModelSelectionModal({
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
+          <BeforeYouGradeSection items={beforeYouGradeItems} aiGradingEnabled={aiGradingEnabled} />
         </Modal.Body>
 
         <Modal.Footer>

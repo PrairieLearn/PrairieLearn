@@ -120,6 +120,8 @@ export function RubricSettings({
   };
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
+  const [showDeleteRubricPopover, setShowDeleteRubricPopover] = useState<boolean>(false);
+  const deleteRubricButtonRef = useRef<HTMLButtonElement>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
@@ -839,18 +841,22 @@ export function RubricSettings({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>
-                    <em>
-                      This question does not have any rubric items! Click "Add item" below to add
-                      some
-                      {wasUsingRubric && (
-                        <>
-                          , or select <strong>Disable rubric</strong> below to switch back to manual
-                          grade input
-                        </>
-                      )}
-                      .
-                    </em>
+                  <td colSpan={7} className="text-muted py-3">
+                    This question does not have any rubric items
+                    {wasUsingRubric && (
+                      <>
+                        , or select <strong>Disable rubric</strong> below to switch back to manual
+                        grade input
+                      </>
+                    )}
+                    .{' '}
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 align-baseline text-decoration-none"
+                      onClick={addRubricItemRow}
+                    >
+                      Add item
+                    </button>
                   </td>
                 </tr>
               )}
@@ -911,7 +917,7 @@ export function RubricSettings({
           </div>
         )}
         <div className="mb-3 gap-1 d-flex">
-          {hasCourseInstancePermissionEdit && (
+          {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
               Add item
             </button>
@@ -1065,14 +1071,55 @@ export function RubricSettings({
           <div className="d-flex justify-content-end align-items-center flex-wrap gap-2">
             {wasUsingRubric && (
               <button
+                ref={deleteRubricButtonRef}
                 type="button"
                 className="btn btn-link btn-sm text-danger"
                 disabled={isSaving}
-                onClick={() => submitSettings(false)}
+                onClick={() => setShowDeleteRubricPopover((prev) => !prev)}
               >
                 Delete rubric
               </button>
             )}
+            <Overlay
+              target={deleteRubricButtonRef.current}
+              show={showDeleteRubricPopover}
+              placement="top"
+              rootClose
+              onHide={() => setShowDeleteRubricPopover(false)}
+            >
+              {(props) => (
+                <Popover {...props}>
+                  <Popover.Header as="h3">Delete rubric</Popover.Header>
+                  <Popover.Body>
+                    <p>
+                      Are you sure you want to delete this rubric? This will remove the rubric from
+                      all graded submissions. This action cannot be undone.
+                    </p>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        disabled={isSaving}
+                        onClick={() => setShowDeleteRubricPopover(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        disabled={isSaving}
+                        onClick={() => {
+                          setShowDeleteRubricPopover(false);
+                          void submitSettings(false);
+                        }}
+                      >
+                        {isSaving ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </Popover.Body>
+                </Popover>
+              )}
+            </Overlay>
             <button
               type="button"
               className="btn btn-secondary"

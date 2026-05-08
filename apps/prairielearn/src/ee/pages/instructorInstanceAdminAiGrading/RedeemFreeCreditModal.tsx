@@ -73,7 +73,7 @@ export function RedeemFreeCreditModal({
         {hasRedemptionsAvailable && (
           <p className="text-muted small mt-3 mb-0">
             You may redeem free credits {maxRedemptions} times across all {courseLabel} course
-            instance.
+            instances.
           </p>
         )}
       </Modal.Body>

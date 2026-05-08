@@ -60,6 +60,7 @@ async function refreshGradingPanels() {
       gradingPanel?: string;
       submissionPanel?: string;
       submissionId?: string;
+      reviewAiAlert?: string;
     };
 
     if (data.submissionPanel && data.submissionId) {
@@ -78,6 +79,13 @@ async function refreshGradingPanels() {
         gradingPanel.innerHTML = data.gradingPanel;
         window.resetInstructorGradingPanel();
         await window.mathjaxTypeset([gradingPanel]);
+      }
+    }
+
+    if (data.reviewAiAlert !== undefined) {
+      const alertContainer = document.getElementById('js-review-ai-grading-alert');
+      if (alertContainer) {
+        alertContainer.innerHTML = data.reviewAiAlert;
       }
     }
   } catch {
@@ -229,6 +237,8 @@ function InstanceQuestionAiGradeInner({
         useCustomApiKeys={useCustomApiKeys}
         aiGradingSettingsUrl={aiGradingSettingsUrl}
         hasRubric={hasRubric}
+        totalSubmissionCount={1}
+        onAutoSelectForTest={() => {}}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
