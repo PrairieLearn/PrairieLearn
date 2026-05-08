@@ -77,7 +77,10 @@ int main(int argc, char *argv[]) {
     closedir(d);
   }
 
-  prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+  if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) {
+    perror("PR_SET_NO_NEW_PRIVS failed");
+    return 1;
+  }
   if (syscall(SYS_landlock_restrict_self, ruleset_fd, 0)) {
     perror("Enforce failed");
     return 1;

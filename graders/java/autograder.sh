@@ -83,7 +83,6 @@ if [ -f $RESULTS_TEMP_FILE ]; then
         exception "Results did not contain correct signature. Please contact the instructor."
     else
         mv $RESULTS_TEMP_FILE $RESULTS_FILE
-        chmod 644 $RESULTS_FILE
     fi
 else
     exception "No grading results could be retrieved.
