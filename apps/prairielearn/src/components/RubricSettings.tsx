@@ -532,7 +532,11 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editor" className="card overflow-hidden mb-3">
+    <div
+      id="rubric-editor"
+      className="card overflow-hidden mb-3"
+      style={{ scrollMarginTop: '10px' }}
+    >
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="modify_rubric_settings" />
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
@@ -553,7 +557,11 @@ export function RubricSettings({
           <i className="fa fa-angle-up ms-1 expand-icon" aria-hidden="true" />
         </button>
       </div>
-      <div id="rubric-setting" className="js-collapsible-card-body p-2 collapse">
+      <div
+        id="rubric-setting"
+        className="js-collapsible-card-body p-2 collapse"
+        style={{ scrollMarginTop: '10px' }}
+      >
         {/* Settings */}
         <div>
           {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (

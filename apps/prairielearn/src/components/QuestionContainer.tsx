@@ -215,7 +215,11 @@ function AIGradingExplanation({
     rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
 
   return html`
-    <div id="ai-grading-explanation" class="card mb-3 grading-block">
+    <div
+      id="ai-grading-explanation"
+      class="card mb-3 grading-block"
+      style="scroll-margin-top: 10px;"
+    >
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
