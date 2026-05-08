@@ -101,31 +101,25 @@ function DefaultRuleSummaryContent({
   const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-2">
       <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
 
       {dateTableRows.length > 0 && (
-        <div className="mb-2">
-          <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
-        </div>
+        <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
       )}
 
       {hasPrairieTestExams && (
-        <div className="mb-2">
-          <PrairieTestExamsTable
-            exams={rule.prairieTestExams}
-            beforeReleaseListed={rule.beforeReleaseListed}
-            initialMetadata={prairieTestExamMetadata}
-            ptHost={ptHost}
-            formErrors={formErrors}
-          />
-        </div>
+        <PrairieTestExamsTable
+          exams={rule.prairieTestExams}
+          beforeReleaseListed={rule.beforeReleaseListed}
+          initialMetadata={prairieTestExamMetadata}
+          ptHost={ptHost}
+          formErrors={formErrors}
+        />
       )}
 
       {afterCompleteTableRows.length > 0 && (
-        <div className="mb-2">
-          <AfterCompleteTableView rows={afterCompleteTableRows} />
-        </div>
+        <AfterCompleteTableView rows={afterCompleteTableRows} />
       )}
 
       {dateTableRows.length === 0 &&

@@ -412,22 +412,6 @@ function AfterCompleteTimeRange({
   );
 }
 
-function compareAfterCompleteEvents(
-  a: AfterCompleteVisibilityEvent,
-  b: AfterCompleteVisibilityEvent,
-) {
-  try {
-    return Temporal.PlainDateTime.compare(
-      Temporal.PlainDateTime.from(a.date),
-      Temporal.PlainDateTime.from(b.date),
-    );
-  } catch {
-    if (!a.date && b.date) return 1;
-    if (a.date && !b.date) return -1;
-    return 0;
-  }
-}
-
 function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterCompleteVisibilityEvent[] {
   const events: AfterCompleteVisibilityEvent[] = [];
   const qv = rule.questionVisibility;
@@ -453,7 +437,18 @@ function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterComplet
     });
   }
 
-  return events.sort(compareAfterCompleteEvents);
+  return events.sort((a, b) => {
+    try {
+      return Temporal.PlainDateTime.compare(
+        Temporal.PlainDateTime.from(a.date),
+        Temporal.PlainDateTime.from(b.date),
+      );
+    } catch {
+      if (!a.date && b.date) return 1;
+      if (a.date && !b.date) return -1;
+      return 0;
+    }
+  });
 }
 
 export function generateAfterCompleteTableRows(
@@ -1120,7 +1115,7 @@ export function DefaultRuleCurrentIndicator({
   if (!indicator) return null;
   return (
     <div
-      className={`d-flex align-items-center gap-2 px-3 py-2 rounded mb-2 bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
+      className={`d-flex align-items-center gap-2 px-3 py-2 rounded bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
       role="status"
     >
       <i className={`bi ${indicator.icon}`} aria-hidden="true" />
