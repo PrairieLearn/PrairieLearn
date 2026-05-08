@@ -393,7 +393,7 @@ function getParamsForAssessment(
     });
   });
 
-  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles ?? []);
+  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles);
   const groupRoles =
     groups?.roles.map((role) => ({
       role_name: role.name,
