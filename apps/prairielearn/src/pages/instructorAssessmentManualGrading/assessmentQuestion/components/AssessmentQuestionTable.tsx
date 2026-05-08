@@ -97,10 +97,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
+  emptyHint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
+  emptyHint?: React.ReactNode;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -108,6 +110,11 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
+      {numToGrade === 0 && emptyHint && (
+        <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
+          {emptyHint}
+        </div>
+      )}
     </Dropdown.Item>
   );
 }
@@ -756,6 +763,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
+                      emptyHint={
+                        aiGradingCounts.all > 0
+                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                          : undefined
+                      }
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'selected',
@@ -767,6 +779,7 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
+                      emptyHint="Receive at least one submission to perform AI grading."
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'all',
