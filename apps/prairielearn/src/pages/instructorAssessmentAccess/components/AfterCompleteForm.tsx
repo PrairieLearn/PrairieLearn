@@ -1,5 +1,5 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { get, useController, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -9,8 +9,7 @@ import {
   type AccessControlFormData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  isNonDefaultQuestionVisibility,
-  isNonDefaultScoreVisibility,
+  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -95,6 +94,7 @@ function QuestionVisibilityInput({
   idPrefix,
   hasPrairieTest = false,
   hasCompletionMechanism = true,
+  errorMessage,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -104,6 +104,7 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   hasCompletionMechanism?: boolean;
+  errorMessage?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
@@ -149,6 +150,7 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
+          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
       </div>
@@ -274,12 +276,14 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  errorMessage,
   visibleFromDateError,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  errorMessage?: string;
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
@@ -313,6 +317,7 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
+          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
       </div>
@@ -362,6 +367,11 @@ const infoPopoverConfig = {
         The completion date can be different for different students based on when they started or
         their specific accommodations.
       </p>
+      <p>
+        These settings apply only when the student does not have an active PrairieTest reservation.
+        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
+        govern visibility instead.
+      </p>
     </>
   ),
   props: { id: 'after-complete-info-popover' },
@@ -396,77 +406,75 @@ function AfterCompleteCard({
   );
 }
 
-export function MainAfterCompleteForm({
+export function DefaultAfterCompleteForm({
   title,
   displayTimezone,
 }: {
   title?: string;
   displayTimezone: string;
 }) {
-  const { field: qvField } = useController<AccessControlFormData, 'mainRule.questionVisibility'>({
-    name: 'mainRule.questionVisibility',
-    rules: { validate: validateQuestionVisibility },
-  });
+  const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
+    {
+      name: 'defaultRule.questionVisibility',
+      rules: { validate: validateQuestionVisibility },
+    },
+  );
 
-  const { field: svField } = useController<AccessControlFormData, 'mainRule.scoreVisibility'>({
-    name: 'mainRule.scoreVisibility',
+  const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
+    name: 'defaultRule.scoreVisibility',
     rules: { validate: validateScoreVisibility },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
+  const qvError: string | undefined = get(errors, 'defaultRule.questionVisibility')?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
-    'mainRule.questionVisibility.visibleFromDate',
+    'defaultRule.questionVisibility.visibleFromDate',
   )?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
-    'mainRule.questionVisibility.visibleUntilDate',
+    'defaultRule.questionVisibility.visibleUntilDate',
   )?.message;
   const svVisibleFromError: string | undefined = get(
     errors,
-    'mainRule.scoreVisibility.visibleFromDate',
+    'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
+  const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
-  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
+  });
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({ name: 'defaultRule.due' });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
+  });
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
-
-  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
-    name: 'mainRule.dueDate',
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism({
+    dateControlEnabled,
+    due,
+    lateDeadlines,
+    durationMinutes,
+    prairieTestExams,
   });
-  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
-    name: 'mainRule.lateDeadlines',
-  });
-  const durationMinutes = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
-  });
-  const hasCompletionMechanism =
-    hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
-
-  const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
-  const svNonDefault = isNonDefaultScoreVisibility(svField.value);
-  const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
 
   return (
     <AfterCompleteCard title={title}>
-      {showNoCompletionWarning && (
-        <Col xs={12}>
-          <Alert variant="warning" className="py-2 mb-0">
-            These settings will have no effect because there is no way for the assessment to be
-            completed.
-          </Alert>
-        </Col>
-      )}
       <Col md={6}>
-        <Form.Label className="fw-bold" htmlFor="mainRule-question-visibility-mode">
+        <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
         </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
-          idPrefix="mainRule"
+          idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
+          errorMessage={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
@@ -474,12 +482,13 @@ export function MainAfterCompleteForm({
         />
       </Col>
       <Col md={6}>
-        <Form.Label className="fw-bold" htmlFor="mainRule-score-visibility-mode">
+        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
           Score visibility
         </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
-          idPrefix="mainRule"
+          idPrefix="defaultRule"
+          errorMessage={svError}
           visibleFromDateError={svVisibleFromError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
@@ -498,18 +507,19 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
-  const mainQV = useWatch<AccessControlFormData, 'mainRule.questionVisibility'>({
-    name: 'mainRule.questionVisibility',
+  const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
+    name: 'defaultRule.questionVisibility',
   });
-  const mainSV = useWatch<AccessControlFormData, 'mainRule.scoreVisibility'>({
-    name: 'mainRule.scoreVisibility',
+  const defaultRuleSV = useWatch<AccessControlFormData, 'defaultRule.scoreVisibility'>({
+    name: 'defaultRule.scoreVisibility',
   });
-  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
-    name: 'mainRule.prairieTestExams',
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
   });
   const hasPrairieTest = prairieTestExams.length > 0;
 
   const { errors } = useFormState<AccessControlFormData>();
+  const qvError: string | undefined = get(errors, `overrides.${index}.questionVisibility`)?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
     `overrides.${index}.questionVisibility.visibleFromDate`,
@@ -522,6 +532,20 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
+  const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
+
+  const { clearErrors } = useFormContext<AccessControlFormData>();
+
+  const {
+    isOverridden: qvOverridden,
+    addOverride: addQvOverride,
+    removeOverride: removeQvOverride,
+  } = useOverrideField(index, 'questionVisibility');
+  const {
+    isOverridden: svOverridden,
+    addOverride: addSvOverride,
+    removeOverride: removeSvOverride,
+  } = useOverrideField(index, 'scoreVisibility');
 
   const { field: qvField } = useController<
     AccessControlFormData,
@@ -538,26 +562,14 @@ export function OverrideAfterCompleteForm({
     rules: { validate: validateScoreVisibility },
   });
 
-  const {
-    isOverridden: qvOverridden,
-    addOverride: addQvOverride,
-    removeOverride: removeQvOverride,
-  } = useOverrideField(index, 'questionVisibility');
-  const {
-    isOverridden: svOverridden,
-    addOverride: addSvOverride,
-    removeOverride: removeSvOverride,
-  } = useOverrideField(index, 'scoreVisibility');
-
   return (
     <AfterCompleteCard title={title}>
       <Col md={6}>
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
-          headerContent={<strong>Question visibility</strong>}
           onOverride={() => {
-            qvField.onChange({ ...mainQV });
+            qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
           }}
           onRemoveOverride={removeQvOverride}
@@ -566,6 +578,7 @@ export function OverrideAfterCompleteForm({
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
+            errorMessage={qvError}
             visibleFromDateError={qvVisibleFromError}
             visibleUntilDateError={visibleUntilDateError}
             displayTimezone={displayTimezone}
@@ -577,16 +590,19 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
-          headerContent={<strong>Score visibility</strong>}
           onOverride={() => {
-            svField.onChange({ ...mainSV });
+            svField.onChange({ ...defaultRuleSV });
             addSvOverride();
           }}
-          onRemoveOverride={removeSvOverride}
+          onRemoveOverride={() => {
+            removeSvOverride();
+            clearErrors(`overrides.${index}.questionVisibility`);
+          }}
         >
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            errorMessage={svError}
             visibleFromDateError={svVisibleFromError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}

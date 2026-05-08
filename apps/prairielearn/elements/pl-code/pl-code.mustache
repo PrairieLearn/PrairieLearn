@@ -1,11 +1,3 @@
-{{#copy_code_button}}
-<script>
-$(function(){
-    PrairieUtil.initCopyButton('#pl-code-button-{{uuid}}');
-});
-</script>
-{{/copy_code_button}}
-
 <div class="pl-code mb-3 {{#show_line_numbers}}show-line-numbers{{/show_line_numbers}}"
     style="--pl-code-background-color: {{background_color}}; --pl-code-line-number-color: {{line_number_color}};">
     <div
@@ -22,10 +14,11 @@ $(function(){
     <button
         id="pl-code-button-{{uuid}}"
         type="button"
-        class="btn btn-secondary btn-sm copy-button"
+        class="btn btn-secondary btn-sm js-copy-button"
         data-clipboard-target="#pl-code-{{uuid}} td.code"
     >
-        copy this text
+        <i class="bi bi-clipboard" aria-hidden="true"></i>
+        Copy
     </button>
     {{/copy_code_button}}
 </div>

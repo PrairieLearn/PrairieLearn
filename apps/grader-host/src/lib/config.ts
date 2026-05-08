@@ -6,6 +6,7 @@ import {
   ConfigLoader,
   type ConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
@@ -153,6 +154,7 @@ export async function loadConfig() {
     makeProductionConfigSource(),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
     makeAutoScalingGroupConfigSource(),
     makeQueueUrlConfigSource(),
   ]);

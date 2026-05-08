@@ -656,7 +656,9 @@ export function InstructorAssessmentInstance({
               ${assessmentInstanceLog.map((row, index) => {
                 return html`
                   <tr>
-                    <td class="text-nowrap">${row.formatted_date}</td>
+                    <td class="text-nowrap">
+                      ${formatDate(row.event_date, resLocals.course_instance.display_timezone)}
+                    </td>
                     <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                     ${resLocals.instance_user
                       ? row.client_fingerprint && row.client_fingerprint_number !== null

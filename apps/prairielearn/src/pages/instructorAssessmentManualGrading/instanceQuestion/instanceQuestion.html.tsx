@@ -22,6 +22,7 @@ import {
   type InstanceQuestionGroup,
   type User,
 } from '../../../lib/db-types.js';
+import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { InstanceQuestionAiGrade } from './components/InstanceQuestionAiGrade.js';
@@ -55,7 +56,7 @@ export function InstanceQuestion({
   aiGradingRelativeCosts,
   isDevMode,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
@@ -352,7 +353,7 @@ function ConflictGradingJobModal({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;

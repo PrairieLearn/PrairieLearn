@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -133,7 +134,7 @@ router.get(
             }
           }
           return [
-            record.date_iso8601,
+            formatDateISO(record.event_date, res.locals.course_instance.display_timezone),
             record.auth_user_uid,
             fingerprintNumbers.get(record.client_fingerprint?.id) ?? null,
             record.client_fingerprint?.ip_address ?? null,

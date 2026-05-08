@@ -167,12 +167,17 @@ format: format-js format-python
 format-sql:
 	@uv run sqlfluff fix
 
-format-js:
+fix-js:
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
-format-js-cached:
+fix-js-cached:
+	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+
+format-js:
+	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+format-js-cached:
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-mustache:
@@ -204,9 +209,9 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2

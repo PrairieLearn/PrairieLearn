@@ -487,7 +487,7 @@ export const AssessmentJsonSchema = z
     honorCode: z
       .string()
       .describe(
-        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+        'Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.',
       )
       .optional(),
     groupWork: z

@@ -128,13 +128,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 ></math-field>
                 <button
                   type="button"
-                  class="calculator-action-btn history-action-btn history-copy-btn"
+                  class="calculator-action-btn history-action-btn history-copy-btn js-copy-button"
+                  data-clipboard-text=""
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
                   data-bs-title="Copy to clipboard"
                 >
-                  <i class="bi bi-copy"></i>
+                  <i class="bi bi-clipboard"></i>
                 </button>
                 <button
                   type="button"
@@ -166,13 +167,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 ></button>
                 <button
                   type="button"
-                  class="calculator-action-btn history-action-btn history-copy-btn ms-auto"
+                  class="calculator-action-btn history-action-btn history-copy-btn ms-auto js-copy-button"
+                  data-clipboard-text=""
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
                   data-bs-title="Copy to clipboard"
                 >
-                  <i class="bi bi-copy"></i>
+                  <i class="bi bi-clipboard"></i>
                 </button>
                 <button
                   type="button"
@@ -228,13 +230,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             <button
               id="calculator-output-copy"
               type="button"
-              class="calculator-action-btn"
+              class="calculator-action-btn js-copy-button"
+              data-clipboard-text=""
               data-bs-toggle="tooltip"
               data-bs-placement="left"
               data-bs-delay="300"
               data-bs-title="Copy this output"
             >
-              <i class="bi bi-copy"></i>
+              <i class="bi bi-clipboard"></i>
             </button>
           </div>
         </div>

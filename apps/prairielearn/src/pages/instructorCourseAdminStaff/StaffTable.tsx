@@ -260,14 +260,13 @@ function CoursePermissionCell({
   );
 }
 
+/** Only course owners can access this page, so instance roles are always editable. */
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
-  canChangeInstanceRole,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstanceAuthz;
-  canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => cir.id === courseInstance.id,
@@ -286,21 +285,6 @@ function CourseInstanceAccessCell({
     },
   });
   const appError = getAppError<CourseStaffError>(mutation.error);
-
-  if (!canChangeInstanceRole) {
-    return (
-      <span
-        className={clsx(
-          'btn btn-sm disabled',
-          `bg-${instanceRoleColor(currentRole)}-subtle`,
-          `text-${instanceRoleColor(currentRole)}-emphasis`,
-        )}
-        style={{ width: 90 }}
-      >
-        {INSTANCE_ROLE_LABELS[currentRole]}
-      </span>
-    );
-  }
 
   return (
     <OverlayTrigger
@@ -503,7 +487,7 @@ function AddUsersModal({
                           <select
                             className="form-select form-select-sm"
                             value={instanceRoles[ci.id] ?? ''}
-                            aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                            aria-label={`Role for ${ci.short_name}`}
                             onChange={(e) =>
                               setInstanceRoles((prev) => ({ ...prev, [ci.id]: e.target.value }))
                             }
@@ -725,7 +709,7 @@ function BulkEditAccessModal({
                         <select
                           className="form-select form-select-sm"
                           value={instanceRoles[ci.id] ?? ''}
-                          aria-label={`Role for ${ci.short_name ?? `course instance ${ci.id}`}`}
+                          aria-label={`Role for ${ci.short_name}`}
                           onChange={(e) =>
                             handleInstanceRoleChange(ci.id, e.target.value as InstanceRole | '')
                           }
@@ -1027,8 +1011,8 @@ function StaffTableInner({
             'None',
           {
             id: `ci_${ci.id}`,
-            header: () => <code>{ci.short_name ?? `Instance ${ci.id}`}</code>,
-            meta: { label: ci.short_name ?? `Instance ${ci.id}` },
+            header: () => <code>{ci.short_name}</code>,
+            meta: { label: ci.short_name },
             size: 120,
             enableGlobalFilter: false,
             enableSorting: false,
@@ -1040,15 +1024,7 @@ function StaffTableInner({
             },
             cell: (info) => (
               <div className="text-center">
-                <CourseInstanceAccessCell
-                  courseUser={info.row.original}
-                  courseInstance={ci}
-                  canChangeInstanceRole={
-                    (info.row.original.user.id !== authnUserId &&
-                      info.row.original.user.id !== userId) ||
-                    isAdministrator
-                  }
-                />
+                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
               </div>
             ),
           },

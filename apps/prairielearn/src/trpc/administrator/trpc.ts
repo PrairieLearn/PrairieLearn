@@ -7,7 +7,7 @@ import { administratorCoursesRouter } from './courses.js';
 import { createContext, t } from './init.js';
 import { administratorInstitutionsRouter } from './institutions.js';
 
-export const administratorRouter = t.router({
+const administratorRouter = t.router({
   courseRequests: administratorCourseRequestsRouter,
   courses: administratorCoursesRouter,
   institutions: administratorInstitutionsRouter,

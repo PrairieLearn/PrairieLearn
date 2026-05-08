@@ -31,10 +31,10 @@ import { createServerJob } from './server-jobs.js';
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
@@ -46,8 +46,6 @@ export const InstanceLogSchema = z.object({
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });

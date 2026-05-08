@@ -1,6 +1,5 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -36,10 +35,11 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { CopyButton } from '../../components/CopyButton.js';
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
-import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -91,7 +91,7 @@ function ManageEnrollmentsDropdown({
   onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   onInvite: () => void;
   onSync: () => void;
 }) {
@@ -184,7 +184,7 @@ function ManageEnrollmentsDropdown({
 }
 
 interface StudentsCardProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
@@ -199,6 +199,7 @@ interface StudentsCardProps {
 type ColumnId =
   | 'select'
   | 'user_uid'
+  | 'user_uin'
   | 'user_name'
   | 'enrollment_status'
   | 'user_email'
@@ -277,6 +278,7 @@ function StudentsCard({
     return {
       select: undefined,
       user_uid: undefined,
+      user_uin: undefined,
       user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
@@ -318,13 +320,6 @@ function StudentsCard({
 
   const [showInvite, setShowInvite] = useState(false);
   const [showSync, setShowSync] = useState(false);
-  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
-
-  const handleCopyEnrollLink = async () => {
-    await copyToClipboard(selfEnrollLink);
-    setCopiedEnrollLink(true);
-    setTimeout(() => setCopiedEnrollLink(false), 2000);
-  };
 
   const syncStudents = async (
     toInvite: string[],
@@ -500,6 +495,25 @@ function StudentsCard({
           return filterValues.includes(current);
         },
       }),
+      columnHelper.accessor((row) => row.user?.uin, {
+        id: 'user_uin',
+        header: 'UIN',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-uin-tooltip' },
+              }}
+            >
+              <i className="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
+      }),
       columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
         header: 'Email',
@@ -565,7 +579,7 @@ function StudentsCard({
   const allColumnIds = columns
     .map((col) => col.id)
     .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hiddenByDefault = new Set(['user_email']);
+  const hiddenByDefault = new Set(['user_uin', 'user_email']);
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
   );
@@ -822,7 +836,7 @@ function StudentsCard({
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
-                  column={header.column as Column<StudentRow, unknown>}
+                  column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
                     const label = studentLabels.find((l) => l.id === String(value));
@@ -845,19 +859,11 @@ function StudentsCard({
                 {(courseInstance.modern_publishing || courseInstance.self_enrollment_enabled) && (
                   <div className="d-flex gap-2">
                     {courseInstance.self_enrollment_enabled && (
-                      <OverlayTrigger
-                        placement="top"
-                        tooltip={{
-                          body: 'Copied!',
-                          props: { id: 'empty-state-copy-link-tooltip' },
-                        }}
-                        show={copiedEnrollLink}
-                      >
-                        <Button variant="primary" onClick={handleCopyEnrollLink}>
-                          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
-                          Copy enrollment link
-                        </Button>
-                      </OverlayTrigger>
+                      <CopyButton
+                        text={selfEnrollLink}
+                        label="Copy enrollment link"
+                        className="btn-primary"
+                      />
                     )}
                     {courseInstance.modern_publishing && (
                       <Button
@@ -916,7 +922,7 @@ export const InstructorStudents = ({
   trpcCsrfToken,
   origHash,
 }: {
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageContext<'courseInstance', 'instructor'>['authz_data'];
   selfEnrollLink: string;
   search: string;
   isDevMode: boolean;
