@@ -608,6 +608,12 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
+        {aiGradingMode && (rubricData == null || rubricData.rubric_items.length === 0) && (
+          <Alert variant="warning" className="mt-2 mb-0">
+            <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
+            Create a rubric to significantly improve AI grading accuracy and consistency.
+          </Alert>
+        )}
       </div>
       {aiGradingMode && (
         <ServerJobsProgressInfo
