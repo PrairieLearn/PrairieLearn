@@ -746,6 +746,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     number_answers = len(data["params"][name])
     all_keys = list(it.islice(pl.iter_keys(), number_answers))
 
+    # If the author disables builtin-grading, we want to start randomly picking an option
     if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
         # Still test that valid and invalid submissions are handled correctly
         result = data["test_type"]
