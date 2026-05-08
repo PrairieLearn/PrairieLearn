@@ -318,13 +318,6 @@ export function generateDefaultRuleDateTableRows(
   return rows;
 }
 
-interface SummaryItem {
-  key: string;
-  icon: string;
-  text: ReactNode;
-  error?: string;
-}
-
 interface AfterCompleteTableRow {
   key: string;
   timeRange: ReactNode;
@@ -521,13 +514,6 @@ export function generateAfterCompleteTableRows(
   }
 
   return rows;
-}
-
-export function generateRuleSummary(
-  _rule: DefaultRuleData,
-  _formErrors?: DefaultRuleFormErrors,
-): SummaryItem[] {
-  return [];
 }
 
 interface OverrideFieldItem {
