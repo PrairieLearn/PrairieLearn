@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { filesize } from 'filesize';
 import hljs from 'highlight.js/lib/core';
 import hljsJson from 'highlight.js/lib/languages/json';
 import hljsPython from 'highlight.js/lib/languages/python';
@@ -109,8 +110,7 @@ export function QuestionReviewPanel({
     fileEntries.push({
       name,
       path: `clientFilesQuestion/${name}`,
-      // Base64 encodes 3 bytes into 4 characters; reverse to estimate original size.
-      content: `(binary file — ${Math.ceil((q.clientFiles[name].length * 3) / 4)} bytes)`,
+      content: `(binary file — ${filesize(Math.ceil((q.clientFiles[name].length * 3) / 4), { round: 0 })})`,
       icon: 'bi-file-earmark-image',
     });
   }
