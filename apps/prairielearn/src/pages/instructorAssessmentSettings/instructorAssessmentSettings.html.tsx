@@ -124,7 +124,7 @@ interface SettingsFormValues {
   allow_real_time_grading: boolean;
   grade_rate_minutes: string;
   tools?: Record<string, boolean>;
-  share_source_publicly: boolean;
+  share_source_publicly?: boolean;
 }
 
 interface InstructorAssessmentSettingsProps {
@@ -485,6 +485,8 @@ function InstructorAssessmentSettingsInner({
   const requireHonorCode = watch('require_honor_code');
   const currentAid = watch('aid');
   const currentBonusPoints = Number(watch('max_bonus_points')) || 0;
+  const shareSourcePubliclyDisabled =
+    !canEdit || assessment.share_source_publicly || nonPublicQuestionsInAssessment.length > 0;
   const effectiveMaxPoints = Math.max(zonePointsRange.max - currentBonusPoints, 0);
   const effectiveMinPoints = Math.max(zonePointsRange.min - currentBonusPoints, 0);
   const effectiveMaxPointsDisplay =
@@ -1147,11 +1149,7 @@ function InstructorAssessmentSettingsInner({
                 id="share_source_publicly"
                 label="Share source publicly"
                 className="mb-1"
-                disabled={
-                  !canEdit ||
-                  assessment.share_source_publicly ||
-                  nonPublicQuestionsInAssessment.length > 0
-                }
+                disabled={shareSourcePubliclyDisabled}
                 defaultChecked={defaultValues.share_source_publicly}
                 {...register('share_source_publicly')}
               />

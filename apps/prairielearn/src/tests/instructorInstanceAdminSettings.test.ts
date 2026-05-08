@@ -79,6 +79,16 @@ describe('Updating a course instance ID', () => {
       group_assessments_by: 'Set',
     };
     if (shareSourcePublicly) body.share_source_publicly = 'on';
+    for (const name of [
+      'self_enrollment_enabled',
+      'self_enrollment_use_enrollment_code',
+      'self_enrollment_restrict_to_institution',
+      'self_enrollment_enabled_before_date_enabled',
+      'self_enrollment_enabled_before_date',
+    ]) {
+      const value = settingsPageResponse.$(`input[name="${name}"]`).last().val();
+      if (typeof value === 'string') body[name] = value;
+    }
     return body;
   }
 
@@ -98,27 +108,46 @@ describe('Updating a course instance ID', () => {
     },
   );
 
-  test.sequential('cannot un-share a course instance whose source is already public', async () => {
-    await execute(
-      'UPDATE course_instances SET share_source_publicly = TRUE WHERE id = $course_instance_id',
-      { course_instance_id: '1' },
-    );
-    try {
-      const response = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams(
-            await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
-          ),
-        },
-      );
-      assert.equal(response.status, 400);
-    } finally {
+  test.sequential(
+    'ignores course instance source sharing when source is already public',
+    async () => {
       await execute(
-        'UPDATE course_instances SET share_source_publicly = FALSE WHERE id = $course_instance_id',
+        'UPDATE questions SET share_publicly = TRUE, share_source_publicly = TRUE WHERE course_id = $course_id',
+        { course_id: 1 },
+      );
+      await execute(
+        'UPDATE assessments SET share_source_publicly = TRUE WHERE course_instance_id = $course_instance_id',
         { course_instance_id: '1' },
       );
-    }
-  });
+      await execute(
+        'UPDATE course_instances SET share_source_publicly = TRUE WHERE id = $course_instance_id',
+        { course_instance_id: '1' },
+      );
+      try {
+        const response = await fetchCheerio(
+          `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+          {
+            method: 'POST',
+            body: new URLSearchParams(
+              await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
+            ),
+          },
+        );
+        assert.equal(response.status, 200);
+      } finally {
+        await execute(
+          'UPDATE course_instances SET share_source_publicly = FALSE WHERE id = $course_instance_id',
+          { course_instance_id: '1' },
+        );
+        await execute(
+          'UPDATE assessments SET share_source_publicly = FALSE WHERE course_instance_id = $course_instance_id',
+          { course_instance_id: '1' },
+        );
+        await execute(
+          'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
+          { course_id: 1 },
+        );
+      }
+    },
+  );
 });

@@ -442,13 +442,6 @@ router.post(
       } else {
         courseInstanceInfo.selfEnrollment = undefined;
       }
-
-      if (courseInstance.share_source_publicly && !parsedBody.share_source_publicly) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with publicly shared source cannot be un-shared.',
-        );
-      }
       if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
         const nonPublicAssessments = await selectNonPublicAssessmentsInCourseInstance({
           course_instance_id: courseInstance.id,
@@ -467,7 +460,8 @@ router.post(
       }
       courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
         courseInstanceInfo.shareSourcePublicly,
-        parsedBody.share_source_publicly,
+        // If it was already shared publicly, we should ignore the body value as it cannot be disabled again
+        courseInstance.share_source_publicly || (parsedBody.share_source_publicly ?? false),
         false,
       );
 

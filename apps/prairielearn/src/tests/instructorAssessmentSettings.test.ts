@@ -86,7 +86,6 @@ const defaultMutationFields = {
   advance_score_perc: null,
   allow_real_time_grading: true,
   grade_rate_minutes: null,
-  share_source_publicly: false,
 };
 
 describe('Editing assessment settings', () => {
@@ -409,9 +408,11 @@ describe('Editing assessment settings', () => {
     },
   );
 
-  test.sequential('cannot un-share an assessment whose source is already public', async () => {
-    // Force the assessment to look as if it has already been shared. The gate in the mutation
-    // fires before any file edit, so this does not need the info file to reflect the flag.
+  test.sequential('ignores assessment source sharing when source is already public', async () => {
+    await execute(
+      'UPDATE questions SET share_publicly = TRUE, share_source_publicly = TRUE WHERE course_id = $course_id',
+      { course_id: 1 },
+    );
     await execute('UPDATE assessments SET share_source_publicly = TRUE WHERE tid = $tid', {
       tid: 'A1',
     });
@@ -419,29 +420,25 @@ describe('Editing assessment settings', () => {
     try {
       const trpcClient = await createTrpcClient('1');
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      try {
-        await trpcClient.assessmentSettings.updateAssessment.mutate({
-          title: assessmentInfo.title,
-          set: assessmentInfo.set,
-          number: assessmentInfo.number,
-          module: assessmentInfo.module ?? 'Default',
-          aid: 'A1',
-          ...defaultMutationFields,
-          share_source_publicly: false,
-          origHash: await getOrigHash(assessmentLiveInfoPath),
-        });
-        assert.fail('Expected mutation to throw');
-      } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'BAD_REQUEST',
-        );
-      }
+      const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'A1',
+        ...defaultMutationFields,
+        share_source_publicly: false,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+      assert.ok(result.origHash);
     } finally {
       await execute('UPDATE assessments SET share_source_publicly = FALSE WHERE tid = $tid', {
         tid: 'A1',
       });
+      await execute(
+        'UPDATE questions SET share_publicly = FALSE, share_source_publicly = FALSE WHERE course_id = $course_id',
+        { course_id: 1 },
+      );
     }
   });
 });
