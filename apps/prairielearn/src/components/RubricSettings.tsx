@@ -780,18 +780,22 @@ export function RubricSettings({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>
-                    <em>
-                      This question does not have any rubric items! Click "Add item" below to add
-                      some
-                      {wasUsingRubric && (
-                        <>
-                          , or select <strong>Disable rubric</strong> below to switch back to manual
-                          grade input
-                        </>
-                      )}
-                      .
-                    </em>
+                  <td colSpan={7} className="text-muted py-3">
+                    This question does not have any rubric items
+                    {wasUsingRubric && (
+                      <>
+                        , or select <strong>Disable rubric</strong> below to switch back to manual
+                        grade input
+                      </>
+                    )}
+                    .{' '}
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 align-baseline text-decoration-none"
+                      onClick={addRubricItemRow}
+                    >
+                      Add item
+                    </button>
                   </td>
                 </tr>
               )}
