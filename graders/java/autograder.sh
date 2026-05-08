@@ -72,7 +72,8 @@ chmod 777 /grade/params/params.json
 DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.initial=DISABLED"
 
 su - sbuser << EOF
-java $JDK_JAVA_OPTIONS -cp "$CLASSPATH" $DISABLE_JAVA_MANAGEMENT JUnitAutograder
+export LD_PRELOAD=/lib/block_proc.so
+exec java $JDK_JAVA_OPTIONS -cp "$CLASSPATH" $DISABLE_JAVA_MANAGEMENT JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ]; then
@@ -83,6 +84,7 @@ if [ -f $RESULTS_TEMP_FILE ]; then
         exception "Results did not contain correct signature. Please contact the instructor."
     else
         mv $RESULTS_TEMP_FILE $RESULTS_FILE
+        chmod 644 $RESULTS_FILE
     fi
 else
     exception "No grading results could be retrieved.
