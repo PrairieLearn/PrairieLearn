@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
-import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
+import { getAppError } from '../../../lib/client/errors.js';
+import {
+  getCourseInstanceBaseUrl,
+  getCourseInstanceEditErrorUrl,
+} from '../../../lib/client/url.js';
 import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
+import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js';
 import {
   type ParseWarning,
   type QuestionOverrides,
@@ -122,7 +127,7 @@ export function QtiImportForm({
   );
   const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; jobSequenceId?: string } | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -179,7 +184,7 @@ export function QtiImportForm({
       setQuestionOverrides(buildInitialQuestionOverrides(data.results, dirs));
       setStep('review');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
       setUploading(false);
     }
@@ -296,10 +301,27 @@ export function QtiImportForm({
         );
       }
 
-      await trpcClient.qtiImport.create.mutate(payload);
+      const { jobSequenceId, assessmentIds } = await trpcClient.qtiImport.create.mutate(payload);
+      const expected = payload.assessments.length;
+
+      if (assessmentIds.length < expected) {
+        const failed = expected - assessmentIds.length;
+        setError({
+          message: `${assessmentIds.length} of ${expected} assessment${expected !== 1 ? 's' : ''} imported successfully (${failed} failed to sync).`,
+          jobSequenceId,
+        });
+        setStep('review');
+        return;
+      }
+
       window.location.href = `${getCourseInstanceBaseUrl(courseInstanceId)}/instructor/instance_admin/assessments`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create assessments');
+      const appError = getAppError<QtiImportError['Create']>(err);
+      if (appError?.code === 'SYNC_JOB_FAILED') {
+        setError({ message: appError.message, jobSequenceId: appError.jobSequenceId });
+      } else {
+        setError({ message: err instanceof Error ? err.message : 'Failed to create assessments' });
+      }
       setStep('review');
     }
   };
@@ -351,7 +373,17 @@ export function QtiImportForm({
       <Card.Body>
         {error && (
           <Alert variant="danger" dismissible onClose={() => setError(null)}>
-            {error}
+            {error.message}
+            {error.jobSequenceId && (
+              <>
+                {' '}
+                <Alert.Link
+                  href={getCourseInstanceEditErrorUrl(courseInstanceId, error.jobSequenceId)}
+                >
+                  View sync errors
+                </Alert.Link>
+              </>
+            )}
           </Alert>
         )}
 

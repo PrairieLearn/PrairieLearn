@@ -50,7 +50,7 @@ const requireQtiImportEnabled = t.middleware(async (opts) => {
   return opts.next();
 });
 
-interface QtiImportError {
+export interface QtiImportError {
   Create: { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string };
 }
 
@@ -93,12 +93,10 @@ const create = t.procedure
     );
 
     const count = assessmentIds.length;
-    const expected = input.assessments.length;
     if (count > 0) {
-      const warning = count < expected ? ` (${expected - count} failed to sync)` : '';
       flash(
         'success',
-        `${count} assessment${count !== 1 ? 's' : ''} imported successfully.${warning}`,
+        `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`,
       );
     }
 
