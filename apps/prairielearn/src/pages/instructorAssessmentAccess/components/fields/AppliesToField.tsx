@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -14,11 +14,12 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  onTargetTypeChange: (targetType: TargetType) => void;
 }) {
-  const { setValue } = useFormContext<AccessControlFormData>();
   const trpc = useTRPC();
 
   const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
@@ -34,18 +35,6 @@ export function AppliesToField({
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
     name: `${namePrefix}.appliesTo.studentLabels`,
   });
-
-  const handleTargetTypeChange = (newType: TargetType) => {
-    setValue(
-      `${namePrefix}.appliesTo`,
-      {
-        targetType: newType,
-        enrollments: [],
-        studentLabels: [],
-      },
-      { shouldDirty: true },
-    );
-  };
 
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
     replaceEnrollments(students);
@@ -80,7 +69,7 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
-          onChange={() => handleTargetTypeChange('enrollment')}
+          onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
           type="radio"
@@ -88,7 +77,7 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
-          onChange={() => handleTargetTypeChange('student_label')}
+          onChange={() => onTargetTypeChange('student_label')}
         />
       </fieldset>
 

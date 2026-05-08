@@ -29,7 +29,7 @@ describe('normalizeGroupSettings', () => {
   describe('new format (groups block)', () => {
     it('normalizes a minimal groups block', () => {
       const result = normalizeGroupSettings({
-        groups: { enabled: true },
+        groups: {},
       } as unknown as AssessmentJsonInput);
 
       assert.deepEqual(result, {
@@ -48,7 +48,6 @@ describe('normalizeGroupSettings', () => {
     it('forces canNameGroup off when canCreateGroup is off', () => {
       const result = normalizeGroupSettings({
         groups: {
-          enabled: true,
           studentPermissions: {
             canCreateGroup: false,
             canNameGroup: true,
@@ -63,7 +62,6 @@ describe('normalizeGroupSettings', () => {
     it('normalizes studentPermissions', () => {
       const result = normalizeGroupSettings({
         groups: {
-          enabled: true,
           studentPermissions: {
             canCreateGroup: true,
             canJoinGroup: true,
@@ -83,7 +81,7 @@ describe('normalizeGroupSettings', () => {
 
     it('normalizes minMembers and maxMembers', () => {
       const result = normalizeGroupSettings({
-        groups: { enabled: true, minMembers: 2, maxMembers: 6 },
+        groups: { minMembers: 2, maxMembers: 6 },
       } as unknown as AssessmentJsonInput);
 
       assert.equal(result?.minMembers, 2);
@@ -93,7 +91,6 @@ describe('normalizeGroupSettings', () => {
     it('normalizes roles with rolePermissions', () => {
       const result = normalizeGroupSettings({
         groups: {
-          enabled: true,
           roles: [
             { name: 'Manager', minMembers: 1, maxMembers: 1 },
             { name: 'Recorder', minMembers: 1, maxMembers: 1 },
@@ -143,7 +140,6 @@ describe('normalizeGroupSettings', () => {
     it('treats absent canView/canSubmit as all-roles-permitted', () => {
       const result = normalizeGroupSettings({
         groups: {
-          enabled: true,
           roles: [{ name: 'Worker' }],
           rolePermissions: {},
         },
@@ -157,7 +153,6 @@ describe('normalizeGroupSettings', () => {
     it('treats empty canView/canSubmit arrays as all-roles-permitted (legacy compat)', () => {
       const result = normalizeGroupSettings({
         groups: {
-          enabled: true,
           roles: [{ name: 'Worker' }],
           rolePermissions: {
             canView: [] as string[],
@@ -528,13 +523,13 @@ describe('stripLegacyGroupKeys', () => {
       studentGroupChooseName: true,
       canView: ['Manager'],
       canSubmit: ['Manager'],
-      groups: { enabled: true },
+      groups: {},
     } as unknown as AssessmentJsonInput);
 
     assert.deepEqual(result, {
       uuid: 'abc',
       type: 'Homework',
-      groups: { enabled: true },
+      groups: {},
     } as unknown as AssessmentJsonInput);
   });
 
@@ -542,7 +537,7 @@ describe('stripLegacyGroupKeys', () => {
     const input = {
       uuid: 'abc',
       type: 'Homework',
-      groups: { enabled: true },
+      groups: {},
     } as unknown as AssessmentJsonInput;
     assert.deepEqual(stripLegacyGroupKeys(input), input);
   });
@@ -567,7 +562,6 @@ describe('convertLegacyGroupsToGroupsConfig', () => {
     } as unknown as AssessmentJson);
 
     assert.deepEqual(result, {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [

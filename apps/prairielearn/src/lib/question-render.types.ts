@@ -62,7 +62,7 @@ export interface ResLocalsInstanceQuestionRenderAdded {
   allowGradeLeftMs: number;
 }
 
-export interface ResLocalsBuildLocals {
+interface ResLocalsBuildLocals {
   showGradeButton: boolean;
   showSaveButton: boolean;
   disableGradeButton: boolean;

@@ -579,10 +579,7 @@ async function loadCourseInfo({
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const result = deduplicateByName<Entry>(
-      (info![fieldName] ?? []) as Entry[],
-      defaults as Entry[] | undefined,
-    );
+    const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
       const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
@@ -1412,12 +1409,14 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to groups format for unified validation
+  // Convert legacy group properties to groups format for unified validation.
   const isLegacyGroups = assessment.groups == null;
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
 
   // Validate groups if we have roles defined
-  if (groups.roles.length > 0) {
+  if (groups != null && groups.roles.length > 0) {
     const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);

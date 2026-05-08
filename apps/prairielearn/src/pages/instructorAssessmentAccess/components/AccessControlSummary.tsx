@@ -9,13 +9,18 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import clsx from 'clsx';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
+
+import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
   DateTableView,
+  DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
+  PrairieTestExamsTable,
   type RuleFormErrors,
   generateDefaultRuleDateTableRows,
   generateRuleSummary,
@@ -40,12 +45,14 @@ function SortableOverrideCard({
   displayTimezone,
   onEdit,
   onRemove,
+  isActive,
 }: {
   id: string;
   override: OverrideData;
   formErrors: RuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
+  isActive: boolean;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -66,6 +73,7 @@ function SortableOverrideCard({
         title={title}
         displayTimezone={displayTimezone}
         formErrors={formErrors}
+        isActive={isActive}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
@@ -109,25 +117,43 @@ function DefaultRuleSummaryContent({
   rule,
   formErrors,
   displayTimezone,
+  prairieTestExamMetadata,
+  ptHost,
 }: {
   rule: DefaultRuleData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }) {
   const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
+  const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
     <div>
+      <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
+
       {dateTableRows.length > 0 && (
         <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
+          <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
+        </div>
+      )}
+
+      {hasPrairieTestExams && (
+        <div className="mb-2">
+          <PrairieTestExamsTable
+            exams={rule.prairieTestExams}
+            initialMetadata={prairieTestExamMetadata}
+            ptHost={ptHost}
+            formErrors={formErrors}
+          />
         </div>
       )}
 
       {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
 
-      {dateTableRows.length === 0 && summaryItems.length === 0 && (
+      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
         <div
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}
@@ -142,6 +168,7 @@ function DefaultRuleSummaryContent({
 export function AccessControlSummary({
   defaultRule,
   overrides,
+  selectedOverrideIndex,
   getOverrideName,
   onAddOverride,
   onRemoveOverride,
@@ -150,9 +177,12 @@ export function AccessControlSummary({
   onClearDefaultRule,
   onEditOverride,
   displayTimezone,
+  prairieTestExamMetadata,
+  ptHost,
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+  selectedOverrideIndex: number | null;
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
@@ -165,6 +195,8 @@ export function AccessControlSummary({
   /** Callback when an override edit is requested */
   onEditOverride: (index: number) => void;
   displayTimezone: string;
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }) {
   const dndId = useId();
   const sensors = useSensors(
@@ -180,7 +212,7 @@ export function AccessControlSummary({
     const newIndex = sortableIds.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Prevent reordering across override types (enrollment must stay before student_label)
+    // Prevent reordering across override types; each target type has its own precedence section.
     if (overrides[oldIndex].appliesTo.targetType !== overrides[newIndex].appliesTo.targetType) {
       return;
     }
@@ -209,6 +241,7 @@ export function AccessControlSummary({
               variant="outline-primary"
               size="sm"
               aria-label="Edit"
+              className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
               <i className="bi bi-pencil" aria-hidden="true" />
@@ -218,6 +251,7 @@ export function AccessControlSummary({
               variant="outline-danger"
               size="sm"
               aria-label="Clear"
+              className="d-inline-flex align-items-center"
               onClick={onClearDefaultRule}
             >
               <i className="bi bi-trash" aria-hidden="true" />
@@ -233,6 +267,8 @@ export function AccessControlSummary({
           rule={defaultRule}
           formErrors={errors.defaultRule}
           displayTimezone={displayTimezone}
+          prairieTestExamMetadata={prairieTestExamMetadata}
+          ptHost={ptHost}
         />
       </section>
 
@@ -246,7 +282,12 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button variant="primary" size="sm" onClick={onAddOverride}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="d-inline-flex align-items-center"
+            onClick={onAddOverride}
+          >
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
@@ -271,22 +312,21 @@ export function AccessControlSummary({
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
               {overrides.map((override, index) => {
-                const isFirstEnrollment =
-                  index === 0 && override.appliesTo.targetType === 'enrollment';
-                const isFirstLabel =
-                  override.appliesTo.targetType === 'student_label' &&
-                  (index === 0 || overrides[index - 1].appliesTo.targetType !== 'student_label');
+                const isFirstOfSection =
+                  index === 0 ||
+                  overrides[index - 1].appliesTo.targetType !== override.appliesTo.targetType;
+                const sectionLabel =
+                  override.appliesTo.targetType === 'enrollment'
+                    ? 'Overrides for specific students'
+                    : 'Overrides for student labels';
 
                 return (
                   <Fragment key={sortableIds[index]}>
-                    {isFirstEnrollment && (
-                      <small className="text-muted fw-semibold d-block mb-2">
-                        Overrides for specific students
-                      </small>
-                    )}
-                    {isFirstLabel && (
-                      <small className="text-muted fw-semibold d-block mb-2 mt-3">
-                        Overrides for student labels
+                    {isFirstOfSection && (
+                      <small
+                        className={clsx('text-muted fw-semibold d-block mb-2', index > 0 && 'mt-3')}
+                      >
+                        {sectionLabel}
                       </small>
                     )}
                     <SortableOverrideCard
@@ -295,6 +335,7 @@ export function AccessControlSummary({
                       formErrors={errors.overrides?.[index]}
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
+                      isActive={selectedOverrideIndex === index}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

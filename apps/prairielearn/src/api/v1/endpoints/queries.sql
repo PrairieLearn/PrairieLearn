@@ -35,7 +35,6 @@ SELECT
   a.id AS assessment_id,
   a.tid AS assessment_name,
   a.title AS assessment_title,
-  (aset.abbreviation || a.number) AS assessment_label,
   aset.abbreviation AS assessment_set_abbreviation,
   a.number AS assessment_number,
   u.id AS user_id,
@@ -49,23 +48,13 @@ SELECT
   ai.score_perc,
   ai.number AS assessment_instance_number,
   ai.open,
-  format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
+  ai.modified_at,
   gi.id AS group_id,
   gi.name AS group_name,
   gi.uid_list AS group_uids,
-  CASE
-    WHEN ai.open
-    AND ai.date_limit IS NOT NULL THEN greatest(
-      0,
-      floor(
-        DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
-      )
-    )::text || ' min'
-    WHEN ai.open THEN 'Open'
-    ELSE 'Closed'
-  END AS time_remaining,
-  format_date_iso8601 (ai.date, ci.display_timezone) AS start_date,
-  DATE_PART('epoch', ai.duration) AS duration_seconds,
+  ai.date_limit,
+  ai.date,
+  ai.duration,
   (
     row_number() OVER (
       PARTITION BY
@@ -76,7 +65,8 @@ SELECT
         ai.number DESC,
         ai.id DESC
     )
-  ) = 1 AS highest_score
+  ) = 1 AS highest_score,
+  ci.display_timezone
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -106,11 +96,10 @@ SELECT
   a.id AS assessment_id,
   a.tid AS assessment_name,
   a.title AS assessment_title,
-  (aset.abbreviation || a.number) AS assessment_label,
   aset.abbreviation AS assessment_set_abbreviation,
   a.number AS assessment_number,
   aar.credit,
-  format_date_iso8601 (aar.end_date, ci.display_timezone) AS end_date,
+  aar.end_date,
   aar.exam_uuid,
   aar.id AS assessment_access_rule_id,
   aar.mode,
@@ -118,9 +107,10 @@ SELECT
   aar.password,
   aar.show_closed_assessment,
   aar.show_closed_assessment_score,
-  format_date_iso8601 (aar.start_date, ci.display_timezone) AS start_date,
+  aar.start_date,
   aar.time_limit_min,
-  aar.uids
+  aar.uids,
+  ci.display_timezone
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -140,14 +130,14 @@ SELECT
   ci.short_name AS course_instance_short_name,
   ci.course_id AS course_instance_course_id,
   ci.display_timezone,
-  format_date_iso8601 (ci.deleted_at, ci.display_timezone) AS deleted_at,
   pl_c.title AS course_title,
   pl_c.short_name AS course_short_name
 FROM
   course_instances AS ci
   JOIN courses AS pl_c ON (pl_c.id = ci.course_id)
 WHERE
-  ci.id = $course_instance_id;
+  ci.id = $course_instance_id
+  AND ci.deleted_at IS NULL;
 
 -- BLOCK select_course_instance_access_rules
 SELECT
@@ -155,11 +145,12 @@ SELECT
   ci.short_name AS course_instance_short_name,
   ci.long_name AS course_instance_long_name,
   ci.course_id AS course_instance_course_id,
-  format_date_iso8601 (ciar.end_date, ci.display_timezone) AS end_date,
+  ci.display_timezone,
+  ciar.end_date,
   ciar.id AS course_instance_access_rule_id,
   ciar.institution,
   ciar.number AS course_instance_access_rule_number,
-  format_date_iso8601 (ciar.start_date, ci.display_timezone) AS start_date,
+  ciar.start_date,
   ciar.uids
 FROM
   course_instances AS ci
@@ -188,7 +179,7 @@ SELECT
   iq.highest_submission_score,
   iq.last_submission_score,
   iq.number_attempts,
-  DATE_PART('epoch', iq.duration) AS duration_seconds
+  iq.duration
 FROM
   assessment_instances AS ai
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
@@ -247,14 +238,14 @@ SELECT
   s.params,
   s.true_answer,
   v.options,
-  format_date_iso8601 (s.date, ci.display_timezone) AS date,
+  s.date,
   s.submitted_answer,
   s.partial_scores,
   s.override_score,
   s.credit,
   s.mode,
-  format_date_iso8601 (s.grading_requested_at, ci.display_timezone) AS grading_requested_at,
-  format_date_iso8601 (s.graded_at, ci.display_timezone) AS graded_at,
+  s.grading_requested_at,
+  s.graded_at,
   s.score,
   s.correct,
   s.feedback,
@@ -296,7 +287,8 @@ SELECT
         s.date DESC,
         s.id DESC
     )
-  ) = 1 AS best_submission_per_variant
+  ) = 1 AS best_submission_per_variant,
+  ci.display_timezone
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
