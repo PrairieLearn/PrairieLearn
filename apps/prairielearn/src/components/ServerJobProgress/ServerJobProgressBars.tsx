@@ -193,44 +193,14 @@ function ServerJobProgressInfo({
     icon: string;
     variant: string;
   }>(() => {
-    if (jobStatus === 'stopped') {
-      return {
-        text: 'AI grading stopped',
-        subtext: undefined,
-        icon: 'bi-stop-circle-fill',
-        variant: 'secondary',
-      };
-    }
-    if (jobStatus === 'stopping') {
-      return {
-        text: 'Stopping AI grading…',
-        subtext: undefined,
-        icon: 'bi-stop-circle-fill',
-        variant: 'secondary',
-      };
-    }
-    if (jobStatus === 'complete') {
-      return {
-        text: statusText.complete,
-        subtext: undefined,
-        icon: statusIcons.complete,
-        variant: 'success',
-      };
-    }
-    if (jobStatus === 'failed') {
-      return {
-        text: statusText.failed,
-        subtext: undefined,
-        icon: statusIcons.failed,
-        variant: 'danger',
-      };
-    }
-    return {
-      text: statusText.inProgress,
-      subtext: undefined,
-      icon: statusIcons.inProgress,
-      variant: 'info',
-    };
+    const display = {
+      stopped: { text: 'AI grading stopped', icon: 'bi-stop-circle-fill', variant: 'secondary' },
+      stopping: { text: 'Stopping AI grading…', icon: 'bi-stop-circle-fill', variant: 'secondary' },
+      complete: { text: statusText.complete, icon: statusIcons.complete, variant: 'success' },
+      failed: { text: statusText.failed, icon: statusIcons.failed, variant: 'danger' },
+      inProgress: { text: statusText.inProgress, icon: statusIcons.inProgress, variant: 'info' },
+    } as const;
+    return { ...display[jobStatus], subtext: undefined };
   }, [statusText, statusIcons, jobStatus]);
 
   const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;

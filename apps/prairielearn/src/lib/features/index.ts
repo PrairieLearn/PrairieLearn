@@ -8,10 +8,8 @@ const featureNames = [
   'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
   'ai-grading',
-  // Gates the Stop button for in-progress AI grading jobs. Off by default
-  // so the new 'Stopping'/'Stopped' enum values are never written until all
-  // pods have shipped the updated EnumJobStatusSchema; flip it on once the
-  // rollout completes.
+  // Off by default so the 'Stopping'/'Stopped' enum values aren't written
+  // until every pod has shipped the matching EnumJobStatusSchema.
   'ai-grading-stop',
   'ai-submission-grouping',
   'disable-public-workspaces',

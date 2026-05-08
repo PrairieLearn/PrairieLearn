@@ -139,8 +139,6 @@ export function useServerJobProgress({
 
     const jobProgress = jobsProgress[jobSequenceId];
 
-    // Only dismiss if the job is in a terminal state — either it ran to
-    // completion, or it was stopped early by the instructor.
     const isTerminal = jobProgress.num_complete >= jobProgress.num_total || jobProgress.is_stopped;
     if (!isTerminal) {
       return;

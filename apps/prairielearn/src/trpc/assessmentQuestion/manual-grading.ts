@@ -22,7 +22,7 @@ import {
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
-import { features } from '../../lib/features/index.js';
+import { type FeatureName, features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
@@ -41,39 +41,30 @@ import {
 
 export interface ManualGradingError {}
 
-const requireAiGradingFeature = t.middleware(async (opts) => {
-  const enabled = await features.enabled('ai-grading', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-    user_id: opts.ctx.authn_user.id,
-  });
-
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (feature not available)',
+function requireFeature(name: FeatureName, deniedMessage: string) {
+  return t.middleware(async (opts) => {
+    const enabled = await features.enabled(name, {
+      institution_id: opts.ctx.course.institution_id,
+      course_id: opts.ctx.course.id,
+      course_instance_id: opts.ctx.course_instance.id,
+      user_id: opts.ctx.authn_user.id,
     });
-  }
-  return opts.next();
-});
-
-const requireAiGradingStopFeature = t.middleware(async (opts) => {
-  const enabled = await features.enabled('ai-grading-stop', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-    user_id: opts.ctx.authn_user.id,
+    if (!enabled) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: deniedMessage });
+    }
+    return opts.next();
   });
+}
 
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Stopping AI grading is not yet enabled.',
-    });
-  }
-  return opts.next();
-});
+const requireAiGradingFeature = requireFeature(
+  'ai-grading',
+  'Access denied (feature not available)',
+);
+
+const requireAiGradingStopFeature = requireFeature(
+  'ai-grading-stop',
+  'Stopping AI grading is not yet enabled.',
+);
 
 const instances = t.procedure
   .use(requireCourseInstancePermissionView)
