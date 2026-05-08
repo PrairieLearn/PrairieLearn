@@ -18,11 +18,13 @@ export type WithAIGradingStats<T> = T & AIGradingStats;
 export interface AIGradingLog {
   messageType: 'info' | 'error';
   message: string;
+  error?: unknown;
+  context?: Record<string, unknown>;
 }
 
 export interface AIGradingLogger {
   info(msg: string): void;
-  error(msg: string): void;
+  error(msg: string, options?: { error?: unknown; context?: Record<string, unknown> }): void;
 }
 
 export interface AiGradingGeneralStats {

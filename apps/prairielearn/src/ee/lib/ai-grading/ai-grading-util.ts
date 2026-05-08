@@ -13,6 +13,7 @@ import mustache from 'mustache';
 import sharp from 'sharp';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import {
   execute,
@@ -438,9 +439,21 @@ export function parseAiRubricItems({
   }
 
   // It's possible that the rubric could have changed since we last
-  // fetched it. We'll optimistically apply all the rubric items
-  // that were selected. If an item was deleted, we'll allow the
-  // grading to fail; the user can then try again.
+  // fetched it, or that the LLM hallucinated a description that
+  // doesn't exist. Surface unknown descriptions so the grading job
+  // log makes the failure diagnosable; the user can then retry.
+  const unknownDescriptions = Array.from(appliedRubricDescription).filter(
+    (description) => !(description in rubricItemsByDescription),
+  );
+  if (unknownDescriptions.length > 0) {
+    throw new error.AugmentedError('AI returned rubric descriptions not present in the rubric', {
+      data: {
+        unknown_descriptions: unknownDescriptions,
+        known_descriptions: Object.keys(rubricItemsByDescription),
+      },
+    });
+  }
+
   const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
     rubric_item_id: rubricItemsByDescription[description].id,
   }));
@@ -881,11 +894,28 @@ export async function correctImagesOrientation({
     }
   > = {};
 
-  for (const [filename, image] of Object.entries(submittedImages)) {
-    const { correctedImage, degreesRotated, response } = await correctImageOrientation({
-      image,
-      model,
-    });
+  const submittedImageEntries = Object.entries(submittedImages);
+  for (let imageIndex = 0; imageIndex < submittedImageEntries.length; imageIndex++) {
+    const [filename, image] = submittedImageEntries[imageIndex];
+
+    let correctedImage: string;
+    let degreesRotated: CounterClockwiseRotationDegrees;
+    let response: GenerateObjectResult<any>;
+    try {
+      ({ correctedImage, degreesRotated, response } = await correctImageOrientation({
+        image,
+        model,
+      }));
+    } catch (cause) {
+      throw new error.AugmentedError('Failed to determine image orientation', {
+        cause,
+        data: {
+          filename,
+          image_index: imageIndex,
+          total_images: submittedImageEntries.length,
+        },
+      });
+    }
 
     const existingIndex = submittedAnswer._files.findIndex(
       (file: { name: string; contents: string }) => file.name === filename,
