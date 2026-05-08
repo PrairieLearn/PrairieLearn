@@ -1,7 +1,4 @@
 -- BLOCK select_resumable_ai_grading_job_sequences
--- AI grading jobs the page should render an alert for on initial load. Only
--- still-active states (Running or Stopping) — terminal Stopped jobs match the
--- existing complete/failed behavior and are not resumed across page reloads.
 SELECT
   id
 FROM

@@ -105,10 +105,7 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  -- Only mask Stopping when the inner job finished successfully (i.e. the
-  -- job took the explicit cancellation path). If the inner job errored,
-  -- preserve the Error status so real failures aren't hidden by a racing
-  -- Stop click.
+  -- Stopping + Success means a clean cancel; preserve real Errors as-is.
   status = CASE
     WHEN js.status = 'Stopping'
     AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
@@ -181,22 +178,16 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = j.finish_date,
-  -- A sequence already in Stopping should land in Stopped, not Error, when
-  -- the inner job is just being abandoned by the cron sweeper. The user
-  -- explicitly requested cancellation; an unrelated host crash shouldn't
-  -- override that intent.
-  status = CASE
-    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
-    ELSE j.status
-  END
+  status = j.status
 FROM
   job_sequence_updates AS j
 WHERE
   js.id = j.job_sequence_id
   AND j.update_job_sequence
-RETURNING
-  js.id AS sequence_id,
-  js.status AS new_status;
+  -- Don't overwrite a sequence that already reached a terminal state via
+  -- another path (e.g. AI grading's stop branch landed Stopped while the
+  -- inner job was still Running and now gets swept as abandoned).
+  AND js.status NOT IN ('Stopped', 'Success', 'Error');
 
 -- BLOCK select_abandoned_jobs
 SELECT
@@ -213,12 +204,9 @@ WHERE
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
 SET
-  -- A sequence stuck in Stopping after its host crashed should land in Stopped
-  -- (not Error), since the user-initiated cancel is what put it in this state.
-  status = CASE
-    WHEN js.status = 'Stopping' THEN 'Stopped'::enum_job_status
-    ELSE 'Error'::enum_job_status
-  END,
+  -- Abandoned workers always land Error so failures aren't masked.
+  -- Cancellation intent stays recorded on stop_requested_at/by.
+  status = 'Error'::enum_job_status,
   finish_date = CURRENT_TIMESTAMP
 WHERE
   js.status IN ('Running', 'Stopping')
@@ -245,8 +233,7 @@ WHERE
     ) -- no running jobs and no recently finished jobs
   )
 RETURNING
-  js.id,
-  js.status AS new_status;
+  js.id;
 
 -- BLOCK select_job_sequence_with_course_id_as_json
 WITH

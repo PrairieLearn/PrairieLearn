@@ -54,6 +54,7 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiGradingStopEnabled = await features.enabledFromLocals('ai-grading-stop', res.locals);
     const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
       'ai-submission-grouping',
       res.locals,
@@ -174,6 +175,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiGradingStopEnabled={aiGradingStopEnabled}
                 aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&

@@ -124,17 +124,17 @@ describe('server-jobs SQL transitions', () => {
   });
 
   describe('update_job_on_error', () => {
-    it('Stopping → Stopped (user cancel wins over crash)', async () => {
+    it('Stopping → Error (preserve worker failure signal)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(sql.update_job_on_error, {
         job_id,
         output: null,
         error_message: 'abandoned',
       });
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
 
-    it('Running → Error (no Stop in flight)', async () => {
+    it('Running → Error', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
       await execute(sql.update_job_on_error, {
         job_id,
@@ -143,26 +143,39 @@ describe('server-jobs SQL transitions', () => {
       });
       assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
+
+    it("doesn't overwrite an already-terminal sequence", async () => {
+      // Reproduces the race where aiGrade's stop branch landed Stopped on
+      // the sequence while the inner job was still Running, and the
+      // abandoned-job sweeper would otherwise clobber it back to Error.
+      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
+      await execute("UPDATE job_sequences SET status = 'Stopped' WHERE id = $job_sequence_id", {
+        job_sequence_id,
+      });
+      await execute(sql.update_job_on_error, {
+        job_id,
+        output: null,
+        error_message: 'abandoned',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+    });
   });
 
   describe('error_abandoned_job_sequences', () => {
-    it('Stopping → Stopped (cron sweep)', async () => {
+    it('Stopping → Error (cron sweep)', async () => {
       const { job_sequence_id } = await insertJobSequence('Stopping');
-      // Force start_date older than the 1-hour threshold.
       await execute(
         `UPDATE job_sequences SET start_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
          WHERE id = $id`,
         { id: job_sequence_id },
       );
-      // Settle the inner job so the WHERE clause's "no running, no recent
-      // finish" branch fires.
       await execute(
         `UPDATE jobs SET status = 'Error', finish_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
          WHERE job_sequence_id = $id`,
         { id: job_sequence_id },
       );
       await execute(sql.error_abandoned_job_sequences);
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
 
     it('Running → Error (cron sweep)', async () => {

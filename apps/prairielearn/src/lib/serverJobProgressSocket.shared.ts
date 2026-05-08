@@ -47,15 +47,9 @@ export const JobProgressSchema = z.object({
    * succeeds but subsequent persistence fails).
    */
   num_items_incurred_cost: z.number().int().nonnegative().optional(),
-  /**
-   * Set when an instructor has requested cancellation of the job. In-flight
-   * items will finish, but no new items will be dispatched.
-   */
+  /** Cancellation requested; in-flight items finish, no new dispatches. */
   is_stopping: z.boolean().optional(),
-  /**
-   * Set when the job has finished settling after a cancellation request — the
-   * job is in its terminal "Stopped" state.
-   */
+  /** Terminal: cancellation has fully settled. */
   is_stopped: z.boolean().optional(),
 });
 

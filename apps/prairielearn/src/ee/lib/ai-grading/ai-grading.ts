@@ -305,12 +305,7 @@ export async function getRunningAiGradingJobCountForCourseInstance(
   );
 }
 
-/**
- * Returns IDs of AI grading job sequences the page should reattach to on
- * initial load: only still-active states (Running or Stopping). Terminal
- * Stopped jobs match how Complete and Failed alerts already behave and are
- * not resumed across page reloads.
- */
+/** Returns IDs of AI grading sequences still active (Running or Stopping). */
 export async function getResumableAiGradingJobSequenceIds(
   assessment_question_id: string,
 ): Promise<string[]> {
@@ -322,10 +317,8 @@ export async function getResumableAiGradingJobSequenceIds(
 }
 
 /**
- * Atomically transitions a Running AI grading job sequence into 'Stopping'.
- * Returns true if this call was the one that flipped the state — useful for
- * surfacing a "no longer running" error on a redundant click. The grading
- * loop polls `stop_requested_at` and short-circuits remaining items.
+ * Atomically transitions a Running AI grading sequence into 'Stopping'.
+ * Returns true only for the call that actually flipped the row.
  */
 export async function requestStopAiGradingJob({
   job_sequence_id,
@@ -342,9 +335,7 @@ export async function requestStopAiGradingJob({
     IdSchema,
   );
   if (updatedId == null) return false;
-  // Best-effort: the DB transition is the source of truth. A Redis blip or
-  // socket failure here would otherwise turn a successful Stop into a
-  // CONFLICT on retry, even though the request actually succeeded.
+  // Best-effort cache patch: the DB transition is authoritative.
   try {
     await patchServerJobProgress(job_sequence_id, { is_stopping: true });
   } catch (err) {
@@ -463,10 +454,9 @@ export async function aiGrade({
       assessmentId: assessment.id,
       assessmentQuestionId: assessment_question.id,
       onTerminalStatus: async (status, jobSequenceId) => {
-        // Race window: Stop was clicked after our final poll, the loop
-        // exited Successfully, then update_job_on_finish flipped Stopping
-        // to Stopped. Without this hook the manual grading alert would
-        // sit on "Stopping AI grading…" until refresh.
+        // Catches the case where Stop raced our final poll: the generic
+        // finisher transitioned Stopping → Stopped, but the alert needs
+        // the cache patch to flip to the terminal state.
         if (status === 'Stopped') {
           try {
             await patchServerJobProgress(jobSequenceId, { is_stopped: true });
@@ -1220,10 +1210,8 @@ export async function aiGrade({
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
     let num_items_incurred_cost = 0;
-    // Polled at the top of every per-item task so a click on "Stop" stops
-    // new dispatches with no further LLM calls, and so every progress emit
-    // carries the correct `is_stopping` flag (avoiding flicker between
-    // Stopping and In-progress when the cache patch races the loop emits).
+    // Polled before every per-item dispatch and finally emit so a Stop click
+    // can't get masked by a stale local flag.
     const stopState = { requested: false };
     const refreshStopRequested = async () => {
       if (stopState.requested) return;
@@ -1269,10 +1257,8 @@ export async function aiGrade({
 
         await refreshStopRequested();
         if (stopState.requested) {
-          // The instructor clicked Stop before this worker picked up the item.
-          // Drop it from item_statuses entirely — no LLM call, no charge, and
-          // no "queued" contribution that could pollute the UI of any other
-          // job concurrently grading the same instance question.
+          // Skip queued items entirely so they don't appear graded by this
+          // job, leaving any concurrent job's status to win in the table UI.
           delete item_statuses[instance_question.id];
           return false;
         }
@@ -1307,8 +1293,6 @@ export async function aiGrade({
           return false;
         } finally {
           num_complete += 1;
-          // Re-poll so this emit can't overwrite the cache's is_stopping flag
-          // with a stale value if Stop was clicked during the LLM call.
           await refreshStopRequested();
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,

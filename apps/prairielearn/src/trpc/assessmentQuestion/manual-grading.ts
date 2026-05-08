@@ -58,6 +58,23 @@ const requireAiGradingFeature = t.middleware(async (opts) => {
   return opts.next();
 });
 
+const requireAiGradingStopFeature = t.middleware(async (opts) => {
+  const enabled = await features.enabled('ai-grading-stop', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+    user_id: opts.ctx.authn_user.id,
+  });
+
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Stopping AI grading is not yet enabled.',
+    });
+  }
+  return opts.next();
+});
+
 const instances = t.procedure
   .use(requireCourseInstancePermissionView)
   .output(z.array(InstanceQuestionRowWithAIGradingStatsSchema))
@@ -174,6 +191,7 @@ const aiGradeInstanceQuestionsMutation = t.procedure
 const stopAiGradingJobMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
+  .use(requireAiGradingStopFeature)
   .input(z.object({ job_sequence_id: IdSchema }))
   .mutation(async (opts) => {
     const stopped = await requestStopAiGradingJob({

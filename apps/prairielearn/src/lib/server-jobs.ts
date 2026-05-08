@@ -13,6 +13,7 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
@@ -31,7 +32,6 @@ import {
   JobSequenceSchema,
 } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
-import { patchServerJobProgress } from './serverJobProgressSocket.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -54,13 +54,9 @@ interface CreateServerJobOptionsBase {
    */
   reportErrorsToSentry?: boolean;
   /**
-   * Optional best-effort hook invoked after the job sequence reaches a
-   * terminal status. Called with the actual status the sequence landed in
-   * (which may differ from the inner job's status — e.g. a Stopping
-   * sequence with a Successful inner job lands in Stopped) and the
-   * sequence id. Throwing here does NOT fail the job; the error is
-   * logged. Useful for callers that need to update an external cache/UI
-   * when the sequence finishes.
+   * Best-effort hook invoked once the sequence reaches a terminal status
+   * (which may differ from the inner job's status). Throwing here is
+   * logged but doesn't fail the job.
    */
   onTerminalStatus?: (status: EnumJobStatus, jobSequenceId: string) => Promise<void> | void;
 }
@@ -396,8 +392,8 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       z.object({ new_status: EnumJobStatusSchema }),
     );
 
-    // Notify sockets first so clients are unblocked even if the optional
-    // terminal-status hook below throws.
+    // Notify sockets before the optional hook so clients are unblocked
+    // even if the hook throws.
     socketServer.io?.to('job-' + this.jobId).emit('update');
     socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
 
@@ -405,9 +401,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       try {
         await this.onTerminalStatus(finishResult.new_status, this.jobSequenceId);
       } catch (hookErr) {
-        // Best-effort: terminal-status hooks are advisory (e.g. patching a UI
-        // cache). They must not be able to fail the authoritative DB
-        // transition or the socket notifications above.
         Sentry.captureException(hookErr);
         logger.error('onTerminalStatus hook threw; ignoring', hookErr);
       }
@@ -613,17 +606,12 @@ export async function errorAbandonedJobs() {
 
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
-    let abandonResult: { sequence_id: string; new_status: string } | null = null;
     try {
-      abandonResult = await queryOptionalRow(
-        sql.update_job_on_error,
-        {
-          job_id: row.id,
-          output: null,
-          error_message: 'Job abandoned by server',
-        },
-        z.object({ sequence_id: IdSchema, new_status: EnumJobStatusSchema }),
-      );
+      await execute(sql.update_job_on_error, {
+        job_id: row.id,
+        output: null,
+        error_message: 'Job abandoned by server',
+      });
     } catch (err) {
       Sentry.captureException(err);
       logger.error('errorAbandonedJobs: error updating job on error', err);
@@ -633,36 +621,11 @@ export async function errorAbandonedJobs() {
         socketServer.io!.to('jobSequence-' + row.job_sequence_id).emit('update');
       }
     }
-    if (abandonResult?.new_status === 'Stopped') {
-      await tryPatchProgressIsStopped(abandonResult.sequence_id);
-    }
   }
 
-  const abandonedJobSequences = await queryRows(
-    sql.error_abandoned_job_sequences,
-    z.object({ id: IdSchema, new_status: EnumJobStatusSchema }),
-  );
-  for (const row of abandonedJobSequences) {
-    socketServer.io!.to('jobSequence-' + row.id).emit('update');
-    if (row.new_status === 'Stopped') {
-      await tryPatchProgressIsStopped(row.id);
-    }
-  }
-}
-
-/**
- * Best-effort: a Redis blip or socket failure must not stop us from continuing
- * to sweep the rest of the abandoned-job batch.
- */
-async function tryPatchProgressIsStopped(job_sequence_id: string): Promise<void> {
-  try {
-    await patchServerJobProgress(job_sequence_id, { is_stopped: true });
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error(
-      `tryPatchProgressIsStopped: failed to patch progress for job_sequence_id=${job_sequence_id}`,
-      err,
-    );
+  const abandonedJobSequences = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
+  for (const job_sequence_id of abandonedJobSequences) {
+    socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
   }
 }
 

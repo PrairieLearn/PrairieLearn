@@ -50,14 +50,9 @@ export function useServerJobProgress({
   );
 
   /**
-   * The status to display for a specific job item across all ongoing jobs.
-   *
-   * If multiple jobs are processing the same item, the least progressed status is shown --
-   * from highest to lowest precedence: queued, in_progress, failed, complete.
-   *
-   * A stopping/stopped job no longer owns its remaining queued items — another
-   * concurrent job may still be grading them. Skip queued contributions from
-   * stopping/stopped jobs so live jobs' in_progress wins for shared items.
+   * Per-item status merged across jobs. Least-progressed wins (queued <
+   * in_progress < failed < complete), but a stopping/stopped job's queued
+   * items are dropped so they don't shadow a live job's in-progress status.
    */
   const displayedStatuses = useMemo(() => {
     const merged: Record<string, JobItemStatus> = {};
@@ -71,7 +66,6 @@ export function useServerJobProgress({
       const dropQueued = job.is_stopping || job.is_stopped;
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
-        // show least progressed status
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
