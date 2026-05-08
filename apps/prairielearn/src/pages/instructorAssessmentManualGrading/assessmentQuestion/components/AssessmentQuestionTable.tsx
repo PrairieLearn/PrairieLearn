@@ -205,10 +205,9 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Track which "Review AI-graded submissions" alerts the user has dismissed.
-  // We accumulate completed job sequence IDs in a ref so the Review alert
-  // continues to render after the user dismisses the "AI grading complete"
-  // alert (which removes the job from `serverJobProgress.jobsProgress`).
+  // Accumulates completed AI grading job sequence IDs so the "Review AI-graded
+  // submissions" alert outlives dismissal of the "AI grading complete" alert
+  // (which clears the job from `serverJobProgress.jobsProgress`).
   const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
   const [dismissedReviewAlerts, setDismissedReviewAlerts] = useState<Set<string>>(new Set());
 
@@ -377,9 +376,6 @@ export function AssessmentQuestionTable({
     },
   });
 
-  // Accumulate completed job sequence IDs during render. Once a job is seen
-  // as completed, it stays in the set even after the user dismisses the
-  // "AI grading complete" alert (which clears it from `jobsProgress`).
   for (const job of Object.values(serverJobProgress.jobsProgress)) {
     if (job.num_total > 0 && job.num_complete >= job.num_total && job.num_failed === 0) {
       seenCompletedJobIdsRef.current.add(job.job_sequence_id);
@@ -657,11 +653,11 @@ export function AssessmentQuestionTable({
               key={latestReviewAlertJobId}
               jobSequenceId={latestReviewAlertJobId}
               onDismiss={() =>
-                setDismissedReviewAlerts((prev) => {
-                  const next = new Set(prev);
-                  next.add(latestReviewAlertJobId);
-                  return next;
-                })
+                setDismissedReviewAlerts((prev) =>
+                  prev.has(latestReviewAlertJobId)
+                    ? prev
+                    : new Set(prev).add(latestReviewAlertJobId),
+                )
               }
             />
           )}

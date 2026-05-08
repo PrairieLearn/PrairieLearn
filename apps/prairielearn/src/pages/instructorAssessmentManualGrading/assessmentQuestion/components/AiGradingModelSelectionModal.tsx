@@ -237,7 +237,6 @@ interface BeforeYouGradeItem {
   title: React.ReactNode;
   description: React.ReactNode;
   onClick?: () => void;
-  variant?: 'warning';
 }
 
 function buildBeforeYouGradeItems({
@@ -262,7 +261,6 @@ function buildBeforeYouGradeItems({
       title: 'Create a rubric',
       description: 'Rubrics significantly improve accuracy and consistency.',
       onClick: onCreateRubric,
-      variant: 'warning',
     });
   }
   if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
@@ -272,43 +270,29 @@ function buildBeforeYouGradeItems({
       title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
       description: 'Confirm your rubric works well before running on all submissions.',
       onClick: () => onAutoSelectForTest(n),
-      variant: 'warning',
     });
   }
   return items;
 }
 
 function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
-  const isWarning = item.variant === 'warning';
-  const titleNode = item.onClick ? (
-    <div>
-      <Button
-        type="button"
-        variant="link"
-        className="p-0 align-baseline fw-medium text-decoration-none"
-        style={{ fontSize: 'inherit' }}
-        onClick={item.onClick}
-      >
-        {item.title}
-      </Button>
-    </div>
-  ) : (
-    <div className="fw-medium">{item.title}</div>
-  );
   return (
-    <div
-      className={clsx(
-        'rounded-2 px-3 py-2',
-        isWarning
-          ? 'border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2'
-          : 'border',
-      )}
-    >
-      {isWarning && (
-        <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
-      )}
+    <div className="rounded-2 px-3 py-2 border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2">
+      <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
       <div className="flex-grow-1">
-        {titleNode}
+        {item.onClick ? (
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 align-baseline fw-medium text-decoration-none"
+            style={{ fontSize: 'inherit' }}
+            onClick={item.onClick}
+          >
+            {item.title}
+          </Button>
+        ) : (
+          <div className="fw-medium">{item.title}</div>
+        )}
         <div className="text-muted small">{item.description}</div>
       </div>
     </div>
@@ -487,10 +471,17 @@ export function AiGradingModelSelectionModal({
     onHide();
   }, [onHide, reset, defaultModel]);
 
+  const [pendingExpandRubricOnExit, setPendingExpandRubricOnExit] = useState(false);
   const handleCreateRubric = useCallback(() => {
+    setPendingExpandRubricOnExit(true);
     onHide();
-    setTimeout(expandRubricSettings, 250);
   }, [onHide]);
+  const handleExited = useCallback(() => {
+    if (pendingExpandRubricOnExit) {
+      setPendingExpandRubricOnExit(false);
+      expandRubricSettings();
+    }
+  }, [pendingExpandRubricOnExit]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -560,7 +551,14 @@ export function AiGradingModelSelectionModal({
     : [];
 
   return (
-    <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
+    <Modal
+      show={isModalOpen}
+      size="lg"
+      backdrop="static"
+      keyboard={false}
+      onHide={handleClose}
+      onExited={handleExited}
+    >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>Select grading model</Modal.Title>

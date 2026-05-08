@@ -39,7 +39,6 @@ export function GradingPanel({
   instanceQuestionGroups,
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
-  gradedByAi = false,
   gradedByHumanName = null,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
@@ -57,9 +56,10 @@ export function GradingPanel({
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
-  gradedByAi?: boolean;
   gradedByHumanName?: string | null;
 }) {
+  const gradedByAi = aiGradingInfo != null;
+  const gradedByHuman = gradedByHumanName != null;
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
@@ -228,7 +228,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${gradedByAi || gradedByHumanName
+        ${gradedByAi || gradedByHuman
           ? html`
               <li class="list-group-item">
                 <div class="d-flex align-items-center flex-wrap gap-1">
@@ -236,19 +236,18 @@ export function GradingPanel({
                   ${gradedByAi
                     ? html`<span class="badge text-bg-light border fw-medium">AI</span>`
                     : ''}
-                  ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
-                  ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
+                  ${gradedByAi && gradedByHuman ? html`<span>+</span>` : ''}
+                  ${gradedByHuman ? html`<span>${gradedByHumanName}</span>` : ''}
                   ${gradedByAi
                     ? html`<a
                         href="#ai-grading-explanation"
                         class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
-                        onclick="event.preventDefault(); document.getElementById('ai-grading-explanation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
                       >
                         <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
                       </a>`
                     : ''}
                 </div>
-                ${gradedByAi && gradedByHumanName
+                ${gradedByAi && gradedByHuman
                   ? html`<div class="text-muted small mt-1">
                       Human grading always takes priority
                     </div>`
@@ -269,7 +268,7 @@ export function GradingPanel({
                 ${AutoPointsSection({ context, disable, auto_points, resLocals })}
               </li>
               <li class="list-group-item">
-                ${TotalPointsSection({ context, disable, points, resLocals })}
+                ${TotalPointsSection({ points, resLocals })}
                 ${resLocals.rubric_data?.rubric.replace_auto_points
                   ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}

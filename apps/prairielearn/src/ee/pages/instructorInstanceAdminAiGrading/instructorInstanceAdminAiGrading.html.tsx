@@ -434,8 +434,7 @@ function CreditPoolSection({
   const purchaseModalState = useModalState();
   const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
 
-  // Mirror the empty-state detection in `CreditPoolDashboard`. These reads share
-  // a TanStack cache with the dashboard, so they don't trigger extra fetches.
+  // Reuses CreditPoolDashboard's TanStack cache to detect the empty state.
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page: 1 }),

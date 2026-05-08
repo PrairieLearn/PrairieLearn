@@ -53,13 +53,9 @@ export function AutoPointsSection({
 }
 
 export function TotalPointsSection({
-  context: _context,
-  disable: _disable,
   points,
   resLocals,
 }: {
-  context: 'main' | 'existing' | 'conflicting';
-  disable: boolean;
   points: number;
   resLocals: UntypedResLocals;
 }) {
