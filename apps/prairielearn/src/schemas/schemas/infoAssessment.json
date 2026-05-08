@@ -824,7 +824,7 @@
               ]
             },
             "afterLastDeadline": {
-              "description": "Controls for assessment behavior after last deadline. Null means no access; omitted means inherit from default (overrides only).",
+              "description": "Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).",
               "anyOf": [
                 {
                   "type": "object",
