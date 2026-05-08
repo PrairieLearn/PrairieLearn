@@ -1127,7 +1127,6 @@ export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): G
     .map((role) => role.name);
 
   return {
-    enabled: assessment.groupWork,
     minMembers: assessment.groupMinSize,
     maxMembers: assessment.groupMaxSize,
     roles: assessment.groupRoles.map((role) => ({
