@@ -3,13 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import {
-  type GenerateObjectResult,
-  type JSONParseError,
-  type ModelMessage,
-  type TypeValidationError,
-  generateObject,
-} from 'ai';
+import { type GenerateObjectResult, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -59,7 +53,6 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
-  correctGeminiMalformedRubricGradingJson,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -678,24 +671,23 @@ export async function aiGrade({
       };
 
       if (rubric_items.length > 0) {
-        // Dynamically generate the rubric schema based on the rubric items.
-        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
-        for (const item of rubric_items) {
-          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
-            z.object({
-              [item.description]: z.boolean(),
-            }),
-          );
+        // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
+        // item is identified by its 1-indexed position in the prompt; using numbers
+        // instead of descriptions avoids JSON-escaping issues with quotes/backslashes
+        // in user-authored rubric text.
+        const rubricItemShape: Record<string, z.ZodBoolean> = {};
+        for (const [index, item] of rubric_items.entries()) {
+          const number = index + 1;
+          rubricItemShape[String(number)] = z
+            .boolean()
+            .describe(
+              `True if rubric item ${number} applies to the student's response. Rubric item ${number}: ${item.description}`,
+            );
         }
+        const RubricGradingItemsSchema = z.object(rubricItemShape);
 
-        // OpenAI will take the property descriptions into account. See the
-        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
-          // rubric_items must be the last property in the schema.
-          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
-          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
-          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -709,21 +701,6 @@ export async function aiGrade({
           finalGradingResponse,
           rotationCorrectionApplied,
         } = (await run(async () => {
-          const experimental_repairText: (options: {
-            text: string;
-            error: JSONParseError | TypeValidationError;
-          }) => Promise<string | null> = async (options) => {
-            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
-              return null;
-            }
-            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // unescaped backslashes in the rubric item keys of the response.
-
-            // TODO: Remove this temporary fix once Google fixes the underlying issue.
-            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
-            return correctGeminiMalformedRubricGradingJson(options.text);
-          };
-
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -736,7 +713,6 @@ export async function aiGrade({
                 model,
                 schema: RubricGradingResultSchema,
                 messages: input,
-                experimental_repairText,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -749,7 +725,6 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -799,7 +774,6 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -847,10 +821,16 @@ export async function aiGrade({
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
-        const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: finalGradingResponse.object.rubric_items,
-          rubric_items,
-        });
+        const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
+          parseAiRubricItems({
+            ai_rubric_items: finalGradingResponse.object.rubric_items,
+            rubric_items,
+          });
+        if (unrecognizedKeys.length > 0) {
+          logger.error(
+            `AI grading response contained unrecognized rubric_items keys: ${JSON.stringify(unrecognizedKeys)}. Expected stringified integers in [1, ${rubric_items.length}].`,
+          );
+        }
         const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
           ? {
               model_id,
