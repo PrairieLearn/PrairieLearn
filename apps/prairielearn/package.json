@@ -68,6 +68,7 @@
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/postgres-tools": "workspace:^",
+    "@prairielearn/question-conversion": "workspace:^",
     "@prairielearn/react": "workspace:^",
     "@prairielearn/run": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
