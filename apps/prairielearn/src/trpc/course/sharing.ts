@@ -127,6 +127,16 @@ async function writeCourseInfo({
   return { ok: true, newHash };
 }
 
+async function assertCourseInfoHashMatches(infoCoursePath: string, origHash: string) {
+  const currentHash = (await getOriginalHash(infoCoursePath)) ?? '';
+  if (currentHash !== origHash) {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: 'infoCourse.json changed since this page loaded. Reload the page and try again.',
+    });
+  }
+}
+
 const regenerateSharingToken = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
@@ -271,7 +281,7 @@ const updateSharingSetDescription = t.procedure
     return { origHash: result.newHash };
   });
 
-const deleteSharingSet = t.procedure
+const deleteSharingSetProcedure = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
   .use(requireNotExampleCourse)
@@ -305,6 +315,10 @@ const deleteSharingSet = t.procedure
         name: input.name,
       });
     }
+
+    // We check this before doing any DB-only changes
+    await assertCourseInfoHashMatches(infoCoursePath, input.origHash);
+
     sharingSets.splice(0, sharingSets.length, ...filtered);
 
     await deleteSharingSet({ course_id: ctx.course.id, name: input.name });
@@ -364,6 +378,6 @@ export const sharingRouter = t.router({
   addCourseToSharingSet,
   createSharingSet,
   updateSharingSetDescription,
-  deleteSharingSet,
+  deleteSharingSet: deleteSharingSetProcedure,
   chooseSharingName,
 });
