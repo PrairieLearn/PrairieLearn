@@ -54,56 +54,22 @@ function DueDateInput({
 
     const dueDatePlain = Temporal.PlainDateTime.from(value.date);
     const latestEarly = earlyDeadlines ? getLatestDeadlineEntry(earlyDeadlines) : null;
-    const creditLabel = `(${effectiveCredit}% credit)`;
+    const friendly = (date: Date | Temporal.PlainDateTime) => (
+      <FriendlyDate date={date} timezone={displayTimezone} options={{ includeTz: false }} />
+    );
 
-    if (latestEarly) {
-      return (
-        <>
-          <FriendlyDate
-            date={latestEarly}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    } else if (releaseDate) {
-      const releaseDatePlain = Temporal.PlainDateTime.from(releaseDate);
-      return (
-        <>
-          <FriendlyDate
-            date={releaseDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    } else {
-      return (
-        <>
-          While accessible –{' '}
-          <FriendlyDate
-            date={dueDatePlain}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />{' '}
-          {creditLabel}
-        </>
-      );
-    }
+    const startNode = latestEarly
+      ? friendly(latestEarly)
+      : releaseDate
+        ? friendly(Temporal.PlainDateTime.from(releaseDate))
+        : null;
+    if (!startNode) return null;
+
+    return (
+      <>
+        {startNode} – {friendly(dueDatePlain)} ({effectiveCredit}% credit)
+      </>
+    );
   };
 
   return (
@@ -196,7 +162,7 @@ function DueDateInput({
                 min={0}
                 max={200}
                 step={1}
-                style={{ width: '5rem' }}
+                style={{ width: '6rem' }}
                 aria-label="Due date credit percentage"
                 aria-invalid={!!creditError}
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
@@ -264,13 +230,13 @@ function validateDueCredit(credit: number | null, customCredit: boolean): string
     if (customCredit) return 'Credit is required';
     return undefined;
   }
-  if (!Number.isFinite(credit)) return 'Credit must be a number';
+  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
   if (!Number.isInteger(credit)) return 'Credit must be an integer';
   if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
   return undefined;
 }
 
-export function MainDueDateField({
+export function DefaultDueDateField({
   displayTimezone,
   assessmentId,
   courseInstanceId,
@@ -279,29 +245,29 @@ export function MainDueDateField({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const releaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
-  const earlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
-    name: 'mainRule.earlyDeadlines',
+  const earlyDeadlines = useWatch<AccessControlFormData, 'defaultRule.earlyDeadlines'>({
+    name: 'defaultRule.earlyDeadlines',
   });
 
-  const customCreditCtrl = useController<AccessControlFormData, 'mainRule.due.customCredit'>({
-    name: 'mainRule.due.customCredit',
+  const customCreditCtrl = useController<AccessControlFormData, 'defaultRule.due.customCredit'>({
+    name: 'defaultRule.due.customCredit',
   });
 
-  const dateCtrl = useController<AccessControlFormData, 'mainRule.due.date'>({
-    name: 'mainRule.due.date',
+  const dateCtrl = useController<AccessControlFormData, 'defaultRule.due.date'>({
+    name: 'defaultRule.due.date',
     rules: {
       validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
     },
   });
-  const creditCtrl = useController<AccessControlFormData, 'mainRule.due.credit'>({
-    name: 'mainRule.due.credit',
+  const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
+    name: 'defaultRule.due.credit',
     rules: {
       validate: (value, formValues) =>
-        validateDueCredit(value, formValues.mainRule.due.customCredit) ?? true,
+        validateDueCredit(value, formValues.defaultRule.due.customCredit) ?? true,
     },
   });
 
@@ -323,7 +289,7 @@ export function MainDueDateField({
       <Form.Label className="fw-bold">Due date</Form.Label>
       <DueDateInput
         value={value}
-        idPrefix="mainRule"
+        idPrefix="defaultRule"
         releaseDate={releaseDate}
         earlyDeadlines={earlyDeadlines}
         dateError={dateCtrl.fieldState.error?.message}
@@ -348,8 +314,8 @@ export function OverrideDueDateField({
   assessmentId: string;
   courseInstanceId: string;
 }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'due');
@@ -358,19 +324,19 @@ export function OverrideDueDateField({
   const releaseDate = useWatch<AccessControlFormData, `overrides.${number}.release.date`>({
     name: `overrides.${index}.release.date`,
   });
-  const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const defaultRuleReleaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
   const { isOverridden: earlyDeadlinesOverridden } = useOverrideField(index, 'earlyDeadlines');
   const earlyDeadlines = useWatch<AccessControlFormData, `overrides.${number}.earlyDeadlines`>({
     name: `overrides.${index}.earlyDeadlines`,
   });
-  const mainEarlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
-    name: 'mainRule.earlyDeadlines',
+  const defaultRuleEarlyDeadlines = useWatch<AccessControlFormData, 'defaultRule.earlyDeadlines'>({
+    name: 'defaultRule.earlyDeadlines',
   });
 
-  const effectiveReleaseDate = releaseDateOverridden ? releaseDate : mainReleaseDate;
+  const effectiveReleaseDate = releaseDateOverridden ? releaseDate : defaultRuleReleaseDate;
   const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
 
   const customCreditCtrl = useController<
@@ -412,9 +378,9 @@ export function OverrideDueDateField({
       isOverridden={isOverridden}
       label="Due date"
       onOverride={() => {
-        dateCtrl.field.onChange(mainValue.date);
-        creditCtrl.field.onChange(mainValue.credit);
-        customCreditCtrl.field.onChange(mainValue.customCredit);
+        dateCtrl.field.onChange(defaultRuleValue.date);
+        creditCtrl.field.onChange(defaultRuleValue.credit);
+        customCreditCtrl.field.onChange(defaultRuleValue.customCredit);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
@@ -423,7 +389,7 @@ export function OverrideDueDateField({
         value={value}
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
-        earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
+        earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : defaultRuleEarlyDeadlines}
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}

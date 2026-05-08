@@ -1,7 +1,7 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 /**
- * Maximum number of access control rules (main + overrides) per assessment.
+ * Maximum number of access control rules (default + overrides) per assessment.
  * Enforced during both JSON sync and tRPC input validation.
  */
 export const MAX_ACCESS_CONTROL_RULES = 50;
@@ -12,7 +12,7 @@ export const MAX_ACCESS_CONTROL_RULES = 50;
  */
 export const MAX_ENROLLMENT_RULES = 100;
 
-export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
   rule: AccessControlJson;
@@ -20,7 +20,7 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
-export type AccessControlIssuePath =
+type AccessControlIssuePath =
   | ['dateControl', 'release', 'date']
   | ['dateControl', 'due', 'date']
   | ['dateControl', 'due', 'credit']
@@ -28,8 +28,10 @@ export type AccessControlIssuePath =
   | ['dateControl', 'lateDeadlines', number, 'date']
   | ['dateControl', 'lateDeadlines', number, 'credit']
   | ['dateControl', 'afterLastDeadline', 'credit']
+  | ['afterComplete', 'questions']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score']
   | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
@@ -98,6 +100,37 @@ function hasAnyDeadline(rule: AccessControlJson): boolean {
   return false;
 }
 
+type CompletionMechanismType = 'deadline' | 'duration' | 'prairieTest';
+
+function getCompletionMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
+  const types = new Set<CompletionMechanismType>();
+  if (hasAnyDeadline(rule)) types.add('deadline');
+  if (rule.dateControl?.durationMinutes != null) types.add('duration');
+  if ((rule.integrations?.prairieTest?.exams ?? []).length > 0) types.add('prairieTest');
+  return types;
+}
+
+/**
+ * Mechanism types that an override actively clears, i.e. nulls out without
+ * supplying a replacement. Used to pull a globally-available mechanism out
+ * of consideration for this override's resolved view: e.g. a default with only
+ * a due date paired with an override of `dateControl: { due: { date: null } }`
+ * leaves the override's students with nothing. Overrides cannot define
+ * `integrations`, so PrairieTest exams cannot be cleared by an override.
+ */
+function overrideClearedMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
+  const cleared = new Set<CompletionMechanismType>();
+  const dc = rule.dateControl;
+  if (!dc) return cleared;
+  if (!hasAnyDeadline(rule) && dc.due !== undefined && dc.due.date == null) {
+    cleared.add('deadline');
+  }
+  if (dc.durationMinutes === null) {
+    cleared.add('duration');
+  }
+  return cleared;
+}
+
 /**
  * Validates structural field dependencies within a single rule.
  * These are constraints where certain fields are meaningless without
@@ -110,26 +143,36 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines require a due date.
-  // Late deadlines define credit after the due date, so they need one as an anchor.
-  // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, due === undefined means "inherit from main rule" (valid),
-  // while due.date === null means "explicitly no due date" (invalid with late deadlines).
+  // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
+  // true) need a due date as an anchor. Early deadlines are standalone bonus
+  // windows. The cross-rule "inherit from default" case is handled by
+  // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
     const dueDateMissing =
       validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['dateControl', 'lateDeadlines', 0, 'date'],
-        'Late deadlines require a due date.',
-      );
+    if (dueDateMissing) {
+      if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', 0, 'date'],
+          'Late deadlines require a due date.',
+        );
+      }
+
+      if (dc.afterLastDeadline?.allowSubmissions === true) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'afterLastDeadline', 'credit'],
+          'After-last-deadline behavior requires a due date.',
+        );
+      }
     }
   }
 
-  // Constraint 3: Early deadlines are not allowed when a custom due credit is set.
+  // Constraint 2: Early deadlines are not allowed when a custom due credit is set.
   // Early deadlines are standalone bonus-credit windows above the due-date credit,
   // but when the due-date credit is customized we require a single coherent credit
   // shape around the due date rather than layering bonuses on top.
@@ -142,7 +185,7 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 4: Late deadlines are not allowed when due credit is 0%.
+  // Constraint 3: Late deadlines are not allowed when due credit is 0%.
   // Late deadline credit must be strictly less than the due credit, so a
   // 0% due credit leaves no valid range.
   if (dc?.due?.credit === 0 && dc.lateDeadlines && dc.lateDeadlines.length > 0) {
@@ -154,18 +197,22 @@ export function validateRuleStructuralDependencyIssues(
     );
   }
 
-  // Constraint 2: After-complete date fields require at least one deadline.
+  // Constraint 4: After-complete date fields require at least one deadline.
   // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
   // to the last deadline. Boolean fields (hidden) are fine without deadlines.
   // PrairieTest and timed assessments manage completion independently,
   // so after-complete dates are valid without deadlines in those cases.
-  // Only enforced on the main rule — overrides may inherit deadlines.
+  // Only enforced on the default rule — overrides may inherit deadlines.
+  // The "no completion mechanism at all" case (no dateControl + no
+  // PrairieTest) is handled by validateGlobalAfterCompleteIssues with a
+  // broader message.
   const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
   const hasDuration = dc?.durationMinutes != null;
   const ac = rule.afterComplete;
   if (
     validationRule.targetType === 'none' &&
     ac &&
+    dc &&
     !hasAnyDeadline(rule) &&
     !hasPrairieTest &&
     !hasDuration
@@ -193,6 +240,50 @@ export function validateRuleStructuralDependencyIssues(
         validationRule,
         ['afterComplete', 'score', 'visibleFromDate'],
         'After-complete dates require at least one deadline (due date or late deadline).',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule structural check: complements the per-rule validator, which
+ * treats `dc.due === undefined` on overrides as "inherit from default" and so
+ * misses the case where the inherited value is also missing. Lenient like
+ * the other global checks — overrides can cascade, so any rule's due could
+ * anchor a given student's resolved timeline. Skips overrides that
+ * explicitly set their own `due`: either it provides an anchor, or per-rule
+ * already flagged the explicit-null case.
+ */
+export function validateGlobalStructuralDependencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+  if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
+
+  for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
+    const dc = validationRule.rule.dateControl;
+    if (!dc || dc.due !== undefined) continue;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'lateDeadlines', 0, 'date'],
+        'Late deadlines require a due date on at least one rule.',
+      );
+    }
+
+    // `allowSubmissions: false` is a no-op without a deadline.
+    if (dc.afterLastDeadline?.allowSubmissions === true) {
+      pushIssue(
+        issues,
+        validationRule,
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        'After-last-deadline behavior requires a due date on at least one rule.',
       );
     }
   }
@@ -455,8 +546,8 @@ export function validateGlobalCreditConsistencyIssues(
   const issues: AccessControlValidationIssue[] = [];
   if (validationRules.length === 0) return issues;
 
-  const mainRule = validationRules.find((vr) => vr.targetType === 'none');
-  const baseHasCustomCredit = mainRule?.rule.dateControl?.due?.credit !== undefined;
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none');
+  const baseHasCustomCredit = defaultRule?.rule.dateControl?.due?.credit !== undefined;
 
   // "Clears custom credit" = an override supplies its own `due` with no credit
   // field (explicit default 100%). A non-overridden `due` inherits instead.
@@ -529,6 +620,159 @@ export function validateGlobalCreditConsistencyIssues(
         ['dateControl', 'afterLastDeadline', 'credit'],
         `After-last-deadline credit (${afterLastDeadline.credit}%) must not exceed the maximum possible due-date credit (${maxDueCredit}%).`,
       );
+    }
+  }
+
+  return issues;
+}
+
+type AfterCompleteQuestions = NonNullable<
+  NonNullable<AccessControlJson['afterComplete']>['questions']
+>;
+type AfterCompleteScore = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
+
+type AfterCompleteCrossFieldIssueKind =
+  | 'score_hidden_requires_questions_hidden'
+  | 'questions_reveal_requires_score_reveal'
+  | 'score_reveal_after_questions_reveal';
+
+interface AfterCompleteCrossFieldIssue {
+  kind: AfterCompleteCrossFieldIssueKind;
+  message: string;
+}
+
+function resolveEffectiveAfterComplete(
+  rule: AccessControlJson,
+  defaultRule: AccessControlJson | undefined,
+): { questions: AfterCompleteQuestions; score: AfterCompleteScore } {
+  const ruleAc = rule.afterComplete;
+  const defaultAc = defaultRule?.afterComplete;
+  // Defaults: questions hidden, score visible. An override that doesn't
+  // include questions/score inherits the default rule's effective value.
+  // Inheritance is whole-object, not field-by-field: an override that sets
+  // `questions: { hidden: true }` (without dates) does NOT inherit the
+  // default's `visibleFromDate`.
+  const questions = ruleAc?.questions ?? defaultAc?.questions ?? { hidden: true };
+  const score = ruleAc?.score ?? defaultAc?.score ?? { hidden: false };
+  return { questions, score };
+}
+
+/**
+ * Checks the cross-field invariant between `afterComplete.questions` and
+ * `afterComplete.score`: questions cannot become visible while the score
+ * remains hidden. Returns `null` when the pair is consistent, otherwise an
+ * issue with a `kind` discriminator and a human-readable message. The kinds
+ * are:
+ *
+ * - `score_hidden_requires_questions_hidden`: score is hidden after completion
+ *   but questions are visible.
+ * - `questions_reveal_requires_score_reveal`: questions have a reveal date but
+ *   the score stays hidden forever.
+ * - `score_reveal_after_questions_reveal`: both reveal, but the score's reveal
+ *   date is after the questions' reveal date.
+ *
+ * Used by both the per-rule validator and the legacy migration's fix-up
+ * step, so the two stay aligned on what counts as a conflict.
+ */
+export function getAfterCompleteCrossFieldIssue(
+  questions: AfterCompleteQuestions,
+  score: AfterCompleteScore,
+): AfterCompleteCrossFieldIssue | null {
+  if (score.hidden && !questions.hidden) {
+    return {
+      kind: 'score_hidden_requires_questions_hidden',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    };
+  }
+  if (!questions.hidden || questions.visibleFromDate === undefined) return null;
+  if (!score.hidden) return null;
+  if (score.visibleFromDate === undefined) {
+    return {
+      kind: 'questions_reveal_requires_score_reveal',
+      message:
+        'Questions cannot become visible after completion while the score remains hidden. Either make the score visible after completion, or reveal the score on or before the question reveal date.',
+    };
+  }
+  if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
+    return {
+      kind: 'score_reveal_after_questions_reveal',
+      message: 'The score must become visible on or before the question reveal date.',
+    };
+  }
+  return null;
+}
+
+/**
+ * Cross-field afterComplete validation. Checks that the effective
+ * questions/score visibility is internally consistent, including for overrides
+ * that only override one of the two fields (the inherited side is resolved
+ * against the default rule). The error is reported on the questions field; the
+ * score field is treated as the trailing dependency in the relationship.
+ */
+export function validateAfterCompleteCrossFieldIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none')?.rule;
+
+  for (const validationRule of validationRules) {
+    const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, defaultRule);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) {
+      pushIssue(issues, validationRule, ['afterComplete', 'questions'], issue.message);
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule check: each rule with after-complete settings must have a
+ * completion mechanism — a real deadline (due date or late deadline), a
+ * duration limit, or a PrairieTest exam. A dateControl with only `release`,
+ * `password`, or `due: { date: null }` is not enough since none of those can
+ * ever close the assessment, so any after-complete settings would be a no-op.
+ *
+ * The default rule must carry a mechanism in its own config. Overrides accept
+ * any globally-available mechanism (any rule may contribute, since overrides
+ * stack at runtime), minus types this override actively clears: a globally
+ * unique mechanism type that the override nulls out leaves nothing for the
+ * override's students.
+ */
+export function validateGlobalAfterCompleteIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const message =
+    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  const globalMechanisms = new Set<CompletionMechanismType>();
+  for (const vr of validationRules) {
+    for (const t of getCompletionMechanismTypes(vr.rule)) globalMechanisms.add(t);
+  }
+
+  for (const validationRule of validationRules) {
+    const ac = validationRule.rule.afterComplete;
+    if (!ac) continue;
+
+    let hasMechanism: boolean;
+    if (validationRule.targetType === 'none') {
+      hasMechanism = getCompletionMechanismTypes(validationRule.rule).size > 0;
+    } else {
+      const cleared = overrideClearedMechanismTypes(validationRule.rule);
+      hasMechanism = [...globalMechanisms].some((t) => !cleared.has(t));
+    }
+    if (hasMechanism) continue;
+
+    if (ac.questions !== undefined) {
+      pushIssue(issues, validationRule, ['afterComplete', 'questions'], message);
+    }
+    if (ac.score !== undefined) {
+      pushIssue(issues, validationRule, ['afterComplete', 'score'], message);
     }
   }
 
@@ -635,25 +879,28 @@ export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit monotonicity, and target-type constraints (e.g. integrations and
- * beforeRelease are only valid on the main rule).
+ * beforeRelease are only valid on the default rule).
  *
  * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
+ * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
+ * @param options Optional flags.
+ * @param options.includeAfterCompleteCrossField Whether to include the afterComplete
+ * cross-field check (defaults to `true`). Callers that also run
+ * {@link validateAfterCompleteCrossFieldIssues} across all rules should pass `false`
+ * to avoid duplicate errors, since that validator already covers the same constraint
+ * and additionally handles inheritance.
  */
 export function validateRule(
   rule: AccessControlJson,
   targetType: 'none' | 'student_label' | 'enrollment',
+  options: { includeAfterCompleteCrossField?: boolean } = {},
 ): string[] {
   const errors: string[] = [];
+  const includeAfterCompleteCrossField = options.includeAfterCompleteCrossField ?? true;
 
   if (targetType === 'none') {
     if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
-    }
-    if (rule.dateControl && !rule.dateControl.due) {
-      errors.push(
-        'Due date configuration is required on the defaults when dateControl is specified.',
-      );
     }
   } else {
     if (rule.beforeRelease !== undefined) {
@@ -727,11 +974,10 @@ export function validateRule(
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
   }
 
-  if (
-    rule.afterComplete?.score?.hidden === true &&
-    rule.afterComplete.questions?.hidden === false
-  ) {
-    errors.push('afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.');
+  if (includeAfterCompleteCrossField) {
+    const { questions, score } = resolveEffectiveAfterComplete(rule, undefined);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) errors.push(issue.message);
   }
 
   errors.push(
@@ -765,7 +1011,7 @@ function formatValues(values: Set<string> | string[]) {
  *
  * @param params
  * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
+ * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
@@ -796,24 +1042,24 @@ export function validateAccessControlRules({
     );
   }
 
-  // A main rule is identified by the absence of a `labels` key.
-  const mainRules = rules.filter((rule) => rule.labels == null);
+  // A default rule is identified by the absence of a `labels` key.
+  const defaultRules = rules.filter((rule) => rule.labels == null);
 
-  if (mainRules.length === 0) {
+  if (defaultRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
+  } else if (defaultRules.length > 1) {
     errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+      `Found ${defaultRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
     );
   } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
+    // The DB constraint `check_first_rule_is_none` requires the default rule at index 0
     const firstRule = rules[0];
     if (firstRule.labels != null) {
       errors.push('The defaults must be the first element in the array.');
     }
   }
 
-  // Index 0 is the main rule; everything else is a student-label rule.
+  // Index 0 is the default rule; everything else is a student-label rule.
   rules.forEach((rule, index) => {
     const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
 
@@ -850,7 +1096,7 @@ export function validateAccessControlRules({
       ruleIndex: validationRules.length,
     });
 
-    errors.push(...validateRule(rule, targetType));
+    errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
 
   for (const rule of enrollmentRules ?? []) {
@@ -859,12 +1105,20 @@ export function validateAccessControlRules({
       targetType: 'enrollment',
       ruleIndex: validationRules.length,
     });
-    errors.push(...validateRule(rule, 'enrollment'));
+    errors.push(...validateRule(rule, 'enrollment', { includeAfterCompleteCrossField: false }));
   }
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
+    // Run the "no completion mechanism" check before the cross-field check,
+    // matching the form-side validator. The mechanism error is more
+    // fundamental (cross-field consistency is moot when there's no completion
+    // mechanism at all), so surface it first. Errors here are concatenated
+    // rather than deduped by path, so this is purely presentational.
+    ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
+    ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
   return { errors, warnings };

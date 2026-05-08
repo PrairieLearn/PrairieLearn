@@ -1,6 +1,5 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -36,6 +35,7 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { CopyButton } from '../../components/CopyButton.js';
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
@@ -320,13 +320,6 @@ function StudentsCard({
 
   const [showInvite, setShowInvite] = useState(false);
   const [showSync, setShowSync] = useState(false);
-  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
-
-  const handleCopyEnrollLink = async () => {
-    await copyToClipboard(selfEnrollLink);
-    setCopiedEnrollLink(true);
-    setTimeout(() => setCopiedEnrollLink(false), 2000);
-  };
 
   const syncStudents = async (
     toInvite: string[],
@@ -843,7 +836,7 @@ function StudentsCard({
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
-                  column={header.column as Column<StudentRow, unknown>}
+                  column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
                     const label = studentLabels.find((l) => l.id === String(value));
@@ -866,19 +859,11 @@ function StudentsCard({
                 {(courseInstance.modern_publishing || courseInstance.self_enrollment_enabled) && (
                   <div className="d-flex gap-2">
                     {courseInstance.self_enrollment_enabled && (
-                      <OverlayTrigger
-                        placement="top"
-                        tooltip={{
-                          body: 'Copied!',
-                          props: { id: 'empty-state-copy-link-tooltip' },
-                        }}
-                        show={copiedEnrollLink}
-                      >
-                        <Button variant="primary" onClick={handleCopyEnrollLink}>
-                          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
-                          Copy enrollment link
-                        </Button>
-                      </OverlayTrigger>
+                      <CopyButton
+                        text={selfEnrollLink}
+                        label="Copy enrollment link"
+                        className="btn-primary"
+                      />
                     )}
                     {courseInstance.modern_publishing && (
                       <Button

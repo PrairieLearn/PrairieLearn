@@ -3,7 +3,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
-export const DATE_CONTROL_FIELD_NAMES = [
+const DATE_CONTROL_FIELD_NAMES = [
   'release',
   'due',
   'earlyDeadlines',
@@ -66,6 +66,8 @@ export function isNonDefaultScoreVisibility(sv: ScoreVisibilityValue): boolean {
 interface PrairieTestExam {
   examUuid: string;
   readOnly?: boolean;
+  afterCompleteQuestionsHidden: boolean;
+  afterCompleteScoreHidden: boolean;
 }
 
 export interface EnrollmentTarget {
@@ -74,7 +76,7 @@ export interface EnrollmentTarget {
   name: string | null;
 }
 
-export interface StudentLabelTarget {
+interface StudentLabelTarget {
   studentLabelId: string;
   name: string;
   color?: string;
@@ -82,19 +84,33 @@ export interface StudentLabelTarget {
 
 export type TargetType = 'enrollment' | 'student_label';
 
-export interface AppliesTo {
+interface AppliesTo {
   targetType: TargetType;
   enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
 }
 
-// Main rule: flat fields, null = feature off
-export interface MainRuleData {
+/**
+ * Form-state representation of the release configuration. `date` is the
+ * release date itself; `released` is a UI-only flag that backs the
+ * "Released" / "Scheduled for release" radio choice. We track it separately
+ * from `date` so the user can express a state that is inconsistent with the
+ * date (e.g., "Released" with a future date) and see a validation error,
+ * which would not otherwise be possible if `released` were derived from
+ * `date <= now`. The flag is dropped on JSON serialization.
+ */
+interface ReleaseValue {
+  date: string | null;
+  released: boolean;
+}
+
+// Default rule: flat fields, null = feature off
+export interface DefaultRuleData {
   id?: string;
   trackingId: string;
   beforeReleaseListed: boolean;
   dateControlEnabled: boolean;
-  release: { date: string | null };
+  release: ReleaseValue;
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
@@ -107,7 +123,7 @@ export interface MainRuleData {
 }
 
 // Override: flat fields. The `overriddenFields` array tracks which fields
-// are overridden vs inherited from the main rule.  We avoid using `undefined`
+// are overridden vs inherited from the default rule.  We avoid using `undefined`
 // as a sentinel because react-hook-form does not support setting field values
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
@@ -115,11 +131,11 @@ export interface OverrideData {
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
-  release: { date: string | null };
+  release: ReleaseValue;
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue;
+  afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -127,8 +143,40 @@ export interface OverrideData {
 }
 
 export interface AccessControlFormData {
-  mainRule: MainRuleData;
+  defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+}
+
+/**
+ * The default rule has a completion mechanism when something can actually
+ * close the assessment: a due date, a late deadline, a duration limit, or a
+ * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
+ * with only a release date or password has date control "on" but nothing to
+ * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
+ * in `validation.ts`. Used to gate after-complete UI and serialization on
+ * the default rule.
+ */
+export function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  >,
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
+}
+
+/**
+ * Whether a (timezone-naive) datetime string is at or before "now" in the
+ * given display timezone. A null/empty value is treated as released.
+ */
+export function isReleasedNow(value: string | null, displayTimezone: string): boolean {
+  if (!value) return true;
+  const release = Temporal.PlainDateTime.from(value);
+  const now = Temporal.Now.plainDateTimeISO(displayTimezone);
+  return Temporal.PlainDateTime.compare(release, now) <= 0;
 }
 
 /**
@@ -151,12 +199,14 @@ function toLocalDatetimeValue<T extends string | null | undefined>(
   return value;
 }
 
-export function jsonToMainRuleFormData(
+export function jsonToDefaultRuleFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
-): MainRuleData {
+): DefaultRuleData {
   const dc = json.dateControl;
   const ac = json.afterComplete;
+
+  const releaseDate = toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null;
 
   return {
     id: json.id,
@@ -170,7 +220,7 @@ export function jsonToMainRuleFormData(
       dc?.afterLastDeadline != null ||
       dc?.durationMinutes != null ||
       dc?.password != null,
-    release: { date: toLocalDatetimeValue(dc?.release?.date, displayTimezone) ?? null },
+    release: { date: releaseDate, released: isReleasedNow(releaseDate, displayTimezone) },
     due: {
       date: toLocalDatetimeValue(dc?.due?.date ?? null, displayTimezone),
       credit: dc?.due?.credit ?? null,
@@ -187,7 +237,12 @@ export function jsonToMainRuleFormData(
     afterLastDeadline: dc?.afterLastDeadline ?? null,
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
-    prairieTestExams: json.integrations?.prairieTest?.exams ?? [],
+    prairieTestExams: (json.integrations?.prairieTest?.exams ?? []).map((e) => ({
+      examUuid: e.examUuid,
+      readOnly: e.readOnly,
+      afterCompleteQuestionsHidden: e.afterComplete?.questions?.hidden ?? false,
+      afterCompleteScoreHidden: e.afterComplete?.score?.hidden ?? false,
+    })),
     questionVisibility: {
       hidden: ac?.questions?.hidden ?? true,
       visibleFromDate:
@@ -233,9 +288,10 @@ export function jsonToOverrideFormData(
 
   const overriddenFields: OverridableFieldName[] = [];
 
-  let release: { date: string | null } = { date: null };
+  let release: ReleaseValue = { date: null, released: true };
   if (dc?.release !== undefined) {
-    release = { date: toLocalDatetimeValue(dc.release.date, displayTimezone) };
+    const date = toLocalDatetimeValue(dc.release.date, displayTimezone);
+    release = { date, released: isReleasedNow(date, displayTimezone) };
     overriddenFields.push('release');
   }
 
@@ -267,7 +323,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
+  let afterLastDeadline: AfterLastDeadlineValue | null = null;
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -329,22 +385,19 @@ export function jsonToOverrideFormData(
  * distinct from default because cross-rule validation (e.g. forbidding early
  * deadlines) treats any set credit as customized.
  *
- * `customCredit: true` with `credit: null` is a transient editing state that
- * the form's per-field validator blocks at submit time; assert here so any
- * future caller that bypasses the form fails loudly instead of silently
- * coercing to "default credit".
+ * `customCredit: true` with `credit: null` is a transient editing state (the
+ * user has cleared the input). The field-level validator surfaces "Credit is
+ * required" and blocks submit; here we just omit `credit` so that live
+ * cross-field validation can keep running without throwing.
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
-  if (due.customCredit) {
-    if (due.credit === null) {
-      throw new Error('customCredit is true but credit is null');
-    }
+  if (due.customCredit && due.credit !== null) {
     return { date: due.date, credit: due.credit };
   }
   return { date: due.date };
 }
 
-function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
+function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
   };
@@ -356,7 +409,12 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.dateControlEnabled) {
     output.dateControl = {};
     if (rule.release.date) output.dateControl.release = { date: rule.release.date };
-    output.dateControl.due = buildDueJson(rule.due);
+    // Omit `due` on the default rule when no date is set and no custom credit is
+    // applied — it would just emit `{ date: null }`, which is semantically
+    // equivalent to "no due configured".
+    if (rule.due.date !== null || rule.due.customCredit) {
+      output.dateControl.due = buildDueJson(rule.due);
+    }
     if (rule.earlyDeadlines.length > 0) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
@@ -373,19 +431,35 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   if (rule.prairieTestExams.length > 0) {
     output.integrations = {
       prairieTest: {
-        exams: rule.prairieTestExams,
+        exams: rule.prairieTestExams.map((e) => {
+          const afterComplete: { questions?: { hidden: true }; score?: { hidden: true } } = {};
+          if (e.afterCompleteQuestionsHidden) {
+            afterComplete.questions = { hidden: true };
+          }
+          if (e.afterCompleteScoreHidden) {
+            afterComplete.score = { hidden: true };
+          }
+          return {
+            examUuid: e.examUuid,
+            ...(e.readOnly && { readOnly: true }),
+            ...(Object.keys(afterComplete).length > 0 && { afterComplete }),
+          };
+        }),
       },
     };
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false).
+  // (questions.hidden: true, score.hidden: false) AND there is a
+  // completion mechanism (dateControl or PrairieTest). Without one,
+  // after-complete settings are meaningless and would fail validation.
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
@@ -410,7 +484,7 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
 }
 
 function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
-  // Override rules always emit a `labels` array (possibly empty); only main
+  // Override rules always emit a `labels` array (possibly empty); only default
   // rules omit the key. An empty array means the rule targets zero students
   // (e.g. every label it used to reference was deleted) and is still a
   // student-label rule, not a second default.
@@ -481,10 +555,13 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 }
 
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  return [mainRuleToJson(formData.mainRule), ...formData.overrides.map((o) => overrideToJson(o))];
+  return [
+    defaultRuleToJson(formData.defaultRule),
+    ...formData.overrides.map((o) => overrideToJson(o)),
+  ];
 }
 
-export function createDefaultOverrideFormData(mainRule?: MainRuleData): OverrideData {
+export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
     trackingId: crypto.randomUUID(),
     appliesTo: {
@@ -493,16 +570,19 @@ export function createDefaultOverrideFormData(mainRule?: MainRuleData): Override
       studentLabels: [],
     },
     overriddenFields: [],
-    release: { date: mainRule?.release.date ?? null },
-    due: mainRule?.due ? { ...mainRule.due } : { date: null, credit: null, customCredit: false },
-    earlyDeadlines: (mainRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
-    lateDeadlines: (mainRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: mainRule?.afterLastDeadline
-      ? { ...mainRule.afterLastDeadline }
-      : { allowSubmissions: false },
-    durationMinutes: mainRule?.durationMinutes ?? null,
-    password: mainRule?.password ?? null,
-    questionVisibility: mainRule ? { ...mainRule.questionVisibility } : { hidden: true },
-    scoreVisibility: mainRule ? { ...mainRule.scoreVisibility } : { hidden: false },
+    release: {
+      date: defaultRule?.release.date ?? null,
+      released: defaultRule?.release.released ?? true,
+    },
+    due: defaultRule?.due
+      ? { ...defaultRule.due }
+      : { date: null, credit: null, customCredit: false },
+    earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
+    lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
+    afterLastDeadline: defaultRule?.afterLastDeadline ? { ...defaultRule.afterLastDeadline } : null,
+    durationMinutes: defaultRule?.durationMinutes ?? null,
+    password: defaultRule?.password ?? null,
+    questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },
+    scoreVisibility: defaultRule ? { ...defaultRule.scoreVisibility } : { hidden: false },
   };
 }

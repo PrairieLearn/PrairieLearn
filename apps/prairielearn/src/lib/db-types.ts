@@ -237,6 +237,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -251,7 +252,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   id: IdSchema,
   number: z.number(),
 
-  // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
+  // Target type: 'none' for default rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
   target_type: z.enum(['none', 'student_label', 'enrollment']),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
