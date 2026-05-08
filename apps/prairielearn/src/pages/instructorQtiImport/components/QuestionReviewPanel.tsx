@@ -11,13 +11,12 @@ hljs.registerLanguage('html', hljsHtml);
 hljs.registerLanguage('json', hljsJson);
 hljs.registerLanguage('python', hljsPython);
 
-import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
-
 import {
   type CollisionStrategy,
   type QuestionOverrides,
+  type SerializedQuestionOutput,
   resolveRenamedDir,
-} from './QtiImportForm.js';
+} from '../instructorQtiImport.types.js';
 
 const PL_ELEMENT_TYPE_MAP: Record<string, string> = {
   'pl-multiple-choice': 'Multiple choice',

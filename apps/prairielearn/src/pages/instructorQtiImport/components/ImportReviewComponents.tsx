@@ -1,13 +1,14 @@
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type {
+  CollisionStrategy,
   ParseWarning,
+  QuestionOverrides,
   SerializedConversionResult,
   SerializedQuestionOutput,
   StrippedAccessRules,
 } from '../instructorQtiImport.types.js';
 
-import type { CollisionStrategy, QuestionOverrides } from './QtiImportForm.js';
 import { QuestionReviewPanel } from './QuestionReviewPanel.js';
 
 function isRubricWarning(message: string): boolean {

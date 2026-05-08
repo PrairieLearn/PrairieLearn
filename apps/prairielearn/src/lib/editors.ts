@@ -2516,7 +2516,7 @@ export class MultiEditor extends Editor {
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
 
 /** A single question to import, with all file contents as serialized data. */
-export interface QtiImportQuestionData {
+interface QtiImportQuestionData {
   directoryName: string;
   infoJson: Record<string, unknown>;
   questionHtml: string;

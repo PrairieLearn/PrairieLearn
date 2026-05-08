@@ -3,11 +3,13 @@ import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import { getCourseInstanceBaseUrl } from '../../../lib/client/url.js';
 import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
-import type {
-  ParseWarning,
-  SerializedConversionResult,
-  StrippedAccessRules,
-  UploadResponse,
+import {
+  type ParseWarning,
+  type QuestionOverrides,
+  type SerializedConversionResult,
+  type StrippedAccessRules,
+  type UploadResponse,
+  resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
 
 import {
@@ -36,21 +38,6 @@ interface AssessmentOverrides {
   set: string;
   number: string;
   included: boolean;
-}
-
-export type CollisionStrategy = 'overwrite' | 'rename';
-
-export interface QuestionOverrides {
-  title: string;
-  topic: string;
-  tags: string[];
-  included: boolean;
-  /** The original directoryName from the conversion output. */
-  originalDirName: string;
-  /** Whether this question collides with an existing question directory. */
-  collides: boolean;
-  /** How to handle the collision: overwrite existing or rename this question. */
-  collisionStrategy: CollisionStrategy;
 }
 
 function deduplicateAssessmentNumbers(
@@ -110,17 +97,6 @@ function buildInitialQuestionOverrides(
     }
   }
   return overrides;
-}
-
-/** Generate a renamed directory by appending an incrementing suffix. */
-export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>): string {
-  let candidate = `${originalDir}-2`;
-  let n = 3;
-  while (existingDirs.has(candidate)) {
-    candidate = `${originalDir}-${n}`;
-    n++;
-  }
-  return candidate;
 }
 
 export function QtiImportForm({

@@ -42,6 +42,32 @@ export interface ParseWarning {
   message: string;
 }
 
+export type CollisionStrategy = 'overwrite' | 'rename';
+
+export interface QuestionOverrides {
+  title: string;
+  topic: string;
+  tags: string[];
+  included: boolean;
+  /** The original directoryName from the conversion output. */
+  originalDirName: string;
+  /** Whether this question collides with an existing question directory. */
+  collides: boolean;
+  /** How to handle the collision: overwrite existing or rename this question. */
+  collisionStrategy: CollisionStrategy;
+}
+
+/** Generate a renamed directory by appending an incrementing suffix. */
+export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>): string {
+  let candidate = `${originalDir}-2`;
+  let n = 3;
+  while (existingDirs.has(candidate)) {
+    candidate = `${originalDir}-${n}`;
+    n++;
+  }
+  return candidate;
+}
+
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
   results: SerializedConversionResult[];
