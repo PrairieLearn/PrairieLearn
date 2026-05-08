@@ -63,7 +63,9 @@ When `builtin-grading="false"` is set:
 - The `weight` and `hide-score-badge` attributes **cannot** be used alongside `builtin-grading="false"`. Similarly, `score` and `feedback` on individual `pl-answer` children are not permitted.
 - The `all-of-the-above` and `none-of-the-above` attributes are restricted to boolean `true`/`false` when `builtin-grading="false"`. Setting them to `true` shows the option without any correctness semantics (always displayed last, always included when `number-answers` limits display). Values like `"correct"`, `"incorrect"`, or `"random"` are not allowed.
 
-Note that even when built-in grading is disabled, the `correct="true"` attribute on a `pl-answer` still controls which single answer is selected when the element prepares its display. If there is truly no correct answer (e.g., a survey), you can omit `correct="true"` from all choices.
+!!! note
+
+    Even when built-in grading is disabled, the `correct="true"` attribute on a `pl-answer` still controls which single answer is selected when the element prepares its display. If there is truly no correct answer (e.g., a survey), you can omit `correct="true"` from all choices.
 
 ### :pencil: Notes
 
