@@ -774,7 +774,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      emptyHint="Checkboxes on the left select submissions. Shift-click to select a range."
+                      emptyHint={
+                        aiGradingCounts.all > 0
+                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                          : undefined
+                      }
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'selected',
@@ -786,6 +790,7 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
+                      emptyHint="Receive at least one submission to perform AI grading."
                       onSelect={() =>
                         setModelSelectionModalState({
                           type: 'all',

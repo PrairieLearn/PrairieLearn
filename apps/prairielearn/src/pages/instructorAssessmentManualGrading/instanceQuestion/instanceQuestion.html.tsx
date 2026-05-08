@@ -259,25 +259,27 @@ export function InstanceQuestion({
         )}
       </div>
       ${aiGradingEnabled
-        ? hydrateHtml(
-            <InstanceQuestionAiGrade
-              courseInstanceId={resLocals.course_instance.id}
-              assessmentId={resLocals.assessment.id}
-              assessmentQuestionId={resLocals.assessment_question.id}
-              instanceQuestionId={resLocals.instance_question.id}
-              trpcCsrfToken={trpcCsrfToken}
-              isDevMode={isDevMode}
-              hasRubric={rubric_data != null && rubric_data.rubric_items.length > 0}
-              useCustomApiKeys={!!resLocals.course_instance.ai_grading_use_custom_api_keys}
-              aiGradingSettingsUrl={`${resLocals.urlPrefix}/instance_admin/ai_grading`}
-              availableAiGradingProviders={availableAiGradingProviders}
-              aiGradingRelativeCosts={aiGradingRelativeCosts}
-              aiGradingLastSelectedModel={
-                resLocals.assessment_question.ai_grading_last_selected_model ?? null
-              }
-              initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
-            />,
-          )
+        ? html`<div id="ai-grading-progress">
+            ${hydrateHtml(
+              <InstanceQuestionAiGrade
+                courseInstanceId={resLocals.course_instance.id}
+                assessmentId={resLocals.assessment.id}
+                assessmentQuestionId={resLocals.assessment_question.id}
+                instanceQuestionId={resLocals.instance_question.id}
+                trpcCsrfToken={trpcCsrfToken}
+                isDevMode={isDevMode}
+                hasRubric={rubric_data != null && rubric_data.rubric_items.length > 0}
+                useCustomApiKeys={!!resLocals.course_instance.ai_grading_use_custom_api_keys}
+                aiGradingSettingsUrl={`${resLocals.urlPrefix}/instance_admin/ai_grading`}
+                availableAiGradingProviders={availableAiGradingProviders}
+                aiGradingRelativeCosts={aiGradingRelativeCosts}
+                aiGradingLastSelectedModel={
+                  resLocals.assessment_question.ai_grading_last_selected_model ?? null
+                }
+                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+              />,
+            )}
+          </div>`
         : ''}
       <div id="js-review-ai-grading-alert">${ReviewAiGradingAlertInner({ aiGradingInfo })}</div>
       ${conflict_grading_job

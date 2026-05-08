@@ -895,11 +895,11 @@ export function RubricSettings({
                 </span>
                 <button
                   type="button"
-                  className="btn btn-link p-0 align-baseline"
+                  className="btn btn-link p-0 align-baseline text-decoration-none"
                   onClick={() => {
                     setSuccessMessage(null);
                     document
-                      .getElementById('grading-panel')
+                      .getElementById('ai-grading-progress')
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     document.dispatchEvent(new CustomEvent('open-ai-grade-modal'));
                   }}

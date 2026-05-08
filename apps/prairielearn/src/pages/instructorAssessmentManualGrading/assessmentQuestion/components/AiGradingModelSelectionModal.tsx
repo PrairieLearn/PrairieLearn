@@ -220,14 +220,17 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
 function expandRubricSettings() {
   const panel = document.getElementById('rubric-setting');
   if (!panel) return;
-  if (!panel.classList.contains('show')) {
-    const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
-    toggle?.click();
-  }
-  // Scroll to the rubric-editor card so the "Rubric settings" header is
-  // visible at the top, instead of just the collapsible body.
   const target = document.getElementById('rubric-editor') ?? panel;
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scroll = () => target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel.classList.contains('show')) {
+    scroll();
+    return;
+  }
+  // Wait for the Bootstrap collapse animation to finish so the post-expansion
+  // layout is what gets scrolled to, not the pre-expansion (zero-height) one.
+  panel.addEventListener('shown.bs.collapse', scroll, { once: true });
+  const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+  toggle?.click();
 }
 
 function NoCreditsAlert({
