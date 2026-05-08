@@ -824,20 +824,27 @@
               ]
             },
             "afterLastDeadline": {
-              "description": "Controls for assessment behavior after last deadline",
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["allowSubmissions"],
-              "properties": {
-                "allowSubmissions": {
-                  "type": "boolean"
+              "description": "Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["allowSubmissions"],
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean"
+                    },
+                    "credit": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 99
+                    }
+                  }
                 },
-                "credit": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 99
+                {
+                  "type": "null"
                 }
-              }
+              ]
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",
