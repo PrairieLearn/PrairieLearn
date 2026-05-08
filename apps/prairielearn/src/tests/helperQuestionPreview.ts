@@ -247,8 +247,6 @@ export function testFileDownloads(
         const res = await fetch(fileUrl);
         assert.equal(res.status, 200);
         page = await res.text();
-      });
-      it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
       });
       it('should contain a new tab link to clientFilesQuestion/name&gt;"weird.txt with properly escaped URL and label', function () {
