@@ -117,9 +117,9 @@ function RubricItems({
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
-  const showAiColumn = aiGradingInfo?.submissionManuallyGraded ?? false;
+  const showAiColumn = aiGradingInfo?.submissionManuallyGraded;
   const ai_selected_rubric_item_ids_set = showAiColumn
-    ? new Set(aiGradingInfo?.selectedRubricItemIds)
+    ? new Set(aiGradingInfo.selectedRubricItemIds)
     : null;
 
   return html`

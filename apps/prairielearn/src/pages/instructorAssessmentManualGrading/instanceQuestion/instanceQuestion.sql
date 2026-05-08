@@ -130,6 +130,23 @@ SELECT
       AND gj.deleted_at IS NULL
   );
 
+-- BLOCK select_last_manual_grader_for_instance_question
+SELECT
+  COALESCE(u.name, u.uid) AS grader_name
+FROM
+  grading_jobs AS gj
+  JOIN submissions AS s ON (s.id = gj.submission_id)
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN users AS u ON (u.id = gj.auth_user_id)
+WHERE
+  v.instance_question_id = $instance_question_id
+  AND gj.grading_method = 'Manual'
+  AND gj.deleted_at IS NULL
+ORDER BY
+  gj.graded_at DESC NULLS LAST
+LIMIT
+  1;
+
 -- BLOCK select_submission_credit_values
 SELECT DISTINCT
   s.credit

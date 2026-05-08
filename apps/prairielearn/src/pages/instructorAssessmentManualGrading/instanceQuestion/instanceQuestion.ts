@@ -108,6 +108,11 @@ router.get(
       const lastGrader = res.locals.instance_question.last_grader
         ? await selectUserById(res.locals.instance_question.last_grader)
         : null;
+      const lastHumanGraderName = await sqldb.queryOptionalRow(
+        sql.select_last_manual_grader_for_instance_question,
+        { instance_question_id: res.locals.instance_question.id },
+        z.object({ grader_name: z.string() }),
+      );
 
       const instance_question = res.locals.instance_question;
 
@@ -280,6 +285,7 @@ router.get(
           ...localsForRender,
           assignedGrader,
           lastGrader,
+          lastHumanGraderName: lastHumanGraderName?.grader_name ?? null,
           selectedInstanceQuestionGroup: instanceQuestionGroup,
           instanceQuestionGroups,
           aiGradingEnabled,

@@ -238,15 +238,6 @@ export function GradingPanel({
                     : ''}
                   ${gradedByAi && gradedByHumanName ? html`<span>+</span>` : ''}
                   ${gradedByHumanName ? html`<span>${gradedByHumanName}</span>` : ''}
-                  ${gradedByAi
-                    ? html`<a
-                        href="#ai-grading-explanation-body"
-                        class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
-                        onclick="event.preventDefault(); document.getElementById('ai-grading-explanation-body')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
-                      >
-                        <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
-                      </a>`
-                    : ''}
                 </div>
                 ${gradedByAi && gradedByHumanName
                   ? html`<div class="text-muted small mt-1">
