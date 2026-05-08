@@ -3,7 +3,6 @@ import * as crypto from 'crypto';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
@@ -64,7 +63,6 @@ router.get(
           page: 'user_settings',
           type: 'plain',
         },
-        headContent: compiledScriptTag('userSettingsClient.ts'),
         content: (
           <>
             <Hydrate>
