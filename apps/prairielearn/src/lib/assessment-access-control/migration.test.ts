@@ -686,12 +686,73 @@ describe('migrateAllowAccess', () => {
             due: { date: '2024-06-01T00:00:00' },
           },
           afterComplete: {
-            questions: { hidden: true, visibleFromDate: '2024-07-01T00:00:00' },
+            questions: { hidden: true, visibleFromDate: '2024-09-01T00:00:00' },
             score: { hidden: true, visibleFromDate: '2024-09-01T00:00:00' },
           },
         },
         errors: [],
-        notes: [],
+        notes: [
+          'Questions reveal date changed from 2024-07-01T00:00:00 to 2024-09-01T00:00:00 so questions do not become visible while the score is still hidden.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'questions reveal date removed when score stays hidden forever',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01T00:00:00',
+          endDate: '2024-06-01T00:00:00',
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        { active: false, startDate: '2024-07-01T00:00:00', showClosedAssessmentScore: false },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00' },
+          },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
+        errors: [],
+        notes: [
+          'Questions reveal date 2024-07-01T00:00:00 was removed because score remains hidden after completion.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'bounded question window cleared when score stays hidden forever',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01T00:00:00',
+          endDate: '2024-06-01T00:00:00',
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+        {
+          active: false,
+          startDate: '2024-07-01T00:00:00',
+          endDate: '2024-08-01T00:00:00',
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00' },
+          },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
+        errors: [],
+        notes: [
+          'Questions reveal date 2024-07-01T00:00:00 was removed because score remains hidden after completion.',
+        ],
         hasUidRules: false,
       },
     },
@@ -1512,6 +1573,42 @@ describe('analyzeAssessmentFile', () => {
         assert.equal(result.hasUidRules, false);
         assert.deepEqual(result.errors, []);
         assert.deepEqual(result.notes, []);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('includes notes for visibility changes during analysis', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              {
+                credit: 100,
+                startDate: '2024-01-01T00:00:00',
+                endDate: '2024-06-01T00:00:00',
+                showClosedAssessment: false,
+                showClosedAssessmentScore: false,
+              },
+              {
+                active: false,
+                startDate: '2024-07-01T00:00:00',
+                showClosedAssessmentScore: false,
+              },
+            ],
+          }),
+        );
+        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        assert.isNotNull(result);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, [
+          'Questions reveal date 2024-07-01T00:00:00 was removed because score remains hidden after completion.',
+        ]);
       },
       { unsafeCleanup: true },
     );

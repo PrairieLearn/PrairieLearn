@@ -46,6 +46,10 @@ describe('date formatting', () => {
   });
 
   describe('formatDateISO', () => {
+    it('returns null for a null date', () => {
+      assert.isNull(formatDateISO(null, 'UTC'));
+    });
+
     it('formats a UTC date with timezone offset', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDateISO(date, 'UTC'), '2018-01-01T12:00:00+00:00');

@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
@@ -121,7 +121,7 @@ function DefaultRuleSummaryContent({
   ptHost,
 }: {
   rule: DefaultRuleData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
@@ -136,7 +136,7 @@ function DefaultRuleSummaryContent({
 
       {dateTableRows.length > 0 && (
         <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
+          <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
         </div>
       )}
 
