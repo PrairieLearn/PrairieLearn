@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
@@ -21,7 +21,6 @@ import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
   type DefaultRuleData,
-  type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
@@ -33,19 +32,9 @@ function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
 }
 
-type RuleData = DefaultRuleData | OverrideData;
-
 /** react-hook-form error subtree for a single access control rule. */
 export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
-
-function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
-  return 'dateControlEnabled' in rule;
-}
-
-function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isDefaultRuleData(rule)) return true;
-  return rule.overriddenFields.includes(fieldName);
-}
+type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
   date: ReactNode;
@@ -151,7 +140,7 @@ function getDefaultRuleCurrentState(
 export function generateDefaultRuleDateTableRows(
   rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: DefaultRuleFormErrors,
 ): DateTableRow[] {
   if (!rule.dateControlEnabled) return [];
 
@@ -324,66 +313,37 @@ interface SummaryItem {
 }
 
 export function generateRuleSummary(
-  rule: RuleData,
+  rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: DefaultRuleFormErrors,
 ): SummaryItem[] {
   const items: SummaryItem[] = [];
 
-  if (isDefaultRuleData(rule)) {
-    const listed = rule.beforeReleaseListed;
-    const text = run(() => {
-      const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
-      if (releaseDate) {
-        return listed ? 'Listed before release' : 'Hidden before release';
-      }
-      if (rule.prairieTestExams.length > 0) {
-        return listed ? 'Listed before exam' : 'Hidden before exam';
-      }
-      return listed ? 'Always listed' : 'Always hidden';
-    });
-    items.push({
-      key: 'before-release',
-      icon: listed ? 'bi-eye' : 'bi-eye-slash',
-      text,
-    });
-  }
-
-  if (isOverrideFieldActive(rule, 'durationMinutes')) {
-    const durationMinutes = rule.durationMinutes;
-    if (durationMinutes !== null) {
-      const error = formErrors?.durationMinutes?.message;
-      items.push({
-        key: 'duration',
-        icon: 'bi-clock',
-        text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
-        error,
-      });
+  const listed = rule.beforeReleaseListed;
+  const text = run(() => {
+    const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
+    if (releaseDate) {
+      return listed ? 'Listed before release' : 'Hidden before release';
     }
-  }
-
-  if (isOverrideFieldActive(rule, 'password')) {
-    const password = rule.password;
-    if (password !== null) {
-      const error = formErrors?.password?.message;
-      items.push({
-        key: 'password',
-        icon: 'bi-lock',
-        text: error ? 'Missing password' : 'Password protected',
-        error,
-      });
+    if (rule.prairieTestExams.length > 0) {
+      return listed ? 'Listed before exam' : 'Hidden before exam';
     }
-  }
+    return listed ? 'Always listed' : 'Always hidden';
+  });
+  items.push({
+    key: 'before-release',
+    icon: listed ? 'bi-eye' : 'bi-eye-slash',
+    text,
+  });
 
-  const isDefault = isDefaultRuleData(rule);
-  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
+  const hasDateControl = rule.dateControlEnabled;
+  const hasPrairieTest = rule.prairieTestExams.length > 0;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
   const svNonDefault = isNonDefaultScoreVisibility(rule.scoreVisibility);
 
-  if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
+  if (showAfterComplete || qvNonDefault) {
     const qv = rule.questionVisibility;
     const qvError =
       formErrors?.questionVisibility?.visibleFromDate?.message ||
@@ -446,7 +406,7 @@ export function generateRuleSummary(
       });
     }
   }
-  if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
+  if (showAfterComplete || svNonDefault) {
     const sv = rule.scoreVisibility;
     const svError =
       formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
@@ -814,11 +774,52 @@ function YesNoBadge({ value }: { value: boolean | null }) {
   );
 }
 
-export function DateTableView({ rows }: { rows: DateTableRow[] }) {
+export function DateTableView({
+  rows,
+  rule,
+  formErrors,
+}: {
+  rows: DateTableRow[];
+  rule: DefaultRuleData;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
+}) {
+  // The footer (time limit, password) renders inside this table, so it only
+  // appears when the table itself does. That's intentional: setting either
+  // field flips `dateControlEnabled` to true, which always produces at least
+  // one row (a "No due date" row, if nothing else).
   if (rows.length === 0) return null;
+
+  const footerItems: ReactNode[] = [];
+  if (rule.durationMinutes != null) {
+    const error = formErrors?.durationMinutes?.message;
+    if (!error) {
+      footerItems.push(`${rule.durationMinutes} min time limit`);
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing time limit
+        </span>,
+      );
+    }
+  }
+  if (rule.password != null) {
+    const error = formErrors?.password?.message;
+    if (!error) {
+      footerItems.push('Password protected');
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing password
+        </span>,
+      );
+    }
+  }
+
   return (
     <div
-      className="border rounded-top overflow-hidden"
+      className="border rounded overflow-hidden"
       style={{ borderColor: 'var(--bs-border-color)' }}
     >
       <table className="table table-sm mb-0">
@@ -874,6 +875,17 @@ export function DateTableView({ rows }: { rows: DateTableRow[] }) {
           ))}
         </tbody>
       </table>
+      {footerItems.length > 0 && (
+        <div className="border-top px-3 py-2">
+          {footerItems.map((item, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <Fragment key={index}>
+              <span className="text-body-secondary small">{item}</span>
+              {index < footerItems.length - 1 && <span className="mx-1">·</span>}
+            </Fragment>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
