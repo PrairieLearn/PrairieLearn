@@ -303,6 +303,8 @@ async function serializeConversionResult(
           level: 'warn',
         });
       }
+      // @reteps to handle this differently post-mvp, under the assumption that
+      // rewriting the question HTML should be handled by the import package
       const questionHtml =
         q.skippedFiles.length > 0
           ? commentOutVideoReferences(q.questionHtml, q.skippedFiles)
