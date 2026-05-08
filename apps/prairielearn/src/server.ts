@@ -465,6 +465,14 @@ export async function initExpress(): Promise<Express> {
       '/pl/auth/institution/:institution_id(\\d+)/saml',
       (await import('./ee/auth/saml/router.js')).default,
     );
+
+    // Receives a JWT minted by PrairieTest and starts a PrairieLearn session.
+    // Must come before the authn middleware since the user isn't authenticated yet,
+    // and before the CSRF middleware since the JWT signature is the auth proof.
+    app.use(
+      '/pl/prairietest/auth/callback',
+      (await import('./ee/auth/prairietestCallback.js')).default,
+    );
   }
 
   app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
