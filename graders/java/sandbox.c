@@ -44,14 +44,17 @@ void add_path_rule(int ruleset_fd, const char *path) {
       .parent_fd = fd,
   };
 
-  syscall(SYS_landlock_add_rule, ruleset_fd, LANDLOCK_RULE_PATH_BENEATH,
-          &path_attr, 0);
+  if (syscall(SYS_landlock_add_rule, ruleset_fd, LANDLOCK_RULE_PATH_BENEATH,
+              &path_attr, 0) < 0) {
+    perror("Failed to add path rule");
+  }
   close(fd);
 }
 
 int main(int argc, char *argv[]) {
   if (argc < 2) return 1;
 
+  // Create a landlock ruleset that handles all filesystem access.
   struct landlock_ruleset_attr attr = {.handled_access_fs = ACCESS_ALL};
   int ruleset_fd = syscall(SYS_landlock_create_ruleset, &attr, sizeof(attr), 0);
   if (ruleset_fd < 0) {
@@ -61,26 +64,31 @@ int main(int argc, char *argv[]) {
 
   // Scan / and add everything EXCEPT proc, sys and dev.
   DIR *d = opendir("/");
-  if (d) {
-    struct dirent *dir;
-    while ((dir = readdir(d)) != NULL) {
-      if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
-        continue;
-      if (strcmp(dir->d_name, "proc") == 0 || strcmp(dir->d_name, "sys") == 0 ||
-          strcmp(dir->d_name, "dev") == 0)
-        continue;
-
-      char full_path[512];
-      snprintf(full_path, sizeof(full_path), "/%s", dir->d_name);
-      add_path_rule(ruleset_fd, full_path);
-    }
-    closedir(d);
+  if (!d) {
+    perror("Failed to open root directory");
+    return 1;
   }
+  struct dirent *dir;
+  while ((dir = readdir(d)) != NULL) {
+    if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+      continue;
+    if (strcmp(dir->d_name, "proc") == 0 || strcmp(dir->d_name, "sys") == 0 ||
+        strcmp(dir->d_name, "dev") == 0)
+      continue;
 
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "/%s", dir->d_name);
+    add_path_rule(ruleset_fd, full_path);
+  }
+  closedir(d);
+
+  // Blocks the process or its children from gaining new privileges, e.g., via
+  // setuid binaries. This is required to use landlock.
   if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) {
     perror("PR_SET_NO_NEW_PRIVS failed");
     return 1;
   }
+  // Apply the landlock ruleset to the current process and its future children.
   if (syscall(SYS_landlock_restrict_self, ruleset_fd, 0)) {
     perror("Enforce failed");
     return 1;

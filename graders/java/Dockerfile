@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
     && gcc -O2 -o /usr/local/bin/landlock_sandbox /sandbox.c \
     && apt-get purge -y gcc libc6-dev \
     && apt-get autoremove -y \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /sandbox.c
 
 COPY libs /javagrader/libs
