@@ -4,8 +4,12 @@ import { io } from 'socket.io-client';
 import {
   JobItemStatus,
   type JobProgress,
+  type JobStatus,
   type ProgressUpdateMessage,
+  deriveJobStatus,
 } from '../../lib/serverJobProgressSocket.shared.js';
+
+export type JobProgressWithStatus = JobProgress & { status: JobStatus };
 
 /**
  * Manages and retrieves live progress information for server jobs via WebSocket connections.
@@ -49,6 +53,15 @@ export function useServerJobProgress({
     [],
   );
 
+  /** Raw progress payloads tagged with the derived JobStatus per job. */
+  const jobsProgressWithStatus = useMemo<Record<string, JobProgressWithStatus>>(() => {
+    const result: Record<string, JobProgressWithStatus> = {};
+    for (const [id, progress] of Object.entries(jobsProgress)) {
+      result[id] = { ...progress, status: deriveJobStatus(progress) };
+    }
+    return result;
+  }, [jobsProgress]);
+
   /**
    * Per-item status merged across jobs. Least-progressed wins (queued <
    * in_progress < failed < complete), but a stopping/stopped job's queued
@@ -59,11 +72,11 @@ export function useServerJobProgress({
     if (!enabled) {
       return merged;
     }
-    for (const job of Object.values(jobsProgress)) {
+    for (const job of Object.values(jobsProgressWithStatus)) {
       if (!job.item_statuses) {
         continue;
       }
-      const dropQueued = job.stop_state != null;
+      const dropQueued = job.status === 'stopping' || job.status === 'stopped';
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
         if (!(itemId in merged) || status < merged[itemId]) {
@@ -72,7 +85,7 @@ export function useServerJobProgress({
       }
     }
     return merged;
-  }, [jobsProgress, enabled]);
+  }, [jobsProgressWithStatus, enabled]);
 
   useEffect(() => {
     if (
@@ -160,7 +173,7 @@ export function useServerJobProgress({
   }
 
   return {
-    jobsProgress,
+    jobsProgress: jobsProgressWithStatus,
     displayedStatuses,
     handleAddOngoingJobSequence,
     handleDismissCompleteJobSequence,

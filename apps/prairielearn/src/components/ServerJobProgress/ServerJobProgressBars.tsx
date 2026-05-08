@@ -3,9 +3,9 @@ import { Alert, Button, Modal, ProgressBar, Spinner } from 'react-bootstrap';
 
 import { formatMilliDollars } from '../../lib/ai-grading-credits.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
-import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
+import type { JobStatus } from '../../lib/serverJobProgressSocket.shared.js';
 
-type JobStatus = 'inProgress' | 'stopping' | 'stopped' | 'complete' | 'failed';
+import type { JobProgressWithStatus } from './useServerJobProgress.js';
 
 interface StatusVisuals {
   inProgress?: string;
@@ -13,15 +13,6 @@ interface StatusVisuals {
   stopped?: string;
   complete?: string;
   failed?: string;
-}
-
-function deriveJobStatus(progress: JobProgress): JobStatus {
-  if (progress.stop_state === 'stopped') return 'stopped';
-  if (progress.num_total > 0 && progress.num_complete >= progress.num_total) {
-    return progress.num_failed > 0 ? 'failed' : 'complete';
-  }
-  if (progress.stop_state === 'stopping') return 'stopping';
-  return 'inProgress';
 }
 
 /**
@@ -49,7 +40,7 @@ export function ServerJobsProgressInfo({
   onStopJobSequence,
 }: {
   itemNames: string;
-  jobsProgress: JobProgress[];
+  jobsProgress: JobProgressWithStatus[];
   courseInstanceId: string;
   statusIcons?: StatusVisuals;
   statusText?: StatusVisuals;
@@ -63,7 +54,7 @@ export function ServerJobsProgressInfo({
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
           jobSequenceId={jobProgress.job_sequence_id}
           courseInstanceId={courseInstanceId}
-          status={deriveJobStatus(jobProgress)}
+          status={jobProgress.status}
           nums={{
             complete: jobProgress.num_complete,
             failed: jobProgress.num_failed,

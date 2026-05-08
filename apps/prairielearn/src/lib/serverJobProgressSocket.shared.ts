@@ -53,6 +53,17 @@ export const JobProgressSchema = z.object({
 
 export type JobProgress = z.infer<typeof JobProgressSchema>;
 
+export type JobStatus = 'inProgress' | 'stopping' | 'stopped' | 'complete' | 'failed';
+
+export function deriveJobStatus(progress: JobProgress): JobStatus {
+  if (progress.stop_state === 'stopped') return 'stopped';
+  if (progress.num_total > 0 && progress.num_complete >= progress.num_total) {
+    return progress.num_failed > 0 ? 'failed' : 'complete';
+  }
+  if (progress.stop_state === 'stopping') return 'stopping';
+  return 'inProgress';
+}
+
 /**
  * Progress update message sent from the server job progress socket.
  */
