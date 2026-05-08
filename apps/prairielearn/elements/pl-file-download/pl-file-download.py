@@ -1,5 +1,6 @@
 import html
 import os
+import posixpath
 from enum import Enum
 from typing import assert_never
 from urllib.parse import quote
@@ -97,7 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         assert_never(file_type)
 
     # Get full url
-    file_url = f"{base_url}/{quote(file_name)}"
+    file_url = posixpath.join(base_url, quote(file_name))
 
     # Create and return html
     if force_download:
