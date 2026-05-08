@@ -466,13 +466,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
         if get_nota_aota_attrib(
             element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT
-        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT}:
+        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT, AotaNotaType.RANDOM}:
             raise ValueError(
                 '"all-of-the-above" should be set to true or false when builtin-grading is false.'
             )
         if get_nota_aota_attrib(
             element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
-        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT}:
+        ) in {AotaNotaType.CORRECT, AotaNotaType.INCORRECT, AotaNotaType.RANDOM}:
             raise ValueError(
                 '"none-of-the-above" should be set to true or false when builtin-grading is false.'
             )
