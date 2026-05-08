@@ -385,9 +385,9 @@ export function AssessmentQuestionTable({
       seenCompletedJobIdsRef.current.add(job.job_sequence_id);
     }
   }
-  const reviewAlertJobIds = Array.from(seenCompletedJobIdsRef.current).filter(
-    (id) => !dismissedReviewAlerts.has(id),
-  );
+  const latestReviewAlertJobId = Array.from(seenCompletedJobIdsRef.current)
+    .filter((id) => !dismissedReviewAlerts.has(id))
+    .at(-1);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -652,19 +652,19 @@ export function AssessmentQuestionTable({
             }}
             onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           />
-          {reviewAlertJobIds.map((id) => (
+          {latestReviewAlertJobId && (
             <ReviewSubmissionsAlert
-              key={id}
-              jobSequenceId={id}
+              key={latestReviewAlertJobId}
+              jobSequenceId={latestReviewAlertJobId}
               onDismiss={() =>
                 setDismissedReviewAlerts((prev) => {
                   const next = new Set(prev);
-                  next.add(id);
+                  next.add(latestReviewAlertJobId);
                   return next;
                 })
               }
             />
-          ))}
+          )}
         </>
       )}
       <QueryErrors<ManualGradingError>
