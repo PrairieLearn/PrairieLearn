@@ -290,6 +290,35 @@ def test_mathjson_submission_reapplies_custom_function_checks() -> None:
     assert data["submitted_answers"]["test"] is None
 
 
+def test_mathjson_student_errors_are_shown_directly() -> None:
+    element_html = build_element_html('allow-sets="true"')
+    data = make_question_data(
+        submitted_answers={"test": "{1} + 2", "test-json": '["Add", ["Set", 1], 2]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert (
+        data["format_errors"]["test"] == "Parse error: Expected a numeric expression."
+    )
+    assert data["submitted_answers"]["test"] is None
+
+
+def test_unexpected_mathjson_composition_errors_use_generic_message() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x", "test-json": '["Rational", "x"]'}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"]["test"] == (
+        "Parse error: Could not parse submitted answer."
+    )
+    assert "invalid input" not in data["format_errors"]["test"]
+    assert data["submitted_answers"]["test"] is None
+
+
 def test_mathjson_submission_respects_blank_value() -> None:
     element_html = build_element_html('allow-blank="true"', 'blank-value="0"')
     data = make_question_data(submitted_answers={"test": "", "test-json": '"x"'})

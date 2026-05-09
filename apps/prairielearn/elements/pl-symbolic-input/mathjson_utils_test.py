@@ -6,6 +6,7 @@ import sympy
 from mathjson import MathJsonExpression
 from mathjson_utils import (
     MathJsonParseError,
+    MathJsonStudentError,
     mathjson_to_sympy_expr,
     raw_mathjson_to_sympy_expr,
     sympy_expr_to_raw_mathjson,
@@ -272,7 +273,7 @@ def test_converts_chained_relation() -> None:
 
 
 def test_rejects_non_expression_arithmetic_argument() -> None:
-    with pytest.raises(TypeError, match="expected SymPy expression"):
+    with pytest.raises(MathJsonStudentError, match="numeric expression"):
         mathjson_to_sympy_expr(["Add", ["Set", 1], 2])
 
 
@@ -369,10 +370,10 @@ def test_rejects_symbol_expressions_that_do_not_convert_to_sympy_symbols() -> No
     with pytest.raises(TypeError, match="Symbol expects a single symbol argument"):
         mathjson_to_sympy_expr(["Symbol", "x", "y"])
 
-    with pytest.raises(TypeError, match="expected a MathJSON symbol expression"):
+    with pytest.raises(MathJsonStudentError, match="MathJSON symbol expression"):
         mathjson_to_sympy_expr(["Symbol", 1])
 
-    with pytest.raises(TypeError, match="expected a MathJSON symbol expression"):
+    with pytest.raises(MathJsonStudentError, match="MathJSON symbol expression"):
         mathjson_to_sympy_expr(["Symbol", "'x'"])
 
 
@@ -383,5 +384,5 @@ def test_converts_symbol_expression_shorthands() -> None:
 
 
 def test_rejects_string_literals_in_algebraic_expression_positions() -> None:
-    with pytest.raises(TypeError, match="expected SymPy expression"):
+    with pytest.raises(MathJsonStudentError, match="numeric expression"):
         mathjson_to_sympy_expr(["Add", "'test'", 1])
