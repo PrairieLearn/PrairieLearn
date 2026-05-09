@@ -216,10 +216,12 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
   );
 }
 
-// Opens the rubric settings collapse panel (if not already open) and scrolls to
-// the editor. Used by the BeforeYouGradeCard "Create a rubric" action to guide
-// the instructor to the authoring UI after dismissing the modal.
-function expandRubricSettings() {
+/**
+ * Opens the rubric settings collapse panel (if not already open) and scrolls
+ * to the editor. Used by the BeforeYouGradeCard "Create a rubric" action to
+ * guide the instructor to the authoring UI after the modal closes.
+ */
+function openRubricSettings() {
   const panel = document.getElementById('rubric-setting');
   if (!panel) return;
   const target = document.getElementById('rubric-editor') ?? panel;
@@ -237,8 +239,8 @@ function expandRubricSettings() {
 
 interface BeforeYouGradeItem {
   key: string;
-  title: React.ReactNode;
-  description: React.ReactNode;
+  title: string;
+  description: string;
   onClick?: () => void;
 }
 
@@ -247,14 +249,14 @@ function buildBeforeYouGradeItems({
   hasPriorJobs,
   numToGrade,
   totalSubmissionCount,
-  onCreateRubric,
+  onOpenRubricSettings,
   onAutoSelectForTestBatch,
 }: {
   hasRubric: boolean;
   hasPriorJobs: boolean;
   numToGrade: number;
   totalSubmissionCount: number;
-  onCreateRubric: () => void;
+  onOpenRubricSettings: () => void;
   onAutoSelectForTestBatch: (n: number) => void;
 }): BeforeYouGradeItem[] {
   const items: BeforeYouGradeItem[] = [];
@@ -263,7 +265,7 @@ function buildBeforeYouGradeItems({
       key: 'no_rubric',
       title: 'Create a rubric',
       description: 'Rubrics significantly improve accuracy and consistency.',
-      onClick: onCreateRubric,
+      onClick: onOpenRubricSettings,
     });
   }
   if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
@@ -474,17 +476,17 @@ export function AiGradingModelSelectionModal({
     onHide();
   }, [onHide, reset, defaultModel]);
 
-  const [pendingExpandRubricOnExit, setPendingExpandRubricOnExit] = useState(false);
-  const handleCreateRubric = useCallback(() => {
-    setPendingExpandRubricOnExit(true);
+  const [pendingOpenRubricSettingsOnExit, setPendingOpenRubricSettingsOnExit] = useState(false);
+  const handleOpenRubricSettings = useCallback(() => {
+    setPendingOpenRubricSettingsOnExit(true);
     onHide();
   }, [onHide]);
   const handleExited = useCallback(() => {
-    if (pendingExpandRubricOnExit) {
-      setPendingExpandRubricOnExit(false);
-      expandRubricSettings();
+    if (pendingOpenRubricSettingsOnExit) {
+      setPendingOpenRubricSettingsOnExit(false);
+      openRubricSettings();
     }
-  }, [pendingExpandRubricOnExit]);
+  }, [pendingOpenRubricSettingsOnExit]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -548,7 +550,7 @@ export function AiGradingModelSelectionModal({
         hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
         numToGrade: modalState?.numToGrade ?? 0,
         totalSubmissionCount,
-        onCreateRubric: handleCreateRubric,
+        onOpenRubricSettings: handleOpenRubricSettings,
         onAutoSelectForTestBatch,
       })
     : [];

@@ -205,11 +205,13 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Accumulates completed AI grading job sequence IDs so the "Review AI-graded
-  // submissions" alert outlives dismissal of the "AI grading complete" alert
-  // (which clears the job from `serverJobProgress.jobsProgress`).
+  // Track completed AI grading jobs so the "Review AI-graded submissions" alert
+  // shows exactly one banner at a time and survives dismissal of the
+  // "AI grading complete" progress alert (which clears the job from
+  // `serverJobProgress.jobsProgress`). When a new completion arrives, the seen
+  // set grows past `acknowledgedReviewCount` and the alert re-appears.
   const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
-  const [dismissedReviewAlerts, setDismissedReviewAlerts] = useState<Set<string>>(new Set());
+  const [acknowledgedReviewCount, setAcknowledgedReviewCount] = useState(0);
 
   // Controls the AI grading model selection modal: null = hidden, otherwise
   // holds the grading mode ('all', 'human_graded', or 'selected') and count.
@@ -376,14 +378,11 @@ export function AssessmentQuestionTable({
     },
   });
 
-  for (const job of Object.values(serverJobProgress.jobsProgress)) {
-    if (job.num_total > 0 && job.num_complete >= job.num_total && job.num_failed === 0) {
-      seenCompletedJobIdsRef.current.add(job.job_sequence_id);
-    }
-  }
-  const latestReviewAlertJobId = Array.from(seenCompletedJobIdsRef.current)
-    .filter((id) => !dismissedReviewAlerts.has(id))
-    .at(-1);
+  Object.values(serverJobProgress.jobsProgress)
+    .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
+    .forEach((j) => seenCompletedJobIdsRef.current.add(j.job_sequence_id));
+
+  const showReviewAlert = seenCompletedJobIdsRef.current.size > acknowledgedReviewCount;
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -648,16 +647,9 @@ export function AssessmentQuestionTable({
             }}
             onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           />
-          {latestReviewAlertJobId && (
+          {showReviewAlert && (
             <ReviewSubmissionsAlert
-              key={latestReviewAlertJobId}
-              onDismiss={() =>
-                setDismissedReviewAlerts((prev) =>
-                  prev.has(latestReviewAlertJobId)
-                    ? prev
-                    : new Set(prev).add(latestReviewAlertJobId),
-                )
-              }
+              onDismiss={() => setAcknowledgedReviewCount(seenCompletedJobIdsRef.current.size)}
             />
           )}
         </>
