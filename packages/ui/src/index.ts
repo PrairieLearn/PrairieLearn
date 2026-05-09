@@ -11,8 +11,12 @@ export {
   TanstackTableDownloadButton,
   type TanstackTableCsvCell,
 } from './components/TanstackTableDownloadButton.js';
-export { CategoricalColumnFilter } from './components/CategoricalColumnFilter.js';
-export { MultiSelectColumnFilter } from './components/MultiSelectColumnFilter.js';
+export {
+  MultiSelectColumnFilter,
+  applyMultiSelectFilter,
+  type MultiSelectFilterMode,
+  type MultiSelectFilterValue,
+} from './components/MultiSelectColumnFilter.js';
 export {
   NumericInputColumnFilter,
   parseNumericFilter,
@@ -29,6 +33,7 @@ export {
   parseAsColumnVisibilityStateWithColumns,
   parseAsColumnPinningState,
   parseAsNumericFilter,
+  parseAsMultiSelectFilter,
 } from './components/nuqs.js';
 export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
 
