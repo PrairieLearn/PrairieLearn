@@ -41,6 +41,8 @@
             {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
             {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
             {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
             >
             {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
         </math-field>
