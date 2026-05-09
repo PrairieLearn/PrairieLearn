@@ -302,9 +302,13 @@ def test_rejects_mathjson_parse_errors() -> None:
         [
             "InvisibleOperator",
             "x",
-            ["Error", "'unexpected-command'", ["LatexString", "'\\left'"]],
+            [
+                "Error",
+                {"str": "unexpected-command"},
+                ["LatexString", {"str": "\\left"}],
+            ],
         ],
-        ["Error", "'unexpected-delimiter'", ["LatexString", "'('"]],
+        ["Error", {"str": "unexpected-delimiter"}, ["LatexString", {"str": "("}]],
     ]
 
     with pytest.raises(MathJsonParseError) as exc_info:
@@ -315,6 +319,26 @@ def test_rejects_mathjson_parse_errors() -> None:
     assert "\\left" in message
     assert "unexpected-delimiter" in message
     assert "(" in message
+
+
+def test_rejects_mathjson_parse_error_codes() -> None:
+    mathjson = [
+        "Sequence",
+        "x",
+        [
+            "Error",
+            ["ErrorCode", {"str": "unexpected-token"}, {"str": "@"}],
+            ["LatexString", {"str": "@"}],
+        ],
+    ]
+
+    with pytest.raises(MathJsonParseError) as exc_info:
+        mathjson_to_sympy_expr(mathjson)
+
+    message = str(exc_info.value)
+    assert "unexpected-token" in message
+    assert "@" in message
+    assert "ErrorCode" not in message
 
 
 @pytest.mark.parametrize(

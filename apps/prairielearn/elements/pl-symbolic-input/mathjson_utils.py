@@ -748,13 +748,25 @@ def _collect_mathjson_errors(
 def _format_error(expr: MathJsonFunctionExpression) -> str:
     match expr:
         case ["Error", code_expr]:
-            return _format_error_part(code_expr)
+            code, details = _format_error_code(code_expr)
+            return ": ".join([code, *details])
         case ["Error", code_expr, detail_expr]:
-            code = _format_error_part(code_expr)
-            detail = _format_error_part(detail_expr)
+            code, details = _format_error_code(code_expr)
+            detail = details[0] if details else _format_error_part(detail_expr)
             return f"{code}: {detail}"
         case _:
             raise TypeError("expected MathJSON error expression")
+
+
+def _format_error_code(expr: MathJsonExpression) -> tuple[str, list[str]]:
+    match expr:
+        case ["ErrorCode", code_expr, *detail_exprs]:
+            return (
+                _format_error_part(code_expr),
+                [_format_error_part(detail_expr) for detail_expr in detail_exprs],
+            )
+        case _:
+            return (_format_error_part(expr), [])
 
 
 def _format_error_part(expr: MathJsonExpression) -> str:
@@ -779,6 +791,9 @@ def _format_error_part(expr: MathJsonExpression) -> str:
             return _format_error_part(value)
         case ("Error", *_):
             return _format_error(expr)
+        case ("ErrorCode", *_):
+            code, details = _format_error_code(expr)
+            return ": ".join([code, *details])
         case _:
             pass
 

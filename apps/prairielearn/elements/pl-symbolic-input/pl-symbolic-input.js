@@ -468,13 +468,190 @@
   }
 
   /**
+   * @param {unknown} expr
+   * @returns {string | null} The first MathJSON parse error message, if present
+   */
+  function findMathJSONParseError(expr) {
+    if (Array.isArray(expr)) {
+      if (expr[0] === 'Error') return formatMathJSONParseError(expr);
+      for (const arg of expr.slice(1)) {
+        const error = findMathJSONParseError(arg);
+        if (error) return error;
+      }
+      return null;
+    }
+
+    if (expr && typeof expr === 'object' && 'fn' in expr) {
+      return findMathJSONParseError(expr.fn);
+    }
+
+    return null;
+  }
+
+  /**
+   * @param {unknown[]} expr
+   * @returns {string} User-facing parse error message
+   */
+  function formatMathJSONParseError(expr) {
+    const { code, details } = getMathJSONErrorCode(expr[1]);
+    const detail = details[0] ?? formatMathJSONParseErrorPart(expr[2]);
+
+    switch (code) {
+      case 'missing':
+        return 'Missing value.';
+      case 'unexpected-command':
+        return detail ? `Unexpected LaTeX command '${detail}'.` : 'Unexpected LaTeX command.';
+      case 'unexpected-delimiter':
+        return detail ? `Unexpected delimiter '${detail}'.` : 'Unexpected delimiter.';
+      case 'unexpected-operator':
+        return detail ? `Unexpected operator '${detail}'.` : 'Unexpected operator.';
+      case 'expected-operand':
+        return 'Expected another value.';
+      case 'unexpected-token':
+        return detail ? `Unexpected input '${detail}'.` : 'Unexpected input.';
+      case '':
+        return 'Could not parse this expression.';
+      default:
+        return detail ? `Could not parse this expression: ${code} (${detail}).` : code;
+    }
+  }
+
+  /**
+   * @param {unknown} expr
+   * @returns {{ code: string, details: string[] }} The error code and structured details
+   */
+  function getMathJSONErrorCode(expr) {
+    if (Array.isArray(expr) && expr[0] === 'ErrorCode') {
+      return {
+        code: formatMathJSONParseErrorPart(expr[1]),
+        details: expr.slice(2).map(formatMathJSONParseErrorPart).filter(Boolean),
+      };
+    }
+
+    return { code: formatMathJSONParseErrorPart(expr), details: [] };
+  }
+
+  /**
+   * @param {unknown} expr
+   * @returns {string} One formatted MathJSON error component
+   */
+  function formatMathJSONParseErrorPart(expr) {
+    if (expr === undefined || expr === null) return '';
+    if (typeof expr === 'string') return stripMathJSONStringQuotes(expr);
+    if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr);
+
+    if (Array.isArray(expr)) {
+      if (expr[0] === 'LatexString') return formatMathJSONParseErrorPart(expr[1]);
+      if (expr[0] === 'Error') return formatMathJSONParseError(expr);
+      if (expr[0] === 'ErrorCode') {
+        const { code, details } = getMathJSONErrorCode(expr);
+        return [code, ...details].join(': ');
+      }
+    }
+
+    if (typeof expr === 'object') {
+      if ('str' in expr && typeof expr.str === 'string') return stripMathJSONStringQuotes(expr.str);
+      if ('sym' in expr && typeof expr.sym === 'string') return stripMathJSONStringQuotes(expr.sym);
+      if ('num' in expr && typeof expr.num === 'string') return expr.num;
+      if ('fn' in expr) return formatMathJSONParseErrorPart(expr.fn);
+    }
+
+    return String(expr);
+  }
+
+  /**
+   * @param {string} value
+   * @returns {string} MathJSON string value without matching quote delimiters
+   */
+  function stripMathJSONStringQuotes(value) {
+    if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === "'" || value[0] === '"')) {
+      return value.slice(1, -1);
+    }
+    return value;
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} errorEl
+   * @param {import('@cortex-js/compute-engine').MathJsonExpression} mathJSON
+   */
+  function syncClientParseError(inputEl, errorEl, mathJSON) {
+    const error = findMathJSONParseError(mathJSON);
+    if (!error) {
+      clearClientParseError(inputEl, errorEl);
+      return;
+    }
+    setClientParseError(inputEl, errorEl, error);
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} errorEl
+   * @param {string} message
+   */
+  function setClientParseError(inputEl, errorEl, message) {
+    if (!inputEl.classList.contains('is-invalid')) inputEl.dataset.clientParseWasValid = 'true';
+    inputEl.dataset.clientParseError = 'true';
+    inputEl.classList.add('is-invalid');
+    inputEl.setAttribute('aria-invalid', 'true');
+    if (errorEl) {
+      if (!inputEl.hasAttribute('aria-errormessage')) {
+        inputEl.dataset.clientParseAddedErrormessage = 'true';
+      }
+      inputEl.setAttribute('aria-errormessage', errorEl.id);
+    }
+    setCustomValidity(inputEl, message);
+
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    errorEl.classList.add('d-block');
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} errorEl
+   */
+  function clearClientParseError(inputEl, errorEl) {
+    if (inputEl.dataset.clientParseWasValid === 'true') {
+      inputEl.classList.remove('is-invalid');
+      inputEl.removeAttribute('aria-invalid');
+    }
+    if (inputEl.dataset.clientParseAddedErrormessage === 'true') {
+      inputEl.removeAttribute('aria-errormessage');
+    }
+    delete inputEl.dataset.clientParseWasValid;
+    delete inputEl.dataset.clientParseAddedErrormessage;
+    delete inputEl.dataset.clientParseError;
+    setCustomValidity(inputEl, '');
+
+    if (!errorEl) return;
+    errorEl.textContent = '';
+    errorEl.classList.add('d-none');
+    errorEl.classList.remove('d-block');
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   * @param {string} message
+   */
+  function setCustomValidity(inputEl, message) {
+    if ('setCustomValidity' in inputEl && typeof inputEl.setCustomValidity === 'function') {
+      inputEl.setCustomValidity(message);
+    }
+  }
+
+  /**
    * @param {HTMLInputElement} el
    * @param {HTMLInputElement} jsonEl
+   * @param {HTMLElement | null} [errorEl]
    */
   // @ts-expect-error - Window assignment
-  window.syncMathJSON = function (el, jsonEl) {
+  window.syncMathJSON = function (el, jsonEl, errorEl) {
     const ls = createSyntax(el);
-    jsonEl.value = JSON.stringify(parseLatex(ls, el.value));
+    const mathJSON = parseLatex(ls, el.value);
+    jsonEl.value = JSON.stringify(mathJSON);
+    syncClientParseError(el, errorEl, mathJSON);
   };
 
   /**
@@ -487,6 +664,7 @@
     const mf = /** @type {import('mathlive').MathfieldElement} */ (
       document.getElementById('symbolic-input-' + name)
     );
+    const clientErrorEl = document.getElementById(`pl-symbolic-input-client-error-${name}`);
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
@@ -759,6 +937,7 @@
       const ls = createSyntax(mf);
       const json = parseLatex(ls, mf.getValue('latex-unstyled'));
       $('#symbolic-input-json-' + name).val(JSON.stringify(json));
+      syncClientParseError(/** @type {HTMLElement} */ (mf), clientErrorEl, json);
     };
 
     updateSubmissionData();

@@ -50,8 +50,9 @@
             $(function() {
                 const el = document.getElementById("raw-input-{{name}}");
                 const jsonEl = document.getElementById("symbolic-input-json-{{name}}");
-                window.syncMathJSON(el, jsonEl);
-                el.addEventListener('input', () => void window.syncMathJSON(el, jsonEl));
+                const errorEl = document.getElementById("pl-symbolic-input-client-error-{{name}}");
+                window.syncMathJSON(el, jsonEl, errorEl);
+                el.addEventListener('input', () => void window.syncMathJSON(el, jsonEl, errorEl));
             });
         </script>
         <input
@@ -98,6 +99,11 @@
             </span>
         {{/incorrect}}
     </span>
+    <span
+        id="pl-symbolic-input-client-error-{{name}}"
+        class="invalid-feedback d-none"
+        aria-live="polite"
+    ></span>
     {{#parse_error}}
         <span class="invalid-feedback d-block">
             <span class="badge text-bg-danger">
