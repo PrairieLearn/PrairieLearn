@@ -250,14 +250,14 @@ function buildBeforeYouGradeItems({
   numToGrade,
   totalSubmissionCount,
   onOpenRubricSettings,
-  onAutoSelectForTestBatch,
+  onSelectFirstSubmissions,
 }: {
   hasRubric: boolean;
   hasPriorJobs: boolean;
   numToGrade: number;
   totalSubmissionCount: number;
   onOpenRubricSettings: () => void;
-  onAutoSelectForTestBatch: (n: number) => void;
+  onSelectFirstSubmissions: (n: number) => void;
 }): BeforeYouGradeItem[] {
   const items: BeforeYouGradeItem[] = [];
   if (!hasRubric) {
@@ -274,7 +274,7 @@ function buildBeforeYouGradeItems({
       key: 'test_with_n',
       title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
       description: 'Confirm your rubric works well before running on all submissions.',
-      onClick: () => onAutoSelectForTestBatch(n),
+      onClick: () => onSelectFirstSubmissions(n),
     });
   }
   return items;
@@ -433,7 +433,7 @@ export function AiGradingModelSelectionModal({
   aiGradingSettingsUrl,
   hasRubric,
   totalSubmissionCount,
-  onAutoSelectForTestBatch,
+  onSelectFirstSubmissions,
   onSuccess,
   onHide,
 }: {
@@ -445,7 +445,7 @@ export function AiGradingModelSelectionModal({
   aiGradingSettingsUrl: string;
   hasRubric: boolean;
   totalSubmissionCount: number;
-  onAutoSelectForTestBatch: (n: number) => void;
+  onSelectFirstSubmissions: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
@@ -551,7 +551,7 @@ export function AiGradingModelSelectionModal({
         numToGrade: modalState?.numToGrade ?? 0,
         totalSubmissionCount,
         onOpenRubricSettings: handleOpenRubricSettings,
-        onAutoSelectForTestBatch,
+        onSelectFirstSubmissions,
       })
     : [];
 

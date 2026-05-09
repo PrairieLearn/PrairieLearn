@@ -205,13 +205,13 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Track completed AI grading jobs so the "Review AI-graded submissions" alert
-  // shows exactly one banner at a time and survives dismissal of the
-  // "AI grading complete" progress alert (which clears the job from
-  // `serverJobProgress.jobsProgress`). When a new completion arrives, the seen
-  // set grows past `acknowledgedReviewCount` and the alert re-appears.
+  // Track completed AI grading job IDs so the "Review AI-graded submissions"
+  // alert survives dismissal of the "AI grading complete" progress alert
+  // (which clears the job from `serverJobProgress.jobsProgress`). The ref
+  // dedupes by job_sequence_id; the boolean drives alert visibility and is
+  // reset on dismissal.
   const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
-  const [acknowledgedReviewCount, setAcknowledgedReviewCount] = useState(0);
+  const [hasUnacknowledgedReview, setHasUnacknowledgedReview] = useState(false);
 
   // Controls the AI grading model selection modal: null = hidden, otherwise
   // holds the grading mode ('all', 'human_graded', or 'selected') and count.
@@ -378,11 +378,26 @@ export function AssessmentQuestionTable({
     },
   });
 
-  Object.values(serverJobProgress.jobsProgress)
-    .filter((j) => j.num_total > 0 && j.num_complete >= j.num_total && j.num_failed === 0)
-    .forEach((j) => seenCompletedJobIdsRef.current.add(j.job_sequence_id));
-
-  const showReviewAlert = seenCompletedJobIdsRef.current.size > acknowledgedReviewCount;
+  // Show the review alert when a job completes that we haven't already
+  // recorded. The seen set is genuinely history-dependent (it must outlive
+  // the job leaving `jobsProgress`), so this is a legitimate accumulator
+  // rather than derived state.
+  useEffect(() => {
+    let added = false;
+    for (const j of Object.values(serverJobProgress.jobsProgress)) {
+      if (
+        j.num_total > 0 &&
+        j.num_complete >= j.num_total &&
+        j.num_failed === 0 &&
+        !seenCompletedJobIdsRef.current.has(j.job_sequence_id)
+      ) {
+        seenCompletedJobIdsRef.current.add(j.job_sequence_id);
+        added = true;
+      }
+    }
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    if (added) setHasUnacknowledgedReview(true);
+  }, [serverJobProgress.jobsProgress]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -647,10 +662,8 @@ export function AssessmentQuestionTable({
             }}
             onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           />
-          {showReviewAlert && (
-            <ReviewSubmissionsAlert
-              onDismiss={() => setAcknowledgedReviewCount(seenCompletedJobIdsRef.current.size)}
-            />
+          {hasUnacknowledgedReview && (
+            <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
           )}
         </>
       )}
@@ -998,7 +1011,7 @@ export function AssessmentQuestionTable({
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         totalSubmissionCount={aiGradingCounts.all}
-        onAutoSelectForTestBatch={(n) => {
+        onSelectFirstSubmissions={(n) => {
           const ids = instanceQuestionsInfo.slice(0, n).map((row) => row.instance_question.id);
           const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
           setRowSelection(nextSelection);
