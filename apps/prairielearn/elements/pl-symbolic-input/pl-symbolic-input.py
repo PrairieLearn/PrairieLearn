@@ -533,7 +533,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     a_sub_parsed = None
 
     if use_mathjson:
-        from mathjson_utils import raw_mathjson_to_sympy_expr
+        from mathjson_utils import MathJsonStudentError, raw_mathjson_to_sympy_expr
 
         try:
             raw_mathjson = data["submitted_answers"].get(f"{name}-json")
@@ -554,9 +554,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
             )
-        except Exception as e:
-            # TODO: produce more informative error messages for students
+        except MathJsonStudentError as e:
             data["format_errors"][name] = f"Parse error: {e}"
+            data["submitted_answers"][name] = None
+            return
+        except Exception:
+            data["format_errors"][name] = (
+                "Parse error: Could not parse submitted answer."
+            )
             data["submitted_answers"][name] = None
             return
         a_sub_parsed = result
