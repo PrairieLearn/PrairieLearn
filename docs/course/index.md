@@ -274,6 +274,8 @@ The organization of the assessment page is configured at the course instance lev
 
 Each question in the course has a topic from the list specified in the `infoCourse.json` file. Topics should be thought of as chapters or sections in a textbook, and there should be about 10 to 30 topics in a typical course. The topic properties are as follows.
 
+The topic for a question is assigned with the `topic` property in the question's [`info.json`](../question/overview.md#metadata-infojson) file. Topics are useful for organizing the question bank around course concepts and for selecting questions that align with an assessment's learning goals. They are separate from [assessment modules](#assessment-modules), which organize assessments on the student assessments page.
+
 | Property      | Description                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------- |
 | `name`        | Brief name for the topic. Shorter is better. Should be in sentence case (leading capital letter). |
@@ -302,6 +304,8 @@ For example, topics could be listed like:
 ## Tags
 
 Each question can have zero, one, or many tags associated with it. The properties of a tag are as follows.
+
+Tags are metadata for course staff. They can describe answer format, skills being tested, intended use, authorship, or maintenance notes, but they are not part of the student-facing question prompt. Put instructions that students need to see in `question.html`, assessment text, or another visible course material instead of relying on tags.
 
 | Property      | Description                                                                                                                                                                                                                                   |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -342,7 +346,7 @@ The following list of standardized tags is automatically included in every cours
 | `<email>`    | The email of the person who wrote the question, E.g., `instructor@example.com`. Multiple emails can be tagged when several people had significant input. |
 | `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.                                                                                |
 
-### Adding your own tags
+### Custom tags
 
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
