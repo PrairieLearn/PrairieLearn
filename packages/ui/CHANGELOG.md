@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.4.1
+
+### Patch Changes
+
+- 9ec69b0: Vertically center the icon and label in the `StickySaveBar` save button.
+
 ## 3.4.0
 
 ### Minor Changes

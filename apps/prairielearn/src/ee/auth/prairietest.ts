@@ -30,6 +30,7 @@ router.get(
       .setProtectedHeader({ alg: 'HS512' })
       .setIssuedAt()
       .setExpirationTime('1m')
+      .setAudience('prairietest')
       .sign(key);
 
     // This renders a self-submitting form that will submit the JWT to PrairieTest.

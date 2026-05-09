@@ -241,6 +241,7 @@ export function AccessControlSummary({
               variant="outline-primary"
               size="sm"
               aria-label="Edit"
+              className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
               <i className="bi bi-pencil" aria-hidden="true" />
@@ -250,6 +251,7 @@ export function AccessControlSummary({
               variant="outline-danger"
               size="sm"
               aria-label="Clear"
+              className="d-inline-flex align-items-center"
               onClick={onClearDefaultRule}
             >
               <i className="bi bi-trash" aria-hidden="true" />
@@ -280,7 +282,12 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button variant="primary" size="sm" onClick={onAddOverride}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="d-inline-flex align-items-center"
+            onClick={onAddOverride}
+          >
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>

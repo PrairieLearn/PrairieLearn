@@ -115,6 +115,6 @@ describe('shortAnswerHandler', () => {
     assert.equal(result.gradingMethod, 'Manual');
     assert.equal(result.body.type, 'string-input');
     assert.isArray(result.warnings);
-    assert.match(result.warnings![0], /manually-graded/);
+    assert.match(result.warnings![0], /No correct answer found/);
   });
 });
