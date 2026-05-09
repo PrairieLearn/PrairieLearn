@@ -834,7 +834,7 @@ export function RubricSettings({
           </div>
         ))}
         <div className="mb-3 gap-1 d-flex">
-          {hasCourseInstancePermissionEdit && (
+          {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
               Add item
             </button>
