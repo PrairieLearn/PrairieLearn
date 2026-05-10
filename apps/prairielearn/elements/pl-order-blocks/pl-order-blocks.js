@@ -378,9 +378,9 @@ window.PLOrderBlocks = function (uuid, options) {
       // For code blocks, check the inner scroll container. Otherwise, check the element itself.
       const scrollTarget = el.querySelector('.pl-code > div') || el;
       const canScrollX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
-      const canScrollY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
 
-      el.classList.toggle('is-scrollable', canScrollX || canScrollY);
+      // Vertical overflow is hidden, so only horizontal scrolling should suppress drag.
+      el.classList.toggle('is-scrollable', canScrollX);
     });
   }
 
