@@ -46,17 +46,17 @@ li.pl-order-blocks-code .pl-order-block-handle {
 }
 
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
-  cursor: move; /* For UX: The answer tiles shows a 'move' cursor on mouse over */
+  cursor: grab; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
 }
 
 /* Scrollable content is excluded from the sortable's drag region (see the
-   `cancel` selector in pl-order-blocks.js), so don't show a 'move' cursor over it. */
+   `cancel` selector in pl-order-blocks.js), so don't show a 'grab' cursor over it. */
 ul.pl-order-blocks-connected-sortable
   .pl-order-block:not(.nodrag)
   .pl-order-block-content.is-scrollable {
-  cursor: auto;
+  cursor: default;
 }
 
 ul.pl-order-blocks-connected-sortable li.nodrag {
@@ -215,4 +215,8 @@ li.pl-order-block:not(.pl-order-blocks-code) .pl-order-block-handle {
   min-width: 0;
   width: 100%;
   touch-action: pan-x;
+  /* Text selection is impossible in fully-draggable blocks,
+  so we disable selection in scrollable blocks for consistency. */
+  user-select: none;
+  -webkit-user-select: none;
 }

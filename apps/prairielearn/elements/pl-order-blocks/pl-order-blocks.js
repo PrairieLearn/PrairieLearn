@@ -395,6 +395,7 @@ window.PLOrderBlocks = function (uuid, options) {
       baseCancel +
       ', .pl-order-block-content.is-scrollable, .pl-order-block-content.is-scrollable *',
     connectWith: sortables,
+    cursor: 'grabbing',
     placeholder: 'ui-state-highlight',
     create() {
       placePairingIndicators();
