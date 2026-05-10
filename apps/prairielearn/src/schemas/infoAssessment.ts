@@ -100,11 +100,6 @@ const GroupsRolePermissionsJsonSchema = z
 
 export const GroupsJsonSchema = z
   .object({
-    enabled: z
-      .boolean()
-      .describe('Whether groups are enabled for this assessment.')
-      .optional()
-      .default(true),
     minMembers: z.number().describe('Minimum number of students in a group.').optional(),
     maxMembers: z.number().describe('Maximum number of students in a group.').optional(),
     roles: z

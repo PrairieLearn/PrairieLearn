@@ -27,11 +27,14 @@ export const trueFalseHandler: TransformHandler<QTI12ParsedItem> = {
       { id: falseLabel.ident, html: 'False', correct: correctIdents.has(falseLabel.ident) },
     ];
     if (!choices.some((c) => c.correct)) {
+      // Mark the first choice as correct so the element passes validation;
+      // the question is Manual-graded so the marking is not used for scoring.
+      choices[0].correct = true;
       return {
         body: { type: 'multiple-choice', choices },
         gradingMethod: 'Manual',
         warnings: [
-          `true_false_question "${item.ident}" has no correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+          'No correct answer found. Set the correct answer in question.html, or leave as manually graded.',
         ],
       };
     }

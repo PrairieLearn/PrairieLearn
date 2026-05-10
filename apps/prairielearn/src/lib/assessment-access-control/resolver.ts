@@ -465,6 +465,12 @@ export function resolveAccessControl(
     };
   }
 
+  // afterLastDeadline omitted = no access at all (distinct from
+  // allowSubmissions: false which is view-only).
+  if (!current.accessible) {
+    return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
+  }
+
   return {
     authorized: true,
     credit: current.credit,

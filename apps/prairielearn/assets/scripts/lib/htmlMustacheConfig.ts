@@ -73,6 +73,18 @@ export const htmlMustacheConfig: Config = {
         'pl-variable-score is deprecated. v3 submission elements have built-in score display options.',
     },
     {
+      id: 'pl-deprecated-matrix-output',
+      selector: 'pl-matrix-output',
+      message:
+        'pl-matrix-output is deprecated. Migrate to pl-variable-output. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+    },
+    {
+      id: 'pl-deprecated-matrix-output',
+      selector: 'pl-variable-output variable',
+      message:
+        'variable children in pl-variable-output are deprecated. Migrate to pl-variable. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+    },
+    {
       id: 'pl-prefer-pl-inputs',
       selector: 'input, textarea, select',
       message: 'Prefer PrairieLearn input elements over raw HTML form inputs.',
@@ -123,7 +135,7 @@ export const htmlMustacheConfig: Config = {
       selector:
         'a[href*="client_files_course_url"], a[href*="client_files_question_url"], a[href*="client_files_question_dynamic_url"]',
       message:
-        'Prefer pl-file-download over a plain <a> link for downloadable files. See https://docs.prairielearn.com/elements/pl-file-download/.',
+        'Prefer pl-file-download over a plain <a> tag for links to course or question resources. See https://docs.prairielearn.com/elements/pl-file-download/.',
       severity: 'warning',
     },
     // Improper nesting of elements
@@ -289,6 +301,8 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
     { name: 'pl-github-link' },
+    { name: 'pl-matrix-output' },
+    { name: 'variable' }, // Deprecated alias for pl-variable
     // pl-drawing
     { name: 'pl-drawing' },
     { name: 'pl-drawing-answer' },

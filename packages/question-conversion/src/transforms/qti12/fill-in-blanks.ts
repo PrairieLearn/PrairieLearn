@@ -22,7 +22,7 @@ export const fillInBlanksHandler: TransformHandler<QTI12ParsedItem> = {
       const id = lid.materialText ?? lid.ident;
       if (!correctText) {
         warnings.push(
-          `fill_in_multiple_blanks_question "${item.ident}": blank "${id}" has no correct answer — the blank will accept any input. Review and edit info.json.`,
+          `Blank "${id}" has no correct answer — the blank will accept any input. Review and edit question.html.`,
         );
       }
       return {
@@ -37,7 +37,7 @@ export const fillInBlanksHandler: TransformHandler<QTI12ParsedItem> = {
     const allMissing = blanks.length > 0 && blanks.every((b) => !b.correctText);
     if (allMissing) {
       warnings.push(
-        `fill_in_multiple_blanks_question "${item.ident}" has no correct answers for any blank; emitting as a manually-graded question.`,
+        'No correct answers found. Set the correct answers in question.html, or leave as manually graded.',
       );
     }
 
