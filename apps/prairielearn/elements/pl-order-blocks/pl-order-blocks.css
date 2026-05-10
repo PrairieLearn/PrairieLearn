@@ -51,6 +51,14 @@ ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
   outline-offset: -2px;
 }
 
+/* Scrollable content is excluded from the sortable's drag region (see the
+   `cancel` selector in pl-order-blocks.js), so don't show a 'move' cursor over it. */
+ul.pl-order-blocks-connected-sortable
+  .pl-order-block:not(.nodrag)
+  .pl-order-block-content.is-scrollable {
+  cursor: auto;
+}
+
 ul.pl-order-blocks-connected-sortable li.nodrag {
   opacity: 0.6;
 }
