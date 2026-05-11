@@ -55,7 +55,7 @@ export function getAppError<T>(error: unknown): AppError<T> | null {
  * requires one entry per `code`, so missing a variant — or having the server
  * add a new one — is a compile error.
  */
-export type AppErrorRenderers<E extends { code: string }> = {
+type AppErrorRenderers<E extends { code: string }> = {
   [K in E['code']]: (error: Extract<E, { code: K }>) => ReactNode;
 };
 
@@ -107,12 +107,7 @@ export function AppErrorAlert<E extends { code: string }>({
 }) {
   if (!error) return null;
   return (
-    <Alert
-      variant={variant}
-      dismissible={!!onDismiss}
-      onClose={onDismiss}
-      className={className}
-    >
+    <Alert variant={variant} dismissible={!!onDismiss} onClose={onDismiss} className={className}>
       {renderAppError(error, render)}
     </Alert>
   );

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
-import { type AppError, getAppError } from '../../../../lib/client/errors.js';
+import { type AppError, getAppError, renderAppError } from '../../../../lib/client/errors.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type {
   AssessmentQuestionsError,
@@ -275,7 +275,10 @@ export function QuestionPickerPanel({
       {pickerError && (
         <div className="alert alert-danger small mx-2 mt-2 mb-0" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          {pickerError.message || 'Failed to add question. Please try again.'}
+          {renderAppError(pickerError, {
+            QUESTION_NOT_FOUND: ({ message }) => message,
+            UNKNOWN: ({ message }) => message || 'Failed to add question. Please try again.',
+          })}
         </div>
       )}
       {!sharedQuestionMode && (
@@ -349,17 +352,20 @@ export function QuestionPickerPanel({
               );
             })
           ) : sharedQuestionError ? (
-            sharedQuestionError.code === 'QUESTION_NOT_FOUND' ? (
-              <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
-                <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">Shared question not found.</p>
-              </div>
-            ) : (
-              <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
-                <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">Failed to search for a shared question. Try again.</p>
-              </div>
-            )
+            renderAppError(sharedQuestionError, {
+              QUESTION_NOT_FOUND: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+                  <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Shared question not found.</p>
+                </div>
+              ),
+              UNKNOWN: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
+                  <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Failed to search for a shared question. Try again.</p>
+                </div>
+              ),
+            })
           ) : (
             <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
               <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
