@@ -1564,6 +1564,21 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, timeLimitMin: null },
       },
       {
+        // 30m30s until deadline minus 31 seconds = 1799s / 60 = 29.983 → rounds to 30
+        name: 'rounds capped time limit to nearest minute',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:29:30Z'),
+        expect: { authorized: true, submittable: true, timeLimitMin: 30 },
+      },
+      {
         // 20 seconds until deadline minus 31 seconds → clamp to 0
         name: 'clamps to zero when deadline is less than 31 seconds away',
         rules: [
