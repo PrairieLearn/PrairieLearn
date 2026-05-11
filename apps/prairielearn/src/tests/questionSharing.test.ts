@@ -612,6 +612,83 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     });
 
     test.sequential(
+      'Delete a referenced sharing set, ensure sync error message identifies it',
+      async () => {
+        const saveSharingSets = sharingCourseData.course.sharingSets || [];
+        sharingCourseData.course.sharingSets = saveSharingSets.filter(
+          (ss) => ss.name !== SHARING_SET_NAME,
+        );
+        await fs.writeJSON(
+          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+          sharingCourseData.course,
+        );
+
+        const { logger: capturedLogger, getOutput } = makeMockLogger();
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(
+          courseRepo.courseLiveDir,
+          capturedLogger,
+        );
+        assert.equal(syncResult.status, 'sharing_error');
+        assert.match(
+          getOutput(),
+          new RegExp(
+            `The following sharing sets are still in use and cannot be removed from 'infoCourse\\.json': ${SHARING_SET_NAME}`,
+          ),
+        );
+
+        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
+        const restoreSync = await syncFromDisk.syncOrCreateDiskToSql(
+          courseRepo.courseLiveDir,
+          logger,
+        );
+        assert.equal(restoreSync.status, 'complete');
+
+        sharingCourseData.course.sharingSets = saveSharingSets;
+      },
+    );
+
+    test.sequential(
+      'Delete an unreferenced sharing set, ensure live syncs and removes it',
+      async () => {
+        const newSharingSetName = 'unreferenced-share-set';
+        const saveSharingSets = sharingCourseData.course.sharingSets || [];
+        sharingCourseData.course.sharingSets = [
+          ...saveSharingSets,
+          { name: newSharingSetName, description: 'no references' },
+        ];
+        await fs.writeJSON(
+          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+          sharingCourseData.course,
+        );
+
+        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(syncResult.status, 'complete');
+        const createdId = await sqldb.queryOptionalScalar(
+          sql.select_sharing_set,
+          { sharing_set_name: newSharingSetName },
+          IdSchema,
+        );
+        assert.isNotNull(createdId);
+
+        sharingCourseData.course.sharingSets = saveSharingSets;
+        await fs.writeJSON(
+          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+          sharingCourseData.course,
+        );
+
+        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(syncResult.status, 'complete');
+        const remainingId = await sqldb.queryOptionalScalar(
+          sql.select_sharing_set,
+          { sharing_set_name: newSharingSetName },
+          IdSchema,
+        );
+        assert.isNull(remainingId);
+      },
+    );
+
+    test.sequential(
       'Adding question to sharing set that does not exist, ensure sync error is created',
       async () => {
         const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];

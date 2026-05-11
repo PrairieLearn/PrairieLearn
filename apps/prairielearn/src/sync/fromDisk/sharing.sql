@@ -21,6 +21,12 @@ ON CONFLICT (course_id, name) DO UPDATE
 SET
   description = EXCLUDED.description;
 
+-- BLOCK delete_removed_course_sharing_sets
+DELETE FROM sharing_sets
+WHERE
+  course_id = $course_id
+  AND NOT (name = ANY ($sharing_set_names::text[]));
+
 -- BLOCK select_course_sharing_sets
 SELECT
   ss.name,

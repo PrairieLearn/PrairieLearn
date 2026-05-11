@@ -19,13 +19,32 @@ WHERE
     )
   );
 
--- BLOCK select_sharing_sets
+-- BLOCK select_referenced_sharing_set_deletions
 SELECT
   ss.name
 FROM
   sharing_sets AS ss
 WHERE
-  ss.course_id = $course_id;
+  ss.course_id = $course_id
+  AND NOT (ss.name = ANY ($sharing_set_names::text[]))
+  AND (
+    EXISTS (
+      SELECT
+        1
+      FROM
+        sharing_set_questions AS ssq
+      WHERE
+        ssq.sharing_set_id = ss.id
+    )
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        sharing_set_courses AS ssc
+      WHERE
+        ssc.sharing_set_id = ss.id
+    )
+  );
 
 -- BLOCK select_question_sharing_sets
 WITH
