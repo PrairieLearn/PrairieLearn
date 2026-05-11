@@ -57,6 +57,8 @@ async function handlePendingLti13User({
 interface LoadUserOptions {
   /** Redirect after processing? */
   redirect?: boolean;
+  /** Override the post-auth redirect target. Only used when `redirect` is true. */
+  redirectUrl?: string;
 }
 
 export async function loadUser(
@@ -141,7 +143,9 @@ export async function loadUser(
 
   if (options.redirect) {
     let redirUrl = '/';
-    if ('pl2_pre_auth_url' in req.cookies) {
+    if (options.redirectUrl !== undefined) {
+      redirUrl = options.redirectUrl;
+    } else if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
