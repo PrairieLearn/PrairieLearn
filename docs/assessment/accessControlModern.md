@@ -64,9 +64,9 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
     With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit, and all credit after the due date must be below 100%.
 
-#### After last deadline
+#### After deadlines
 
-Use **After last deadline** to decide what happens after the final due or late deadline:
+Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
 
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
@@ -215,7 +215,7 @@ In the UI:
 3. Set **Release** to **Scheduled for release** and enter Jan 15.
 4. Set **Due date** to **Due on date** and enter Feb 15.
 5. Leave due-date credit at the default 100%.
-6. Set **After last deadline** to **No submissions allowed**.
+6. Set **After due date** to **No submissions allowed**.
 
 ??? info "JSON"
 
@@ -278,7 +278,7 @@ In the UI:
 3. Add an **Early deadline** on Feb 1 with 110% credit.
 4. Set the **Due date** to Feb 15 and leave credit at 100%.
 5. Add **Late deadlines** on Feb 22 with 80% credit and Mar 1 with 50% credit.
-6. Set **After last deadline** to **Allow practice submissions**.
+6. Set **After late deadlines** to **Allow practice submissions**.
 
 ??? info "JSON"
 
