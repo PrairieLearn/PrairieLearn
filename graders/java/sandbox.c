@@ -34,13 +34,13 @@
    LANDLOCK_ACCESS_FS_MAKE_FIFO | LANDLOCK_ACCESS_FS_MAKE_BLOCK |   \
    LANDLOCK_ACCESS_FS_TRUNCATE)
 
-void add_path_rule(int ruleset_fd, const char *path) {
+void add_path_rule(int ruleset_fd, const char *path, __u64 access_mask) {
   int fd = open(path, O_PATH | O_CLOEXEC);
   if (fd < 0)
     return;  // Skip directories we can't open (like some system mounts)
 
   struct landlock_path_beneath_attr path_attr = {
-      .allowed_access = ACCESS_ALL,
+      .allowed_access = access_mask,
       .parent_fd = fd,
   };
 
@@ -54,8 +54,21 @@ void add_path_rule(int ruleset_fd, const char *path) {
 int main(int argc, char *argv[]) {
   if (argc < 2) return 1;
 
+  // Query the kernel's supported Landlock ABI version and adjust the mask.
+  int abi = syscall(SYS_landlock_create_ruleset, NULL, 0,
+                    LANDLOCK_CREATE_RULESET_VERSION);
+  if (abi < 0) {
+    perror("Landlock not supported by kernel");
+    return 1;
+  }
+  __u64 access_mask = ACCESS_ALL;
+  // Landlock ABI before v3 does not support the TRUNCATE access, so we remove
+  // it from the mask for older kernels.
+  if (abi < 3) access_mask &= ~LANDLOCK_ACCESS_FS_TRUNCATE;
+  // Add similar guards for any future ABI-gated bits as needed.
+
   // Create a landlock ruleset that handles all filesystem access.
-  struct landlock_ruleset_attr attr = {.handled_access_fs = ACCESS_ALL};
+  struct landlock_ruleset_attr attr = {.handled_access_fs = access_mask};
   int ruleset_fd = syscall(SYS_landlock_create_ruleset, &attr, sizeof(attr), 0);
   if (ruleset_fd < 0) {
     perror("Landlock init failed");
@@ -78,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     char full_path[512];
     snprintf(full_path, sizeof(full_path), "/%s", dir->d_name);
-    add_path_rule(ruleset_fd, full_path);
+    add_path_rule(ruleset_fd, full_path, access_mask);
   }
   closedir(d);
 

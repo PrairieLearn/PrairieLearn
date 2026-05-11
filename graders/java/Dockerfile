@@ -21,7 +21,7 @@ RUN apt-get update \
 # Copy the sandbox.c file and compile it into a Landlock-based sandbox executable
 COPY sandbox.c /sandbox.c
 RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
-    && gcc -O2 -o /usr/local/bin/landlock_sandbox /sandbox.c \
+    && gcc -O2 -o /usr/local/bin/landlock_sandbox -Wall -Wextra -Werror /sandbox.c \
     && apt-get purge -y gcc libc6-dev \
     && apt-get autoremove -y \
     && apt-get clean \
