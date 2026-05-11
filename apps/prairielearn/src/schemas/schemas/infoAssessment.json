@@ -345,7 +345,7 @@
           "minimum": 0
         },
         "password": {
-          "description": "Password to begin the assessment (only for Exams).",
+          "description": "Password to begin the assessment. Typically used for proctored exams.",
           "type": "string"
         },
         "showClosedAssessment": {

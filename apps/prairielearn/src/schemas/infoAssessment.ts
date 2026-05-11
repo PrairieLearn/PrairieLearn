@@ -150,7 +150,10 @@ export const AssessmentAccessRuleJsonSchema = z
       .gte(0)
       .describe('The time limit to complete the assessment, in minutes (only for Exams).')
       .optional(),
-    password: z.string().describe('Password to begin the assessment (only for Exams).').optional(),
+    password: z
+      .string()
+      .describe('Password to begin the assessment. Typically used for proctored exams.')
+      .optional(),
     showClosedAssessment: z
       .boolean()
       .describe('Whether the student can view the assessment after it has been closed')
