@@ -348,7 +348,7 @@ In the UI:
 1. Edit **Defaults**.
 2. Enable **PrairieTest** under **Integrations**.
 3. Enter the PrairieTest exam UUID.
-4. For **After completion (during reservation)**, choose what students can see while their reservation is still active.
+4. For **After completion**, choose what students can see after they finish, while their reservation is still active.
 5. Use the top-level **After completion** settings for what students can see after the reservation ends.
 6. Do not configure an ordinary date-control access window unless students should also be able to access the assessment outside PrairieTest.
 
