@@ -27,6 +27,36 @@ FROM
 WHERE
   ss.course_id = $course_id;
 
+-- BLOCK select_questions_blocking_unshare
+SELECT
+  q.id,
+  q.qid,
+  bool_or(ci.course_id != $course_id) AS used_in_other_course,
+  bool_or(
+    a.share_source_publicly
+    AND ci.course_id = $course_id
+  ) AS used_in_public_assessment
+FROM
+  questions AS q
+  JOIN assessment_questions AS aq ON aq.question_id = q.id
+  JOIN assessments AS a ON a.id = aq.assessment_id
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id
+WHERE
+  q.id = ANY ($question_ids::bigint[])
+  AND q.deleted_at IS NULL
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+GROUP BY
+  q.id,
+  q.qid
+HAVING
+  bool_or(ci.course_id != $course_id)
+  OR bool_or(
+    a.share_source_publicly
+    AND ci.course_id = $course_id
+  );
+
 -- BLOCK select_question_sharing_sets
 WITH
   sharing_sets_agg AS (

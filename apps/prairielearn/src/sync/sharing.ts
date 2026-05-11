@@ -48,31 +48,55 @@ export function getInvalidRenames(
   return existInvalidRenames;
 }
 
-export function checkInvalidPublicSharingRemovals(
+export async function checkInvalidPublicSharingRemovals(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidUnshares: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!question.share_publicly) {
-      return;
-    }
-
-    // TODO: allow if question is not used in anyone else's assessments
-    const questionData = courseData.questions[question.qid].data;
+): Promise<boolean> {
+  const unsharingQuestionIds: string[] = [];
+  for (const question of sharedQuestions) {
+    if (!question.share_publicly) continue;
+    const questionData = courseData.questions[question.qid]?.data;
     if (!questionData?.sharePublicly) {
-      invalidUnshares.push(question.qid);
+      unsharingQuestionIds.push(question.id);
     }
-  });
+  }
 
-  const existInvalidUnshares = invalidUnshares.length > 0;
-  if (existInvalidUnshares) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidUnshares.join(', ')}`,
+  if (unsharingQuestionIds.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_questions_blocking_unshare,
+    { course_id: courseId, question_ids: unsharingQuestionIds },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+      used_in_other_course: z.boolean(),
+      used_in_public_assessment: z.boolean(),
+    }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  const usedInOtherCourse = blockedQuestions.filter((q) => q.used_in_other_course).map((q) => q.qid);
+  const usedInPublicAssessment = blockedQuestions
+    .filter((q) => q.used_in_public_assessment)
+    .map((q) => q.qid);
+
+  const messages: string[] = ['✖ Course sync completely failed.'];
+  if (usedInOtherCourse.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in other courses' assessments: ${usedInOtherCourse.join(', ')}.`,
     );
   }
-  return existInvalidUnshares;
+  if (usedInPublicAssessment.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in publicly shared assessments in this course: ${usedInPublicAssessment.join(', ')}.`,
+    );
+  }
+  logger.error(messages.join(' '));
+
+  return true;
 }
 
 export async function checkInvalidSharingSetDeletions(

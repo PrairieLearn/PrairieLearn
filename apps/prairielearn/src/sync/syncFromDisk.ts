@@ -75,7 +75,8 @@ export async function checkSharingConfigurationValid(
 
   const sharedQuestions = await selectSharedQuestions(course.id);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
-  const existInvalidPublicSharingRemovals = checkInvalidPublicSharingRemovals(
+  const existInvalidPublicSharingRemovals = await checkInvalidPublicSharingRemovals(
+    course.id,
     sharedQuestions,
     courseData,
     logger,
