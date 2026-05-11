@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import { Fragment, type ReactNode, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
@@ -121,7 +121,7 @@ function DefaultRuleSummaryContent({
   ptHost,
 }: {
   rule: DefaultRuleData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
@@ -136,7 +136,7 @@ function DefaultRuleSummaryContent({
 
       {dateTableRows.length > 0 && (
         <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
+          <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
         </div>
       )}
 
@@ -241,6 +241,7 @@ export function AccessControlSummary({
               variant="outline-primary"
               size="sm"
               aria-label="Edit"
+              className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
               <i className="bi bi-pencil" aria-hidden="true" />
@@ -250,6 +251,7 @@ export function AccessControlSummary({
               variant="outline-danger"
               size="sm"
               aria-label="Clear"
+              className="d-inline-flex align-items-center"
               onClick={onClearDefaultRule}
             >
               <i className="bi bi-trash" aria-hidden="true" />
@@ -280,7 +282,12 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button variant="primary" size="sm" onClick={onAddOverride}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="d-inline-flex align-items-center"
+            onClick={onAddOverride}
+          >
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
