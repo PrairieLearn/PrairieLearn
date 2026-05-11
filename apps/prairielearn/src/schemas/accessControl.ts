@@ -5,14 +5,14 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z.number().min(0).max(200).describe('Amount of credit as a percent to allow'),
+    credit: z.number().int().min(0).max(200).describe('Integer credit percentage to allow'),
   })
   .strict();
 
 const AfterLastDeadlineJsonSchema = z
   .object({
     allowSubmissions: z.boolean(),
-    credit: z.number().min(0).optional(),
+    credit: z.number().int().min(0).max(99).optional(),
   })
   .strict();
 

@@ -56,17 +56,17 @@ Use **Early deadlines** for bonus-credit windows before the due date, and **Late
 For each deadline, choose:
 
 - a date and time;
-- the credit percentage students receive until that deadline.
+- the integer credit percentage students receive until that deadline.
 
 Deadlines form one chronological credit timeline. For example, an assessment might be worth 110% until an early deadline, 100% until the due date, 80% until a late deadline, and then 0% or practice credit after that.
 
 !!! tip
 
-    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit and late credits must fall below it.
+    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit, and all credit after the due date must be below 100%.
 
-#### After last deadline
+#### After deadlines
 
-Use **After last deadline** to decide what happens after the final due or late deadline:
+Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
 
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
@@ -121,9 +121,9 @@ Question visibility options:
 
 Score visibility options:
 
-- **Show score after completion**: students can see their score immediately.
 - **Hide score permanently**: the score is never visible after completion.
-- **Hide score until date**: the score is hidden after completion and becomes visible on the chosen date.
+- **Show score after completion**: students can see their score immediately.
+- **Show score after date**: the score is hidden after completion and becomes visible on the chosen date.
 
 For PrairieTest exams, top-level after-completion settings apply outside an active reservation. Use the per-exam PrairieTest visibility setting to control what students see while their reservation is still active.
 
@@ -215,7 +215,7 @@ In the UI:
 3. Set **Release** to **Scheduled for release** and enter Jan 15.
 4. Set **Due date** to **Due on date** and enter Feb 15.
 5. Leave due-date credit at the default 100%.
-6. Set **After last deadline** to **No submissions allowed**.
+6. Set **After due date** to **No submissions allowed**.
 
 ??? info "JSON"
 
@@ -278,7 +278,7 @@ In the UI:
 3. Add an **Early deadline** on Feb 1 with 110% credit.
 4. Set the **Due date** to Feb 15 and leave credit at 100%.
 5. Add **Late deadlines** on Feb 22 with 80% credit and Mar 1 with 50% credit.
-6. Set **After last deadline** to **Allow practice submissions**.
+6. Set **After late deadlines** to **Allow practice submissions**.
 
 ??? info "JSON"
 
@@ -316,7 +316,7 @@ In the UI:
 4. Enable **Time limit** and enter 90 minutes.
 5. Enable **Password** and enter the password.
 6. Under **After completion**, set **Question visibility** to **Hide questions permanently**.
-7. Set **Score visibility** to **Hide score until date** and enter Mar 12.
+7. Set **Score visibility** to **Show score after date** and enter Mar 12.
 
 ??? info "JSON"
 
@@ -522,17 +522,17 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 
 ### `dateControl`
 
-| Field               | Type    | Description                                                                                                 |
-| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                 |
-| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional `credit` (0-200, default 100).    |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                   |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                  |
-| `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive. |
-| `durationMinutes`   | integer | Time limit in minutes.                                                                                      |
-| `password`          | string  | Password required to start the assessment.                                                                  |
+| Field               | Type    | Description                                                                                                      |
+| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                      |
+| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional integer `credit` (0-200, default 100). |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                        |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                       |
+| `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive.      |
+| `durationMinutes`   | integer | Time limit in minutes.                                                                                           |
+| `password`          | string  | Password required to start the assessment.                                                                       |
 
-`due.credit` defaults to 100. If you set a custom due credit, early deadlines are not allowed. Late deadline credits must be lower than both 100% and the due-date credit. `afterLastDeadline.credit` cannot exceed the preceding deadline's credit, and it also cannot exceed the maximum possible due-date credit across the resolved rule.
+`due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
 When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
 
@@ -541,9 +541,9 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 | Field              | Type    | Default | Description                                                    |
 | ------------------ | ------- | ------- | -------------------------------------------------------------- |
 | `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | number  | `0`     | Credit percentage after the last deadline.                     |
+| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 99.       |
 
-If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit.
+If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
 
 ### `beforeRelease`
 
