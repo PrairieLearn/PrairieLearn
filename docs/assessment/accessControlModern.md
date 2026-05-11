@@ -64,9 +64,9 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
     With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit and late credits must fall below it.
 
-#### After the last deadline
+#### Configure behavior after deadlines
 
-Use the after-deadline setting to decide what happens after the final due or late deadline. The label in the UI reflects the last deadline you have configured: **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
+Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
 
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
