@@ -27,7 +27,7 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'no_access',
     label: 'No access',
-    description: 'Students cannot access the assessment after the last deadline',
+    description: 'Students cannot access the assessment',
   },
   {
     value: 'no_submissions',
@@ -42,9 +42,16 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'partial_credit',
     label: 'Allow submissions for partial credit',
-    description: 'Students will receive partial credit for submissions after the deadline',
+    description: 'Students receive a fixed percentage of credit for submissions',
   },
 ];
+
+/** Caller passes the *effective* late deadlines (overrides may inherit from default). */
+export function getAfterLastDeadlineLabel(lateDeadlines: DeadlineEntry[]): string {
+  if (lateDeadlines.length === 0) return 'After due date';
+  if (lateDeadlines.length === 1) return 'After late deadline';
+  return 'After late deadlines';
+}
 
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   if (value == null) return 'no_access';
@@ -136,6 +143,10 @@ function AfterLastDeadlineInput({
     }
   }, [trigger, creditFieldPath, mode, precedingCredit]);
 
+  // For overrides we can't fully reason about the effective deadlines (override
+  // stacking may produce a different set), so we fall back to a generic label.
+  const label = isOverride ? 'After last deadline' : getAfterLastDeadlineLabel(lateDeadlines);
+
   const getLastDeadlineText = () => {
     const lastDate = getLastDeadlineDate(lateDeadlines, dueDate);
     if (lastDate) {
@@ -143,10 +154,11 @@ function AfterLastDeadlineInput({
         <>
           This will take effect after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
+          , until the course instance end date.
         </>
       );
     }
-    return 'This will take effect after the last deadline';
+    return 'This will take effect until the course instance end date.';
   };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
@@ -173,7 +185,7 @@ function AfterLastDeadlineInput({
         <RichSelect
           items={AFTER_LAST_DEADLINE_ITEMS}
           value={mode}
-          aria-label="After last deadline"
+          aria-label={label}
           id={`${idPrefix}-after-deadline-mode`}
           minWidth={300}
           onChange={handleModeChange}
@@ -250,10 +262,14 @@ export function DefaultAfterLastDeadlineField({ displayTimezone }: { displayTime
   const { field } = useController<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
   });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const label = getAfterLastDeadlineLabel(lateDeadlines);
 
   return (
     <div>
-      <strong className="d-block mb-2">After last deadline</strong>
+      <strong className="d-block mb-2">{label}</strong>
       <AfterLastDeadlineInput
         value={field.value}
         displayTimezone={displayTimezone}

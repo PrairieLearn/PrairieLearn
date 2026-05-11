@@ -17,6 +17,7 @@ import {
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+import { getAfterLastDeadlineLabel } from './fields/AfterLastDeadlineField.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
@@ -284,13 +285,13 @@ export function generateDefaultRuleDateTableRows(
     });
   });
 
-  // Show "After last deadline" only when there is a deadline it can apply to.
+  // Show the after-last-deadline row only when there is a deadline it can apply to.
   const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
       date: '',
-      label: 'After last deadline',
+      label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       credit:
         afterLastDeadline == null
           ? 'No access'
