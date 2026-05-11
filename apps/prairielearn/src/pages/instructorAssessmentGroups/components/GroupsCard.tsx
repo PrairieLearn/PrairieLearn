@@ -326,10 +326,10 @@ function RandomAssessmentGroupsModal({
         <Modal.Body>
           <AppErrorAlert
             error={appError}
-            onDismiss={() => mutation.reset()}
             render={{
               UNKNOWN: ({ message }) => message,
             }}
+            onDismiss={() => mutation.reset()}
           />
           <p className="text-muted small">
             Unassigned students will be randomly distributed into new groups based on the size

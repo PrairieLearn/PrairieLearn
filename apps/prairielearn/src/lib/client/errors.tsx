@@ -107,7 +107,7 @@ export function AppErrorAlert<E extends { code: string }>({
 }) {
   if (!error) return null;
   return (
-    <Alert variant={variant} dismissible={!!onDismiss} onClose={onDismiss} className={className}>
+    <Alert variant={variant} dismissible={!!onDismiss} className={className} onClose={onDismiss}>
       {renderAppError(error, render)}
     </Alert>
   );

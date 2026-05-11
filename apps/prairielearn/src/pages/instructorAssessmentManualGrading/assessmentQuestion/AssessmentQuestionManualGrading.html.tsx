@@ -107,7 +107,6 @@ function AssessmentQuestionManualGradingInner({
     <>
       <AppErrorAlert
         error={setAiGradingModeError}
-        onDismiss={() => setAiGradingModeMutation.reset()}
         className="mb-3"
         render={{
           UNKNOWN: ({ message }) => (
@@ -116,6 +115,7 @@ function AssessmentQuestionManualGradingInner({
             </>
           ),
         }}
+        onDismiss={() => setAiGradingModeMutation.reset()}
       />
       <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">

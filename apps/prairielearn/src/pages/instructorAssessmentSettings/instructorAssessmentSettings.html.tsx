@@ -257,7 +257,6 @@ function CopyAssessmentModal({
         <Modal.Body>
           <AppErrorAlert
             error={copyError}
-            onDismiss={() => copyMutation.reset()}
             render={{
               SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
                 <>
@@ -266,6 +265,7 @@ function CopyAssessmentModal({
               ),
               UNKNOWN: ({ message }) => message,
             }}
+            onDismiss={() => copyMutation.reset()}
           />
           <p className="text-muted small mb-3">
             Making a copy of <code>{assessment.tid}</code>.
@@ -533,7 +533,6 @@ function InstructorAssessmentSettingsInner({
         <Modal.Body>
           <AppErrorAlert
             error={deleteError}
-            onDismiss={() => deleteMutation.reset()}
             render={{
               SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
                 <>
@@ -542,6 +541,7 @@ function InstructorAssessmentSettingsInner({
               ),
               UNKNOWN: ({ message }) => message,
             }}
+            onDismiss={() => deleteMutation.reset()}
           />
           <p>
             Are you sure you want to delete the assessment <b>{assessment.tid}</b>?

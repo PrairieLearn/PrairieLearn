@@ -266,8 +266,8 @@ export function AddInstitutionModal({
           )}
           <AppErrorAlert
             error={appError}
-            onDismiss={() => mutation.reset()}
             render={{ UNKNOWN: ({ message }) => message }}
+            onDismiss={() => mutation.reset()}
           />
         </form>
       </Modal.Body>
