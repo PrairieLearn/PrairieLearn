@@ -379,25 +379,6 @@ function VisibilityBadge({ visible }: { visible: boolean }) {
   );
 }
 
-function AfterCompleteDate({
-  date,
-  displayTimezone,
-}: {
-  date: string | undefined;
-  displayTimezone: string;
-}) {
-  if (date === undefined) return <span className="text-body-secondary">—</span>;
-  if (!date) return 'No date set';
-  return (
-    <FriendlyDate
-      date={Temporal.PlainDateTime.from(date)}
-      timezone={displayTimezone}
-      options={{ includeTz: false }}
-      tooltip
-    />
-  );
-}
-
 function AfterCompleteTimeRange({
   date,
   displayTimezone,
@@ -407,7 +388,13 @@ function AfterCompleteTimeRange({
 }) {
   return (
     <>
-      After <AfterCompleteDate date={date} displayTimezone={displayTimezone} />
+      After{' '}
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(date)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+        tooltip
+      />
     </>
   );
 }
@@ -417,12 +404,12 @@ function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterComplet
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
 
-  if (qv.hidden && qv.visibleFromDate !== undefined) {
+  if (qv.hidden && qv.visibleFromDate) {
     events.push({
       date: qv.visibleFromDate,
       questionsVisible: true,
     });
-    if (qv.visibleUntilDate !== undefined) {
+    if (qv.visibleUntilDate) {
       events.push({
         date: qv.visibleUntilDate,
         questionsVisible: false,
@@ -430,7 +417,7 @@ function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterComplet
     }
   }
 
-  if (sv.hidden && sv.visibleFromDate !== undefined) {
+  if (sv.hidden && sv.visibleFromDate) {
     events.push({
       date: sv.visibleFromDate,
       scoreVisible: true,
@@ -444,8 +431,6 @@ function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterComplet
         Temporal.PlainDateTime.from(b.date),
       );
     } catch {
-      if (!a.date && b.date) return 1;
-      if (a.date && !b.date) return -1;
       return 0;
     }
   });
