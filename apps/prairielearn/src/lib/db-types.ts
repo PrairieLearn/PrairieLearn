@@ -130,16 +130,6 @@ const SprocCheckAssessmentAccessSchema = z.object({
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
 
-// Result of team_info sproc
-export const SprocTeamInfoSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  uid_list: z.array(z.string()),
-  user_name_list: z.array(z.string()),
-  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
-});
-export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
-
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
