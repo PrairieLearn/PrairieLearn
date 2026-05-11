@@ -1,10 +1,10 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -17,6 +17,7 @@ import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../trpc/assessmentQuestion/manual-grading.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
@@ -98,19 +99,24 @@ function AssessmentQuestionManualGradingInner({
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
+  const setAiGradingModeError = getAppError<ManualGradingError['SetAiGradingMode']>(
+    setAiGradingModeMutation.error,
+  );
 
   return (
     <>
-      {setAiGradingModeMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => setAiGradingModeMutation.reset()}
-        >
-          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-        </Alert>
-      )}
+      <AppErrorAlert
+        error={setAiGradingModeError}
+        onDismiss={() => setAiGradingModeMutation.reset()}
+        className="mb-3"
+        render={{
+          UNKNOWN: ({ message }) => (
+            <>
+              <strong>Error:</strong> {message}
+            </>
+          ),
+        }}
+      />
       <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb mb-0">

@@ -56,6 +56,8 @@ export interface AssessmentGroupsError {
   EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  RandomizeGroups: never;
+  RefreshGroups: never;
 }
 
 const addGroup = t.procedure

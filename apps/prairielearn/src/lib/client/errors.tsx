@@ -96,16 +96,23 @@ export function AppErrorAlert<E extends { code: string }>({
   error,
   onDismiss,
   variant = 'danger',
+  className,
   render,
 }: {
   error: E | null | undefined;
   onDismiss?: () => void;
   variant?: AlertProps['variant'];
+  className?: string;
   render: AppErrorRenderers<E>;
 }) {
   if (!error) return null;
   return (
-    <Alert variant={variant} dismissible={!!onDismiss} onClose={onDismiss}>
+    <Alert
+      variant={variant}
+      dismissible={!!onDismiss}
+      onClose={onDismiss}
+      className={className}
+    >
       {renderAppError(error, render)}
     </Alert>
   );

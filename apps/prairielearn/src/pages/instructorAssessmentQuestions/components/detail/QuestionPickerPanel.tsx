@@ -1,14 +1,17 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { TRPCClientError } from '@trpc/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
+import { type AppError, getAppError } from '../../../../lib/client/errors.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
-import type { QuestionByQidResult } from '../../../../trpc/assessment/assessment-questions.js';
+import type {
+  AssessmentQuestionsError,
+  QuestionByQidResult,
+} from '../../../../trpc/assessment/assessment-questions.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { CourseQuestionForPicker } from '../../types.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
@@ -48,7 +51,7 @@ export function QuestionPickerPanel({
   courseInstanceId: string;
   currentAssessmentId?: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   onQuestionSelected: (qid: string) => void;
@@ -76,6 +79,9 @@ export function QuestionPickerPanel({
     ),
     retry: false,
   });
+  const sharedQuestionError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    sharedQuestionQuery.error,
+  );
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
 
@@ -342,9 +348,8 @@ export function QuestionPickerPanel({
                 </div>
               );
             })
-          ) : sharedQuestionQuery.isError ? (
-            sharedQuestionQuery.error instanceof TRPCClientError &&
-            sharedQuestionQuery.error.data?.code === 'NOT_FOUND' ? (
+          ) : sharedQuestionError ? (
+            sharedQuestionError.code === 'QUESTION_NOT_FOUND' ? (
               <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
                 <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
                 <p className="mb-1">Shared question not found.</p>
