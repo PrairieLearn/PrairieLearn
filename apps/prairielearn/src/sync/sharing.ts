@@ -27,52 +27,95 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
   );
 }
 
-export function getInvalidRenames(
+export async function getInvalidRenames(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidRenames: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!(question.qid in courseData.questions)) {
-      invalidRenames.push(question.qid);
-    }
-  });
+): Promise<boolean> {
+  const renamedQuestions = sharedQuestions.filter(
+    (question) => !(question.qid in courseData.questions),
+  );
 
-  const existInvalidRenames = invalidRenames.length > 0;
-  if (existInvalidRenames) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-    );
-  }
-  return existInvalidRenames;
+  if (renamedQuestions.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_renames_used_in_other_courses,
+    { course_id: courseId, question_ids: renamedQuestions.map((q) => q.id) },
+    z.object({ qid: z.string() }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  logger.error(
+    `✖ Course sync completely failed. The following questions are shared and used in other courses, so they cannot be renamed or deleted: ${blockedQuestions.map((q) => q.qid).join(', ')}`,
+  );
+  return true;
 }
 
-export function checkInvalidPublicSharingRemovals(
+export async function checkInvalidPublicSharingRemovals(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidUnshares: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!question.share_publicly) {
-      return;
+): Promise<boolean> {
+  const unsharingQuestionIds: string[] = [];
+  // Questions that remain source-public are still valid in same-course public assessments, but
+  // they are not valid for other-course imports that require full public sharing.
+  const sourcePublicQuestionIds = new Set<string>();
+  for (const question of sharedQuestions) {
+    if (!question.share_publicly) continue;
+    if (!(question.qid in courseData.questions)) {
+      // Renamed or deleted questions are handled by getInvalidRenames.
+      continue;
     }
-
-    // TODO: allow if question is not used in anyone else's assessments
     const questionData = courseData.questions[question.qid].data;
     if (!questionData?.sharePublicly) {
-      invalidUnshares.push(question.qid);
+      unsharingQuestionIds.push(question.id);
+      if (questionData?.shareSourcePublicly) {
+        sourcePublicQuestionIds.add(question.id);
+      }
     }
-  });
+  }
 
-  const existInvalidUnshares = invalidUnshares.length > 0;
-  if (existInvalidUnshares) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidUnshares.join(', ')}`,
+  if (unsharingQuestionIds.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_questions_blocking_unshare,
+    { course_id: courseId, question_ids: unsharingQuestionIds },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+      used_in_other_course: z.boolean(),
+      used_in_public_assessment: z.boolean(),
+    }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  const usedInOtherCourse = blockedQuestions
+    .filter((q) => q.used_in_other_course)
+    .map((q) => q.qid);
+  const usedInPublicAssessment = blockedQuestions
+    .filter((q) => q.used_in_public_assessment && !sourcePublicQuestionIds.has(q.id))
+    .map((q) => q.qid);
+
+  if (usedInOtherCourse.length === 0 && usedInPublicAssessment.length === 0) return false;
+
+  const messages: string[] = ['✖ Course sync completely failed.'];
+  if (usedInOtherCourse.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in other courses' assessments: ${usedInOtherCourse.join(', ')}.`,
     );
   }
-  return existInvalidUnshares;
+  if (usedInPublicAssessment.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in publicly shared assessments in this course: ${usedInPublicAssessment.join(', ')}.`,
+    );
+  }
+  logger.error(messages.join(' '));
+
+  return true;
 }
 
 export async function checkInvalidSharingSetDeletions(
@@ -124,7 +167,6 @@ export async function checkInvalidSharingSetRemovals(
     }
 
     question.sharing_sets.forEach((sharingSet) => {
-      // TODO: allow if the sharing set hasn't been shared to a course
       if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
         if (!(question.qid in invalidSharingSetRemovals)) {
           invalidSharingSetRemovals[question.qid] = [];
