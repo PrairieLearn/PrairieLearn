@@ -506,7 +506,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     submitted_answer = data["submitted_answers"].get(name, None)
-    use_mathjson = f"{name}-json" in data["submitted_answers"]
+    raw_mathjson = data["submitted_answers"].get(f"{name}-json")
+    use_mathjson = (
+        raw_mathjson.strip() != "" if isinstance(raw_mathjson, str) else False
+    )
 
     if submitted_answer is None:
         data["format_errors"][name] = "No submitted answer."
@@ -536,9 +539,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         from mathjson_utils import MathJsonStudentError, raw_mathjson_to_sympy_expr
 
         try:
-            raw_mathjson = data["submitted_answers"].get(f"{name}-json")
-            if raw_mathjson is None:
-                raise ValueError("No MathJSON submission.")
             if not isinstance(raw_mathjson, str):
                 raise TypeError("MathJSON submission must be a string.")
             sympy_expr = raw_mathjson_to_sympy_expr(
