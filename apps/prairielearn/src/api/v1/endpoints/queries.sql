@@ -51,15 +51,17 @@ SELECT
   ai.modified_at,
   g.id AS group_id,
   g.name AS group_name,
-  (
-    SELECT
-      COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
-    FROM
-      team_users gu
-      JOIN users u ON (u.id = gu.user_id)
-    WHERE
-      gu.team_id = ai.team_id
-  ) AS group_uids,
+  CASE
+    WHEN ai.team_id IS NOT NULL THEN (
+      SELECT
+        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+      FROM
+        team_users gu
+        JOIN users u ON (u.id = gu.user_id)
+      WHERE
+        gu.team_id = ai.team_id
+    )
+  END AS group_uids,
   ai.date_limit,
   ai.date,
   ai.duration,
@@ -221,15 +223,17 @@ SELECT
   users_get_displayed_role (u.id, ci.id) AS user_role,
   g.id AS group_id,
   g.name AS group_name,
-  (
-    SELECT
-      COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
-    FROM
-      team_users gu
-      JOIN users u ON (u.id = gu.user_id)
-    WHERE
-      gu.team_id = ai.team_id
-  ) AS group_uids,
+  CASE
+    WHEN ai.team_id IS NOT NULL THEN (
+      SELECT
+        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+      FROM
+        team_users gu
+        JOIN users u ON (u.id = gu.user_id)
+      WHERE
+        gu.team_id = ai.team_id
+    )
+  END AS group_uids,
   a.id AS assessment_id,
   a.tid AS assessment_name,
   (aset.abbreviation || a.number) AS assessment_label,
