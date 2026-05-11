@@ -76,7 +76,7 @@ Use **After last deadline** to decide what happens after the final due or late d
 
 Enable **Time limit** to give each student a fixed amount of working time after they start the assessment. The timer is independent of deadlines: a student who starts close to a deadline gets the full time limit, but the credit they earn shifts as each deadline passes during the attempt. For example, a student with a 60-minute time limit who starts 1 minute before the due date works for the full 60 minutes — the first minute earns the on-time credit, and the remainder earns the next late-deadline credit.
 
-Enable **Password** to require a password before a student can start the assessment. This is typically used for proctored exams.
+Enable **Password** to require a password before a student can start or continue an active attempt. This is typically used for proctored exams. The password gates active participation only — students do not need to re-enter it to review their work once submissions are no longer allowed (for example, in **No submissions allowed** mode after the last deadline).
 
 !!! info
 
