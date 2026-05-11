@@ -290,6 +290,21 @@ def test_mathjson_submission_reapplies_custom_function_checks() -> None:
     assert data["submitted_answers"]["test"] is None
 
 
+@pytest.mark.parametrize("raw_mathjson", ["", "   "])
+def test_blank_mathjson_submission_falls_back_to_string_parser(
+    raw_mathjson: str,
+) -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x + 1", "test-json": raw_mathjson}
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x") + 1
+
+
 def test_mathjson_student_errors_are_shown_directly() -> None:
     element_html = build_element_html('allow-sets="true"')
     data = make_question_data(
