@@ -158,6 +158,10 @@ function AfterLastDeadlineInput({
         </>
       );
     }
+
+    // TODO: we want to update the UI to completely hide the "after last deadline" options
+    // when there are in fact no deadlines. That'll render this branch obsolete, but in the
+    // meantime we have to show something here.
     return 'This will take effect until the course instance end date.';
   };
 
