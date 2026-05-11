@@ -514,7 +514,11 @@ export function resolveAccessControl(
       date,
       authzMode,
     ),
-    password: rule.dateControl?.password ?? null,
+    // Password gates active participation only; once the student is in a
+    // view-only segment (e.g. afterLastDeadline.allowSubmissions: false),
+    // re-prompting for the password would gate review without protecting
+    // anything submittable.
+    password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
     ...visibility,
     examAccessEnd: null,

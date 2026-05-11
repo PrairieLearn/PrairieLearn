@@ -647,7 +647,7 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('password')) {
     items.push({
       label: 'Password',
-      value: rule.password ? 'Password protected' : 'No password',
+      value: rule.password ? 'Required to start or submit' : 'No password',
       error: formErrors?.password?.message,
     });
   }
@@ -861,7 +861,7 @@ export function DateTableView({
   if (rule.password != null) {
     const error = formErrors?.password?.message;
     if (!error) {
-      footerItems.push('Password protected');
+      footerItems.push('Password required to start or submit');
     } else {
       footerItems.push(
         <span className="text-danger">
