@@ -181,11 +181,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "description": "Whether groups are enabled for this assessment.",
-          "type": "boolean",
-          "default": true
-        },
         "minMembers": {
           "description": "Minimum number of students in a group.",
           "type": "number"
@@ -211,17 +206,17 @@
             "canCreateGroup": {
               "description": "Whether students can create groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canJoinGroup": {
               "description": "Whether students can join groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canLeaveGroup": {
               "description": "Whether students can leave groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canNameGroup": {
               "description": "Whether students can choose a group name when creating a group.",
