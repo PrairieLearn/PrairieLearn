@@ -45,6 +45,7 @@ const SHARING_SET_NAME = 'share-set-example';
 const SHARING_QUESTION_QID = 'shared-via-sharing-set';
 const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
 const UNUSED_PUBLICLY_SHARED_QUESTION_QID = 'unused-shared-publicly';
+const UNUSED_RENAMEABLE_QUESTION_QID = 'unused-renameable';
 const ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID = 'public-assessment-only-question';
 const DRAFT_QUESTION_QID = '__drafts__/draft_1';
 
@@ -151,6 +152,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         title: 'Shared publicly but unused',
         topic: 'TOPIC HERE',
       },
+      [UNUSED_RENAMEABLE_QUESTION_QID]: {
+        uuid: '55555555-5555-5555-5555-555555555555',
+        type: 'v3',
+        title: 'Shared publicly but unused, for rename test',
+        topic: 'TOPIC HERE',
+      },
       [ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]: {
         uuid: '44444444-4444-4444-4444-444444444444',
         type: 'v3',
@@ -181,6 +188,10 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         );
         await fs.writeFile(
           path.join(originDir, 'questions', UNUSED_PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
+          '',
+        );
+        await fs.writeFile(
+          path.join(originDir, 'questions', UNUSED_RENAMEABLE_QUESTION_QID, 'question.html'),
           '',
         );
         await fs.writeFile(
@@ -498,6 +509,17 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID],
       );
 
+      sharingCourseData.questions[UNUSED_RENAMEABLE_QUESTION_QID].sharePublicly = true;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseOriginDir,
+          'questions',
+          UNUSED_RENAMEABLE_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[UNUSED_RENAMEABLE_QUESTION_QID],
+      );
+
       sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
         true;
       await fs.writeJSON(
@@ -647,6 +669,32 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         await ensureInvalidSharingOperationFailsToSync();
       },
     );
+
+    test.sequential('Rename a publicly shared question that has no consumers', async () => {
+      const originalQuestionPath = path.join(
+        courseRepo.courseOriginDir,
+        'questions',
+        UNUSED_RENAMEABLE_QUESTION_QID,
+      );
+      const renamedQid = `${UNUSED_RENAMEABLE_QUESTION_QID}-renamed`;
+      const renamedQuestionPath = path.join(courseRepo.courseOriginDir, 'questions', renamedQid);
+      await fs.rename(originalQuestionPath, renamedQuestionPath);
+
+      await commitAndPullSharingCourse();
+
+      const oldQuestion = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: UNUSED_RENAMEABLE_QUESTION_QID,
+      });
+      assert.isNull(oldQuestion);
+
+      const renamedQuestion = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: renamedQid,
+      });
+      assert.isNotNull(renamedQuestion);
+      assert.isTrue(renamedQuestion.share_publicly);
+    });
 
     test.sequential('Unshare a publicly shared question that has no consumers', async () => {
       sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;

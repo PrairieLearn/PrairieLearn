@@ -27,25 +27,30 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
   );
 }
 
-export function getInvalidRenames(
+export async function getInvalidRenames(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidRenames: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!(question.qid in courseData.questions)) {
-      invalidRenames.push(question.qid);
-    }
-  });
+): Promise<boolean> {
+  const renamedQuestions = sharedQuestions.filter(
+    (question) => !(question.qid in courseData.questions),
+  );
 
-  const existInvalidRenames = invalidRenames.length > 0;
-  if (existInvalidRenames) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-    );
-  }
-  return existInvalidRenames;
+  if (renamedQuestions.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_renames_used_in_other_courses,
+    { course_id: courseId, question_ids: renamedQuestions.map((q) => q.id) },
+    z.object({ qid: z.string() }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  logger.error(
+    `✖ Course sync completely failed. The following questions are shared and used in other courses, so they cannot be renamed or deleted: ${blockedQuestions.map((q) => q.qid).join(', ')}`,
+  );
+  return true;
 }
 
 export async function checkInvalidPublicSharingRemovals(
@@ -60,6 +65,10 @@ export async function checkInvalidPublicSharingRemovals(
   const sourcePublicQuestionIds = new Set<string>();
   for (const question of sharedQuestions) {
     if (!question.share_publicly) continue;
+    if (!(question.qid in courseData.questions)) {
+      // Renamed or deleted questions are handled by getInvalidRenames.
+      continue;
+    }
     const questionData = courseData.questions[question.qid].data;
     if (!questionData?.sharePublicly) {
       unsharingQuestionIds.push(question.id);
@@ -158,7 +167,6 @@ export async function checkInvalidSharingSetRemovals(
     }
 
     question.sharing_sets.forEach((sharingSet) => {
-      // TODO: allow if the sharing set hasn't been shared to a course
       if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
         if (!(question.qid in invalidSharingSetRemovals)) {
           invalidSharingSetRemovals[question.qid] = [];
