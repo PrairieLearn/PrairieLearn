@@ -95,6 +95,11 @@ WHERE
     $unsafe_assessment_instance_id::bigint IS NULL
     OR ai.id = $unsafe_assessment_instance_id
   )
+  -- Filter out group instances that don't have an undeleted group
+  AND (
+    ai.team_id IS NULL
+    OR g.id IS NOT NULL
+  )
 ORDER BY
   user_role DESC,
   user_uid ASC,

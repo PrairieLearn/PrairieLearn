@@ -112,11 +112,19 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN group_user_lists AS gul ON (gul.id = ai.team_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
+  -- Filter out group instances that don't have an undeleted group
+  AND (
+    ai.team_id IS NULL
+    OR g.id IS NOT NULL
+  )
 ORDER BY
   u.uid,
   u.id,
