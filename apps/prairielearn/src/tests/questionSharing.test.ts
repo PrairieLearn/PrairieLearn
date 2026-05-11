@@ -44,6 +44,8 @@ const CONSUMING_COURSE_SHARING_NAME = 'consuming-course';
 const SHARING_SET_NAME = 'share-set-example';
 const SHARING_QUESTION_QID = 'shared-via-sharing-set';
 const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+const UNUSED_PUBLICLY_SHARED_QUESTION_QID = 'unused-shared-publicly';
+const ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID = 'public-assessment-only-question';
 const DRAFT_QUESTION_QID = '__drafts__/draft_1';
 
 function sharingPageUrl(courseId: string) {
@@ -143,6 +145,18 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         title: 'Shared publicly',
         topic: 'TOPIC HERE',
       },
+      [UNUSED_PUBLICLY_SHARED_QUESTION_QID]: {
+        uuid: '33333333-3333-3333-3333-333333333333',
+        type: 'v3',
+        title: 'Shared publicly but unused',
+        topic: 'TOPIC HERE',
+      },
+      [ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]: {
+        uuid: '44444444-4444-4444-4444-444444444444',
+        type: 'v3',
+        title: 'Used only in a publicly shared assessment',
+        topic: 'TOPIC HERE',
+      },
       [DRAFT_QUESTION_QID]: {
         uuid: '22222222-2222-2222-2222-222222222222',
         type: 'v3',
@@ -163,6 +177,19 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         );
         await fs.writeFile(
           path.join(originDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
+          '',
+        );
+        await fs.writeFile(
+          path.join(originDir, 'questions', UNUSED_PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
+          '',
+        );
+        await fs.writeFile(
+          path.join(
+            originDir,
+            'questions',
+            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+            'question.html',
+          ),
           '',
         );
       },
@@ -460,6 +487,29 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
       );
 
+      sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseOriginDir,
+          'questions',
+          UNUSED_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
+      sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+        true;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseOriginDir,
+          'questions',
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       await commitAndPullSharingCourse();
     });
 
@@ -598,6 +648,28 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential('Unshare a publicly shared question that has no consumers', async () => {
+      sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseOriginDir,
+          'questions',
+          UNUSED_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
+      await commitAndPullSharingCourse();
+
+      const unusedQuestion = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: UNUSED_PUBLICLY_SHARED_QUESTION_QID,
+      });
+      assert.isNotNull(unusedQuestion);
+      assert.isFalse(unusedQuestion.share_publicly);
+    });
+
     test.sequential('Delete a sharing set, ensure live does not sync it', async () => {
       const saveSharingSets = sharingCourseData.course.sharingSets || [];
       sharingCourseData.course.sharingSets = [];
@@ -719,7 +791,10 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     test.sequential('Successfully sync a shared assessment with a shared question', async () => {
       sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
         {
-          questions: [{ id: `${PUBLICLY_SHARED_QUESTION_QID}`, points: 1 }],
+          questions: [
+            { id: `${PUBLICLY_SHARED_QUESTION_QID}`, points: 1 },
+            { id: `${ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID}`, points: 1 },
+          ],
         },
       ];
 
@@ -735,6 +810,38 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert(syncResult.status === 'complete');
       assert.isFalse(syncResult.hadJsonErrorsOrWarnings);
     });
+
+    test.sequential(
+      'Fail to unshare a publicly shared question that is in a publicly shared assessment in the same course',
+      async () => {
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+          false;
+        await fs.writeJSON(
+          path.join(
+            courseRepo.courseLiveDir,
+            'questions',
+            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+            'info.json',
+          ),
+          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+        );
+
+        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(syncResult.status, 'sharing_error');
+
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+          true;
+        await fs.writeJSON(
+          path.join(
+            courseRepo.courseLiveDir,
+            'questions',
+            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+            'info.json',
+          ),
+          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+        );
+      },
+    );
 
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;

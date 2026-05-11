@@ -57,7 +57,7 @@ export async function checkInvalidPublicSharingRemovals(
   const unsharingQuestionIds: string[] = [];
   for (const question of sharedQuestions) {
     if (!question.share_publicly) continue;
-    const questionData = courseData.questions[question.qid]?.data;
+    const questionData = courseData.questions[question.qid].data;
     if (!questionData?.sharePublicly) {
       unsharingQuestionIds.push(question.id);
     }
@@ -78,7 +78,9 @@ export async function checkInvalidPublicSharingRemovals(
 
   if (blockedQuestions.length === 0) return false;
 
-  const usedInOtherCourse = blockedQuestions.filter((q) => q.used_in_other_course).map((q) => q.qid);
+  const usedInOtherCourse = blockedQuestions
+    .filter((q) => q.used_in_other_course)
+    .map((q) => q.qid);
   const usedInPublicAssessment = blockedQuestions
     .filter((q) => q.used_in_public_assessment)
     .map((q) => q.qid);
