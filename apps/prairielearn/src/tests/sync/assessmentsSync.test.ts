@@ -75,7 +75,6 @@ function makeAssessmentSet() {
 
 function getGroupsConfig(): GroupsJsonInput {
   return {
-    enabled: true,
     roles: [{ name: 'Recorder', minMembers: 1, maxMembers: 4 }, { name: 'Contributor' }],
     studentPermissions: {
       canCreateGroup: false,
@@ -1262,7 +1261,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       roles: [{ name: 'Recorder' }],
       rolePermissions: {
         canAssignRoles: [],
@@ -1285,7 +1283,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 4,
       roles: [
         { name: 'Manager', minMembers: 10 },
@@ -1316,7 +1313,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1340,7 +1336,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
     teamAssessment.groups = {
-      enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
@@ -1374,7 +1369,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1493,7 +1487,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
 
     const singleRoleConfig = {
-      enabled: true,
       roles: [{ name: 'Recorder', minMembers: 1 }],
       rolePermissions: {
         canAssignRoles: ['Recorder'],
@@ -2651,7 +2644,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       roles: [
         { name: 'Manager', minMembers: 1, maxMembers: 1 },
         { name: 'Recorder', minMembers: 1, maxMembers: 1 },
@@ -4074,7 +4066,6 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }],
@@ -4100,7 +4091,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 5,
       roles: [
@@ -4161,7 +4151,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
     teamAssessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
