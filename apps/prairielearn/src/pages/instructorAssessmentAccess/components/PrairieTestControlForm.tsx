@@ -28,7 +28,8 @@ const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMod
   {
     value: 'show_score_only',
     label: 'Show score only',
-    description: 'Students see their score but not the questions while the reservation is active',
+    description:
+      'Students see their score but not the questions after finishing while the reservation is still active',
   },
   {
     value: 'hide_questions_and_score',
