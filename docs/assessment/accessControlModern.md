@@ -64,7 +64,7 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
     With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit and late credits must fall below it.
 
-#### Configure behavior after deadlines
+#### After deadlines
 
 Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
 

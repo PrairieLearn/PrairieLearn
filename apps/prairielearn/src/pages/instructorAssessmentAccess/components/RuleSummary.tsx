@@ -301,7 +301,7 @@ export function generateDefaultRuleDateTableRows(
   if (hasAnyDeadline) {
     rows.push({
       date: '',
-      label: getAfterLastDeadlineLabel(rule.lateDeadlines),
+      label: getAfterLastDeadlineLabel(lateDeadlines),
       access:
         afterLastDeadline == null
           ? 'No access'
