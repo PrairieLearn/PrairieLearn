@@ -30,7 +30,6 @@ interface AssessmentAccessControlProps {
 
 function AssessmentAccessControlInner({
   courseInstance,
-  assessmentId,
   origHash: initialOrigHash,
   initialData,
   prairieTestExamMetadata,
@@ -104,7 +103,6 @@ function AssessmentAccessControlInner({
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
-        assessmentId={assessmentId}
         initialData={initialData}
         prairieTestExamMetadata={prairieTestExamMetadata}
         ptHost={ptHost}
