@@ -6,6 +6,7 @@ import {
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
+  validateRuleCreditOrderingIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
@@ -17,6 +18,7 @@ export type AccessControlFormFieldPath =
   | 'defaultRule.due.date'
   | 'defaultRule.due.credit'
   | `defaultRule.earlyDeadlines.${number}.date`
+  | `defaultRule.earlyDeadlines.${number}.credit`
   | `defaultRule.lateDeadlines.${number}.date`
   | `defaultRule.lateDeadlines.${number}.credit`
   | 'defaultRule.afterLastDeadline.credit'
@@ -29,6 +31,7 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.due.date`
   | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.earlyDeadlines.${number}.credit`
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
@@ -60,7 +63,9 @@ function mapIssueToFormFieldPath(
         case 'due':
           return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
-          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.earlyDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
           return issue.path[3] === 'credit'
             ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
@@ -176,10 +181,14 @@ export function getGlobalDateValidationErrors(
   }
 
   for (const validationRule of validationRules) {
-    for (const issues of [
-      validateRuleStructuralDependencyIssues(validationRule),
-      validateRuleDateOrderingIssues(validationRule),
-    ]) {
+    const dateIssues = validateRuleDateOrderingIssues(validationRule);
+    const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
+    // Credit ordering assumes deadlines are chronological; skip if dates are
+    // out of order to avoid misleading "credits must strictly decrease" errors.
+    if (dateIssues.length === 0) {
+      issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
+    }
+    for (const issues of issueGroups) {
       for (const issue of issues) {
         const path = mapIssueToFormFieldPath(issue);
         if (!path || seenPaths.has(path)) continue;
