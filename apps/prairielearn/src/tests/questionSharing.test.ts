@@ -824,28 +824,32 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     );
   });
 
-  async function updateSharingQuestionDeletedAt({
-    qid,
-    deleted_at,
-  }: {
-    qid: string;
-    deleted_at: Date | null;
-  }) {
-    const question = await selectQuestionByQid({ course_id: sharingCourse.id, qid });
-    await updateQuestion({
-      question_id: question.id,
-      patch: { deleted_at },
-    });
-  }
-
   describe('Test that deleted shared questions are excluded from imports', function () {
+    // Resolve question IDs once before any soft-deletes; `selectQuestionByQid`
+    // filters on `deleted_at IS NULL`, so the lookup would fail mid-test once
+    // the question has been soft-deleted.
+    let sharingQuestionId: string;
+    let publiclySharedQuestionId: string;
+
+    beforeAll(async () => {
+      sharingQuestionId = (
+        await selectQuestionByQid({ course_id: sharingCourse.id, qid: SHARING_QUESTION_QID })
+      ).id;
+      publiclySharedQuestionId = (
+        await selectQuestionByQid({
+          course_id: sharingCourse.id,
+          qid: PUBLICLY_SHARED_QUESTION_QID,
+        })
+      ).id;
+    });
+
     test.sequential(
       'Soft-delete a sharing-set question, ensure consuming course sync reports errors',
       async () => {
         await withConfig({ checkSharingOnSync: true }, async () => {
-          await updateSharingQuestionDeletedAt({
-            deleted_at: new Date(),
-            qid: SHARING_QUESTION_QID,
+          await updateQuestion({
+            question_id: sharingQuestionId,
+            patch: { deleted_at: new Date() },
           });
 
           const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
@@ -853,9 +857,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
             syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
           ).toBeTruthy();
 
-          await updateSharingQuestionDeletedAt({
-            deleted_at: null,
-            qid: SHARING_QUESTION_QID,
+          await updateQuestion({
+            question_id: sharingQuestionId,
+            patch: { deleted_at: null },
           });
         });
       },
@@ -865,9 +869,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       'Soft-delete a publicly shared question, ensure consuming course sync reports errors',
       async () => {
         await withConfig({ checkSharingOnSync: true }, async () => {
-          await updateSharingQuestionDeletedAt({
-            deleted_at: new Date(),
-            qid: PUBLICLY_SHARED_QUESTION_QID,
+          await updateQuestion({
+            question_id: publiclySharedQuestionId,
+            patch: { deleted_at: new Date() },
           });
 
           const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
@@ -875,9 +879,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
             syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
           ).toBeTruthy();
 
-          await updateSharingQuestionDeletedAt({
-            deleted_at: null,
-            qid: PUBLICLY_SHARED_QUESTION_QID,
+          await updateQuestion({
+            question_id: publiclySharedQuestionId,
+            patch: { deleted_at: null },
           });
         });
       },

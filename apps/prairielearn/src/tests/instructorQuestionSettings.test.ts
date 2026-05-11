@@ -45,7 +45,11 @@ async function setLockedSharingSetInCourseFiles(enabled: boolean) {
   }
   await fs.writeJSON(infoCoursePath, infoCourse, { spaces: 2 });
 
-  const infoQuestionRelPath = path.relative(courseRepo.courseLiveDir, questionLiveInfoPath);
+  // Resolve question 1's current qid from the DB rather than relying on the
+  // module-level `questionLiveInfoPath`, which lags behind renames performed
+  // by earlier tests in this sequence.
+  const question = await selectQuestionById('1');
+  const infoQuestionRelPath = path.join('questions', question.qid!, 'info.json');
   const infoQuestionPath = path.join(courseRepo.courseOriginDir, infoQuestionRelPath);
   const infoQuestion: InfoQuestionJson = await fs.readJSON(infoQuestionPath);
   if (enabled) {
