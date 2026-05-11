@@ -145,6 +145,8 @@ export async function loadUser(
     let redirUrl = '/';
     if (options.redirectUrl !== undefined) {
       redirUrl = options.redirectUrl;
+      // Clear cookies here as well so it doesn't affect a later login redirect
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     } else if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
