@@ -19,7 +19,7 @@ WHERE
     )
   );
 
--- BLOCK select_referenced_sharing_set_deletions
+-- BLOCK select_blocked_sharing_set_deletions
 SELECT
   ss.name
 FROM

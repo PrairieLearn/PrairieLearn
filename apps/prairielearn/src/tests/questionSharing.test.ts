@@ -598,19 +598,6 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential('Delete a sharing set, ensure live does not sync it', async () => {
-      const saveSharingSets = sharingCourseData.course.sharingSets || [];
-      sharingCourseData.course.sharingSets = [];
-      await fs.writeJSON(
-        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
-        sharingCourseData.course,
-      );
-
-      await ensureInvalidSharingOperationFailsToSync();
-
-      sharingCourseData.course.sharingSets = saveSharingSets;
-    });
-
     test.sequential(
       'Delete a referenced sharing set, ensure sync error message identifies it',
       async () => {
@@ -685,6 +672,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
           IdSchema,
         );
         assert.isNull(remainingId);
+
+        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
       },
     );
 

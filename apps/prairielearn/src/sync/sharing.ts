@@ -82,7 +82,7 @@ export async function checkInvalidSharingSetDeletions(
 ): Promise<boolean> {
   const sharingSetNames = (courseData.course.data?.sharingSets ?? []).map((ss) => ss.name);
   const invalidSharingSetDeletions = await sqldb.queryScalars(
-    sql.select_referenced_sharing_set_deletions,
+    sql.select_blocked_sharing_set_deletions,
     { course_id: courseId, sharing_set_names: sharingSetNames },
     z.string(),
   );
