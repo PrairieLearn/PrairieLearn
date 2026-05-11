@@ -46,7 +46,8 @@ void add_path_rule(int ruleset_fd, const char *path, __u64 access_mask) {
 
   if (syscall(SYS_landlock_add_rule, ruleset_fd, LANDLOCK_RULE_PATH_BENEATH,
               &path_attr, 0) < 0) {
-    perror("Failed to add path rule");
+    fprintf(stderr, "Failed to add rule for path %s\n", path);
+    perror("syscall");
   }
   close(fd);
 }
@@ -83,6 +84,11 @@ int main(int argc, char *argv[]) {
   }
   struct dirent *dir;
   while ((dir = readdir(d)) != NULL) {
+    // We only add rules for directories. Paths are applied recursively, so we
+    // don't need to add rules for individual files under those directories.
+    // Files stored directly under / (like .dockerenv) become inaccessible, and
+    // that's ok.
+    if (dir->d_type != DT_DIR) continue;
     if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
       continue;
     if (strcmp(dir->d_name, "proc") == 0 || strcmp(dir->d_name, "sys") == 0 ||
