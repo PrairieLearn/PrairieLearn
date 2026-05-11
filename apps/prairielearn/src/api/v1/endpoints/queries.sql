@@ -49,8 +49,8 @@ SELECT
   ai.number AS assessment_instance_number,
   ai.open,
   ai.modified_at,
-  ai.team_id AS group_id,
-  t.name AS group_name,
+  g.id AS group_id,
+  g.name AS group_name,
   (
     SELECT
       COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
@@ -80,7 +80,10 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN teams AS t ON (t.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   ci.id = $course_instance_id
@@ -211,8 +214,8 @@ SELECT
   u.uin AS user_uin,
   u.name AS user_name,
   users_get_displayed_role (u.id, ci.id) AS user_role,
-  ai.team_id AS group_id,
-  t.name AS group_name,
+  g.id AS group_id,
+  g.name AS group_name,
   (
     SELECT
       COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
@@ -310,7 +313,10 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN teams AS t ON (t.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
