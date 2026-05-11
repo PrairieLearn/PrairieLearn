@@ -352,10 +352,14 @@ function computeTimeLimitMin(
   if (authzMode === 'Exam') return null;
   if (!lastSubmittableEnd) return durationMinutes;
 
-  // Cap time limit by seconds until the last reachable submittable deadline,
-  // minus 31 seconds (legacy behavior).
+  // Cap time limit by the time remaining until the last reachable submittable
+  // deadline. If the timer hits 0:00 exactly at the deadline, the exam might
+  // end fractionally after the deadline (overdue submission), so we subtract
+  // 31 seconds to avoid that race. 31 (rather than 30) forces the final value
+  // to round down when the cap falls on a half-minute boundary (time limits
+  // are stored in whole minutes).
   const secondsUntilDeadline = (lastSubmittableEnd.getTime() - date.getTime()) / 1000 - 31;
-  return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
+  return Math.max(0, Math.round(Math.min(durationMinutes, secondsUntilDeadline / 60)));
 }
 
 /**
