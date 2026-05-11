@@ -154,18 +154,21 @@ By default, the Java compiler will show all compilation warnings to the user, ex
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
     "timeout": 10,
-    "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3", "JDK_JAVA_OPTIONS": "-ea" }
+    "environment": {
+      "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3",
+      "JDK_JAVA_OPTIONS": "-ea"
+    }
   }
 }
 ```
 
-The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html#options). Some options of interest may include:
+The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/25/docs/specs/man/javac.html#options). Some options of interest may include:
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
 - `--release 11` to compile using the Java 11 language version.
 
-Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
+Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/25/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
 - `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
   - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/user-guide/#running-tests-config-params).
@@ -201,6 +204,8 @@ The [instructor provided library files](index.md#libraries-and-instructor-provid
 
 ### Restricted access to advanced features
 
-The autograder is set up to disable some advanced Java features that may be used by students to attempt to access private information about the grading environment, such as the heap or the stack. In particular, JNI and Java management options are disabled by default, which prevents students from using tools such as `jmap` or `jstack` to get information about the memory or threads of the autograder. Additionally, Java code is blocked from accessing files in directories like `/proc`, `/sys` or `/dev`, which may contain information about the system or the running processes.
+The autograder is set up to disable some advanced Java features that may be used by students to attempt to access private information about the grading environment, such as the heap or the stack. In particular, Java management options are disabled by default, which prevents students from using tools such as `jmap` or `jstack` to get information about the memory or threads of the autograder. Additionally, Java code is blocked from accessing files in directories like `/proc`, `/sys` or `/dev`, which may contain information about the system or the running processes.
 
-There is currently no method to enable these features. If you have a specific use case that requires the use of these features, please create an issue in the [PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn/issues) describing the use case and the features needed, and what guardrails you expect to provide to prevent abuse of these features.
+There is currently no method to enable access to these directories for specific questions. If you have a specific use case that requires the use of these features, please create an issue in the [PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn/issues) describing the use case and the features needed, and what guardrails you expect to provide to prevent abuse of these features.
+
+[Restricted methods](https://docs.oracle.com/en/java/javase/25/core/restricted-methods.html) (which includes JNI in recent Java versions) are also disabled by default, which prevents students from running native code that may be used to access information about the system. If these modules are needed in a particular question, [the `JDK_JAVA_OPTIONS` environment variable can be set](#changing-compilation-options) to include the `--enable-native-access` option, which will allow specific modules to be executed. However, instructors are warned that this may allow students to run malicious code that can access private information about the grading environment, and should only be used if necessary and with appropriate guardrails in place. Also note that the autograder image does not include any C libraries or compilers by default, so native code may need be provided as a shared library (e.g., `*.so` files) that can be loaded by the Java code.
