@@ -16,7 +16,7 @@ import { features } from '../lib/features/index.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
-import { selectQuestionByQid } from '../models/question.js';
+import { selectOptionalQuestionByQid, selectQuestionByQid } from '../models/question.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -682,7 +682,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
 
       await commitAndPullSharingCourse();
 
-      const oldQuestion = await selectQuestionByQid({
+      const oldQuestion = await selectOptionalQuestionByQid({
         course_id: sharingCourse.id,
         qid: UNUSED_RENAMEABLE_QUESTION_QID,
       });
@@ -692,7 +692,6 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
         course_id: sharingCourse.id,
         qid: renamedQid,
       });
-      assert.isNotNull(renamedQuestion);
       assert.isTrue(renamedQuestion.share_publicly);
     });
 
