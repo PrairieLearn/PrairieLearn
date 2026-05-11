@@ -55,11 +55,17 @@ export async function checkInvalidPublicSharingRemovals(
   logger: ServerJobLogger,
 ): Promise<boolean> {
   const unsharingQuestionIds: string[] = [];
+  // Questions that remain source-public are still valid in same-course public assessments, but
+  // they are not valid for other-course imports that require full public sharing.
+  const sourcePublicQuestionIds = new Set<string>();
   for (const question of sharedQuestions) {
     if (!question.share_publicly) continue;
     const questionData = courseData.questions[question.qid].data;
     if (!questionData?.sharePublicly) {
       unsharingQuestionIds.push(question.id);
+      if (questionData?.shareSourcePublicly) {
+        sourcePublicQuestionIds.add(question.id);
+      }
     }
   }
 
@@ -82,8 +88,10 @@ export async function checkInvalidPublicSharingRemovals(
     .filter((q) => q.used_in_other_course)
     .map((q) => q.qid);
   const usedInPublicAssessment = blockedQuestions
-    .filter((q) => q.used_in_public_assessment)
+    .filter((q) => q.used_in_public_assessment && !sourcePublicQuestionIds.has(q.id))
     .map((q) => q.qid);
+
+  if (usedInOtherCourse.length === 0 && usedInPublicAssessment.length === 0) return false;
 
   const messages: string[] = ['✖ Course sync completely failed.'];
   if (usedInOtherCourse.length > 0) {

@@ -843,6 +843,48 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential(
+      'Allow sharing only the source of a question that is in a publicly shared assessment in the same course',
+      async () => {
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+          false;
+        sharingCourseData.questions[
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID
+        ].shareSourcePublicly = true;
+        await fs.writeJSON(
+          path.join(
+            courseRepo.courseLiveDir,
+            'questions',
+            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+            'info.json',
+          ),
+          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+        );
+
+        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(syncResult.status, 'complete');
+        assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+          true;
+        delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]
+          .shareSourcePublicly;
+        await fs.writeJSON(
+          path.join(
+            courseRepo.courseLiveDir,
+            'questions',
+            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+            'info.json',
+          ),
+          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+        );
+
+        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(syncResult.status, 'complete');
+        assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+      },
+    );
+
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
