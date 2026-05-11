@@ -107,6 +107,10 @@
       "description": "Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.",
       "type": "string"
     },
+    "showQuestionTitles": {
+      "description": "Whether to show question titles in the student view.",
+      "type": "boolean"
+    },
     "groupWork": {
       "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
