@@ -94,7 +94,6 @@ function QuestionVisibilityInput({
   idPrefix,
   hasPrairieTest = false,
   hasCompletionMechanism = true,
-  errorMessage,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -104,7 +103,6 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   hasCompletionMechanism?: boolean;
-  errorMessage?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
@@ -150,7 +148,6 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
-          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
       </div>
@@ -276,14 +273,12 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
-  errorMessage,
   visibleFromDateError,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
-  errorMessage?: string;
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
@@ -317,7 +312,6 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
-          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
       </div>
@@ -426,7 +420,6 @@ export function DefaultAfterCompleteForm({
   });
 
   const { errors } = useFormState<AccessControlFormData>();
-  const qvError: string | undefined = get(errors, 'defaultRule.questionVisibility')?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
     'defaultRule.questionVisibility.visibleFromDate',
@@ -439,7 +432,6 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
-  const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -474,7 +466,6 @@ export function DefaultAfterCompleteForm({
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
-          errorMessage={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
@@ -488,7 +479,6 @@ export function DefaultAfterCompleteForm({
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="defaultRule"
-          errorMessage={svError}
           visibleFromDateError={svVisibleFromError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
@@ -519,7 +509,6 @@ export function OverrideAfterCompleteForm({
   const hasPrairieTest = prairieTestExams.length > 0;
 
   const { errors } = useFormState<AccessControlFormData>();
-  const qvError: string | undefined = get(errors, `overrides.${index}.questionVisibility`)?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
     `overrides.${index}.questionVisibility.visibleFromDate`,
@@ -532,7 +521,6 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
-  const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
 
   const { clearErrors } = useFormContext<AccessControlFormData>();
 
@@ -578,7 +566,6 @@ export function OverrideAfterCompleteForm({
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
-            errorMessage={qvError}
             visibleFromDateError={qvVisibleFromError}
             visibleUntilDateError={visibleUntilDateError}
             displayTimezone={displayTimezone}
@@ -602,7 +589,6 @@ export function OverrideAfterCompleteForm({
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
-            errorMessage={svError}
             visibleFromDateError={svVisibleFromError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}
