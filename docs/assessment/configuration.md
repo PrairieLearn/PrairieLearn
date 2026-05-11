@@ -443,12 +443,13 @@ The `groups` object supports the following properties:
 
 | Attribute            | Type    | Default | Description                                                                                                                      |
 | -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`            | boolean | `true`  | Whether groups are enabled for this assessment.                                                                                  |
 | `minMembers`         | integer | -       | The minimum number of students in a group.                                                                                       |
 | `maxMembers`         | integer | -       | The maximum number of students in a group.                                                                                       |
 | `roles`              | array   | `[]`    | Array of custom user roles in a group. See [Enabling custom group roles](#enabling-custom-group-roles).                          |
 | `studentPermissions` | object  | `{}`    | Student permissions for group management. See below.                                                                             |
 | `rolePermissions`    | object  | `{}`    | Role-based permissions for group assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
+
+The presence of the `groups` object indicates that group work is enabled for the assessment; remove the property to disable group work.
 
 ### Student permissions
 
@@ -456,10 +457,14 @@ The `studentPermissions` object controls what students can do to manage their gr
 
 | Attribute        | Type    | Default | Description                                                                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
+| `canCreateGroup` | boolean | `true`  | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `true`  | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `true`  | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+
+??? note "Legacy defaults"
+
+    The previous legacy defaults were `canCreateGroup: false`, `canJoinGroup: false`, `canLeaveGroup: false`, `canNameGroup: true`.
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
 

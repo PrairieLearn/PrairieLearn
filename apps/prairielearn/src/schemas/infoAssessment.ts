@@ -60,17 +60,17 @@ const GroupsStudentPermissionsJsonSchema = z
       .boolean()
       .describe('Whether students can create groups.')
       .optional()
-      .default(false),
+      .default(true),
     canJoinGroup: z
       .boolean()
       .describe('Whether students can join groups.')
       .optional()
-      .default(false),
+      .default(true),
     canLeaveGroup: z
       .boolean()
       .describe('Whether students can leave groups.')
       .optional()
-      .default(false),
+      .default(true),
     canNameGroup: z
       .boolean()
       .describe('Whether students can choose a group name when creating a group.')
@@ -100,11 +100,6 @@ const GroupsRolePermissionsJsonSchema = z
 
 export const GroupsJsonSchema = z
   .object({
-    enabled: z
-      .boolean()
-      .describe('Whether groups are enabled for this assessment.')
-      .optional()
-      .default(true),
     minMembers: z.number().describe('Minimum number of students in a group.').optional(),
     maxMembers: z.number().describe('Maximum number of students in a group.').optional(),
     roles: z

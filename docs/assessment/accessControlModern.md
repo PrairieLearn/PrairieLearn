@@ -138,7 +138,7 @@ Click **Add override** in the **Overrides** section.
 Choose who the override applies to:
 
 - **Specific students**: select individual enrolled students.
-- **Students by label**: select one or more student labels, such as "Section A" or "Extra time".
+- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them).
 
 [Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
 
