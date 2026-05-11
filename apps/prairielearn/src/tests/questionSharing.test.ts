@@ -601,7 +601,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     test.sequential(
       'Delete a referenced sharing set, ensure sync error message identifies it',
       async () => {
-        const saveSharingSets = sharingCourseData.course.sharingSets || [];
+        assert(sharingCourseData.course.sharingSets);
+        const saveSharingSets = sharingCourseData.course.sharingSets;
         sharingCourseData.course.sharingSets = saveSharingSets.filter(
           (ss) => ss.name !== SHARING_SET_NAME,
         );
@@ -639,7 +640,8 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       'Delete an unreferenced sharing set, ensure live syncs and removes it',
       async () => {
         const newSharingSetName = 'unreferenced-share-set';
-        const saveSharingSets = sharingCourseData.course.sharingSets || [];
+        assert(sharingCourseData.course.sharingSets);
+        const saveSharingSets = sharingCourseData.course.sharingSets;
         sharingCourseData.course.sharingSets = [
           ...saveSharingSets,
           { name: newSharingSetName, description: 'no references' },
