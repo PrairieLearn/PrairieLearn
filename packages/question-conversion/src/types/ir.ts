@@ -133,9 +133,8 @@ export interface IRQuestion {
   feedback?: IRFeedback;
   assets: Map<string, AssetReference>;
   /**
-   * Filenames referenced by the prompt HTML whose extensions matched
-   * `ParseOptions.excludeFileExtensions`. The tags referencing these files have
-   * been commented out in `promptHtml`, and the files are not included in `assets`.
+   * Filenames the parser chose to omit. Their referencing tags have been commented out
+   * in `promptHtml` and the files are not included in `assets`.
    */
   skippedFiles?: string[];
   metadata?: Record<string, string>;

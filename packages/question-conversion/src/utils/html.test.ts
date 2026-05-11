@@ -54,13 +54,6 @@ describe('rewriteImagesAsPlFigure', () => {
     );
   });
 
-  it('still strips a legacy relative clientFilesQuestion/ prefix', () => {
-    assert.equal(
-      rewriteImagesAsPlFigure('<img src="clientFilesQuestion/image.png">'),
-      '<pl-figure file-name="image.png" directory="clientFilesQuestion"></pl-figure>',
-    );
-  });
-
   it('preserves alt and width attributes, drops height', () => {
     assert.equal(
       rewriteImagesAsPlFigure(
@@ -161,6 +154,22 @@ describe('resolveImsFileRefs', () => {
       '<a href="{{ options.client_files_question_url }}/clip.mp4">Watch</a>',
     );
     assert.equal(result.fileRefs.get('image.png'), 'image.png');
+    assert.deepEqual(result.skippedFiles, ['clip.mp4']);
+  });
+
+  it('only wraps the inner excluded tag when a container has its own non-excluded ref', () => {
+    const html =
+      '<div data-bg="$IMS-CC-FILEBASE$/bg.png"><video src="$IMS-CC-FILEBASE$/clip.mp4"></video><p>Prompt</p></div>';
+    const result = resolveImsFileRefs(html, new Set(['.mp4']));
+    assert.equal(
+      result.html,
+      '<div data-bg="{{ options.client_files_question_url }}/bg.png">' +
+        '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.mp4"></video>\n' +
+        '-->' +
+        '<p>Prompt</p></div>',
+    );
+    assert.equal(result.fileRefs.get('bg.png'), 'bg.png');
     assert.deepEqual(result.skippedFiles, ['clip.mp4']);
   });
 });
