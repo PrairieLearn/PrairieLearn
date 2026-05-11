@@ -121,9 +121,9 @@ Question visibility options:
 
 Score visibility options:
 
-- **Show score after completion**: students can see their score immediately.
 - **Hide score permanently**: the score is never visible after completion.
-- **Hide score until date**: the score is hidden after completion and becomes visible on the chosen date.
+- **Show score after completion**: students can see their score immediately.
+- **Show score after date**: the score is hidden after completion and becomes visible on the chosen date.
 
 For PrairieTest exams, top-level after-completion settings apply outside an active reservation. Use the per-exam PrairieTest visibility setting to control what students see while their reservation is still active.
 
@@ -316,7 +316,7 @@ In the UI:
 4. Enable **Time limit** and enter 90 minutes.
 5. Enable **Password** and enter the password.
 6. Under **After completion**, set **Question visibility** to **Hide questions permanently**.
-7. Set **Score visibility** to **Hide score until date** and enter Mar 12.
+7. Set **Score visibility** to **Show score after date** and enter Mar 12.
 
 ??? info "JSON"
 
