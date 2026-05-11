@@ -119,7 +119,6 @@ async function createSymbolicInputQuestion(
 ></pl-symbolic-input>
 
 <pl-symbolic-input
-  aria-label="Formula editor expression"
   formula-editor="true"
   answers-name="editor"
   variables="x"
@@ -164,6 +163,10 @@ async function fillFormulaEditor(formulaEditor: Locator, latex: string): Promise
   }, latex);
 }
 
+function getFormulaEditor(page: Page): Locator {
+  return page.locator('#symbolic-input-editor');
+}
+
 async function setHiddenMathJson(
   page: Page,
   answersName: 'editor' | 'raw',
@@ -188,7 +191,7 @@ async function submitRawMathJson(page: Page, rawMathJson: string): Promise<void>
 
 async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Promise<void> {
   await page.getByLabel('Raw symbolic expression').fill('x');
-  await fillFormulaEditor(page.getByLabel('Formula editor expression'), 'x');
+  await fillFormulaEditor(getFormulaEditor(page), 'x');
   await setHiddenMathJson(page, 'editor', rawMathJson);
   await showSubmittedErrorDetails(page);
 }
@@ -215,7 +218,7 @@ test.describe('pl-symbolic-input', () => {
         await expect(page.getByText(message)).toBeHidden();
       }
 
-      const formulaEditor = page.getByLabel('Formula editor expression');
+      const formulaEditor = getFormulaEditor(page);
       await expect(formulaEditor).toBeVisible();
       for (const { latex, message } of parseErrorCases) {
         await fillFormulaEditor(formulaEditor, latex);
