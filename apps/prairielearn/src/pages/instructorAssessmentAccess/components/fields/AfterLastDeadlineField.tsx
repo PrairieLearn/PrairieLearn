@@ -42,7 +42,7 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'partial_credit',
     label: 'Allow submissions for partial credit',
-    description: 'Students receive a fixed percentage of credit for submissions',
+    description: 'Students receive partial credit for submissions',
   },
 ];
 
