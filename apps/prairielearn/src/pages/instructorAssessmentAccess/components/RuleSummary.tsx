@@ -17,6 +17,7 @@ import {
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+import { getAfterLastDeadlineLabel } from './fields/AfterLastDeadlineField.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
@@ -153,8 +154,6 @@ export function generateDefaultRuleDateTableRows(
   const releaseDate = rule.release.date;
   const dueDate = rule.due.date;
   const dueCredit = rule.due.credit ?? 100;
-  const earlyDeadlines = rule.earlyDeadlines;
-  const lateDeadlines = rule.lateDeadlines;
 
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
@@ -211,7 +210,7 @@ export function generateDefaultRuleDateTableRows(
     });
   }
 
-  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -272,7 +271,7 @@ export function generateDefaultRuleDateTableRows(
     });
   }
 
-  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -294,13 +293,13 @@ export function generateDefaultRuleDateTableRows(
     });
   });
 
-  // Show "After last deadline" only when there is a deadline it can apply to.
+  // Show the after-last-deadline row only when there is a deadline it can apply to.
   const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
       date: '',
-      label: 'After last deadline',
+      label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       access:
         afterLastDeadline == null
           ? 'No access'

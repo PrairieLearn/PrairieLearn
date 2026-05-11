@@ -46,19 +46,19 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
 
 const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
-    value: 'show_score',
-    label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
-  },
-  {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
     description: 'Score will never be visible after completion',
   },
   {
+    value: 'show_score',
+    label: 'Show score after completion',
+    description: 'Students can see their score immediately after completing the assessment',
+  },
+  {
     value: 'hide_score_until_date',
-    label: 'Hide score until date',
-    description: 'Score will be hidden after completion and become visible again on this date',
+    label: 'Show score after date',
+    description: 'Score will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -321,7 +321,7 @@ function ScoreVisibilityInput({
             id={`${idPrefix}-show-score-date`}
             type="datetime-local"
             step={1}
-            aria-label="Show score again on"
+            aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
             aria-invalid={visibleFromDateInvalid}
