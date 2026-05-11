@@ -815,8 +815,14 @@ export class QTI12AssessmentParser implements InputParser {
         ? { type: 'file-upload' as const, allowedExtensions }
         : result.body;
 
-    // Resolve $IMS-CC-FILEBASE$ references → clientFilesQuestion/
-    const { html: imsResolved, fileRefs } = resolveImsFileRefs(item.promptHtml);
+    // Resolve $IMS-CC-FILEBASE$ references → `{{ options.client_files_question_url }}/<file>`.
+    // References to files whose extension is in `excludeFileExtensions` are commented out and
+    // excluded from `fileRefs`.
+    const {
+      html: imsResolved,
+      fileRefs,
+      skippedFiles,
+    } = resolveImsFileRefs(item.promptHtml, parseOptions?.excludeFileExtensions);
 
     // Handle inline base64 images
     const { html: cleanedPrompt, files } = extractInlineImages(imsResolved);
@@ -885,6 +891,7 @@ export class QTI12AssessmentParser implements InputParser {
       points: sectionPoints ?? item.pointsPossible,
       feedback: hasFeedback ? feedback : undefined,
       assets,
+      ...(skippedFiles.length > 0 ? { skippedFiles } : {}),
       metadata: {
         ...item.metadata,
         ...(parseOptions?.defaultTopic ? { topic: parseOptions.defaultTopic } : {}),

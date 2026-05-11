@@ -10,11 +10,21 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
   ModelOperations: typeof ModelOperationsType;
 };
 
+/**
+ * Mustache URL prefix recommended by PrairieLearn for referencing files in `clientFilesQuestion/`
+ * from question HTML. Resolves to the served URL of the question's clientFilesQuestion directory
+ * at render time. See https://docs.prairielearn.com/clientServerFiles/.
+ *
+ * Note: the surrounding `{{ ... }}` is the Mustache template syntax PrairieLearn evaluates while
+ * rendering `question.html`; it's not a runtime template literal placeholder.
+ */
+const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+
 const DATA_URI_RE = /src=(["'])data:(?<mime>image\/[a-zA-Z0-9.+-]+);base64,(?<data>[^"']+)\1/g;
 
 /**
- * Extract inline base64 data URI images from HTML, replacing them with
- * local file references in clientFilesQuestion/.
+ * Extract inline base64 data URI images from HTML, replacing them with references to the
+ * question's clientFilesQuestion URL via the Mustache prefix.
  *
  * Returns the rewritten HTML and a map of filename → Buffer.
  */
@@ -30,7 +40,7 @@ export function extractInlineImages(html: string): {
     const digest = crypto.createHash('sha256').update(imgBytes).digest('hex').slice(0, 16);
     const filename = `inline-${digest}.${ext}`;
     files.set(filename, imgBytes);
-    return `src=${quote}clientFilesQuestion/${filename}${quote}`;
+    return `src=${quote}${CLIENT_FILES_QUESTION_URL}/${filename}${quote}`;
   });
 
   return { html: rewritten, files };
@@ -43,8 +53,9 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
- * For images already pointing into clientFilesQuestion/ the directory attribute
- * is set explicitly and the prefix is stripped from file-name. Other relative
+ * For images pointing into the question's clientFilesQuestion directory (via the
+ * Mustache prefix or the legacy `clientFilesQuestion/` relative path), the directory
+ * attribute is set explicitly and the prefix is stripped from file-name. Other relative
  * paths are passed through as file-name without a directory attribute. Images
  * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are
  * left as <img> since pl-figure resolves file-name against a local course
@@ -64,9 +75,10 @@ export function rewriteImagesAsPlFigure(html: string): string {
 
     const parts: string[] = [];
 
-    if (src.startsWith('clientFilesQuestion/')) {
+    const clientFilesQuestionFilename = stripClientFilesQuestionPrefix(src);
+    if (clientFilesQuestionFilename != null) {
       parts.push(
-        `file-name="${he.escape(src.slice('clientFilesQuestion/'.length))}"`,
+        `file-name="${he.escape(clientFilesQuestionFilename)}"`,
         'directory="clientFilesQuestion"',
       );
     } else {
@@ -80,24 +92,58 @@ export function rewriteImagesAsPlFigure(html: string): string {
   });
 }
 
+/**
+ * If `src` points into the question's clientFilesQuestion directory — either via the
+ * Mustache prefix or the legacy relative path — return the filename portion.
+ * Returns `null` otherwise so the caller can decide on a default.
+ */
+function stripClientFilesQuestionPrefix(src: string): string | null {
+  const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
+  if (src.startsWith(mustachePrefix)) return src.slice(mustachePrefix.length);
+  if (src.startsWith('clientFilesQuestion/')) return src.slice('clientFilesQuestion/'.length);
+  return null;
+}
+
 const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
+
+// Single regex with three branches, tried in order:
+//   1. open tag containing $IMS-CC-FILEBASE$ in its attrs + matching close (`<a ...$IMS...>...</a>`).
+//   2. self-closing or void open tag containing $IMS-CC-FILEBASE$ (`<img ...$IMS.../>`, `<source ...$IMS...>`).
+//   3. bare $IMS-CC-FILEBASE$ reference not wrapped in a tag (text content or attributes of a tag whose
+//      open-tag matching already failed — rare; falls through here so the URL still gets rewritten).
+// Branches 1 and 2 are tag-aware so the entire tag can be comment-wrapped when an excluded file is referenced;
+// branch 3 just rewrites the URL since there's no tag context to wrap.
+const IMS_REF_OR_TAG_RE =
+  /<(\w[\w-]*)\b[^>]*\$IMS-CC-FILEBASE\$[^>]*>[\s\S]*?<\/\1>|<\w[\w-]*\b[^>]*\$IMS-CC-FILEBASE\$[^>]*\/?>|\$IMS-CC-FILEBASE\$\/[^"'\s]+/gi;
 
 /**
  * Resolve $IMS-CC-FILEBASE$ references in HTML for PrairieLearn output.
  *
- * Rewrites src="$IMS-CC-FILEBASE$/path/img.png" to:
- * src="clientFilesQuestion/img.png"
+ * Rewrites `src="$IMS-CC-FILEBASE$/path/img.png"` to
+ * `src="{{ options.client_files_question_url }}/img.png"` — the PrairieLearn-recommended
+ * Mustache URL pattern for files in the question's clientFilesQuestion directory.
  *
- * Returns the rewritten HTML and a map of { filename → original decoded relative path }
- * so the caller can locate and copy the source files.
+ * When `excludeExtensions` is provided, a tag that references a file with an excluded
+ * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
+ * the path is readable), and the file is omitted from `fileRefs`. Excluded filenames are
+ * returned in `skippedFiles`.
+ *
+ * Returns the rewritten HTML, a map of `{ filename → original decoded relative path }`
+ * for files that should be copied to clientFilesQuestion, and the list of skipped filenames.
  */
-export function resolveImsFileRefs(html: string): {
+export function resolveImsFileRefs(
+  html: string,
+  excludeExtensions?: Set<string>,
+): {
   html: string;
   fileRefs: Map<string, string>;
+  skippedFiles: string[];
 } {
   const fileRefs = new Map<string, string>();
+  const skipped = new Set<string>();
+  const pathByFilename = new Map<string, string>();
 
-  const rewritten = html.replaceAll(IMS_CC_FILEBASE_RE, (_match, rawPath: string) => {
+  function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
     const decodedPath = decodeURIComponent(rawPath);
     const base = decodedPath.split('/').pop() ?? decodedPath;
     const dot = base.lastIndexOf('.');
@@ -105,15 +151,44 @@ export function resolveImsFileRefs(html: string): {
     const ext = dot !== -1 ? base.slice(dot) : '';
     let filename = base;
     let suffix = 1;
-    while (fileRefs.has(filename) && fileRefs.get(filename) !== decodedPath) {
+    while (pathByFilename.has(filename) && pathByFilename.get(filename) !== decodedPath) {
       filename = `${stem}-${suffix}${ext}`;
       suffix += 1;
     }
-    fileRefs.set(filename, decodedPath);
-    return `clientFilesQuestion/${filename}`;
-  });
+    pathByFilename.set(filename, decodedPath);
+    const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
+    if (excluded) {
+      skipped.add(filename);
+    } else {
+      fileRefs.set(filename, decodedPath);
+    }
+    return { filename, excluded };
+  }
 
-  return { html: rewritten, fileRefs };
+  return {
+    html: html.replaceAll(IMS_REF_OR_TAG_RE, (match, _name, offset, full) => {
+      // Branch 3 (bare URL): rewrite in place. No surrounding tag to wrap.
+      if (!match.startsWith('<')) {
+        const rawPath = match.slice('$IMS-CC-FILEBASE$/'.length);
+        return `${CLIENT_FILES_QUESTION_URL}/${rewriteUrl(rawPath).filename}`;
+      }
+      // Branches 1 & 2 (tag): rewrite all URLs inside the matched tag and, if any are
+      // excluded, wrap the whole tag in a TODO comment.
+      let hasExcluded = false;
+      const rewritten = match.replaceAll(IMS_CC_FILEBASE_RE, (_, rawPath: string) => {
+        const { filename, excluded } = rewriteUrl(rawPath);
+        if (excluded) hasExcluded = true;
+        return `${CLIENT_FILES_QUESTION_URL}/${filename}`;
+      });
+      if (!hasExcluded) return rewritten;
+      // Don't nest comments if the tag is already inside one.
+      const before = full.slice(0, offset);
+      if (before.lastIndexOf('<!--') > before.lastIndexOf('-->')) return rewritten;
+      return `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${rewritten}\n-->`;
+    }),
+    fileRefs,
+    skippedFiles: [...skipped],
+  };
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
