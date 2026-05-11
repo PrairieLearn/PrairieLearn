@@ -552,7 +552,7 @@ function DeleteAllGroupsModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AssessmentGroupsError['DeleteAll']>(mutation.error);
 
   const handleHide = () => {
     mutation.reset();

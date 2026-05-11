@@ -227,7 +227,7 @@ function CourseDeleteForm({
     },
   });
 
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Delete']>(mutation.error);
 
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
@@ -292,7 +292,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Insert']>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -460,7 +460,7 @@ function CourseUpdateColumnForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['UpdateColumn']>(mutation.error);
 
   const {
     register,

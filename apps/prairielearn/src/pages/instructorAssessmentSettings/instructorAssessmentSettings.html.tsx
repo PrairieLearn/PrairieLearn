@@ -10,7 +10,7 @@ import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairiel
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { getAppError } from '../../lib/client/errors.js';
+import { AppErrorAlert, getAppError, renderAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
@@ -255,11 +255,18 @@ function CopyAssessmentModal({
       </Modal.Header>
       <form onSubmit={onSubmit}>
         <Modal.Body>
-          {copyError && (
-            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
-              {copyError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={copyError}
+            onDismiss={() => copyMutation.reset()}
+            render={{
+              SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+                <>
+                  {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+                </>
+              ),
+              UNKNOWN: ({ message }) => message,
+            }}
+          />
           <p className="text-muted small mb-3">
             Making a copy of <code>{assessment.tid}</code>.
           </p>
@@ -442,10 +449,17 @@ function InstructorAssessmentSettingsInner({
         onDismiss: () => saveMutation.reset(),
       };
     }
-    if (appError?.message) {
+    if (appError) {
       return {
         variant: 'danger',
-        message: appError.message,
+        message: renderAppError(appError, {
+          SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+            <>
+              {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+            </>
+          ),
+          UNKNOWN: ({ message }) => message,
+        }),
         onDismiss: () => saveMutation.reset(),
       };
     }
@@ -517,11 +531,18 @@ function InstructorAssessmentSettingsInner({
           <Modal.Title>Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {deleteError && (
-            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-              {deleteError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={deleteError}
+            onDismiss={() => deleteMutation.reset()}
+            render={{
+              SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+                <>
+                  {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+                </>
+              ),
+              UNKNOWN: ({ message }) => message,
+            }}
+          />
           <p>
             Are you sure you want to delete the assessment <b>{assessment.tid}</b>?
           </p>
