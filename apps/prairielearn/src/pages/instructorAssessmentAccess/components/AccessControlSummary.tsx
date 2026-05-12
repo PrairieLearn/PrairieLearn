@@ -100,38 +100,45 @@ function DefaultRuleSummaryContent({
   const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
   const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
+  const hasAnyTable =
+    dateTableRows.length > 0 || hasPrairieTestExams || afterCompleteTableRows.length > 0;
+
   return (
     <div className="d-flex flex-column gap-2">
       <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
 
-      {dateTableRows.length > 0 && (
-        <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
-      )}
+      {hasAnyTable && (
+        <div className="access-summary-grid-scroll">
+          <div className="access-summary-grid">
+            {dateTableRows.length > 0 && (
+              <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
+            )}
 
-      {hasPrairieTestExams && (
-        <PrairieTestExamsTable
-          exams={rule.prairieTestExams}
-          beforeReleaseListed={rule.beforeReleaseListed}
-          initialMetadata={prairieTestExamMetadata}
-          ptHost={ptHost}
-          formErrors={formErrors}
-        />
-      )}
+            {hasPrairieTestExams && (
+              <PrairieTestExamsTable
+                exams={rule.prairieTestExams}
+                beforeReleaseListed={rule.beforeReleaseListed}
+                initialMetadata={prairieTestExamMetadata}
+                ptHost={ptHost}
+                formErrors={formErrors}
+              />
+            )}
 
-      {afterCompleteTableRows.length > 0 && (
-        <AfterCompleteTableView rows={afterCompleteTableRows} />
-      )}
-
-      {dateTableRows.length === 0 &&
-        !hasPrairieTestExams &&
-        afterCompleteTableRows.length === 0 && (
-          <div
-            className="rounded text-center py-3 text-body-secondary"
-            style={{ border: '2px dashed var(--bs-border-color)' }}
-          >
-            No access settings configured.
+            {afterCompleteTableRows.length > 0 && (
+              <AfterCompleteTableView rows={afterCompleteTableRows} />
+            )}
           </div>
-        )}
+        </div>
+      )}
+
+      {!hasAnyTable && (
+        <div
+          className="rounded text-center py-3 text-body-secondary"
+          style={{ border: '2px dashed var(--bs-border-color)' }}
+        >
+          No access settings configured.
+        </div>
+      )}
     </div>
   );
 }

@@ -24,3 +24,92 @@
 .assessment-access-date-cell-current-success::before {
   background-color: var(--bs-success);
 }
+
+/* ── Access summary tables: subgrid for cross-card column alignment ───── */
+
+/* Horizontal scroll wrapper. Without min-width: 0 the wrapper inherits
+   sizing from its flex parent and won't shrink, defeating overflow-x. */
+.access-summary-grid-scroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/* Three column tracks. `auto` lets each track size to its widest content
+   across all participating cards — that's what makes columns line up
+   without hardcoded widths. column-gap is 0 because cards visually act
+   like tables (cells abut). row-gap reproduces the previous gap-2. */
+.access-summary-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  column-gap: 0;
+  row-gap: 0.5rem;
+}
+
+/* Each card spans the full row and uses the parent's column tracks via
+   subgrid, so its cells share column boundaries with the other cards. */
+.access-summary-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  overflow: hidden;
+}
+
+.access-summary-card-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.access-summary-card-header h6 {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
+/* Each logical row in a card is itself a subgrid so its cells align to
+   the same column tracks. */
+.access-summary-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.access-summary-row--headers {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.access-summary-cell {
+  padding: 0.5rem 0.5rem;
+}
+
+.access-summary-cell--first {
+  padding-left: 1rem;
+}
+
+.access-summary-cell--header {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+/* Date table only uses 2 cells per row; the second cell stretches across
+   both remaining tracks of the parent grid. */
+.access-summary-cell--span-rest {
+  grid-column: 2 / -1;
+}
+
+.access-summary-card-footer {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--bs-border-color);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+}
