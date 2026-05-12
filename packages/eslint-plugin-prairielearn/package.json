@@ -23,6 +23,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@html-eslint/parser": "^0.58.1",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript-eslint/rule-tester": "^8.58.0",

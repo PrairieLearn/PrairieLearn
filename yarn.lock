@@ -4981,6 +4981,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
   dependencies:
+    "@html-eslint/parser": "npm:^0.58.1"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.12.2"
     "@typescript-eslint/rule-tester": "npm:^8.58.0"
