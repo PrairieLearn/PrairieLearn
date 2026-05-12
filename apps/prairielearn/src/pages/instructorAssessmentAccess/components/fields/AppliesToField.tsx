@@ -139,42 +139,47 @@ export function AppliesToField({
             )}
           </div>
         ) : (
-          <div className="d-flex flex-wrap align-items-baseline gap-2">
-            <StudentLabelDropdown
-              labels={allLabels ?? []}
-              selectedIds={excludedStudentLabelIds}
-              buttonLabel="Select labels"
-              onToggle={(label) => {
-                if (excludedStudentLabelIds.has(label.id)) {
-                  handleRemoveStudentLabelById(label.id);
-                } else {
-                  appendStudentLabel({
-                    studentLabelId: label.id,
-                    name: label.name,
-                    color: label.color,
-                  });
-                }
-              }}
-            />
-            {studentLabels.length === 0 ? (
-              <span className="text-muted small">No student labels selected</span>
-            ) : (
-              studentLabels.map((sl) => (
-                <StudentLabelBadge
-                  key={sl.studentLabelId}
-                  label={{ name: sl.name, color: sl.color ?? 'gray1' }}
-                >
-                  <button
-                    type="button"
-                    className="btn p-0 lh-1"
-                    aria-label={`Remove label "${sl.name}"`}
-                    onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+          <div>
+            <div className="d-flex flex-wrap align-items-baseline gap-2">
+              <StudentLabelDropdown
+                labels={allLabels ?? []}
+                selectedIds={excludedStudentLabelIds}
+                buttonLabel="Select labels"
+                onToggle={(label) => {
+                  if (excludedStudentLabelIds.has(label.id)) {
+                    handleRemoveStudentLabelById(label.id);
+                  } else {
+                    appendStudentLabel({
+                      studentLabelId: label.id,
+                      name: label.name,
+                      color: label.color,
+                    });
+                  }
+                }}
+              />
+              {studentLabels.length === 0 ? (
+                <span className="text-muted small">No student labels selected</span>
+              ) : (
+                studentLabels.map((sl) => (
+                  <StudentLabelBadge
+                    key={sl.studentLabelId}
+                    label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    <i className="bi bi-x text-danger" aria-hidden="true" />
-                  </button>
-                </StudentLabelBadge>
-              ))
-            )}
+                    <button
+                      type="button"
+                      className="btn p-0 lh-1"
+                      aria-label={`Remove label "${sl.name}"`}
+                      onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                    >
+                      <i className="bi bi-x text-danger" aria-hidden="true" />
+                    </button>
+                  </StudentLabelBadge>
+                ))
+              )}
+            </div>
+            <div className="form-text mt-2">
+              Applies to students with any of the selected labels.
+            </div>
           </div>
         )}
       </div>

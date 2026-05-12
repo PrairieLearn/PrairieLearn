@@ -1,5 +1,5 @@
 import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import { get, useController, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -9,8 +9,7 @@ import {
   type AccessControlFormData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  isNonDefaultQuestionVisibility,
-  isNonDefaultScoreVisibility,
+  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -47,19 +46,19 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
 
 const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
-    value: 'show_score',
-    label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
-  },
-  {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
     description: 'Score will never be visible after completion',
   },
   {
+    value: 'show_score',
+    label: 'Show score after completion',
+    description: 'Students can see their score immediately after completing the assessment',
+  },
+  {
     value: 'hide_score_until_date',
-    label: 'Hide score until date',
-    description: 'Score will be hidden after completion and become visible again on this date',
+    label: 'Show score after date',
+    description: 'Score will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -109,6 +108,9 @@ function QuestionVisibilityInput({
   displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
+  const selectedDescription = QUESTION_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideQuestionsMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideQuestionsMode) => {
     switch (newMode) {
@@ -151,6 +153,9 @@ function QuestionVisibilityInput({
           minWidth={300}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideQuestionsMode === 'hide_questions_between_dates' && (
         <div className="mt-2">
@@ -248,6 +253,12 @@ function QuestionVisibilityInput({
           )}
         </div>
       )}
+      {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
+        <Alert variant="warning" className="mt-2 mb-0">
+          Showing questions after completion is not recommended when PrairieTest exams are
+          connected. Students may be able to view exam content when their assessment is closed.
+        </Alert>
+      )}
       {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
         <Alert variant="info" className="mt-2 mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
@@ -278,6 +289,9 @@ function ScoreVisibilityInput({
   displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
+  const selectedDescription = SCORE_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideScoreMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideScoreMode) => {
     switch (newMode) {
@@ -309,6 +323,9 @@ function ScoreVisibilityInput({
           minWidth={300}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideScoreMode === 'hide_score_until_date' && (
         <div className="mt-2">
@@ -316,7 +333,7 @@ function ScoreVisibilityInput({
             id={`${idPrefix}-show-score-date`}
             type="datetime-local"
             step={1}
-            aria-label="Show score again on"
+            aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
             aria-invalid={visibleFromDateInvalid}
@@ -343,23 +360,17 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is considered complete when students can no longer answer questions. This
-        typically happens when:
-      </p>
-      <ul>
-        <li>The last late deadline passes (or due date if no late deadlines)</li>
-        <li>
-          The assessment is closed (e.g., time limit expires, autoclose, or instructor closes it)
-        </li>
-      </ul>
-      <p>
-        The completion date can be different for different students based on when they started or
-        their specific accommodations.
+        An assessment is complete when students can no longer answer questions — for example, after
+        the due date and any late deadlines pass, after a time limit expires, or once their
+        assessment instance is closed (manually or via autoclose).
       </p>
       <p>
-        These settings apply only when the student does not have an active PrairieTest reservation.
-        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
-        govern visibility instead.
+        The completion time can vary between students based on when they started or any
+        accommodations they have.
+      </p>
+      <p>
+        While a student has an active PrairieTest reservation, the per-exam settings on each
+        PrairieTest exam govern visibility instead.
       </p>
     </>
   ),
@@ -388,6 +399,9 @@ function AfterCompleteCard({
               <i className="bi bi-info-circle" aria-hidden="true" />
             </Button>
           </OverlayTrigger>
+        </div>
+        <div className="text-muted small mt-1">
+          What students can see once they can no longer answer questions on the assessment.
         </div>
       </div>
       <Row className="gy-3">{children}</Row>
@@ -428,38 +442,30 @@ export function DefaultAfterCompleteForm({
     'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
 
-  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
-    name: 'defaultRule.prairieTestExams',
+  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
+    name: 'defaultRule.dateControlEnabled',
   });
-  const hasPrairieTest = prairieTestExams.length > 0;
-
-  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({
-    name: 'defaultRule.due',
-  });
-  const dueDate = due.date;
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({ name: 'defaultRule.due' });
   const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
     name: 'defaultRule.lateDeadlines',
   });
   const durationMinutes = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
     name: 'defaultRule.durationMinutes',
   });
-  const hasCompletionMechanism =
-    hasPrairieTest || dueDate != null || lateDeadlines.length > 0 || durationMinutes != null;
-
-  const qvNonDefault = isNonDefaultQuestionVisibility(qvField.value);
-  const svNonDefault = isNonDefaultScoreVisibility(svField.value);
-  const showNoCompletionWarning = !hasCompletionMechanism && (qvNonDefault || svNonDefault);
+  const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
+    name: 'defaultRule.prairieTestExams',
+  });
+  const hasPrairieTest = prairieTestExams.length > 0;
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism({
+    dateControlEnabled,
+    due,
+    lateDeadlines,
+    durationMinutes,
+    prairieTestExams,
+  });
 
   return (
     <AfterCompleteCard title={title}>
-      {showNoCompletionWarning && (
-        <Col xs={12}>
-          <Alert variant="warning" className="py-2 mb-0">
-            These settings will have no effect because there is no way for the assessment to be
-            completed.
-          </Alert>
-        </Col>
-      )}
       <Col md={6}>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
@@ -525,6 +531,19 @@ export function OverrideAfterCompleteForm({
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
 
+  const { clearErrors } = useFormContext<AccessControlFormData>();
+
+  const {
+    isOverridden: qvOverridden,
+    addOverride: addQvOverride,
+    removeOverride: removeQvOverride,
+  } = useOverrideField(index, 'questionVisibility');
+  const {
+    isOverridden: svOverridden,
+    addOverride: addSvOverride,
+    removeOverride: removeSvOverride,
+  } = useOverrideField(index, 'scoreVisibility');
+
   const { field: qvField } = useController<
     AccessControlFormData,
     `overrides.${number}.questionVisibility`
@@ -539,17 +558,6 @@ export function OverrideAfterCompleteForm({
     name: `overrides.${index}.scoreVisibility`,
     rules: { validate: validateScoreVisibility },
   });
-
-  const {
-    isOverridden: qvOverridden,
-    addOverride: addQvOverride,
-    removeOverride: removeQvOverride,
-  } = useOverrideField(index, 'questionVisibility');
-  const {
-    isOverridden: svOverridden,
-    addOverride: addSvOverride,
-    removeOverride: removeSvOverride,
-  } = useOverrideField(index, 'scoreVisibility');
 
   return (
     <AfterCompleteCard title={title}>
@@ -582,7 +590,10 @@ export function OverrideAfterCompleteForm({
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
           }}
-          onRemoveOverride={removeSvOverride}
+          onRemoveOverride={() => {
+            removeSvOverride();
+            clearErrors(`overrides.${index}.questionVisibility`);
+          }}
         >
           <ScoreVisibilityInput
             value={svField.value}

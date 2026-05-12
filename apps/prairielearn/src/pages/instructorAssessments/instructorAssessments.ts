@@ -20,6 +20,7 @@ import {
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { validateShortName } from '../../lib/short-name.js';
@@ -67,6 +68,8 @@ router.get(
       );
     }
 
+    const qtiImportEnabled = await features.enabledFromLocals('qti-content-import', res.locals);
+
     res.send(
       InstructorAssessments({
         resLocals: res.locals,
@@ -76,6 +79,7 @@ router.get(
         assessmentSets,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         assessmentModules,
+        qtiImportEnabled,
       }),
     );
   }),

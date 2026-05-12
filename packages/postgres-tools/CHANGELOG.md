@@ -1,5 +1,11 @@
 # @prairielearn/postgres-tools
 
+## 3.0.6
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 3.0.5
 
 ### Patch Changes
