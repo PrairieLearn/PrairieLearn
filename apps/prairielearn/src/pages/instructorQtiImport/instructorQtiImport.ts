@@ -111,12 +111,15 @@ router.post(
       }
 
       // Find QTI assessment files from the manifest. If the archive has a
-      // single wrapper directory (e.g. "course-export/imsmanifest.xml" instead
-      // of "imsmanifest.xml" at root), descend into it automatically.
+      // wrapper directory (e.g. "course-export/imsmanifest.xml" instead of
+      // "imsmanifest.xml" at root), descend into it. macOS zip tools add a
+      // __MACOSX/ sibling with resource forks, so filter those out first.
       let contentDir = tempDir;
       let entries = await findQtiFilesFromManifest(contentDir);
       if (entries.length === 0) {
-        const children = await readdir(tempDir);
+        const children = (await readdir(tempDir)).filter(
+          (name) => !name.startsWith('.') && name !== '__MACOSX',
+        );
         if (children.length === 1) {
           const child = path.join(tempDir, children[0]);
           if ((await fsStat(child)).isDirectory()) {

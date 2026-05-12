@@ -77,7 +77,8 @@ export interface QtiFileEntry {
 /**
  * Find QTI assessment XML files by parsing the resource list in `imsmanifest.xml`.
  *
- * Canvas QTI resources have type imsqti_xmlv1p2/imscc_xmlv1pN/assessment.
+ * Canvas QTI resources have type `imsqti_xmlv1p2` (quiz exports) or
+ * `imsqti_xmlv1p2/imscc_xmlv1pN/assessment` (course exports).
  * Each assessment resource has a paired `associatedcontent` dependency that
  * lists both `assessment_meta.xml` and a `non_cc_assessments/<id>.xml.qti`
  * file. The non-CC QTI contains the full question content (including Canvas-
@@ -129,7 +130,7 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
     if (resource == null || typeof resource !== 'object') continue;
     const r = resource as Record<string, unknown>;
     const type = attr(r, 'type').toLowerCase();
-    if (!type.includes('qti') || !type.includes('assessment')) continue;
+    if (!type.includes('qti')) continue;
 
     // Resolve the primary QTI file path.
     // Canvas IMS CC: path is in a <file href="..."> child element.
