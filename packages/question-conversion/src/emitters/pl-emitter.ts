@@ -234,10 +234,7 @@ export class PLEmitter implements OutputEmitter {
 
     const questionHtml = this.renderQuestionHtml(question);
     const serverPy = this.renderServerPy(question);
-    const { clientFiles, skippedFiles } = this.collectClientFiles(
-      question,
-      options?.excludeFileExtensions,
-    );
+    const clientFiles = this.collectClientFiles(question);
 
     return {
       directoryName,
@@ -246,7 +243,7 @@ export class PLEmitter implements OutputEmitter {
       questionHtml,
       serverPy: serverPy || undefined,
       clientFiles,
-      skippedFiles,
+      skippedFiles: question.skippedFiles ?? [],
     };
   }
 
@@ -318,20 +315,9 @@ export class PLEmitter implements OutputEmitter {
     return parts.join('\n');
   }
 
-  private collectClientFiles(
-    question: IRQuestion,
-    excludeExtensions?: Set<string>,
-  ): { clientFiles: Map<string, Buffer | string>; skippedFiles: string[] } {
+  private collectClientFiles(question: IRQuestion): Map<string, Buffer | string> {
     const clientFiles = new Map<string, Buffer | string>();
-    const skippedFiles: string[] = [];
     for (const [filename, asset] of question.assets) {
-      if (excludeExtensions) {
-        const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
-        if (excludeExtensions.has(ext)) {
-          skippedFiles.push(filename);
-          continue;
-        }
-      }
       if (asset.type === 'base64') {
         clientFiles.set(filename, Buffer.from(asset.value, 'base64'));
       } else if (asset.type === 'file-path') {
@@ -339,7 +325,7 @@ export class PLEmitter implements OutputEmitter {
         clientFiles.set(filename, asset.value);
       }
     }
-    return { clientFiles, skippedFiles };
+    return clientFiles;
   }
 }
 

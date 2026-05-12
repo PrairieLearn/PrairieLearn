@@ -11,15 +11,17 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
 import {
+  type MultiSelectFilterValue,
   OverlayTrigger,
   TanstackTableCard,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
   useShiftClickCheckbox,
@@ -63,11 +65,14 @@ import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
-const DEFAULT_GRADING_STATUS_FILTER: GradingStatusValue[] = [];
-const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
-const DEFAULT_GRADED_BY_FILTER: string[] = [];
-const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
-const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
+const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -156,25 +161,23 @@ export function AssessmentQuestionTable({
 
   const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
     'status',
-    parseAsArrayOf(parseAsStringLiteral(GRADING_STATUS_VALUES)).withDefault(
-      DEFAULT_GRADING_STATUS_FILTER,
-    ),
+    parseAsMultiSelectFilter(GRADING_STATUS_VALUES).withDefault(DEFAULT_GRADING_STATUS_FILTER),
   );
   const [assignedGraderFilter, setAssignedGraderFilter] = useQueryState(
     'assigned_grader',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
   );
   const [gradedByFilter, setGradedByFilter] = useQueryState(
     'graded_by',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_GRADED_BY_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_GRADED_BY_FILTER),
   );
   const [submissionGroupFilter, setSubmissionGroupFilter] = useQueryState(
     'submission_group',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
   );
   const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
     'ai_agreement',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_AI_AGREEMENT_FILTER),
   );
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',

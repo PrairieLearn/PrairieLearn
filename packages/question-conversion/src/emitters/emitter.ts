@@ -15,8 +15,6 @@ export interface EmitOptions {
   uuidNamespace?: string;
   /** Prefix for question IDs in the assessment (e.g. "imported/hw1"). */
   questionIdPrefix?: string;
-  /** File extensions (e.g. ".mp4") to exclude from clientFiles. Excluded files are tracked in skippedFiles. */
-  excludeFileExtensions?: Set<string>;
 }
 
 /** Result of converting an assessment. */

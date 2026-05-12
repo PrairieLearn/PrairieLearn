@@ -496,26 +496,44 @@ function normalizeCreditDeadlines(
  * collapsed credit is 100%, or use `due: { date: null, credit: X }` to
  * preserve a non-100% open-ended credit.
  *
- * When early or late deadlines exist, skip the collapse so we don't drop
- * those windows on the floor (the dueDate carries them; collapsing erases
- * the structure they hang off of).
+ * When late deadlines exist, skip the collapse so we don't drop those windows
+ * on the floor. Early deadlines can be preserved with `due: { date: null }`.
+ * If an open-ended full-credit-or-bonus rule follows a higher-credit due
+ * window, preserve the higher-credit due window as an early deadline instead
+ * of emitting post-due credit at or above 100%.
  */
 function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
+  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
   if (
     dateControl.afterLastDeadline &&
-    !dateControl.earlyDeadlines?.length &&
     !dateControl.lateDeadlines?.length &&
-    (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
+    afterLastCredit >= dueDateCredit
   ) {
-    const collapseCredit = dateControl.afterLastDeadline.credit ?? 0;
-    if (collapseCredit === 100) {
+    if (afterLastCredit === 100 && !dateControl.earlyDeadlines?.length) {
       delete dateControl.due;
     } else {
-      dateControl.due = { date: null, credit: collapseCredit };
+      dateControl.due =
+        afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     }
+    delete dateControl.afterLastDeadline;
+  }
+
+  if (
+    dateControl.afterLastDeadline &&
+    !dateControl.lateDeadlines?.length &&
+    afterLastCredit >= 100 &&
+    dateControl.due?.date &&
+    dueDateCredit > afterLastCredit
+  ) {
+    dateControl.earlyDeadlines = [
+      ...(dateControl.earlyDeadlines ?? []),
+      { date: dateControl.due.date, credit: dueDateCredit },
+    ];
+    dateControl.due =
+      afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     delete dateControl.afterLastDeadline;
   }
 }
@@ -601,15 +619,14 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     return { dateControl, errors, notes };
   }
 
-  // --- Pick dueDate from the highest-credit closed rules ---
-  // Prefer 100% rules if they exist; otherwise use highest credit.
-  const fullCreditRules = closedCreditRules.filter((r) => (r.credit ?? 0) === 100);
+  // --- Pick dueDate from the first drop below full credit ---
+  const fullOrBonusCreditRules = closedCreditRules.filter((r) => (r.credit ?? 0) >= 100);
   let dueDateRules: AssessmentAccessRuleJson[];
   let dueDateCredit: number;
 
-  if (fullCreditRules.length > 0) {
-    dueDateRules = fullCreditRules;
-    dueDateCredit = 100;
+  if (fullOrBonusCreditRules.length > 0) {
+    dueDateCredit = Math.min(...fullOrBonusCreditRules.map((r) => r.credit ?? 0));
+    dueDateRules = fullOrBonusCreditRules.filter((r) => (r.credit ?? 0) === dueDateCredit);
   } else {
     const highestCredit = Math.max(...closedCreditRules.map((r) => r.credit ?? 0));
     dueDateRules = closedCreditRules.filter((r) => (r.credit ?? 0) === highestCredit);
@@ -653,9 +670,9 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
 
   for (const rule of otherClosedRules) {
     const credit = rule.credit ?? 0;
-    if (credit > 100 && credit > dueDateCredit) {
+    if (credit > dueDateCredit) {
       earlyRules.push(rule);
-    } else if (credit < 100 && credit < dueDateCredit) {
+    } else if (credit < dueDateCredit) {
       // Drop late rules whose window ends on or before the chosen due date —
       // the higher-credit due-date rule already covers them at higher credit,
       // so emitting a late deadline before dueDate would be redundant and

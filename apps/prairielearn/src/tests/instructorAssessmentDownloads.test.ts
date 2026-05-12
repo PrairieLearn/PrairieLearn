@@ -436,7 +436,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
         urlBase: ctx.siteUrl,
       });
       await trpcClient.assessmentGroups.addGroup.mutate({
-        group_name: 'testteam',
+        groupName: 'testteam',
         uids: ctx.studentUsers.map((u) => u.uid).join(','),
       });
 
