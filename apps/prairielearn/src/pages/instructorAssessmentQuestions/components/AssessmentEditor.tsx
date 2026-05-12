@@ -546,8 +546,6 @@ function AssessmentEditorInner({
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
-      canSubmit: [],
-      canView: [],
     });
     dispatch({ type: 'ADD_ZONE', zone });
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });

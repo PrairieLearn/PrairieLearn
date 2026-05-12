@@ -151,10 +151,6 @@ export function QuestionDetailPanel({
   }));
 
   const standaloneQuestion = isAlternative ? null : (question as StandaloneQuestionBlockForm);
-  const [canViewOverridden, setCanViewOverridden] = useState(standaloneQuestion?.canView != null);
-  const [canSubmitOverridden, setCanSubmitOverridden] = useState(
-    standaloneQuestion?.canSubmit != null,
-  );
   const canViewParent = resolveRolePermissionCascade([
     { value: zone?.canView, source: 'zone' },
     { value: assessmentCanView, source: 'assessment' },
@@ -598,20 +594,17 @@ export function QuestionDetailPanel({
                 label="Can view"
                 helpText="Roles allowed to view this question."
                 editMode={editMode}
-                isInherited={!canViewOverridden}
+                isInherited={watch('canView') == null}
                 inheritedValue={canViewParent.value}
                 inheritedFromLabel={canViewParent.source}
                 allRoles={groupRoles}
                 value={watch('canView') ?? []}
-                hasRoles={hasRoles}
-                groupsPageUrl={groupsPageUrl}
                 onChange={(next) => setValue('canView', next, { shouldDirty: true })}
-                onOverride={() => {
-                  setCanViewOverridden(true);
-                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true });
-                }}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
                 onReset={() => {
-                  setCanViewOverridden(false);
+                  setValue('canView', undefined);
                   resetAndSave('canView');
                 }}
               />
@@ -620,22 +613,17 @@ export function QuestionDetailPanel({
                 label="Can submit"
                 helpText="Roles allowed to submit answers to this question."
                 editMode={editMode}
-                isInherited={!canSubmitOverridden}
+                isInherited={watch('canSubmit') == null}
                 inheritedValue={canSubmitParent.value}
                 inheritedFromLabel={canSubmitParent.source}
                 allRoles={groupRoles}
                 value={watch('canSubmit') ?? []}
-                hasRoles={hasRoles}
-                groupsPageUrl={groupsPageUrl}
                 onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
-                onOverride={() => {
-                  setCanSubmitOverridden(true);
-                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, {
-                    shouldDirty: true,
-                  });
-                }}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
                 onReset={() => {
-                  setCanSubmitOverridden(false);
+                  setValue('canSubmit', undefined);
                   resetAndSave('canSubmit');
                 }}
               />

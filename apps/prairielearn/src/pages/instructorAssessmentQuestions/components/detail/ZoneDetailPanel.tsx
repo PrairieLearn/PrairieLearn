@@ -186,11 +186,11 @@ export function ZoneDetailPanel({
     () => new Set(EnumAssessmentToolSchema.options.filter((tool) => zone.tools?.[tool] != null)),
   );
 
-  const [canViewOverridden, setCanViewOverridden] = useState(zone.canView != null);
-  const [canSubmitOverridden, setCanSubmitOverridden] = useState(zone.canSubmit != null);
+  const watchedCanView = watch('canView');
+  const watchedCanSubmit = watch('canSubmit');
+  const canViewOverridden = watchedCanView != null;
+  const canSubmitOverridden = watchedCanSubmit != null;
   const hasRoles = groupRoles.length > 0;
-  const watchedCanView = watch('canView') ?? [];
-  const watchedCanSubmit = watch('canSubmit') ?? [];
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
@@ -373,52 +373,52 @@ export function ZoneDetailPanel({
       {groupsConfigured && (
         <>
           <DetailSectionHeader>Role permissions</DetailSectionHeader>
-          <Wrapper className={clsx(!editMode && 'mb-0')}>
-            <InheritableRolesField
-              id={`${idPrefix}-canView`}
-              label="Can view"
-              helpText="Roles allowed to view questions in this zone."
-              editMode={editMode}
-              isInherited={!canViewOverridden}
-              inheritedValue={assessmentCanView}
-              inheritedFromLabel="assessment"
-              allRoles={groupRoles}
-              value={watchedCanView}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canView', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanViewOverridden(true);
-                setValue('canView', assessmentCanView ?? groupRoles, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setCanViewOverridden(false);
-                resetAndSave('canView');
-              }}
-            />
-            <InheritableRolesField
-              id={`${idPrefix}-canSubmit`}
-              label="Can submit"
-              helpText="Roles allowed to submit answers to questions in this zone."
-              editMode={editMode}
-              isInherited={!canSubmitOverridden}
-              inheritedValue={assessmentCanSubmit}
-              inheritedFromLabel="assessment"
-              allRoles={groupRoles}
-              value={watchedCanSubmit}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanSubmitOverridden(true);
-                setValue('canSubmit', assessmentCanSubmit ?? groupRoles, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setCanSubmitOverridden(false);
-                resetAndSave('canSubmit');
-              }}
-            />
-          </Wrapper>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view questions in this zone."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={assessmentCanView}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanView ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', assessmentCanView ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to questions in this zone."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={assessmentCanSubmit}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanSubmit ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', assessmentCanSubmit ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
         </>
       )}
 

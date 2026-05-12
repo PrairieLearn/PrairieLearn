@@ -21,6 +21,7 @@ import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-qu
 import type {
   AssessmentForPicker,
   CourseQuestionForPicker,
+  InheritanceSource,
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -622,8 +623,8 @@ export function getZoneMixedToolsWarning({
  * `[pool?.canView, zone?.canView, assessmentValue]`.
  */
 export function resolveRolePermissionCascade(
-  layers: { value: string[] | undefined; source: 'zone' | 'pool' | 'assessment' }[],
-): { value: string[] | undefined; source: 'zone' | 'pool' | 'assessment' } {
+  layers: { value: string[] | undefined; source: InheritanceSource }[],
+): { value: string[] | undefined; source: InheritanceSource } {
   for (const layer of layers) {
     if (layer.value !== undefined) return layer;
   }

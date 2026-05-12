@@ -317,8 +317,6 @@ export function createAltPoolWithTrackingId(): AltPoolBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
-    canSubmit: [],
-    canView: [],
   };
 }
 

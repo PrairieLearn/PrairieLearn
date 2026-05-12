@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
@@ -168,10 +168,10 @@ export function AltPoolDetailPanel({
     resetAndSave,
   };
 
-  const [canViewOverridden, setCanViewOverridden] = useState(zoneQuestionBlock.canView != null);
-  const [canSubmitOverridden, setCanSubmitOverridden] = useState(
-    zoneQuestionBlock.canSubmit != null,
-  );
+  const watchedCanView = watch('canView');
+  const watchedCanSubmit = watch('canSubmit');
+  const canViewOverridden = watchedCanView != null;
+  const canSubmitOverridden = watchedCanSubmit != null;
   const hasRoles = groupRoles.length > 0;
   const canViewParent = resolveRolePermissionCascade([
     { value: zone.canView, source: 'zone' },
@@ -181,8 +181,6 @@ export function AltPoolDetailPanel({
     { value: zone.canSubmit, source: 'zone' },
     { value: assessmentCanSubmit, source: 'assessment' },
   ]);
-  const watchedCanView = watch('canView') ?? [];
-  const watchedCanSubmit = watch('canSubmit') ?? [];
 
   const watchedAutoPoints = watch('autoPoints');
   const autoPointsPlaceholder =
@@ -513,52 +511,52 @@ export function AltPoolDetailPanel({
       {groupsConfigured && (
         <>
           <DetailSectionHeader>Role permissions</DetailSectionHeader>
-          <Wrapper className={clsx(!editMode && 'mb-0')}>
-            <InheritableRolesField
-              id={`${idPrefix}-canView`}
-              label="Can view"
-              helpText="Roles allowed to view alternatives in this pool."
-              editMode={editMode}
-              isInherited={!canViewOverridden}
-              inheritedValue={canViewParent.value}
-              inheritedFromLabel={canViewParent.source}
-              allRoles={groupRoles}
-              value={watchedCanView}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canView', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanViewOverridden(true);
-                setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setCanViewOverridden(false);
-                resetAndSave('canView');
-              }}
-            />
-            <InheritableRolesField
-              id={`${idPrefix}-canSubmit`}
-              label="Can submit"
-              helpText="Roles allowed to submit answers to alternatives in this pool."
-              editMode={editMode}
-              isInherited={!canSubmitOverridden}
-              inheritedValue={canSubmitParent.value}
-              inheritedFromLabel={canSubmitParent.source}
-              allRoles={groupRoles}
-              value={watchedCanSubmit}
-              hasRoles={hasRoles}
-              groupsPageUrl={groupsPageUrl}
-              onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
-              onOverride={() => {
-                setCanSubmitOverridden(true);
-                setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setCanSubmitOverridden(false);
-                resetAndSave('canSubmit');
-              }}
-            />
-          </Wrapper>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view alternatives in this pool."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watchedCanView ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to alternatives in this pool."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watchedCanSubmit ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
         </>
       )}
 

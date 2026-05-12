@@ -20,17 +20,16 @@ import { config } from '../../lib/config.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { normalizeGroupSettings } from '../../lib/group-config.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
-import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import {
-  type AssessmentJsonInput,
-  type EnumAssessmentTool,
-  ZoneAssessmentJsonSchema,
-} from '../../schemas/infoAssessment.js';
+  selectGroupConfigForAssessment,
+  selectGroupRoleNamesForAssessment,
+} from '../../models/group.js';
+import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
@@ -78,25 +77,17 @@ router.get(
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
-    let groupsConfigured = false;
-    let groupRoles: string[] = [];
-    let assessmentCanView: string[] | undefined;
-    let assessmentCanSubmit: string[] | undefined;
-    try {
-      const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
-      const groupSettings = normalizeGroupSettings(rawJson);
-      groupsConfigured = !!groupSettings;
-      if (groupSettings) {
-        groupRoles = groupSettings.roles.map((r) => r.name);
-        const viewRoles = groupSettings.roles.filter((r) => r.canView).map((r) => r.name);
-        const submitRoles = groupSettings.roles.filter((r) => r.canSubmit).map((r) => r.name);
-        assessmentCanView = viewRoles.length === groupSettings.roles.length ? undefined : viewRoles;
-        assessmentCanSubmit =
-          submitRoles.length === groupSettings.roles.length ? undefined : submitRoles;
-      }
-    } catch (err: any) {
-      if (err.code !== 'ENOENT') throw err;
-    }
+    const groupConfig = await selectGroupConfigForAssessment(res.locals.assessment.id);
+    const groupsConfigured = groupConfig != null;
+    const groupRoles = groupConfig
+      ? await selectGroupRoleNamesForAssessment(res.locals.assessment.id)
+      : [];
+    const assessmentCanView = res.locals.assessment.json_can_view?.length
+      ? res.locals.assessment.json_can_view
+      : undefined;
+    const assessmentCanSubmit = res.locals.assessment.json_can_submit?.length
+      ? res.locals.assessment.json_can_submit
+      : undefined;
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.

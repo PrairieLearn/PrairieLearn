@@ -29,12 +29,6 @@ export function getAssessmentStudentsUrl(
   return `${getAssessmentUrl(parts)}/instances`;
 }
 
-export function getAssessmentStudentsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/instances`;
-}
-
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }

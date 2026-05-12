@@ -144,13 +144,13 @@ describe('serializeZonesForJson', () => {
     assert.equal(reparsed[0].lockpoint, true);
   });
 
-  it('strips empty canView/canSubmit arrays but preserves explicit role overrides', () => {
+  it('preserves explicit role overrides on zones and questions', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({
         title: 'Zone with role overrides',
         canView: ['Manager', 'Recorder'],
         canSubmit: ['Recorder'],
-        questions: [{ id: 'q1', canView: ['Reflector'], canSubmit: ['Reflector'] }, { id: 'q2' }],
+        questions: [{ id: 'q1', canView: ['Reflector'], canSubmit: ['Reflector'] }],
       }),
     ];
 
@@ -159,9 +159,55 @@ describe('serializeZonesForJson', () => {
     expect(serialized[0].canSubmit).toEqual(['Recorder']);
     expect(serialized[0].questions[0].canView).toEqual(['Reflector']);
     expect(serialized[0].questions[0].canSubmit).toEqual(['Reflector']);
-    // Defaults (empty arrays) are stripped so the question inherits from the zone.
-    expect(serialized[0].questions[1].canView).toBeUndefined();
-    expect(serialized[0].questions[1].canSubmit).toBeUndefined();
+  });
+
+  it('strips explicitly empty canView/canSubmit arrays on questions to inherit from zone', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone',
+        canView: ['Manager'],
+        canSubmit: ['Manager'],
+        questions: [{ id: 'q1', canView: [], canSubmit: [] }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0].canView).toBeUndefined();
+    expect(serialized[0].questions[0].canSubmit).toBeUndefined();
+  });
+
+  it('strips explicitly empty canView/canSubmit arrays on zones to inherit from assessment', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone',
+        canView: [],
+        canSubmit: [],
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].canView).toBeUndefined();
+    expect(serialized[0].canSubmit).toBeUndefined();
+  });
+
+  it('strips explicitly empty canView/canSubmit arrays on alternative pools to inherit from zone', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone',
+        questions: [
+          {
+            canView: [],
+            canSubmit: [],
+            alternatives: [{ id: 'q1' }],
+          },
+        ],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0].canView).toBeUndefined();
+    expect(serialized[0].questions[0].canSubmit).toBeUndefined();
   });
 });
 

@@ -2,14 +2,6 @@ import clsx from 'clsx';
 
 import type { InheritanceSource } from '../../types.js';
 
-/**
- * Multi-select editor for a `canView` / `canSubmit` array with inheritance
- * from a parent scope (assessment → zone → pool). Renders an inline list of
- * roles so all options and their selection state are visible without opening
- * a popover. When inherited, the list is read-only and an "Override" link
- * seeds the override from the inherited value; when overridden, a reset
- * control falls back to the parent.
- */
 export function InheritableRolesField({
   id,
   label,
@@ -23,8 +15,6 @@ export function InheritableRolesField({
   onChange,
   onOverride,
   onReset,
-  hasRoles,
-  groupsPageUrl,
 }: {
   id: string;
   label: string;
@@ -38,20 +28,11 @@ export function InheritableRolesField({
   onChange: (next: string[]) => void;
   onOverride: () => void;
   onReset: () => void;
-  hasRoles: boolean;
-  groupsPageUrl: string;
 }) {
+  const displayValue = isInherited ? (inheritedValue ?? allRoles) : value;
+  const selectedSet = new Set(displayValue);
+
   if (!editMode) {
-    if (!hasRoles) {
-      return (
-        <>
-          <dt>{label}</dt>
-          <dd className="text-muted">No custom group roles defined.</dd>
-        </>
-      );
-    }
-    const displayValue = isInherited ? (inheritedValue ?? allRoles) : value;
-    const selectedSet = new Set(displayValue);
     return (
       <>
         <dt>
@@ -67,36 +48,10 @@ export function InheritableRolesField({
     );
   }
 
-  if (!hasRoles) {
-    return (
-      <div className="mb-3">
-        <div className="form-label">{label}</div>
-        <small className="form-text text-muted">
-          No custom group roles defined.{' '}
-          <a href={groupsPageUrl}>Configure roles on the Groups page</a> to set per-zone or
-          per-question permissions.
-        </small>
-      </div>
-    );
-  }
-
-  const displayValue = isInherited ? (inheritedValue ?? allRoles) : value;
-  const selectedSet = new Set(displayValue);
-
   return (
     <div className="mb-3">
-      <div className="d-flex align-items-center justify-content-between mb-1">
-        <span className="form-label mb-0" id={`${id}-label`}>
-          {label}
-          {isInherited && (
-            <span className="text-muted fw-normal"> (inherited from {inheritedFromLabel})</span>
-          )}
-        </span>
-        {!isInherited && (
-          <button type="button" className="btn btn-link btn-sm p-0" onClick={onReset}>
-            Reset to {inheritedFromLabel}
-          </button>
-        )}
+      <div className="form-label" id={`${id}-label`}>
+        {label}
       </div>
       <RoleChecklist
         allRoles={allRoles}
@@ -104,18 +59,16 @@ export function InheritableRolesField({
         ariaLabel={label}
         readOnly={isInherited}
         idPrefix={id}
+        disableUncheckingLast={!isInherited}
         onToggle={(role, checked) => {
           const next = new Set(selectedSet);
           if (checked) next.add(role);
           else next.delete(role);
-          // Prevent overrides from ending up with zero roles — deselecting
-          // every role would hide the question from all students. To go back
-          // to the inherited value, use the reset button.
-          if (next.size === 0) return;
           onChange(Array.from(next));
         }}
       />
       <small id={`${id}-help`} className="form-text text-muted">
+        {helpText}{' '}
         {isInherited ? (
           <>
             Inherited from {inheritedFromLabel}.{' '}
@@ -128,7 +81,13 @@ export function InheritableRolesField({
             </button>
           </>
         ) : (
-          helpText
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={onReset}
+          >
+            Inherit from {inheritedFromLabel}
+          </button>
         )}
       </small>
     </div>
@@ -141,6 +100,7 @@ function RoleChecklist({
   ariaLabel,
   readOnly,
   idPrefix,
+  disableUncheckingLast,
   onToggle,
 }: {
   allRoles: string[];
@@ -148,25 +108,29 @@ function RoleChecklist({
   ariaLabel: string;
   readOnly: boolean;
   idPrefix?: string;
+  disableUncheckingLast?: boolean;
   onToggle?: (role: string, checked: boolean) => void;
 }) {
+  const isLastSelected = disableUncheckingLast && selectedSet.size === 1;
   return (
     <div className={clsx('list-group', readOnly && 'bg-light')} role="group" aria-label={ariaLabel}>
       {allRoles.map((role) => {
         const checkboxId = `${idPrefix}-${role}`;
         const selected = selectedSet.has(role);
+        const disabled = readOnly || (isLastSelected && selected);
         return (
           <label
             key={role}
             htmlFor={checkboxId}
             className={clsx('list-group-item py-1 px-2 m-0', readOnly && 'text-muted')}
+            title={isLastSelected && selected ? 'At least one role must be selected.' : undefined}
           >
             <input
               id={checkboxId}
               type="checkbox"
               className="form-check-input me-2"
               checked={selected}
-              disabled={readOnly}
+              disabled={disabled}
               onChange={(e) => onToggle?.(role, e.target.checked)}
             />
             {role}
