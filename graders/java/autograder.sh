@@ -49,7 +49,9 @@ if [ -d /grade/tests/studentFiles ]; then
 fi
 
 RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
-RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$RANDOM.json"
+# Build a cryptographically random filename without creating the file, so that
+# the file does not exist on disk until the autograder writes its results.
+RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9').json"
 SIGNATURE=$(head -c 32 /dev/random | base64)
 
 jq -n --arg results_file "$RESULTS_TEMP_FILE" \
@@ -67,10 +69,13 @@ chmod 777 $RESULTS_TEMP_DIR
 chmod 777 /grade/params
 chmod 777 /grade/params/params.json
 
-# Disable Java management options and FFM restricted methods (e.g., JNI) to
-# hinder student's ability to dump the heap or otherwise get access to private
-# memory information.
+# Disable Java management options to hinder students from dumping the heap or
+# otherwise accessing private memory information.
 DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.initial=DISABLED"
+# --illegal-native-access=deny (introduced in Java 24, JEP 472) restricts JNI
+# and FFM API calls that have not been explicitly granted native access via
+# --enable-native-access. This prevents student code from using native methods
+# or the FFM API to access arbitrary memory or bypass the sandbox.
 DISABLE_RESTRICTED_METHODS="--illegal-native-access=deny"
 
 su - sbuser << EOF
