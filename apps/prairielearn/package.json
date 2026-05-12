@@ -76,7 +76,6 @@
     "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/sketchresponse": "^0.1.3",
-    "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/ui": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
@@ -272,6 +271,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
+    "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/vite-plugin-express": "workspace:^",
     "@sa11y/format": "^8.0.27",
     "@smithy/types": "^4.14.1",
