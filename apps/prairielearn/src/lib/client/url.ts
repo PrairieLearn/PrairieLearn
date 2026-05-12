@@ -23,14 +23,26 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
-export function getAssessmentSettingsUrl(
+export function getAssessmentStudentsUrl(
   parts: { assessmentId: string } & AssessmentUrlParts,
 ): string {
-  return `${getAssessmentUrl(parts)}/settings`;
+  return `${getAssessmentUrl(parts)}/instances`;
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+}
+
+export function getAssessmentDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {

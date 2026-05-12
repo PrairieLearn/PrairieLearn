@@ -39,5 +39,11 @@ export function prairieLearnConfig(
         ],
       },
     },
+    {
+      files: ['**/src/trpc/**/*.ts'],
+      rules: {
+        '@prairielearn/require-trpc-permission-middleware': 'error',
+      },
+    },
   ];
 }

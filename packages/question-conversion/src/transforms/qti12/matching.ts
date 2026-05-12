@@ -33,13 +33,11 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
       }
       const statementHtml = lid.materialText ?? '';
       if (!statementHtml) {
-        warnings.push(
-          `matching_question "${item.ident}": statement "${lid.ident}" has no display text. Review the source QTI.`,
-        );
+        warnings.push(`Statement "${lid.ident}" has no display text. Review the source QTI.`);
       }
       if (!optionHtml) {
         warnings.push(
-          `matching_question "${item.ident}": statement "${statementHtml || lid.ident}" has no correct match. Review and edit info.json.`,
+          `Statement "${statementHtml || lid.ident}" has no correct match. Review and edit question.html.`,
         );
       }
       return { statementHtml, optionHtml };
@@ -49,7 +47,7 @@ export const matchingHandler: TransformHandler<QTI12ParsedItem> = {
     const allMissing = pairs.length > 0 && pairs.every((p) => !p.optionHtml);
     if (allMissing) {
       warnings.push(
-        `matching_question "${item.ident}" has no correct matches for any statement; emitting as a manually-graded question.`,
+        'No correct matches found. Set the correct matches in question.html, or leave as manually graded.',
       );
     }
 

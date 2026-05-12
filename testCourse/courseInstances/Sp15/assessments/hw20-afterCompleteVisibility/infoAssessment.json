@@ -8,7 +8,8 @@
     {
       "dateControl": {
         "release": { "date": "2026-01-01T00:00:00" },
-        "due": { "date": "2026-04-10T00:00:00" }
+        "due": { "date": "2026-04-10T00:00:00" },
+        "afterLastDeadline": { "allowSubmissions": false }
       },
       "afterComplete": {
         "questions": { "hidden": true },

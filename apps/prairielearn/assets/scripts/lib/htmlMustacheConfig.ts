@@ -135,7 +135,7 @@ export const htmlMustacheConfig: Config = {
       selector:
         'a[href*="client_files_course_url"], a[href*="client_files_question_url"], a[href*="client_files_question_dynamic_url"]',
       message:
-        'Prefer pl-file-download over a plain <a> link for downloadable files. See https://docs.prairielearn.com/elements/pl-file-download/.',
+        'Prefer pl-file-download over a plain <a> tag for links to course or question resources. See https://docs.prairielearn.com/elements/pl-file-download/.',
       severity: 'warning',
     },
     // Improper nesting of elements

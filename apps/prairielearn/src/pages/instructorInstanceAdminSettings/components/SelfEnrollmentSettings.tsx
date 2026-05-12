@@ -5,18 +5,13 @@ import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { CopyButton } from '../../../components/CopyButton.js';
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
 import type { StaffInstitution } from '../../../lib/client/safe-db-types.js';
 import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text);
-}
-
 function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
-  const [copied, setCopied] = useState(false);
-
   const enrollmentCodeDashed =
     enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
 
@@ -32,25 +27,11 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
           style={{ fontFamily: 'monospace', fontSize: '1.1em', letterSpacing: '0.1em' }}
           disabled
         />
-        <OverlayTrigger
-          tooltip={{
-            body: copied ? 'Copied!' : 'Copy',
-            props: { id: 'self-enrollment-code-copy-tooltip' },
-          }}
-        >
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy self-enrollment code"
-            onClick={async () => {
-              await copyToClipboard(enrollmentCodeDashed);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i className="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
+        <CopyButton
+          text={enrollmentCodeDashed}
+          ariaLabel="Copy self-enrollment code"
+          className="btn-sm btn-outline-secondary"
+        />
       </InputGroup>
       <small className="form-text text-muted">
         Students can use this code to enroll in the course by entering it on the homepage or after
@@ -69,7 +50,6 @@ function SelfEnrollmentLink({
   csrfToken: string;
   canEdit: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   return (
@@ -80,25 +60,11 @@ function SelfEnrollmentLink({
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-          <OverlayTrigger
-            tooltip={{
-              body: copied ? 'Copied!' : 'Copy',
-              props: { id: 'self-enrollment-link-copy-tooltip' },
-            }}
-          >
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              aria-label="Copy self-enrollment link"
-              onClick={async () => {
-                await copyToClipboard(selfEnrollLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <i className="bi bi-clipboard" />
-            </Button>
-          </OverlayTrigger>
+          <CopyButton
+            text={selfEnrollLink}
+            ariaLabel="Copy self-enrollment link"
+            className="btn-sm btn-outline-secondary"
+          />
           <OverlayTrigger
             tooltip={{
               body: 'View QR Code',
@@ -218,8 +184,6 @@ export function SelfEnrollmentSettings({
 
   return (
     <>
-      <h2 className="h4">Self-enrollment</h2>
-
       {!hasModernPublishing ? (
         <div className="alert alert-warning">
           You are using access rules to control who can access the course instance.{' '}
