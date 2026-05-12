@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 import * as jose from 'jose';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 
 import * as authnLib from '../../lib/authn.js';
 import { getStudentAssessmentUrl } from '../../lib/client/url.js';
@@ -28,7 +28,31 @@ router.post(
     }
 
     const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
-    const { payload } = await jose.jwtVerify(jwt, key, { audience: 'prairielearn' });
+    let payload: jose.JWTPayload;
+    try {
+      const verifyResult = await jose.jwtVerify(jwt, key, { audience: 'prairielearn' });
+      payload = verifyResult.payload;
+    } catch (err) {
+      if (err instanceof jose.errors.JWSSignatureVerificationFailed) {
+        throw new AugmentedError(
+          'PrairieTest JWT signature verification failed; the shared secret likely differs between PrairieTest and PrairieLearn.',
+          { status: 401, cause: err },
+        );
+      }
+      if (err instanceof jose.errors.JWTExpired) {
+        throw new AugmentedError('PrairieTest JWT is expired.', { status: 401, cause: err });
+      }
+      if (err instanceof jose.errors.JWTClaimValidationFailed) {
+        throw new AugmentedError(`PrairieTest JWT claim validation failed: ${err.message}`, {
+          status: 401,
+          cause: err,
+        });
+      }
+      throw new AugmentedError('PrairieTest JWT verification failed.', {
+        status: 401,
+        cause: err,
+      });
+    }
     const { user_id, course_instance_id, assessment_id } =
       PrairieTestJwtPayloadSchema.parse(payload);
 
