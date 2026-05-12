@@ -24,6 +24,7 @@ import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
@@ -295,13 +296,17 @@ async function serializeConversionResult(
       // The converter emits local directory names (e.g. "q1"), but on disk
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
+      const questionId = `${questionPrefix}/${q.directoryName}`;
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
-          questionId: `${questionPrefix}/${q.directoryName}`,
+          questionId,
           message: `Missing asset file(s): ${missingFiles.join(', ')}`,
           level: 'warn',
         });
+      }
+      for (const d of await lintQuestionHtml(q.questionHtml)) {
+        extraWarnings.push({ questionId, message: d.message, level: 'warn' });
       }
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
