@@ -42,7 +42,13 @@ export function InheritableRolesField({
           )}
         </dt>
         <dd>
-          <RoleChecklist allRoles={allRoles} selectedSet={selectedSet} ariaLabel={label} readOnly />
+          <RoleChecklist
+            allRoles={allRoles}
+            selectedSet={selectedSet}
+            ariaLabel={label}
+            idPrefix={id}
+            readOnly
+          />
         </dd>
       </>
     );
