@@ -7,6 +7,7 @@ type MDBody = Extract<IRQuestionBody, { type: 'multiple-dropdowns' }>;
 
 export const multipleDropdownsHandler: BodyEmitHandler = {
   bodyType: 'multiple-dropdowns',
+  inlineInputs: true,
 
   transformPrompt(promptHtml, body) {
     const md = body as MDBody;
@@ -24,7 +25,7 @@ export const multipleDropdownsHandler: BodyEmitHandler = {
     return result;
   },
 
-  // Dropdowns are inlined in the prompt via transformPrompt; nothing goes below pl-question-panel.
+  // Dropdowns are inlined in the prompt via transformPrompt; no separate body HTML needed.
   renderHtml() {
     return '';
   },

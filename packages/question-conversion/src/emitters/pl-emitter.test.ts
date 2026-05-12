@@ -95,7 +95,7 @@ describe('PLEmitter', () => {
     const result = emitter.emit(makeAssessment([q]));
     assert.equal(
       result.questions[0].questionHtml,
-      '<pl-question-panel>\n<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n</pl-question-panel>\n',
+      '<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
     );
     assert.isUndefined(result.questions[0].serverPy);
   });
@@ -114,11 +114,8 @@ describe('PLEmitter', () => {
     const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
     assert.include(html, 'answers-name="capital1"');
     assert.include(html, 'answers-name="capital2"');
-    // Both inputs should be inside pl-question-panel, not below it
-    const panelEnd = html.indexOf('</pl-question-panel>');
-    assert.isAbove(html.indexOf('answers-name="capital1"'), 0);
-    assert.isBelow(html.indexOf('answers-name="capital1"'), panelEnd);
-    assert.isBelow(html.indexOf('answers-name="capital2"'), panelEnd);
+    // Inline-input types must not wrap content in pl-question-panel
+    assert.notInclude(html, '<pl-question-panel>');
   });
 
   describe('feedback rendering', () => {

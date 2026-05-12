@@ -271,7 +271,9 @@ export class PLEmitter implements OutputEmitter {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
     }
 
-    const parts: string[] = ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
+    const parts: string[] = handler.inlineInputs
+      ? [promptHtml, '']
+      : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
     // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
     // show together — PL only surfaces one feedback attribute per element, so don't put them in HTML.
