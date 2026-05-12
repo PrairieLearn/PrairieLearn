@@ -52,7 +52,6 @@ WITH
   )
 SELECT
   ai_by_user_and_date.date,
-  to_char(ai_by_user_and_date.date, 'DD Mon') AS date_formatted,
   count(score_perc)::integer AS number,
   avg(score_perc) AS mean_score_perc,
   histogram (score_perc, 0, 100, 10)

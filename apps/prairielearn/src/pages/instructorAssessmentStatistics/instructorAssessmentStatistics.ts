@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
+import { formatDateYMD } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
@@ -228,7 +229,12 @@ router.get(
       res.attachment(req.params.filename);
       stringify(csvData, {
         header: true,
-        columns: ['Date', ...scoresByDay.map((day) => day.date_formatted)],
+        columns: [
+          'Date',
+          ...scoresByDay.map((day) =>
+            formatDateYMD(day.date, res.locals.course_instance.display_timezone),
+          ),
+        ],
       }).pipe(res);
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

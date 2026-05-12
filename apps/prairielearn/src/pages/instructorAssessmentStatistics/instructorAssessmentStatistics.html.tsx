@@ -1,7 +1,9 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
+import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -23,8 +25,7 @@ export const DurationStatSchema = z.object({
 type DurationStat = z.infer<typeof DurationStatSchema>;
 
 export const AssessmentScoreHistogramByDateSchema = z.object({
-  date: z.date(),
-  date_formatted: z.string(),
+  date: DateFromISOString,
   number: z.number(),
   mean_score_perc: z.number(),
   histogram: z.array(z.number()),
@@ -258,7 +259,7 @@ export function InstructorAssessmentStatistics({
                   class="js-parallel-histograms"
                   data-histograms="${JSON.stringify(
                     assessmentScoreHistogramByDate.map((day) => ({
-                      label: day.date_formatted,
+                      label: formatDateYMD(day.date, resLocals.course_instance.display_timezone),
                       mean: day.mean_score_perc,
                       histogram: day.histogram,
                     })),
