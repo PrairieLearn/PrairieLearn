@@ -1,11 +1,10 @@
-/* ── SplitPane app-specific overrides ─────────────────────────────────── */
-
+/* Container query on the left pane drives the toolbar-label collapse below. */
 .pl-ui-split-pane__left {
   container-type: inline-size;
   container-name: split-left;
 }
 
-/* ── Toolbar button text: hide when the left pane is narrow ────────── */
+/* Hide toolbar button labels when the left pane is narrow. */
 @container split-left (max-width: 650px) {
   .toolbar-btn-label {
     display: none;
@@ -29,11 +28,9 @@
   background-color: var(--bs-success);
 }
 
-/* ── Access summary tables ─────────────────────────────────────────────── */
-
-/* Base styles assume no subgrid — each card sizes its own columns. The
-   @supports block below enhances to cross-card alignment when available
-   (Chrome 117+, Safari 16+, Firefox 71+). */
+/* Access summary tables: base styles assume no subgrid (each card sizes
+   its own columns); the @supports block at the bottom enhances to
+   cross-card alignment in Chrome 117+, Safari 16+, Firefox 71+. */
 
 /* min-width: 0 lets the wrapper shrink below its flex parent's intrinsic
    size, which is what makes overflow-x kick in on narrow viewports. */
@@ -69,6 +66,11 @@
   grid-template-columns: max-content max-content 1fr;
 }
 
+/* `display: contents` lets cells flow as direct children of the card grid.
+   Note: Firefox <89 had a bug where ARIA roles on display: contents
+   elements were not exposed to assistive tech, so AT users on Firefox 70
+   (the same browsers hitting this fallback) lose the role="row" semantic.
+   The visual layout is correct; AT semantics are mildly degraded. */
 .access-summary-row {
   display: contents;
 }
@@ -137,9 +139,7 @@
     row-gap: 0.5rem;
   }
 
-  .access-summary-card,
-  .access-summary-card--cols-2,
-  .access-summary-card--cols-3 {
+  .access-summary-card {
     grid-column: 1 / -1;
     grid-template-columns: subgrid;
   }
