@@ -1,9 +1,9 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { assert } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
