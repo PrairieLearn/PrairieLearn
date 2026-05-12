@@ -85,13 +85,7 @@ router.get(
     try {
       const rawJson = (await fs.readJson(assessmentPath)) as AssessmentJsonInput;
       const groupSettings = normalizeGroupSettings(rawJson);
-      // normalizeGroupSettings returns non-null for both the new `groups`
-      // block and the legacy `groupWork: true` shape. Treat `groups.enabled:
-      // false` as "no group configuration" so the role permissions section
-      // stays hidden on non-group assessments.
-      const groupsBlockEnabled = rawJson.groups ? rawJson.groups.enabled !== false : false;
-      const legacyGroupsEnabled = !rawJson.groups && rawJson.groupWork === true;
-      groupsConfigured = !!groupSettings && (groupsBlockEnabled || legacyGroupsEnabled);
+      groupsConfigured = !!groupSettings;
       if (groupSettings) {
         groupRoles = groupSettings.roles.map((r) => r.name);
         const viewRoles = groupSettings.roles.filter((r) => r.canView).map((r) => r.name);

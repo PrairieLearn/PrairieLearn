@@ -130,16 +130,6 @@ const SprocCheckAssessmentAccessSchema = z.object({
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
 
-// Result of team_info sproc
-export const SprocTeamInfoSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  uid_list: z.array(z.string()),
-  user_name_list: z.array(z.string()),
-  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
-});
-export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
-
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
@@ -237,6 +227,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -455,6 +446,7 @@ export const AssessmentSchema = z.object({
   score_stat_number: z.number(),
   score_stat_std: z.number(),
   share_source_publicly: z.boolean(),
+  show_question_titles: z.boolean(),
   shuffle_questions: z.boolean().nullable(),
   statistics_last_updated_at: DateFromISOString,
   stats_last_updated: DateFromISOString.nullable(),

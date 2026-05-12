@@ -513,7 +513,7 @@ function AssessmentEditorInner({
       dispatch({
         type: 'UPDATE_QUESTION',
         questionTrackingId,
-        question: normalized as Partial<QuestionAlternativeForm>,
+        question: normalized,
         alternativeTrackingId,
       });
     } else {
@@ -548,7 +548,7 @@ function AssessmentEditorInner({
       lockpoint: false,
       canSubmit: [],
       canView: [],
-    } as Omit<ZoneAssessmentForm, 'trackingId'>);
+    });
     dispatch({ type: 'ADD_ZONE', zone });
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
   };

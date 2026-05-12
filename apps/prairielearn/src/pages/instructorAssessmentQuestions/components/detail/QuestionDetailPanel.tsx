@@ -363,9 +363,8 @@ export function QuestionDetailPanel({
                     {!hasTitle && (
                       <CopyButton
                         text={question.id}
-                        tooltipId="copy-qid"
                         ariaLabel="Copy QID"
-                        className="ms-1"
+                        className="btn-xs btn-ghost ms-1"
                       />
                     )}
                   </>
@@ -383,9 +382,8 @@ export function QuestionDetailPanel({
                 {question.id}
                 <CopyButton
                   text={question.id}
-                  tooltipId="copy-qid"
                   ariaLabel="Copy QID"
-                  className="ms-1"
+                  className="btn-xs btn-ghost ms-1"
                 />
               </span>
             )}

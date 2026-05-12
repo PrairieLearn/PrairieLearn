@@ -17,9 +17,20 @@ export async function sync(
     return;
   }
 
+  const courseSharingSetsData = courseData.course.data?.sharingSets ?? [];
+
   await sqldb.execute(sql.sync_course_sharing_sets, {
     course_id: courseId,
-    new_course_sharing_sets: JSON.stringify(courseData.course.data?.sharingSets ?? []),
+    new_course_sharing_sets: JSON.stringify(courseSharingSetsData),
+  });
+
+  // Relies on `checkInvalidSharingSetDeletions` having gated the sync. With
+  // `checkSharingOnSync` disabled, this can cascade-delete rows in
+  // `sharing_set_questions` and `sharing_set_courses` via the ON DELETE CASCADE
+  // foreign keys.
+  await sqldb.execute(sql.delete_removed_course_sharing_sets, {
+    course_id: courseId,
+    sharing_set_names: courseSharingSetsData.map((ss) => ss.name),
   });
 
   const courseSharingSets = await sqldb.queryRows(

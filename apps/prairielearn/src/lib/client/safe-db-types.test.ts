@@ -179,6 +179,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   score_stat_number: 10,
   score_stat_std: 5,
   share_source_publicly: false,
+  show_question_titles: false,
   shuffle_questions: null,
   statistics_last_updated_at: new Date(),
   stats_last_updated: null,

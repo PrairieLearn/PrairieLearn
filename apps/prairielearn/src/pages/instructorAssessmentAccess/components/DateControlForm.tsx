@@ -20,20 +20,30 @@ export function DefaultDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   title?: string;
   description?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
   });
+
+  // Show late-deadline fields when a due date is set, OR when previously
+  // configured late content exists. Preserving content lets the user fix or
+  // intentionally clear it instead of having it silently wiped.
+  const dueDate = useWatch<AccessControlFormData, 'defaultRule.due.date'>({
+    name: 'defaultRule.due.date',
+  });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const afterLastDeadline = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
+    name: 'defaultRule.afterLastDeadline',
+  });
+  const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
 
   return (
     <div>
@@ -53,6 +63,10 @@ export function DefaultDateControlForm({
                     shouldValidate: true,
                   },
                 );
+                setValue('defaultRule.release.released', true, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
               }
             },
           })}
@@ -66,13 +80,13 @@ export function DefaultDateControlForm({
         <div className="d-flex flex-column gap-3">
           <DefaultReleaseDateField displayTimezone={displayTimezone} />
           <DefaultDeadlineArrayField type="early" displayTimezone={displayTimezone} />
-          <DefaultDueDateField
-            displayTimezone={displayTimezone}
-            assessmentId={assessmentId}
-            courseInstanceId={courseInstanceId}
-          />
-          <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-          <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+          <DefaultDueDateField displayTimezone={displayTimezone} />
+          {showLateFields && (
+            <>
+              <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
+              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+            </>
+          )}
           <Row className="gy-3">
             <Col md={6}>
               <DefaultDurationField />
@@ -96,15 +110,11 @@ export function OverrideDateControlForm({
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   index: number;
   title?: string;
   description?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
   return (
     <div>
@@ -117,12 +127,7 @@ export function OverrideDateControlForm({
       <div className="d-flex flex-column gap-3">
         <OverrideReleaseDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
-        <OverrideDueDateField
-          index={index}
-          displayTimezone={displayTimezone}
-          assessmentId={assessmentId}
-          courseInstanceId={courseInstanceId}
-        />
+        <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
         <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
         <Row className="gy-3">

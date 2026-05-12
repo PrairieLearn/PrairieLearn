@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Form, InputGroup } from 'react-bootstrap';
+import { Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
   get,
@@ -17,9 +17,18 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
-type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
+type AfterLastDeadlineMode =
+  | 'no_access'
+  | 'no_submissions'
+  | 'practice_submissions'
+  | 'partial_credit';
 
 const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
+  {
+    value: 'no_access',
+    label: 'No access',
+    description: 'Students cannot access the assessment',
+  },
   {
     value: 'no_submissions',
     label: 'No submissions allowed',
@@ -33,12 +42,19 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'partial_credit',
     label: 'Allow submissions for partial credit',
-    description: 'Students will receive partial credit for submissions after the deadline',
+    description: 'Students receive partial credit for submissions',
   },
 ];
 
+/** Caller passes the *effective* late deadlines (overrides may inherit from default). */
+export function getAfterLastDeadlineLabel(lateDeadlines: DeadlineEntry[]): string {
+  if (lateDeadlines.length === 0) return 'After due date';
+  if (lateDeadlines.length === 1) return 'After late deadline';
+  return 'After late deadlines';
+}
+
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
-  if (!value) return 'no_submissions';
+  if (value == null) return 'no_access';
   if (!value.allowSubmissions) return 'no_submissions';
   if (value.credit == null) return 'practice_submissions';
   return 'partial_credit';
@@ -77,13 +93,11 @@ function AfterLastDeadlineInput({
   onChange,
   overrideIndex,
   displayTimezone,
-  showNoDueDateWarning = true,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
   overrideIndex?: number;
   displayTimezone: string;
-  showNoDueDateWarning?: boolean;
 }) {
   const isOverride = overrideIndex != null;
   const creditFieldPath = isOverride
@@ -108,7 +122,7 @@ function AfterLastDeadlineInput({
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
   // Watch dep fields so this component re-renders when they change,
-  // keeping display values (last-deadline text, warnings) up to date.
+  // keeping display values (last-deadline text) up to date.
   useWatch<AccessControlFormData>({ name: creditDeps });
   const {
     dueDate,
@@ -129,6 +143,10 @@ function AfterLastDeadlineInput({
     }
   }, [trigger, creditFieldPath, mode, precedingCredit]);
 
+  // For overrides we can't fully reason about the effective deadlines (override
+  // stacking may produce a different set), so we fall back to a generic label.
+  const label = isOverride ? 'After last deadline' : getAfterLastDeadlineLabel(lateDeadlines);
+
   const getLastDeadlineText = () => {
     const lastDate = getLastDeadlineDate(lateDeadlines, dueDate);
     if (lastDate) {
@@ -136,16 +154,22 @@ function AfterLastDeadlineInput({
         <>
           This will take effect after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
+          , until the course instance end date.
         </>
       );
     }
-    return 'This will take effect after the last deadline';
-  };
 
-  const hasLastDeadline = !!dueDate || lateDeadlines.length > 0;
+    // TODO: we want to update the UI to completely hide the "after last deadline" options
+    // when there are in fact no deadlines. That'll render this branch obsolete, but in the
+    // meantime we have to show something here.
+    return 'This will take effect until the course instance end date.';
+  };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
+      case 'no_access':
+        onChange(null);
+        break;
       case 'no_submissions':
         onChange({ allowSubmissions: false });
         break;
@@ -165,68 +189,76 @@ function AfterLastDeadlineInput({
         <RichSelect
           items={AFTER_LAST_DEADLINE_ITEMS}
           value={mode}
-          aria-label="After last deadline"
+          aria-label={label}
           id={`${idPrefix}-after-deadline-mode`}
           minWidth={300}
           onChange={handleModeChange}
         />
       </div>
-      {showNoDueDateWarning && !hasLastDeadline && mode !== 'no_submissions' && (
-        <Alert variant="warning" className="py-2 mb-2">
-          This setting will have no effect because there is no due date set.
-        </Alert>
-      )}
-
       {mode === 'partial_credit' && (
         <div className="mt-2">
-          <InputGroup>
-            <Form.Control
-              type="number"
-              aria-label="Credit percentage after last deadline"
-              aria-invalid={!!creditError}
-              aria-errormessage={
-                creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
-              }
-              min="0"
-              max="200"
-              placeholder="Credit percentage"
-              isInvalid={!!creditError}
-              onWheel={({ currentTarget }) => currentTarget.blur()}
-              {...register(creditFieldPath, {
-                shouldUnregister: true,
-                valueAsNumber: true,
-                deps: creditDeps,
-                validate: (v, formValues) => {
-                  if (v == null || Number.isNaN(v)) return 'Credit is required';
-                  if (v < 0 || v > 200) return 'Must be 0\u2013200%';
-                  const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
-                    formValues,
-                    overrideIndex,
-                  );
-                  const precedingCredit =
-                    lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-                  if (precedingCredit != null && v > precedingCredit) {
-                    return `Must not exceed ${precedingCredit}% (the preceding deadline's credit)`;
-                  }
-                  return true;
-                },
-              })}
-            />
-            <InputGroup.Text>%</InputGroup.Text>
-          </InputGroup>
-          {creditError && (
-            <Form.Text
-              id={`${idPrefix}-after-deadline-credit-error`}
-              className="text-danger d-block"
-              role="alert"
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <label
+              htmlFor={`${idPrefix}-after-deadline-credit`}
+              className="form-label mb-0 small text-body-secondary"
             >
-              {creditError}
-            </Form.Text>
-          )}
+              Credit
+            </label>
+            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+              <Form.Control
+                id={`${idPrefix}-after-deadline-credit`}
+                type="number"
+                style={{ width: '6rem' }}
+                aria-label="Credit percentage after last deadline"
+                aria-invalid={!!creditError}
+                aria-errormessage={
+                  creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
+                }
+                min="0"
+                max="99"
+                step={1}
+                placeholder="0"
+                isInvalid={!!creditError}
+                onWheel={({ currentTarget }) => currentTarget.blur()}
+                {...register(creditFieldPath, {
+                  shouldUnregister: true,
+                  valueAsNumber: true,
+                  deps: creditDeps,
+                  validate: (v, formValues) => {
+                    if (v == null || Number.isNaN(v)) return 'Credit is required';
+                    if (!Number.isFinite(v)) return 'Credit must be a finite number';
+                    if (!Number.isInteger(v)) return 'Credit must be an integer';
+                    if (v < 0 || v >= 100) return 'Credit after the due date must be 0\u201399%';
+                    const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
+                      formValues,
+                      overrideIndex,
+                    );
+                    const precedingCredit =
+                      lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
+                    if (precedingCredit != null && v >= precedingCredit) {
+                      return `Must be less than ${precedingCredit}% (the preceding deadline's credit)`;
+                    }
+                    return true;
+                  },
+                })}
+              />
+              <InputGroup.Text>%</InputGroup.Text>
+            </InputGroup>
+          </div>
           <Form.Text className="text-muted d-block">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
         </div>
+      )}
+      {/* Outside the partial_credit block so cross-field errors (e.g. "requires a due date") show in all modes. */}
+      {creditError && (
+        <Form.Text
+          id={`${idPrefix}-after-deadline-credit-error`}
+          className="text-danger d-block"
+          role="alert"
+        >
+          {creditError}
+        </Form.Text>
       )}
     </Form.Group>
   );
@@ -236,10 +268,14 @@ export function DefaultAfterLastDeadlineField({ displayTimezone }: { displayTime
   const { field } = useController<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
   });
+  const lateDeadlines = useWatch<AccessControlFormData, 'defaultRule.lateDeadlines'>({
+    name: 'defaultRule.lateDeadlines',
+  });
+  const label = getAfterLastDeadlineLabel(lateDeadlines);
 
   return (
     <div>
-      <strong className="d-block mb-2">After last deadline</strong>
+      <strong className="d-block mb-2">{label}</strong>
       <AfterLastDeadlineInput
         value={field.value}
         displayTimezone={displayTimezone}
@@ -274,7 +310,7 @@ export function OverrideAfterLastDeadlineField({
       isOverridden={isOverridden}
       label="After last deadline"
       onOverride={() => {
-        field.onChange(defaultRuleValue ?? { allowSubmissions: false });
+        field.onChange(defaultRuleValue ?? null);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
@@ -283,7 +319,6 @@ export function OverrideAfterLastDeadlineField({
         value={field.value}
         overrideIndex={index}
         displayTimezone={displayTimezone}
-        showNoDueDateWarning={false}
         onChange={field.onChange}
       />
     </FieldWrapper>
