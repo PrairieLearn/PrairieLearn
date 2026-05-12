@@ -243,6 +243,7 @@ export class PLEmitter implements OutputEmitter {
       questionHtml,
       serverPy: serverPy || undefined,
       clientFiles,
+      skippedFiles: question.skippedFiles ?? [],
     };
   }
 
@@ -315,16 +316,16 @@ export class PLEmitter implements OutputEmitter {
   }
 
   private collectClientFiles(question: IRQuestion): Map<string, Buffer | string> {
-    const files = new Map<string, Buffer | string>();
+    const clientFiles = new Map<string, Buffer | string>();
     for (const [filename, asset] of question.assets) {
       if (asset.type === 'base64') {
-        files.set(filename, Buffer.from(asset.value, 'base64'));
+        clientFiles.set(filename, Buffer.from(asset.value, 'base64'));
       } else if (asset.type === 'file-path') {
         // Store the relative path; the CLI resolves it against web_resources/ at write time
-        files.set(filename, asset.value);
+        clientFiles.set(filename, asset.value);
       }
     }
-    return files;
+    return clientFiles;
   }
 }
 

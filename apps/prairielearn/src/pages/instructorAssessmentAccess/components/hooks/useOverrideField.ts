@@ -10,7 +10,7 @@ import type { AccessControlFormData, OverridableFieldName } from '../types.js';
  * to `undefined`, which react-hook-form does not support.
  */
 export function useOverrideField(index: number, fieldName: OverridableFieldName) {
-  const { setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues, clearErrors } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
@@ -34,7 +34,12 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       current.filter((f) => f !== fieldName),
       { shouldDirty: true },
     );
-  }, [index, fieldName, setValue, getValues]);
+    // Clear stale errors on the field being un-overridden. Manual cross-field
+    // errors may not clear on their own because watch() can return a
+    // reference-stable proxy, preventing the validation useEffect from re-running.
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/14702
+    clearErrors(`overrides.${index}.${fieldName}`);
+  }, [index, fieldName, setValue, getValues, clearErrors]);
 
   return { isOverridden, addOverride, removeOverride };
 }

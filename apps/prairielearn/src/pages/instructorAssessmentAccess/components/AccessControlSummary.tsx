@@ -10,20 +10,21 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { Fragment, type ReactNode, useId, useMemo } from 'react';
+import { Fragment, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
+  AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
+  generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
-  generateRuleSummary,
 } from './RuleSummary.js';
 import type { AccessControlFormData, DefaultRuleData, OverrideData } from './types.js';
 
@@ -82,37 +83,6 @@ function SortableOverrideCard({
   );
 }
 
-function SummaryItemChips({
-  items,
-}: {
-  items: { key: string; icon: string; text: ReactNode; error?: string }[];
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <div>
-      <div className="d-flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span
-            key={item.key}
-            className={`d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 ${
-              item.error ? 'border-danger text-danger border' : 'border'
-            }`}
-            style={{ fontSize: '0.875rem' }}
-          >
-            {item.error ? (
-              <i className="bi bi-exclamation-circle" aria-hidden="true" />
-            ) : (
-              <i className={`bi ${item.icon}`} aria-hidden="true" />
-            )}
-            {item.text}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function DefaultRuleSummaryContent({
   rule,
   formErrors,
@@ -121,46 +91,47 @@ function DefaultRuleSummaryContent({
   ptHost,
 }: {
   rule: DefaultRuleData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
+  const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
   const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-2">
       <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
 
       {dateTableRows.length > 0 && (
-        <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
-        </div>
+        <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
       )}
 
       {hasPrairieTestExams && (
-        <div className="mb-2">
-          <PrairieTestExamsTable
-            exams={rule.prairieTestExams}
-            initialMetadata={prairieTestExamMetadata}
-            ptHost={ptHost}
-            formErrors={formErrors}
-          />
-        </div>
+        <PrairieTestExamsTable
+          exams={rule.prairieTestExams}
+          beforeReleaseListed={rule.beforeReleaseListed}
+          initialMetadata={prairieTestExamMetadata}
+          ptHost={ptHost}
+          formErrors={formErrors}
+        />
       )}
 
-      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
-
-      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
-        <div
-          className="rounded text-center py-3 text-body-secondary"
-          style={{ border: '2px dashed var(--bs-border-color)' }}
-        >
-          No access settings configured.
-        </div>
+      {afterCompleteTableRows.length > 0 && (
+        <AfterCompleteTableView rows={afterCompleteTableRows} />
       )}
+
+      {dateTableRows.length === 0 &&
+        !hasPrairieTestExams &&
+        afterCompleteTableRows.length === 0 && (
+          <div
+            className="rounded text-center py-3 text-body-secondary"
+            style={{ border: '2px dashed var(--bs-border-color)' }}
+          >
+            No access settings configured.
+          </div>
+        )}
     </div>
   );
 }
@@ -241,6 +212,7 @@ export function AccessControlSummary({
               variant="outline-primary"
               size="sm"
               aria-label="Edit"
+              className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
               <i className="bi bi-pencil" aria-hidden="true" />
@@ -250,6 +222,7 @@ export function AccessControlSummary({
               variant="outline-danger"
               size="sm"
               aria-label="Clear"
+              className="d-inline-flex align-items-center"
               onClick={onClearDefaultRule}
             >
               <i className="bi bi-trash" aria-hidden="true" />
@@ -280,7 +253,12 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button variant="primary" size="sm" onClick={onAddOverride}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="d-inline-flex align-items-center"
+            onClick={onAddOverride}
+          >
             <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
