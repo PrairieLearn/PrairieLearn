@@ -98,10 +98,11 @@ function DefaultRuleSummaryContent({
 }) {
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
   const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
-  const hasPrairieTestExams = rule.prairieTestExams.length > 0;
 
   const hasAnyTable =
-    dateTableRows.length > 0 || hasPrairieTestExams || afterCompleteTableRows.length > 0;
+    dateTableRows.length > 0 ||
+    rule.prairieTestExams.length > 0 ||
+    afterCompleteTableRows.length > 0;
 
   return (
     <div className="d-flex flex-column gap-2">
@@ -114,7 +115,7 @@ function DefaultRuleSummaryContent({
               <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
             )}
 
-            {hasPrairieTestExams && (
+            {rule.prairieTestExams.length > 0 && (
               <PrairieTestExamsTable
                 exams={rule.prairieTestExams}
                 beforeReleaseListed={rule.beforeReleaseListed}
