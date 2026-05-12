@@ -47,7 +47,6 @@ async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
-    // @ts-expect-error This reload doesn't set 'formatted_date'
     locals.assessment_instance = await queryRow(
       sql.select_assessment_instance,
       { assessment_instance_id: locals.assessment_instance.id },
