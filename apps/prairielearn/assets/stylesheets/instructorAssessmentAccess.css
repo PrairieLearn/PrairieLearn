@@ -12,6 +12,10 @@
   }
 }
 
+.assessment-access-date-cell-current {
+  position: relative;
+}
+
 .assessment-access-date-cell-current::before {
   content: '';
   position: absolute;
@@ -25,35 +29,48 @@
   background-color: var(--bs-success);
 }
 
-/* ── Access summary tables: subgrid for cross-card column alignment ───── */
+/* ── Access summary tables ─────────────────────────────────────────────── */
 
-/* Horizontal scroll wrapper. Without min-width: 0 the wrapper inherits
-   sizing from its flex parent and won't shrink, defeating overflow-x. */
+/* Base styles assume no subgrid — each card sizes its own columns. The
+   @supports block below enhances to cross-card alignment when available
+   (Chrome 117+, Safari 16+, Firefox 71+). */
+
+/* min-width: 0 lets the wrapper shrink below its flex parent's intrinsic
+   size, which is what makes overflow-x kick in on narrow viewports. */
 .access-summary-grid-scroll {
   overflow-x: auto;
   min-width: 0;
 }
 
-/* Three column tracks. `auto` lets each track size to its widest content
-   across all participating cards — that's what makes columns line up
-   without hardcoded widths. column-gap is 0 because cards visually act
-   like tables (cells abut). row-gap reproduces the previous gap-2. */
 .access-summary-grid {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  column-gap: 0;
-  row-gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-/* Each card spans the full row and uses the parent's column tracks via
-   subgrid, so its cells share column boundaries with the other cards. */
+/* The card is the grid; rows use `display: contents` so cells flow as
+   direct children. This lets every cell in a column share one track,
+   so columns align across rows within a card (the within-card half of
+   what subgrid achieves across cards). Leading tracks are max-content so
+   badges abut their row labels; the trailing 1fr makes the last cell
+   absorb any leftover width so the card content fills the container. */
 .access-summary-card {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   overflow: hidden;
+}
+
+.access-summary-card--cols-2 {
+  grid-template-columns: max-content 1fr;
+}
+
+.access-summary-card--cols-3 {
+  grid-template-columns: max-content max-content 1fr;
+}
+
+.access-summary-row {
+  display: contents;
 }
 
 .access-summary-card-header {
@@ -71,20 +88,15 @@
   font-weight: 600;
 }
 
-/* Each logical row in a card is itself a subgrid so its cells align to
-   the same column tracks. */
-.access-summary-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: subgrid;
-}
-
-.access-summary-row--headers {
+/* Border-bottom lives on the cells (not the row), because in fallback
+   the row is display: contents and its own border wouldn't render. With
+   column-gap: 0, cell borders form a continuous line under the header. */
+.access-summary-row--headers .access-summary-cell {
   border-bottom: 1px solid var(--bs-border-color);
 }
 
 .access-summary-cell {
-  padding: 0.5rem 0.5rem;
+  padding: 0.5rem;
 }
 
 .access-summary-cell--first {
@@ -100,16 +112,41 @@
   white-space: nowrap;
 }
 
-/* Date table only uses 2 cells per row; the second cell stretches across
-   both remaining tracks of the parent grid. */
+/* In subgrid mode, spans the 2-col card's "Access" cell across tracks
+   2 & 3 of the parent grid. In the fallback (2-col card grid with
+   max-content max-content), 2 / -1 resolves to col 2 — natural placement. */
 .access-summary-cell--span-rest {
   grid-column: 2 / -1;
 }
 
 .access-summary-card-footer {
-  grid-column: 1 / -1;
   border-top: 1px solid var(--bs-border-color);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   color: var(--bs-secondary-color);
+}
+
+/* Enhancement: cards share a single 3-track grid so columns line up
+   across all cards. `auto` sizes each track to the widest content across
+   every participating card. column-gap is 0 so cells visually abut. */
+@supports (grid-template-columns: subgrid) {
+  .access-summary-grid {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    column-gap: 0;
+    row-gap: 0.5rem;
+  }
+
+  .access-summary-card,
+  .access-summary-card--cols-2,
+  .access-summary-card--cols-3 {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .access-summary-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+  }
 }

@@ -874,7 +874,11 @@ export function DateTableView({
   }
 
   return (
-    <div className="access-summary-card" role="table" aria-label="Date control">
+    <div
+      className="access-summary-card access-summary-card--cols-2"
+      role="table"
+      aria-label="Date control"
+    >
       <SummaryCardHeader icon="bi-calendar3" title="Date control" />
       <div className="access-summary-row access-summary-row--headers" role="row">
         <div
@@ -895,7 +899,7 @@ export function DateTableView({
         <div key={index} className="access-summary-row" role="row">
           <div
             className={clsx(
-              'access-summary-cell access-summary-cell--first position-relative',
+              'access-summary-cell access-summary-cell--first',
               row.current &&
                 `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
             )}
@@ -941,7 +945,11 @@ export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[]
   if (rows.length === 0) return null;
   const errors = Array.from(new Set(rows.flatMap((row) => row.errors ?? [])));
   return (
-    <div className="access-summary-card" role="table" aria-label="After completion">
+    <div
+      className="access-summary-card access-summary-card--cols-3"
+      role="table"
+      aria-label="After completion"
+    >
       <SummaryCardHeader icon="bi-check2-circle" title="After completion" />
       <div className="access-summary-row access-summary-row--headers" role="row">
         <div
@@ -1123,7 +1131,11 @@ export function PrairieTestExamsTable({
   const metadataByUuid = new Map(metadata.map((m) => [m.uuid.toLowerCase(), m]));
 
   return (
-    <div className="access-summary-card" role="table" aria-label="PrairieTest">
+    <div
+      className="access-summary-card access-summary-card--cols-3"
+      role="table"
+      aria-label="PrairieTest"
+    >
       <SummaryCardHeader icon="bi-pc-display" title="PrairieTest" />
       <div className="access-summary-row access-summary-row--headers" role="row">
         <div
