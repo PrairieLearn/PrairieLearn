@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 
 import { fetchCheerio } from './helperClient.js';
 import {
@@ -60,6 +61,9 @@ describe('Updating a course instance ID', () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    // The sharing-related tests below rely on the share_source_publicly server-side
+    // validation, which only runs when this feature flag is enabled.
+    await features.enable('question-sharing');
   });
 
   afterAll(helperServer.after);

@@ -34,3 +34,54 @@ export async function selectNonPublicAssessmentsInCourseInstance({
     NonPublicAssessmentSchema,
   );
 }
+
+/**
+ * Formats a list of names with a "and N more" tail when there are more than
+ * `maxListed` entries. Keeps the user-facing message short when there are many
+ * children, while still naming the first few. Pure formatting helper.
+ */
+function formatTruncatedList(names: string[], maxListed = 5): string {
+  if (names.length <= maxListed) return names.join(', ');
+  const remaining = names.length - maxListed;
+  return `${names.slice(0, maxListed).join(', ')}, and ${remaining} more`;
+}
+
+export class SharingValidationError extends Error {
+  status = 400 as const;
+}
+
+/**
+ * Throws a 400-style error if the assessment cannot transition to publicly
+ * shared because one or more of its questions are not publicly shared. Used at
+ * both page-load time (to disable the checkbox + render the warning) and
+ * submit time (to enforce the invariant server-side).
+ */
+export async function assertAssessmentCanBeSharedPublicly({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<void> {
+  const nonPublic = await selectNonPublicQuestionsInAssessment({ assessment_id });
+  if (nonPublic.length > 0) {
+    throw new SharingValidationError(
+      `Cannot share this assessment publicly because it contains questions that are not publicly shared: ${formatTruncatedList(nonPublic.map((q) => q.qid))}.`,
+    );
+  }
+}
+
+/**
+ * Throws a 400-style error if the course instance cannot transition to publicly
+ * shared because one or more of its assessments are not publicly shared.
+ */
+export async function assertCourseInstanceCanBeSharedPublicly({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}): Promise<void> {
+  const nonPublic = await selectNonPublicAssessmentsInCourseInstance({ course_instance_id });
+  if (nonPublic.length > 0) {
+    throw new SharingValidationError(
+      `Cannot share this course instance publicly because it contains assessments that are not publicly shared: ${formatTruncatedList(nonPublic.map((a) => a.tid))}.`,
+    );
+  }
+}

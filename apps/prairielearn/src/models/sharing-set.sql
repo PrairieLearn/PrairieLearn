@@ -79,7 +79,25 @@ SELECT
       sharing_set_questions AS ssq
     WHERE
       ssq.sharing_set_id = ss.id
-  ) AS question_count
+  ) AS question_count,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          jsonb_build_object('id', q.id, 'qid', q.qid)
+          ORDER BY
+            q.qid
+        ),
+        '[]'
+      )
+    FROM
+      sharing_set_questions AS ssq
+      JOIN questions AS q ON q.id = ssq.question_id
+    WHERE
+      ssq.sharing_set_id = ss.id
+      AND q.deleted_at IS NULL
+      AND q.qid IS NOT NULL
+  ) AS questions
 FROM
   sharing_sets AS ss
   LEFT JOIN sharing_set_courses AS css ON css.sharing_set_id = ss.id

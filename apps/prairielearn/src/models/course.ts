@@ -432,6 +432,16 @@ export async function selectCanChooseSharingName(course: {
   );
 }
 
+export async function selectOptionalCourseBySharingToken(
+  sharing_token: string,
+): Promise<Course | null> {
+  return await queryOptionalRow(
+    sql.select_course_by_sharing_token,
+    { sharing_token },
+    CourseSchema,
+  );
+}
+
 /**
  * Update the `sharing_name` column for a course.
  */
@@ -446,6 +456,26 @@ export async function updateCourseSharingName({
     course_id,
     sharing_name,
   });
+}
+
+/**
+ * Atomically updates `sharing_name` only if the course is still allowed to
+ * change it (i.e., no sharing name yet, or no shared questions). Returns the
+ * new sharing name on success, or `null` if the conditional UPDATE matched no
+ * rows because a question was shared between page-load and submit.
+ */
+export async function updateCourseSharingNameIfAllowed({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<string | null> {
+  return await queryOptionalScalar(
+    sql.update_course_sharing_name_if_allowed,
+    { course_id, sharing_name },
+    z.string(),
+  );
 }
 
 /**

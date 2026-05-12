@@ -1,5 +1,6 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import clsx from 'clsx';
+import { Fragment, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -8,7 +9,7 @@ import { useModalState } from '@prairielearn/ui';
 import { CopyButton } from '../../components/CopyButton.js';
 import { getAppError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getCourseEditErrorUrl } from '../../lib/client/url.js';
+import { getCourseEditErrorUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { SharingSetRow } from '../../models/sharing-set.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
@@ -78,6 +79,16 @@ function InstructorCourseAdminSharingInner({
   const addCourseModal = useModalState<SharingSetRow>();
   const editDescriptionModal = useModalState<SharingSetRow>();
   const deleteModal = useModalState<SharingSetRow>();
+
+  const [expandedSharingSetIds, setExpandedSharingSetIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => {
+    setExpandedSharingSetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <>
@@ -238,67 +249,119 @@ function InstructorCourseAdminSharingInner({
               ) : (
                 sharingSets.map((sharingSet) => {
                   const inUse = sharingSet.question_count > 0 || sharingSet.shared_with.length > 0;
+                  const isExpanded = expandedSharingSetIds.has(sharingSet.id);
+                  const detailsId = `sharing-set-questions-${sharingSet.id}`;
                   return (
-                    <tr key={sharingSet.id}>
-                      <td className="align-middle">{sharingSet.name}</td>
-                      <td className="align-middle text-muted">{sharingSet.description ?? ''}</td>
-                      <td className="align-middle" data-testid="shared-with">
-                        {sharingSet.shared_with.map((courseSharedWith) => (
-                          <span key={courseSharedWith} className="badge color-gray1">
-                            {courseSharedWith}
-                          </span>
-                        ))}
-                        <div className="btn-group btn-group-sm" role="group">
+                    <Fragment key={sharingSet.id}>
+                      <tr>
+                        <td className="align-middle">
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-dark"
-                            aria-label="Add course to sharing set"
-                            onClick={() => addCourseModal.showWithData(sharingSet)}
+                            className="btn btn-sm btn-link p-0 text-decoration-none align-baseline"
+                            aria-expanded={isExpanded}
+                            aria-controls={detailsId}
+                            onClick={() => toggleExpanded(sharingSet.id)}
                           >
-                            Add...
-                            <i className="bi bi-plus-lg" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
-                      {canEdit && (
-                        <td className="align-middle">
-                          <div className="d-flex justify-content-end gap-2">
+                            <i
+                              className={clsx(
+                                'bi',
+                                isExpanded ? 'bi-chevron-down' : 'bi-chevron-right',
+                                'me-1',
+                              )}
+                              aria-hidden="true"
+                            />
+                            {sharingSet.name}
+                          </button>{' '}
+                          <span className="text-muted small">
+                            ({sharingSet.question_count}{' '}
+                            {sharingSet.question_count === 1 ? 'question' : 'questions'})
+                          </span>
+                        </td>
+                        <td className="align-middle text-muted">{sharingSet.description ?? ''}</td>
+                        <td className="align-middle" data-testid="shared-with">
+                          {sharingSet.shared_with.map((courseSharedWith) => (
+                            <span key={courseSharedWith} className="badge color-gray1">
+                              {courseSharedWith}
+                            </span>
+                          ))}
+                          <div className="btn-group btn-group-sm" role="group">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-secondary"
-                              aria-label={`Edit description for ${sharingSet.name}`}
-                              onClick={() => editDescriptionModal.showWithData(sharingSet)}
+                              className="btn btn-sm btn-outline-dark"
+                              aria-label="Add course to sharing set"
+                              onClick={() => addCourseModal.showWithData(sharingSet)}
                             >
-                              <i className="bi bi-pencil" aria-hidden="true" /> Edit
+                              Add...
+                              <i className="bi bi-plus-lg" aria-hidden="true" />
                             </button>
-                            {inUse ? (
-                              <span
-                                className="d-inline-block"
-                                title="Cannot delete: sharing set contains questions or has been shared with other courses."
+                          </div>
+                        </td>
+                        {canEdit && (
+                          <td className="align-middle">
+                            <div className="d-flex justify-content-end gap-2">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary"
+                                aria-label={`Edit description for ${sharingSet.name}`}
+                                onClick={() => editDescriptionModal.showWithData(sharingSet)}
                               >
+                                <i className="bi bi-pencil" aria-hidden="true" /> Edit
+                              </button>
+                              {inUse ? (
+                                <span
+                                  className="d-inline-block"
+                                  title="Cannot delete: sharing set contains questions or has been shared with other courses."
+                                >
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    aria-label={`Delete sharing set ${sharingSet.name}`}
+                                    disabled
+                                  >
+                                    <i className="bi bi-trash" aria-hidden="true" /> Delete
+                                  </button>
+                                </span>
+                              ) : (
                                 <button
                                   type="button"
                                   className="btn btn-sm btn-outline-danger"
                                   aria-label={`Delete sharing set ${sharingSet.name}`}
-                                  disabled
+                                  onClick={() => deleteModal.showWithData(sharingSet)}
                                 >
                                   <i className="bi bi-trash" aria-hidden="true" /> Delete
                                 </button>
-                              </span>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                      {isExpanded && (
+                        <tr id={detailsId}>
+                          <td colSpan={canEdit ? 4 : 3} className="bg-light">
+                            {sharingSet.questions.length === 0 ? (
+                              <div className="small text-muted">
+                                No questions in this sharing set yet.
+                              </div>
                             ) : (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger"
-                                aria-label={`Delete sharing set ${sharingSet.name}`}
-                                onClick={() => deleteModal.showWithData(sharingSet)}
-                              >
-                                <i className="bi bi-trash" aria-hidden="true" /> Delete
-                              </button>
+                              <div className="d-flex flex-wrap gap-1">
+                                {sharingSet.questions.map((q) => (
+                                  <a
+                                    key={q.id}
+                                    href={getQuestionSettingsUrl({
+                                      questionId: q.id,
+                                      courseId,
+                                    })}
+                                    className="btn btn-badge color-gray1"
+                                  >
+                                    {q.qid}
+                                  </a>
+                                ))}
+                              </div>
                             )}
-                          </div>
-                        </td>
+                          </td>
+                        </tr>
                       )}
-                    </tr>
+                    </Fragment>
                   );
                 })
               )}
@@ -442,20 +505,24 @@ function ChooseSharingNameModal({
             />
             {errors.courseSharingName && (
               <div id="course_sharing_name_error" className="text-danger small">
+                <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
                 {errors.courseSharingName.message}
               </div>
             )}
           </div>
-          <p>
+          <Alert variant="secondary" className="py-2 small">
             <strong>
               Once you have shared a question either publicly or with another course, you will no
               longer be able to change your sharing name.
             </strong>{' '}
             Doing so would break the assessments of other courses that have imported your questions.
+          </Alert>
+          <p className="form-text mb-0">
             It is recommended that you choose something short but descriptive. For example, if
-            you're teaching a calculus course at a university that goes by the abbreviation 'XYZ',
-            then you could choose the sharing name 'xyz-calculus'. Then other courses will import
-            questions from your course with the syntax '@xyz-calculus/qid'.
+            you're teaching a calculus course at a university that goes by the abbreviation{' '}
+            <code>XYZ</code>, then you could choose the sharing name <code>xyz-calculus</code>. Then
+            other courses will import questions from your course with the syntax{' '}
+            <code>@xyz-calculus/&lt;qid&gt;</code>.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -594,6 +661,7 @@ function AddSharingSetModal({
             />
             {errors.name ? (
               <div id="new_sharing_set_name_error" className="text-danger small">
+                <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
                 {errors.name.message}
               </div>
             ) : (
@@ -717,6 +785,7 @@ function AddCourseToSharingSetModal({
             />
             {errors.courseSharingToken && (
               <div id="course_sharing_token_error" className="text-danger small">
+                <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
                 {errors.courseSharingToken.message}
               </div>
             )}
@@ -806,7 +875,7 @@ function EditSharingSetDescriptionModal({
     <Modal show={show} onHide={handleHide} onExited={handleExited}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Header closeButton>
-          <Modal.Title>Edit description</Modal.Title>
+          <Modal.Title>Edit sharing set "{data?.name ?? ''}"</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {appError && appError.code !== 'SYNC_JOB_FAILED' && (
@@ -816,7 +885,7 @@ function EditSharingSetDescriptionModal({
           )}
           <div className="mb-3">
             <label className="form-label" htmlFor={`sharing_set_description_${data?.id ?? ''}`}>
-              Description for "{data?.name ?? ''}"
+              Description
             </label>
             <textarea
               className="form-control"

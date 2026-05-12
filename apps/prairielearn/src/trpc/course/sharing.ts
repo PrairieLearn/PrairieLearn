@@ -12,7 +12,11 @@ import { getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { selectCanChooseSharingName, updateCourseSharingName } from '../../models/course.js';
+import {
+  findCoursesBySharingNames,
+  selectOptionalCourseBySharingToken,
+  updateCourseSharingNameIfAllowed,
+} from '../../models/course.js';
 import {
   deleteSharingSet,
   selectSharingSetUsage,
@@ -35,6 +39,7 @@ export interface SharingError {
     | { code: 'IN_USE'; name: string }
     | { code: 'NOT_FOUND'; name: string }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  ChooseSharingName: { code: 'DUPLICATE_NAME'; name: string } | { code: 'CANNOT_CHANGE' };
 }
 
 const SharingSetNameSchema = z
@@ -167,6 +172,21 @@ const addCourseToSharingSet = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    if (input.courseSharingToken === ctx.locals.course.sharing_token) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          "This is your own course's sharing token. Paste another course's sharing token here to grant them access to this sharing set; your course already owns it.",
+      });
+    }
+    const consumingCourse = await selectOptionalCourseBySharingToken(input.courseSharingToken);
+    if (consumingCourse === null) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Unknown sharing token. Verify that you copied the token correctly from the other course.',
+      });
+    }
     const consuming_course_id = await sqldb.queryOptionalScalar(
       sql.course_sharing_set_add,
       {
@@ -349,20 +369,36 @@ const chooseSharingName = t.procedure
   .use(requireNotExampleCourse)
   .input(z.object({ courseSharingName: SharingNameSchema }))
   .mutation(async ({ input, ctx }) => {
-    const canChoose = await selectCanChooseSharingName(ctx.course);
-    if (!canChoose) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
+    // Pre-check: surface a clean DUPLICATE_NAME error instead of letting the
+    // UNIQUE constraint raise a raw 23505. (A narrow race remains where two
+    // different courses pick the same name between this check and the UPDATE;
+    // that case still surfaces as an internal error, which is acceptable for
+    // an admin-only action.)
+    const existing = await findCoursesBySharingNames([input.courseSharingName]);
+    const owner = existing.get(input.courseSharingName);
+    if (owner && owner.id !== ctx.course.id) {
+      throwAppError<SharingError['ChooseSharingName']>({
+        code: 'DUPLICATE_NAME',
+        name: input.courseSharingName,
+        message: `Another course already uses the sharing name "${input.courseSharingName}".`,
+      });
+    }
+
+    // Atomic conditional UPDATE: closes the TOCTOU window where a question
+    // could be shared between page-load and submit. Returns null if the
+    // invariant fails at the time of the write.
+    const updatedName = await updateCourseSharingNameIfAllowed({
+      course_id: ctx.course.id,
+      sharing_name: input.courseSharingName,
+    });
+    if (updatedName === null) {
+      throwAppError<SharingError['ChooseSharingName']>({
+        code: 'CANNOT_CHANGE',
         message: 'Unable to change sharing name. At least one question has been shared.',
       });
     }
 
-    await updateCourseSharingName({
-      course_id: ctx.course.id,
-      sharing_name: input.courseSharingName,
-    });
-
-    return { sharingName: input.courseSharingName };
+    return { sharingName: updatedName };
   });
 
 const listSharingSets = t.procedure

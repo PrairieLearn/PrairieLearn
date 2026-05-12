@@ -259,6 +259,54 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK update_course_sharing_name_if_allowed
+-- Atomically sets the sharing_name only if the "no rename after sharing"
+-- invariant still holds at the time of the write. Returns the new name on
+-- success or no rows (so queryOptionalScalar yields null) if blocked. This
+-- closes the TOCTOU window where a question could be shared between page-load
+-- and submit.
+UPDATE courses
+SET
+  sharing_name = $sharing_name
+WHERE
+  id = $course_id
+  AND (
+    sharing_name IS NULL
+    OR NOT EXISTS (
+      SELECT
+        1
+      FROM
+        questions AS q
+      WHERE
+        q.course_id = courses.id
+        AND q.deleted_at IS NULL
+        AND (
+          q.share_publicly
+          OR q.share_source_publicly
+        )
+    )
+    AND NOT EXISTS (
+      SELECT
+        1
+      FROM
+        sharing_sets AS ss
+        JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
+      WHERE
+        ss.course_id = courses.id
+    )
+  )
+RETURNING
+  sharing_name;
+
+-- BLOCK select_course_by_sharing_token
+SELECT
+  *
+FROM
+  courses
+WHERE
+  sharing_token = $sharing_token
+  AND deleted_at IS NULL;
+
 -- BLOCK update_course_column_short_name
 UPDATE courses
 SET

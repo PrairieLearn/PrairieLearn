@@ -962,6 +962,13 @@ export const InstructorQuestionSettingsForm = ({
                   </div>
                 ) : (
                   <>
+                    {/* Hidden inputs are derived from the RHF state, which is the
+                        single source of truth for which sharing sets get submitted.
+                        TagPicker is intentionally rendered without a `name` prop so
+                        it doesn't emit its own hidden inputs in parallel. */}
+                    {watchedSharingSets.map((name) => (
+                      <input key={name} type="hidden" name="sharing_sets" value={name} />
+                    ))}
                     {lockedSharingSetNames.length > 0 && (
                       <div className="d-flex flex-wrap gap-1 mb-2">
                         {lockedSharingSetNames.map((name) => (
@@ -969,15 +976,11 @@ export const InstructorQuestionSettingsForm = ({
                             {name}
                           </span>
                         ))}
-                        {lockedSharingSetNames.map((name) => (
-                          <input key={name} type="hidden" name="sharing_sets" value={name} />
-                        ))}
                       </div>
                     )}
                     {addableSharingSets.length > 0 ? (
                       <TagPicker
                         id="sharing_sets"
-                        name="sharing_sets"
                         items={addableSharingSets.map((s) => ({
                           id: s.name,
                           data: s,
@@ -1002,7 +1005,19 @@ export const InstructorQuestionSettingsForm = ({
                       </div>
                     )}
                     <small className="form-text text-muted">
-                      Questions cannot be removed from a sharing set after being added.
+                      <strong>
+                        Adding a question to a{' '}
+                        <a
+                          href="https://docs.prairielearn.com/contentSharing/#sharing-sets"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          sharing set
+                        </a>{' '}
+                        is permanent and cannot be undone.
+                      </strong>{' '}
+                      The question cannot be renamed or deleted, and any later changes to its
+                      content will be applied to every course that has imported it.
                     </small>
                   </>
                 )}

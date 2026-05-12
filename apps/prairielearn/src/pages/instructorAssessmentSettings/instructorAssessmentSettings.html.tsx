@@ -8,7 +8,8 @@ import { run } from '@prairielearn/run';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { StudentLinkSharing } from '../../components/LinkSharing.js';
+import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { getAppError } from '../../lib/client/errors.js';
 import type {
@@ -145,6 +146,7 @@ interface InstructorAssessmentSettingsProps {
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
+  questionSharingEnabled: boolean;
 }
 
 export function InstructorAssessmentSettings({
@@ -165,6 +167,7 @@ export function InstructorAssessmentSettings({
   assessmentTools,
   zonePointsRange,
   nonPublicQuestionsInAssessment,
+  questionSharingEnabled,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -193,6 +196,7 @@ export function InstructorAssessmentSettings({
           assessmentTools={assessmentTools}
           zonePointsRange={zonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
+          questionSharingEnabled={questionSharingEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -379,6 +383,7 @@ function InstructorAssessmentSettingsInner({
   assessmentTools,
   zonePointsRange,
   nonPublicQuestionsInAssessment,
+  questionSharingEnabled,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
@@ -435,6 +440,12 @@ function InstructorAssessmentSettingsInner({
 
   const saveMutation = useMutation(trpc.assessmentSettings.updateAssessment.mutationOptions());
   const deleteMutation = useMutation(trpc.assessmentSettings.deleteAssessment.mutationOptions());
+  const bulkShareMutation = useMutation(
+    trpc.assessmentSettings.shareSourcePubliclyBulk.mutationOptions(),
+  );
+  const bulkShareAppError = getAppError<
+    AssessmentSettingsError['ShareAssessmentSourcePubliclyBulk']
+  >(bulkShareMutation.error);
 
   const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(saveMutation.error);
   const deleteError = getAppError<AssessmentSettingsError['DeleteAssessment']>(
@@ -485,8 +496,6 @@ function InstructorAssessmentSettingsInner({
   const requireHonorCode = watch('require_honor_code');
   const currentAid = watch('aid');
   const currentBonusPoints = Number(watch('max_bonus_points')) || 0;
-  const shareSourcePubliclyDisabled =
-    !canEdit || assessment.share_source_publicly || nonPublicQuestionsInAssessment.length > 0;
   const effectiveMaxPoints = Math.max(zonePointsRange.max - currentBonusPoints, 0);
   const effectiveMinPoints = Math.max(zonePointsRange.min - currentBonusPoints, 0);
   const effectiveMaxPointsDisplay =
@@ -1141,53 +1150,42 @@ function InstructorAssessmentSettingsInner({
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-body">
-              <h2 className="h5 card-title mb-3">Sharing</h2>
-              <Form.Check
-                type="checkbox"
-                id="share_source_publicly"
-                label="Share source publicly"
-                className="mb-1"
-                disabled={shareSourcePubliclyDisabled}
-                defaultChecked={defaultValues.share_source_publicly}
-                {...register('share_source_publicly')}
-              />
-              <small className="form-text text-muted d-block mb-2">
-                The assessment's JSON configuration and question list become available for others to
-                view and copy.
-                {assessment.share_source_publicly &&
-                  ' This assessment already has publicly shared source and cannot be un-shared.'}
-              </small>
-              {nonPublicQuestionsInAssessment.length > 0 && !assessment.share_source_publicly && (
-                <Alert variant="warning" className="small mb-2">
-                  Cannot share this assessment publicly until the following questions are also
-                  shared publicly:{' '}
-                  {nonPublicQuestionsInAssessment.map((q, i) => (
-                    <span key={q.id}>
-                      {i > 0 && ', '}
-                      <a
-                        href={getQuestionSettingsUrl({
-                          questionId: q.id,
-                          courseInstanceId: assessment.course_instance_id,
-                        })}
-                      >
-                        {q.qid}
-                      </a>
-                    </span>
-                  ))}
-                  .
-                </Alert>
-              )}
-              {assessment.share_source_publicly && (
-                <PublicLinkSharing
-                  publicLink={publicLink}
-                  sharingMessage="This assessment's source is publicly shared."
-                  publicLinkMessage="The link that other instructors can use to view this assessment."
-                />
-              )}
-            </div>
-          </div>
+          {questionSharingEnabled && (
+            <ShareSourcePubliclyCard
+              alreadyShared={assessment.share_source_publicly}
+              canEdit={canEdit}
+              registerProps={register('share_source_publicly')}
+              defaultChecked={defaultValues.share_source_publicly}
+              description="The assessment's JSON configuration and question list become available for others to view and copy."
+              alreadySharedSentence="This assessment already has publicly shared source and cannot be un-shared."
+              blockingChildren={nonPublicQuestionsInAssessment.map((q) => ({
+                id: q.id,
+                href: getQuestionSettingsUrl({
+                  questionId: q.id,
+                  courseInstanceId: assessment.course_instance_id,
+                }),
+                label: q.qid,
+              }))}
+              blockingPrefix="Cannot share this assessment publicly until the following questions are also shared publicly:"
+              publicLink={publicLink}
+              sharingMessage="This assessment's source is publicly shared."
+              publicLinkMessage="The link that other instructors can use to view this assessment."
+              bulkShare={{
+                childNoun: 'question',
+                parentNoun: 'assessment',
+                isPending: bulkShareMutation.isPending,
+                error: bulkShareAppError,
+                onConfirm: async () => {
+                  await bulkShareMutation.mutateAsync(
+                    undefined,
+                    // Reload so the page rehydrates with the new shared state
+                    // (DB columns, info.json hashes, and the empty blocking list).
+                    { onSuccess: () => window.location.reload() },
+                  );
+                },
+              }}
+            />
+          )}
 
           {(currentGHLink || canEdit) && (
             <div className="card">

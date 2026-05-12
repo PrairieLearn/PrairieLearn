@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type SharingSet, SharingSetSchema } from '../lib/db-types.js';
 
@@ -12,6 +13,7 @@ const SharingSetRowSchema = z.object({
   description: z.string().nullable(),
   shared_with: z.string().array(),
   question_count: z.number(),
+  questions: z.object({ id: IdSchema, qid: z.string() }).array(),
 });
 export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 

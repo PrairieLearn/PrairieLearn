@@ -16,15 +16,21 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
+  prepareJsonFileEditor,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
+import {
+  SharingValidationError,
+  assertAssessmentCanBeSharedPublicly,
+  selectNonPublicQuestionsInAssessment,
+} from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
 } from '../../schemas/infoAssessment.js';
+import { type QuestionJsonInput } from '../../schemas/infoQuestion.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
@@ -38,6 +44,7 @@ export interface AssessmentSettingsError {
     | { code: 'DUPLICATE_SHORT_NAME' }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  ShareAssessmentSourcePubliclyBulk: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
 const updateAssessment = t.procedure
@@ -223,23 +230,24 @@ const updateAssessment = t.procedure
       input.grade_rate_minutes ?? undefined,
       (v: number | null | undefined) => v == null || v === 0,
     );
-    if (input.share_source_publicly && !assessment.share_source_publicly) {
-      const nonPublicQuestions = await selectNonPublicQuestionsInAssessment({
-        assessment_id: assessment.id,
-      });
-      if (nonPublicQuestions.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot share this assessment publicly because it contains questions that are not publicly shared: ${nonPublicQuestions.map((q) => q.qid).join(', ')}.`,
-        });
+    if (locals.question_sharing_enabled) {
+      if (input.share_source_publicly && !assessment.share_source_publicly) {
+        try {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof SharingValidationError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
+        }
       }
+      assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
+        assessmentInfo.shareSourcePublicly,
+        // If source is already public, preserve that setting regardless of the submitted value.
+        assessment.share_source_publicly || (input.share_source_publicly ?? false),
+        false,
+      );
     }
-    assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
-      assessmentInfo.shareSourcePublicly,
-      // If source is already public, preserve that setting regardless of the submitted value.
-      assessment.share_source_publicly || (input.share_source_publicly ?? false),
-      false,
-    );
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
@@ -386,8 +394,112 @@ const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(a
   flash('success', 'Assessment deleted successfully.');
 });
 
+/**
+ * Bulk-share every non-publicly-shared question in this assessment, and flip
+ * the assessment's own `shareSourcePublicly` to true. All file edits are
+ * bundled into a single `MultiEditor` so they commit and sync atomically.
+ */
+const shareSourcePubliclyBulk = t.procedure
+  .use(requireCoursePermissionEdit)
+  .mutation(async ({ ctx }) => {
+    const { course, course_instance, assessment, locals } = ctx;
+
+    if (!locals.question_sharing_enabled) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (feature not available).',
+      });
+    }
+    if (course.example_course) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot make changes to example course.',
+      });
+    }
+    if (assessment.share_source_publicly) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'This assessment is already publicly shared.',
+      });
+    }
+
+    const nonPublicQuestions = await selectNonPublicQuestionsInAssessment({
+      assessment_id: assessment.id,
+    });
+
+    const editors: FileModifyEditor[] = [];
+    for (const q of nonPublicQuestions) {
+      const questionDir = path.join(course.path, 'questions', q.qid);
+      const prepared = await prepareJsonFileEditor<QuestionJsonInput>({
+        applyChanges: (contents) => {
+          contents.shareSourcePublicly = true;
+          return contents;
+        },
+        jsonPath: path.join(questionDir, 'info.json'),
+        // No user-held origHash for individual questions; FileModifyEditor's
+        // full-file hash still guards against concurrent on-disk writes.
+        conflictCheck: { origHash: null, scope: (j) => j },
+        locals,
+        container: { rootPath: questionDir, invalidRootPaths: [] },
+      });
+      if (prepared.success) editors.push(prepared.editor);
+    }
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name,
+      'assessments',
+      assessment.tid!,
+    );
+    const preparedAssessment = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (contents) => {
+        contents.shareSourcePublicly = true;
+        return contents;
+      },
+      jsonPath: path.join(assessmentDir, 'infoAssessment.json'),
+      // No scoped conflict check: the page's `origHash` uses a different
+      // hashing scheme than `prepareJsonFileEditor`'s scoped hash, so comparing
+      // them always fails. The full-file hash inside the FileModifyEditor
+      // (set from the just-read contents) still guards against concurrent
+      // on-disk writes at commit time.
+      conflictCheck: { origHash: null, scope: (j) => j },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    if (!preparedAssessment.success) {
+      // Unreachable: `success: false` only happens when `origHash` is set.
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to prepare assessment edit.',
+      });
+    }
+    editors.push(preparedAssessment.editor);
+
+    const multi = new MultiEditor(
+      {
+        locals,
+        description: `Bulk-share questions for assessment: ${assessment.tid}`,
+      },
+      editors,
+    );
+    const serverJob = await multi.prepareServerJob();
+    try {
+      await multi.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<AssessmentSettingsError['ShareAssessmentSourcePubliclyBulk']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to share assessment publicly',
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+
+    return { origHash: preparedAssessment.newHash };
+  });
+
 export const assessmentSettingsRouter = t.router({
   updateAssessment,
   copyAssessment,
   deleteAssessment,
+  shareSourcePubliclyBulk,
 });

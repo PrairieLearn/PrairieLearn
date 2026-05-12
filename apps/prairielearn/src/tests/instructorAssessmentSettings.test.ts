@@ -13,6 +13,7 @@ import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { type AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
@@ -128,6 +129,9 @@ describe('Editing assessment settings', () => {
     assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW1', 'infoAssessment.json');
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    // The sharing-related tests below rely on the share_source_publicly server-side
+    // validation, which only runs when this feature flag is enabled.
+    await features.enable('question-sharing');
   });
 
   afterAll(helperServer.after);
