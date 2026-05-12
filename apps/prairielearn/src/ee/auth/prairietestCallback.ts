@@ -27,7 +27,7 @@ router.post(
       throw new HttpStatusError(400, 'Missing JWT');
     }
 
-    const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
+    const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
     let payload: jose.JWTPayload;
     try {
       const verifyResult = await jose.jwtVerify(jwt, key, { audience: 'prairielearn' });
