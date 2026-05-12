@@ -1,0 +1,156 @@
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
+import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
+
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
+
+describe(
+  'Modern access control: afterComplete visibility applies only after completion',
+  { timeout: 60_000 },
+  function () {
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
+    context.baseUrl = `${context.siteUrl}/pl`;
+    context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
+    context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
+    context.gradebookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
+
+    // The test assessment hw20-afterCompleteVisibility has:
+    //   release 2026-01-01, due 2026-04-10, afterComplete { questions/score hidden }.
+    // No `afterLastDeadline`, so the assessment becomes non-submittable (and thus
+    // "complete" per the resolver) once the due date passes, even though the
+    // homework instance stays open.
+    const activeWindowCookie = 'pl_test_user=test_student; pl_test_date=2026-04-05T00:00:00Z';
+    const afterCompleteCookie = 'pl_test_user=test_student; pl_test_date=2026-04-15T00:00:00Z';
+
+    beforeAll(async function () {
+      // The `enhanced-access-control` feature flag must be enabled during
+      // sync so the assessment is marked `modern_access_control: true`.
+      await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+        await helperServer.before()();
+      });
+      const { id: assessmentId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw20-afterCompleteVisibility',
+      });
+      context.assessmentId = assessmentId;
+      context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
+    });
+
+    afterAll(helperServer.after);
+
+    test.sequential('visit home page to create the student user', async () => {
+      const response = await helperClient.fetchCheerio(context.baseUrl, {
+        headers: { cookie: activeWindowCookie },
+      });
+      assert.isTrue(response.ok);
+    });
+
+    test.sequential('enroll the test student in the course', async () => {
+      const user = await selectUserByUid('student@example.com');
+      const courseInstance = await selectCourseInstanceById('1');
+      await ensureUncheckedEnrollment({
+        userId: user.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+    });
+
+    test.sequential('start the homework during the active window', async () => {
+      const response = await helperClient.fetchCheerio(context.assessmentUrl, {
+        headers: { cookie: activeWindowCookie },
+      });
+      assert.isTrue(response.ok);
+      // For homework, visiting the assessment URL creates an instance and
+      // redirects to it.
+      assert.include(response.url, '/assessment_instance/');
+      context.assessmentInstanceUrl = response.url;
+    });
+
+    test.sequential(
+      'student assessments list shows the score during the active window',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
+
+        const row = response.$('tr:contains("After complete visibility")');
+        assert.lengthOf(row, 1);
+        // While active, the afterComplete policy must NOT apply: the score
+        // cell renders a scorebar.
+        assert.lengthOf(row.find('[data-testid="scorebar"]'), 1);
+      },
+    );
+
+    test.sequential('student gradebook shows the score during the active window', async () => {
+      const response = await helperClient.fetchCheerio(context.gradebookUrl, {
+        headers: { cookie: activeWindowCookie },
+      });
+      assert.isTrue(response.ok);
+
+      const row = response.$('tr:contains("After complete visibility")');
+      assert.lengthOf(row, 1);
+      assert.lengthOf(row.find('[data-testid="scorebar"]'), 1);
+    });
+
+    test.sequential(
+      'student assessment instance page is accessible during the active window',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
+        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 0);
+      },
+    );
+
+    test.sequential(
+      'student assessments list hides the score after the deadline passes',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: afterCompleteCookie },
+        });
+        assert.isTrue(response.ok);
+
+        const row = response.$('tr:contains("After complete visibility")');
+        assert.lengthOf(row, 1);
+        assert.lengthOf(row.find('[data-testid="scorebar"]'), 0);
+      },
+    );
+
+    test.sequential('student gradebook hides the score after the deadline passes', async () => {
+      const response = await helperClient.fetchCheerio(context.gradebookUrl, {
+        headers: { cookie: afterCompleteCookie },
+      });
+      assert.isTrue(response.ok);
+
+      const row = response.$('tr:contains("After complete visibility")');
+      assert.lengthOf(row, 1);
+      assert.lengthOf(row.find('[data-testid="scorebar"]'), 0);
+    });
+
+    test.sequential(
+      'student assessment instance page shows the closed message after the deadline passes',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+          headers: { cookie: afterCompleteCookie },
+        });
+        assert.equal(response.status, 403);
+
+        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+        // afterComplete.score.hidden = true, so the closed page must not show
+        // the score either.
+        assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
+      },
+    );
+  },
+);
