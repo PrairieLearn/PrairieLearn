@@ -39,11 +39,8 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'd3',
   'he',
   'marked',
-  'clipboard',
-  'async',
   'qrcode-svg',
   'socket.io-client',
-  'lodash',
   'ace-builds',
   'bootstrap-table',
   'bootstrap',
@@ -68,6 +65,7 @@ const DEPS_OF_DEAD_CODE = ['@tiptap/extension-code-block'];
  */
 const EXTERNAL_ELEMENT_DEPS = [
   'backbone',
+  'clipboard',
   'dropzone',
   'lodash',
   'mersenne',
@@ -139,6 +137,15 @@ const autoDetectedDeps = new Set<string>(
 
 // Hand back to knip the deps that have a real import site, so it can keep
 // tracking them.
+const staleAutoDetectedEntries = AUTO_DETECTED_BUT_ALSO_IMPORTED.filter(
+  (dep) => !autoDetectedDeps.has(dep),
+);
+if (staleAutoDetectedEntries.length > 0) {
+  throw new Error(
+    "AUTO_DETECTED_BUT_ALSO_IMPORTED contains entries that aren't auto-detected: " +
+      `${staleAutoDetectedEntries.join(', ')}. Remove them or move to another list.`,
+  );
+}
 for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
   autoDetectedDeps.delete(dep);
 }
