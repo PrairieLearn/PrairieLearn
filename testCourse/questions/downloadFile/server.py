@@ -11,3 +11,5 @@ def file(data):
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
         return buf
+    elif data["filename"] == 'name&gt;"weird.txt':
+        return "If you see this, it worked.\n"

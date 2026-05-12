@@ -474,7 +474,7 @@ export async function initExpress(): Promise<Express> {
     // Must come before the authn middleware since the user isn't authenticated yet,
     // and before the CSRF middleware since the JWT signature is the auth proof.
     app.use(
-      '/pl/prairietest/auth/callback',
+      '/pl/auth/prairietest/callback',
       (await import('./ee/auth/prairietestCallback.js')).default,
     );
   }
