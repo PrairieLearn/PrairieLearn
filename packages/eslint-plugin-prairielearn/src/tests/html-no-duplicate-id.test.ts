@@ -39,7 +39,7 @@ ruleTester.run('html-no-duplicate-id', rule, {
         { messageId: 'duplicateId', data: { id: 'x' } },
       ],
     },
-    // A `pl-*` tag still counts when matched against a non-`pl-*` element.
+    // Duplicate `id` on non-`pl-*` elements should be reported.
     {
       code: '<div id="fd"></div><span id="fd"></span>',
       errors: [
