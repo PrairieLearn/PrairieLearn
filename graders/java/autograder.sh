@@ -52,7 +52,7 @@ RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
 # Build a cryptographically random filename without creating the file, so that
 # the file does not exist on disk until the autograder writes its results.
 RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9').json"
-SIGNATURE=$(head -c 32 /dev/random | base64)
+SIGNATURE=$(head -c 32 /dev/urandom | base64)
 
 jq -n --arg results_file "$RESULTS_TEMP_FILE" \
     --arg compile_output "$STUDENT_COMPILE_OUT" \
