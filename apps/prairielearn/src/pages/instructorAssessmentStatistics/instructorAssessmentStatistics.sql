@@ -6,23 +6,6 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_duration_stats
-SELECT
-  format_interval (duration_stat_median) AS median_formatted,
-  format_interval (duration_stat_min) AS min_formatted,
-  format_interval (duration_stat_max) AS max_formatted,
-  format_interval (duration_stat_mean) AS mean_formatted,
-  DATE_PART('epoch', duration_stat_median) / 60 AS median_minutes,
-  DATE_PART('epoch', duration_stat_min) / 60 AS min_minutes,
-  DATE_PART('epoch', duration_stat_max) / 60 AS max_minutes,
-  DATE_PART('epoch', duration_stat_mean) / 60 AS mean_minutes,
-  duration_stat_thresholds AS thresholds,
-  duration_stat_hist AS hist
-FROM
-  assessments
-WHERE
-  id = $assessment_id;
-
 -- BLOCK assessment_score_histogram_by_date
 WITH
   assessment_instances_by_user_and_date AS (

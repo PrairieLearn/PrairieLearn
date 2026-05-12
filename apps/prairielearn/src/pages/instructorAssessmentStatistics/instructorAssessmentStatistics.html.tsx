@@ -1,28 +1,14 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
-import { formatDateYMD } from '@prairielearn/formatter';
+import { formatDateYMD, formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
+import { type Assessment, AssessmentInstanceSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-export const DurationStatSchema = z.object({
-  median_formatted: z.string(),
-  min_formatted: z.string(),
-  max_formatted: z.string(),
-  mean_formatted: z.string(),
-  median_minutes: z.number(),
-  min_minutes: z.number(),
-  max_minutes: z.number(),
-  mean_minutes: z.number(),
-  thresholds: AssessmentSchema.shape.duration_stat_thresholds,
-  hist: AssessmentSchema.shape.duration_stat_hist,
-});
-type DurationStat = z.infer<typeof DurationStatSchema>;
 
 export const AssessmentScoreHistogramByDateSchema = z.object({
   date: DateFromISOString,
@@ -47,14 +33,12 @@ export interface Filenames {
 export function InstructorAssessmentStatistics({
   resLocals,
   assessment,
-  durationStat,
   assessmentScoreHistogramByDate,
   userScores,
   filenames,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   assessment: Assessment;
-  durationStat: DurationStat;
   assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];
   userScores: UserScore[];
   filenames: Filenames;
@@ -163,15 +147,15 @@ export function InstructorAssessmentStatistics({
               <div class="card-body">
                 <div
                   class="js-histogram"
-                  data-histogram="${JSON.stringify(durationStat.hist)}"
+                  data-histogram="${JSON.stringify(assessment.duration_stat_hist)}"
                   data-xgrid="${JSON.stringify(
-                    durationStat.thresholds.map((durationMs) => durationMs / 1000),
+                    assessment.duration_stat_thresholds.map((durationMs) => durationMs / 1000),
                   )}"
                   data-options="${JSON.stringify({
                     ymin: 0,
                     xlabel: 'duration',
                     ylabel: 'number of students',
-                    xTickLabels: durationStat.thresholds.map(durationLabel),
+                    xTickLabels: assessment.duration_stat_thresholds.map(durationLabel),
                   })}"
                 ></div>
               </div>
@@ -184,19 +168,19 @@ export function InstructorAssessmentStatistics({
                   <tbody>
                     <tr>
                       <td>Mean duration</td>
-                      <td>${durationStat.mean_formatted}</td>
+                      <td>${formatInterval(assessment.duration_stat_mean)}</td>
                     </tr>
                     <tr>
                       <td>Median duration</td>
-                      <td>${durationStat.median_formatted}</td>
+                      <td>${formatInterval(assessment.duration_stat_median)}</td>
                     </tr>
                     <tr>
                       <td>Minimum duration</td>
-                      <td>${durationStat.min_formatted}</td>
+                      <td>${formatInterval(assessment.duration_stat_min)}</td>
                     </tr>
                     <tr>
                       <td>Maximum duration</td>
-                      <td>${durationStat.max_formatted}</td>
+                      <td>${formatInterval(assessment.duration_stat_max)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -227,11 +211,11 @@ export function InstructorAssessmentStatistics({
                   data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
                   data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                   data-options="${JSON.stringify({
-                    xgrid: durationStat.thresholds.map((durationMs) => durationMs / 1000),
+                    xgrid: assessment.duration_stat_thresholds.map((durationMs) => durationMs / 1000),
                     ygrid: range(0, 110, 10),
                     xlabel: 'duration',
                     ylabel: 'score / %',
-                    xTickLabels: durationStat.thresholds.map(durationLabel),
+                    xTickLabels: assessment.duration_stat_thresholds.map(durationLabel),
                   })}"
                 ></div>
               </div>
