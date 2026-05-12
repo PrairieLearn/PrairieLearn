@@ -27,6 +27,7 @@ describe(
     // "complete" per the resolver) once the due date passes, even though the
     // homework instance stays open.
     const activeWindowCookie = 'pl_test_user=test_student; pl_test_date=2026-04-05T00:00:00Z';
+    const afterTimeLimitCookie = 'pl_test_user=test_student; pl_test_date=2026-04-05T00:20:00Z';
     const afterCompleteCookie = 'pl_test_user=test_student; pl_test_date=2026-04-15T00:00:00Z';
 
     beforeAll(async function () {
@@ -41,6 +42,12 @@ describe(
       });
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
+
+      const { id: timedExamAssessmentId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam21-afterCompleteTimeLimit',
+      });
+      context.timedExamAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${timedExamAssessmentId}/`;
     });
 
     afterAll(helperServer.after);
@@ -73,6 +80,26 @@ describe(
       // redirects to it.
       assert.include(response.url, '/assessment_instance/');
       context.assessmentInstanceUrl = response.url;
+    });
+
+    test.sequential('start the timed exam during the active window', async () => {
+      const startPage = await helperClient.fetchCheerio(context.timedExamAssessmentUrl, {
+        headers: { cookie: activeWindowCookie },
+      });
+      assert.isTrue(startPage.ok);
+      helperClient.extractAndSaveCSRFToken(context, startPage.$, '#confirm-form');
+
+      const response = await helperClient.fetchCheerio(context.timedExamAssessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'new_instance',
+          __csrf_token: context.__csrf_token,
+        }),
+        headers: { cookie: activeWindowCookie },
+      });
+      assert.isTrue(response.ok);
+      assert.include(response.url, '/assessment_instance/');
+      context.timedExamAssessmentInstanceUrl = response.url;
     });
 
     test.sequential(
@@ -149,6 +176,19 @@ describe(
         assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
         // afterComplete.score.hidden = true, so the closed page must not show
         // the score either.
+        assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
+      },
+    );
+
+    test.sequential(
+      'student timed assessment instance page shows the closed message after the time limit expires',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.timedExamAssessmentInstanceUrl, {
+          headers: { cookie: afterTimeLimitCookie },
+        });
+        assert.equal(response.status, 403);
+
+        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
       },
     );

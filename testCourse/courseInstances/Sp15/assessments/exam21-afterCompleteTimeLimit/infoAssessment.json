@@ -1,0 +1,22 @@
+{
+  "uuid": "d2e3f4a5-b6c7-48d9-9e0f-1a2b3c4d5e6f",
+  "type": "Exam",
+  "title": "After complete time limit visibility",
+  "set": "Exam",
+  "number": "21",
+  "requireHonorCode": false,
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2026-01-01T00:00:00" },
+        "due": { "date": "2026-04-10T00:00:00" },
+        "durationMinutes": 10
+      },
+      "afterComplete": {
+        "questions": { "hidden": true },
+        "score": { "hidden": true }
+      }
+    }
+  ],
+  "zones": [{ "questions": [{ "id": "addNumbers", "autoPoints": 1 }] }]
+}

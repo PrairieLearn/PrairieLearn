@@ -83,6 +83,7 @@ function applyInstanceCompletion(
     ...result,
     ...result.afterCompleteVisibility,
     complete: true,
+    submittable: false,
   };
 }
 

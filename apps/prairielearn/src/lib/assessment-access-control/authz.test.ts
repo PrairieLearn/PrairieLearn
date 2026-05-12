@@ -150,6 +150,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
 
     expect(result.show_closed_assessment).toBe(true);
     expect(result.show_closed_assessment_score).toBe(true);
+    expect(result.active).toBe(true);
   });
 
   it('applies afterComplete score visibility when an instance is closed', () => {
@@ -163,6 +164,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
 
     expect(result.show_closed_assessment).toBe(false);
     expect(result.show_closed_assessment_score).toBe(false);
+    expect(result.active).toBe(false);
   });
 
   it('applies afterComplete score visibility when the time limit has expired', () => {
@@ -176,6 +178,7 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
 
     expect(result.show_closed_assessment).toBe(false);
     expect(result.show_closed_assessment_score).toBe(false);
+    expect(result.active).toBe(false);
   });
 
   it('leaves PrairieTest visibility in control while a reservation is active', () => {
