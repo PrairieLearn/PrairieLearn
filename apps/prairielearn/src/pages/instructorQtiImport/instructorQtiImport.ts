@@ -228,6 +228,7 @@ async function convertEntry(
     basePath: entry.assessmentDir,
     assessmentMetaXml,
     rubricsXml,
+    excludeFileExtensions: VIDEO_EXTENSIONS,
   };
 
   // Parse once into IR, derive the title for the question prefix,
@@ -261,7 +262,6 @@ async function convertEntry(
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: questionPrefix,
-    excludeFileExtensions: VIDEO_EXTENSIONS,
   });
 
   return {
@@ -303,17 +303,11 @@ async function serializeConversionResult(
           level: 'warn',
         });
       }
-      // @reteps to handle this differently post-mvp, under the assumption that
-      // rewriting the question HTML should be handled by the import package
-      const questionHtml =
-        q.skippedFiles.length > 0
-          ? commentOutVideoReferences(q.questionHtml, q.skippedFiles)
-          : q.questionHtml;
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
         sourceId: q.sourceId,
         infoJson: q.infoJson,
-        questionHtml,
+        questionHtml: q.questionHtml,
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
@@ -330,38 +324,6 @@ async function serializeConversionResult(
     questions,
     warnings: [...result.warnings, ...extraWarnings],
   };
-}
-
-/**
- * Comment out any HTML tag that references a skipped video file via
- * `clientFilesQuestion/<filename>`. Matches self-closing tags and
- * open/close pairs regardless of tag name.
- */
-export function commentOutVideoReferences(html: string, skippedVideos: string[]): string {
-  let result = html;
-  for (const videoFile of skippedVideos) {
-    const escaped = videoFile.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const ref = `clientFilesQuestion/${escaped}`;
-    // Match open+close tag pairs (e.g. <a ...>...</a>, <pl-figure ...>...</pl-figure>)
-    // then self-closing or void tags (e.g. <img .../>).
-    const patterns = [
-      new RegExp(`<(\\w[\\w-]*)\\b[^>]*${ref}[^>]*>[\\s\\S]*?</\\1>`, 'gi'),
-      new RegExp(`<\\w[\\w-]*\\b[^>]*${ref}[^>]*/?>`, 'gi'),
-    ];
-    for (const pattern of patterns) {
-      result = result.replace(pattern, (...args) => {
-        const offset = args[args.length - 2] as number;
-        // Skip if this match is already inside an HTML comment.
-        const before = result.slice(0, offset);
-        const lastCommentOpen = before.lastIndexOf('<!--');
-        const lastCommentClose = before.lastIndexOf('-->');
-        if (lastCommentOpen > lastCommentClose) return args[0];
-
-        return `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${args[0]}\n-->`;
-      });
-    }
-  }
-  return result;
 }
 
 const VIDEO_EXTENSIONS = new Set([

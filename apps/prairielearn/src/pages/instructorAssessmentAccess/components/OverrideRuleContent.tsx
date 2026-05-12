@@ -4,13 +4,9 @@ import { OverrideDateControlForm } from './DateControlForm.js';
 export function OverrideRuleContent({
   index,
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   index: number;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
   return (
     <div className="d-flex flex-column gap-3">
@@ -19,8 +15,6 @@ export function OverrideRuleContent({
         title="Date control"
         description="Control access and credit to your assessment based on a schedule"
         displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
       />
 
       <OverrideAfterCompleteForm

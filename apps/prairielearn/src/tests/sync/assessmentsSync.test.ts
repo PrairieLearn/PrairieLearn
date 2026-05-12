@@ -218,6 +218,29 @@ describe('Assessment syncing', () => {
     assert.isTrue(syncedData.assessment.shuffle_questions);
   });
 
+  it('syncs showQuestionTitles configuration', async () => {
+    const courseData = util.getCourseData();
+
+    const explicitExam = makeAssessment(courseData, 'Exam');
+    explicitExam.showQuestionTitles = true;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['explicitexam'] = explicitExam;
+
+    const defaultHomework = makeAssessment(courseData, 'Homework');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaulthomework'] =
+      defaultHomework;
+
+    const defaultExam = makeAssessment(courseData, 'Exam');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaultexam'] = defaultExam;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    assert.isTrue((await getSyncedAssessmentData('explicitexam')).assessment.show_question_titles);
+    assert.isTrue(
+      (await getSyncedAssessmentData('defaulthomework')).assessment.show_question_titles,
+    );
+    assert.isFalse((await getSyncedAssessmentData('defaultexam')).assessment.show_question_titles);
+  });
+
   it('syncs alternatives in an Exam zone', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');

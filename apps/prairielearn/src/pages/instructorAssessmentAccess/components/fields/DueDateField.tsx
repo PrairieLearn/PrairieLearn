@@ -1,12 +1,10 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'react';
-import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
+import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { getAssessmentSettingsUrl } from '../../../../lib/client/url.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
@@ -32,8 +30,6 @@ function DueDateInput({
   dateError,
   creditError,
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   value: DueValue;
   onChange: (value: DueValue) => void;
@@ -43,11 +39,8 @@ function DueDateInput({
   dateError?: string;
   creditError?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
   const effectiveCredit = value.credit ?? 100;
-  const [highCreditWarningDismissed, setHighCreditWarningDismissed] = useState(false);
 
   const getCreditPeriodText = () => {
     if (!value.date) return null;
@@ -139,10 +132,7 @@ function DueDateInput({
               variant="link"
               size="sm"
               className="p-0 align-baseline"
-              onClick={() => {
-                setHighCreditWarningDismissed(false);
-                onChange({ ...value, customCredit: true, credit: 100 });
-              }}
+              onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
             >
               Change
             </Button>
@@ -193,21 +183,6 @@ function DueDateInput({
           {creditError}
         </Form.Text>
       )}
-      {value.credit !== null && value.credit > 100 && !highCreditWarningDismissed && (
-        <Alert
-          variant="secondary"
-          className="py-2 mt-2 mb-0"
-          dismissible
-          onClose={() => setHighCreditWarningDismissed(true)}
-        >
-          Configuring a due date percentage above 100% is not recommended: it gives every on-time
-          student this bonus. If you intend students to exceed 100% by doing additional work, use{' '}
-          <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
-            bonus points
-          </Alert.Link>{' '}
-          instead. If you intend to reward early submissions, configure an early deadline.
-        </Alert>
-      )}
     </Form.Group>
   );
 }
@@ -236,15 +211,7 @@ function validateDueCredit(credit: number | null, customCredit: boolean): string
   return undefined;
 }
 
-export function DefaultDueDateField({
-  displayTimezone,
-  assessmentId,
-  courseInstanceId,
-}: {
-  displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
-}) {
+export function DefaultDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
@@ -295,8 +262,6 @@ export function DefaultDueDateField({
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </div>
@@ -306,13 +271,9 @@ export function DefaultDueDateField({
 export function OverrideDueDateField({
   index,
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   index: number;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.due'>({
     name: 'defaultRule.due',
@@ -393,8 +354,6 @@ export function OverrideDueDateField({
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </FieldWrapper>
