@@ -217,7 +217,7 @@ interface ModernAssessmentAccessBatchInput {
   reqDate: Date;
 }
 
-export async function resolveModernAssessmentAccessResultBatch({
+export async function resolveModernAssessmentAccessBatch({
   courseInstance,
   userId,
   authzData,

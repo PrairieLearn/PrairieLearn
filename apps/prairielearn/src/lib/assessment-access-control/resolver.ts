@@ -111,9 +111,11 @@ export interface AccessControlResolverResult {
    */
   afterCompleteVisibility: Visibility;
   /**
-   * True when date control has reached a non-submittable after-last-deadline
-   * segment. Instance-specific completion, such as a closed instance or
-   * expired time limit, is applied in the modern authz layer.
+   * True when the assessment has reached a "complete" phase from the
+   * resolver's perspective: a non-submittable after-last-deadline segment
+   * under date control, or a read-only PrairieTest reservation. Instance-
+   * specific completion (closed instance or expired time limit) is applied
+   * separately in the modern authz layer.
    */
   complete: boolean;
   /**
@@ -485,23 +487,15 @@ export function resolveAccessControl(
   // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
   if (!hasRelease) {
     if (rule.prairieTestExams.length > 0) {
-      if (afterCompleteVisibility.showClosedAssessment) {
-        return {
-          ...UNAUTHORIZED_RESULT,
-          authorized: true,
-          ...afterCompleteVisibility,
-          afterCompleteVisibility,
-          complete: true,
-          accessTimeline,
-        };
-      }
+      const reviewMode = afterCompleteVisibility.showClosedAssessment;
       return {
         ...UNAUTHORIZED_RESULT,
+        authorized: reviewMode,
         ...afterCompleteVisibility,
         afterCompleteVisibility,
         complete: true,
         accessTimeline,
-        showBeforeRelease: shouldShowBeforeRelease,
+        showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
       };
     }
     return {

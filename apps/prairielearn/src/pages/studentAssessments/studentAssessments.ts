@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
-  resolveModernAssessmentAccessResultBatch,
+  resolveModernAssessmentAccessBatch,
   resolverResultToAuthzAssessmentForInstance,
 } from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -35,8 +35,8 @@ router.get(
     );
 
     const hasModern = rows.some((r) => r.modern_access_control);
-    const modernResults = hasModern
-      ? await resolveModernAssessmentAccessResultBatch({
+    const modernAccessByAssessment = hasModern
+      ? await resolveModernAssessmentAccessBatch({
           courseInstance: res.locals.course_instance,
           userId: res.locals.user.id,
           authzData: res.locals.authz_data,
@@ -48,10 +48,10 @@ router.get(
       .map((row): StudentAssessmentsRow | null => {
         if (!row.modern_access_control) return row;
 
-        const result = modernResults?.get(row.assessment_id);
-        if (!result) return null;
+        const assessmentAccess = modernAccessByAssessment?.get(row.assessment_id);
+        if (!assessmentAccess) return null;
         const authzResult = resolverResultToAuthzAssessmentForInstance({
-          result,
+          result: assessmentAccess,
           authzMode: res.locals.authz_data.mode,
           displayTimezone: res.locals.course_instance.display_timezone,
           assessmentInstance:
