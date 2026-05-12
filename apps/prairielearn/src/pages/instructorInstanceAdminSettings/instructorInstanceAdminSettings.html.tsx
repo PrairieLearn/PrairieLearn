@@ -149,8 +149,10 @@ export function InstructorInstanceAdminSettings({
   );
 }
 
-// Refactored into a separate component so it can use `useTRPC` hooks for the
-// bulk-share action. The parent owns the QueryClient/TRPCProvider.
+/**
+ * Refactored into a separate component so it can use `useTRPC` hooks for the
+ * bulk-share action. The parent owns the QueryClient/TRPCProvider.
+ */
 function InstructorInstanceAdminSettingsForm(_props: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
