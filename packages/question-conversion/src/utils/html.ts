@@ -314,14 +314,18 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
           }
         }
 
+        // Strip HTML tags before decoding entities so that decoded `<` in
+        // code (e.g. `&lt;=`) isn't mistaken for a tag boundary.
+        const plainCode = he.decode(stripHtmlFromCode(codeContent));
+
         if (!language) {
-          language = await detectCodeLanguage(he.decode(codeContent));
+          language = await detectCodeLanguage(plainCode);
         }
         const langAttr = language ? ` language="${language}"` : '';
         return {
           start,
           end,
-          replacement: `<pl-code${langAttr}>\n${he.decode(codeContent)}</pl-code>`,
+          replacement: `<pl-code${langAttr}>\n${plainCode}</pl-code>`,
         };
       })(),
     );
@@ -335,6 +339,15 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
     result = result.slice(0, start) + replacement + result.slice(end);
   }
   return result.replaceAll(P_WRAPPING_PL_CODE_RE, '$1');
+}
+
+/**
+ * Strip HTML tags from code content. Converts `<br>` to newlines and removes
+ * all other tags (e.g. `<span>`, `<code>`) that Canvas sometimes wraps around
+ * code inside `<pre>` blocks.
+ */
+function stripHtmlFromCode(code: string): string {
+  return code.replaceAll(/<br\s*\/?>/gi, '\n').replaceAll(/<[^>]+>/g, '');
 }
 
 const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
