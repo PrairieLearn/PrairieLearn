@@ -122,15 +122,14 @@ function RubricItems({
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   showEditRubricButton: boolean;
 }) {
-  const showAiColumn = aiGradingInfo?.submissionManuallyGraded;
-  const ai_selected_rubric_item_ids_set = showAiColumn
+  const ai_selected_rubric_item_ids_set = aiGradingInfo?.submissionManuallyGraded
     ? new Set(aiGradingInfo.selectedRubricItemIds)
     : null;
 
   return html`
     <div class="d-flex align-items-center justify-content-between mb-1">
       <div class="d-flex align-items-center gap-2 text-secondary" style="padding-left: 3px;">
-        ${showAiColumn
+        ${aiGradingInfo?.submissionManuallyGraded
           ? html`
               <div data-bs-toggle="tooltip" data-bs-title="AI grading">
                 <i class="bi bi-stars"></i>

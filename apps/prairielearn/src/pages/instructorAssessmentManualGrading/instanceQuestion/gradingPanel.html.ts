@@ -242,7 +242,7 @@ export function GradingPanel({
                       class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
                       onclick="event.preventDefault(); document.getElementById('ai-grading-explanation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
                     >
-                      <i class="bi bi-stars me-1" aria-hidden="true"></i>View explanation
+                      <i class="bi bi-stars me-1" aria-hidden="true"></i>View AI explanation
                     </a>`;
                     if (gradedByAi && gradedByHuman) {
                       return html`${aiBadge}<span>+</span
