@@ -31,7 +31,7 @@ function makeZone(trackingId: string, questions: ZoneQuestionBlockForm[]): ZoneA
     canSubmit: [],
     canView: [],
     questions,
-  } as ZoneAssessmentForm;
+  };
 }
 
 describe('sanitizeSelectedItem', () => {

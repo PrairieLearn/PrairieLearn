@@ -11,3 +11,16 @@
     display: none;
   }
 }
+
+.assessment-access-date-cell-current::before {
+  content: '';
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 4px;
+  border-radius: 999px;
+  background-color: var(--bs-primary);
+}
+
+.assessment-access-date-cell-current-success::before {
+  background-color: var(--bs-success);
+}

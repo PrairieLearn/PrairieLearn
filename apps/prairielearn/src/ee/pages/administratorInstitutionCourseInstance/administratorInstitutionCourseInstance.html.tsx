@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
+import { type CreditPoolLimits } from '../../../lib/ai-grading-credits.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -21,8 +22,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants,
   aiGradingEnabled,
   trpcCsrfToken,
-  maxAddDollars,
-  maxDeductDollars,
+  refundsEnabled,
+  creditPoolLimits,
   resLocals,
 }: {
   institution: Institution;
@@ -31,8 +32,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants: PlanGrant[];
   aiGradingEnabled: boolean;
   trpcCsrfToken: string | null;
-  maxAddDollars: number;
-  maxDeductDollars: number;
+  refundsEnabled: boolean;
+  creditPoolLimits: CreditPoolLimits;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -58,7 +59,7 @@ export function AdministratorInstitutionCourseInstance({
             </a>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
+            ${course_instance.short_name}: ${course_instance.long_name ?? '—'}
           </li>
         </ol>
       </nav>
@@ -149,8 +150,8 @@ export function AdministratorInstitutionCourseInstance({
               trpcCsrfToken={trpcCsrfToken}
               useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
               isDeleted={isDeleted}
-              maxAddDollars={maxAddDollars}
-              maxDeductDollars={maxDeductDollars}
+              refundsEnabled={refundsEnabled}
+              creditPoolLimits={creditPoolLimits}
             />,
           )
         : ''}

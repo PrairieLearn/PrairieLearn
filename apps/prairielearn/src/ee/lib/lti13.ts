@@ -68,7 +68,7 @@ const LineitemSchema = z.object({
 });
 type Lineitem = z.infer<typeof LineitemSchema>;
 
-export const LineitemsSchema = z.array(LineitemSchema);
+const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3

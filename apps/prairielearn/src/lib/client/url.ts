@@ -23,8 +23,26 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentStudentsUrl(
+  parts: { assessmentId: string } & AssessmentUrlParts,
+): string {
+  return `${getAssessmentUrl(parts)}/instances`;
+}
+
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+}
+
+export function getAssessmentDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -51,7 +69,9 @@ export function getInstanceQuestionUrl({
   variantId?: string | null;
 }) {
   const searchParams = variantId ? `?variant_id=${encodeURIComponent(variantId)}` : '';
-  return `/pl/course_instance/${courseInstanceId}/instance_question/${instanceQuestionId}${searchParams}`;
+  // TODO: Some questions are relying on relative URLs for certain functionality.
+  // We should drop the slash between `instanceQuestionId` and `searchParams` when it is safe to do so.
+  return `/pl/course_instance/${courseInstanceId}/instance_question/${instanceQuestionId}/${searchParams}`;
 }
 
 export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: string): string {
@@ -174,6 +194,10 @@ export function getQuestionCreateUrl(courseInstanceId: string): string {
 
 export function getAdministratorTrpcUrl(): string {
   return '/pl/administrator/trpc';
+}
+
+export function getCourseTrpcUrl(courseId: string): string {
+  return `/pl/course/${courseId}/trpc`;
 }
 
 export function getCourseInstanceTrpcUrl(courseInstanceId: string): string {

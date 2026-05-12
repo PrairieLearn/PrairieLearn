@@ -8,6 +8,7 @@ const featureNames = [
   'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
   'ai-grading',
+  'ai-submission-grouping',
   'disable-public-workspaces',
   'enhanced-access-control',
 
@@ -16,6 +17,7 @@ const featureNames = [
 
   // Can be applied to any context.
   'ai-question-generation',
+  'qti-content-import',
   'rich-text-editor',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.

@@ -187,8 +187,14 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
-    AccessControlJsonSchema,
+    // `DatetimeLocalStringSchema` must precede any definition (e.g.
+    // `AccessControlJsonSchema`) that inlines a helper schema which wraps it
+    // in `.describe(...)`. Processing order determines the canonical `$ref`
+    // target: if the described instance is emitted first, the generator
+    // makes the deep inline path canonical and points the
+    // `DatetimeLocalStringSchema` definition back at it.
     DatetimeLocalStringSchema,
+    AccessControlJsonSchema,
     DeadlineEntryJsonSchema,
   },
 }) as JSONSchemaType<AssessmentJson>;

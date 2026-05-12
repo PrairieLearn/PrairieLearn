@@ -3,6 +3,7 @@ import { assert, describe, it } from 'vitest';
 import {
   formatDate,
   formatDateFriendly,
+  formatDateISO,
   formatDateRangeFriendly,
   formatDateWithinRange,
   formatDateYMD,
@@ -41,6 +42,45 @@ describe('date formatting', () => {
         formatDate(date, 'America/Chicago', { longTz: true }),
         '2018-01-01 06:00:00 (Central Standard Time)',
       );
+    });
+  });
+
+  describe('formatDateISO', () => {
+    it('returns null for a null date', () => {
+      assert.isNull(formatDateISO(null, 'UTC'));
+    });
+
+    it('formats a UTC date with timezone offset', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateISO(date, 'UTC'), '2018-01-01T12:00:00+00:00');
+    });
+
+    it('formats a CST date with timezone offset', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateISO(date, 'America/Chicago'), '2018-01-01T06:00:00-06:00');
+    });
+
+    it('formats a date in Asia/Kolkata with timezone offset', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateISO(date, 'Asia/Kolkata'), '2018-01-01T17:30:00+05:30');
+    });
+
+    it('formats a date in Asia/Tokyo with timezone offset', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateISO(date, 'Asia/Tokyo'), '2018-01-01T21:00:00+09:00');
+    });
+
+    it('formats a date with milliseconds', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 4, 1, 3, 12));
+      assert.equal(
+        formatDateISO(date, 'UTC', { includeMs: true }),
+        '2018-01-01T04:01:03.012+00:00',
+      );
+    });
+
+    it('formats a date without the timezone', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateISO(date, 'UTC', { includeTz: false }), '2018-01-01T12:00:00');
     });
   });
 

@@ -20,7 +20,6 @@ A full `info.json` file should look something like:
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python"
   }
 }
@@ -275,7 +274,6 @@ Some courses may use libraries that are common across multiple questions. For su
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["course_lib.py"]
   }
@@ -293,7 +291,6 @@ To access `serverFilesCourse` from the autograder, specify the file or its conta
 ```json title="info.json" hl_lines="5"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["compounds"]
   }

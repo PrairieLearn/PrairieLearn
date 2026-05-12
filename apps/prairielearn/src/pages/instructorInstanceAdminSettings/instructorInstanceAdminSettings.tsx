@@ -15,9 +15,14 @@ import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstance
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import {
+  getCourseInstanceEditErrorUrl,
+  getCourseInstanceTrpcUrl,
+  getSelfEnrollmentLinkUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
@@ -25,8 +30,8 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -53,8 +58,6 @@ router.get(
       course,
       institution,
       authz_data,
-      urlPrefix,
-      navPage,
       __csrf_token,
       is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
@@ -86,12 +89,12 @@ router.get(
     ).href;
     const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
 
-    const infoCourseInstancePath = path.join(
+    const fullInfoCourseInstancePath = path.join(
+      course.path,
       'courseInstances',
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
     const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
@@ -100,6 +103,11 @@ router.get(
     );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+
+    const enhancedAccessControlEnabled = await features.enabledFromLocals(
+      'enhanced-access-control',
+      res.locals,
+    );
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -118,14 +126,17 @@ router.get(
           page: 'instance_admin',
           subPage: 'settings',
         },
+        options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
+        },
         content: (
           <>
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
-                urlPrefix={urlPrefix}
-                navPage={navPage}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -137,9 +148,9 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                enhancedAccessControlEnabled={enhancedAccessControlEnabled}
               />
             </Hydrate>
             <Hydrate>
@@ -162,7 +173,6 @@ router.post(
     const {
       course_instance: courseInstance,
       course,
-      urlPrefix,
       authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -179,7 +189,7 @@ router.post(
         self_enrollment_use_enrollment_code,
         course_instance_permission,
         access_control_strategy,
-        preserve_incompatible,
+        clear_incompatible,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -189,8 +199,8 @@ router.post(
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-          access_control_strategy: z.enum(['migrate', 'keep', 'wipe']).optional().default('wipe'),
-          preserve_incompatible: z.boolean().optional().default(false),
+          access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+          clear_incompatible: z.boolean().optional().default(false),
         })
         .parse(req.body);
 
@@ -266,6 +276,11 @@ router.post(
             }
           : undefined;
 
+      const enhancedAccessControlEnabled = await features.enabledFromLocals(
+        'enhanced-access-control',
+        res.locals,
+      );
+
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
@@ -278,8 +293,8 @@ router.post(
           selfEnrollment: resolvedSelfEnrollment,
         },
         accessControlMigration: {
-          strategy: access_control_strategy,
-          preserveIncompatible: preserve_incompatible,
+          strategy: enhancedAccessControlEnabled ? access_control_strategy : 'keep',
+          clearIncompatible: clear_incompatible,
         },
       });
 
@@ -319,7 +334,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         res.redirect(`/pl/course/${course.id}/course_admin/instances`);
       } catch {
-        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId));
       }
     } else if (req.body.__action === 'update_configuration') {
       const infoCourseInstancePath = path.join(
@@ -458,7 +473,9 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(
+          getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId),
+        );
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);

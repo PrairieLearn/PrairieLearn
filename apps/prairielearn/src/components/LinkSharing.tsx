@@ -3,11 +3,8 @@ import { Button, Form, InputGroup } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { CopyButton } from './CopyButton.js';
 import { QRCodeModal } from './QRCodeModal.js';
-
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text);
-}
 
 export function PublicLinkSharing({
   publicLink,
@@ -19,7 +16,6 @@ export function PublicLinkSharing({
   publicLinkMessage: string;
 }) {
   const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
   return (
     <>
       <p>
@@ -29,26 +25,18 @@ export function PublicLinkSharing({
       <div className="mb-3">
         <label htmlFor="publicLink">Public link</label>
         <InputGroup>
-          <Form.Control type="text" id="publicLink" value={publicLink} disabled />
-          <OverlayTrigger
-            tooltip={{
-              body: copied ? 'Copied!' : 'Copy',
-              props: { id: 'public-link-copy-tooltip' },
-            }}
-          >
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              aria-label="Copy public link"
-              onClick={async () => {
-                await copyToClipboard(publicLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <i className="far fa-clipboard" />
-            </Button>
-          </OverlayTrigger>
+          <Form.Control
+            type="text"
+            id="publicLink"
+            className="bg-body-secondary"
+            value={publicLink}
+            readOnly
+          />
+          <CopyButton
+            text={publicLink}
+            ariaLabel="Copy public link"
+            className="btn-sm btn-outline-secondary"
+          />
           <Button
             size="sm"
             variant="outline-secondary"
@@ -79,33 +67,24 @@ export function StudentLinkSharing({
   studentLinkMessage: string;
 }) {
   const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
   return (
     <div className="mb-3">
       <label className="form-label" htmlFor="student_link">
         Student link
       </label>
       <InputGroup>
-        <Form.Control type="text" id="student_link" value={studentLink} disabled />
-        <OverlayTrigger
-          tooltip={{
-            body: copied ? 'Copied!' : 'Copy',
-            props: { id: 'student-link-copy-tooltip' },
-          }}
-        >
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy student link"
-            onClick={async () => {
-              await copyToClipboard(studentLink);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i className="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
+        <Form.Control
+          type="text"
+          id="student_link"
+          className="bg-body-secondary"
+          value={studentLink}
+          readOnly
+        />
+        <CopyButton
+          text={studentLink}
+          ariaLabel="Copy student link"
+          className="btn-sm btn-outline-secondary"
+        />
         <OverlayTrigger
           tooltip={{
             body: 'View QR Code',

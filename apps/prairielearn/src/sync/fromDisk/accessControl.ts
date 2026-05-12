@@ -40,7 +40,7 @@ function validateAssessmentRules(
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
   // Reject them here to prevent label-targeted rules from being silently
-  // treated as main rules.
+  // treated as default rules.
   for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
@@ -82,15 +82,15 @@ function prepareRuleRow(
   const dateControl = rule.dateControl ?? {};
   const afterComplete = rule.afterComplete ?? {};
   const afterLastDeadline = dateControl.afterLastDeadline;
-  const isMainRule = ruleNumber === JSON_RULE_START;
+  const isDefaultRule = ruleNumber === JSON_RULE_START;
 
-  const listBeforeRelease = mapField(rule.listBeforeRelease);
-  const dueDateField = mapField(dateControl.dueDate);
+  const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
+  const dueField = mapField(dateControl.due);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
+  const afterLastDeadlineField = mapField(afterLastDeadline);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -99,23 +99,27 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' = isMainRule ? 'none' : 'student_label';
+  const targetType: 'none' | 'student_label' = isDefaultRule ? 'none' : 'student_label';
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // listBeforeRelease is only configurable on the main rule.
-    list_before_release: isMainRule ? (listBeforeRelease.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the default rule.
+    before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
-    date_control_release_date: dateControl.releaseDate ?? null,
-    date_control_due_date_overridden: dueDateField.overridden,
-    date_control_due_date: dueDateField.value,
+    date_control_release_date: dateControl.release?.date ?? null,
+    date_control_due_overridden: dueField.overridden,
+    date_control_due_date: dueField.value?.date ?? null,
+    date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
+    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
     date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineAllowSubmissionsField.value,
+      afterLastDeadlineField.value?.allowSubmissions ?? null,
     date_control_after_last_deadline_credit:
-      afterLastDeadline?.allowSubmissions === true ? (afterLastDeadline.credit ?? null) : null,
+      afterLastDeadlineField.value?.allowSubmissions === true
+        ? (afterLastDeadlineField.value.credit ?? null)
+        : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
@@ -143,7 +147,14 @@ function prepareRuleRow(
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
   const prairietestExams = exams.map((e) =>
-    JSON.stringify([assessmentId, ruleNumber, e.examUuid, e.readOnly ?? false]),
+    JSON.stringify([
+      assessmentId,
+      ruleNumber,
+      e.examUuid,
+      e.readOnly ?? false,
+      e.afterComplete?.questions?.hidden ?? false,
+      e.afterComplete?.score?.hidden ?? false,
+    ]),
   );
 
   return { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams };

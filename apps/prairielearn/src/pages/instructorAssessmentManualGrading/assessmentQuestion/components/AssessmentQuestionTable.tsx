@@ -11,15 +11,17 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
 import {
+  type MultiSelectFilterValue,
   OverlayTrigger,
   TanstackTableCard,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
   useShiftClickCheckbox,
@@ -62,11 +64,14 @@ import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
-const DEFAULT_GRADING_STATUS_FILTER: GradingStatusValue[] = [];
-const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
-const DEFAULT_GRADED_BY_FILTER: string[] = [];
-const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
-const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
+const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -79,6 +84,7 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -119,6 +125,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
+  aiSubmissionGroupingEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -146,25 +153,23 @@ export function AssessmentQuestionTable({
 
   const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
     'status',
-    parseAsArrayOf(parseAsStringLiteral(GRADING_STATUS_VALUES)).withDefault(
-      DEFAULT_GRADING_STATUS_FILTER,
-    ),
+    parseAsMultiSelectFilter(GRADING_STATUS_VALUES).withDefault(DEFAULT_GRADING_STATUS_FILTER),
   );
   const [assignedGraderFilter, setAssignedGraderFilter] = useQueryState(
     'assigned_grader',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
   );
   const [gradedByFilter, setGradedByFilter] = useQueryState(
     'graded_by',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_GRADED_BY_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_GRADED_BY_FILTER),
   );
   const [submissionGroupFilter, setSubmissionGroupFilter] = useQueryState(
     'submission_group',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
   );
   const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
     'ai_agreement',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_AI_AGREEMENT_FILTER),
   );
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
@@ -743,63 +748,69 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-                {!availableAiGradingProviders.includes('openai') ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
-                      props: { id: 'ai-grouping-no-openai-tooltip' },
-                    }}
-                  >
-                    <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
+                {aiSubmissionGroupingEnabled &&
+                  (!availableAiGradingProviders.includes('openai') ? (
+                    <OverlayTrigger
+                      tooltip={{
+                        body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
+                        props: { id: 'ai-grouping-no-openai-tooltip' },
+                      }}
+                    >
+                      <span style={{ display: 'inline-block' }}>
+                        <Button
+                          variant="light"
+                          size="sm"
+                          style={{ pointerEvents: 'none' }}
+                          disabled
+                        >
+                          <i className="bi bi-stars" aria-hidden="true" />
+                          <span className="d-none d-sm-inline">AI submission grouping</span>
+                        </Button>
+                      </span>
+                    </OverlayTrigger>
+                  ) : (
+                    <Dropdown>
+                      <Dropdown.Toggle variant="light" size="sm">
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </Button>
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Dropdown>
-                    <Dropdown.Toggle variant="light" size="sm">
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span className="d-none d-sm-inline">AI submission grouping</span>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu align="end">
-                      <Dropdown.Item
-                        disabled={selectedIds.length === 0}
-                        onClick={() =>
-                          onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
-                        }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group selected submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.selected}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group all submissions</span>
-                          <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group ungrouped submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.ungrouped}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
-                        Delete all AI groupings
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu align="end">
+                        <Dropdown.Item
+                          disabled={selectedIds.length === 0}
+                          onClick={() =>
+                            onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                          }
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group selected submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.selected}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group all submissions</span>
+                            <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group ungrouped submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.ungrouped}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
+                          Delete all AI groupings
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  ))}
               </>
             ) : (
               <Dropdown>
@@ -948,10 +959,6 @@ export function AssessmentQuestionTable({
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
-        creditBalanceMilliDollars={
-          courseInstance.credit_transferable_milli_dollars +
-          courseInstance.credit_non_transferable_milli_dollars
-        }
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(

@@ -19,14 +19,18 @@ import {
   getStudentAssessmentUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { type AssessmentToolsConfig, getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
+import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
-import { selectAssessmentToolDefaults } from '../../models/assessment.js';
+import {
+  selectAssessmentToolDefaults,
+  selectAssessmentZonePointsRange,
+} from '../../models/assessment.js';
 import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
@@ -74,9 +78,10 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
-    const toolDefaultRows = await selectAssessmentToolDefaults({
-      assessment_id: assessment.id,
-    });
+    const [toolDefaultRows, zonePointsRange] = await Promise.all([
+      selectAssessmentToolDefaults({ assessment_id: assessment.id }),
+      selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+    ]);
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
       name: tool,
@@ -111,6 +116,11 @@ router.get(
           page: 'assessment',
           subPage: 'settings',
         },
+        options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
+        },
         content: (
           <Hydrate>
             <InstructorAssessmentSettings
@@ -120,7 +130,6 @@ router.get(
               origHash={origHash}
               assessment={assessment}
               assessmentSet={assessment_set}
-              hasCoursePermissionView={authz_data.has_course_permission_view}
               assessmentGHLink={assessmentGHLink}
               tids={tids}
               studentLink={studentLink}
@@ -130,6 +139,7 @@ router.get(
               courseInstance={course_instance}
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
+              zonePointsRange={zonePointsRange}
             />
           </Hydrate>
         ),
