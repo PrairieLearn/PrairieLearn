@@ -22,6 +22,5 @@
         { "id": "workspace", "autoPoints": 2, "maxAutoPoints": 10 }
       ]
     }
-  ],
-  "groups": {}
+  ]
 }

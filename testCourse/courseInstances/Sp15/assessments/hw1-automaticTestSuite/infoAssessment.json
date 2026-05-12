@@ -9,13 +9,7 @@
   "zones": [
     {
       "questions": [
-        {
-          "id": "addNumbers",
-          "autoPoints": 1,
-          "maxAutoPoints": 5,
-          "canSubmit": ["Manager", "Recorder", "Reflector", "Contributor"],
-          "canView": ["Manager", "Recorder", "Reflector", "Contributor"]
-        },
+        { "id": "addNumbers", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "addVectors", "autoPoints": 2, "maxAutoPoints": 11 },
         { "id": "fossilFuelsRadio", "autoPoints": 3, "maxAutoPoints": 14 },
         { "id": "downloadFile", "autoPoints": 5, "maxAutoPoints": 17 },
@@ -34,20 +28,5 @@
         { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
       ]
     }
-  ],
-  "groups": {
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true,
-      "canNameGroup": true
-    },
-    "roles": [
-      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
-      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
-      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
-      { "name": "Contributor" }
-    ],
-    "rolePermissions": { "canAssignRoles": ["Manager"] }
-  }
+  ]
 }
