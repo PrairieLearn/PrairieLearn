@@ -305,7 +305,10 @@ async function serializeConversionResult(
           level: 'warn',
         });
       }
+      const seenMessages = new Set<string>();
       for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (seenMessages.has(d.message)) continue;
+        seenMessages.add(d.message);
         extraWarnings.push({ questionId, message: d.message, level: 'warn' });
       }
       return {
