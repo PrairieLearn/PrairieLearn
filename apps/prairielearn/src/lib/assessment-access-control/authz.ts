@@ -62,10 +62,15 @@ function resolverResultToAuthzAssessment(
       ? formatDateShort(result.nextActiveDate, displayTimezone)
       : null,
     access_rules: [],
-    access_timeline: result.accessTimeline.map((entry) => ({ ...entry })),
+    access_timeline: result.accessTimeline,
   };
 }
 
+/**
+ * Applies instance-specific completion once an instance is closed or its time
+ * limit expires. PrairieTest visibility is already resolved from the active
+ * reservation, so top-level afterComplete visibility should not override it.
+ */
 function applyInstanceCompletion(
   result: AccessControlResolverResult,
   {

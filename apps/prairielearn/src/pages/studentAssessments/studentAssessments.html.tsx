@@ -32,7 +32,7 @@ export const StudentAssessmentsRowSchema = z.object({
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
   access_rules: AuthzAccessRuleSchema.array(),
-  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]),
+  access_timeline: z.array(AccessTimelineEntrySchema).optional().default([]).readonly(),
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
