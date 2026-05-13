@@ -103,7 +103,7 @@ export function CreditPoolDashboard({
             {onRedeemFreeCreditClick && (
               <button
                 type="button"
-                className="btn btn-success d-inline-flex align-items-center gap-2 fw-semibold"
+                className="btn btn-success d-inline-flex align-items-center gap-2"
                 onClick={onRedeemFreeCreditClick}
               >
                 <i className="bi bi-gift-fill" aria-hidden="true" />
