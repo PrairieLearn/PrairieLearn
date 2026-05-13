@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { executeScripts } from '@prairielearn/browser-utils';
+import { useModalState } from '@prairielearn/ui';
 
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
@@ -103,6 +104,7 @@ async function refreshGradingPanels(): Promise<boolean> {
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
   instanceQuestionId: string;
+  hasRubric: boolean;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
   availableAiGradingProviders: EnumAiGradingProvider[];
@@ -121,6 +123,7 @@ export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInn
 function InstanceQuestionAiGradeInner({
   courseInstanceId,
   instanceQuestionId,
+  hasRubric,
   useCustomApiKeys,
   aiGradingSettingsUrl,
   availableAiGradingProviders,
@@ -128,7 +131,7 @@ function InstanceQuestionAiGradeInner({
   aiGradingLastSelectedModel,
   initialOngoingJobSequenceTokens,
 }: InstanceQuestionAiGradeInnerProps) {
-  const [modalState, setModalState] = useState<AiGradingModelSelectionModalState>(null);
+  const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
   );
@@ -196,11 +199,15 @@ function InstanceQuestionAiGradeInner({
   useEffect(() => {
     const handler = () => {
       if (isInFlight(submissionStatusRef.current)) return;
-      setModalState({ type: 'selected', ids: [instanceQuestionId], numToGrade: 1 });
+      modelSelectionModalState.showWithData({
+        type: 'selected',
+        ids: [instanceQuestionId],
+        numToGrade: 1,
+      });
     };
     document.addEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
     return () => document.removeEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
-  }, [instanceQuestionId]);
+  }, [instanceQuestionId, modelSelectionModalState]);
 
   return (
     <>
@@ -218,12 +225,21 @@ function InstanceQuestionAiGradeInner({
       />
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        modalState={modalState}
+        show={modelSelectionModalState.show}
+        data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={useCustomApiKeys}
         aiGradingSettingsUrl={aiGradingSettingsUrl}
+        hasRubric={hasRubric}
+        totalSubmissionCount={1}
+        onSelectFirstSubmissions={() => {
+          // No-op: this modal is opened for a single instance question, so there
+          // is no "first N submissions" reduction to make.
+        }}
+        onHide={modelSelectionModalState.onHide}
+        onExited={modelSelectionModalState.onExited}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
@@ -231,7 +247,6 @@ function InstanceQuestionAiGradeInner({
           );
           setLastSelectedModel(modelId);
         }}
-        onHide={() => setModalState(null)}
       />
     </>
   );

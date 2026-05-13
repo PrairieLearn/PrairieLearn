@@ -210,6 +210,7 @@ router.get(
           instanceQuestionId: res.locals.instance_question.id,
           trpcCsrfToken,
           isDevMode: process.env.NODE_ENV === 'development',
+          hasRubric: res.locals.assessment_question.manual_rubric_id != null,
           useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
           aiGradingSettingsUrl: `${res.locals.urlPrefix}/instance_admin/ai_grading`,
           availableAiGradingProviders: await getAvailableAiGradingProviders(
@@ -370,6 +371,14 @@ router.get(
             })
           : undefined;
 
+        const lastHumanGraderRow = res.locals.instance_question.last_grader
+          ? await sqldb.queryOptionalRow(
+              sql.select_last_manual_grader_for_instance_question,
+              { instance_question_id: res.locals.instance_question.id },
+              z.object({ grader_name: z.string() }),
+            )
+          : null;
+
         const gradingPanel = GradingPanel({
           ...locals,
           context: 'main',
@@ -380,6 +389,7 @@ router.get(
           skip_graded_submissions: req.session.skip_graded_submissions ?? true,
           show_submissions_assigned_to_me_only:
             req.session.show_submissions_assigned_to_me_only ?? true,
+          gradedByHumanName: lastHumanGraderRow?.grader_name ?? null,
         }).toString();
 
         const questionContainer = QuestionContainer({
