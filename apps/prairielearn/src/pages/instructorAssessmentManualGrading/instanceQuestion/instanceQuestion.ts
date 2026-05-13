@@ -309,15 +309,39 @@ router.get(
   typedAsyncHandler<'instructor-instance-question', ResLocalsInstanceQuestionRender>(
     async (req, res) => {
       try {
+        const instance_question = res.locals.instance_question;
+        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+        const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+          'ai-submission-grouping',
+          res.locals,
+        );
+        const aiGradingMode = aiGradingEnabled && res.locals.assessment_question.ai_grading_mode;
+
+        const instanceQuestionGroup = await run(async () => {
+          if (!aiSubmissionGroupingEnabled) return null;
+          if (instance_question.manual_instance_question_group_id) {
+            return await selectInstanceQuestionGroup(
+              instance_question.manual_instance_question_group_id,
+            );
+          } else if (instance_question.ai_instance_question_group_id) {
+            return await selectInstanceQuestionGroup(
+              instance_question.ai_instance_question_group_id,
+            );
+          }
+          return null;
+        });
+
+        const instanceQuestionGroups = aiSubmissionGroupingEnabled
+          ? await selectInstanceQuestionGroups({
+              assessmentQuestionId: res.locals.assessment_question.id,
+            })
+          : [];
+        const instanceQuestionGroupsExist = instanceQuestionGroups.length > 0;
+
         const locals = await prepareLocalsForRender({}, res.locals);
         const rubric_data = await manualGrading.selectRubricData({
           assessment_question: res.locals.assessment_question,
         });
-        const gradingPanel = GradingPanel({
-          ...locals,
-          context: 'main',
-        }).toString();
-        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
         // `prepareLocalsForRender` guarantees a submission exists.
         const submission = res.locals.submission!;
@@ -360,6 +384,18 @@ router.get(
           });
         });
 
+        const gradingPanel = GradingPanel({
+          ...locals,
+          context: 'main',
+          aiGradingInfo,
+          selectedInstanceQuestionGroup: instanceQuestionGroup,
+          showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+          instanceQuestionGroups,
+          skip_graded_submissions: req.session.skip_graded_submissions ?? true,
+          show_submissions_assigned_to_me_only:
+            req.session.show_submissions_assigned_to_me_only ?? true,
+        }).toString();
+
         const questionContainer = QuestionContainer({
           resLocals: res.locals,
           questionContext: 'manual_grading',
@@ -373,10 +409,9 @@ router.get(
           rubric_data,
           submissionPanel: panels.submissionPanel,
           submissionId: submission.id,
-          aiGradingStats:
-            aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
-              ? await calculateAiGradingStats(res.locals.assessment_question)
-              : null,
+          aiGradingStats: aiGradingMode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
         });
       } catch (err) {
         res.send({ err: String(err) });
