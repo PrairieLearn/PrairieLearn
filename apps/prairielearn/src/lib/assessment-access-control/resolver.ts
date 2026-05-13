@@ -338,16 +338,6 @@ export function resolveVisibility(
   return true;
 }
 
-function withCompletionVisibility(
-  result: Omit<AccessControlResolverResult, 'showClosedAssessment' | 'showClosedAssessmentScore'>,
-): AccessControlResolverResult {
-  const visibility = result.complete ? result.afterCompleteVisibility : VISIBLE;
-  return {
-    ...result,
-    ...visibility,
-  };
-}
-
 export function formatDateShort(date: Date, timezone: string): string {
   // Replicate SQL format: 'HH24:MI, Dy, Mon FMDD'
   // Example: "14:30, Mon, Jan 5"
@@ -557,7 +547,10 @@ export function resolveAccessControl(
     };
   }
 
-  return withCompletionVisibility({
+  const complete = current.kind === 'afterLastDeadline' && !current.submittable;
+  const visibility = complete ? afterCompleteVisibility : VISIBLE;
+
+  return {
     authorized: true,
     credit: current.credit,
     creditDateString: formatCreditDateString(
@@ -578,12 +571,13 @@ export function resolveAccessControl(
     // anything submittable.
     password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
+    ...visibility,
     afterCompleteVisibility,
-    complete: current.kind === 'afterLastDeadline' && !current.submittable,
+    complete,
     usesPrairieTestVisibility: false,
     examAccessEnd: null,
     showBeforeRelease: false,
     accessTimeline,
     nextActiveDate: null,
-  });
+  };
 }
