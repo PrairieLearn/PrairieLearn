@@ -1787,97 +1787,12 @@ describe('resolveAccessControl', () => {
         ...rule,
         dateControl: {
           release: { date: '2025-03-01T00:00:00Z' },
+          // The `baseInput` date that `makeDefaultRule` will apply is after this due date.
           due: { date: '2025-03-10T00:00:00Z' },
           afterLastDeadline: { allowSubmissions: false },
           ...rule.dateControl,
         },
       });
-
-    it.each<ResolveCase>([
-      {
-        name: 'active before due: afterComplete score policy is not applied yet',
-        rules: [
-          makeDefaultRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              due: { date: '2025-03-20T00:00:00Z' },
-            },
-            afterComplete: { score: { hidden: true } },
-          }),
-        ],
-        date: new Date('2025-03-15T12:00:00Z'),
-        expect: {
-          authorized: true,
-          submittable: true,
-          complete: false,
-          visibility: { showQuestions: true, showScore: true },
-        },
-      },
-      {
-        name: 'late deadline window: afterComplete score policy is not applied yet',
-        rules: [
-          makeDefaultRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              due: { date: '2025-03-10T00:00:00Z' },
-              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
-              afterLastDeadline: { allowSubmissions: false },
-            },
-            afterComplete: { score: { hidden: true } },
-          }),
-        ],
-        date: new Date('2025-03-15T12:00:00Z'),
-        expect: {
-          authorized: true,
-          submittable: true,
-          complete: false,
-          visibility: { showQuestions: true, showScore: true },
-        },
-      },
-      {
-        name: 'after last late deadline: afterComplete score policy is applied',
-        rules: [
-          makeDefaultRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              due: { date: '2025-03-10T00:00:00Z' },
-              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
-              afterLastDeadline: { allowSubmissions: false },
-            },
-            afterComplete: { score: { hidden: true } },
-          }),
-        ],
-        date: new Date('2025-03-21T12:00:00Z'),
-        expect: {
-          authorized: true,
-          submittable: false,
-          complete: true,
-          visibility: { showQuestions: false, showScore: false },
-        },
-      },
-      {
-        name: 'afterLastDeadline submissions allowed: afterComplete score policy is not applied',
-        rules: [
-          makeDefaultRule({
-            dateControl: {
-              release: { date: '2025-03-01T00:00:00Z' },
-              due: { date: '2025-03-10T00:00:00Z' },
-              afterLastDeadline: { allowSubmissions: true, credit: 10 },
-            },
-            afterComplete: { score: { hidden: true } },
-          }),
-        ],
-        date: new Date('2025-03-21T12:00:00Z'),
-        expect: {
-          authorized: true,
-          submittable: true,
-          complete: false,
-          visibility: { showQuestions: true, showScore: true },
-        },
-      },
-    ])('$name', (c) => {
-      expect(runCase(c)).toMatchObject(c.expect);
-    });
 
     it.each<ResolveCase>([
       {
@@ -1988,6 +1903,92 @@ describe('resolveAccessControl', () => {
           authorized: true,
           submittable: false,
           visibility: { showQuestions: false, showScore: false },
+        },
+      },
+    ])('$name', (c) => {
+      expect(runCase(c)).toMatchObject(c.expect);
+    });
+
+    it.each<ResolveCase>([
+      {
+        name: 'active before due: afterComplete score policy is not applied yet',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-20T00:00:00Z' },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
+      },
+      {
+        name: 'late deadline window: afterComplete score policy is not applied yet',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
+              afterLastDeadline: { allowSubmissions: false },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
+      },
+      {
+        name: 'after last late deadline: afterComplete score policy is applied',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
+              afterLastDeadline: { allowSubmissions: false },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-21T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: false,
+          complete: true,
+          visibility: { showQuestions: false, showScore: false },
+        },
+      },
+      {
+        name: 'afterLastDeadline submissions allowed: afterComplete score policy is not applied',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { allowSubmissions: true, credit: 10 },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-21T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
         },
       },
     ])('$name', (c) => {
