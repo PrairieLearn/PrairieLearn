@@ -29,6 +29,9 @@ import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.j
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export interface SharingError {
+  ListSharingSets: never;
+  RegenerateSharingToken: never;
+  AddCourseToSharingSet: never;
   CreateSharingSet:
     | { code: 'DUPLICATE_NAME'; name: string }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };

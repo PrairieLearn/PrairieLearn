@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { useModalState } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
-import { getAppError } from '../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { SharingSetRow } from '../../models/sharing-set.js';
@@ -401,11 +401,14 @@ function RegenerateSharingTokenButton({
       >
         <i className="bi bi-arrow-clockwise" aria-hidden="true" /> <span>Regenerate</span>
       </button>
-      {mutation.isError && (
-        <Alert variant="danger" className="mt-2" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
+      <AppErrorAlert
+        error={getAppError<SharingError['RegenerateSharingToken']>(mutation.error)}
+        className="mt-2"
+        render={{
+          UNKNOWN: ({ message }) => message,
+        }}
+        onDismiss={() => mutation.reset()}
+      />
     </>
   );
 }
@@ -486,11 +489,14 @@ function ChooseSharingNameModal({
           <Modal.Title>Choose sharing name</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {mutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={getAppError<SharingError['ChooseSharingName']>(mutation.error)}
+            render={{
+              DUPLICATE_NAME: ({ message }) => message,
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => mutation.reset()}
+          />
           <p className="form-text">Enter the sharing name you would like for your course.</p>
           <div className="mb-3">
             <label className="form-label" htmlFor="course_sharing_name">
@@ -582,6 +588,7 @@ function AddSharingSetModal({
   });
 
   const appError = getAppError<SharingError['CreateSharingSet']>(mutation.error);
+  const inlineError = appError?.code === 'SYNC_JOB_FAILED' ? null : appError;
 
   const onSubmit = (data: { name: string; description: string }) => {
     mutation.mutate(
@@ -621,11 +628,14 @@ function AddSharingSetModal({
           <Modal.Title>Add sharing set</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {appError && appError.code !== 'SYNC_JOB_FAILED' && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={inlineError}
+            render={{
+              DUPLICATE_NAME: ({ message }) => message,
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => mutation.reset()}
+          />
           <p className="small text-muted">
             A{' '}
             <a
@@ -765,11 +775,13 @@ function AddCourseToSharingSetModal({
           <Modal.Title>Add course to sharing set</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {mutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={getAppError<SharingError['AddCourseToSharingSet']>(mutation.error)}
+            render={{
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => mutation.reset()}
+          />
           <p className="form-text text-wrap">
             To allow another course to access questions in the sharing set "{data.name}", enter
             their course sharing token below.
@@ -850,6 +862,7 @@ function EditSharingSetDescriptionModal({
   });
 
   const appError = getAppError<SharingError['UpdateSharingSetDescription']>(mutation.error);
+  const inlineError = appError?.code === 'SYNC_JOB_FAILED' ? null : appError;
 
   if (!data) return null;
   const defaultDescription = data.description ?? '';
@@ -887,11 +900,14 @@ function EditSharingSetDescriptionModal({
           <Modal.Title>Edit sharing set "{data.name}"</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {appError && appError.code !== 'SYNC_JOB_FAILED' && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={inlineError}
+            render={{
+              NOT_FOUND: ({ message }) => message,
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => mutation.reset()}
+          />
           <div className="mb-3">
             <label className="form-label" htmlFor={`sharing_set_description_${data.id}`}>
               Description
@@ -949,6 +965,7 @@ function DeleteSharingSetModal({
   const mutation = useMutation(trpc.sharing.deleteSharingSet.mutationOptions());
 
   const appError = getAppError<SharingError['DeleteSharingSet']>(mutation.error);
+  const inlineError = appError?.code === 'SYNC_JOB_FAILED' ? null : appError;
 
   if (!data) return null;
 
@@ -984,11 +1001,15 @@ function DeleteSharingSetModal({
         <Modal.Title>Delete sharing set</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {appError && appError.code !== 'SYNC_JOB_FAILED' && (
-          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-            {appError.message}
-          </Alert>
-        )}
+        <AppErrorAlert
+          error={inlineError}
+          render={{
+            IN_USE: ({ message }) => message,
+            NOT_FOUND: ({ message }) => message,
+            UNKNOWN: ({ message }) => message,
+          }}
+          onDismiss={() => mutation.reset()}
+        />
         <p className="form-text text-wrap">
           Delete the sharing set "{data.name}"? This cannot be undone.
         </p>
