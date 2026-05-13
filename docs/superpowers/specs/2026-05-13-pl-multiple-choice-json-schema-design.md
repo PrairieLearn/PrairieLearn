@@ -54,6 +54,7 @@ Single artifact (`elementCustomTags`), two consumers. JSON Schema is computed at
 apps/prairielearn/src/ee/lib/element-schemas/
 ├── index.ts                  — converts zod → JSON Schema, exports elementCustomTags
 ├── formats.ts                — pl-boolean / pl-integer / pl-float format predicates
+├── keywords.ts               — consumer-side ajv keywords (currently: unique-child-text)
 ├── pl-multiple-choice.ts     — zod schemas (parent + child envelopes)
 └── pl-multiple-choice.test.ts
 
@@ -72,7 +73,7 @@ apps/prairielearn/src/ee/lib/htmlMustacheLinterNode.ts
 **Modified:**
 
 - `apps/prairielearn/src/lib/htmlMustacheConfig.ts` (post-move) — replace the bare `{ name: 'pl-multiple-choice' }` entry with the schema-bearing version from `element-schemas`. The bare `{ name: 'pl-answer' }` entry stays as-is (no standalone schema — see Scope). Switch the `Config` type import from `@reteps/tree-sitter-htmlmustache/browser` to `@reteps/tree-sitter-htmlmustache/linter`.
-- `apps/prairielearn/assets/scripts/lib/htmlMustacheLinter.ts` — import `/linter` for `createLinter`, `/formatter` for `createFormatter`. Two singletons. Pass `formats: plFormats` to `createLinter`. Update the `htmlMustacheConfig` import to the new path.
+- `apps/prairielearn/assets/scripts/lib/htmlMustacheLinter.ts` — import `/linter` for `createLinter`, `/formatter` for `createFormatter`. Two singletons. Pass `formats: plFormats` and `keywords: plKeywords` to `createLinter`. Update the `htmlMustacheConfig` import to the new path.
 - `apps/prairielearn/src/ee/lib/validateHTML.ts` — make `validateHTML` async; call `lintQuestionHtml`; merge diagnostics into `errors`/`warnings`; delete `checkMultipleChoice`, `checkAnswerMultipleChoice`, and the `pl-multiple-choice` / `pl-answer` cases in `checkTag`.
 - Callers of `validateHTML`: `apps/prairielearn/src/ee/lib/ai-question-generation/agent.ts:467` and `apps/prairielearn/src/ee/lib/context-parsers/template-questions.ts:26` — add `await` (both call sites are already inside async functions).
 
@@ -109,6 +110,7 @@ function getLinter() {
     linterPromise = createLinter({
       locateWasm: (name) => { /* createRequire-based resolution */ },
       formats: plFormats,
+      keywords: plKeywords,
     });
   }
   return linterPromise;
@@ -136,31 +138,35 @@ export async function validateHTML(file: string, hasServerPy: boolean): Promise<
 }
 ```
 
-## Schema coverage from upstream features now available
+## Schema coverage from upstream features
 
-Upstream `@reteps/tree-sitter-htmlmustache` ships:
+Upstream `@reteps/tree-sitter-htmlmustache` provides everything we need:
 
-- Custom `format` registration on `createLinter` (v1.0.1) — used for `pl-boolean`/`pl-integer`/`pl-float` predicates so individual attributes don't re-enumerate the 20 boolean strings.
-- `text`/`innerHtml` projections in the per-child envelope — gives ajv access to inner content for `pl-answer` children. Available but only directly used by the duplicate-text rule below; future element migrations can use them for length / emptiness / pattern rules.
-- Path-aware uniqueness keyword (ajv-keywords' `uniqueItemProperties` or equivalent) — enables the duplicate-`pl-answer` rule below.
+- `createLinter({ formats })` (v1.0.1) — `pl-boolean`/`pl-integer`/`pl-float` predicates, so attribute schemas don't re-enumerate the 20 boolean strings.
+- `createLinter({ keywords })` — consumer-registered ajv keywords. The pilot uses one: `unique-child-text`, lifted verbatim from the upstream README's example.
+- `text` / `innerHtml` projections per child in the ajv envelope. Pilot only uses `text` (for the uniqueness keyword); future element migrations can use both for length / emptiness / pattern rules.
+- `errorMessage` via ajv-errors for the few diagnostics whose ajv defaults are opaque.
 
-**Pilot rules now in the schema:**
+**Pilot rules in the schema:**
 
-- All `checkMultipleChoice` attribute/cross-attribute/parent-child rules (already planned).
-- `minItems: 1` on `children` matching `pl-answer`.
-- `pl-answer` `score` in `[0.0, 1.0]` via `minimum` + `maximum` on the `pl-float`-typed property.
-- **Duplicate `pl-answer` inner-text detection** (`pl-multiple-choice.py:499-508`) — via the path-aware uniqueness keyword over the children's `text` field.
+- All `checkMultipleChoice` attribute / cross-attribute / parent-child rules.
+- `minItems: 1` on `children` matching `pl-answer` (tightening — `checkMultipleChoice` didn't enforce this; `prepare()` raises at variant-generation time).
+- `pl-answer` `score` in `[0.0, 1.0]` via `minimum` + `maximum` on the `pl-float`-typed property (tightening — same rationale).
+- **Duplicate `pl-answer` inner-text detection** via `unique-child-text` over the children's `text` field. The keyword definition is the example from the upstream README; registered via `createLinter({ keywords })`.
+
+`element-schemas/keywords.ts` collects the consumer-side keyword registry (currently just `unique-child-text`). Both `createLinter` sites pass it.
 
 ## Rules carved out of the schema (left in `prepare()`)
 
-These don't cleanly express in JSON Schema 2020-12 + the currently-shipped upstream vocabulary:
+These are *expressible* given upstream's hooks, but writing them is net-new authoring beyond the pilot's deletion goal — they enforce rules `checkMultipleChoice` never enforced. Folded in as follow-up PRs:
 
-- **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Expressible via `contains` + enumerated 20-string truthy `enum`, but the result is grotesque. Deferred until upstream lands a truthy-aware `contains` (or `createLinter({ keywords })` so we write a `pl-truthy-contains` keyword ourselves).
-- **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Needs a custom keyword that compares an attribute-as-integer to a derived array length.
-- **Cross-element `answers-name` uniqueness** (`pl-multiple-choice.py:453-456`). Document-scope, not tag-scope; outside the schema model entirely. Not in `checkMultipleChoice` either — same gap, unchanged by this pilot.
-- **`external-json` file existence**. Filesystem access; out of schema's reach.
+- **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Would need a `pl-truthy-contains` consumer keyword.
+- **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Would need an `attribute-le-child-count` consumer keyword.
 
-Folded back in once upstream lands custom keywords (for the first two) and walkers (for the last two).
+Not expressible at all with the current upstream feature set:
+
+- **Cross-element `answers-name` uniqueness** (`pl-multiple-choice.py:453-456`). Document-scope, not tag-scope; outside the schema model. Not in `checkMultipleChoice` either — same gap, unchanged by this pilot.
+- **`external-json` file existence**. Filesystem access. Same gap as above.
 
 ## Mustache waiver
 
@@ -186,6 +192,7 @@ We inherit the linter's upstream mustache waiver as-is: when an operand of a cro
 ## Out of scope (follow-ups)
 
 - Migrate remaining elements (integer/number/string/symbolic/checkbox) — repeats this pattern, each isolated.
+- Add `pl-truthy-contains` and `attribute-le-child-count` consumer keywords; move the matching `prepare()` checks into the schema (tightening for the AI agent).
 - Retire the `pl-input-in-panel` `dfsCheckParseTree` warning once linter coverage is verified in production.
 - Surface attribute completions and docs from the same schemas in the editor.
 - Feed JSON Schema to Python `prepare()` for a single source of truth across runtime + AI paths. **Planned** (not just possible) — the TODO in `pl-multiple-choice.py` will be retired by this work.
