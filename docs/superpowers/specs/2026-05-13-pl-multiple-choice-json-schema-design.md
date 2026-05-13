@@ -136,19 +136,31 @@ export async function validateHTML(file: string, hasServerPy: boolean): Promise<
 }
 ```
 
+## Schema coverage from upstream features now available
+
+Upstream `@reteps/tree-sitter-htmlmustache` ships:
+
+- Custom `format` registration on `createLinter` (v1.0.1) — used for `pl-boolean`/`pl-integer`/`pl-float` predicates so individual attributes don't re-enumerate the 20 boolean strings.
+- `text`/`innerHtml` projections in the per-child envelope — gives ajv access to inner content for `pl-answer` children. Available but only directly used by the duplicate-text rule below; future element migrations can use them for length / emptiness / pattern rules.
+- Path-aware uniqueness keyword (ajv-keywords' `uniqueItemProperties` or equivalent) — enables the duplicate-`pl-answer` rule below.
+
+**Pilot rules now in the schema:**
+
+- All `checkMultipleChoice` attribute/cross-attribute/parent-child rules (already planned).
+- `minItems: 1` on `children` matching `pl-answer`.
+- `pl-answer` `score` in `[0.0, 1.0]` via `minimum` + `maximum` on the `pl-float`-typed property.
+- **Duplicate `pl-answer` inner-text detection** (`pl-multiple-choice.py:499-508`) — via the path-aware uniqueness keyword over the children's `text` field.
+
 ## Rules carved out of the schema (left in `prepare()`)
 
-JSON Schema 2020-12 + ajv's built-in vocabulary can't cleanly express these `prepare()` rules. They stay in Python for now:
+These don't cleanly express in JSON Schema 2020-12 + the currently-shipped upstream vocabulary:
 
-- **Duplicate `pl-answer` inner-text detection** (`pl-multiple-choice.py:499-508`). Needs a custom ajv keyword over the per-child `text` envelope field; upstream `text`/`innerHtml` shipped but `createLinter({ keywords })` did not.
-- **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Expressible-but-ugly via `contains` + enumerated truthy strings; deferred until a `pl-truthy`-style custom keyword exists.
-- **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Needs a custom keyword.
-- **Cross-element `answers-name` uniqueness** (`pl-multiple-choice.py:453-456`). Document-scope, not tag-scope; outside the schema model. Not in `checkMultipleChoice` either — same gap.
+- **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Expressible via `contains` + enumerated 20-string truthy `enum`, but the result is grotesque. Deferred until upstream lands a truthy-aware `contains` (or `createLinter({ keywords })` so we write a `pl-truthy-contains` keyword ourselves).
+- **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Needs a custom keyword that compares an attribute-as-integer to a derived array length.
+- **Cross-element `answers-name` uniqueness** (`pl-multiple-choice.py:453-456`). Document-scope, not tag-scope; outside the schema model entirely. Not in `checkMultipleChoice` either — same gap, unchanged by this pilot.
 - **`external-json` file existence**. Filesystem access; out of schema's reach.
 
-Folded back in once upstream lands custom keywords (and walkers for the last two).
-
-Available but not used in this pilot: upstream `text`/`innerHtml` envelope fields. `pl-multiple-choice`'s `prepare()` has no text-shape rules (length, emptiness, pattern); future element migrations may use them.
+Folded back in once upstream lands custom keywords (for the first two) and walkers (for the last two).
 
 ## Mustache waiver
 
