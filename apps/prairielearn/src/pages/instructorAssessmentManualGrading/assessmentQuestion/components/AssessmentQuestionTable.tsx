@@ -15,6 +15,7 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
   OverlayTrigger,
@@ -1015,7 +1016,16 @@ export function AssessmentQuestionTable({
         hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         totalSubmissionCount={aiGradingCounts.all}
         onSelectFirstSubmissions={(n) => {
-          const ids = instanceQuestionsInfo.slice(0, n).map((row) => row.instance_question.id);
+          const candidateIds = run(() => {
+            if (modelSelectionModalState?.type === 'selected') return modelSelectionModalState.ids;
+            if (modelSelectionModalState?.type === 'human_graded') {
+              return instanceQuestionsInfo
+                .filter((row) => row.instance_question.last_human_grader != null)
+                .map((row) => row.instance_question.id);
+            }
+            return instanceQuestionsInfo.map((row) => row.instance_question.id);
+          });
+          const ids = candidateIds.slice(0, n);
           const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
           setRowSelection(nextSelection);
           setModelSelectionModalState({
