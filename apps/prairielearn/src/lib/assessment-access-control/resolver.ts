@@ -109,14 +109,14 @@ export interface AccessControlResolverResult {
    */
   visibility: Visibility;
   /**
-   * Explains which policy produced the effective `visibility`.
-   */
-  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
-  /**
    * Top-level after-complete visibility policy, evaluated against the current
    * date. This is applied only once the assessment is complete.
    */
   afterCompleteVisibility: Visibility;
+  /**
+   * Explains which policy produced the effective `visibility`.
+   */
+  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
    * True when the assessment has reached a "complete" phase from the
    * resolver's perspective: a non-submittable after-last-deadline segment
@@ -172,8 +172,8 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   password: null,
   submittable: false,
   visibility: VISIBLE,
-  visibilitySource: 'default',
   afterCompleteVisibility: VISIBLE,
+  visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
   showBeforeRelease: false,
@@ -189,8 +189,8 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   password: null,
   submittable: true,
   visibility: VISIBLE,
-  visibilitySource: 'default',
   afterCompleteVisibility: VISIBLE,
+  visibilitySource: 'default',
   complete: false,
   examAccessEnd: null,
   showBeforeRelease: false,
@@ -457,8 +457,8 @@ export function resolveAccessControl(
       return {
         ...UNAUTHORIZED_RESULT,
         visibility: afterCompleteVisibility,
-        visibilitySource: 'afterComplete',
         afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
         complete: true,
         accessTimeline,
       };
@@ -482,8 +482,8 @@ export function resolveAccessControl(
       password: null,
       submittable,
       visibility: examVisibility,
-      visibilitySource: 'prairieTest',
       afterCompleteVisibility,
+      visibilitySource: 'prairieTest',
       complete: matched.readOnly,
       examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
@@ -506,8 +506,8 @@ export function resolveAccessControl(
         ...UNAUTHORIZED_RESULT,
         authorized: reviewMode,
         visibility: afterCompleteVisibility,
-        visibilitySource: 'afterComplete',
         afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
         complete: true,
         accessTimeline,
         showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
@@ -545,8 +545,8 @@ export function resolveAccessControl(
     return {
       ...UNAUTHORIZED_RESULT,
       visibility: afterCompleteVisibility,
-      visibilitySource: 'afterComplete',
       afterCompleteVisibility,
+      visibilitySource: 'afterComplete',
       complete: true,
       accessTimeline,
     };
@@ -578,8 +578,8 @@ export function resolveAccessControl(
     password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
     visibility,
-    visibilitySource,
     afterCompleteVisibility,
+    visibilitySource,
     complete,
     examAccessEnd: null,
     showBeforeRelease: false,
