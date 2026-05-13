@@ -286,5 +286,5 @@ export function InstructorAssessmentStatistics({
 }
 
 function durationLabel(durationMs: number) {
-  formatInterval(durationMs).replaceAll(' ', '');
+  return formatInterval(durationMs).replaceAll(' ', '');
 }
