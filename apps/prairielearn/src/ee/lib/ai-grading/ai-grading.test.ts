@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { execute, queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { EnumJobStatusSchema } from '../../../lib/db-types.js';
@@ -9,16 +9,10 @@ import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 
+const sql = loadSqlEquiv(import.meta.url);
+
 async function pickAssessmentQuestionId(): Promise<string> {
-  // Any assessment_question from the synced test course works — the SQL
-  // under test only uses the id to scope the UPDATE to the caller's page.
-  const id = await queryOptionalScalar(
-    'SELECT id FROM assessment_questions ORDER BY id ASC LIMIT 1',
-    {},
-    IdSchema,
-  );
-  if (id == null) throw new Error('Test course has no assessment_questions');
-  return id;
+  return await queryScalar(sql.select_first_assessment_question_id, {}, IdSchema);
 }
 
 async function insertAiGradingJobSequence(params: {
@@ -26,12 +20,8 @@ async function insertAiGradingJobSequence(params: {
   status: 'Running' | 'Stopping' | 'Stopped' | 'Success' | 'Error';
   type?: string;
 }): Promise<string> {
-  const id = await queryOptionalScalar(
-    `INSERT INTO job_sequences (
-       number, type, description, legacy, status, assessment_question_id
-     )
-     VALUES (1, $type, 'test', FALSE, $status::enum_job_status, $assessment_question_id)
-     RETURNING id`,
+  return await queryScalar(
+    sql.insert_test_ai_grading_job_sequence,
     {
       type: params.type ?? 'ai_grading',
       status: params.status,
@@ -39,16 +29,10 @@ async function insertAiGradingJobSequence(params: {
     },
     IdSchema,
   );
-  if (id == null) throw new Error('Failed to insert job_sequence');
-  return id;
 }
 
 async function selectStatus(job_sequence_id: string): Promise<string> {
-  return await queryScalar(
-    'SELECT status::text FROM job_sequences WHERE id = $job_sequence_id',
-    { job_sequence_id },
-    EnumJobStatusSchema,
-  );
+  return await queryScalar(sql.select_status, { job_sequence_id }, EnumJobStatusSchema);
 }
 
 describe('stopJobSequence (AI grading scope)', () => {
@@ -71,12 +55,9 @@ describe('stopJobSequence (AI grading scope)', () => {
   afterAll(helperDb.after);
 
   beforeEach(async () => {
-    // Wipe all AI grading job sequences seeded by previous tests so the
-    // atomic stop-once invariant can be exercised without cross-test bleed.
-    await execute(
-      "DELETE FROM job_sequences WHERE assessment_question_id = $aq AND type = 'ai_grading'",
-      { aq: assessment_question_id },
-    );
+    // Wipe AI grading sequences from prior tests so the atomic stop-once
+    // invariant can be exercised without cross-test bleed.
+    await execute(sql.delete_test_ai_grading_sequences, { assessment_question_id });
   });
 
   it('atomically transitions Running → Stopping and returns true once', async () => {

@@ -1,44 +1,28 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { execute, loadSql, queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSql, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import { EnumJobStatusSchema } from './db-types.js';
 
-// Load the production SQL blocks under test.
-const sql = loadSql(new URL('server-jobs.sql', import.meta.url).pathname);
+// Production SQL blocks under test.
+const productionSql = loadSql(new URL('server-jobs.sql', import.meta.url).pathname);
+// Test-only setup/assertion blocks.
+const sql = loadSqlEquiv(import.meta.url);
 
 async function insertJobSequence(status: 'Running' | 'Stopping'): Promise<{
   job_sequence_id: string;
   job_id: string;
 }> {
-  const sequenceId = await queryOptionalScalar(
-    `INSERT INTO job_sequences (number, type, description, legacy, status)
-     VALUES (1, 'ai_grading', 'test', FALSE, $status::enum_job_status)
-     RETURNING id`,
-    { status },
-    IdSchema,
-  );
-  if (sequenceId == null) throw new Error('Failed to insert job_sequence');
-  const jobId = await queryOptionalScalar(
-    `INSERT INTO jobs (job_sequence_id, number_in_sequence, last_in_sequence, type, description, status, heartbeat_at)
-     VALUES ($job_sequence_id, 1, TRUE, 'ai_grading', 'test', 'Running', CURRENT_TIMESTAMP - INTERVAL '2 days')
-     RETURNING id`,
-    { job_sequence_id: sequenceId },
-    IdSchema,
-  );
-  if (jobId == null) throw new Error('Failed to insert job');
+  const sequenceId = await queryScalar(sql.insert_test_job_sequence, { status }, IdSchema);
+  const jobId = await queryScalar(sql.insert_test_job, { job_sequence_id: sequenceId }, IdSchema);
   return { job_sequence_id: sequenceId, job_id: jobId };
 }
 
 async function selectStatus(job_sequence_id: string): Promise<string> {
-  return await queryScalar(
-    'SELECT status::text FROM job_sequences WHERE id = $job_sequence_id',
-    { job_sequence_id },
-    EnumJobStatusSchema,
-  );
+  return await queryScalar(sql.select_status, { job_sequence_id }, EnumJobStatusSchema);
 }
 
 describe('server-jobs SQL transitions', () => {
@@ -48,7 +32,7 @@ describe('server-jobs SQL transitions', () => {
   describe('update_job_on_finish', () => {
     it('Running + Success → Success', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
-      await execute(sql.update_job_on_finish, {
+      await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
         job_id,
         output: '',
@@ -60,7 +44,7 @@ describe('server-jobs SQL transitions', () => {
 
     it('Running + Error → Error', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
-      await execute(sql.update_job_on_finish, {
+      await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
         job_id,
         output: '',
@@ -72,7 +56,7 @@ describe('server-jobs SQL transitions', () => {
 
     it('Stopping → no-op (aiGrade owns the Stopping → Stopped transition)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute(sql.update_job_on_finish, {
+      await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
         job_id,
         output: '',
@@ -86,7 +70,7 @@ describe('server-jobs SQL transitions', () => {
   describe('update_job_on_error', () => {
     it('Stopping → Error (preserve worker failure signal)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute(sql.update_job_on_error, {
+      await execute(productionSql.update_job_on_error, {
         job_id,
         output: null,
         error_message: 'abandoned',
@@ -96,7 +80,7 @@ describe('server-jobs SQL transitions', () => {
 
     it('Running → Error', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
-      await execute(sql.update_job_on_error, {
+      await execute(productionSql.update_job_on_error, {
         job_id,
         output: null,
         error_message: 'abandoned',
@@ -105,14 +89,12 @@ describe('server-jobs SQL transitions', () => {
     });
 
     it("doesn't overwrite an already-terminal sequence", async () => {
-      // Reproduces the race where aiGrade's stop branch landed Stopped on
-      // the sequence while the inner job was still Running, and the
-      // abandoned-job sweeper would otherwise clobber it back to Error.
+      // Reproduces the race where an orchestrator landed Stopped on the
+      // sequence while the inner job was still Running, and the abandoned-job
+      // sweeper would otherwise clobber it back to Error.
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute("UPDATE job_sequences SET status = 'Stopped' WHERE id = $job_sequence_id", {
-        job_sequence_id,
-      });
-      await execute(sql.update_job_on_error, {
+      await execute(sql.mark_sequence_stopped, { job_sequence_id });
+      await execute(productionSql.update_job_on_error, {
         job_id,
         output: null,
         error_message: 'abandoned',
@@ -124,33 +106,23 @@ describe('server-jobs SQL transitions', () => {
   describe('error_abandoned_job_sequences', () => {
     it('Stopping → Error (cron sweep)', async () => {
       const { job_sequence_id } = await insertJobSequence('Stopping');
-      await execute(
-        `UPDATE job_sequences SET start_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
-         WHERE id = $id`,
-        { id: job_sequence_id },
-      );
-      await execute(
-        `UPDATE jobs SET status = 'Error', finish_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
-         WHERE job_sequence_id = $id`,
-        { id: job_sequence_id },
-      );
-      await execute(sql.error_abandoned_job_sequences);
+      await execute(sql.force_old_start_date, { id: job_sequence_id });
+      await execute(sql.force_old_finish_date_with_status, {
+        id: job_sequence_id,
+        status: 'Error',
+      });
+      await execute(productionSql.error_abandoned_job_sequences);
       assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
 
     it('Running → Error (cron sweep)', async () => {
       const { job_sequence_id } = await insertJobSequence('Running');
-      await execute(
-        `UPDATE job_sequences SET start_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
-         WHERE id = $id`,
-        { id: job_sequence_id },
-      );
-      await execute(
-        `UPDATE jobs SET status = 'Error', finish_date = CURRENT_TIMESTAMP - INTERVAL '2 days'
-         WHERE job_sequence_id = $id`,
-        { id: job_sequence_id },
-      );
-      await execute(sql.error_abandoned_job_sequences);
+      await execute(sql.force_old_start_date, { id: job_sequence_id });
+      await execute(sql.force_old_finish_date_with_status, {
+        id: job_sequence_id,
+        status: 'Error',
+      });
+      await execute(productionSql.error_abandoned_job_sequences);
       assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
   });
