@@ -137,6 +137,8 @@ const plMultipleChoiceEnvelopeSchema = z
     text: z.string().optional(),
     innerHtml: z.string().optional(),
     attributes: plMultipleChoiceAttributesSchema,
+    // Custom ajv keyword registered in `ajv-extensions.ts`; rejects two
+    // <pl-answer> children that render to the same inner HTML.
     children: z.array(plAnswerSchema).meta({ 'unique-child-inner-html': true }),
   })
   .strict()
