@@ -173,7 +173,9 @@ describe(
         });
         assert.equal(response.status, 403);
 
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+        const message = response.$('[data-testid="assessment-closed-message"]');
+        assert.lengthOf(message, 1);
+        assert.match(message.text(), /Assessment is no longer available/);
         // afterComplete.score.hidden = true, so the closed page must not show
         // the score either.
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
@@ -188,7 +190,9 @@ describe(
         });
         assert.equal(response.status, 403);
 
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+        const message = response.$('[data-testid="assessment-closed-message"]');
+        assert.lengthOf(message, 1);
+        assert.match(message.text(), /Assessment is no longer available/);
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
       },
     );
