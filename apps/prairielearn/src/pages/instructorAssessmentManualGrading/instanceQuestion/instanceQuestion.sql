@@ -98,7 +98,7 @@ WHERE
     OR iq.requires_manual_grading
   )
 ORDER BY
-  iq.id,
+  iq.id ASC,
   v.date DESC,
   s.date DESC,
   s.id DESC;
