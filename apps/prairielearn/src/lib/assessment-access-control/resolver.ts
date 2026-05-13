@@ -103,8 +103,8 @@ export interface AccessControlResolverResult {
    * Translates to the legacy `authz_result.active` field.
    */
   submittable: boolean;
-  showClosedAssessment: boolean;
-  showClosedAssessmentScore: boolean;
+  /** Effective visibility to apply right now. */
+  visibility: Visibility;
   /**
    * Top-level after-complete visibility policy, evaluated against the current
    * date. This is applied only once the assessment is complete.
@@ -119,10 +119,9 @@ export interface AccessControlResolverResult {
    */
   complete: boolean;
   /**
-   * True when a live PrairieTest reservation is controlling visibility. In
-   * that state, per-PT-exam settings govern instead of top-level afterComplete.
+   * Explains which policy produced the effective `visibility`.
    */
-  usesPrairieTestVisibility: boolean;
+  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
    * When the assessment is gated behind a PrairieTest reservation, this is
    * the reservation's `accessEnd` timestamp. Used to determine whether the
@@ -151,13 +150,13 @@ export interface AccessControlResolverResult {
 }
 
 interface Visibility {
-  showClosedAssessment: boolean;
-  showClosedAssessmentScore: boolean;
+  showQuestions: boolean;
+  showScore: boolean;
 }
 
 const VISIBLE = Object.freeze({
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
+  showQuestions: true,
+  showScore: true,
 } satisfies Readonly<Visibility>);
 
 const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
@@ -169,10 +168,10 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   timeLimitMin: null,
   password: null,
   submittable: false,
-  ...VISIBLE,
+  visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
   complete: false,
-  usesPrairieTestVisibility: false,
+  visibilitySource: 'default',
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
@@ -186,10 +185,10 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   timeLimitMin: null,
   password: null,
   submittable: true,
-  ...VISIBLE,
+  visibility: VISIBLE,
   afterCompleteVisibility: VISIBLE,
   complete: false,
-  usesPrairieTestVisibility: false,
+  visibilitySource: 'default',
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
@@ -297,20 +296,20 @@ function computeTopLevelVisibility(
   afterComplete: RuntimeAfterComplete | undefined,
   date: Date,
 ): Visibility {
-  let showClosedAssessment = resolveVisibility(
+  let showQuestions = resolveVisibility(
     afterComplete?.questions?.hidden ?? true,
     afterComplete?.questions?.visibleFromDate,
     afterComplete?.questions?.visibleUntilDate,
     date,
   );
-  const showClosedAssessmentScore = resolveVisibility(
+  const showScore = resolveVisibility(
     afterComplete?.score?.hidden,
     afterComplete?.score?.visibleFromDate,
     undefined,
     date,
   );
-  if (!showClosedAssessmentScore) showClosedAssessment = false;
-  return { showClosedAssessment, showClosedAssessmentScore };
+  if (!showScore) showQuestions = false;
+  return { showQuestions, showScore };
 }
 
 /**
@@ -321,8 +320,8 @@ function computeTopLevelVisibility(
  */
 function computePrairieTestVisibility(exam: PrairieTestExam): Visibility {
   return {
-    showClosedAssessment: exam.readOnly || !exam.questionsHidden,
-    showClosedAssessmentScore: exam.readOnly || !exam.scoreHidden,
+    showQuestions: exam.readOnly || !exam.questionsHidden,
+    showScore: exam.readOnly || !exam.scoreHidden,
   };
 }
 
@@ -454,9 +453,10 @@ export function resolveAccessControl(
     if (!matched) {
       return {
         ...UNAUTHORIZED_RESULT,
-        ...afterCompleteVisibility,
+        visibility: afterCompleteVisibility,
         afterCompleteVisibility,
         complete: true,
+        visibilitySource: 'afterComplete',
         accessTimeline,
       };
     }
@@ -478,10 +478,10 @@ export function resolveAccessControl(
       timeLimitMin: null,
       password: null,
       submittable,
-      ...examVisibility,
+      visibility: examVisibility,
       afterCompleteVisibility,
       complete: matched.readOnly,
-      usesPrairieTestVisibility: true,
+      visibilitySource: 'prairieTest',
       examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
       // The PT reservation governs access; the date-control timeline is
@@ -498,13 +498,14 @@ export function resolveAccessControl(
   // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
   if (!hasRelease) {
     if (rule.prairieTestExams.length > 0) {
-      const reviewMode = afterCompleteVisibility.showClosedAssessment;
+      const reviewMode = afterCompleteVisibility.showQuestions;
       return {
         ...UNAUTHORIZED_RESULT,
         authorized: reviewMode,
-        ...afterCompleteVisibility,
+        visibility: afterCompleteVisibility,
         afterCompleteVisibility,
         complete: true,
+        visibilitySource: 'afterComplete',
         accessTimeline,
         showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
       };
@@ -540,15 +541,17 @@ export function resolveAccessControl(
   if (!current.accessible) {
     return {
       ...UNAUTHORIZED_RESULT,
-      ...afterCompleteVisibility,
+      visibility: afterCompleteVisibility,
       afterCompleteVisibility,
       complete: true,
+      visibilitySource: 'afterComplete',
       accessTimeline,
     };
   }
 
   const complete = current.kind === 'afterLastDeadline' && !current.submittable;
   const visibility = complete ? afterCompleteVisibility : VISIBLE;
+  const visibilitySource = complete ? 'afterComplete' : 'default';
 
   return {
     authorized: true,
@@ -571,10 +574,10 @@ export function resolveAccessControl(
     // anything submittable.
     password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
-    ...visibility,
+    visibility,
     afterCompleteVisibility,
     complete,
-    usesPrairieTestVisibility: false,
+    visibilitySource,
     examAccessEnd: null,
     showBeforeRelease: false,
     accessTimeline,

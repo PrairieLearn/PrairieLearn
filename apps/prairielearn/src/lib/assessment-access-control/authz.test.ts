@@ -34,14 +34,16 @@ const baseResolverResult: AccessControlResolverResult = {
   timeLimitMin: null,
   password: null,
   submittable: true,
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
+  visibility: {
+    showQuestions: true,
+    showScore: true,
+  },
   afterCompleteVisibility: {
-    showClosedAssessment: false,
-    showClosedAssessmentScore: false,
+    showQuestions: false,
+    showScore: false,
   },
   complete: false,
-  usesPrairieTestVisibility: false,
+  visibilitySource: 'default',
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: [],
@@ -185,9 +187,11 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: {
         ...baseResolverResult,
-        showClosedAssessment: true,
-        showClosedAssessmentScore: true,
-        usesPrairieTestVisibility: true,
+        visibility: {
+          showQuestions: true,
+          showScore: true,
+        },
+        visibilitySource: 'prairieTest',
       },
       authzMode: 'Exam',
       displayTimezone: 'America/Chicago',

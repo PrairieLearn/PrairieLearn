@@ -1,3 +1,5 @@
+import { run } from '@prairielearn/run';
+
 import type {
   Assessment,
   CourseInstance,
@@ -51,8 +53,8 @@ function resolverResultToAuthzAssessment(
     // The resolver uses `submittable` (can the student submit work?
     // the legacy field name is `active`, we map it to the legacy name.
     active: result.submittable,
-    show_closed_assessment: result.showClosedAssessment,
-    show_closed_assessment_score: result.showClosedAssessmentScore,
+    show_closed_assessment: result.visibility.showQuestions,
+    show_closed_assessment_score: result.visibility.showScore,
     exam_access_end: result.examAccessEnd,
     // Only report Exam mode when the student has an active PrairieTest
     // reservation (examAccessEnd is non-null), indicating a live exam session.
@@ -63,32 +65,6 @@ function resolverResultToAuthzAssessment(
       : null,
     access_rules: [],
     access_timeline: result.accessTimeline,
-  };
-}
-
-/**
- * Applies instance-specific completion once an instance is closed or its time
- * limit expires. PrairieTest visibility is already resolved from the active
- * reservation, so top-level afterComplete visibility should not override it.
- */
-function applyInstanceCompletion(
-  result: AccessControlResolverResult,
-  {
-    instanceOpen,
-    timeLimitExpired,
-  }: {
-    instanceOpen: boolean | null;
-    timeLimitExpired: boolean;
-  },
-): AccessControlResolverResult {
-  if (result.usesPrairieTestVisibility) return result;
-  if (instanceOpen !== false && !timeLimitExpired) return result;
-
-  return {
-    ...result,
-    ...result.afterCompleteVisibility,
-    complete: true,
-    submittable: false,
   };
 }
 
@@ -257,18 +233,22 @@ export function resolverResultToAuthzAssessmentForInstance({
   assessmentInstance: { open: boolean | null; date_limit: Date | null } | null;
   reqDate: Date;
 }): SprocAuthzAssessment {
-  if (assessmentInstance == null) {
-    return resolverResultToAuthzAssessment(result, authzMode, displayTimezone);
-  }
+  const resultForInstance = run(() => {
+    if (assessmentInstance == null) return result;
 
-  const timeLimitExpired =
-    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
-  return resolverResultToAuthzAssessment(
-    applyInstanceCompletion(result, {
-      instanceOpen: assessmentInstance.open,
-      timeLimitExpired,
-    }),
-    authzMode,
-    displayTimezone,
-  );
+    const timeLimitExpired =
+      assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
+    if (result.visibilitySource === 'prairieTest') return result;
+    if (assessmentInstance.open !== false && !timeLimitExpired) return result;
+
+    return {
+      ...result,
+      visibility: result.afterCompleteVisibility,
+      visibilitySource: 'afterComplete' as const,
+      complete: true,
+      submittable: false,
+    };
+  });
+
+  return resolverResultToAuthzAssessment(resultForInstance, authzMode, displayTimezone);
 }
