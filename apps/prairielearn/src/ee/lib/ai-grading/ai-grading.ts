@@ -1267,16 +1267,18 @@ export async function aiGrade({
       job.info(
         `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
       );
-      await finalizeStoppedJobSequence(serverJob.jobSequenceId);
-      await emitServerJobProgressUpdate({
-        job_sequence_id: serverJob.jobSequenceId,
-        num_complete,
-        num_failed,
-        num_total: instance_questions.length,
-        item_statuses,
-        stop_state: 'stopped',
-        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
-      });
+      await Promise.all([
+        finalizeStoppedJobSequence(serverJob.jobSequenceId),
+        emitServerJobProgressUpdate({
+          job_sequence_id: serverJob.jobSequenceId,
+          num_complete,
+          num_failed,
+          num_total: instance_questions.length,
+          item_statuses,
+          stop_state: 'stopped',
+          ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+        }),
+      ]);
       return;
     }
 
