@@ -28,12 +28,9 @@ type AiGradingAvailabilityState =
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
   | { type: 'human_graded'; numToGrade: number }
-  | { type: 'selected'; ids: string[]; numToGrade: number }
-  | null;
+  | { type: 'selected'; ids: string[]; numToGrade: number };
 
-function getSelection(
-  state: NonNullable<AiGradingModelSelectionModalState>,
-): 'all' | 'human_graded' | string[] {
+function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_graded' | string[] {
   if (state.type === 'selected') return state.ids;
   return state.type;
 }
@@ -425,7 +422,8 @@ function AiGradingAvailabilityAlert({
 }
 
 export function AiGradingModelSelectionModal({
-  modalState,
+  show,
+  data: modalState,
   availableProviders,
   aiGradingLastSelectedModel,
   relativeCosts,
@@ -436,8 +434,10 @@ export function AiGradingModelSelectionModal({
   onSelectFirstSubmissions,
   onSuccess,
   onHide,
+  onExited,
 }: {
-  modalState: AiGradingModelSelectionModalState;
+  show: boolean;
+  data: AiGradingModelSelectionModalState | null;
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
@@ -451,12 +451,12 @@ export function AiGradingModelSelectionModal({
     modelId: AiGradingModelId,
   ) => void;
   onHide: () => void;
+  onExited: () => void;
 }) {
   const trpc = useTRPC();
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
-  const isModalOpen = modalState != null;
   const {
     data: aiGradingAvailabilityInfo,
     isFetching: isAvailabilityFetching,
@@ -464,7 +464,7 @@ export function AiGradingModelSelectionModal({
     refetch: refetchAvailabilityInfo,
   } = useQuery({
     ...trpc.manualGrading.aiGradingAvailabilityInfo.queryOptions(),
-    enabled: isModalOpen,
+    enabled: show,
     refetchOnMount: 'always',
   });
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
@@ -482,11 +482,12 @@ export function AiGradingModelSelectionModal({
     onHide();
   }, [onHide]);
   const handleExited = useCallback(() => {
+    onExited();
     if (pendingOpenRubricSettingsOnExit) {
       setPendingOpenRubricSettingsOnExit(false);
       openRubricSettings();
     }
-  }, [pendingOpenRubricSettingsOnExit]);
+  }, [pendingOpenRubricSettingsOnExit, onExited]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -557,7 +558,7 @@ export function AiGradingModelSelectionModal({
 
   return (
     <Modal
-      show={isModalOpen}
+      show={show}
       size="lg"
       backdrop="static"
       keyboard={false}

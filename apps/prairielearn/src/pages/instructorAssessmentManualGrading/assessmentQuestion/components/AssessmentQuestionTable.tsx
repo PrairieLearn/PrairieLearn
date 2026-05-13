@@ -25,6 +25,7 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useModalState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -217,10 +218,7 @@ export function AssessmentQuestionTable({
   const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
   const [hasUnacknowledgedReview, setHasUnacknowledgedReview] = useState(false);
 
-  // Controls the AI grading model selection modal: null = hidden, otherwise
-  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
-  const [modelSelectionModalState, setModelSelectionModalState] =
-    useState<AiGradingModelSelectionModalState>(null);
+  const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
@@ -758,7 +756,7 @@ export function AssessmentQuestionTable({
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'human_graded',
                           numToGrade: aiGradingCounts.humanGraded,
                         })
@@ -773,7 +771,7 @@ export function AssessmentQuestionTable({
                           : undefined
                       }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'selected',
                           ids: selectedIds,
                           numToGrade: aiGradingCounts.selected,
@@ -789,7 +787,7 @@ export function AssessmentQuestionTable({
                           : undefined
                       }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'all',
                           numToGrade: aiGradingCounts.all,
                         })
@@ -1007,7 +1005,7 @@ export function AssessmentQuestionTable({
 
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        modalState={modelSelectionModalState}
+        {...modelSelectionModalState}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
@@ -1017,8 +1015,10 @@ export function AssessmentQuestionTable({
         totalSubmissionCount={aiGradingCounts.all}
         onSelectFirstSubmissions={(n) => {
           const candidateIds = run(() => {
-            if (modelSelectionModalState?.type === 'selected') return modelSelectionModalState.ids;
-            if (modelSelectionModalState?.type === 'human_graded') {
+            if (modelSelectionModalState.data?.type === 'selected') {
+              return modelSelectionModalState.data.ids;
+            }
+            if (modelSelectionModalState.data?.type === 'human_graded') {
               return instanceQuestionsInfo
                 .filter((row) => row.instance_question.last_human_grader != null)
                 .map((row) => row.instance_question.id);
@@ -1028,7 +1028,7 @@ export function AssessmentQuestionTable({
           const ids = candidateIds.slice(0, n);
           const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
           setRowSelection(nextSelection);
-          setModelSelectionModalState({
+          modelSelectionModalState.showWithData({
             type: 'selected',
             ids,
             numToGrade: ids.length,
@@ -1042,7 +1042,6 @@ export function AssessmentQuestionTable({
           setLastSelectedModel(modelId);
           setRowSelection({});
         }}
-        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}

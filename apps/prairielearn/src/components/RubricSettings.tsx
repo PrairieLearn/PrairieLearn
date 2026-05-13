@@ -789,27 +789,33 @@ export function RubricSettings({
               ) : (
                 <tr>
                   <td colSpan={7} className="text-muted py-3">
-                    This question does not have any rubric items.{' '}
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 align-baseline text-decoration-none"
-                      onClick={addRubricItemRow}
-                    >
-                      Add item
-                    </button>
-                    {wasUsingRubric && (
+                    This question does not have any rubric items
+                    {hasCourseInstancePermissionEdit ? (
                       <>
-                        , or{' '}
+                        {' '}
                         <button
                           type="button"
                           className="btn btn-link p-0 align-baseline text-decoration-none"
-                          onClick={() => submitSettings(false)}
+                          onClick={addRubricItemRow}
                         >
-                          Disable rubric
-                        </button>{' '}
-                        to switch back to manual grade input.
+                          Add item
+                        </button>
+                        {wasUsingRubric && (
+                          <>
+                            , or{' '}
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 align-baseline text-decoration-none"
+                              onClick={() => submitSettings(false)}
+                            >
+                              Disable rubric
+                            </button>{' '}
+                            to switch back to manual grade input
+                          </>
+                        )}
                       </>
-                    )}
+                    ) : null}
+                    .
                   </td>
                 </tr>
               )}
