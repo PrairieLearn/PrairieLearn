@@ -1,7 +1,7 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
-import { formatDateYMD, formatInterval } from '@prairielearn/formatter';
+import { SECOND_IN_MILLISECONDS, formatDateYMD, formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { DateFromISOString } from '@prairielearn/zod';
 
@@ -149,7 +149,9 @@ export function InstructorAssessmentStatistics({
                   class="js-histogram"
                   data-histogram="${JSON.stringify(assessment.duration_stat_hist)}"
                   data-xgrid="${JSON.stringify(
-                    assessment.duration_stat_thresholds.map((durationMs) => durationMs / 1000),
+                    assessment.duration_stat_thresholds.map(
+                      (durationMs) => durationMs / SECOND_IN_MILLISECONDS,
+                    ),
                   )}"
                   data-options="${JSON.stringify({
                     ymin: 0,
@@ -211,7 +213,9 @@ export function InstructorAssessmentStatistics({
                   data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
                   data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                   data-options="${JSON.stringify({
-                    xgrid: assessment.duration_stat_thresholds.map((durationMs) => durationMs / 1000),
+                    xgrid: assessment.duration_stat_thresholds.map(
+                      (durationMs) => durationMs / SECOND_IN_MILLISECONDS,
+                    ),
                     ygrid: range(0, 110, 10),
                     xlabel: 'duration',
                     ylabel: 'score / %',
@@ -280,15 +284,5 @@ export function InstructorAssessmentStatistics({
 }
 
 function durationLabel(durationMs: number) {
-  const days = Math.floor(durationMs / (24 * 60 * 60 * 1000));
-  const hours = Math.floor(durationMs / (60 * 60 * 1000)) % 24;
-  const mins = Math.floor(durationMs / (60 * 1000)) % 60;
-  const secs = Math.floor(durationMs / 1000) % 60;
-
-  let label = '';
-  if (days > 0) label += `${days}d`;
-  if (hours > 0) label += `${hours}h`;
-  if (mins > 0) label += `${mins}m`;
-  if (secs > 0) label += `${secs}s`;
-  return label || '0';
+  formatInterval(durationMs).replaceAll(' ', '');
 }
