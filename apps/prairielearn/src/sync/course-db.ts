@@ -16,6 +16,7 @@ import { validateAccessControlRules } from '../lib/assessment-access-control/val
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
@@ -25,7 +26,6 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
-  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -1116,36 +1116,6 @@ function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
-}
-
-/**
- * Converts legacy group properties to the new groups format for unified handling.
- */
-export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
-  const canAssignRoles = assessment.groupRoles
-    .filter((role) => role.canAssignRoles)
-    .map((role) => role.name);
-
-  return {
-    minMembers: assessment.groupMinSize,
-    maxMembers: assessment.groupMaxSize,
-    roles: assessment.groupRoles.map((role) => ({
-      name: role.name,
-      minMembers: role.minimum,
-      maxMembers: role.maximum,
-    })),
-    studentPermissions: {
-      canCreateGroup: assessment.studentGroupCreate,
-      canJoinGroup: assessment.studentGroupJoin,
-      canLeaveGroup: assessment.studentGroupLeave,
-      canNameGroup: assessment.studentGroupChooseName,
-    },
-    rolePermissions: {
-      canAssignRoles,
-      canView: assessment.canView,
-      canSubmit: assessment.canSubmit,
-    },
-  };
 }
 
 function validateAssessment({

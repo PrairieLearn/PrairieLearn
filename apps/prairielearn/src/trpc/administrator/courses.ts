@@ -14,7 +14,11 @@ import {
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
-export interface AdminCourseError {}
+export interface AdminCourseError {
+  Insert: never;
+  Delete: never;
+  UpdateColumn: never;
+}
 
 const insert = t.procedure
   .use(requireAdministrator)

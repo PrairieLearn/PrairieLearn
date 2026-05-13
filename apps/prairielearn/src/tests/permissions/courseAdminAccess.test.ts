@@ -214,7 +214,7 @@ function runTest(context: TestContext) {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      const appError = getAppError<CourseStaffError>(err);
+      const appError = getAppError<CourseStaffError['DeleteUser']>(err);
       assert.isNotNull(appError);
       assert.include(appError.message, 'Only administrators can');
     }
@@ -240,7 +240,7 @@ function runTest(context: TestContext) {
       });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      const appError = getAppError<CourseStaffError>(err);
+      const appError = getAppError<CourseStaffError['UpdateCourseRole']>(err);
       assert.isNotNull(appError);
       assert.include(appError.message, 'Only administrators can');
     }
@@ -255,7 +255,7 @@ function runTest(context: TestContext) {
       await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
       assert.fail('Expected FORBIDDEN error');
     } catch (err) {
-      const appError = getAppError<CourseStaffError>(err);
+      const appError = getAppError<CourseStaffError['DeleteUser']>(err);
       assert.isNotNull(appError);
       assert.include(appError.message, 'while emulating');
     }
@@ -275,7 +275,7 @@ function runTest(context: TestContext) {
         });
         assert.fail('Expected FORBIDDEN error');
       } catch (err) {
-        const appError = getAppError<CourseStaffError>(err);
+        const appError = getAppError<CourseStaffError['UpdateCourseRole']>(err);
         assert.isNotNull(appError);
         assert.include(appError.message, 'while emulating');
       }

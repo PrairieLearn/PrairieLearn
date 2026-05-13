@@ -1,4 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -11,6 +12,7 @@ import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
+  Course,
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
@@ -59,6 +61,7 @@ export function QuestionContainer({
     variant,
     variantToken,
     questionJsonBase64,
+    course,
     course_instance,
     authz_data,
     is_administrator,
@@ -80,7 +83,7 @@ export function QuestionContainer({
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue: IssueRenderData) =>
-        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+        IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
       )}
       ${question.type === 'Freeform'
         ? html`
@@ -283,11 +286,13 @@ ${explanation}
 
 function IssuePanel({
   issue,
+  course,
   course_instance,
   authz_data,
   is_administrator,
 }: {
   issue: IssueRenderData;
+  course: Course;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -368,7 +373,12 @@ function IssuePanel({
             </tr>
             <tr>
               <th>Date:</th>
-              <td>${issue.formatted_date}</td>
+              <td>
+                ${formatDate(
+                  issue.date!,
+                  course_instance?.display_timezone ?? course.display_timezone,
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -959,7 +969,8 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance?.id,
+      course_instance: resLocals.course_instance,
+      course: resLocals.course,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,

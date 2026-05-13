@@ -21,7 +21,7 @@ router.get(
       await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
-    const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
+    const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a
     // database with PrairieLearn, so it can use the same user ID to look up any
