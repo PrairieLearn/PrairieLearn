@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Form } from 'react-bootstrap';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
 import { PublicLinkSharing } from './LinkSharing.js';
@@ -10,19 +9,6 @@ interface BlockingChild {
   label: string;
 }
 
-interface BulkShareOptions {
-  /** Submit the bulk-share. The caller mutates state and refreshes the page. */
-  onConfirm: () => Promise<void>;
-  /** Whether the mutation is currently in flight, used to disable buttons. */
-  isPending: boolean;
-  /** Singular noun for the children: "question" or "assessment". */
-  childNoun: string;
-  /** Singular noun for the parent entity: "assessment" or "course instance". */
-  parentNoun: string;
-  /** Optional inline error displayed below the modal's body. */
-  error?: { message: string } | null;
-}
-
 /**
  * Sharing card used on the assessment-settings and course-instance-settings
  * pages. Both surfaces have the same structure: a `share_source_publicly`
@@ -30,10 +16,9 @@ interface BulkShareOptions {
  * lists non-publicly-shared children with links to their settings pages, and a
  * `PublicLinkSharing` block once shared.
  *
- * If `bulkShare` is provided, the warning also surfaces a "Share all N <kind>
- * publicly" button that opens a confirmation modal and, on confirm, invokes
- * `bulkShare.onConfirm`. The parent is responsible for the actual mutation
- * and for refreshing page state after success.
+ * Copy varies only by two nouns:
+ *   - `entityNoun`: this card's entity ("assessment", "course instance").
+ *   - `childNoun`: what must also be shared ("questions", "assessments").
  *
  * The question-settings sharing card intentionally does not use this component
  * — it has additional fields (a separate `share_publicly` toggle and a
@@ -44,14 +29,10 @@ export function ShareSourcePubliclyCard({
   canEdit,
   registerProps,
   defaultChecked,
-  description,
-  alreadySharedSentence,
   blockingChildren,
-  blockingPrefix,
   publicLink,
-  sharingMessage,
-  publicLinkMessage,
-  bulkShare,
+  entityNoun,
+  childNoun,
 }: {
   /** Current persisted value of `share_source_publicly`. */
   alreadyShared: boolean;
@@ -59,23 +40,15 @@ export function ShareSourcePubliclyCard({
   /** Result of `register('share_source_publicly')` from react-hook-form. */
   registerProps: UseFormRegisterReturn;
   defaultChecked: boolean | undefined;
-  /** Helper text describing what enabling the toggle does. */
-  description: string;
-  /** Appended to the helper text once the value is locked in. */
-  alreadySharedSentence: string;
   /** Non-publicly-shared children that block the transition; empty when clear. */
   blockingChildren: BlockingChild[];
-  /** Sentence introducing the blocking list (no trailing space). */
-  blockingPrefix: string;
   publicLink: string;
-  sharingMessage: string;
-  publicLinkMessage: string;
-  /** Optional bulk-share action; renders the "Share all N …" button. */
-  bulkShare?: BulkShareOptions;
+  /** Singular noun for this card's entity, e.g. "assessment". */
+  entityNoun: string;
+  /** Plural noun for the blocking children, e.g. "questions". */
+  childNoun: string;
 }) {
-  const [showConfirm, setShowConfirm] = useState(false);
   const blockedCount = blockingChildren.length;
-  const canBulkShare = bulkShare !== undefined && canEdit && !alreadyShared && blockedCount > 0;
 
   return (
     <div className="card">
@@ -91,105 +64,31 @@ export function ShareSourcePubliclyCard({
           {...registerProps}
         />
         <small className="form-text text-muted d-block mb-2">
-          {description}
-          {alreadyShared && ` ${alreadySharedSentence}`}
+          The {entityNoun}'s source becomes available for others to view and copy.
+          {alreadyShared &&
+            ` This ${entityNoun} already has publicly shared source and cannot be un-shared.`}
         </small>
         {blockedCount > 0 && !alreadyShared && (
           <Alert variant="warning" className="small mb-2">
-            <div>
-              {blockingPrefix}{' '}
-              {blockingChildren.map((child, i) => (
-                <span key={child.id}>
-                  {i > 0 && ', '}
-                  <a href={child.href}>{child.label}</a>
-                </span>
-              ))}
-              .
-            </div>
-            {canBulkShare && (
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="warning"
-                  disabled={bulkShare.isPending}
-                  onClick={() => setShowConfirm(true)}
-                >
-                  Share all {blockedCount} {bulkShare.childNoun}
-                  {blockedCount === 1 ? '' : 's'} and this {bulkShare.parentNoun} publicly
-                </Button>
-              </div>
-            )}
+            Cannot share this {entityNoun} publicly until the following {childNoun} are also shared
+            publicly:{' '}
+            {blockingChildren.map((child, i) => (
+              <span key={child.id}>
+                {i > 0 && ', '}
+                <a href={child.href}>{child.label}</a>
+              </span>
+            ))}
+            .
           </Alert>
         )}
         {alreadyShared && (
           <PublicLinkSharing
             publicLink={publicLink}
-            sharingMessage={sharingMessage}
-            publicLinkMessage={publicLinkMessage}
+            sharingMessage={`This ${entityNoun}'s source is publicly shared.`}
+            publicLinkMessage={`The link that other instructors can use to view this ${entityNoun}.`}
           />
         )}
       </div>
-      {bulkShare && (
-        <Modal
-          show={showConfirm}
-          backdrop={bulkShare.isPending ? 'static' : true}
-          onHide={() => !bulkShare.isPending && setShowConfirm(false)}
-        >
-          <Modal.Header closeButton={!bulkShare.isPending}>
-            <Modal.Title>Share all publicly</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <p>
-              Confirming this action will permanently share the following {blockedCount}{' '}
-              {bulkShare.childNoun}
-              {blockedCount === 1 ? '' : 's'}, and then mark this {bulkShare.parentNoun} as publicly
-              shared:
-            </p>
-            <ul className="mb-3">
-              {blockingChildren.map((c) => (
-                <li key={c.id}>
-                  <code>{c.label}</code>
-                </li>
-              ))}
-            </ul>
-            <Alert variant="warning" className="small mb-0">
-              <strong>This cannot be undone.</strong> Once shared, neither the {bulkShare.childNoun}
-              s nor this {bulkShare.parentNoun} can be un-shared, and the {bulkShare.childNoun}s
-              cannot be renamed or deleted. Any later content changes will be applied to every
-              course that has imported them.
-            </Alert>
-            {bulkShare.error && (
-              <Alert variant="danger" className="mt-3 mb-0 small">
-                {bulkShare.error.message}
-              </Alert>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={bulkShare.isPending}
-              onClick={() => setShowConfirm(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={bulkShare.isPending}
-              onClick={async () => {
-                await bulkShare.onConfirm();
-                // The parent closes the modal on success by re-rendering with
-                // `blockedCount === 0` (no warning, no button). On error, we
-                // leave the modal open so the user can see the message.
-              }}
-            >
-              {bulkShare.isPending ? 'Sharing...' : 'Share all publicly'}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      )}
     </div>
   );
 }

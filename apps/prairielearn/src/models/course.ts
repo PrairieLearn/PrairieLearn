@@ -459,10 +459,11 @@ export async function updateCourseSharingName({
 }
 
 /**
- * Atomically updates `sharing_name` only if the course is still allowed to
- * change it (i.e., no sharing name yet, or no shared questions). Returns the
- * new sharing name on success, or `null` if the conditional UPDATE matched no
- * rows because a question was shared between page-load and submit.
+ * Updates `sharing_name` only if the course is still allowed to change it
+ * (i.e., no sharing name yet, or no shared questions). The check and the
+ * write run in one transaction so a question being shared between page-load
+ * and submit cannot slip past the guard. Returns the new sharing name on
+ * success, or `null` if the check failed at the time of the write.
  */
 export async function updateCourseSharingNameIfAllowed({
   course_id,
@@ -471,11 +472,12 @@ export async function updateCourseSharingNameIfAllowed({
   course_id: string;
   sharing_name: string;
 }): Promise<string | null> {
-  return await queryOptionalScalar(
-    sql.update_course_sharing_name_if_allowed,
-    { course_id, sharing_name },
-    z.string(),
-  );
+  return await runInTransactionAsync(async () => {
+    const course = await selectCourseById(course_id);
+    if (!(await selectCanChooseSharingName(course))) return null;
+    await execute(sql.update_course_sharing_name, { course_id, sharing_name });
+    return sharing_name;
+  });
 }
 
 /**

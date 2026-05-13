@@ -66,7 +66,10 @@ describe('Updating a course instance ID', () => {
     await features.enable('question-sharing');
   });
 
-  afterAll(helperServer.after);
+  afterAll(async () => {
+    await features.disable('question-sharing');
+    await helperServer.after();
+  });
 
   test.sequential(
     'should not be able to change course instance id to one that falls outside the correct root directory',

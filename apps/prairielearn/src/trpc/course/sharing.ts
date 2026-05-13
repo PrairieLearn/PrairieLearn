@@ -39,7 +39,7 @@ export interface SharingError {
     | { code: 'IN_USE'; name: string }
     | { code: 'NOT_FOUND'; name: string }
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  ChooseSharingName: { code: 'DUPLICATE_NAME'; name: string } | { code: 'CANNOT_CHANGE' };
+  ChooseSharingName: { code: 'DUPLICATE_NAME'; name: string };
 }
 
 const SharingSetNameSchema = z
@@ -369,11 +369,6 @@ const chooseSharingName = t.procedure
   .use(requireNotExampleCourse)
   .input(z.object({ courseSharingName: SharingNameSchema }))
   .mutation(async ({ input, ctx }) => {
-    // Pre-check: surface a clean DUPLICATE_NAME error instead of letting the
-    // UNIQUE constraint raise a raw 23505. (A narrow race remains where two
-    // different courses pick the same name between this check and the UPDATE;
-    // that case still surfaces as an internal error, which is acceptable for
-    // an admin-only action.)
     const existing = await findCoursesBySharingNames([input.courseSharingName]);
     const owner = existing.get(input.courseSharingName);
     if (owner && owner.id !== ctx.course.id) {
@@ -384,16 +379,13 @@ const chooseSharingName = t.procedure
       });
     }
 
-    // Atomic conditional UPDATE: closes the TOCTOU window where a question
-    // could be shared between page-load and submit. Returns null if the
-    // invariant fails at the time of the write.
     const updatedName = await updateCourseSharingNameIfAllowed({
       course_id: ctx.course.id,
       sharing_name: input.courseSharingName,
     });
     if (updatedName === null) {
-      throwAppError<SharingError['ChooseSharingName']>({
-        code: 'CANNOT_CHANGE',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: 'Unable to change sharing name. At least one question has been shared.',
       });
     }

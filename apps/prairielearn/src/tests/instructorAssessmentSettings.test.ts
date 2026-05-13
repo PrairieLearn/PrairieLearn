@@ -134,7 +134,10 @@ describe('Editing assessment settings', () => {
     await features.enable('question-sharing');
   });
 
-  afterAll(helperServer.after);
+  afterAll(async () => {
+    await features.disable('question-sharing');
+    await helperServer.after();
+  });
 
   test.sequential('access the test assessment info file', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));

@@ -440,12 +440,6 @@ function InstructorAssessmentSettingsInner({
 
   const saveMutation = useMutation(trpc.assessmentSettings.updateAssessment.mutationOptions());
   const deleteMutation = useMutation(trpc.assessmentSettings.deleteAssessment.mutationOptions());
-  const bulkShareMutation = useMutation(
-    trpc.assessmentSettings.shareSourcePubliclyBulk.mutationOptions(),
-  );
-  const bulkShareAppError = getAppError<
-    AssessmentSettingsError['ShareAssessmentSourcePubliclyBulk']
-  >(bulkShareMutation.error);
 
   const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(saveMutation.error);
   const deleteError = getAppError<AssessmentSettingsError['DeleteAssessment']>(
@@ -1156,8 +1150,6 @@ function InstructorAssessmentSettingsInner({
               canEdit={canEdit}
               registerProps={register('share_source_publicly')}
               defaultChecked={defaultValues.share_source_publicly}
-              description="The assessment's JSON configuration and question list become available for others to view and copy."
-              alreadySharedSentence="This assessment already has publicly shared source and cannot be un-shared."
               blockingChildren={nonPublicQuestionsInAssessment.map((q) => ({
                 id: q.id,
                 href: getQuestionSettingsUrl({
@@ -1166,24 +1158,9 @@ function InstructorAssessmentSettingsInner({
                 }),
                 label: q.qid,
               }))}
-              blockingPrefix="Cannot share this assessment publicly until the following questions are also shared publicly:"
               publicLink={publicLink}
-              sharingMessage="This assessment's source is publicly shared."
-              publicLinkMessage="The link that other instructors can use to view this assessment."
-              bulkShare={{
-                childNoun: 'question',
-                parentNoun: 'assessment',
-                isPending: bulkShareMutation.isPending,
-                error: bulkShareAppError,
-                onConfirm: async () => {
-                  await bulkShareMutation.mutateAsync(
-                    undefined,
-                    // Reload so the page rehydrates with the new shared state
-                    // (DB columns, info.json hashes, and the empty blocking list).
-                    { onSuccess: () => window.location.reload() },
-                  );
-                },
-              }}
+              entityNoun="assessment"
+              childNoun="questions"
             />
           )}
 
