@@ -19,7 +19,7 @@ export const AssessmentScoreHistogramByDateSchema = z.object({
 type AssessmentScoreHistogramByDate = z.infer<typeof AssessmentScoreHistogramByDateSchema>;
 
 export const UserScoreSchema = z.object({
-  duration_secs: z.number(),
+  duration: AssessmentInstanceSchema.shape.duration,
   score_perc: AssessmentInstanceSchema.shape.score_perc,
 });
 type UserScore = z.infer<typeof UserScoreSchema>;
@@ -210,7 +210,9 @@ export function InstructorAssessmentStatistics({
               <div class="card-body">
                 <div
                   class="js-scatter"
-                  data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
+                  data-xdata="${JSON.stringify(
+                    userScores.map((user) => (user.duration ?? 0) / SECOND_IN_MILLISECONDS),
+                  )}"
                   data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                   data-options="${JSON.stringify({
                     xgrid: assessment.duration_stat_thresholds.map(

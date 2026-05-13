@@ -48,7 +48,7 @@ ORDER BY
 -- BLOCK user_scores
 SELECT
   ai.score_perc,
-  DATE_PART('epoch', ai.duration) AS duration_secs
+  ai.duration
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
