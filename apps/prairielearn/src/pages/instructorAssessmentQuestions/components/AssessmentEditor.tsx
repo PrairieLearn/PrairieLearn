@@ -19,6 +19,7 @@ import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffCourse,
@@ -26,6 +27,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -169,6 +171,9 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) =>
       queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
+  const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    questionByQidMutation.error,
+  );
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
 
@@ -1110,7 +1115,7 @@ function AssessmentEditorInner({
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}
-                  pickerError={questionByQidMutation.error}
+                  pickerError={pickerError}
                   questionSharingEnabled={questionSharingEnabled}
                   consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
                 />
