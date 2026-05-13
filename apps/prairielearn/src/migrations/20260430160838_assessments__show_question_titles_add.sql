@@ -1,0 +1,2 @@
+ALTER TABLE assessments
+ADD COLUMN show_question_titles BOOLEAN NOT NULL DEFAULT FALSE;

@@ -344,17 +344,44 @@ function formatCreditDateString(
 
 function computeTimeLimitMin(
   durationMinutes: number | null | undefined,
-  nextDeadline: Date | null,
+  lastSubmittableEnd: Date | null,
   date: Date,
   authzMode: EnumMode,
 ): number | null {
   if (!durationMinutes) return null;
   if (authzMode === 'Exam') return null;
-  if (!nextDeadline) return durationMinutes;
+  if (!lastSubmittableEnd) return durationMinutes;
 
-  // Cap time limit by seconds until next deadline, minus 31 seconds (legacy behavior).
-  const secondsUntilDeadline = (nextDeadline.getTime() - date.getTime()) / 1000 - 31;
-  return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
+  // Cap time limit by the time remaining until the last reachable submittable
+  // deadline. If the timer hits 0:00 exactly at the deadline, the exam might
+  // end fractionally after the deadline (overdue submission), so we subtract
+  // 31 seconds to avoid that race. 31 (rather than 30) forces the final value
+  // to round down when the cap falls on a half-minute boundary (time limits
+  // are stored in whole minutes).
+  const secondsUntilDeadline = (lastSubmittableEnd.getTime() - date.getTime()) / 1000 - 31;
+  return Math.max(0, Math.round(Math.min(durationMinutes, secondsUntilDeadline / 60)));
+}
+
+/**
+ * Returns the latest endDate the student can still submit at, walking forward
+ * from `current` through contiguous submittable timeline entries. The time
+ * limit caps here so duration can span access windows (e.g. 100% credit
+ * window → 80% late window) without truncating at the credit drop. Returns
+ * `null` if a submittable entry has no end (afterLastDeadline allowing
+ * submissions, or an indefinite due date).
+ */
+function findLastSubmittableEnd(
+  accessTimeline: AccessTimelineEntry[],
+  currentIdx: number,
+): Date | null {
+  let end: Date | null = null;
+  for (let i = currentIdx; i < accessTimeline.length; i++) {
+    const entry = accessTimeline[i];
+    if (!entry.submittable) break;
+    if (entry.endDate === null) return null;
+    end = entry.endDate;
+  }
+  return end;
 }
 
 /**
@@ -450,7 +477,8 @@ export function resolveAccessControl(
   }
   // `hasRelease` is true, so `current` is defined unless we have a degenerate window where due ≤ release.
   // Treat degenerate windows as fully unauthorized.
-  const current = accessTimeline.find((e) => e.current);
+  const currentIdx = accessTimeline.findIndex((e) => e.current);
+  const current = currentIdx !== -1 ? accessTimeline[currentIdx] : undefined;
   if (!current) {
     return { ...UNAUTHORIZED_RESULT, ...visibility, accessTimeline };
   }
@@ -482,11 +510,15 @@ export function resolveAccessControl(
     ),
     timeLimitMin: computeTimeLimitMin(
       rule.dateControl?.durationMinutes,
-      current.endDate,
+      findLastSubmittableEnd(accessTimeline, currentIdx),
       date,
       authzMode,
     ),
-    password: rule.dateControl?.password ?? null,
+    // Password gates active participation only; once the student is in a
+    // view-only segment (e.g. afterLastDeadline.allowSubmissions: false),
+    // re-prompting for the password would gate review without protecting
+    // anything submittable.
+    password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
     ...visibility,
     examAccessEnd: null,

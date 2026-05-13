@@ -46,19 +46,19 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
 
 const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
-    value: 'show_score',
-    label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
-  },
-  {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
     description: 'Score will never be visible after completion',
   },
   {
+    value: 'show_score',
+    label: 'Show score after completion',
+    description: 'Students can see their score immediately after completing the assessment',
+  },
+  {
     value: 'hide_score_until_date',
-    label: 'Hide score until date',
-    description: 'Score will be hidden after completion and become visible again on this date',
+    label: 'Show score after date',
+    description: 'Score will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -94,7 +94,6 @@ function QuestionVisibilityInput({
   idPrefix,
   hasPrairieTest = false,
   hasCompletionMechanism = true,
-  errorMessage,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -104,12 +103,14 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   hasCompletionMechanism?: boolean;
-  errorMessage?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
+  const selectedDescription = QUESTION_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideQuestionsMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideQuestionsMode) => {
     switch (newMode) {
@@ -150,9 +151,11 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
-          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideQuestionsMode === 'hide_questions_between_dates' && (
         <div className="mt-2">
@@ -276,18 +279,19 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
-  errorMessage,
   visibleFromDateError,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
-  errorMessage?: string;
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
+  const selectedDescription = SCORE_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideScoreMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideScoreMode) => {
     switch (newMode) {
@@ -317,9 +321,11 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
-          errorMessage={errorMessage}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideScoreMode === 'hide_score_until_date' && (
         <div className="mt-2">
@@ -327,7 +333,7 @@ function ScoreVisibilityInput({
             id={`${idPrefix}-show-score-date`}
             type="datetime-local"
             step={1}
-            aria-label="Show score again on"
+            aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
             aria-invalid={visibleFromDateInvalid}
@@ -354,23 +360,17 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is considered complete when students can no longer answer questions. This
-        typically happens when:
-      </p>
-      <ul>
-        <li>The last late deadline passes (or due date if no late deadlines)</li>
-        <li>
-          The assessment is closed (e.g., time limit expires, autoclose, or instructor closes it)
-        </li>
-      </ul>
-      <p>
-        The completion date can be different for different students based on when they started or
-        their specific accommodations.
+        An assessment is complete when students can no longer answer questions — for example, after
+        the due date and any late deadlines pass, after a time limit expires, or once their
+        assessment instance is closed (manually or via autoclose).
       </p>
       <p>
-        These settings apply only when the student does not have an active PrairieTest reservation.
-        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
-        govern visibility instead.
+        The completion time can vary between students based on when they started or any
+        accommodations they have.
+      </p>
+      <p>
+        While a student has an active PrairieTest reservation, the per-exam settings on each
+        PrairieTest exam govern visibility instead.
       </p>
     </>
   ),
@@ -400,6 +400,9 @@ function AfterCompleteCard({
             </Button>
           </OverlayTrigger>
         </div>
+        <div className="text-muted small mt-1">
+          What students can see once they can no longer answer questions on the assessment.
+        </div>
       </div>
       <Row className="gy-3">{children}</Row>
     </div>
@@ -426,7 +429,6 @@ export function DefaultAfterCompleteForm({
   });
 
   const { errors } = useFormState<AccessControlFormData>();
-  const qvError: string | undefined = get(errors, 'defaultRule.questionVisibility')?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
     'defaultRule.questionVisibility.visibleFromDate',
@@ -439,7 +441,6 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
-  const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -474,7 +475,6 @@ export function DefaultAfterCompleteForm({
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
-          errorMessage={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
@@ -488,7 +488,6 @@ export function DefaultAfterCompleteForm({
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="defaultRule"
-          errorMessage={svError}
           visibleFromDateError={svVisibleFromError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
@@ -519,7 +518,6 @@ export function OverrideAfterCompleteForm({
   const hasPrairieTest = prairieTestExams.length > 0;
 
   const { errors } = useFormState<AccessControlFormData>();
-  const qvError: string | undefined = get(errors, `overrides.${index}.questionVisibility`)?.message;
   const qvVisibleFromError: string | undefined = get(
     errors,
     `overrides.${index}.questionVisibility.visibleFromDate`,
@@ -532,7 +530,6 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
-  const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
 
   const { clearErrors } = useFormContext<AccessControlFormData>();
 
@@ -578,7 +575,6 @@ export function OverrideAfterCompleteForm({
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
-            errorMessage={qvError}
             visibleFromDateError={qvVisibleFromError}
             visibleUntilDateError={visibleUntilDateError}
             displayTimezone={displayTimezone}
@@ -602,7 +598,6 @@ export function OverrideAfterCompleteForm({
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
-            errorMessage={svError}
             visibleFromDateError={svVisibleFromError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}
