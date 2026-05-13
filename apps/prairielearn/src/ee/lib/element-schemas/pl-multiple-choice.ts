@@ -1,257 +1,149 @@
-/* eslint-disable unicorn/no-thenable -- JSON Schema uses the `if`/`then` keywords. */
-
 import * as z from 'zod/v4';
 
 import { BOOLEAN_FALSE_VALUES } from './ajv-extensions.js';
+import { type Fragment, Then, When, rule } from './conditionals.js';
 
-const aotaNotaValues = ['false', 'random', 'correct', 'incorrect'];
+const plBoolean = () => z.union([z.boolean(), z.string().meta({ format: 'pl-boolean' })]);
 
-const plAnswerAttributeSchema = z
+const plInteger = () => z.string().meta({ format: 'pl-integer' });
+
+const plFloat = () => z.string().meta({ format: 'pl-float' });
+
+const aotaNotaAttribute = () =>
+  z.union([plBoolean(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
+
+const plAnswerAttributesSchema = z
   .object({
-    correct: z.union([z.boolean(), z.string()]).optional(),
+    correct: plBoolean().optional(),
     feedback: z.string().optional(),
-    score: z.union([z.number(), z.string()]).optional(),
+    score: plFloat()
+      .meta({
+        'pl-float-range': [0, 1],
+        errorMessage: 'Score must be in the range [0.0, 1.0].',
+      })
+      .optional(),
   })
   .strict();
 
-const plMultipleChoiceEnvelopeSchema = z.object({
-  tag: z.literal('pl-multiple-choice'),
-  attributes: z.record(z.string(), z.unknown()),
-  children: z.array(
-    z.object({
-      tag: z.string(),
-      attributes: z.record(z.string(), z.unknown()),
-      text: z.string().optional(),
-      innerHtml: z.string().optional(),
-    }),
-  ),
+const plAnswerSchema = z.object({
+  tag: z.literal('pl-answer'),
+  text: z.string().optional(),
+  innerHtml: z.string().optional(),
+  attributes: plAnswerAttributesSchema,
 });
 
-const booleanAttribute = {
+const plMultipleChoiceAttributesSchema = z
+  .object({
+    'answers-name': z.string(),
+    weight: plInteger().optional(),
+    'number-answers': plInteger().optional(),
+    order: z.enum(['random', 'ascend', 'descend', 'fixed']).optional(),
+    display: z.enum(['block', 'inline', 'dropdown']).optional(),
+    'hide-letter-keys': plBoolean().optional(),
+    'fixed-order': plBoolean().optional(),
+    inline: plBoolean().optional(),
+    'hide-score-badge': plBoolean().optional(),
+    'allow-blank': plBoolean().optional(),
+    'builtin-grading': plBoolean().optional(),
+    size: plInteger().optional(),
+    placeholder: z.string().optional(),
+    'aria-label': z.string().optional(),
+    'external-json': z.string().optional(),
+    'external-json-correct-key': z.string().optional(),
+    'external-json-incorrect-key': z.string().optional(),
+    'all-of-the-above': aotaNotaAttribute().optional(),
+    'none-of-the-above': aotaNotaAttribute().optional(),
+    'all-of-the-above-feedback': z.string().optional(),
+    'none-of-the-above-feedback': z.string().optional(),
+  })
+  .strict();
+
+const booleanAttributeFragment: Fragment = {
   anyOf: [{ type: 'boolean' }, { type: 'string', format: 'pl-boolean' }],
 };
+const builtinGradingFalse = When.attributeIn('builtin-grading', BOOLEAN_FALSE_VALUES);
 
-const aotaNotaAttribute = {
-  anyOf: [booleanAttribute, { enum: aotaNotaValues }],
-};
+const conditionalValidators = [
+  rule(
+    When.lacks('external-json'),
+    Then.childrenMinItems(1),
+    'pl-multiple-choice element must have at least 1 answer choice.',
+  ),
+  rule(
+    When.has('fixed-order'),
+    Then.lacks('order'),
+    'Setting answer choice order should be done with the "order" attribute.',
+  ),
+  rule(
+    When.has('inline'),
+    Then.lacks('display'),
+    "Cannot set both 'display' and 'inline' attributes. Use only 'display'; the 'inline' attribute is deprecated.",
+  ),
+  rule(
+    When.has('size'),
+    Then.attributeEquals('display', 'dropdown'),
+    'pl-multiple-choice: if using size, you must also set display to "dropdown".',
+  ),
+  rule(
+    When.has('placeholder'),
+    Then.attributeEquals('display', 'dropdown'),
+    'pl-multiple-choice: if using placeholder, you must also set display to "dropdown".',
+  ),
+  rule(
+    When.has('all-of-the-above-feedback'),
+    Then.attributeNotIn('all-of-the-above', BOOLEAN_FALSE_VALUES),
+    'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
+  ),
+  rule(
+    When.has('none-of-the-above-feedback'),
+    Then.attributeNotIn('none-of-the-above', BOOLEAN_FALSE_VALUES),
+    'pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.lacks('weight'),
+    '"weight" should not be set when builtin-grading is false.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.lacks('hide-score-badge'),
+    '"hide-score-badge" should not be set when builtin-grading is false.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.attributeMatches('all-of-the-above', booleanAttributeFragment),
+    '"all-of-the-above" should be set to true or false when builtin-grading is false.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.attributeMatches('none-of-the-above', booleanAttributeFragment),
+    '"none-of-the-above" should be set to true or false when builtin-grading is false.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.childAttributeLacks('score'),
+    '"score" on pl-answer should not be set when builtin-grading is false.',
+  ),
+  rule(
+    builtinGradingFalse,
+    Then.childAttributeLacks('feedback'),
+    '"feedback" on pl-answer should not be set when builtin-grading is false.',
+  ),
+];
 
-const integerAttribute = { type: 'string', format: 'pl-integer' };
-
-const disabledBuiltinGradingCondition = {
-  properties: {
-    attributes: {
-      properties: {
-        'builtin-grading': { enum: BOOLEAN_FALSE_VALUES },
-      },
-      required: ['builtin-grading'],
-    },
-  },
-};
-
-function attributeRequiresDropdown(attributeName: string, message: string) {
-  return {
-    if: {
-      properties: {
-        attributes: { required: [attributeName] },
-      },
-    },
-    then: {
-      properties: {
-        attributes: {
-          properties: {
-            display: { const: 'dropdown' },
-          },
-          required: ['display'],
-        },
-      },
-      errorMessage: { _: message },
-    },
-  };
-}
-
-function feedbackRequiresOption(feedbackName: string, optionName: string, message: string) {
-  return {
-    if: {
-      properties: {
-        attributes: { required: [feedbackName] },
-      },
-    },
-    then: {
-      properties: {
-        attributes: {
-          properties: {
-            [optionName]: { not: { enum: BOOLEAN_FALSE_VALUES } },
-          },
-          required: [optionName],
-        },
-      },
-      errorMessage: { _: message },
-    },
-  };
-}
+const plMultipleChoiceEnvelopeSchema = z
+  .object({
+    tag: z.literal('pl-multiple-choice'),
+    text: z.string().optional(),
+    innerHtml: z.string().optional(),
+    attributes: plMultipleChoiceAttributesSchema,
+    children: z.array(plAnswerSchema).meta({ 'unique-child-inner-html': true }),
+  })
+  .strict()
+  .meta({ allOf: conditionalValidators });
 
 export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
-  const schema = z.toJSONSchema(plMultipleChoiceEnvelopeSchema, {
+  return z.toJSONSchema(plMultipleChoiceEnvelopeSchema, {
     target: 'draft-2020-12',
-  }) as Record<string, unknown>;
-  const plAnswerAttributesJsonSchema = z.toJSONSchema(plAnswerAttributeSchema, {
-    target: 'draft-2020-12',
-  }) as Record<string, unknown>;
-  delete plAnswerAttributesJsonSchema.$schema;
-
-  Object.assign(schema, {
-    $schema: 'https://json-schema.org/draft/2020-12/schema',
-    type: 'object',
-    properties: {
-      tag: { const: 'pl-multiple-choice' },
-      text: { type: 'string' },
-      innerHtml: { type: 'string' },
-      attributes: {
-        type: 'object',
-        properties: {
-          'answers-name': { type: 'string' },
-          weight: integerAttribute,
-          'number-answers': integerAttribute,
-          order: { enum: ['random', 'ascend', 'descend', 'fixed'] },
-          display: { enum: ['block', 'inline', 'dropdown'] },
-          'hide-letter-keys': booleanAttribute,
-          'fixed-order': booleanAttribute,
-          inline: booleanAttribute,
-          'hide-score-badge': booleanAttribute,
-          'allow-blank': booleanAttribute,
-          'builtin-grading': booleanAttribute,
-          size: integerAttribute,
-          placeholder: { type: 'string' },
-          'aria-label': { type: 'string' },
-          'external-json': { type: 'string' },
-          'external-json-correct-key': { type: 'string' },
-          'external-json-incorrect-key': { type: 'string' },
-          'all-of-the-above': aotaNotaAttribute,
-          'none-of-the-above': aotaNotaAttribute,
-          'all-of-the-above-feedback': { type: 'string' },
-          'none-of-the-above-feedback': { type: 'string' },
-        },
-        required: ['answers-name'],
-        additionalProperties: false,
-      },
-      children: {
-        type: 'array',
-        'unique-child-inner-html': true,
-        items: {
-          type: 'object',
-          properties: {
-            tag: { const: 'pl-answer' },
-            text: { type: 'string' },
-            innerHtml: { type: 'string' },
-            attributes: {
-              ...plAnswerAttributesJsonSchema,
-              properties: {
-                correct: booleanAttribute,
-                feedback: { type: 'string' },
-                score: {
-                  type: 'string',
-                  format: 'pl-float',
-                  'pl-float-range': [0, 1],
-                  errorMessage: 'Score must be in the range [0.0, 1.0].',
-                },
-              },
-            },
-          },
-          required: ['tag', 'attributes'],
-        },
-      },
-    },
-    required: ['tag', 'attributes', 'children'],
-    allOf: [
-      {
-        if: {
-          properties: {
-            attributes: {
-              not: { required: ['external-json'] },
-            },
-          },
-          required: ['attributes'],
-        },
-        then: {
-          properties: {
-            children: { minItems: 1 },
-          },
-        },
-      },
-      {
-        if: {
-          properties: {
-            attributes: { required: ['fixed-order'] },
-          },
-        },
-        then: {
-          properties: {
-            attributes: { not: { required: ['order'] } },
-          },
-        },
-      },
-      {
-        if: {
-          properties: {
-            attributes: { required: ['inline'] },
-          },
-        },
-        then: {
-          properties: {
-            attributes: { not: { required: ['display'] } },
-          },
-        },
-      },
-      {
-        if: disabledBuiltinGradingCondition,
-        then: {
-          properties: {
-            attributes: {
-              properties: {
-                'all-of-the-above': booleanAttribute,
-                'none-of-the-above': booleanAttribute,
-              },
-              not: {
-                anyOf: [{ required: ['weight'] }, { required: ['hide-score-badge'] }],
-              },
-            },
-            children: {
-              items: {
-                properties: {
-                  attributes: {
-                    not: {
-                      anyOf: [{ required: ['score'] }, { required: ['feedback'] }],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          errorMessage: {
-            _: 'builtin-grading="false" only supports true/false all-of-the-above and none-of-the-above values, and forbids grading attributes.',
-          },
-        },
-      },
-      attributeRequiresDropdown(
-        'size',
-        'pl-multiple-choice: if using size, you must also set display to "dropdown".',
-      ),
-      attributeRequiresDropdown(
-        'placeholder',
-        'pl-multiple-choice: if using placeholder, you must also set display to "dropdown".',
-      ),
-      feedbackRequiresOption(
-        'all-of-the-above-feedback',
-        'all-of-the-above',
-        'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
-      ),
-      feedbackRequiresOption(
-        'none-of-the-above-feedback',
-        'none-of-the-above',
-        'pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above.',
-      ),
-    ],
   });
-
-  return schema;
 }

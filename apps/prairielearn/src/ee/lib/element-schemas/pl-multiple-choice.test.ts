@@ -91,7 +91,21 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isNotEmpty(messages);
+    const joined = messages.join('\n');
+    assert.include(joined, '"weight" should not be set when builtin-grading is false.');
+    assert.include(
+      joined,
+      '"hide-score-badge" should not be set when builtin-grading is false.',
+    );
+    assert.include(
+      joined,
+      '"all-of-the-above" should be set to true or false when builtin-grading is false.',
+    );
+    assert.include(joined, '"score" on pl-answer should not be set when builtin-grading is false.');
+    assert.include(
+      joined,
+      '"feedback" on pl-answer should not be set when builtin-grading is false.',
+    );
   });
 
   it('rejects feedback when disabled builtin grading option is false alias', async () => {
