@@ -61,7 +61,7 @@ Inside the `pl-template` element, variables for use in rendering the template ma
 
 ## Details
 
-Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **elements that accept and/or grade student input used within this element will not work correctly.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Each instance of the `pl-template` element also has a unique `uuid` variable available for rendering. Templates may also be used within other templates.
+Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **elements that accept and/or grade student input used within this element will not work correctly.** When rendering a template, all entries from `data["params"]` and `data["preferences"]` are included as available variables and may be used when the template is rendered, using the `{{params.variable_name}}` or `{{preferences.variable_name}}` syntax. Each instance of the `pl-template` element also has a unique `uuid` variable available for rendering. Templates may also be used within other templates.
 
 !!! note
 
