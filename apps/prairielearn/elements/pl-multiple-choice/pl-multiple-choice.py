@@ -2,6 +2,7 @@ import itertools as it
 import json
 import pathlib
 import random
+from collections import Counter
 from enum import Enum
 from typing import NamedTuple, assert_never
 
@@ -415,6 +416,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
+
+    if pl.has_attrib(element, "external-json"):
+        choices_dict = Counter(
+            choice.html.strip()
+            for choice in it.chain(correct_answers, incorrect_answers)
+        )
+        duplicates = [item for item, count in choices_dict.items() if count > 1]
+        if duplicates:
+            raise ValueError(
+                f"pl-multiple-choice element has duplicate choices: {duplicates}"
+            )
 
     # Get answers to display to student, using a helper function to separate out logic.
     answers_to_display = prepare_answers_to_display(

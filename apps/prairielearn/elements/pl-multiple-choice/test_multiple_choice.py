@@ -1,4 +1,5 @@
 import importlib
+import json
 from typing import Any
 
 import pytest
@@ -162,6 +163,54 @@ def test_prepare_rejects_score_outside_range() -> None:
         pl_multiple_choice.prepare(
             mc_html(
                 answers='<pl-answer correct="true" score="1.5">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("attr", "match"),
+    [
+        ('size="5"', "if using size"),
+        ('placeholder="Pick one"', "if using placeholder"),
+    ],
+    ids=["size", "placeholder"],
+)
+def test_prepare_requires_dropdown_for_dropdown_attributes(
+    attr: str, match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        pl_multiple_choice.prepare(
+            mc_html(
+                attr,
+                '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+def test_prepare_rejects_duplicate_visible_text_with_different_markup() -> None:
+    with pytest.raises(ValueError, match="Duplicate child text"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                answers='<pl-answer correct="true"><strong>A</strong></pl-answer><pl-answer>A</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+def test_prepare_rejects_duplicate_external_json_answers(tmp_path: Any) -> None:
+    answers_path = tmp_path / "answers.json"
+    answers_path.write_text(json.dumps({"correct": ["A"], "incorrect": ["A"]}))
+
+    with pytest.raises(ValueError, match="duplicate choices"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                f'external-json="{answers_path}"',
+                answers="",
                 builtin_grading=True,
             ),
             _make_question_data(),
