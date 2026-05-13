@@ -46,19 +46,19 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
 
 const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
-    value: 'show_score',
-    label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
-  },
-  {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
     description: 'Score will never be visible after completion',
   },
   {
+    value: 'show_score',
+    label: 'Show score after completion',
+    description: 'Students can see their score immediately after completing the assessment',
+  },
+  {
     value: 'hide_score_until_date',
-    label: 'Hide score until date',
-    description: 'Score will be hidden after completion and become visible again on this date',
+    label: 'Show score after date',
+    description: 'Score will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -108,6 +108,9 @@ function QuestionVisibilityInput({
   displayTimezone: string;
 }) {
   const hideQuestionsMode = getHideQuestionsMode(value);
+  const selectedDescription = QUESTION_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideQuestionsMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideQuestionsMode) => {
     switch (newMode) {
@@ -150,6 +153,9 @@ function QuestionVisibilityInput({
           minWidth={300}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideQuestionsMode === 'hide_questions_between_dates' && (
         <div className="mt-2">
@@ -283,6 +289,9 @@ function ScoreVisibilityInput({
   displayTimezone: string;
 }) {
   const hideScoreMode = getHideScoreMode(value);
+  const selectedDescription = SCORE_VISIBILITY_ITEMS.find(
+    (item) => item.value === hideScoreMode,
+  )?.description;
 
   const handleModeChange = (newMode: HideScoreMode) => {
     switch (newMode) {
@@ -314,6 +323,9 @@ function ScoreVisibilityInput({
           minWidth={300}
           onChange={handleModeChange}
         />
+        {selectedDescription && (
+          <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+        )}
       </div>
       {hideScoreMode === 'hide_score_until_date' && (
         <div className="mt-2">
@@ -321,7 +333,7 @@ function ScoreVisibilityInput({
             id={`${idPrefix}-show-score-date`}
             type="datetime-local"
             step={1}
-            aria-label="Show score again on"
+            aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
             aria-invalid={visibleFromDateInvalid}
@@ -348,23 +360,17 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is considered complete when students can no longer answer questions. This
-        typically happens when:
-      </p>
-      <ul>
-        <li>The last late deadline passes (or due date if no late deadlines)</li>
-        <li>
-          The assessment is closed (e.g., time limit expires, autoclose, or instructor closes it)
-        </li>
-      </ul>
-      <p>
-        The completion date can be different for different students based on when they started or
-        their specific accommodations.
+        An assessment is complete when students can no longer answer questions — for example, after
+        the due date and any late deadlines pass, after a time limit expires, or once their
+        assessment instance is closed (manually or via autoclose).
       </p>
       <p>
-        These settings apply only when the student does not have an active PrairieTest reservation.
-        While a PrairieTest reservation is active, the per-exam settings on each PrairieTest exam
-        govern visibility instead.
+        The completion time can vary between students based on when they started or any
+        accommodations they have.
+      </p>
+      <p>
+        While a student has an active PrairieTest reservation, the per-exam settings on each
+        PrairieTest exam govern visibility instead.
       </p>
     </>
   ),
@@ -393,6 +399,9 @@ function AfterCompleteCard({
               <i className="bi bi-info-circle" aria-hidden="true" />
             </Button>
           </OverlayTrigger>
+        </div>
+        <div className="text-muted small mt-1">
+          What students can see once they can no longer answer questions on the assessment.
         </div>
       </div>
       <Row className="gy-3">{children}</Row>

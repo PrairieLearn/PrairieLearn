@@ -442,6 +442,59 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('password', () => {
+    it.each<ResolveCase>([
+      {
+        name: 'propagated in submittable segment',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: true, password: 'secret' },
+      },
+      {
+        // Once submissions are disallowed, the password would gate review of
+        // already-completed work without protecting anything submittable.
+        name: 'null in view-only afterLastDeadline segment',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { allowSubmissions: false },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: false, password: null },
+      },
+      {
+        name: 'propagated when afterLastDeadline still allows submissions',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { credit: 50, allowSubmissions: true },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: true, password: 'secret' },
+      },
+    ])('$name', (c) => {
+      expect(runCase(c)).toMatchObject(c.expect);
+    });
+  });
+
   describe('beforeRelease.listed', () => {
     it.each<ResolveCase>([
       {

@@ -17,6 +17,7 @@ import {
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+import { getAfterLastDeadlineLabel } from './fields/AfterLastDeadlineField.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
@@ -153,8 +154,6 @@ export function generateDefaultRuleDateTableRows(
   const releaseDate = rule.release.date;
   const dueDate = rule.due.date;
   const dueCredit = rule.due.credit ?? 100;
-  const earlyDeadlines = rule.earlyDeadlines;
-  const lateDeadlines = rule.lateDeadlines;
 
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
@@ -211,7 +210,7 @@ export function generateDefaultRuleDateTableRows(
     });
   }
 
-  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -272,7 +271,7 @@ export function generateDefaultRuleDateTableRows(
     });
   }
 
-  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -294,13 +293,13 @@ export function generateDefaultRuleDateTableRows(
     });
   });
 
-  // Show "After last deadline" only when there is a deadline it can apply to.
+  // Show the after-last-deadline row only when there is a deadline it can apply to.
   const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
       date: '',
-      label: 'After last deadline',
+      label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       access:
         afterLastDeadline == null
           ? 'No access'
@@ -648,7 +647,7 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('password')) {
     items.push({
       label: 'Password',
-      value: rule.password ? 'Password protected' : 'No password',
+      value: rule.password ? 'Required to start or submit' : 'No password',
       error: formErrors?.password?.message,
     });
   }
@@ -862,7 +861,7 @@ export function DateTableView({
   if (rule.password != null) {
     const error = formErrors?.password?.message;
     if (!error) {
-      footerItems.push('Password protected');
+      footerItems.push('Password required to start or submit');
     } else {
       footerItems.push(
         <span className="text-danger">
@@ -1201,7 +1200,9 @@ export function PrairieTestExamsTable({
         );
       })}
       <div className="access-summary-card-footer">
-        {formatListedForStudents(beforeReleaseListed)} before the exam
+        <span>{formatListedForStudents(beforeReleaseListed)} before the exam</span>
+        <span className="mx-1">·</span>
+        <span>PrairieTest controls access and time limits during reservations</span>
       </div>
     </div>
   );

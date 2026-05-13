@@ -89,12 +89,18 @@ function computeNextDeadline({
 
   const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
   const previousCredit = deadlines.at(-1)?.credit;
-  const defaultCredit =
-    previousCredit !== undefined
-      ? clampCredit(previousCredit - 1, type)
-      : isEarly
-        ? clampCredit(dueCredit + 10, 'early')
-        : clampCredit(dueCredit - 10, 'late');
+  const defaultCredit = run(() => {
+    if (isEarly) {
+      return clampCredit(
+        previousCredit !== undefined ? previousCredit - 1 : dueCredit + 10,
+        'early',
+      );
+    }
+    // Anchor at min(dueCredit, 100) so dueCredit > 100 still lands on a clean
+    // 90 instead of clamping to 99.
+    const anchor = previousCredit ?? Math.min(dueCredit, 100);
+    return clampCredit(anchor - 10, 'late');
+  });
   return { date: defaultDate, credit: defaultCredit };
 }
 
