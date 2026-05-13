@@ -460,7 +460,7 @@ export async function stopJobSequence({
  * Used by page-level handlers to reattach the live progress alert on initial
  * load. Pass `type` / `assessment_question_id` to scope.
  */
-export async function getResumableJobSequenceIds({
+export async function getOngoingJobSequenceIds({
   type,
   assessment_question_id,
 }: {
@@ -468,7 +468,7 @@ export async function getResumableJobSequenceIds({
   assessment_question_id?: string;
 }): Promise<string[]> {
   return await queryScalars(
-    sql.select_resumable_job_sequences,
+    sql.select_ongoing_job_sequences,
     {
       type: type ?? null,
       assessment_question_id: assessment_question_id ?? null,

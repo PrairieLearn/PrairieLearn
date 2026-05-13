@@ -109,7 +109,7 @@ WHERE
     OR assessment_question_id = $assessment_question_id::bigint
   );
 
--- BLOCK select_resumable_job_sequences
+-- BLOCK select_ongoing_job_sequences
 -- IDs of job sequences in a still-active state (Running or Stopping). Used
 -- by the page-level handler to reattach the progress alert on initial load.
 SELECT
