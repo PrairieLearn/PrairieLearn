@@ -613,36 +613,48 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
-      {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            stopping: 'Stopping AI grading…',
-            stopped: 'AI grading stopped',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          stopConfirmation={{
-            title: 'Stop AI grading',
-            body: 'In-progress submissions will finish. The rest will be skipped.',
-            confirmLabel: 'Stop grading',
-            cancelLabel: 'Keep grading',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-          onStopJobSequence={
-            hasCourseInstancePermissionEdit
-              ? (jobSequenceId) =>
-                  stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
-              : undefined
-          }
-        />
-      )}
+      {aiGradingMode &&
+        (hasCourseInstancePermissionEdit ? (
+          <ServerJobsProgressInfo
+            itemNames="submissions graded"
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            statusIcons={{ inProgress: 'bi-stars' }}
+            statusText={{
+              inProgress: 'AI grading in progress',
+              stopping: 'Stopping AI grading…',
+              stopped: 'AI grading stopped',
+              complete: 'AI grading complete',
+              failed: 'AI grading failed',
+            }}
+            stopConfirmation={{
+              title: 'Stop AI grading',
+              body: 'In-progress submissions will finish. The rest will be skipped.',
+              confirmLabel: 'Stop grading',
+              cancelLabel: 'Keep grading',
+            }}
+            stoppable
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+            onStopJobSequence={(jobSequenceId) =>
+              stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+            }
+          />
+        ) : (
+          <ServerJobsProgressInfo
+            itemNames="submissions graded"
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            statusIcons={{ inProgress: 'bi-stars' }}
+            statusText={{
+              inProgress: 'AI grading in progress',
+              stopping: 'Stopping AI grading…',
+              stopped: 'AI grading stopped',
+              complete: 'AI grading complete',
+              failed: 'AI grading failed',
+            }}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          />
+        ))}
       <QueryErrors<ManualGradingError>
         queries={[
           deleteAiGradingJobsMutation,

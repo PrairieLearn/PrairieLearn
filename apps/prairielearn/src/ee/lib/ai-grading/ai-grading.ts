@@ -1256,10 +1256,9 @@ export async function aiGrade({
       },
     );
 
-    // Final poll: catches Stop clicks that arrived during the last batch.
-    // A Stop click that lands AFTER this poll but BEFORE the inner job's
-    // post-callback finisher may leave the sequence in 'Stopping'; the cron
-    // sweeper will eventually settle it as 'Error'.
+    // Final poll: catches Stop clicks that arrived during the last batch. A
+    // Stop click that lands after this poll is still handled — the inner
+    // job's finisher in `update_job_on_finish` projects Stopping → Stopped.
     await refreshStopRequested();
 
     if (stopRequested) {
@@ -1267,18 +1266,16 @@ export async function aiGrade({
       job.info(
         `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
       );
-      await Promise.all([
-        finalizeStoppedJobSequence(serverJob.jobSequenceId),
-        emitServerJobProgressUpdate({
-          job_sequence_id: serverJob.jobSequenceId,
-          num_complete,
-          num_failed,
-          num_total: instance_questions.length,
-          item_statuses,
-          stop_state: 'stopped',
-          ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
-        }),
-      ]);
+      await finalizeStoppedJobSequence(serverJob.jobSequenceId);
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete,
+        num_failed,
+        num_total: instance_questions.length,
+        item_statuses,
+        stop_state: 'stopped',
+        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+      });
       return;
     }
 

@@ -54,7 +54,7 @@ describe('server-jobs SQL transitions', () => {
       assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
 
-    it('Stopping → no-op (aiGrade owns the Stopping → Stopped transition)', async () => {
+    it('Stopping + Success → Stopped (settle the race where stop landed mid-finish)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
@@ -63,7 +63,19 @@ describe('server-jobs SQL transitions', () => {
         data: {},
         status: 'Success',
       });
-      assert.equal(await selectStatus(job_sequence_id), 'Stopping');
+      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+    });
+
+    it('Stopping + Error → Stopped (stop intent wins over a clean inner-job error)', async () => {
+      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
+      await execute(productionSql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Error',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
     });
   });
 

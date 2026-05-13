@@ -7,40 +7,36 @@ import type { JobStatus } from '../../lib/serverJobProgressSocket.shared.js';
 
 import type { JobProgressWithStatus } from './useServerJobProgress.js';
 
+export type StopProps =
+  | { stoppable?: false }
+  | {
+      stoppable: true;
+      onStopJobSequence: (jobSequenceId: string) => void;
+      stopConfirmation?: {
+        title?: string;
+        body?: string;
+        confirmLabel?: string;
+        cancelLabel?: string;
+      };
+    };
+
 /**
  * Displays progress information for multiple server jobs.
  *
  * This is used alongside the `useServerJobProgress` hook to display live progress information
  * for server jobs, retrieved via WebSocket connections.
  *
- * @param params
+ * Pass `stoppable: true` along with `onStopJobSequence` (and optionally
+ * `stopConfirmation`) to render a Stop button on running jobs. Otherwise the
+ * Stop button is hidden.
  *
+ * @param params
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  * @param params.jobsProgress Progress information for each server job.
  * @param params.courseInstanceId The course instance ID of the server jobs.
- *
  * @param params.statusIcons Icons for indicating the server job status.
- * @param params.statusIcons.inProgress Icon for in-progress jobs.
- * @param params.statusIcons.stopping Icon for jobs whose cancellation is in flight.
- * @param params.statusIcons.stopped Icon for jobs that have finished settling after cancellation.
- * @param params.statusIcons.complete Icon for completed jobs.
- * @param params.statusIcons.failed Icon for failed jobs.
- *
  * @param params.statusText Text describing the server job status.
- * @param params.statusText.inProgress Text for in-progress jobs.
- * @param params.statusText.stopping Text for jobs whose cancellation is in flight.
- * @param params.statusText.stopped Text for jobs that have finished settling after cancellation.
- * @param params.statusText.complete Text for completed jobs.
- * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
- *
- * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
- * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button on running jobs. Called with the job sequence ID when the user confirms the stop action.
- *
- * @param params.stopConfirmation Optional text for the confirmation modal opened when the user clicks Stop. Falls back to generic strings when not provided.
- * @param params.stopConfirmation.title Modal title.
- * @param params.stopConfirmation.body Modal body text.
- * @param params.stopConfirmation.confirmLabel Label for the confirm button.
- * @param params.stopConfirmation.cancelLabel Label for the cancel button.
+ * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -49,8 +45,7 @@ export function ServerJobsProgressInfo({
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
-  onStopJobSequence,
-  stopConfirmation,
+  ...stopProps
 }: {
   itemNames: string;
   jobsProgress: JobProgressWithStatus[];
@@ -70,14 +65,7 @@ export function ServerJobsProgressInfo({
     failed?: string;
   };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
-  onStopJobSequence?: (jobSequenceId: string) => void;
-  stopConfirmation?: {
-    title?: string;
-    body?: string;
-    confirmLabel?: string;
-    cancelLabel?: string;
-  };
-}) {
+} & StopProps) {
   return (
     <div className={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
       {jobsProgress.map((jobProgress) => (
@@ -99,9 +87,8 @@ export function ServerJobsProgressInfo({
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
-          stopConfirmation={stopConfirmation}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
-          onStopJobSequence={onStopJobSequence}
+          {...stopProps}
         />
       ))}
     </div>
@@ -126,87 +113,49 @@ const DEFAULT_DISPLAY: Record<JobStatus, { text: string; icon: string; variant: 
 /**
  * Displays progress information for a single server job.
  *
- * @param params
- * @param params.jobSequenceId The server job sequence ID to display progress info for.
- * @param params.courseInstanceId The course instance ID of the server job to display.
- * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
- * @param params.status The derived job status; controls which icon/text/variant the alert uses.
+ * Pass `stoppable: true` along with `onStopJobSequence` (and optionally
+ * `stopConfirmation`) to render a Stop button while the job is running.
  *
- * @param params.nums
- * @param params.nums.complete Number of job items completed (including failed items).
- * @param params.nums.failed Number of job items that failed.
- * @param params.nums.total Total number of items.
- *
- * @param params.statusIcons Icon indicating the server job status.
- * @param params.statusIcons.inProgress Icon for in-progress jobs.
- * @param params.statusIcons.stopping Icon for jobs whose cancellation is in flight.
- * @param params.statusIcons.stopped Icon for jobs that have finished settling after cancellation.
- * @param params.statusIcons.complete Icon for completed jobs.
- * @param params.statusIcons.failed Icon for failed jobs.
- *
- * @param params.statusText Text describing the server job status.
- * @param params.statusText.inProgress Text for in-progress jobs.
- * @param params.statusText.stopping Text for jobs whose cancellation is in flight.
- * @param params.statusText.stopped Text for jobs that have finished settling after cancellation.
- * @param params.statusText.complete Text for completed jobs.
- * @param params.statusText.failed Text for failed jobs.
- *
- * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
- * @param params.numItemsIncurredCost Optional number of items that incurred cost.
- *
- * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
- * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button. Called with the job sequence ID when the user confirms.
- *
- * @param params.stopConfirmation Optional text overrides for the confirmation modal opened when the user clicks Stop.
- * @param params.stopConfirmation.title Modal title.
- * @param params.stopConfirmation.body Modal body text.
- * @param params.stopConfirmation.confirmLabel Label for the confirm button.
- * @param params.stopConfirmation.cancelLabel Label for the cancel button.
+ * @param props The component props.
  */
-function ServerJobProgressInfo({
-  jobSequenceId,
-  courseInstanceId,
-  itemNames,
-  status,
-  nums,
-  statusIcons,
-  statusText,
-  totalCostMilliDollars,
-  numItemsIncurredCost,
-  onDismissCompleteJobSequence,
-  onStopJobSequence,
-  stopConfirmation,
-}: {
-  jobSequenceId: string;
-  courseInstanceId: string;
-  itemNames: string;
-  status: JobStatus;
-  nums: { complete: number; failed: number; total: number };
-  statusIcons: {
-    inProgress?: string;
-    stopping?: string;
-    stopped?: string;
-    complete?: string;
-    failed?: string;
-  };
-  statusText: {
-    inProgress?: string;
-    stopping?: string;
-    stopped?: string;
-    complete?: string;
-    failed?: string;
-  };
-  totalCostMilliDollars?: number;
-  numItemsIncurredCost?: number;
-  onDismissCompleteJobSequence: (jobSequenceId: string) => void;
-  onStopJobSequence?: (jobSequenceId: string) => void;
-  stopConfirmation?: {
-    title?: string;
-    body?: string;
-    confirmLabel?: string;
-    cancelLabel?: string;
-  };
-}) {
+function ServerJobProgressInfo(
+  props: {
+    jobSequenceId: string;
+    courseInstanceId: string;
+    itemNames: string;
+    status: JobStatus;
+    nums: { complete: number; failed: number; total: number };
+    statusIcons: {
+      inProgress?: string;
+      stopping?: string;
+      stopped?: string;
+      complete?: string;
+      failed?: string;
+    };
+    statusText: {
+      inProgress?: string;
+      stopping?: string;
+      stopped?: string;
+      complete?: string;
+      failed?: string;
+    };
+    totalCostMilliDollars?: number;
+    numItemsIncurredCost?: number;
+    onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+  } & StopProps,
+) {
+  const {
+    jobSequenceId,
+    courseInstanceId,
+    itemNames,
+    status,
+    nums,
+    statusIcons,
+    statusText,
+    totalCostMilliDollars,
+    numItemsIncurredCost,
+    onDismissCompleteJobSequence,
+  } = props;
   const [showStopConfirm, setShowStopConfirm] = useState(false);
 
   const display = {
@@ -216,10 +165,14 @@ function ServerJobProgressInfo({
   };
 
   const stopCopy = {
-    title: stopConfirmation?.title ?? DEFAULT_STOP_CONFIRMATION.title,
-    body: stopConfirmation?.body ?? DEFAULT_STOP_CONFIRMATION.body,
-    confirmLabel: stopConfirmation?.confirmLabel ?? DEFAULT_STOP_CONFIRMATION.confirmLabel,
-    cancelLabel: stopConfirmation?.cancelLabel ?? DEFAULT_STOP_CONFIRMATION.cancelLabel,
+    title: (props.stoppable && props.stopConfirmation?.title) || DEFAULT_STOP_CONFIRMATION.title,
+    body: (props.stoppable && props.stopConfirmation?.body) || DEFAULT_STOP_CONFIRMATION.body,
+    confirmLabel:
+      (props.stoppable && props.stopConfirmation?.confirmLabel) ||
+      DEFAULT_STOP_CONFIRMATION.confirmLabel,
+    cancelLabel:
+      (props.stoppable && props.stopConfirmation?.cancelLabel) ||
+      DEFAULT_STOP_CONFIRMATION.cancelLabel,
   };
 
   const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;
@@ -258,7 +211,7 @@ function ServerJobProgressInfo({
   const isDismissible = (['complete', 'failed', 'stopped'] as readonly JobStatus[]).includes(
     status,
   );
-  const showStopButton = onStopJobSequence != null && status === 'inProgress';
+  const showStopButton = props.stoppable === true && status === 'inProgress';
 
   return (
     <>
@@ -358,7 +311,7 @@ function ServerJobProgressInfo({
         </div>
       </Alert>
 
-      {onStopJobSequence != null && (
+      {props.stoppable === true && (
         <Modal show={showStopConfirm} onHide={() => setShowStopConfirm(false)}>
           <Modal.Header closeButton>
             <Modal.Title>{stopCopy.title}</Modal.Title>
@@ -371,7 +324,7 @@ function ServerJobProgressInfo({
             <Button
               variant="danger"
               onClick={() => {
-                onStopJobSequence(jobSequenceId);
+                props.onStopJobSequence(jobSequenceId);
                 setShowStopConfirm(false);
               }}
             >

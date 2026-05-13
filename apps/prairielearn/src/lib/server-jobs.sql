@@ -90,9 +90,6 @@ FROM
   new_job;
 
 -- BLOCK stop_job_sequence
--- Atomically transition a Running job sequence into 'Stopping'. Optional
--- type/assessment_question_id filters allow callers to scope the update to
--- the type of job and/or the page context that initiated the stop.
 UPDATE job_sequences
 SET
   status = 'Stopping',
@@ -110,8 +107,6 @@ WHERE
   );
 
 -- BLOCK select_ongoing_job_sequences
--- IDs of job sequences in a still-active state (Running or Stopping). Used
--- by the page-level handler to reattach the progress alert on initial load.
 SELECT
   id
 FROM
@@ -136,10 +131,6 @@ WHERE
   id = $job_sequence_id;
 
 -- BLOCK finalize_stopped_job_sequence
--- Idempotent transition from 'Stopping' to the terminal 'Stopped' status.
--- Used by orchestrators that observed a stop request mid-loop and want to
--- settle the sequence themselves before the inner job's natural finisher
--- runs.
 UPDATE job_sequences
 SET
   status = 'Stopped',
@@ -164,10 +155,19 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = $status::enum_job_status
+  -- If a stop landed after the orchestrator's last poll (or via an early
+  -- return), project the natural finish onto 'Stopped' so the sequence
+  -- doesn't stay stuck in 'Stopping' until the hourly sweeper.
+  status = CASE
+    WHEN js.status = 'Stopping'::enum_job_status THEN 'Stopped'::enum_job_status
+    ELSE $status::enum_job_status
+  END
 WHERE
   js.id = $job_sequence_id
-  AND js.status = 'Running'::enum_job_status;
+  AND js.status IN (
+    'Running'::enum_job_status,
+    'Stopping'::enum_job_status
+  );
 
 -- BLOCK select_job_output
 SELECT
