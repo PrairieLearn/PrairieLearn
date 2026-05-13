@@ -434,7 +434,6 @@ export function AiGradingModelSelectionModal({
   onSelectFirstSubmissions,
   onSuccess,
   onHide,
-  onExited,
 }: {
   show: boolean;
   data: AiGradingModelSelectionModalState | null;
@@ -451,7 +450,6 @@ export function AiGradingModelSelectionModal({
     modelId: AiGradingModelId,
   ) => void;
   onHide: () => void;
-  onExited: () => void;
 }) {
   const trpc = useTRPC();
   const { mutate, reset, isPending, isError, error } = useMutation(
@@ -476,18 +474,10 @@ export function AiGradingModelSelectionModal({
     onHide();
   }, [onHide, reset, defaultModel]);
 
-  const [pendingOpenRubricSettingsOnExit, setPendingOpenRubricSettingsOnExit] = useState(false);
   const handleOpenRubricSettings = useCallback(() => {
-    setPendingOpenRubricSettingsOnExit(true);
+    openRubricSettings();
     onHide();
   }, [onHide]);
-  const handleExited = useCallback(() => {
-    onExited();
-    if (pendingOpenRubricSettingsOnExit) {
-      setPendingOpenRubricSettingsOnExit(false);
-      openRubricSettings();
-    }
-  }, [pendingOpenRubricSettingsOnExit, onExited]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -563,7 +553,6 @@ export function AiGradingModelSelectionModal({
       backdrop="static"
       keyboard={false}
       onHide={handleClose}
-      onExited={handleExited}
     >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>

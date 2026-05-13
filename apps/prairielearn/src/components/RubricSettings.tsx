@@ -789,8 +789,8 @@ export function RubricSettings({
               ) : (
                 <tr>
                   <td colSpan={7} className="text-muted py-3">
-                    This question does not have any rubric items
-                    {hasCourseInstancePermissionEdit ? (
+                    This question does not have any rubric items.
+                    {hasCourseInstancePermissionEdit && (
                       <>
                         {' '}
                         <button
@@ -810,12 +810,11 @@ export function RubricSettings({
                             >
                               Disable rubric
                             </button>{' '}
-                            to switch back to manual grade input
+                            to switch back to manual grade input.
                           </>
                         )}
                       </>
-                    ) : null}
-                    .
+                    )}
                   </td>
                 </tr>
               )}
