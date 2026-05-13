@@ -89,6 +89,53 @@ FROM
   new_job_sequence,
   new_job;
 
+-- BLOCK stop_job_sequence
+-- Atomically transition a Running job sequence into 'Stopping'. Optional
+-- type/assessment_question_id filters allow callers to scope the update
+-- (e.g. AI grading restricts to type='ai_grading' for the current page's
+-- assessment question).
+UPDATE job_sequences
+SET
+  status = 'Stopping',
+  stop_requested_by_authn_user_id = $authn_user_id
+WHERE
+  id = $job_sequence_id
+  AND status = 'Running'
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_resumable_job_sequences
+-- IDs of job sequences in a still-active state (Running or Stopping). Used
+-- by the page-level handler to reattach the progress alert on initial load.
+SELECT
+  id
+FROM
+  job_sequences
+WHERE
+  status IN ('Running', 'Stopping')
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_job_sequence_status
+SELECT
+  status
+FROM
+  job_sequences
+WHERE
+  id = $job_sequence_id;
+
 -- BLOCK update_job_on_finish
 WITH
   updated_job AS (

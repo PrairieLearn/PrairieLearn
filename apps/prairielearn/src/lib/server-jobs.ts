@@ -23,8 +23,9 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
+import { patchServerJobProgress } from './serverJobProgressSocket.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -415,6 +416,74 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
 
 export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
   return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
+}
+
+/**
+ * Atomically transitions a Running job sequence into 'Stopping'. Returns true
+ * only when this call was the one that flipped the row.
+ *
+ * Optional `type` / `assessment_question_id` filters scope the update to a
+ * specific kind of job. Callers should pass whatever scope corresponds to
+ * the page/request that initiated the stop, so a user can't stop a job
+ * outside their authorization.
+ */
+export async function stopJobSequence({
+  job_sequence_id,
+  authn_user_id,
+  type,
+  assessment_question_id,
+}: {
+  job_sequence_id: string;
+  authn_user_id: string;
+  type?: string;
+  assessment_question_id?: string;
+}): Promise<boolean> {
+  const rowCount = await execute(sql.stop_job_sequence, {
+    job_sequence_id,
+    authn_user_id,
+    type: type ?? null,
+    assessment_question_id: assessment_question_id ?? null,
+  });
+  if (rowCount === 0) return false;
+  // Best-effort cache patch: the DB transition is authoritative.
+  try {
+    await patchServerJobProgress(job_sequence_id, { stop_state: 'stopping' });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error('stopJobSequence: failed to patch progress cache', err);
+  }
+  return true;
+}
+
+/**
+ * Returns IDs of job sequences still in an active state (Running or Stopping).
+ * Used by page-level handlers to reattach the live progress alert on initial
+ * load. Pass `type` / `assessment_question_id` to scope.
+ */
+export async function getResumableJobSequenceIds({
+  type,
+  assessment_question_id,
+}: {
+  type?: string;
+  assessment_question_id?: string;
+}): Promise<string[]> {
+  return await queryScalars(
+    sql.select_resumable_job_sequences,
+    {
+      type: type ?? null,
+      assessment_question_id: assessment_question_id ?? null,
+    },
+    IdSchema,
+  );
+}
+
+/** Returns the current status of a job sequence. */
+export async function selectJobSequenceStatus(job_sequence_id: string) {
+  return await queryRow(
+    sql.select_job_sequence_status,
+    { job_sequence_id },
+    z.object({ status: EnumJobStatusSchema.nullable() }),
+  );
 }
 
 /*

@@ -7,28 +7,34 @@ import type { JobStatus } from '../../lib/serverJobProgressSocket.shared.js';
 
 import type { JobProgressWithStatus } from './useServerJobProgress.js';
 
-interface StatusVisuals {
-  inProgress?: string;
-  stopping?: string;
-  stopped?: string;
-  complete?: string;
-  failed?: string;
-}
-
 /**
  * Displays progress information for multiple server jobs.
  *
- * Used alongside `useServerJobProgress` to render live progress for jobs
- * delivered via WebSocket.
+ * This is used alongside the `useServerJobProgress` hook to display live progress information
+ * for server jobs, retrieved via WebSocket connections.
  *
  * @param params
- * @param params.itemNames Plural noun for job items (e.g. "submissions graded").
- * @param params.jobsProgress Per-job progress snapshots.
- * @param params.courseInstanceId Course instance ID (used to build job-log URLs).
- * @param params.statusIcons Optional Bootstrap-icon class overrides per status.
- * @param params.statusText Optional text overrides per status.
- * @param params.onDismissCompleteJobSequence Called when the user closes a terminal alert.
- * @param params.onStopJobSequence Optional; when provided, renders a Stop button on running jobs.
+ *
+ * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
+ * @param params.jobsProgress Progress information for each server job.
+ * @param params.courseInstanceId The course instance ID of the server jobs.
+ *
+ * @param params.statusIcons Icons for indicating the server job status.
+ * @param params.statusIcons.inProgress Icon for in-progress jobs.
+ * @param params.statusIcons.stopping Icon for jobs whose cancellation is in flight.
+ * @param params.statusIcons.stopped Icon for jobs that have finished settling after cancellation.
+ * @param params.statusIcons.complete Icon for completed jobs.
+ * @param params.statusIcons.failed Icon for failed jobs.
+ *
+ * @param params.statusText Text describing the server job status.
+ * @param params.statusText.inProgress Text for in-progress jobs.
+ * @param params.statusText.stopping Text for jobs whose cancellation is in flight.
+ * @param params.statusText.stopped Text for jobs that have finished settling after cancellation.
+ * @param params.statusText.complete Text for completed jobs.
+ * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
+ *
+ * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button on running jobs. Called with the job sequence ID when the user confirms the stop action.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -42,8 +48,20 @@ export function ServerJobsProgressInfo({
   itemNames: string;
   jobsProgress: JobProgressWithStatus[];
   courseInstanceId: string;
-  statusIcons?: StatusVisuals;
-  statusText?: StatusVisuals;
+  statusIcons?: {
+    inProgress?: string;
+    stopping?: string;
+    stopped?: string;
+    complete?: string;
+    failed?: string;
+  };
+  statusText?: {
+    inProgress?: string;
+    stopping?: string;
+    stopped?: string;
+    complete?: string;
+    failed?: string;
+  };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   onStopJobSequence?: (jobSequenceId: string) => void;
 }) {
@@ -84,7 +102,40 @@ const DEFAULT_DISPLAY: Record<JobStatus, { text: string; icon: string; variant: 
   failed: { text: 'Job failed', icon: 'bi-exclamation-triangle-fill', variant: 'danger' },
 };
 
-/** Displays progress information for a single server job. */
+/**
+ * Displays progress information for a single server job.
+ *
+ * @param params
+ * @param params.jobSequenceId The server job sequence ID to display progress info for.
+ * @param params.courseInstanceId The course instance ID of the server job to display.
+ * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
+ * @param params.status The derived job status; controls which icon/text/variant the alert uses.
+ *
+ * @param params.nums
+ * @param params.nums.complete Number of job items completed (including failed items).
+ * @param params.nums.failed Number of job items that failed.
+ * @param params.nums.total Total number of items.
+ *
+ * @param params.statusIcons Icon indicating the server job status.
+ * @param params.statusIcons.inProgress Icon for in-progress jobs.
+ * @param params.statusIcons.stopping Icon for jobs whose cancellation is in flight.
+ * @param params.statusIcons.stopped Icon for jobs that have finished settling after cancellation.
+ * @param params.statusIcons.complete Icon for completed jobs.
+ * @param params.statusIcons.failed Icon for failed jobs.
+ *
+ * @param params.statusText Text describing the server job status.
+ * @param params.statusText.inProgress Text for in-progress jobs.
+ * @param params.statusText.stopping Text for jobs whose cancellation is in flight.
+ * @param params.statusText.stopped Text for jobs that have finished settling after cancellation.
+ * @param params.statusText.complete Text for completed jobs.
+ * @param params.statusText.failed Text for failed jobs.
+ *
+ * @param params.totalCostMilliDollars Optional running total cost in milli-dollars for the job.
+ * @param params.numItemsIncurredCost Optional number of items that incurred cost.
+ *
+ * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button. Called with the job sequence ID when the user confirms.
+ */
 function ServerJobProgressInfo({
   jobSequenceId,
   courseInstanceId,
@@ -103,8 +154,20 @@ function ServerJobProgressInfo({
   itemNames: string;
   status: JobStatus;
   nums: { complete: number; failed: number; total: number };
-  statusIcons: StatusVisuals;
-  statusText: StatusVisuals;
+  statusIcons: {
+    inProgress?: string;
+    stopping?: string;
+    stopped?: string;
+    complete?: string;
+    failed?: string;
+  };
+  statusText: {
+    inProgress?: string;
+    stopping?: string;
+    stopped?: string;
+    complete?: string;
+    failed?: string;
+  };
   totalCostMilliDollars?: number;
   numItemsIncurredCost?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
@@ -151,7 +214,9 @@ function ServerJobProgressInfo({
     }
   }, [status, nums, itemNames, successCount]);
 
-  const isDismissible = status === 'complete' || status === 'failed' || status === 'stopped';
+  const isDismissible = (['complete', 'failed', 'stopped'] as readonly JobStatus[]).includes(
+    status,
+  );
   const showStopButton = onStopJobSequence != null && status === 'inProgress';
 
   return (

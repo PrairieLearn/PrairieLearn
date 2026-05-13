@@ -18,13 +18,13 @@ import {
   MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
   aiGrade,
   getRunningAiGradingJobCountForCourseInstance,
-  stopAiGradingJob,
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { stopJobSequence } from '../../lib/server-jobs.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
@@ -176,10 +176,11 @@ const stopAiGradingJobMutation = t.procedure
   .use(requireAiGradingFeature)
   .input(z.object({ job_sequence_id: IdSchema }))
   .mutation(async (opts) => {
-    const stopped = await stopAiGradingJob({
+    const stopped = await stopJobSequence({
       job_sequence_id: opts.input.job_sequence_id,
       assessment_question_id: opts.ctx.assessment_question.id,
       authn_user_id: opts.ctx.authn_user.id,
+      type: 'ai_grading',
     });
     if (!stopped) {
       throw new TRPCError({

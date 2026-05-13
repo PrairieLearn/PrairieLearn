@@ -4,11 +4,10 @@ import { execute, queryOptionalScalar, queryScalar } from '@prairielearn/postgre
 import { IdSchema } from '@prairielearn/zod';
 
 import { EnumJobStatusSchema } from '../../../lib/db-types.js';
+import { stopJobSequence } from '../../../lib/server-jobs.js';
 import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
-
-import { stopAiGradingJob } from './ai-grading.js';
 
 async function pickAssessmentQuestionId(): Promise<string> {
   // Any assessment_question from the synced test course works — the SQL
@@ -52,7 +51,7 @@ async function selectStatus(job_sequence_id: string): Promise<string> {
   );
 }
 
-describe('stopAiGradingJob', () => {
+describe('stopJobSequence (AI grading scope)', () => {
   let assessment_question_id: string;
   let authn_user_id: string;
 
@@ -86,20 +85,22 @@ describe('stopAiGradingJob', () => {
       status: 'Running',
     });
 
-    const first = await stopAiGradingJob({
+    const first = await stopJobSequence({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,
+      type: 'ai_grading',
     });
     assert.isTrue(first);
     assert.equal(await selectStatus(job_sequence_id), 'Stopping');
 
     // A redundant click (or a second TA) returns false; UI surfaces a
     // friendly "no longer running" instead of CONFLICT-on-DB-error.
-    const second = await stopAiGradingJob({
+    const second = await stopJobSequence({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,
+      type: 'ai_grading',
     });
     assert.isFalse(second);
     assert.equal(await selectStatus(job_sequence_id), 'Stopping');
@@ -111,10 +112,11 @@ describe('stopAiGradingJob', () => {
         assessment_question_id,
         status,
       });
-      const stopped = await stopAiGradingJob({
+      const stopped = await stopJobSequence({
         job_sequence_id,
         assessment_question_id,
         authn_user_id,
+        type: 'ai_grading',
       });
       assert.isFalse(stopped, `should not stop a ${status} sequence`);
       assert.equal(await selectStatus(job_sequence_id), status);
@@ -126,12 +128,13 @@ describe('stopAiGradingJob', () => {
       assessment_question_id,
       status: 'Running',
     });
-    const stopped = await stopAiGradingJob({
+    const stopped = await stopJobSequence({
       job_sequence_id,
       // Mismatched assessment_question_id — the WHERE clause must reject this
       // even though the row's status is Running.
       assessment_question_id: '999999999',
       authn_user_id,
+      type: 'ai_grading',
     });
     assert.isFalse(stopped);
     assert.equal(await selectStatus(job_sequence_id), 'Running');
@@ -143,10 +146,11 @@ describe('stopAiGradingJob', () => {
       status: 'Running',
       type: 'sync',
     });
-    const stopped = await stopAiGradingJob({
+    const stopped = await stopJobSequence({
       job_sequence_id,
       assessment_question_id,
       authn_user_id,
+      type: 'ai_grading',
     });
     assert.isFalse(stopped);
     assert.equal(await selectStatus(job_sequence_id), 'Running');

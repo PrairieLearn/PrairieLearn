@@ -15,16 +15,8 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
-import {
-  execute,
-  loadSqlEquiv,
-  queryScalar,
-  queryScalars,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import * as Sentry from '@prairielearn/sentry';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -44,18 +36,14 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  EnumJobStatusSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
-import {
-  emitServerJobProgressUpdate,
-  patchServerJobProgress,
-} from '../../../lib/serverJobProgressSocket.js';
+import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
+import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
   insertAiGradingJobAndDeductCreditsIfNeeded,
@@ -303,46 +291,6 @@ export async function getRunningAiGradingJobCountForCourseInstance(
     { course_instance_id },
     z.number(),
   );
-}
-
-/** Returns IDs of AI grading sequences still active (Running or Stopping). */
-export async function getResumableAiGradingJobSequenceIds(
-  assessment_question_id: string,
-): Promise<string[]> {
-  return await queryScalars(
-    sql.select_resumable_ai_grading_job_sequences,
-    { assessment_question_id },
-    IdSchema,
-  );
-}
-
-/**
- * Atomically transitions a Running AI grading sequence into 'Stopping'.
- * Returns true only for the call that actually flipped the row.
- */
-export async function stopAiGradingJob({
-  job_sequence_id,
-  assessment_question_id,
-  authn_user_id,
-}: {
-  job_sequence_id: string;
-  assessment_question_id: string;
-  authn_user_id: string;
-}): Promise<boolean> {
-  const rowCount = await execute(sql.stop_ai_grading_job, {
-    job_sequence_id,
-    assessment_question_id,
-    authn_user_id,
-  });
-  if (rowCount === 0) return false;
-  // Best-effort cache patch: the DB transition is authoritative.
-  try {
-    await patchServerJobProgress(job_sequence_id, { stop_state: 'stopping' });
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error('stopAiGradingJob: failed to patch progress cache', err);
-  }
-  return true;
 }
 
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
@@ -1202,11 +1150,7 @@ export async function aiGrade({
     let stopRequested = false as boolean;
     const refreshStopRequested = async () => {
       if (stopRequested) return;
-      const status = await queryScalar(
-        sql.select_job_sequence_status,
-        { job_sequence_id: serverJob.jobSequenceId },
-        EnumJobStatusSchema,
-      );
+      const { status } = await selectJobSequenceStatus(serverJob.jobSequenceId);
       if (status === 'Stopping' || status === 'Stopped') stopRequested = true;
     };
 
