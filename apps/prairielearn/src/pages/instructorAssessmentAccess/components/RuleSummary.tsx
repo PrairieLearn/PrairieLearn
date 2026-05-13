@@ -820,14 +820,26 @@ function YesNoBadge({ value }: { value: boolean | null }) {
   );
 }
 
-function SummaryCardHeader({ icon, title }: { icon: string; title: string }) {
+function SummaryCardHeader({
+  icon,
+  title,
+  headingId,
+}: {
+  icon: string;
+  title: string;
+  headingId: string;
+}) {
   return (
     <div className="access-summary-card-header">
       <i className={`bi ${icon} text-body-secondary`} aria-hidden="true" />
-      <h6>{title}</h6>
+      <h6 id={headingId}>{title}</h6>
     </div>
   );
 }
+
+const DATE_CONTROL_HEADING_ID = 'access-summary-heading-date-control';
+const PRAIRIE_TEST_HEADING_ID = 'access-summary-heading-prairie-test';
+const AFTER_COMPLETION_HEADING_ID = 'access-summary-heading-after-completion';
 
 export function DateTableView({
   rows,
@@ -873,58 +885,60 @@ export function DateTableView({
   }
 
   return (
-    <div
-      className="access-summary-card access-summary-card--cols-2"
-      role="table"
-      aria-label="Date control"
-    >
-      <SummaryCardHeader icon="bi-calendar3" title="Date control" />
-      <div className="access-summary-row access-summary-row--headers" role="row">
-        <div
-          className="access-summary-cell access-summary-cell--header access-summary-cell--first"
-          role="columnheader"
-        >
-          Date
-        </div>
-        <div
-          className="access-summary-cell access-summary-cell--header access-summary-cell--span-rest"
-          role="columnheader"
-        >
-          Access
-        </div>
-      </div>
-      {rows.map((row, index) => (
-        // eslint-disable-next-line @eslint-react/no-array-index-key
-        <div key={index} className="access-summary-row" role="row">
+    <div className="access-summary-card access-summary-card--cols-2">
+      <SummaryCardHeader
+        icon="bi-calendar3"
+        title="Date control"
+        headingId={DATE_CONTROL_HEADING_ID}
+      />
+      <div className="access-summary-rows" role="table" aria-labelledby={DATE_CONTROL_HEADING_ID}>
+        <div className="access-summary-row access-summary-row--headers" role="row">
           <div
-            className={clsx(
-              'access-summary-cell access-summary-cell--first',
-              row.current &&
-                `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
-            )}
-            role="cell"
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
           >
-            <div className="text-nowrap">
-              {row.label && (
-                <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
-                  {row.label}
-                  {row.date ? ':' : ''}
-                </span>
-              )}
-              {row.error ? <span className="text-danger">{row.date}</span> : row.date}
-            </div>
-            {row.error && (
-              <div className="text-danger small">
-                <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                {row.error}
-              </div>
-            )}
+            Date
           </div>
-          <div className="access-summary-cell access-summary-cell--span-rest" role="cell">
-            <CreditBadge credit={row.access} />
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--span-rest"
+            role="columnheader"
+          >
+            Access
           </div>
         </div>
-      ))}
+        {rows.map((row, index) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          <div key={index} className="access-summary-row" role="row">
+            <div
+              className={clsx(
+                'access-summary-cell access-summary-cell--first',
+                row.current &&
+                  `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
+              )}
+              role="cell"
+            >
+              <div className="text-nowrap">
+                {row.label && (
+                  <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
+                    {row.label}
+                    {row.date ? ':' : ''}
+                  </span>
+                )}
+                {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+              </div>
+              {row.error && (
+                <div className="text-danger small">
+                  <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                  {row.error}
+                </div>
+              )}
+            </div>
+            <div className="access-summary-cell access-summary-cell--span-rest" role="cell">
+              <CreditBadge credit={row.access} />
+            </div>
+          </div>
+        ))}
+      </div>
       {footerItems.length > 0 && (
         <div className="access-summary-card-footer">
           {footerItems.map((item, index) => (
@@ -944,39 +958,45 @@ export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[]
   if (rows.length === 0) return null;
   const errors = Array.from(new Set(rows.flatMap((row) => row.errors ?? [])));
   return (
-    <div
-      className="access-summary-card access-summary-card--cols-3"
-      role="table"
-      aria-label="After completion"
-    >
-      <SummaryCardHeader icon="bi-check2-circle" title="After completion" />
-      <div className="access-summary-row access-summary-row--headers" role="row">
-        <div
-          className="access-summary-cell access-summary-cell--header access-summary-cell--first"
-          role="columnheader"
-        >
-          Time range
+    <div className="access-summary-card access-summary-card--cols-3">
+      <SummaryCardHeader
+        icon="bi-check2-circle"
+        title="After completion"
+        headingId={AFTER_COMPLETION_HEADING_ID}
+      />
+      <div
+        className="access-summary-rows"
+        role="table"
+        aria-labelledby={AFTER_COMPLETION_HEADING_ID}
+      >
+        <div className="access-summary-row access-summary-row--headers" role="row">
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
+          >
+            Time range
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Question visibility
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Score visibility
+          </div>
         </div>
-        <div className="access-summary-cell access-summary-cell--header" role="columnheader">
-          Question visibility
-        </div>
-        <div className="access-summary-cell access-summary-cell--header" role="columnheader">
-          Score visibility
-        </div>
+        {rows.map((row) => (
+          <div key={row.key} className="access-summary-row" role="row">
+            <div className="access-summary-cell access-summary-cell--first" role="cell">
+              {row.timeRange}
+            </div>
+            <div className="access-summary-cell text-nowrap" role="cell">
+              <VisibilityBadge visible={row.questionsVisible} />
+            </div>
+            <div className="access-summary-cell text-nowrap" role="cell">
+              <VisibilityBadge visible={row.scoreVisible} />
+            </div>
+          </div>
+        ))}
       </div>
-      {rows.map((row) => (
-        <div key={row.key} className="access-summary-row" role="row">
-          <div className="access-summary-cell access-summary-cell--first" role="cell">
-            {row.timeRange}
-          </div>
-          <div className="access-summary-cell text-nowrap" role="cell">
-            <VisibilityBadge visible={row.questionsVisible} />
-          </div>
-          <div className="access-summary-cell text-nowrap" role="cell">
-            <VisibilityBadge visible={row.scoreVisible} />
-          </div>
-        </div>
-      ))}
       {errors.length > 0 && (
         <div className="access-summary-card-footer text-danger">
           {errors.map((error) => (
@@ -1130,75 +1150,77 @@ export function PrairieTestExamsTable({
   const metadataByUuid = new Map(metadata.map((m) => [m.uuid.toLowerCase(), m]));
 
   return (
-    <div
-      className="access-summary-card access-summary-card--cols-3"
-      role="table"
-      aria-label="PrairieTest"
-    >
-      <SummaryCardHeader icon="bi-pc-display" title="PrairieTest" />
-      <div className="access-summary-row access-summary-row--headers" role="row">
-        <div
-          className="access-summary-cell access-summary-cell--header access-summary-cell--first"
-          role="columnheader"
-        >
-          Exam
-        </div>
-        <div className="access-summary-cell access-summary-cell--header" role="columnheader">
-          Allows submissions
-        </div>
-        <div className="access-summary-cell access-summary-cell--header" role="columnheader">
-          After completion
-        </div>
-      </div>
-      {exams.map((exam, index) => {
-        const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
-        const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
-        const examLink =
-          meta?.pt_course_id && meta.pt_exam_id
-            ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
-            : null;
-        const examName =
-          meta?.pt_course_name && meta.pt_exam_name
-            ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
-            : null;
-
-        return (
-          // We don't use UUID as they might be duplicated in the list.
-          // eslint-disable-next-line @eslint-react/no-array-index-key
-          <div key={index} className="access-summary-row" role="row">
-            <div className="access-summary-cell access-summary-cell--first" role="cell">
-              {uuidError ? (
-                <span className="text-danger">
-                  <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                  {uuidError}
-                </span>
-              ) : examName && examLink ? (
-                <a href={examLink} target="_blank" rel="noopener noreferrer">
-                  {examName}
-                </a>
-              ) : (
-                <span className="text-body-secondary">Unknown exam</span>
-              )}
-            </div>
-            <div className="access-summary-cell text-nowrap" role="cell">
-              <YesNoBadge value={!exam.readOnly} />
-            </div>
-            <div className="access-summary-cell text-nowrap" role="cell">
-              {run(() => {
-                if (exam.readOnly) return <>&mdash;</>;
-
-                if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
-                  return 'Questions and score hidden';
-                } else if (exam.afterCompleteQuestionsHidden) {
-                  return 'Questions hidden';
-                } else {
-                  return 'Questions and score visible';
-                }
-              })}
-            </div>
+    <div className="access-summary-card access-summary-card--cols-3">
+      <SummaryCardHeader
+        icon="bi-pc-display"
+        title="PrairieTest"
+        headingId={PRAIRIE_TEST_HEADING_ID}
+      />
+      <div className="access-summary-rows" role="table" aria-labelledby={PRAIRIE_TEST_HEADING_ID}>
+        <div className="access-summary-row access-summary-row--headers" role="row">
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
+          >
+            Exam
           </div>
-        );
-      })}
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Allows submissions
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            After completion
+          </div>
+        </div>
+        {exams.map((exam, index) => {
+          const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
+          const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
+          const examLink =
+            meta?.pt_course_id && meta.pt_exam_id
+              ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
+              : null;
+          const examName =
+            meta?.pt_course_name && meta.pt_exam_name
+              ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
+              : null;
+
+          return (
+            // We don't use UUID as they might be duplicated in the list.
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <div key={index} className="access-summary-row" role="row">
+              <div className="access-summary-cell access-summary-cell--first" role="cell">
+                {uuidError ? (
+                  <span className="text-danger">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {uuidError}
+                  </span>
+                ) : examName && examLink ? (
+                  <a href={examLink} target="_blank" rel="noopener noreferrer">
+                    {examName}
+                  </a>
+                ) : (
+                  <span className="text-body-secondary">Unknown exam</span>
+                )}
+              </div>
+              <div className="access-summary-cell text-nowrap" role="cell">
+                <YesNoBadge value={!exam.readOnly} />
+              </div>
+              <div className="access-summary-cell text-nowrap" role="cell">
+                {run(() => {
+                  if (exam.readOnly) return <>&mdash;</>;
+
+                  if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
+                    return 'Questions and score hidden';
+                  } else if (exam.afterCompleteQuestionsHidden) {
+                    return 'Questions hidden';
+                  } else {
+                    return 'Questions and score visible';
+                  }
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
       <div className="access-summary-card-footer">
         <span>{formatListedForStudents(beforeReleaseListed)} before the exam</span>
         <span className="mx-1">·</span>
