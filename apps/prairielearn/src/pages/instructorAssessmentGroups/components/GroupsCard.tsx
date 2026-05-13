@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form';
 import { run } from '@prairielearn/run';
 import { useModalState } from '@prairielearn/ui';
 
-import { getAppError } from '../../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAssessment, StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
 import {
   getAssessmentDownloadUrl,
@@ -290,6 +290,7 @@ function RandomAssessmentGroupsModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.randomizeGroups.mutationOptions());
+  const appError = getAppError<AssessmentGroupsError['RandomizeGroups']>(mutation.error);
 
   const {
     register,
@@ -323,11 +324,13 @@ function RandomAssessmentGroupsModal({
           <Modal.Title>Assign students randomly</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {mutation.error && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={appError}
+            render={{
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => mutation.reset()}
+          />
           <p className="text-muted small">
             Unassigned students will be randomly distributed into new groups based on the size
             constraints below. Students already in a group will not be affected.
@@ -552,7 +555,7 @@ function DeleteAllGroupsModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AssessmentGroupsError['DeleteAll']>(mutation.error);
 
   const handleHide = () => {
     mutation.reset();

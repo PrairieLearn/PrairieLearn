@@ -170,7 +170,7 @@ function CoursePermissionCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['UpdateCourseRole']>(mutation.error);
 
   if (!canChangeCourseRole) {
     return (
@@ -290,7 +290,7 @@ function CourseInstanceAccessCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['UpdateInstanceRole']>(mutation.error);
 
   return (
     <OverlayTrigger
@@ -412,7 +412,7 @@ function AddUsersModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['InsertByUserUids']>(mutation.error);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -585,7 +585,7 @@ function BulkDeleteModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkDelete']>(mutation.error);
 
   return (
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
@@ -661,7 +661,7 @@ function BulkEditAccessModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkEditAccess']>(mutation.error);
 
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user.id);
