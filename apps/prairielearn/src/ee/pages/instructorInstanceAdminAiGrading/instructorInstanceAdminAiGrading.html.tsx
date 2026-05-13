@@ -481,9 +481,7 @@ function CreditPoolSection({
   }, [initialCheckoutStatus, queryClient, trpc]);
 
   const freeCreditStatus = freeCreditStatusQuery.data;
-  const freeCreditStatusLoaded = freeCreditStatus != null;
-  const hasFreeCreditAvailable =
-    freeCreditStatusLoaded && freeCreditStatus.redemptions_remaining > 0;
+  const hasFreeCreditAvailable = (freeCreditStatus?.redemptions_remaining ?? 0) > 0;
 
   return (
     <div className="pt-3 mt-2 border-top">
