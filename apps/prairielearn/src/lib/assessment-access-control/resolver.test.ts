@@ -147,10 +147,6 @@ const baseInput: AccessControlResolverInput = {
   prairieTestReservations: [],
 };
 
-type ExpectedResolverResult = Omit<Partial<AccessControlResolverResult>, 'visibility'> & {
-  visibility?: Partial<AccessControlResolverResult['visibility']>;
-} & Pick<AccessControlResolverResult, 'authorized' | 'submittable'>;
-
 interface ResolveCase {
   name: string;
   rules?: AccessControlRuleInput[];
@@ -160,7 +156,8 @@ interface ResolveCase {
   courseInstanceRole?: AccessControlResolverInput['courseInstanceRole'];
   enrollment?: EnrollmentContext | null;
   reservations?: PrairieTestReservation[];
-  expect: ExpectedResolverResult;
+  expect: Partial<AccessControlResolverResult> &
+    Pick<AccessControlResolverResult, 'authorized' | 'submittable'>;
 }
 
 function runCase(c: ResolveCase): AccessControlResolverResult {
@@ -544,7 +541,7 @@ describe('resolveAccessControl', () => {
           authorized: false,
           showBeforeRelease: true,
           submittable: false,
-          visibility: { showQuestions: true },
+          visibility: { showQuestions: true, showScore: true },
         },
       },
       {
@@ -917,7 +914,7 @@ describe('resolveAccessControl', () => {
           authorized: false,
           submittable: false,
           credit: 0,
-          visibility: { showQuestions: false },
+          visibility: { showQuestions: false, showScore: true },
         },
       },
       {
@@ -1085,7 +1082,11 @@ describe('resolveAccessControl', () => {
           rules: [cheatSheetRule],
           authzMode: 'Public',
           date: new Date('2025-03-15T00:00:00Z'),
-          expect: { authorized: true, submittable: false, visibility: { showQuestions: true } },
+          expect: {
+            authorized: true,
+            submittable: false,
+            visibility: { showQuestions: true, showScore: true },
+          },
         },
         {
           name: 'Exam mode with readOnly reservation: review-only',
@@ -1093,7 +1094,11 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           date: new Date('2025-03-15T00:00:00Z'),
           reservations: [{ examUuid: 'exam-uuid-1', accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: true, submittable: false, visibility: { showQuestions: true } },
+          expect: {
+            authorized: true,
+            submittable: false,
+            visibility: { showQuestions: true, showScore: true },
+          },
         },
       ])('$name', (c) => {
         expect(runCase(c)).toMatchObject(c.expect);
@@ -1876,24 +1881,31 @@ describe('resolveAccessControl', () => {
 
     it.each<ResolveCase>([
       {
-        name: 'no afterComplete: questions hidden by default',
+        name: 'no afterComplete: defaults to questions hidden and score visible',
         rules: [completedRule()],
-        expect: { authorized: true, submittable: false, visibility: { showQuestions: false } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'questions.hidden=false: questions visible',
         rules: [completedRule({ afterComplete: { questions: { hidden: false } } })],
-        expect: { authorized: true, submittable: false, visibility: { showQuestions: true } },
-      },
-      {
-        name: 'no afterComplete: score visible by default',
-        rules: [completedRule()],
-        expect: { authorized: true, submittable: false, visibility: { showScore: true } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
       },
       {
         name: 'questions.hidden=true: questions hidden',
         rules: [completedRule({ afterComplete: { questions: { hidden: true } } })],
-        expect: { authorized: true, submittable: false, visibility: { showQuestions: false } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'questions.visibleFromDate elapsed: questions visible',
@@ -1905,7 +1917,11 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: false, visibility: { showQuestions: true } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
       },
       {
         name: 'questions.visibleUntilDate elapsed: questions hidden again',
@@ -1921,12 +1937,20 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: false, visibility: { showQuestions: false } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'score.hidden=true: score hidden',
         rules: [completedRule({ afterComplete: { score: { hidden: true } } })],
-        expect: { authorized: true, submittable: false, visibility: { showScore: false } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: false },
+        },
       },
       {
         name: 'score.visibleFromDate elapsed: score visible',
@@ -1938,7 +1962,11 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: false, visibility: { showScore: true } },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         // Per-rule validation forbids `score.hidden: true` alongside
