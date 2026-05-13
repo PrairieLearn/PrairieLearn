@@ -6,34 +6,36 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  containsImageCapture,
+  AiGradingJobDataForSubmissionSchema,
+  buildAiGradingInfo,
   selectLastSubmissionId,
-  selectRubricGradingItems,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import type {
-  InstanceQuestionAIGradingInfo,
-  InstanceQuestionAIGradingInfoBase,
-} from '../../../ee/lib/ai-grading/types.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroup,
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
+import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -135,135 +137,31 @@ router.get(
           })
         : [];
 
-      /**
-       * Contains the prompt and selected rubric items of the AI grader.
-       * If the submission was not graded by AI, this will be undefined.
-       */
-      let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
-
       const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-      if (aiGradingEnabled) {
+      const aiGradingInfo = await run(async () => {
+        if (!aiGradingEnabled) return undefined;
         const submission_id = await selectLastSubmissionId(instance_question.id);
-        const ai_grading_job_data = await sqldb.queryOptionalRow(
-          sql.select_ai_grading_job_data_for_submission,
-          {
-            submission_id,
-          },
-          z.object({
-            id: GradingJobSchema.shape.id,
-            manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
-            prompt: AiGradingJobSchema.shape.prompt,
-            completion: AiGradingJobSchema.shape.completion,
-            rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
-          }),
-        );
-
-        if (ai_grading_job_data) {
-          const promptForGradingJob = ai_grading_job_data.prompt;
-          const selectedRubricItems = await selectRubricGradingItems(
-            ai_grading_job_data.manual_rubric_grading_id,
-          );
-
-          /** The submission was also manually graded if a manual grading job exists for it.*/
-          const submissionManuallyGraded =
-            (await sqldb.queryOptionalScalar(
+        const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
+          sqldb.queryOptionalRow(
+            sql.select_ai_grading_job_data_for_submission,
+            { submission_id },
+            AiGradingJobDataForSubmissionSchema,
+          ),
+          sqldb
+            .queryOptionalScalar(
               sql.select_exists_manual_grading_job_for_submission,
               { submission_id },
               z.boolean(),
-            )) ?? false;
-
-          const formattedPrompt =
-            promptForGradingJob !== null
-              ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
-                  .replaceAll('\\n', '\n')
-                  .trimStart()
-              : '';
-
-          // We're dealing with a schemaless JSON blob here. We'll be defensive and
-          // try to avoid errors when extracting the explanation. Note that for some
-          // time, the explanation wasn't included in the completion at all, so it
-          // may legitimately be missing.
-          //
-          // Over the lifetime of this feature, we've changed which APIs/libraries we
-          // use to generate the completion, so we need to handle all formats we've ever
-          // used for backwards-compatibility. Each one is documented below.
-          const explanation = run(() => {
-            const completion = ai_grading_job_data.completion;
-            if (!completion) return null;
-
-            // OpenAI chat completion format
-            if (completion.choices) {
-              const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            // OpenAI response format
-            if (completion.output_parsed) {
-              const explanation = completion?.output_parsed?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            // `ai` package format
-            if (completion.object) {
-              const explanation = completion?.object?.explanation;
-              if (typeof explanation !== 'string') return null;
-
-              return explanation.trim() || null;
-            }
-
-            return null;
-          });
-
-          const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
-          const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
-          const validatedDegrees = parsed.success ? parsed.data : {};
-          const rotationCorrectionDegrees = Object.fromEntries(
-            Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
-          );
-
-          const hasPersistedRotationCorrectionData =
-            correctedDegrees != null &&
-            typeof correctedDegrees === 'object' &&
-            Object.keys(correctedDegrees).length > 0;
-
-          const hasImage = run(() => {
-            // Use persisted rotation metadata to infer image context. This preserves
-            // historical AI grading context even if the current rendered HTML no
-            // longer includes image-capture markers.
-            if (hasPersistedRotationCorrectionData) return true;
-            if (localsForRender.resLocals.submissionHtmls.length > 0) {
-              return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
-            }
-            return false;
-          });
-
-          const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
-            submissionManuallyGraded,
-            prompt: formattedPrompt,
-            selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-            explanation,
-          };
-
-          if (hasImage) {
-            aiGradingInfo = {
-              ...aiGradingInfoBase,
-              hasImage: true,
-              rotationCorrectionDegrees,
-            };
-          } else {
-            aiGradingInfo = {
-              ...aiGradingInfoBase,
-              hasImage: false,
-              rotationCorrectionDegrees: null,
-            };
-          }
-        }
-      }
+            )
+            .then((manuallyGraded) => manuallyGraded ?? false),
+        ]);
+        return await buildAiGradingInfo({
+          aiGradingJobData,
+          submissionManuallyGraded,
+          submissionHtmls: localsForRender.resLocals.submissionHtmls,
+        });
+      });
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
       req.session.show_submissions_assigned_to_me_only =
@@ -274,6 +172,55 @@ router.get(
         { assessment_instance_id: res.locals.assessment_instance.id },
         z.number(),
       );
+
+      const instanceQuestionAiGradeProps = await run(async () => {
+        if (!aiGradingEnabled) return null;
+
+        const trpcCsrfToken = generatePrefixCsrfToken(
+          {
+            url: getAssessmentQuestionTrpcUrl({
+              courseInstanceId: res.locals.course_instance.id,
+              assessmentId: res.locals.assessment.id,
+              assessmentQuestionId: res.locals.assessment_question.id,
+            }),
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
+        );
+
+        const ongoingJobSequenceIds = await getJobSequenceIds({
+          assessment_question_id: res.locals.assessment_question.id,
+          status: 'Running',
+          type: 'ai_grading',
+        });
+
+        const initialOngoingJobSequenceTokens = ongoingJobSequenceIds.reduce(
+          (acc, jobSequenceId) => {
+            acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+
+        return {
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+          assessmentQuestionId: res.locals.assessment_question.id,
+          instanceQuestionId: res.locals.instance_question.id,
+          trpcCsrfToken,
+          isDevMode: process.env.NODE_ENV === 'development',
+          hasRubric: res.locals.assessment_question.manual_rubric_id != null,
+          useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
+          aiGradingSettingsUrl: `${res.locals.urlPrefix}/instance_admin/ai_grading`,
+          availableAiGradingProviders: await getAvailableAiGradingProviders(
+            res.locals.course_instance,
+          ),
+          aiGradingRelativeCosts: computeAiGradingRelativeCosts(config.costPerMillionTokens),
+          aiGradingLastSelectedModel:
+            res.locals.assessment_question.ai_grading_last_selected_model ?? null,
+          initialOngoingJobSequenceTokens,
+        };
+      });
 
       res.send(
         InstanceQuestionPage({
@@ -292,6 +239,7 @@ router.get(
           skipGradedSubmissions: req.session.skip_graded_submissions,
           showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
           submissionCredits,
+          instanceQuestionAiGradeProps,
         }),
       );
     },
@@ -388,8 +336,40 @@ router.get(
           groupRolePermissions: null,
         });
 
+        const aiGradingInfo = await run(async () => {
+          if (!aiGradingEnabled) return undefined;
+          const last_submission_id = await selectLastSubmissionId(res.locals.instance_question.id);
+          const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
+            sqldb.queryOptionalRow(
+              sql.select_ai_grading_job_data_for_submission,
+              { submission_id: last_submission_id },
+              AiGradingJobDataForSubmissionSchema,
+            ),
+            sqldb
+              .queryOptionalScalar(
+                sql.select_exists_manual_grading_job_for_submission,
+                { submission_id: last_submission_id },
+                z.boolean(),
+              )
+              .then((manuallyGraded) => manuallyGraded ?? false),
+          ]);
+          return await buildAiGradingInfo({
+            aiGradingJobData,
+            submissionManuallyGraded,
+            submissionHtmls: res.locals.submissionHtmls,
+          });
+        });
+
+        const questionContainer = QuestionContainer({
+          resLocals: res.locals,
+          questionContext: 'manual_grading',
+          showFooter: false,
+          aiGradingInfo,
+        }).toString();
+
         res.json({
           gradingPanel,
+          questionContainer,
           rubric_data,
           submissionPanel: panels.submissionPanel,
           submissionId: submission.id,

@@ -20,6 +20,10 @@ import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../.
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
+import {
+  InstanceQuestionAiGrade,
+  type InstanceQuestionAiGradeProps,
+} from './components/InstanceQuestionAiGrade.js';
 import { GradingPanel } from './gradingPanel.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
@@ -43,6 +47,7 @@ export function InstanceQuestion({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
+  instanceQuestionAiGradeProps,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
@@ -63,6 +68,7 @@ export function InstanceQuestion({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
+  instanceQuestionAiGradeProps: InstanceQuestionAiGradeProps | null;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -199,6 +205,28 @@ export function InstanceQuestion({
           />,
         )}
       </div>
+
+      ${instanceQuestionAiGradeProps
+        ? hydrateHtml(
+            <InstanceQuestionAiGrade
+              courseInstanceId={instanceQuestionAiGradeProps.courseInstanceId}
+              assessmentId={instanceQuestionAiGradeProps.assessmentId}
+              assessmentQuestionId={instanceQuestionAiGradeProps.assessmentQuestionId}
+              instanceQuestionId={instanceQuestionAiGradeProps.instanceQuestionId}
+              trpcCsrfToken={instanceQuestionAiGradeProps.trpcCsrfToken}
+              isDevMode={instanceQuestionAiGradeProps.isDevMode}
+              hasRubric={instanceQuestionAiGradeProps.hasRubric}
+              useCustomApiKeys={instanceQuestionAiGradeProps.useCustomApiKeys}
+              aiGradingSettingsUrl={instanceQuestionAiGradeProps.aiGradingSettingsUrl}
+              availableAiGradingProviders={instanceQuestionAiGradeProps.availableAiGradingProviders}
+              aiGradingRelativeCosts={instanceQuestionAiGradeProps.aiGradingRelativeCosts}
+              aiGradingLastSelectedModel={instanceQuestionAiGradeProps.aiGradingLastSelectedModel}
+              initialOngoingJobSequenceTokens={
+                instanceQuestionAiGradeProps.initialOngoingJobSequenceTokens
+              }
+            />,
+          )
+        : ''}
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,
@@ -211,12 +239,14 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({
-            resLocals,
-            questionContext: 'manual_grading',
-            showFooter: false,
-            aiGradingInfo,
-          })}
+          <div id="js-question-container">
+            ${QuestionContainer({
+              resLocals,
+              questionContext: 'manual_grading',
+              showFooter: false,
+              aiGradingInfo,
+            })}
+          </div>
         </div>
 
         <div class="col-lg-4 col-12">

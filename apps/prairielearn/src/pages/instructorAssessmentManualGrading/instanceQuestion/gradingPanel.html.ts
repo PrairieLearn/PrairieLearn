@@ -408,6 +408,18 @@ ${submission.feedback?.manual}</textarea
                   >
                     Grade
                   </button>
+                  ${resLocals.assessment_question.ai_grading_mode
+                    ? html`
+                        <button
+                          id="ai-grade-button"
+                          type="button"
+                          class="btn btn-primary ms-1"
+                          onclick="document.dispatchEvent(new CustomEvent('open-ai-grade-modal'))"
+                        >
+                          <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
+                        </button>
+                      `
+                    : ''}
                 `
               : ''}
             <div class="btn-group">

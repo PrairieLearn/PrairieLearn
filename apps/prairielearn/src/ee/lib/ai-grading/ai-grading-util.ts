@@ -31,6 +31,7 @@ import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
 import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import { config } from '../../../lib/config.js';
 import {
+  AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
   GradingJobSchema,
@@ -44,10 +45,16 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
+import {
+  type CounterClockwiseRotationDegrees,
+  type InstanceQuestionAIGradingInfo,
+  type InstanceQuestionAIGradingInfoBase,
+  RotationCorrectionOutputSchema,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -947,4 +954,140 @@ export function correctGeminiMalformedRubricGradingJson(rawResponseText: string)
   );
 
   return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
+}
+
+/**
+ * Zod schema for the AI grading job row that callers must query before invoking
+ * `buildAiGradingInfo`. Kept here alongside the helper so consumers can share a
+ * single source of truth for the row shape; the SQL block itself lives in the
+ * caller's `.sql` file so that any nearby SQL changes in PRs (e.g. additional
+ * grader-name queries) don't have to coordinate across files.
+ */
+export const AiGradingJobDataForSubmissionSchema = z.object({
+  id: GradingJobSchema.shape.id,
+  manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  prompt: AiGradingJobSchema.shape.prompt,
+  completion: AiGradingJobSchema.shape.completion,
+  rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
+});
+
+export type AiGradingJobDataForSubmission = z.infer<typeof AiGradingJobDataForSubmissionSchema>;
+
+/**
+ * Assembles the `aiGradingInfo` displayed in the manual-grading instance
+ * question page from a pre-queried AI grading job row. Returns `undefined` if
+ * the submission has not been AI-graded.
+ *
+ * Callers are responsible for running the underlying SQL (so that schema
+ * changes in nearby SQL files stay local to the page); the schema for the
+ * `aiGradingJobData` row is exported as `AiGradingJobDataForSubmissionSchema`.
+ *
+ * `submissionHtmls` is used to detect whether the current rendered submission
+ * contains an image-capture element; pass the array straight from
+ * `resLocals.submissionHtmls`.
+ */
+export async function buildAiGradingInfo({
+  aiGradingJobData,
+  submissionManuallyGraded,
+  submissionHtmls,
+}: {
+  aiGradingJobData: AiGradingJobDataForSubmission | null;
+  submissionManuallyGraded: boolean;
+  submissionHtmls: string[];
+}): Promise<InstanceQuestionAIGradingInfo | undefined> {
+  if (!aiGradingJobData) return undefined;
+
+  const promptForGradingJob = aiGradingJobData.prompt;
+  const selectedRubricItems = await selectRubricGradingItems(
+    aiGradingJobData.manual_rubric_grading_id,
+  );
+
+  const formattedPrompt =
+    promptForGradingJob !== null
+      ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
+          .replaceAll('\\n', '\n')
+          .trimStart()
+      : '';
+
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
+  const explanation = run(() => {
+    const completion = aiGradingJobData.completion;
+    if (!completion) return null;
+
+    // OpenAI chat completion format
+    if (completion.choices) {
+      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // OpenAI response format
+    if (completion.output_parsed) {
+      const explanation = completion?.output_parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // `ai` package format
+    if (completion.object) {
+      const explanation = completion?.object?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    return null;
+  });
+
+  const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
+  const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
+  const validatedDegrees = parsed.success ? parsed.data : {};
+  const rotationCorrectionDegrees = Object.fromEntries(
+    Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+  );
+
+  const hasPersistedRotationCorrectionData =
+    correctedDegrees != null &&
+    typeof correctedDegrees === 'object' &&
+    Object.keys(correctedDegrees).length > 0;
+
+  const hasImage = run(() => {
+    // Use persisted rotation metadata to infer image context. This preserves
+    // historical AI grading context even if the current rendered HTML no
+    // longer includes image-capture markers.
+    if (hasPersistedRotationCorrectionData) return true;
+    if (submissionHtmls.length > 0) {
+      return containsImageCapture(submissionHtmls[0]);
+    }
+    return false;
+  });
+
+  const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    submissionManuallyGraded,
+    prompt: formattedPrompt,
+    selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+    explanation,
+  };
+
+  if (hasImage) {
+    return {
+      ...aiGradingInfoBase,
+      hasImage: true,
+      rotationCorrectionDegrees,
+    };
+  }
+  return {
+    ...aiGradingInfoBase,
+    hasImage: false,
+    rotationCorrectionDegrees: null,
+  };
 }
