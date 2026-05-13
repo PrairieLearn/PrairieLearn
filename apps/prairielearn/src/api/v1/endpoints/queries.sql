@@ -49,9 +49,19 @@ SELECT
   ai.number AS assessment_instance_number,
   ai.open,
   ai.modified_at,
-  gi.id AS group_id,
-  gi.name AS group_name,
-  gi.uid_list AS group_uids,
+  g.id AS group_id,
+  g.name AS group_name,
+  CASE
+    WHEN ai.team_id IS NOT NULL THEN (
+      SELECT
+        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+      FROM
+        team_users gu
+        JOIN users u ON (u.id = gu.user_id)
+      WHERE
+        gu.team_id = ai.team_id
+    )
+  END AS group_uids,
   ai.date_limit,
   ai.date,
   ai.duration,
@@ -72,7 +82,10 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   ci.id = $course_instance_id
@@ -83,6 +96,11 @@ WHERE
   AND (
     $unsafe_assessment_instance_id::bigint IS NULL
     OR ai.id = $unsafe_assessment_instance_id
+  )
+  -- Filter out group instances that don't have an undeleted group
+  AND (
+    ai.team_id IS NULL
+    OR g.id IS NOT NULL
   )
 ORDER BY
   user_role DESC,
@@ -203,9 +221,19 @@ SELECT
   u.uin AS user_uin,
   u.name AS user_name,
   users_get_displayed_role (u.id, ci.id) AS user_role,
-  gi.id AS group_id,
-  gi.name AS group_name,
-  gi.uid_list AS group_uids,
+  g.id AS group_id,
+  g.name AS group_name,
+  CASE
+    WHEN ai.team_id IS NOT NULL THEN (
+      SELECT
+        COALESCE(ARRAY_AGG(u.uid), '{}'::text[])
+      FROM
+        team_users gu
+        JOIN users u ON (u.id = gu.user_id)
+      WHERE
+        gu.team_id = ai.team_id
+    )
+  END AS group_uids,
   a.id AS assessment_id,
   a.tid AS assessment_name,
   (aset.abbreviation || a.number) AS assessment_label,
@@ -294,7 +322,10 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
