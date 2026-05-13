@@ -5296,7 +5296,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.0.1"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.14.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -5995,12 +5995,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^0.9.3":
-  version: 0.9.3
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.9.3"
+"@reteps/tree-sitter-htmlmustache@npm:^1.0.1":
+  version: 1.0.2
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.0.2"
   dependencies:
+    ajv: "npm:^8.20.0"
+    ajv-errors: "npm:^3.0.0"
+    ajv-i18n: "npm:^4.2.0"
+    aria-attributes: "npm:^2.0.1"
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
+    html-element-attributes: "npm:^3.5.0"
     node-gyp: "npm:latest"
     vscode-languageserver-textdocument: "npm:^1.0.12"
     web-tree-sitter: "npm:^0.26.5"
@@ -6019,8 +6024,8 @@ __metadata:
     tree-sitter:
       optional: true
   bin:
-    htmlmustache: cli/out/main.js
-  checksum: 10c0/e38bb19d24098ca3097205453d48320b2daad9fcf09b4cc62355e7900c907581013d2107a69bbeea07f4abc9c23816c0934b762f2331354c8f72d8abe7b6090f
+    htmlmustache: dist/cli/main.js
+  checksum: 10c0/2ab88acf57fcdf2e7263c3db3091b482b0e631b019f2971cd9c268e1c4d3a962c9666e0934578e7e0f0d50833bcffdba0a4119e7bf352b6b9b11a652e0331dd5
   languageName: node
   linkType: hard
 
@@ -9290,6 +9295,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ajv-errors@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "ajv-errors@npm:3.0.0"
+  peerDependencies:
+    ajv: ^8.0.1
+  checksum: 10c0/f3d864ebd4bc0b51ad622b5a889cc8903000295eaa058d59c2102f293fe126c3d901419da143eaa817b863cac2e92ae2ef6f55e6c31d07bf272099afe73961ae
+  languageName: node
+  linkType: hard
+
+"ajv-i18n@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "ajv-i18n@npm:4.2.0"
+  peerDependencies:
+    ajv: ^8.0.0-beta.0
+  checksum: 10c0/8c27882f2d46147600538aa8f48a633c72cd65baa37e0fae7159e832122b4ee504f4076f81ea3f78c15d7236a2d499d42a34d1a27b202066edc620f23963f6db
+  languageName: node
+  linkType: hard
+
 "ajv@npm:^6.12.6, ajv@npm:^6.14.0":
   version: 6.14.0
   resolution: "ajv@npm:6.14.0"
@@ -9434,6 +9457,13 @@ __metadata:
   version: 2.0.1
   resolution: "argparse@npm:2.0.1"
   checksum: 10c0/c5640c2d89045371c7cedd6a70212a04e360fd34d6edeae32f6952c63949e3525ea77dbec0289d8213a99bbaeab5abfa860b5c12cf88a2e6cf8106e90dd27a7e
+  languageName: node
+  linkType: hard
+
+"aria-attributes@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "aria-attributes@npm:2.0.1"
+  checksum: 10c0/801b027126ab83fb27261d6f52568be524fd6ccac86421fcc7926c2f4e6f68c66ab2c68686cc1ebc49e6ff4a315176177c155c13d6e6fec316a7aec26e93e818
   languageName: node
   linkType: hard
 
@@ -13539,6 +13569,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-element-attributes@npm:^3.5.0":
+  version: 3.5.0
+  resolution: "html-element-attributes@npm:3.5.0"
+  checksum: 10c0/b48a586fa3868e5a00b600bed1fcd56e12537f4bcdc073d52eb124921d48a2527a403b34088ed5b543d89d3dbf851dfe780fa2911e9f88691bc2f9a69dece988
+  languageName: node
+  linkType: hard
+
 "html-encoding-sniffer@npm:^6.0.0":
   version: 6.0.0
   resolution: "html-encoding-sniffer@npm:6.0.0"
@@ -17506,7 +17543,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.0.1"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"

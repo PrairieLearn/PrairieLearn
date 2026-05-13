@@ -1,6 +1,9 @@
 import mustache from 'mustache';
 import * as parse5 from 'parse5';
 
+import { BOOLEAN_TRUE_VALUES, BOOLEAN_VALUES } from './element-schemas/formats.js';
+import { lintQuestionHtml } from './htmlMustacheLinterNode.js';
+
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
@@ -20,10 +23,6 @@ const INPUT_ELEMENTS = new Set([
 ]);
 
 export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
-
-const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
-const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
-const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
@@ -174,13 +173,6 @@ function isBooleanTrue(val: string): boolean {
 }
 
 /**
- * Checks if the given attribute value is a boolean `false` value.
- */
-function isBooleanFalse(val: string): boolean {
-  return BOOLEAN_FALSE_VALUES.includes(val.trim());
-}
-
-/**
  * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
@@ -190,8 +182,6 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
     // The elements supported here should be kept in sync with those in
     // `context-parsers/documentation.ts`.
     switch (ast.tagName) {
-      case 'pl-multiple-choice':
-        return checkMultipleChoice(ast);
       case 'pl-integer-input':
         return checkIntegerInput(ast);
       case 'pl-number-input':
@@ -202,6 +192,7 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
         return checkCheckbox(ast);
       case 'pl-symbolic-input':
         return checkSymbolicInput(ast);
+      case 'pl-multiple-choice':
       case 'pl-question-panel':
       case 'pl-answer-panel':
       case 'pl-submission-panel':
@@ -220,157 +211,6 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
     }
   }
   return { errors: [] };
-}
-
-/**
- * Checks that a `pl-multiple-choice` element has valid attributes.
- * @param ast The tree to consider, rooted at the tag.
- * @returns The list of errors for the tag, if any.
- */
-function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResult {
-  const errors: string[] = [];
-  let usedAnswersName = false;
-  let displayDropdown = false;
-  let usedAllOfTheAbove = false;
-  let usedNoneOfTheAbove = false;
-  let usedAllOfTheAboveFeedback = false;
-  let usedNoneOfTheAboveFeedback = false;
-  let usedSize = false;
-  const disabledBuiltinGrading =
-    'attrs' in ast &&
-    ast.attrs.some((attr) => attr.name === 'builtin-grading' && isBooleanFalse(attr.value));
-  const optionsOfTheAbove = ['false', 'random', 'correct', 'incorrect'];
-  if ('attrs' in ast) {
-    for (const attr of ast.attrs) {
-      const key = attr.name;
-      const val = attr.value;
-      switch (key) {
-        case 'answers-name':
-          usedAnswersName = true;
-          break;
-        case 'weight':
-          if (disabledBuiltinGrading) {
-            errors.push('pl-multiple-choice: weight cannot be used when builtin-grading is false.');
-          }
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        case 'display':
-          assertInChoices('pl-multiple-choice', key, val, ['block', 'inline', 'dropdown'], errors);
-          if (val === 'dropdown') {
-            displayDropdown = true;
-          }
-          break;
-        case 'number-answers':
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        case 'order':
-          assertInChoices(
-            'pl-multiple-choice',
-            key,
-            val,
-            ['random', 'ascend', 'descend', 'fixed'],
-            errors,
-          );
-          break;
-        case 'hide-letter-keys':
-        case 'fixed-order':
-        case 'inline':
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'hide-score-badge':
-          if (disabledBuiltinGrading) {
-            errors.push(
-              'pl-multiple-choice: hide-score-badge cannot be used when builtin-grading is false.',
-            );
-          }
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'placeholder':
-        case 'aria-label':
-        case 'external-json':
-        case 'external-json-correct-key':
-        case 'external-json-incorrect-key':
-          break;
-        case 'all-of-the-above':
-          if (disabledBuiltinGrading) {
-            assertBool('pl-multiple-choice', key, val, errors);
-          } else {
-            assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          }
-          if (
-            (disabledBuiltinGrading && isBooleanTrue(val)) ||
-            (!disabledBuiltinGrading && optionsOfTheAbove.includes(val) && val !== 'false')
-          ) {
-            usedAllOfTheAbove = true;
-          }
-          break;
-        case 'none-of-the-above':
-          if (disabledBuiltinGrading) {
-            assertBool('pl-multiple-choice', key, val, errors);
-          } else {
-            assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          }
-          if (
-            (disabledBuiltinGrading && isBooleanTrue(val)) ||
-            (!disabledBuiltinGrading && optionsOfTheAbove.includes(val) && val !== 'false')
-          ) {
-            usedNoneOfTheAbove = true;
-          }
-          break;
-        case 'all-of-the-above-feedback':
-          usedAllOfTheAboveFeedback = true;
-          break;
-        case 'none-of-the-above-feedback':
-          usedNoneOfTheAboveFeedback = true;
-          break;
-        case 'allow-blank':
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'builtin-grading':
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'size':
-          usedSize = true;
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        default:
-          errors.push(`pl-multiple-choice: ${key} is not a valid attribute.`);
-      }
-    }
-  }
-  if (!usedAnswersName) {
-    errors.push('pl-multiple-choice: answers-name is a required attribute.');
-  }
-  if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
-    errors.push(
-      'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
-    );
-  }
-  if (!usedNoneOfTheAbove && usedNoneOfTheAboveFeedback) {
-    errors.push(
-      'pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above.',
-    );
-  }
-  if (!displayDropdown && usedSize) {
-    errors.push('pl-multiple-choice: if using size, you must also use set display to "dropdown".');
-  }
-
-  let errorsChildren: string[] = [];
-  if ('childNodes' in ast) {
-    for (const child of ast.childNodes) {
-      if ('tagName' in child && child.tagName) {
-        if (child.tagName === 'pl-answer') {
-          errorsChildren = errorsChildren.concat(
-            checkAnswerMultipleChoice(child, disabledBuiltinGrading),
-          );
-        } else {
-          errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
-        }
-      }
-    }
-  }
-
-  return { errors: errors.concat(errorsChildren) };
 }
 
 /**
@@ -656,45 +496,6 @@ function checkNumberInput(ast: DocumentFragment | ChildNode): ValidationResult {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkAnswerMultipleChoice(
-  ast: DocumentFragment | ChildNode,
-  disabledBuiltinGrading: boolean,
-): string[] {
-  const errors: string[] = [];
-  if ('attrs' in ast) {
-    for (const attr of ast.attrs) {
-      switch (attr.name) {
-        case 'correct':
-          assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-          break;
-        case 'feedback':
-          if (disabledBuiltinGrading) {
-            errors.push(
-              'pl-answer (for pl-multiple-choice): feedback cannot be used when builtin-grading is false.',
-            );
-          }
-          break;
-        case 'score':
-          if (disabledBuiltinGrading) {
-            errors.push(
-              'pl-answer (for pl-multiple-choice): score cannot be used when builtin-grading is false.',
-            );
-          }
-          assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-          break;
-        default:
-          errors.push(`pl-answer (for pl-multiple-choice): ${attr.name} is not a valid attribute.`);
-      }
-    }
-  }
-  return errors;
-}
-
-/**
- * Checks that a `pl-answer` element in a multiple choice tag has valid attributes.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
 function checkAnswerCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   if ('attrs' in ast) {
@@ -922,7 +723,10 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
  * @param hasServerPy True if a server.py file is present, else false.
  * @returns Errors that must be fixed and warnings about likely issues.
  */
-export function validateHTML(file: string, hasServerPy: boolean): HTMLValidationResult {
+export async function validateHTML(
+  file: string,
+  hasServerPy: boolean,
+): Promise<HTMLValidationResult> {
   const forbiddenTagMatch = file.match(/^\s*<(!doctype|html|body|head)[\s>]/i);
   if (forbiddenTagMatch) {
     const tag = forbiddenTagMatch[1].toLowerCase();
@@ -944,6 +748,11 @@ export function validateHTML(file: string, hasServerPy: boolean): HTMLValidation
 
   const tree = parse5.parseFragment(file);
   const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
+
+  const diagnostics = await lintQuestionHtml(file);
+  for (const diagnostic of diagnostics) {
+    (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);
+  }
 
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [

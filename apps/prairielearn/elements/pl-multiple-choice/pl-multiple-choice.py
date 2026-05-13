@@ -412,6 +412,8 @@ def prepare_answers_to_display(
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
+    # Keep attribute/child validation in sync with
+    # apps/prairielearn/src/ee/lib/element-schemas/pl-multiple-choice.ts.
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
