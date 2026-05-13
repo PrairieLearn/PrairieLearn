@@ -76,8 +76,6 @@ describe(
         headers: { cookie: activeWindowCookie },
       });
       assert.isTrue(response.ok);
-      // For homework, visiting the assessment URL creates an instance and
-      // redirects to it.
       assert.include(response.url, '/assessment_instance/');
       context.assessmentInstanceUrl = response.url;
     });
@@ -176,8 +174,6 @@ describe(
         const message = response.$('[data-testid="assessment-closed-message"]');
         assert.lengthOf(message, 1);
         assert.match(message.text(), /Assessment is no longer available/);
-        // afterComplete.score.hidden = true, so the closed page must not show
-        // the score either.
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
       },
     );

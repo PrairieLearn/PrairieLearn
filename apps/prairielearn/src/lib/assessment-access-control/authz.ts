@@ -62,7 +62,7 @@ function resolverResultToAuthzAssessment(
       ? formatDateShort(result.nextActiveDate, displayTimezone)
       : null,
     access_rules: [],
-    access_timeline: result.accessTimeline,
+    access_timeline: result.accessTimeline.map((entry) => ({ ...entry })),
   };
 }
 
@@ -111,22 +111,15 @@ async function resolveModernAssessmentAccessResult({
   });
 }
 
-export async function resolveModernAssessmentAccess({
-  assessment,
-  userId,
-  courseInstance,
-  authzData,
-  reqDate,
-}: ModernAssessmentAccessInput): Promise<SprocAuthzAssessment> {
-  const result = await resolveModernAssessmentAccessResult({
-    assessment,
-    userId,
-    courseInstance,
-    authzData,
-    reqDate,
-  });
-
-  return resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone);
+export async function resolveModernAssessmentAccess(
+  input: ModernAssessmentAccessInput,
+): Promise<SprocAuthzAssessment> {
+  const result = await resolveModernAssessmentAccessResult(input);
+  return resolverResultToAuthzAssessment(
+    result,
+    input.authzData.mode,
+    input.courseInstance.display_timezone,
+  );
 }
 
 interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
@@ -177,20 +170,14 @@ export async function resolveModernAssessmentInstanceAccess({
 }: ModernAssessmentInstanceAccessInput): Promise<SprocAuthzAssessmentInstance> {
   const { assessment, authzData, reqDate } = assessmentInput;
 
-  const timeLimitExpired =
-    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
-  const result = applyInstanceCompletion(
-    await resolveModernAssessmentAccessResult(assessmentInput),
-    {
-      instanceOpen: assessmentInstance.open,
-      timeLimitExpired,
-    },
-  );
-  const assessmentResult = resolverResultToAuthzAssessment(
+  const result = await resolveModernAssessmentAccessResult(assessmentInput);
+  const assessmentResult = resolverResultToAuthzAssessmentForInstance({
     result,
-    authzData.mode,
-    assessmentInput.courseInstance.display_timezone,
-  );
+    authzMode: authzData.mode,
+    displayTimezone: assessmentInput.courseInstance.display_timezone,
+    assessmentInstance,
+    reqDate,
+  });
 
   // Determine if the effective user owns this assessment instance.
   // For group work, check that the user is in an active group matching
@@ -202,6 +189,9 @@ export async function resolveModernAssessmentInstanceAccess({
   } else {
     ownsInstance = assessmentInstance.user_id === authzData.user.id;
   }
+
+  const timeLimitExpired =
+    assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
 
   return applyInstanceAccess({
     assessmentResult,

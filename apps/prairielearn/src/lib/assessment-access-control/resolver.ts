@@ -142,7 +142,7 @@ export interface AccessControlResolverResult {
   /**
    * Timeline of credit segments for display. Raw data — formatting is a UI concern.
    */
-  accessTimeline: AccessTimelineEntry[];
+  accessTimeline: readonly Readonly<AccessTimelineEntry>[];
   /**
    * The next date when the assessment becomes active (e.g. the release date
    * when before release). Null when already active or no future open date.
@@ -150,47 +150,51 @@ export interface AccessControlResolverResult {
   nextActiveDate: Date | null;
 }
 
-const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
+interface Visibility {
+  showClosedAssessment: boolean;
+  showClosedAssessmentScore: boolean;
+}
+
+const VISIBLE = Object.freeze({
+  showClosedAssessment: true,
+  showClosedAssessmentScore: true,
+} satisfies Readonly<Visibility>);
+
+const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
+
+const UNAUTHORIZED_RESULT = Object.freeze({
   authorized: false,
   credit: 0,
   creditDateString: 'None',
   timeLimitMin: null,
   password: null,
   submittable: false,
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
-  afterCompleteVisibility: {
-    showClosedAssessment: true,
-    showClosedAssessmentScore: true,
-  },
+  ...VISIBLE,
+  afterCompleteVisibility: VISIBLE,
   complete: false,
   usesPrairieTestVisibility: false,
   examAccessEnd: null,
   showBeforeRelease: false,
-  accessTimeline: [],
+  accessTimeline: EMPTY_ACCESS_TIMELINE,
   nextActiveDate: null,
-};
+} satisfies Readonly<AccessControlResolverResult>);
 
-const STAFF_OVERRIDE_RESULT: AccessControlResolverResult = {
+const STAFF_OVERRIDE_RESULT = Object.freeze({
   authorized: true,
   credit: 100,
   creditDateString: '100% (Staff override)',
   timeLimitMin: null,
   password: null,
   submittable: true,
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
-  afterCompleteVisibility: {
-    showClosedAssessment: true,
-    showClosedAssessmentScore: true,
-  },
+  ...VISIBLE,
+  afterCompleteVisibility: VISIBLE,
   complete: false,
   usesPrairieTestVisibility: false,
   examAccessEnd: null,
   showBeforeRelease: false,
-  accessTimeline: [],
+  accessTimeline: EMPTY_ACCESS_TIMELINE,
   nextActiveDate: null,
-};
+} satisfies Readonly<AccessControlResolverResult>);
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
   None: 0,
@@ -279,16 +283,6 @@ function pickEffectiveRule(
     defaultRule.rule,
   );
 }
-
-interface Visibility {
-  showClosedAssessment: boolean;
-  showClosedAssessmentScore: boolean;
-}
-
-const VISIBLE: Visibility = {
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
-};
 
 /**
  * `questions.hidden` defaults to `true` for exam security (an async exam over
@@ -416,7 +410,7 @@ function computeTimeLimitMin(
  * submissions, or an indefinite due date).
  */
 function findLastSubmittableEnd(
-  accessTimeline: AccessTimelineEntry[],
+  accessTimeline: readonly Readonly<AccessTimelineEntry>[],
   currentIdx: number,
 ): Date | null {
   let end: Date | null = null;
