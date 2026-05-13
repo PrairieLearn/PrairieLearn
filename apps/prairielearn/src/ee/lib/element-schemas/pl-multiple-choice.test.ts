@@ -104,7 +104,7 @@ describe('pl-multiple-choice schema', () => {
     assert.isNotEmpty(messages);
   });
 
-  it('rejects duplicate answer text', async () => {
+  it('rejects duplicate answer inner HTML', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer>A</pl-answer>
@@ -112,7 +112,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('duplicate child text')));
+    assert.isTrue(messages.some((message) => message.includes('duplicate child inner HTML')));
   });
 
   it('allows external-json without inline answers', async () => {
@@ -123,7 +123,7 @@ describe('pl-multiple-choice schema', () => {
     assert.deepEqual(messages, []);
   });
 
-  it('rejects answers with matching text but different HTML', async () => {
+  it('allows answers with matching text but different HTML', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer><code>x</code></pl-answer>
@@ -131,6 +131,6 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('duplicate child text')));
+    assert.isFalse(messages.some((message) => message.includes('duplicate child inner HTML')));
   });
 });

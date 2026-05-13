@@ -1,7 +1,7 @@
 import mustache from 'mustache';
 import * as parse5 from 'parse5';
 
-import { BOOLEAN_TRUE_VALUES, BOOLEAN_VALUES } from './element-schemas/formats.js';
+import { BOOLEAN_TRUE_VALUES, BOOLEAN_VALUES } from './element-schemas/ajv-extensions.js';
 import { lintQuestionHtml } from './htmlMustacheLinterNode.js';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];

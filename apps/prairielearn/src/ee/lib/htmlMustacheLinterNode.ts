@@ -8,8 +8,7 @@ import {
 
 import { htmlMustacheConfig } from '../../lib/htmlMustacheConfig.js';
 
-import { plFormats } from './element-schemas/formats.js';
-import { plKeywords } from './element-schemas/keywords.js';
+import { formats, keywords } from './element-schemas/ajv-extensions.js';
 
 const require = createRequire(import.meta.url);
 
@@ -29,8 +28,8 @@ function getLinter(): Promise<Linter> {
       }
       return name;
     },
-    formats: plFormats,
-    keywords: plKeywords,
+    formats,
+    keywords,
   });
 
   return linterPromise;

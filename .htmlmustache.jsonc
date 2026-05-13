@@ -11,6 +11,7 @@
     "testCourse/questions/addVectors/question.html"
   ],
   "printWidth": 100,
+  "ajvModule": "./apps/prairielearn/src/ee/lib/element-schemas/ajv-extensions.ts",
   "noBreakDelimiters": [
     { "start": "$", "end": "$" },
     { "start": "$$", "end": "$$" },
@@ -255,7 +256,10 @@
     { "name": "pl-matrix-component-input" },
     { "name": "pl-matrix-input" },
     { "name": "pl-checkbox" },
-    { "name": "pl-multiple-choice" },
+    {
+      "name": "pl-multiple-choice",
+      "schema": "./apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.schema.json"
+    },
     { "name": "pl-order-blocks" },
     { "name": "pl-block-group" }, // pl-order-blocks
     { "name": "pl-answer" }, // pl-multiple-choice / pl-checkbox / pl-order-blocks

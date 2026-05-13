@@ -68,12 +68,14 @@ def test_unregistered_format_preflight() -> None:
 
 
 def test_unregistered_keyword_preflight() -> None:
-    with pytest.raises(ValueError, match="unregistered PL keyword 'unique-child-tex'"):
-        _assert_registered_names({"type": "object", "unique-child-tex": True})
+    with pytest.raises(
+        ValueError, match="unregistered PL keyword 'unique-child-inner-htm'"
+    ):
+        _assert_registered_names({"type": "object", "unique-child-inner-htm": True})
 
 
-def test_unique_child_text_keyword() -> None:
-    schema = {"type": "object", "unique-child-text": True}
+def test_unique_child_inner_html_keyword() -> None:
+    schema = {"type": "object", "unique-child-inner-html": True}
     element = lxml.html.fragment_fromstring(
         "<pl-widget><pl-answer> A </pl-answer><pl-answer>A</pl-answer></pl-widget>"
     )
@@ -81,7 +83,7 @@ def test_unique_child_text_keyword() -> None:
     validator = PLValidator(schema)
     errors = list(validator.iter_errors(_build_envelope(element)))
 
-    assert errors[0].message == "Duplicate child text: 'A'"
+    assert errors[0].message == "Duplicate child inner HTML: 'A'"
 
 
 def test_pl_float_range_keyword() -> None:

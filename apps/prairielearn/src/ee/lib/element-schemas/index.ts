@@ -1,7 +1,6 @@
 import type { CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { plFormats } from './formats.js';
-import { plKeywords } from './keywords.js';
+import { formats, keywords } from './ajv-extensions.js';
 import { plMultipleChoiceJsonSchema } from './pl-multiple-choice.js';
 
 const elementSchemas = {
@@ -15,8 +14,8 @@ export function serializeElementSchemas(): {
 } {
   return {
     schemas: elementSchemas,
-    keywords: Object.keys(plKeywords),
-    formats: Object.keys(plFormats),
+    keywords: Object.keys(keywords),
+    formats: Object.keys(formats),
   };
 }
 

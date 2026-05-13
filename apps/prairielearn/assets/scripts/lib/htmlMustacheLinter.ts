@@ -6,8 +6,7 @@ import {
 } from '@reteps/tree-sitter-htmlmustache/linter';
 import type ace from 'ace-builds';
 
-import { plFormats } from '../../../src/ee/lib/element-schemas/formats.js';
-import { plKeywords } from '../../../src/ee/lib/element-schemas/keywords.js';
+import { formats, keywords } from '../../../src/ee/lib/element-schemas/ajv-extensions.js';
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
@@ -36,8 +35,8 @@ function getLinter(): Promise<Linter> {
       if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
       return name;
     },
-    formats: plFormats,
-    keywords: plKeywords,
+    formats,
+    keywords,
   });
   return linterPromise;
 }

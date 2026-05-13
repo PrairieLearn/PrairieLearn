@@ -1,49 +1,86 @@
-import type { SchemaKeyword } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { SchemaFormat, SchemaKeyword } from '@reteps/tree-sitter-htmlmustache/linter';
 import type { ErrorObject } from 'ajv';
+
+export const BOOLEAN_TRUE_VALUES = [
+  'true',
+  't',
+  '1',
+  'True',
+  'T',
+  'TRUE',
+  'yes',
+  'y',
+  'Yes',
+  'Y',
+  'YES',
+];
+
+export const BOOLEAN_FALSE_VALUES = [
+  'false',
+  'f',
+  '0',
+  'False',
+  'F',
+  'FALSE',
+  'no',
+  'n',
+  'No',
+  'N',
+  'NO',
+];
+
+export const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
+
+const booleanValueSet = new Set(BOOLEAN_VALUES);
+
+const plBoolean: SchemaFormat = (value) => typeof value === 'string' && booleanValueSet.has(value);
+
+const plInteger: SchemaFormat = (value) => typeof value === 'string' && /^-?\d+$/.test(value);
+
+const plFloat: SchemaFormat = (value) =>
+  typeof value === 'string' && /^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(value);
+
+export const formats = {
+  'pl-boolean': plBoolean,
+  'pl-integer': plInteger,
+  'pl-float': plFloat,
+};
 
 type KeywordValidateFunction = ((schema: unknown, data: unknown) => boolean) & {
   errors?: ErrorObject[] | null;
 };
 
-function stripTags(html: string): string {
-  return html.replaceAll(/<[^>]*>/g, '');
-}
-
-const validateUniqueChildText: KeywordValidateFunction = (_schema, data) => {
-  validateUniqueChildText.errors = null;
+const validateUniqueChildInnerHtml: KeywordValidateFunction = (_schema, data) => {
+  validateUniqueChildInnerHtml.errors = null;
 
   if (!Array.isArray(data)) return true;
 
   const seen = new Set<string>();
   for (const child of data) {
-    const text =
-      child && typeof child === 'object' ? (child as { text?: unknown }).text : undefined;
     const innerHtml =
       child && typeof child === 'object' ? (child as { innerHtml?: unknown }).innerHtml : undefined;
-    const normalizedText = (
-      typeof text === 'string' ? text : typeof innerHtml === 'string' ? stripTags(innerHtml) : ''
-    ).trim();
-    if (seen.has(normalizedText)) {
-      validateUniqueChildText.errors = [
+    const normalized = (typeof innerHtml === 'string' ? innerHtml : '').trim();
+    if (seen.has(normalized)) {
+      validateUniqueChildInnerHtml.errors = [
         {
           instancePath: '',
           schemaPath: '',
-          keyword: 'unique-child-text',
+          keyword: 'unique-child-inner-html',
           params: {},
-          message: `duplicate child text "${normalizedText}"`,
+          message: `duplicate child inner HTML "${normalized}"`,
         },
       ];
       return false;
     }
-    seen.add(normalizedText);
+    seen.add(normalized);
   }
   return true;
 };
 
-const uniqueChildText = {
+const uniqueChildInnerHtml = {
   type: 'array',
   errors: true,
-  validate: validateUniqueChildText,
+  validate: validateUniqueChildInnerHtml,
 } as unknown as SchemaKeyword;
 
 const validatePlFloatRange: KeywordValidateFunction = (schema, data) => {
@@ -76,7 +113,7 @@ const plFloatRange = {
   validate: validatePlFloatRange,
 } as unknown as SchemaKeyword;
 
-export const plKeywords = {
+export const keywords = {
   'pl-float-range': plFloatRange,
-  'unique-child-text': uniqueChildText,
+  'unique-child-inner-html': uniqueChildInnerHtml,
 };

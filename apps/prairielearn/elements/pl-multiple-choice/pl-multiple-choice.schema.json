@@ -164,7 +164,7 @@
     },
     "children": {
       "type": "array",
-      "unique-child-text": true,
+      "unique-child-inner-html": true,
       "items": {
         "type": "object",
         "properties": {

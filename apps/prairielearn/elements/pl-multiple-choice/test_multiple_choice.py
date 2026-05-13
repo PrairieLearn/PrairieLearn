@@ -191,15 +191,14 @@ def test_prepare_requires_dropdown_for_dropdown_attributes(
         )
 
 
-def test_prepare_rejects_duplicate_visible_text_with_different_markup() -> None:
-    with pytest.raises(ValueError, match="Duplicate child text"):
-        pl_multiple_choice.prepare(
-            mc_html(
-                answers='<pl-answer correct="true"><strong>A</strong></pl-answer><pl-answer>A</pl-answer>',
-                builtin_grading=True,
-            ),
-            _make_question_data(),
-        )
+def test_prepare_allows_duplicate_visible_text_with_different_markup() -> None:
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true"><strong>A</strong></pl-answer><pl-answer>A</pl-answer>',
+            builtin_grading=True,
+        ),
+        _make_question_data(),
+    )
 
 
 def test_prepare_rejects_duplicate_external_json_answers(tmp_path: Any) -> None:

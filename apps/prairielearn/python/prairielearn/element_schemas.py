@@ -38,7 +38,7 @@ pl_format_checker.checks("pl-integer")(_check_pl_integer)
 pl_format_checker.checks("pl-float")(_check_pl_float)
 
 
-def _unique_child_text(
+def _unique_child_inner_html(
     validator: Draft202012Validator,
     value: Any,
     instance: Any,
@@ -59,13 +59,15 @@ def _unique_child_text(
     for child in children:
         if not isinstance(child, Mapping):
             continue
-        text = child.get("text", "")
-        if not isinstance(text, str):
+        inner_html_value = child.get("innerHtml", "")
+        if not isinstance(inner_html_value, str):
             continue
-        text = text.strip()
-        if text in seen:
-            yield ValidationError(f"Duplicate child text: {text!r}")
-        seen.add(text)
+        inner_html_value = inner_html_value.strip()
+        if inner_html_value in seen:
+            yield ValidationError(
+                f"Duplicate child inner HTML: {inner_html_value!r}"
+            )
+        seen.add(inner_html_value)
 
 
 def _pl_float_range(
@@ -92,7 +94,7 @@ def _pl_float_range(
 
 PL_KEYWORDS = {
     "pl-float-range": _pl_float_range,
-    "unique-child-text": _unique_child_text,
+    "unique-child-inner-html": _unique_child_inner_html,
 }
 PLValidator = extend(Draft202012Validator, validators=PL_KEYWORDS)
 

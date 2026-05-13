@@ -2,7 +2,7 @@
 
 import * as z from 'zod/v4';
 
-import { BOOLEAN_FALSE_VALUES } from './formats.js';
+import { BOOLEAN_FALSE_VALUES } from './ajv-extensions.js';
 
 const aotaNotaValues = ['false', 'random', 'correct', 'incorrect'];
 
@@ -14,7 +14,7 @@ const plAnswerAttributeSchema = z
   })
   .strict();
 
-export const plMultipleChoiceEnvelopeSchema = z.object({
+const plMultipleChoiceEnvelopeSchema = z.object({
   tag: z.literal('pl-multiple-choice'),
   attributes: z.record(z.string(), z.unknown()),
   children: z.array(
@@ -136,7 +136,7 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
       },
       children: {
         type: 'array',
-        'unique-child-text': true,
+        'unique-child-inner-html': true,
         items: {
           type: 'object',
           properties: {
