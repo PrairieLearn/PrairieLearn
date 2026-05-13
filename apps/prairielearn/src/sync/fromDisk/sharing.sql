@@ -13,6 +13,7 @@ DELETE FROM sharing_set_questions AS ssq USING sharing_sets AS ss
 WHERE
   ssq.sharing_set_id = ss.id
   AND ss.course_id = $course_id
+  AND ssq.question_id = ANY ($synced_question_ids::bigint[])
   AND (ssq.question_id, ssq.sharing_set_id) NOT IN (
     SELECT
       question_id,
