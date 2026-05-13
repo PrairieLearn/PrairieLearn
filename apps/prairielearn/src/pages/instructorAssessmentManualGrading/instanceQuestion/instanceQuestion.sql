@@ -78,8 +78,8 @@ FROM
   updated_issues AS i;
 
 -- BLOCK select_instance_question_ids_in_group
-SELECT
-  iq.id AS instance_question_id,
+SELECT DISTINCT
+  ON (iq.id) iq.id AS instance_question_id,
   s.id AS submission_id
 FROM
   instance_questions AS iq
@@ -92,11 +92,16 @@ WHERE
     iq.ai_instance_question_group_id
   ) = $selected_instance_question_group_id
   AND ai.assessment_id = $assessment_id
-  -- If skipping graded submissions, only include instance questions that require manual grading. 
+  -- If skipping graded submissions, only include instance questions that require manual grading.
   AND (
     NOT $skip_graded_submissions
     OR iq.requires_manual_grading
-  );
+  )
+ORDER BY
+  iq.id,
+  v.date DESC,
+  s.date DESC,
+  s.id DESC;
 
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT
