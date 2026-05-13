@@ -51,7 +51,7 @@ export function InstructorAssessmentQuestionStatistics({
   resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
-  // Fetch assessments.stats_last_updated (the time when we last updated
+  // Use assessments.stats_last_updated (the time when we last updated
   // the _question_ statistics for this assessment). Note that this is
   // different to assessments.statistics_last_updated_at (the time we last
   // updated the assessment instance statistics stored in the assessments
