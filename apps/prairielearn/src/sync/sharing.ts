@@ -40,7 +40,7 @@ export async function getInvalidRenames(
   if (renamedQuestions.length === 0) return false;
 
   const blockedQuestions = await sqldb.queryRows(
-    sql.select_questions_used_in_other_courses,
+    sql.select_renames_used_in_other_courses,
     { course_id: courseId, question_ids: renamedQuestions.map((q) => q.id) },
     z.object({ qid: z.string() }),
   );
@@ -154,53 +154,47 @@ export async function checkInvalidSharingSetRemovals(
     }),
   );
 
-  const candidateRemovals: Record<string, { id: string; sharing_sets: string[] }> = {};
+  const removedQuestionSharingSets: { question_id: string; sharing_set_name: string }[] = [];
   sharedQuestions.forEach((question) => {
     if (!(question.qid in courseData.questions)) {
       // this case is handled by the checks for shared questions being
       // renamed or deleted
       return;
     }
-    if (!courseData.questions[question.qid].data?.sharingSets) {
-      candidateRemovals[question.qid] = { id: question.id, sharing_sets: question.sharing_sets };
-      return;
-    }
-
+    const diskSharingSets = courseData.questions[question.qid].data?.sharingSets ?? [];
     question.sharing_sets.forEach((sharingSet) => {
-      if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
-        if (!(question.qid in candidateRemovals)) {
-          candidateRemovals[question.qid] = { id: question.id, sharing_sets: [] };
-        }
-        candidateRemovals[question.qid].sharing_sets.push(sharingSet);
+      if (!diskSharingSets.includes(sharingSet)) {
+        removedQuestionSharingSets.push({
+          question_id: question.id,
+          sharing_set_name: sharingSet,
+        });
       }
     });
   });
 
-  if (Object.keys(candidateRemovals).length === 0) return false;
+  if (removedQuestionSharingSets.length === 0) return false;
 
-  const blockedQuestions = await sqldb.queryRows(
-    sql.select_questions_used_in_other_courses,
+  const blockedPairs = await sqldb.queryRows(
+    sql.select_in_use_question_sharing_set_removals,
     {
       course_id: courseId,
-      question_ids: Object.values(candidateRemovals).map((c) => c.id),
+      removed_question_sharing_sets: JSON.stringify(removedQuestionSharingSets),
     },
-    z.object({ qid: z.string() }),
+    z.object({ qid: z.string(), sharing_set_name: z.string() }),
   );
 
-  if (blockedQuestions.length === 0) return false;
+  if (blockedPairs.length === 0) return false;
 
-  const blockedQids = new Set(blockedQuestions.map((q) => q.qid));
   const invalidSharingSetRemovals: Record<string, string[]> = {};
-  for (const [qid, { sharing_sets }] of Object.entries(candidateRemovals)) {
-    if (blockedQids.has(qid)) {
-      invalidSharingSetRemovals[qid] = sharing_sets;
+  for (const { qid, sharing_set_name } of blockedPairs) {
+    if (!(qid in invalidSharingSetRemovals)) {
+      invalidSharingSetRemovals[qid] = [];
     }
+    invalidSharingSetRemovals[qid].push(sharing_set_name);
   }
 
-  if (Object.keys(invalidSharingSetRemovals).length === 0) return false;
-
   logger.error(
-    `✖ Course sync completely failed. The following questions are used in other courses' assessments, so they cannot be removed from the listed sharing sets: ${Object.keys(
+    `✖ Course sync completely failed. The following questions are used by consuming courses through the listed sharing sets, so they cannot be removed from those sets: ${Object.keys(
       invalidSharingSetRemovals,
     )
       .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
