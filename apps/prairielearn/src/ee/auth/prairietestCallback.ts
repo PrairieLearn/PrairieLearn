@@ -30,7 +30,9 @@ router.post(
     const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');
     let payload: jose.JWTPayload;
     try {
-      const verifyResult = await jose.jwtVerify(jwt, key, { audience: 'prairielearn' });
+      // TODO: require `audience: 'prairielearn'` once all PrairieTest deployments
+      // are issuing JWTs with the `aud` claim set.
+      const verifyResult = await jose.jwtVerify(jwt, key);
       payload = verifyResult.payload;
     } catch (err) {
       if (err instanceof jose.errors.JWSSignatureVerificationFailed) {
