@@ -1980,7 +1980,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /"autoPoints" \(15\) should not exceed "maxAutoPoints" \(10\)/,
+      /Question "test": "autoPoints" \(15\) should not exceed "maxAutoPoints" \(10\)/,
     );
   });
 
@@ -2003,7 +2003,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /"points" \(20\) should not exceed "maxPoints" \(10\)/,
+      /Question "test": "points" \(20\) should not exceed "maxPoints" \(10\)/,
     );
   });
 
@@ -2110,7 +2110,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /"numberChoose" \(5\) exceeds the number of alternatives \(2\)/,
+      /Zone "test zone", alternative group 1: "numberChoose" \(5\) exceeds the number of alternatives \(2\)/,
     );
   });
 

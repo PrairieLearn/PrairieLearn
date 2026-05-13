@@ -1294,14 +1294,18 @@ function validateAssessment({
       draftQids.add(qid);
     }
   };
-  assessment.zones.forEach((zone) => {
-    zone.questions.map((zoneQuestion) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
+    const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+    zone.questions.forEach((zoneQuestion, questionIndex) => {
       const effectiveAlternativePoolAllowRealTimeGrading =
         zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
 
       // We'll normalize either single questions or alternative pools
       // to make validation easier
-      let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
+      let alternatives: (QuestionPointsJson & {
+        allowRealTimeGrading: boolean;
+        id?: string;
+      })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       }
@@ -1321,6 +1325,7 @@ function validateAssessment({
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
             allowRealTimeGrading:
               alternative.allowRealTimeGrading ?? effectiveAlternativePoolAllowRealTimeGrading,
+            id: alternative.id,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1333,20 +1338,24 @@ function validateAssessment({
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
             allowRealTimeGrading: effectiveAlternativePoolAllowRealTimeGrading,
+            id: zoneQuestion.id,
           },
         ];
       } else {
         errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
-      alternatives.forEach((alternative) => {
+      alternatives.forEach((alternative, alternativeIndex) => {
+        const alternativeLabel = alternative.id
+          ? `Question "${alternative.id}"`
+          : `Zone "${zoneLabel}", question ${questionIndex + 1}, alternative ${alternativeIndex + 1}`;
         if (
           !alternative.allowRealTimeGrading &&
           ((Array.isArray(alternative.autoPoints) && alternative.autoPoints.length > 1) ||
             (Array.isArray(alternative.points) && alternative.points.length > 1))
         ) {
           errors.push(
-            'Cannot specify an array of multiple point values if real-time grading is disabled',
+            `${alternativeLabel}: Cannot specify an array of multiple point values if real-time grading is disabled`,
           );
         }
 
@@ -1355,7 +1364,9 @@ function validateAssessment({
           alternative.autoPoints == null &&
           alternative.manualPoints == null
         ) {
-          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+          errors.push(
+            `${alternativeLabel}: Must specify "points", "autoPoints" or "manualPoints" for a question`,
+          );
         }
         if (
           alternative.points != null &&
@@ -1364,13 +1375,13 @@ function validateAssessment({
             alternative.maxAutoPoints != null)
         ) {
           errors.push(
-            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+            `${alternativeLabel}: Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
           );
         }
         if (assessment.type === 'Exam') {
           if (alternative.maxPoints != null || alternative.maxAutoPoints != null) {
             errors.push(
-              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment',
+              `${alternativeLabel}: Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment`,
             );
           }
 
@@ -1384,7 +1395,7 @@ function validateAssessment({
             (points, index) => index === 0 || points <= pointsList[index - 1],
           );
           if (!isNonIncreasing) {
-            errors.push('Points for a question must be non-increasing');
+            errors.push(`${alternativeLabel}: Points for a question must be non-increasing`);
           }
         }
         if (assessment.type === 'Homework') {
@@ -1395,13 +1406,13 @@ function validateAssessment({
               alternative.maxAutoPoints != null)
           ) {
             errors.push(
-              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+              `${alternativeLabel}: Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
             );
           }
 
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
-              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
+              `${alternativeLabel}: Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment`,
             );
           }
 
@@ -1411,7 +1422,7 @@ function validateAssessment({
               alternative.maxPoints != null &&
               alternative.maxPoints > 0
             ) {
-              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+              errors.push(`${alternativeLabel}: Cannot specify "points": 0 when "maxPoints" > 0`);
             }
 
             if (
@@ -1419,7 +1430,9 @@ function validateAssessment({
               alternative.maxAutoPoints != null &&
               alternative.maxAutoPoints > 0
             ) {
-              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+              errors.push(
+                `${alternativeLabel}: Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0`,
+              );
             }
 
             if (
@@ -1429,7 +1442,7 @@ function validateAssessment({
               alternative.autoPoints > alternative.maxAutoPoints
             ) {
               warnings.push(
-                `"autoPoints" (${alternative.autoPoints}) should not exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
+                `${alternativeLabel}: "autoPoints" (${alternative.autoPoints}) should not exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
               );
             }
 
@@ -1440,7 +1453,7 @@ function validateAssessment({
               alternative.points > alternative.maxPoints
             ) {
               warnings.push(
-                `"points" (${alternative.points}) should not exceed "maxPoints" (${alternative.maxPoints})`,
+                `${alternativeLabel}: "points" (${alternative.points}) should not exceed "maxPoints" (${alternative.maxPoints})`,
               );
             }
           }
@@ -1454,7 +1467,7 @@ function validateAssessment({
         zoneQuestion.numberChoose > zoneQuestion.alternatives.length
       ) {
         warnings.push(
-          `Alternative group: "numberChoose" (${zoneQuestion.numberChoose}) exceeds the number of alternatives (${zoneQuestion.alternatives.length})`,
+          `Zone "${zoneLabel}", alternative group ${questionIndex + 1}: "numberChoose" (${zoneQuestion.numberChoose}) exceeds the number of alternatives (${zoneQuestion.alternatives.length})`,
         );
       }
     });
