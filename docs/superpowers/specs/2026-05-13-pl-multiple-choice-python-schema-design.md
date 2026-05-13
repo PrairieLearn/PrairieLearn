@@ -33,7 +33,7 @@ z.toJSONSchema(...) at TS import time
         │
         └──→ generate.ts (new): writes
               apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.schema.json
-              apps/prairielearn/elements/_element-schemas/keywords.manifest.json
+              apps/prairielearn/src/ee/lib/element-schemas/keywords.manifest.json
                        │
                        ▼
                  pl-multiple-choice.py:
@@ -66,11 +66,13 @@ apps/prairielearn/python/prairielearn/test/test_element_schemas.py
 
 apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.schema.json
   — generated, checked in
-apps/prairielearn/elements/_element-schemas/keywords.manifest.json
+apps/prairielearn/src/ee/lib/element-schemas/keywords.manifest.json
   — generated, checked in: {"keywords": [...], "formats": [...]}
 
-apps/prairielearn/src/ee/lib/element-schemas/generate.ts
-  — script: writes per-element schema files + keywords manifest
+scripts/gen-element-schemas.mts
+  — generator: imports the TS pilot's serializer, writes per-element
+    schema files + keywords manifest. Matches the existing
+    scripts/gen-jsonschema.mts pattern; run via tsx from the Makefile.
 ```
 
 **Modified (Python):**
@@ -89,8 +91,15 @@ apps/prairielearn/src/ee/lib/element-schemas/generate.ts
 
 **Modified (TS):**
 
-- `apps/prairielearn/src/ee/lib/element-schemas/index.ts`: split the `z.toJSONSchema(...)` call into a function the generator can also invoke.
-- `Makefile`: new `update-element-schemas` target.
+- `apps/prairielearn/src/ee/lib/element-schemas/index.ts`: expose a serializer function (`serializeElementSchemas()` returning `{ schemas: Record<elementName, JsonSchema>, keywords: string[], formats: string[] }`) that both the in-process linter/AI-agent consumers and the generator script call. The existing TS pilot already computes the schemas at import time; this just makes the artifact addressable.
+- `Makefile`: new `update-element-schemas` target, body:
+
+  ```make
+  update-element-schemas:
+  	@yarn dlx tsx scripts/gen-element-schemas.mts && \
+  	  yarn prettier --write "apps/prairielearn/elements/**/*.schema.json" \
+  	                       "apps/prairielearn/src/ee/lib/element-schemas/keywords.manifest.json"
+  ```
 - CI config: freshness check on the generated schema files and manifest, same shape as `update-jsonschema`.
 
 ## Validation entry point
@@ -133,7 +142,7 @@ def _build_envelope(element):
             {
                 "tag": child.tag.replace("_", "-"),
                 "attributes": _normalize_attrs(child.attrib),
-                "text": pl.inner_html(child),  # TODO — see below
+                "text": child.text_content(),
             }
             for child in element
             if not isinstance(child, lxml.etree._Comment)
@@ -146,7 +155,7 @@ def _normalize_attrs(attribs):
 
 Underscore-form names (`pl_answer`, `none_of_the_above`) get normalized to dash-form before validation. The schema only ever sees dash-form. (The TS-side linter may or may not normalize the same way today — out of scope for this spec; if the TS-side accepts source-HTML underscore forms as "unknown attribute" errors, that's a TS-pilot question, not a Python-consumer question, since the Python envelope is constructed from already-parsed lxml.)
 
-**TODO (implementation plan must resolve before `unique-child-text` is wired up in Python):** confirm what the TS linter exposes as `text` per child in the ajv envelope. Python currently uses `pl.inner_html(child)` for duplicate-detection (the existing Counter at `prepare:499-501`); the TS linter's `text` projection is more likely to be visible text content (`.text_content()`). If they differ, pick one — either change Python's `text` to match, or change the schema to use the `innerHtml` projection. Until this is resolved, the duplicate-text check stays in `prepare()` and is removed in a follow-up commit. This is what the "gated on the §3 TODO" notes elsewhere in this doc refer to.
+**Note on `text` semantics (intentional tightening):** the envelope's `text` field uses `lxml`'s `.text_content()` — visible text only, stripping inner HTML markup. This matches the TS linter's `text` projection (per the TS pilot's `unique-child-text` example) and tightens Python's existing duplicate detection, which used `pl.inner_html(child)` and therefore treated `<b>A</b>` and `A` as distinct. Under the new behavior they're duplicates — which is the correct rule from the student's perspective. Any course content that intentionally relied on markup-distinguished duplicates will surface as a `ValueError` after this lands; that's a course-content bug worth surfacing.
 
 ## Format & keyword registries
 
@@ -196,7 +205,7 @@ def parse_pl_boolean(value: str) -> bool:
 
 ## Parity manifest
 
-TS generator emits `apps/prairielearn/elements/_element-schemas/keywords.manifest.json`:
+TS generator emits `apps/prairielearn/src/ee/lib/element-schemas/keywords.manifest.json`:
 
 ```json
 {
@@ -205,7 +214,9 @@ TS generator emits `apps/prairielearn/elements/_element-schemas/keywords.manifes
 }
 ```
 
-One manifest, not per-element — the registries are global. Python parity test:
+One manifest, not per-element — the registries are global. The manifest is a **registry snapshot**: it lists names *registered* on the TS side (`Object.keys(plKeywords)`, format names in `plFormats`), not names *referenced* by any element schema. Reference-side issues (a schema that uses an unregistered keyword) are caught at validation time by `_assert_registered_names`; two-layer defense without trying to compute a union-of-references at generator time.
+
+Python parity test:
 
 ```python
 def test_keyword_format_parity():
@@ -218,7 +229,13 @@ Catches **presence drift only**. Semantic drift (same name, different behavior) 
 
 ## Pre-flight registry check
 
-`_assert_registered_names(schema)` walks the loaded schema once and asserts every `format` and consumer-keyword name referenced is registered in `PL_KEYWORDS` / `pl_format_checker.checkers`. Cheap and runs once per schema load (cached). Without this, jsonschema silently _skips_ unknown format/keyword names per Draft 2020-12 default — a footgun the CI parity test catches in steady state, but the in-process assertion gives a much clearer error to anyone iterating locally.
+`_assert_registered_names(schema)` walks the loaded schema once and asserts every `format` and consumer-keyword name referenced is registered in `PL_KEYWORDS` / `pl_format_checker.checkers`. Cheap and runs once per schema load (cached).
+
+Without this, jsonschema silently _skips_ unknown format/keyword names — required behavior per Draft 2020-12 § 4.3.1, which mandates implementations ignore unknown keywords so schemas remain portable across vocabularies. A typo (`pl-bolean` for `pl-boolean`) would pass validation trivially. The CI parity test catches naming drift between TS and Python registries, but a typo present in *both* registries would slip through; the pre-flight walker catches the typo locally at first `validate_element` call.
+
+**Walker shape**: explicit recursion over subschema-position keywords (`properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `items`, `prefixItems`, `contains`, `allOf`, `anyOf`, `oneOf`, `not`, `if`, `then`, `else`, `dependentSchemas`, `$defs` / `definitions`). At each node, collect any `format` value and any object-key matching `PL_KEYWORDS`. Assert each collected name is in the registered set, with a clear error naming the offender and the schema path.
+
+The implementation plan must include a unit test that runs the walker over a hand-crafted nested schema and verifies it finds names buried in each subschema-position keyword. ~20 LOC of walker plus ~30 LOC of test.
 
 ## Error mapping
 
@@ -247,7 +264,7 @@ All paths the schema now covers:
 | `builtin-grading=false` exclusions for `weight`, `hide-score-badge`, restricted aota/nota, per-child `score`/`feedback` | `prepare:462-491`              | Schema `if/then` over the envelope                                     |
 | `pl.check_attribs(child, ...)` for `pl-answer`                                                                          | `categorize_options:77-81`     | Schema `children.items.properties` + `additionalProperties: false`     |
 | Score range `[0.0, 1.0]`                                                                                                | `categorize_options:88-93`     | Schema `minimum`/`maximum` on `pl-float`-typed property                |
-| Duplicate-text Counter                                                                                                  | `prepare:499-508`              | Schema `unique-child-text` keyword (gated on the envelope-`text` TODO) |
+| Duplicate-text Counter                                                                                                  | `prepare:499-508`              | Schema `unique-child-text` keyword over `.text_content()`-based `text` |
 | TS-pilot-added header TODO comment                                                                                      | top of `pl-multiple-choice.py` | n/a                                                                    |
 
 ## Kept in `prepare()`
@@ -271,7 +288,10 @@ Doesn't apply on the Python side. `prepare()` runs _after_ mustache rendering, s
 ## Tests
 
 - **`test_element_schemas.py`** (new — harness only): envelope construction (including underscore normalization), error mapping (three `errorMessage` shapes), pre-flight registry check (unregistered format/keyword raises clearly), parity test against `keywords.manifest.json`. Does not import any element's schema; pure harness coverage.
-- **`pl-multiple-choice.test.py`** (modified): reword assertions for messages that change from interpolated `ValueError` strings to static `errorMessage` strings. Add rows for tightened rules (`minItems: 1` on children, score range, duplicate-text once the envelope-`text` TODO resolves). Rows for rules that stay in `prepare()` (cross-element name uniqueness, sampling-time invariants) unchanged.
+- **`pl-multiple-choice.test.py`** (modified). Two categories of update:
+  - **Moved coverage, reworded message**: every rule in the §Removed-from-prepare table whose existing test row asserts on a Python `ValueError` string. Reword to the schema's `errorMessage`, and update the row's expected failure point (the assertion now fires at `validate_element` rather than inside `prepare_answers_to_display` / `categorize_options` / etc.). Includes `minItems: 1` (was at `prepare_answers_to_display:222-225`) and score range `[0.0, 1.0]` (was at `categorize_options:88-93`) — these are *not* new rules for Python; they used to fire deeper in the call stack and now fire at the schema check.
+  - **Genuinely tightened coverage**: duplicate-text. Was `pl.inner_html(child)`-based; is now `.text_content()`-based, so a new row covers markup-distinguished visual duplicates (`<b>A</b>` vs `A`) now flagging as duplicates.
+  - Rows for rules that stay in `prepare()` (cross-element name uniqueness, sampling-time invariants like the AOTA/NOTA conflicts and `number-answers`-cannot-be-satisfied) are unchanged.
 - **`pl-multiple-choice.test.ts`** (modified — TS pilot's test): unchanged. Same schema, same assertions. Confirms the generator's serialized output behaves identically to in-memory zod compilation.
 
 ## Failure modes
