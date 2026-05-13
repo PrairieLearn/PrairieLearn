@@ -25,6 +25,8 @@ const StudentGradebookRowSchema = z
     // we should return the raw data from the database, and parse that data
     // again with additional authorization context to narrow the return type.
 
+    // Legacy access control computes this in SQL. Modern access control needs
+    // instance-aware visibility, so `gradebook.ts` applies it after parsing.
     if (!data.modern_access_control && !data.show_closed_assessment_score) {
       data.assessment_instance.points = null;
       data.assessment_instance.score_perc = null;

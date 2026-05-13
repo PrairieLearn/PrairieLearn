@@ -103,8 +103,15 @@ export interface AccessControlResolverResult {
    * Translates to the legacy `authz_result.active` field.
    */
   submittable: boolean;
-  /** Effective visibility to apply right now. */
+  /**
+   * Effective visibility for this assessment-level result. Instance-specific
+   * completion may replace this before converting to assessment-instance authz.
+   */
   visibility: Visibility;
+  /**
+   * Explains which policy produced the effective `visibility`.
+   */
+  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
    * Top-level after-complete visibility policy, evaluated against the current
    * date. This is applied only once the assessment is complete.
@@ -118,10 +125,6 @@ export interface AccessControlResolverResult {
    * separately in the modern authz layer.
    */
   complete: boolean;
-  /**
-   * Explains which policy produced the effective `visibility`.
-   */
-  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
    * When the assessment is gated behind a PrairieTest reservation, this is
    * the reservation's `accessEnd` timestamp. Used to determine whether the
@@ -169,9 +172,9 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   password: null,
   submittable: false,
   visibility: VISIBLE,
+  visibilitySource: 'default',
   afterCompleteVisibility: VISIBLE,
   complete: false,
-  visibilitySource: 'default',
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
@@ -186,9 +189,9 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   password: null,
   submittable: true,
   visibility: VISIBLE,
+  visibilitySource: 'default',
   afterCompleteVisibility: VISIBLE,
   complete: false,
-  visibilitySource: 'default',
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
@@ -454,9 +457,9 @@ export function resolveAccessControl(
       return {
         ...UNAUTHORIZED_RESULT,
         visibility: afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
         afterCompleteVisibility,
         complete: true,
-        visibilitySource: 'afterComplete',
         accessTimeline,
       };
     }
@@ -479,9 +482,9 @@ export function resolveAccessControl(
       password: null,
       submittable,
       visibility: examVisibility,
+      visibilitySource: 'prairieTest',
       afterCompleteVisibility,
       complete: matched.readOnly,
-      visibilitySource: 'prairieTest',
       examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
       // The PT reservation governs access; the date-control timeline is
@@ -503,9 +506,9 @@ export function resolveAccessControl(
         ...UNAUTHORIZED_RESULT,
         authorized: reviewMode,
         visibility: afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
         afterCompleteVisibility,
         complete: true,
-        visibilitySource: 'afterComplete',
         accessTimeline,
         showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
       };
@@ -542,9 +545,9 @@ export function resolveAccessControl(
     return {
       ...UNAUTHORIZED_RESULT,
       visibility: afterCompleteVisibility,
+      visibilitySource: 'afterComplete',
       afterCompleteVisibility,
       complete: true,
-      visibilitySource: 'afterComplete',
       accessTimeline,
     };
   }
@@ -575,9 +578,9 @@ export function resolveAccessControl(
     password: current.submittable ? (rule.dateControl?.password ?? null) : null,
     submittable: current.submittable,
     visibility,
+    visibilitySource,
     afterCompleteVisibility,
     complete,
-    visibilitySource,
     examAccessEnd: null,
     showBeforeRelease: false,
     accessTimeline,

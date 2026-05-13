@@ -233,18 +233,20 @@ export function resolverResultToAuthzAssessmentForInstance({
   assessmentInstance: { open: boolean | null; date_limit: Date | null } | null;
   reqDate: Date;
 }): SprocAuthzAssessment {
-  const resultForInstance = run(() => {
+  const resultForInstance = run((): AccessControlResolverResult => {
     if (assessmentInstance == null) return result;
 
     const timeLimitExpired =
       assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
     if (result.visibilitySource === 'prairieTest') return result;
-    if (assessmentInstance.open !== false && !timeLimitExpired) return result;
+    if (assessmentInstance.open !== false && !timeLimitExpired) {
+      return result;
+    }
 
     return {
       ...result,
       visibility: result.afterCompleteVisibility,
-      visibilitySource: 'afterComplete' as const,
+      visibilitySource: 'afterComplete',
       complete: true,
       submittable: false,
     };

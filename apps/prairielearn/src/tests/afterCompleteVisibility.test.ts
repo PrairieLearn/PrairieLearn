@@ -26,6 +26,8 @@ describe(
     // No `afterLastDeadline`, so the assessment becomes non-submittable (and thus
     // "complete" per the resolver) once the due date passes, even though the
     // homework instance stays open.
+    // The timed exam uses the same hidden afterComplete policy, but reaches
+    // instance-specific completion when its duration limit expires.
     const activeWindowCookie = 'pl_test_user=test_student; pl_test_date=2026-04-05T00:00:00Z';
     const afterTimeLimitCookie = 'pl_test_user=test_student; pl_test_date=2026-04-05T00:20:00Z';
     const afterCompleteCookie = 'pl_test_user=test_student; pl_test_date=2026-04-15T00:00:00Z';
