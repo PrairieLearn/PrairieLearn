@@ -91,9 +91,8 @@ FROM
 
 -- BLOCK stop_job_sequence
 -- Atomically transition a Running job sequence into 'Stopping'. Optional
--- type/assessment_question_id filters allow callers to scope the update
--- (e.g. AI grading restricts to type='ai_grading' for the current page's
--- assessment question).
+-- type/assessment_question_id filters allow callers to scope the update to
+-- the type of job and/or the page context that initiated the stop.
 UPDATE job_sequences
 SET
   status = 'Stopping',
@@ -238,8 +237,9 @@ WHERE
   js.id = j.job_sequence_id
   AND j.update_job_sequence
   -- Don't overwrite a sequence that already reached a terminal state via
-  -- another path (e.g. AI grading's stop branch landed Stopped while the
-  -- inner job was still Running and now gets swept as abandoned).
+  -- another path. Without this guard, an orchestrator that landed the
+  -- sequence in Stopped before the inner job naturally settled could see
+  -- the abandoned-job sweeper overwrite Stopped with Error.
   AND js.status NOT IN ('Stopped', 'Success', 'Error');
 
 -- BLOCK select_abandoned_jobs
