@@ -49,12 +49,15 @@ type AssessmentTrpcCtx = ReturnType<typeof createContext>;
 const MAX_UIDS = 50;
 
 export interface AssessmentGroupsError {
-  AddGroup: { code: 'GROUP_OPERATION_FAILED' };
-  EditGroup: { code: 'GROUP_OPERATION_FAILED' };
-  DeleteGroup: { code: 'GROUP_OPERATION_FAILED' };
+  AddGroup: never;
+  EditGroup: never;
+  DeleteGroup: never;
+  DeleteAll: never;
   EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  RandomizeGroups: never;
+  RefreshGroups: never;
 }
 
 const addGroup = t.procedure
@@ -81,10 +84,7 @@ const addGroup = t.procedure
       createdGroupId = group.id;
     } catch (err) {
       if (err instanceof GroupOperationError) {
-        throwAppError<AssessmentGroupsError['AddGroup']>({
-          code: 'GROUP_OPERATION_FAILED',
-          message: err.message,
-        });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
       }
       throw err;
     }
@@ -181,10 +181,7 @@ const deleteGroupProcedure = t.procedure
       await deleteGroup(assessment.id, input.groupId, authn_user.id);
     } catch (err) {
       if (err instanceof GroupOperationError) {
-        throwAppError<AssessmentGroupsError['DeleteGroup']>({
-          code: 'GROUP_OPERATION_FAILED',
-          message: err.message,
-        });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
       }
       throw err;
     }

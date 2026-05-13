@@ -407,7 +407,8 @@ describe('Editing assessment settings', () => {
       } catch (err: unknown) {
         const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
         assert.isNotNull(appError);
-        assert.equal(appError.code, 'INVALID_SHORT_NAME');
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.match(appError.message, /path segments cannot start with a dot/i);
       }
     },
   );

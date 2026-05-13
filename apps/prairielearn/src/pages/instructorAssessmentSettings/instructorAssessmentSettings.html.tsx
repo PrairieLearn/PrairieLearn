@@ -11,7 +11,7 @@ import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { getAppError } from '../../lib/client/errors.js';
+import { AppErrorAlert, getAppError, renderAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
@@ -25,6 +25,14 @@ import { validateShortName } from '../../lib/short-name.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+
+function syncJobFailedRenderer(urlPrefix: string) {
+  return ({ message, jobSequenceId }: { message: string; jobSequenceId: string }) => (
+    <>
+      {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+    </>
+  );
+}
 
 function ScoringSummary({
   zonePointsRange,
@@ -264,11 +272,14 @@ function CopyAssessmentModal({
       </Modal.Header>
       <form onSubmit={onSubmit}>
         <Modal.Body>
-          {copyError && (
-            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
-              {copyError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={copyError}
+            render={{
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => copyMutation.reset()}
+          />
           <p className="text-muted small mb-3">
             Making a copy of <code>{assessment.tid}</code>.
           </p>
@@ -454,10 +465,13 @@ function InstructorAssessmentSettingsInner({
         onDismiss: () => saveMutation.reset(),
       };
     }
-    if (appError?.message) {
+    if (appError) {
       return {
         variant: 'danger',
-        message: appError.message,
+        message: renderAppError(appError, {
+          SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+          UNKNOWN: ({ message }) => message,
+        }),
         onDismiss: () => saveMutation.reset(),
       };
     }
@@ -530,11 +544,14 @@ function InstructorAssessmentSettingsInner({
           <Modal.Title>Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {deleteError && (
-            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-              {deleteError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={deleteError}
+            render={{
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => deleteMutation.reset()}
+          />
           <p>
             Are you sure you want to delete the assessment <b>{assessment.tid}</b>?
           </p>

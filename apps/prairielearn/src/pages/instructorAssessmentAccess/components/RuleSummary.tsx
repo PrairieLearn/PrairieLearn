@@ -1242,7 +1242,9 @@ export function PrairieTestExamsTable({
         </tbody>
       </table>
       <div className="border-top px-3 py-2 text-body-secondary small">
-        {formatListedForStudents(beforeReleaseListed)} before the exam
+        <span>{formatListedForStudents(beforeReleaseListed)} before the exam</span>
+        <span className="mx-1">·</span>
+        <span>PrairieTest controls access and time limits during reservations</span>
       </div>
     </div>
   );
