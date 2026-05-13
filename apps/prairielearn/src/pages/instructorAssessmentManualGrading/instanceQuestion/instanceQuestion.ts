@@ -16,7 +16,6 @@ import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-s
 import {
   AiGradingJobDataForSubmissionSchema,
   buildAiGradingInfo,
-  selectLastSubmissionId,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import {
@@ -50,6 +49,34 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function fetchAiGradingInfo({
+  submission_id,
+  submissionHtmls,
+}: {
+  submission_id: string;
+  submissionHtmls: string[];
+}) {
+  const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
+    sqldb.queryOptionalRow(
+      sql.select_ai_grading_job_data_for_submission,
+      { submission_id },
+      AiGradingJobDataForSubmissionSchema,
+    ),
+    sqldb
+      .queryOptionalScalar(
+        sql.select_exists_manual_grading_job_for_submission,
+        { submission_id },
+        z.boolean(),
+      )
+      .then((manuallyGraded) => manuallyGraded ?? false),
+  ]);
+  return await buildAiGradingInfo({
+    aiGradingJobData,
+    submissionManuallyGraded,
+    submissionHtmls,
+  });
+}
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
@@ -139,29 +166,12 @@ router.get(
 
       const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-      const aiGradingInfo = await run(async () => {
-        if (!aiGradingEnabled) return undefined;
-        const submission_id = await selectLastSubmissionId(instance_question.id);
-        const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
-          sqldb.queryOptionalRow(
-            sql.select_ai_grading_job_data_for_submission,
-            { submission_id },
-            AiGradingJobDataForSubmissionSchema,
-          ),
-          sqldb
-            .queryOptionalScalar(
-              sql.select_exists_manual_grading_job_for_submission,
-              { submission_id },
-              z.boolean(),
-            )
-            .then((manuallyGraded) => manuallyGraded ?? false),
-        ]);
-        return await buildAiGradingInfo({
-          aiGradingJobData,
-          submissionManuallyGraded,
-          submissionHtmls: localsForRender.resLocals.submissionHtmls,
-        });
-      });
+      const aiGradingInfo = aiGradingEnabled
+        ? await fetchAiGradingInfo({
+            submission_id: res.locals.submission!.id,
+            submissionHtmls: localsForRender.resLocals.submissionHtmls,
+          })
+        : undefined;
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
       req.session.show_submissions_assigned_to_me_only =
@@ -209,7 +219,6 @@ router.get(
           instanceQuestionId: res.locals.instance_question.id,
           trpcCsrfToken,
           isDevMode: process.env.NODE_ENV === 'development',
-          hasRubric: res.locals.assessment_question.manual_rubric_id != null,
           useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
           aiGradingSettingsUrl: `${res.locals.urlPrefix}/instance_admin/ai_grading`,
           availableAiGradingProviders: await getAvailableAiGradingProviders(
@@ -360,29 +369,12 @@ router.get(
           groupRolePermissions: null,
         });
 
-        const aiGradingInfo = await run(async () => {
-          if (!aiGradingEnabled) return undefined;
-          const last_submission_id = await selectLastSubmissionId(res.locals.instance_question.id);
-          const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
-            sqldb.queryOptionalRow(
-              sql.select_ai_grading_job_data_for_submission,
-              { submission_id: last_submission_id },
-              AiGradingJobDataForSubmissionSchema,
-            ),
-            sqldb
-              .queryOptionalScalar(
-                sql.select_exists_manual_grading_job_for_submission,
-                { submission_id: last_submission_id },
-                z.boolean(),
-              )
-              .then((manuallyGraded) => manuallyGraded ?? false),
-          ]);
-          return await buildAiGradingInfo({
-            aiGradingJobData,
-            submissionManuallyGraded,
-            submissionHtmls: res.locals.submissionHtmls,
-          });
-        });
+        const aiGradingInfo = aiGradingEnabled
+          ? await fetchAiGradingInfo({
+              submission_id: submission.id,
+              submissionHtmls: res.locals.submissionHtmls,
+            })
+          : undefined;
 
         const gradingPanel = GradingPanel({
           ...locals,

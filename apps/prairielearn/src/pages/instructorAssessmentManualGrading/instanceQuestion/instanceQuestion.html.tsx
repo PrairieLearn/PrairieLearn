@@ -215,7 +215,6 @@ export function InstanceQuestion({
               instanceQuestionId={instanceQuestionAiGradeProps.instanceQuestionId}
               trpcCsrfToken={instanceQuestionAiGradeProps.trpcCsrfToken}
               isDevMode={instanceQuestionAiGradeProps.isDevMode}
-              hasRubric={instanceQuestionAiGradeProps.hasRubric}
               useCustomApiKeys={instanceQuestionAiGradeProps.useCustomApiKeys}
               aiGradingSettingsUrl={instanceQuestionAiGradeProps.aiGradingSettingsUrl}
               availableAiGradingProviders={instanceQuestionAiGradeProps.availableAiGradingProviders}

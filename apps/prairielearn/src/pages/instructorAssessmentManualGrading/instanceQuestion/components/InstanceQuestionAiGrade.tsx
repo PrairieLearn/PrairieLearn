@@ -14,8 +14,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
-
-const OPEN_EVENT = 'open-ai-grade-modal';
+import { OPEN_AI_GRADE_MODAL_EVENT } from '../instanceQuestionAiGradeEvent.js';
 
 declare global {
   interface Window {
@@ -50,8 +49,6 @@ async function refreshGradingPanels() {
     const data = (await res.json()) as {
       gradingPanel?: string;
       questionContainer?: string;
-      submissionPanel?: string;
-      submissionId?: string;
       err?: string;
     };
     if (data.err) {
@@ -108,20 +105,22 @@ async function refreshGradingPanels() {
   }
 }
 
-export interface InstanceQuestionAiGradeProps {
+interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
-  assessmentId: string;
-  assessmentQuestionId: string;
   instanceQuestionId: string;
-  trpcCsrfToken: string;
-  isDevMode: boolean;
-  hasRubric: boolean;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
   aiGradingLastSelectedModel: string | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
+}
+
+export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInnerProps {
+  assessmentId: string;
+  assessmentQuestionId: string;
+  trpcCsrfToken: string;
+  isDevMode: boolean;
 }
 
 function InstanceQuestionAiGradeInner({
@@ -133,10 +132,7 @@ function InstanceQuestionAiGradeInner({
   aiGradingRelativeCosts,
   aiGradingLastSelectedModel,
   initialOngoingJobSequenceTokens,
-}: Omit<
-  InstanceQuestionAiGradeProps,
-  'trpcCsrfToken' | 'isDevMode' | 'assessmentId' | 'assessmentQuestionId' | 'hasRubric'
->) {
+}: InstanceQuestionAiGradeInnerProps) {
   const [modalState, setModalState] = useState<AiGradingModelSelectionModalState>(null);
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
@@ -186,8 +182,8 @@ function InstanceQuestionAiGradeInner({
   useEffect(() => {
     const handler = () =>
       setModalState({ type: 'selected', ids: [instanceQuestionId], numToGrade: 1 });
-    document.addEventListener(OPEN_EVENT, handler);
-    return () => document.removeEventListener(OPEN_EVENT, handler);
+    document.addEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
+    return () => document.removeEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
   }, [instanceQuestionId]);
 
   return (
