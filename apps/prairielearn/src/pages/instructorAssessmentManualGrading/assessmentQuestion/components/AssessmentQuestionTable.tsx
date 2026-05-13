@@ -1005,7 +1005,8 @@ export function AssessmentQuestionTable({
 
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        {...modelSelectionModalState}
+        show={modelSelectionModalState.show}
+        data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
@@ -1013,6 +1014,8 @@ export function AssessmentQuestionTable({
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
         hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
         totalSubmissionCount={aiGradingCounts.all}
+        onHide={modelSelectionModalState.onHide}
+        onExited={modelSelectionModalState.onExited}
         onSelectFirstSubmissions={(n) => {
           const candidateIds = run(() => {
             if (modelSelectionModalState.data?.type === 'selected') {
