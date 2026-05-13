@@ -100,6 +100,7 @@ scripts/gen-element-schemas.mts
   	  yarn prettier --write "apps/prairielearn/elements/**/*.schema.json" \
   	                       "apps/prairielearn/src/ee/lib/element-schemas/keywords.manifest.json"
   ```
+
 - CI config: freshness check on the generated schema files and manifest, same shape as `update-jsonschema`.
 
 ## Validation entry point
@@ -214,7 +215,7 @@ TS generator emits `apps/prairielearn/src/ee/lib/element-schemas/keywords.manife
 }
 ```
 
-One manifest, not per-element — the registries are global. The manifest is a **registry snapshot**: it lists names *registered* on the TS side (`Object.keys(plKeywords)`, format names in `plFormats`), not names *referenced* by any element schema. Reference-side issues (a schema that uses an unregistered keyword) are caught at validation time by `_assert_registered_names`; two-layer defense without trying to compute a union-of-references at generator time.
+One manifest, not per-element — the registries are global. The manifest is a **registry snapshot**: it lists names _registered_ on the TS side (`Object.keys(plKeywords)`, format names in `plFormats`), not names _referenced_ by any element schema. Reference-side issues (a schema that uses an unregistered keyword) are caught at validation time by `_assert_registered_names`; two-layer defense without trying to compute a union-of-references at generator time.
 
 Python parity test:
 
@@ -231,7 +232,7 @@ Catches **presence drift only**. Semantic drift (same name, different behavior) 
 
 `_assert_registered_names(schema)` walks the loaded schema once and asserts every `format` and consumer-keyword name referenced is registered in `PL_KEYWORDS` / `pl_format_checker.checkers`. Cheap and runs once per schema load (cached).
 
-Without this, jsonschema silently _skips_ unknown format/keyword names — required behavior per Draft 2020-12 § 4.3.1, which mandates implementations ignore unknown keywords so schemas remain portable across vocabularies. A typo (`pl-bolean` for `pl-boolean`) would pass validation trivially. The CI parity test catches naming drift between TS and Python registries, but a typo present in *both* registries would slip through; the pre-flight walker catches the typo locally at first `validate_element` call.
+Without this, jsonschema silently _skips_ unknown format/keyword names — required behavior per Draft 2020-12 § 4.3.1, which mandates implementations ignore unknown keywords so schemas remain portable across vocabularies. A typo (`pl-bolean` for `pl-boolean`) would pass validation trivially. The CI parity test catches naming drift between TS and Python registries, but a typo present in _both_ registries would slip through; the pre-flight walker catches the typo locally at first `validate_element` call.
 
 **Walker shape**: explicit recursion over subschema-position keywords (`properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `items`, `prefixItems`, `contains`, `allOf`, `anyOf`, `oneOf`, `not`, `if`, `then`, `else`, `dependentSchemas`, `$defs` / `definitions`). At each node, collect any `format` value and any object-key matching `PL_KEYWORDS`. Assert each collected name is in the registered set, with a clear error naming the offender and the schema path.
 
@@ -289,7 +290,7 @@ Doesn't apply on the Python side. `prepare()` runs _after_ mustache rendering, s
 
 - **`test_element_schemas.py`** (new — harness only): envelope construction (including underscore normalization), error mapping (three `errorMessage` shapes), pre-flight registry check (unregistered format/keyword raises clearly), parity test against `keywords.manifest.json`. Does not import any element's schema; pure harness coverage.
 - **`pl-multiple-choice.test.py`** (modified). Two categories of update:
-  - **Moved coverage, reworded message**: every rule in the §Removed-from-prepare table whose existing test row asserts on a Python `ValueError` string. Reword to the schema's `errorMessage`, and update the row's expected failure point (the assertion now fires at `validate_element` rather than inside `prepare_answers_to_display` / `categorize_options` / etc.). Includes `minItems: 1` (was at `prepare_answers_to_display:222-225`) and score range `[0.0, 1.0]` (was at `categorize_options:88-93`) — these are *not* new rules for Python; they used to fire deeper in the call stack and now fire at the schema check.
+  - **Moved coverage, reworded message**: every rule in the §Removed-from-prepare table whose existing test row asserts on a Python `ValueError` string. Reword to the schema's `errorMessage`, and update the row's expected failure point (the assertion now fires at `validate_element` rather than inside `prepare_answers_to_display` / `categorize_options` / etc.). Includes `minItems: 1` (was at `prepare_answers_to_display:222-225`) and score range `[0.0, 1.0]` (was at `categorize_options:88-93`) — these are _not_ new rules for Python; they used to fire deeper in the call stack and now fire at the schema check.
   - **Genuinely tightened coverage**: duplicate-text. Was `pl.inner_html(child)`-based; is now `.text_content()`-based, so a new row covers markup-distinguished visual duplicates (`<b>A</b>` vs `A`) now flagging as duplicates.
   - Rows for rules that stay in `prepare()` (cross-element name uniqueness, sampling-time invariants like the AOTA/NOTA conflicts and `number-answers`-cannot-be-satisfied) are unchanged.
 - **`pl-multiple-choice.test.ts`** (modified — TS pilot's test): unchanged. Same schema, same assertions. Confirms the generator's serialized output behaves identically to in-memory zod compilation.

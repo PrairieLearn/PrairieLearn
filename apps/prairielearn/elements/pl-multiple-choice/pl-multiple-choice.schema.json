@@ -1,0 +1,445 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "tag": {
+      "const": "pl-multiple-choice"
+    },
+    "text": {
+      "type": "string"
+    },
+    "innerHtml": {
+      "type": "string"
+    },
+    "attributes": {
+      "type": "object",
+      "properties": {
+        "answers-name": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "string",
+          "format": "pl-integer"
+        },
+        "number-answers": {
+          "type": "string",
+          "format": "pl-integer"
+        },
+        "order": {
+          "enum": ["random", "ascend", "descend", "fixed"]
+        },
+        "display": {
+          "enum": ["block", "inline", "dropdown"]
+        },
+        "hide-letter-keys": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "fixed-order": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "inline": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "hide-score-badge": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "allow-blank": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "builtin-grading": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "format": "pl-boolean"
+            }
+          ]
+        },
+        "size": {
+          "type": "string",
+          "format": "pl-integer"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "aria-label": {
+          "type": "string"
+        },
+        "external-json": {
+          "type": "string"
+        },
+        "external-json-correct-key": {
+          "type": "string"
+        },
+        "external-json-incorrect-key": {
+          "type": "string"
+        },
+        "all-of-the-above": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "pl-boolean"
+                }
+              ]
+            },
+            {
+              "enum": ["false", "random", "correct", "incorrect"]
+            }
+          ]
+        },
+        "none-of-the-above": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "pl-boolean"
+                }
+              ]
+            },
+            {
+              "enum": ["false", "random", "correct", "incorrect"]
+            }
+          ]
+        },
+        "all-of-the-above-feedback": {
+          "type": "string"
+        },
+        "none-of-the-above-feedback": {
+          "type": "string"
+        }
+      },
+      "required": ["answers-name"],
+      "additionalProperties": false
+    },
+    "children": {
+      "type": "array",
+      "unique-child-text": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "const": "pl-answer"
+          },
+          "text": {
+            "type": "string"
+          },
+          "innerHtml": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "format": "pl-boolean"
+                  }
+                ]
+              },
+              "feedback": {
+                "type": "string"
+              },
+              "score": {
+                "type": "string",
+                "format": "pl-float",
+                "pl-float-range": [0, 1],
+                "errorMessage": "Score must be in the range [0.0, 1.0]."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["tag", "attributes"]
+      }
+    }
+  },
+  "required": ["tag", "attributes", "children"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "not": {
+              "required": ["external-json"]
+            }
+          }
+        },
+        "required": ["attributes"]
+      },
+      "then": {
+        "properties": {
+          "children": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["fixed-order"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "not": {
+              "required": ["order"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["inline"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "not": {
+              "required": ["display"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "builtin-grading": {
+                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
+              }
+            },
+            "required": ["builtin-grading"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "all-of-the-above": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "format": "pl-boolean"
+                  }
+                ]
+              },
+              "none-of-the-above": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "format": "pl-boolean"
+                  }
+                ]
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["weight"]
+                },
+                {
+                  "required": ["hide-score-badge"]
+                }
+              ]
+            }
+          },
+          "children": {
+            "items": {
+              "properties": {
+                "attributes": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": ["score"]
+                      },
+                      {
+                        "required": ["feedback"]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "errorMessage": {
+          "_": "builtin-grading=\"false\" only supports true/false all-of-the-above and none-of-the-above values, and forbids grading attributes."
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["size"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "display": {
+                "const": "dropdown"
+              }
+            },
+            "required": ["display"]
+          }
+        },
+        "errorMessage": {
+          "_": "pl-multiple-choice: if using size, you must also set display to \"dropdown\"."
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["placeholder"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "display": {
+                "const": "dropdown"
+              }
+            },
+            "required": ["display"]
+          }
+        },
+        "errorMessage": {
+          "_": "pl-multiple-choice: if using placeholder, you must also set display to \"dropdown\"."
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["all-of-the-above-feedback"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "all-of-the-above": {
+                "not": {
+                  "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
+                }
+              }
+            },
+            "required": ["all-of-the-above"]
+          }
+        },
+        "errorMessage": {
+          "_": "pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above."
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attributes": {
+            "required": ["none-of-the-above-feedback"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "properties": {
+              "none-of-the-above": {
+                "not": {
+                  "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
+                }
+              }
+            },
+            "required": ["none-of-the-above"]
+          }
+        },
+        "errorMessage": {
+          "_": "pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above."
+        }
+      }
+    }
+  ]
+}

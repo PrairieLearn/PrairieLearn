@@ -78,7 +78,12 @@ function feedbackRequiresOption(feedbackName: string, optionName: string, messag
     },
     then: {
       properties: {
-        attributes: { required: [optionName] },
+        attributes: {
+          properties: {
+            [optionName]: { not: { enum: BOOLEAN_FALSE_VALUES } },
+          },
+          required: [optionName],
+        },
       },
       errorMessage: { _: message },
     },
@@ -89,6 +94,10 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
   const schema = z.toJSONSchema(plMultipleChoiceEnvelopeSchema, {
     target: 'draft-2020-12',
   }) as Record<string, unknown>;
+  const plAnswerAttributesJsonSchema = z.toJSONSchema(plAnswerAttributeSchema, {
+    target: 'draft-2020-12',
+  }) as Record<string, unknown>;
+  delete plAnswerAttributesJsonSchema.$schema;
 
   Object.assign(schema, {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -127,7 +136,6 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
       },
       children: {
         type: 'array',
-        minItems: 1,
         'unique-child-text': true,
         items: {
           type: 'object',
@@ -136,11 +144,16 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
             text: { type: 'string' },
             innerHtml: { type: 'string' },
             attributes: {
-              ...z.toJSONSchema(plAnswerAttributeSchema, { target: 'draft-2020-12' }),
+              ...plAnswerAttributesJsonSchema,
               properties: {
                 correct: booleanAttribute,
                 feedback: { type: 'string' },
-                score: { type: 'number', minimum: 0, maximum: 1 },
+                score: {
+                  type: 'string',
+                  format: 'pl-float',
+                  'pl-float-range': [0, 1],
+                  errorMessage: 'Score must be in the range [0.0, 1.0].',
+                },
               },
             },
           },
@@ -150,6 +163,45 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
     },
     required: ['tag', 'attributes', 'children'],
     allOf: [
+      {
+        if: {
+          properties: {
+            attributes: {
+              not: { required: ['external-json'] },
+            },
+          },
+          required: ['attributes'],
+        },
+        then: {
+          properties: {
+            children: { minItems: 1 },
+          },
+        },
+      },
+      {
+        if: {
+          properties: {
+            attributes: { required: ['fixed-order'] },
+          },
+        },
+        then: {
+          properties: {
+            attributes: { not: { required: ['order'] } },
+          },
+        },
+      },
+      {
+        if: {
+          properties: {
+            attributes: { required: ['inline'] },
+          },
+        },
+        then: {
+          properties: {
+            attributes: { not: { required: ['display'] } },
+          },
+        },
+      },
       {
         if: disabledBuiltinGradingCondition,
         then: {
@@ -177,16 +229,6 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
           },
           errorMessage: {
             _: 'builtin-grading="false" only supports true/false all-of-the-above and none-of-the-above values, and forbids grading attributes.',
-          },
-        },
-        else: {
-          properties: {
-            attributes: {
-              properties: {
-                'all-of-the-above': { enum: aotaNotaValues },
-                'none-of-the-above': { enum: aotaNotaValues },
-              },
-            },
           },
         },
       },

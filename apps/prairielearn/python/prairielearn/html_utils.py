@@ -32,6 +32,81 @@ LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "selected",
 })
 
+_PL_BOOLEAN_TRUE = frozenset({
+    "true",
+    "t",
+    "1",
+    "True",
+    "T",
+    "TRUE",
+    "yes",
+    "y",
+    "Yes",
+    "Y",
+    "YES",
+})
+_PL_BOOLEAN_FALSE = frozenset({
+    "false",
+    "f",
+    "0",
+    "False",
+    "F",
+    "FALSE",
+    "no",
+    "n",
+    "No",
+    "N",
+    "NO",
+})
+
+
+def is_pl_boolean(value: str) -> bool:
+    """Return whether a string is a PrairieLearn boolean value."""
+    return value in _PL_BOOLEAN_TRUE or value in _PL_BOOLEAN_FALSE
+
+
+def parse_pl_boolean(value: str) -> bool:
+    """Parse a string as a PrairieLearn boolean value."""
+    if value in _PL_BOOLEAN_TRUE:
+        return True
+    if value in _PL_BOOLEAN_FALSE:
+        return False
+    raise ValueError(f"Attribute must be a boolean value: {value}")
+
+
+def is_pl_integer(value: str) -> bool:
+    """Return whether a string is a PrairieLearn integer value."""
+    try:
+        int(value)
+    except ValueError:
+        return False
+    return True
+
+
+def parse_pl_integer(value: str) -> int:
+    """Parse a string as a PrairieLearn integer value."""
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValueError(f"Attribute must be an integer: {value}") from exc
+
+
+def is_pl_float(value: str) -> bool:
+    """Return whether a string is a PrairieLearn floating-point value."""
+    try:
+        float(value)
+    except ValueError:
+        return False
+    return True
+
+
+def parse_pl_float(value: str) -> float:
+    """Parse a string as a PrairieLearn floating-point value."""
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise ValueError(f"Attribute must be a number: {value}") from exc
+
 
 def get_enum_attrib[EnumT: Enum](
     element: lxml.html.HtmlElement,
@@ -242,27 +317,10 @@ def get_boolean_attrib(
     if is_default:
         return val
 
-    true_values = ["true", "t", "1", "True", "T", "TRUE", "yes", "y", "Yes", "Y", "YES"]
-    false_values = [
-        "false",
-        "f",
-        "0",
-        "False",
-        "F",
-        "FALSE",
-        "no",
-        "n",
-        "No",
-        "N",
-        "NO",
-    ]
-
-    if val in true_values:
-        return True
-    elif val in false_values:
-        return False
-    else:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
+    try:
+        return parse_pl_boolean(val)
+    except ValueError:
+        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}') from None
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -301,14 +359,11 @@ def get_integer_attrib(
     if is_default:
         return val
     try:
-        int_val = int(val)
+        return parse_pl_integer(val)
     except ValueError:
-        int_val = None
-    if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
-    return int_val
+        raise ValueError(f'Attribute "{name}" must be an integer: {val}') from None
 
 
 @overload
@@ -350,14 +405,11 @@ def get_float_attrib(
     if is_default:
         return val
     try:
-        float_val = float(val)
+        return parse_pl_float(val)
     except ValueError:
-        float_val = None
-    if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be a number: {val}')
-    return float_val
+        raise ValueError(f'Attribute "{name}" must be a number: {val}') from None
 
 
 @overload

@@ -2,7 +2,6 @@ import itertools as it
 import json
 import pathlib
 import random
-from collections import Counter
 from enum import Enum
 from typing import NamedTuple, assert_never
 
@@ -61,6 +60,7 @@ PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
+SCHEMA_PATH = pathlib.Path(__file__).with_suffix(".schema.json")
 
 
 def categorize_options(
@@ -74,23 +74,11 @@ def categorize_options(
     # First, check internal HTML for answer choices
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
-            pl.check_attribs(
-                child,
-                required_attribs=[],
-                optional_attribs=["score", "correct", "feedback"],
-            )
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
 
             score = pl.get_float_attrib(child, "score", None)
-
-            if score is not None and not (
-                SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
-            ):
-                raise ValueError(
-                    f"Score {score} is invalid, must be in the range [0.0, 1.0]."
-                )
 
             answer_tuple = AnswerTuple(
                 next(index_counter), correct, child_html, child_feedback, score
@@ -412,45 +400,10 @@ def prepare_answers_to_display(
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
-    # Keep attribute/child validation in sync with
-    # apps/prairielearn/src/ee/lib/element-schemas/pl-multiple-choice.ts.
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "number-answers",
-        "fixed-order",
-        "inline",
-        "hide-letter-keys",
-        "none-of-the-above",
-        "none-of-the-above-feedback",
-        "all-of-the-above",
-        "all-of-the-above-feedback",
-        "external-json",
-        "external-json-correct-key",
-        "external-json-incorrect-key",
-        "order",
-        "display",
-        "hide-score-badge",
-        "allow-blank",
-        "size",
-        "placeholder",
-        "aria-label",
-        "builtin-grading",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
-
-    if get_display_type(element) is not DisplayType.DROPDOWN:
-        if pl.has_attrib(element, "size"):
-            raise ValueError(
-                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-            )
-        if pl.has_attrib(element, "placeholder"):
-            raise ValueError(
-                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
-            )
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
@@ -461,53 +414,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "builtin-grading", BUILTIN_GRADING_DEFAULT
     )
 
-    if not builtin_grading:
-        if pl.has_attrib(element, "weight"):
-            raise ValueError(
-                '"weight" should not be set when builtin-grading is false.'
-            )
-        restricted_aota_nota_values = {"correct", "incorrect", "random"}
-        aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
-        if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
-            raise ValueError(
-                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
-            )
-        nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
-        if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
-            raise ValueError(
-                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
-            )
-        if pl.has_attrib(element, "hide-score-badge"):
-            raise ValueError(
-                '"hide-score-badge" should not be set when builtin-grading is false.'
-            )
-        for child in element:
-            if child.tag in {"pl-answer", "pl_answer"}:
-                if pl.has_attrib(child, "score"):
-                    raise ValueError(
-                        '"score" on pl-answer should not be set when builtin-grading is false.'
-                    )
-                if pl.has_attrib(child, "feedback"):
-                    raise ValueError(
-                        '"feedback" on pl-answer should not be set when builtin-grading is false.'
-                    )
-
     correct_answers, incorrect_answers = categorize_options(element, data)
-
-    # Check for duplicate answers. Ignore trailing/leading whitespace
-    # Making a conscious choice *NOT* to apply .lower() to all list elements in case
-    # instructors want to explicitly have matrix M vs. vector m as possible options.
-
-    choices_dict = Counter(
-        choice.html.strip() for choice in it.chain(correct_answers, incorrect_answers)
-    )
-
-    duplicates = [item for item, count in choices_dict.items() if count > 1]
-
-    if duplicates:
-        raise ValueError(
-            f"pl-multiple-choice element has duplicate choices: {duplicates}"
-        )
 
     # Get answers to display to student, using a helper function to separate out logic.
     answers_to_display = prepare_answers_to_display(

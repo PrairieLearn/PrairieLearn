@@ -367,3 +367,24 @@ describe('validateHTML panel nesting', () => {
     assert.deepEqual(warnings, []);
   });
 });
+
+describe('validateHTML htmlmustache schema diagnostics', () => {
+  it('surfaces pl-multiple-choice schema errors', async () => {
+    const { errors } = await validateHTML(
+      '<pl-multiple-choice answers-name="choice" bogus="true"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+
+    assert.isTrue(errors.some((error) => error.includes('bogus')));
+  });
+
+  it('does not surface non-schema htmlmustache diagnostics', async () => {
+    const { errors, warnings } = await validateHTML(
+      '<pl-question-panel><img src="foo.png"></pl-question-panel>',
+      true,
+    );
+
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+});

@@ -128,36 +128,63 @@ def test_prepare_no_correct_answers_default_raises() -> None:
 
 
 @pytest.mark.parametrize(
-    ("html", "match"),
+    "attr",
+    ['all-of-the-above="true"', 'none-of-the-above="true"'],
+    ids=["aota_boolean", "nota_boolean"],
+)
+def test_prepare_allows_aota_nota_boolean_with_builtin_grading(attr: str) -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            attr,
+            '<pl-answer correct="true">A</pl-answer><pl-answer correct="true">B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert "survey" in data["params"]
+
+
+def test_prepare_allows_python_float_score() -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true" score=".5">A</pl-answer><pl-answer>B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert data["params"]["survey"][0]["score"] == pytest.approx(0.5)
+
+
+def test_prepare_rejects_score_outside_range() -> None:
+    with pytest.raises(ValueError, match="Score must be in the range"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                answers='<pl-answer correct="true" score="1.5">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+@pytest.mark.parametrize(
+    "html",
     [
-        (mc_html('weight="2"'), r"weight.*should not be set"),
-        (
-            mc_html(
-                'all-of-the-above="correct"',
-                '<pl-answer correct="true">A</pl-answer>'
-                '<pl-answer correct="true">B</pl-answer>',
-            ),
-            r"all-of-the-above.*true or false",
+        mc_html('weight="2"'),
+        mc_html(
+            'all-of-the-above="correct"',
+            '<pl-answer correct="true">A</pl-answer>'
+            '<pl-answer correct="true">B</pl-answer>',
         ),
-        (
-            mc_html(
-                'none-of-the-above="correct"',
-                '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
-            ),
-            r"none-of-the-above.*true or false",
+        mc_html(
+            'none-of-the-above="correct"',
+            '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
         ),
-        (mc_html('hide-score-badge="true"'), r"hide-score-badge.*should not be set"),
-        (
-            mc_html(
-                answers='<pl-answer score="0.5">A</pl-answer><pl-answer>B</pl-answer>'
-            ),
-            r"score.*should not be set",
-        ),
-        (
-            mc_html(
-                answers='<pl-answer feedback="Nice try">A</pl-answer><pl-answer>B</pl-answer>'
-            ),
-            r"feedback.*should not be set",
+        mc_html('hide-score-badge="true"'),
+        mc_html(answers='<pl-answer score="0.5">A</pl-answer><pl-answer>B</pl-answer>'),
+        mc_html(
+            answers='<pl-answer feedback="Nice try">A</pl-answer><pl-answer>B</pl-answer>'
         ),
     ],
     ids=[
@@ -169,8 +196,11 @@ def test_prepare_no_correct_answers_default_raises() -> None:
         "feedback_on_answer",
     ],
 )
-def test_prepare_rejects_with_no_builtin_grading(html: str, match: str) -> None:
-    with pytest.raises(ValueError, match=match):
+def test_prepare_rejects_with_no_builtin_grading(html: str) -> None:
+    with pytest.raises(
+        ValueError,
+        match='builtin-grading="false" only supports true/false all-of-the-above',
+    ):
         pl_multiple_choice.prepare(html, _make_question_data())
 
 

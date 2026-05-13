@@ -50,7 +50,18 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(messages.some((message) => message.includes('pl-integer')));
     assert.isTrue(messages.some((message) => message.includes('display')));
     assert.isTrue(messages.some((message) => message.includes('correct')));
-    assert.isTrue(messages.some((message) => message.includes('score')));
+    assert.isTrue(messages.some((message) => message.includes('range')));
+  });
+
+  it('accepts score strings parsed by Python float', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer correct="true" score=".5">A</pl-answer>
+        <pl-answer>B</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.deepEqual(messages, []);
   });
 
   it('requires dropdown display for size and placeholder', async () => {
@@ -83,11 +94,40 @@ describe('pl-multiple-choice schema', () => {
     assert.isNotEmpty(messages);
   });
 
+  it('rejects feedback when disabled builtin grading option is false alias', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice" builtin-grading="false" all-of-the-above="0" all-of-the-above-feedback="Feedback">
+        <pl-answer>A</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isNotEmpty(messages);
+  });
+
   it('rejects duplicate answer text', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer>A</pl-answer>
         <pl-answer>A</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('duplicate child text')));
+  });
+
+  it('allows external-json without inline answers', async () => {
+    const messages = await lintMessages(
+      '<pl-multiple-choice answers-name="choice" external-json="answers.json"></pl-multiple-choice>',
+    );
+
+    assert.deepEqual(messages, []);
+  });
+
+  it('rejects answers with matching text but different HTML', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer><code>x</code></pl-answer>
+        <pl-answer><strong>x</strong></pl-answer>
       </pl-multiple-choice>
     `);
 

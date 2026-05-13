@@ -751,6 +751,7 @@ export async function validateHTML(
 
   const diagnostics = await lintQuestionHtml(file);
   for (const diagnostic of diagnostics) {
+    if (diagnostic.ruleName !== 'customTagSchema') continue;
     (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);
   }
 

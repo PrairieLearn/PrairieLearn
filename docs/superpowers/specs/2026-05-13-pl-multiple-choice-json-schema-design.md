@@ -12,13 +12,14 @@ We can author the schema in zod v4, convert to JSON Schema at import time, feed 
 
 ## Scope
 
-**In:** `pl-multiple-choice` only. The schema covers everything currently in `checkMultipleChoice` and `checkAnswerMultipleChoice` — attribute presence/type/enum, cross-attribute rules (size↔display, builtin-grading=false exclusions, AOTA/NOTA narrowing, *-feedback dependencies), parent-child rules (only `pl-answer` children, `pl-answer` attribute set), and the cross-tag rule `builtin-grading=false ⇒ no score/feedback on pl-answer` (expressible via nested `if/then` over the `{ attributes, children }` envelope ajv sees).
+**In:** `pl-multiple-choice` only. The schema covers everything currently in `checkMultipleChoice` and `checkAnswerMultipleChoice` — attribute presence/type/enum, cross-attribute rules (size↔display, builtin-grading=false exclusions, AOTA/NOTA narrowing, \*-feedback dependencies), parent-child rules (only `pl-answer` children, `pl-answer` attribute set), and the cross-tag rule `builtin-grading=false ⇒ no score/feedback on pl-answer` (expressible via nested `if/then` over the `{ attributes, children }` envelope ajv sees).
 
-`pl-answer` does NOT get its own `customTags` schema entry. It's a shared child element used by `pl-multiple-choice`, `pl-checkbox`, `pl-order-blocks`, `pl-block-group`, and `pl-dropdown`, each with a different attribute set. A standalone schema would force a loose union (killing the AI-error signal) or duplicate per-parent. Instead, each parent's schema owns its children's rules under `children.items` — when `pl-checkbox` is migrated in a follow-up, *that* schema encodes the checkbox-specific `pl-answer` rules. Stray `pl-answer` outside any valid parent is already caught by the existing `pl-stray-answer` custom rule in `htmlMustacheConfig`.
+`pl-answer` does NOT get its own `customTags` schema entry. It's a shared child element used by `pl-multiple-choice`, `pl-checkbox`, `pl-order-blocks`, `pl-block-group`, and `pl-dropdown`, each with a different attribute set. A standalone schema would force a loose union (killing the AI-error signal) or duplicate per-parent. Instead, each parent's schema owns its children's rules under `children.items` — when `pl-checkbox` is migrated in a follow-up, _that_ schema encodes the checkbox-specific `pl-answer` rules. Stray `pl-answer` outside any valid parent is already caught by the existing `pl-stray-answer` custom rule in `htmlMustacheConfig`.
 
 Python `prepare()` is untouched. The schema is purely AI-generation-facing.
 
 **Out (follow-ups noted):**
+
 - Other elements in `validateHTML.ts` (integer/number/string/symbolic/checkbox).
 - Removing the `pl-input-in-panel` warning from `dfsCheckParseTree` (currently covered by the linter's existing `customRule`, kept for now to avoid expanding the diff).
 - Using the schema for non-AI purposes (editor autocomplete, attribute docs, Python validation).
@@ -100,7 +101,11 @@ Custom error messages are sparing. Defaults like "Unknown attribute `foo` on `<p
 
 ```ts
 // apps/prairielearn/src/ee/lib/htmlMustacheLinterNode.ts
-import { createLinter, type Linter, type Diagnostic } from '@reteps/tree-sitter-htmlmustache/linter';
+import {
+  createLinter,
+  type Linter,
+  type Diagnostic,
+} from '@reteps/tree-sitter-htmlmustache/linter';
 import { htmlMustacheConfig } from '../../lib/htmlMustacheConfig.js';
 import { plFormats } from './element-schemas/formats.js';
 
@@ -108,7 +113,9 @@ let linterPromise: Promise<Linter> | null = null;
 function getLinter() {
   if (!linterPromise) {
     linterPromise = createLinter({
-      locateWasm: (name) => { /* createRequire-based resolution */ },
+      locateWasm: (name) => {
+        /* createRequire-based resolution */
+      },
       formats: plFormats,
       keywords: plKeywords,
     });
@@ -124,7 +131,10 @@ export async function lintQuestionHtml(file: string): Promise<Diagnostic[]> {
 
 ```ts
 // apps/prairielearn/src/ee/lib/validateHTML.ts (excerpt)
-export async function validateHTML(file: string, hasServerPy: boolean): Promise<HTMLValidationResult> {
+export async function validateHTML(
+  file: string,
+  hasServerPy: boolean,
+): Promise<HTMLValidationResult> {
   // ...existing preamble checks (doctype/html/body/head)...
   const tree = parse5.parseFragment(file);
   const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
@@ -158,7 +168,7 @@ Upstream `@reteps/tree-sitter-htmlmustache` provides everything we need:
 
 ## Rules carved out of the schema (left in `prepare()`)
 
-These are *expressible* given upstream's hooks, but writing them is net-new authoring beyond the pilot's deletion goal — they enforce rules `checkMultipleChoice` never enforced. Folded in as follow-up PRs:
+These are _expressible_ given upstream's hooks, but writing them is net-new authoring beyond the pilot's deletion goal — they enforce rules `checkMultipleChoice` never enforced. Folded in as follow-up PRs:
 
 - **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Would need a `pl-truthy-contains` consumer keyword.
 - **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Would need an `attribute-le-child-count` consumer keyword.
