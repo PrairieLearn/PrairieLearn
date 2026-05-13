@@ -109,8 +109,8 @@ export function ServerJobsProgressInfo({
 }
 
 const DEFAULT_STOP_CONFIRMATION = {
-  title: 'Stop job?',
-  body: 'In-progress work will finish; no new work will be started.',
+  title: 'Stop jobs?',
+  body: 'In-progress jobs will finish; no new jobs will be started.',
   confirmLabel: 'Stop',
   cancelLabel: 'Keep running',
 };
