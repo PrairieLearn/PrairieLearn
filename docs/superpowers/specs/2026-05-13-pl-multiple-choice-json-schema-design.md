@@ -14,6 +14,8 @@ We can author the schema in zod v4, convert to JSON Schema at import time, feed 
 
 **In:** `pl-multiple-choice` only. The schema covers everything currently in `checkMultipleChoice` and `checkAnswerMultipleChoice` — attribute presence/type/enum, cross-attribute rules (size↔display, builtin-grading=false exclusions, AOTA/NOTA narrowing, *-feedback dependencies), parent-child rules (only `pl-answer` children, `pl-answer` attribute set), and the cross-tag rule `builtin-grading=false ⇒ no score/feedback on pl-answer` (expressible via nested `if/then` over the `{ attributes, children }` envelope ajv sees).
 
+`pl-answer` does NOT get its own `customTags` schema entry. It's a shared child element used by `pl-multiple-choice`, `pl-checkbox`, `pl-order-blocks`, `pl-block-group`, and `pl-dropdown`, each with a different attribute set. A standalone schema would force a loose union (killing the AI-error signal) or duplicate per-parent. Instead, each parent's schema owns its children's rules under `children.items` — when `pl-checkbox` is migrated in a follow-up, *that* schema encodes the checkbox-specific `pl-answer` rules. Stray `pl-answer` outside any valid parent is already caught by the existing `pl-stray-answer` custom rule in `htmlMustacheConfig`.
+
 Python `prepare()` is untouched. The schema is purely AI-generation-facing.
 
 **Out (follow-ups noted):**
@@ -59,13 +61,17 @@ apps/prairielearn/src/ee/lib/htmlMustacheLinterNode.ts
                               — server-side singleton linter, locateWasm via createRequire
 ```
 
+**TODO comment added:**
+
+- `apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.py` — header comment pointing at `apps/prairielearn/src/ee/lib/element-schemas/pl-multiple-choice.ts`: any change to attribute validation here must be mirrored in the schema until the Python side is unified onto the schema (planned follow-up, see "Out of scope").
+
 **Moved (required — the two TS projects don't cross):**
 
 - `apps/prairielearn/assets/scripts/lib/htmlMustacheConfig.ts` → `apps/prairielearn/src/lib/htmlMustacheConfig.ts`. `src/tsconfig.json` has `rootDir: "./"`, so server-side code can't reach files under `assets/scripts/`. Moving the config to `src/lib/` lets both consumers import it: the browser linter (which already imports `src/`-side code, e.g. tRPC types) keeps working, and `element-schemas/index.ts` can now build the merged config in one place. The file body is pure data with no DOM deps, so the move is mechanical.
 
 **Modified:**
 
-- `apps/prairielearn/src/lib/htmlMustacheConfig.ts` (post-move) — replace the bare `{ name: 'pl-multiple-choice' }` and `{ name: 'pl-answer' }` entries with schema-bearing versions from `element-schemas`. Switch the `Config` type import from `@reteps/tree-sitter-htmlmustache/browser` to `@reteps/tree-sitter-htmlmustache/linter`.
+- `apps/prairielearn/src/lib/htmlMustacheConfig.ts` (post-move) — replace the bare `{ name: 'pl-multiple-choice' }` entry with the schema-bearing version from `element-schemas`. The bare `{ name: 'pl-answer' }` entry stays as-is (no standalone schema — see Scope). Switch the `Config` type import from `@reteps/tree-sitter-htmlmustache/browser` to `@reteps/tree-sitter-htmlmustache/linter`.
 - `apps/prairielearn/assets/scripts/lib/htmlMustacheLinter.ts` — import `/linter` for `createLinter`, `/formatter` for `createFormatter`. Two singletons. Pass `formats: plFormats` to `createLinter`. Update the `htmlMustacheConfig` import to the new path.
 - `apps/prairielearn/src/ee/lib/validateHTML.ts` — make `validateHTML` async; call `lintQuestionHtml`; merge diagnostics into `errors`/`warnings`; delete `checkMultipleChoice`, `checkAnswerMultipleChoice`, and the `pl-multiple-choice` / `pl-answer` cases in `checkTag`.
 - Callers of `validateHTML`: `apps/prairielearn/src/ee/lib/ai-question-generation/agent.ts:467` and `apps/prairielearn/src/ee/lib/context-parsers/template-questions.ts:26` — add `await` (both call sites are already inside async functions).
@@ -130,6 +136,24 @@ export async function validateHTML(file: string, hasServerPy: boolean): Promise<
 }
 ```
 
+## Rules carved out of the schema (left in `prepare()`)
+
+JSON Schema 2020-12 + ajv's built-in vocabulary can't cleanly express these `prepare()` rules. They stay in Python for now:
+
+- **Duplicate `pl-answer` inner-text detection** (`pl-multiple-choice.py:499-508`). Needs a custom ajv keyword over the per-child `text` envelope field; upstream `text`/`innerHtml` shipped but `createLinter({ keywords })` did not.
+- **Cardinality conditional on attribute value** (`pl-multiple-choice.py:240-254`). "At least 1 correct `pl-answer` when builtin-grading + NOTA-is-not-correct." Expressible-but-ugly via `contains` + enumerated truthy strings; deferred until a `pl-truthy`-style custom keyword exists.
+- **Attribute-value-vs-child-count** (`pl-multiple-choice.py:291-302`). "`number-answers` ≤ count of children-filtered-by-attribute." Needs a custom keyword.
+- **Cross-element `answers-name` uniqueness** (`pl-multiple-choice.py:453-456`). Document-scope, not tag-scope; outside the schema model. Not in `checkMultipleChoice` either — same gap.
+- **`external-json` file existence**. Filesystem access; out of schema's reach.
+
+Folded back in once upstream lands custom keywords (and walkers for the last two).
+
+Available but not used in this pilot: upstream `text`/`innerHtml` envelope fields. `pl-multiple-choice`'s `prepare()` has no text-shape rules (length, emptiness, pattern); future element migrations may use them.
+
+## Mustache waiver
+
+We inherit the linter's upstream mustache waiver as-is: when an operand of a cross-attribute rule is mustache-bearing (e.g. `display="{{format}}"`), the rule is suppressed. This allows the LLM to "escape" cross-attribute constraints by mustache-ifying one side, but the runtime check in Python's `prepare()` (which runs after Mustache rendering) catches cases where the resolved value violates the constraint. We do not add a TS-side check for "every mustache name is bound by server.py" — same drift-acceptance policy as the schema/`prepare()` relationship.
+
 ## Failure modes
 
 - **Linter WASM init fails server-side.** `lintQuestionHtml` propagates the error; AI generation request fails loudly. The agent's existing error path handles request failures. Browser side keeps the current swallow-and-log behavior.
@@ -152,5 +176,5 @@ export async function validateHTML(file: string, hasServerPy: boolean): Promise<
 - Migrate remaining elements (integer/number/string/symbolic/checkbox) — repeats this pattern, each isolated.
 - Retire the `pl-input-in-panel` `dfsCheckParseTree` warning once linter coverage is verified in production.
 - Surface attribute completions and docs from the same schemas in the editor.
-- Feed JSON Schema to Python `prepare()` for a single source of truth across runtime + AI paths.
+- Feed JSON Schema to Python `prepare()` for a single source of truth across runtime + AI paths. **Planned** (not just possible) — the TODO in `pl-multiple-choice.py` will be retired by this work.
 - Upstream QoL ask: a higher-level dependency sugar (`requires: [{ when, then }]`) over `if/then`. Optional; JSON Schema works.
