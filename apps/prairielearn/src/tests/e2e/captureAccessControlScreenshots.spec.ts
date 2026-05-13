@@ -213,6 +213,7 @@ function makeEnrollmentRuleData(
     dueCredit: null,
     earlyDeadlinesOverridden: false,
     lateDeadlinesOverridden: false,
+    afterLastDeadlineOverridden: false,
     afterLastDeadlineAllowSubmissions: null,
     afterLastDeadlineCredit: null,
     durationMinutesOverridden: false,

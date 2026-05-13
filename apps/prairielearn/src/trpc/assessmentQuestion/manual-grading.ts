@@ -37,7 +37,17 @@ import {
   t,
 } from './init.js';
 
-export interface ManualGradingError {}
+export interface ManualGradingError {
+  Instances: never;
+  AiGradingAvailabilityInfo: never;
+  SetAiGradingMode: never;
+  DeleteAiGradingJobs: never;
+  DeleteAiInstanceQuestionGroupings: never;
+  AiGroupInstanceQuestions: never;
+  AiGradeInstanceQuestions: never;
+  SetAssignedGrader: never;
+  SetRequiresManualGrading: never;
+}
 
 const requireAiGradingFeature = t.middleware(async (opts) => {
   const enabled = await features.enabled('ai-grading', {
