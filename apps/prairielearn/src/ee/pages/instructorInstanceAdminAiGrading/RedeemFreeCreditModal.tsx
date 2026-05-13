@@ -30,9 +30,7 @@ export function RedeemFreeCreditModal({
     ...trpc.redeemFreeCredit.mutationOptions(),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
-      void queryClient.invalidateQueries({
-        queryKey: trpc.creditPoolChanges.queryKey({ page: 1 }),
-      });
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPoolChanges.queryKey() });
       void queryClient.invalidateQueries({ queryKey: trpc.freeCreditStatus.queryKey() });
       onSuccess(data.amount_milli_dollars);
       onHide();

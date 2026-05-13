@@ -537,7 +537,7 @@ function CreditPoolSection({
                 Redeem free credit
               </button>
             )}
-            {stripePurchasingEnabled && freeCreditStatusLoaded && (
+            {stripePurchasingEnabled && (
               <button
                 type="button"
                 className="btn btn-sm btn-primary d-flex align-items-center gap-2"

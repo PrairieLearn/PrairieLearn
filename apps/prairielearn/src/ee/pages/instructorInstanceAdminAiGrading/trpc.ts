@@ -23,6 +23,7 @@ import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 import { insertCreditCheckoutSession } from '../../models/ai-grading-credit-checkout-sessions.js';
 import {
+  FreeCreditRedemptionCapReachedError,
   redeemFreeAiGradingCredit,
   selectCourseFreeCreditRedemptionsUsed,
 } from '../../models/ai-grading-free-credit-redemption.js';
@@ -217,19 +218,18 @@ const redeemFreeCreditMutation = t.procedure
   .use(requireEditPermission)
   .use(requireAiGradingFeature)
   .mutation(async (opts) => {
-    const redemptionsUsed = await selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id);
-    if (redemptionsUsed >= MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE) {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: `This course has already used all ${MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} free AI grading credit redemptions.`,
+    try {
+      return await redeemFreeAiGradingCredit({
+        course_id: opts.ctx.course.id,
+        course_instance_id: opts.ctx.course_instance.id,
+        user_id: opts.ctx.authn_user.id,
       });
+    } catch (err) {
+      if (err instanceof FreeCreditRedemptionCapReachedError) {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: err.message });
+      }
+      throw err;
     }
-
-    return await redeemFreeAiGradingCredit({
-      course_id: opts.ctx.course.id,
-      course_instance_id: opts.ctx.course_instance.id,
-      user_id: opts.ctx.authn_user.id,
-    });
   });
 
 export const aiGradingSettingsRouter = t.router({

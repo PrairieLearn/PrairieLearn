@@ -15,6 +15,20 @@ const RedemptionsUsedSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
 });
 
+/**
+ * Thrown by {@link redeemFreeAiGradingCredit} when the course has already
+ * used all of its free credit redemptions. Callers should translate this to
+ * a user-facing error (e.g. tRPC `PRECONDITION_FAILED`).
+ */
+export class FreeCreditRedemptionCapReachedError extends Error {
+  constructor() {
+    super(
+      `This course has already used all ${MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} free AI grading credit redemptions.`,
+    );
+    this.name = 'FreeCreditRedemptionCapReachedError';
+  }
+}
+
 export async function selectCourseFreeCreditRedemptionsUsed(course_id: string): Promise<number> {
   const row = await queryRow(
     sql.select_course_free_credit_redemptions_used,
@@ -58,9 +72,7 @@ export async function redeemFreeAiGradingCredit({
       before.ai_grading_free_credit_redemptions_used >=
       MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE
     ) {
-      throw new Error(
-        `This course has already used all ${MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} free AI grading credit redemptions.`,
-      );
+      throw new FreeCreditRedemptionCapReachedError();
     }
 
     const after = await queryRow(
