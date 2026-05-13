@@ -1,4 +1,4 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
 
 import { isRenderableComment } from '../lib/comments.js';
@@ -22,7 +22,7 @@ export function CommentPopover({
       data-bs-container="body"
       data-bs-placement="auto"
       data-bs-html="true"
-      data-bs-content={escapeHtml(html`${content}`).toString()}
+      data-bs-content={html`${content}`}
     >
       <i className="bi bi-chat-left-text" />
     </button>
