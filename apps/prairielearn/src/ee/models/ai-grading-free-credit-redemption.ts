@@ -44,9 +44,10 @@ export async function selectCourseFreeCreditRedemptionsUsed(course_id: string): 
  * {@link MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE} across all course
  * instances), but the credit is added to the specified course instance's pool.
  *
- * Locks the course row FOR UPDATE before checking the cap to serialize
- * concurrent redemptions from the same course. Adds non-transferable credit so
- * the free credit cannot be refunded or carried across course instances.
+ * Locks the course row FOR NO KEY UPDATE before checking the cap to serialize
+ * concurrent redemptions from the same course without blocking foreign-key
+ * references to the course. Adds non-transferable credit so the free credit
+ * cannot be refunded or carried across course instances.
  */
 export async function redeemFreeAiGradingCredit({
   course_id,
@@ -63,7 +64,7 @@ export async function redeemFreeAiGradingCredit({
 }> {
   return await runInTransactionAsync(async () => {
     const before = await queryRow(
-      sql.select_course_free_credit_redemptions_used_for_update,
+      sql.select_course_free_credit_redemptions_used_for_no_key_update,
       { course_id },
       RedemptionsUsedSchema,
     );
