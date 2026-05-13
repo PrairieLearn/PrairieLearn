@@ -61,7 +61,17 @@ export async function sync(
     });
   });
 
+  const serializedQuestionSharingSets = JSON.stringify(questionSharingSets);
+
   await sqldb.execute(sql.sync_question_sharing_sets, {
-    new_question_sharing_sets: JSON.stringify(questionSharingSets),
+    new_question_sharing_sets: serializedQuestionSharingSets,
+  });
+
+  // Relies on `checkInvalidSharingSetRemovals` having gated the sync. With
+  // `checkSharingOnSync` disabled, this can remove `sharing_set_questions`
+  // rows for questions still used by other courses.
+  await sqldb.execute(sql.delete_removed_question_sharing_sets, {
+    course_id: courseId,
+    new_question_sharing_sets: serializedQuestionSharingSets,
   });
 }

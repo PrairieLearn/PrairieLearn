@@ -46,7 +46,7 @@ WHERE
     )
   );
 
--- BLOCK select_renames_used_in_other_courses
+-- BLOCK select_questions_used_in_other_courses
 SELECT DISTINCT
   q.qid
 FROM
