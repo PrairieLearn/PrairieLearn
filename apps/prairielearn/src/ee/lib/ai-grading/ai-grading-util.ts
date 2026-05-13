@@ -619,6 +619,14 @@ export async function selectLastSubmissionId(instance_question_id: string): Prom
   return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
+export async function hasPriorAiGradingJobs(assessment_question_id: string): Promise<boolean> {
+  return await queryScalar(
+    sql.select_has_prior_ai_grading_jobs,
+    { assessment_question_id },
+    z.boolean(),
+  );
+}
+
 export async function deleteAiGradingJobs({
   assessment_question_ids,
   authn_user_id,
