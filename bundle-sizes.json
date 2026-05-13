@@ -185,9 +185,9 @@
     "brotli": 93
   },
   "stylesheets/instructorAssessmentAccess.css": {
-    "raw": 477,
-    "gzip": 304,
-    "brotli": 247
+    "raw": 2268,
+    "gzip": 755,
+    "brotli": 629
   },
   "stylesheets/instructorAssessmentManualGradingAssessmentQuestion.css": {
     "raw": 9962,
@@ -405,9 +405,9 @@
     "brotli": 640368
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1261020,
-    "gzip": 379801,
-    "brotli": 328980
+    "raw": 1261471,
+    "gzip": 379820,
+    "brotli": 329064
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
     "raw": 1323014,
