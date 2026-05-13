@@ -218,9 +218,10 @@ router.get(
         header: true,
         columns: [
           'Date',
-          ...scoresByDay.map((day) =>
-            formatDateYMD(day.date, res.locals.course_instance.display_timezone),
-          ),
+          // The date is already extracted from the timestamp in the query and
+          // returned as UTC, so we can safely format it without worrying
+          // about timezones here.
+          ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
         ],
       }).pipe(res);
     } else {

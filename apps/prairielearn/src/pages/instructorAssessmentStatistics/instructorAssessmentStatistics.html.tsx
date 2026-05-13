@@ -249,7 +249,10 @@ export function InstructorAssessmentStatistics({
                   class="js-parallel-histograms"
                   data-histograms="${JSON.stringify(
                     assessmentScoreHistogramByDate.map((day) => ({
-                      label: formatDateYMD(day.date, resLocals.course_instance.display_timezone),
+                      // The date is already extracted from the timestamp in the
+                      // query and returned as UTC, so we can safely format it
+                      // without worrying about timezones here.
+                      label: formatDateYMD(day.date, 'UTC'),
                       mean: day.mean_score_perc,
                       histogram: day.histogram,
                     })),
