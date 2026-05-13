@@ -28,7 +28,7 @@ export const AssessmentAccessRuleRowSchema = z.object({
   pt_exam_id: z.string().nullable(),
   pt_exam_name: z.string().nullable(),
 });
-type AssessmentAccessRules = z.infer<typeof AssessmentAccessRuleRowSchema>;
+type AssessmentAccessRuleRow = z.infer<typeof AssessmentAccessRuleRowSchema>;
 
 interface MigrationPreview {
   beforeJson: string;
@@ -50,7 +50,7 @@ export function InstructorAssessmentAccess({
   enhancedAccessControlEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  accessRules: AssessmentAccessRules[];
+  accessRules: AssessmentAccessRuleRow[];
   migrationAnalysis: AssessmentMigrationAnalysis | null;
   migrationPreview: MigrationPreview | null;
   origHash: string;
