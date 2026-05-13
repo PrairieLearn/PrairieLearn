@@ -29,7 +29,6 @@
     {
       "canSubmit": ["Recorder"],
       "title": "Fundamental questions",
-      "bestQuestions": 3,
       "questions": [
         { "id": "demo/demoNewton-page1", "autoPoints": 1, "maxAutoPoints": 5 },
         {
