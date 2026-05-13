@@ -258,7 +258,7 @@ WHERE
 UPDATE job_sequences AS js
 SET
   -- Abandoned workers always land Error so failures aren't masked.
-  -- Cancellation intent stays recorded on stop_requested_at/by.
+  -- Cancellation intent stays recorded on stop_requested_by_authn_user_id.
   status = 'Error'::enum_job_status,
   finish_date = CURRENT_TIMESTAMP
 WHERE

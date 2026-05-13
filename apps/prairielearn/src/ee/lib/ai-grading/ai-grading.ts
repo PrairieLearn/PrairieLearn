@@ -287,11 +287,11 @@ async function finalizeAiGradingPersistence({
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE = 5;
 
-export async function getRunningAiGradingJobCountForCourseInstance(
+export async function getActiveAiGradingJobCountForCourseInstance(
   course_instance_id: string,
 ): Promise<number> {
   return await queryScalar(
-    sql.count_running_ai_grading_jobs_for_course_instance,
+    sql.count_active_ai_grading_jobs_for_course_instance,
     { course_instance_id },
     z.number(),
   );
@@ -386,8 +386,8 @@ export async function aiGrade({
       course_instance_id: course_instance.id,
     });
 
-    const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
-    if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
+    const activeJobCount = await getActiveAiGradingJobCountForCourseInstance(course_instance.id);
+    if (activeJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
       throw new error.HttpStatusError(
         429,
         `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please wait for running jobs to finish.`,

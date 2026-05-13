@@ -1,4 +1,4 @@
--- BLOCK count_running_ai_grading_jobs_for_course_instance
+-- BLOCK count_active_ai_grading_jobs_for_course_instance
 SELECT
   COUNT(*)::integer
 FROM

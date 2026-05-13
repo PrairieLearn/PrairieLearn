@@ -17,7 +17,7 @@ import {
 import {
   MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
   aiGrade,
-  getRunningAiGradingJobCountForCourseInstance,
+  getActiveAiGradingJobCountForCourseInstance,
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
@@ -262,7 +262,7 @@ const aiGradingAvailabilityInfo = t.procedure
   )
   .query(async (opts) => {
     const [running_job_count, creditPool] = await Promise.all([
-      getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
+      getActiveAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
       selectCreditPool(opts.ctx.course_instance.id),
     ]);
     return {
