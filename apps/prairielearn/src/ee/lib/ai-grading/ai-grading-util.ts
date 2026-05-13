@@ -17,6 +17,8 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   queryScalar,
@@ -956,14 +958,7 @@ export function correctGeminiMalformedRubricGradingJson(rawResponseText: string)
   return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
 }
 
-/**
- * Zod schema for the AI grading job row that callers must query before invoking
- * `buildAiGradingInfo`. Kept here alongside the helper so consumers can share a
- * single source of truth for the row shape; the SQL block itself lives in the
- * caller's `.sql` file so that any nearby SQL changes in PRs (e.g. additional
- * grader-name queries) don't have to coordinate across files.
- */
-export const AiGradingJobDataForSubmissionSchema = z.object({
+const AiGradingJobDataForSubmissionSchema = z.object({
   id: GradingJobSchema.shape.id,
   manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
   prompt: AiGradingJobSchema.shape.prompt,
@@ -971,30 +966,31 @@ export const AiGradingJobDataForSubmissionSchema = z.object({
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
 
-export type AiGradingJobDataForSubmission = z.infer<typeof AiGradingJobDataForSubmissionSchema>;
-
 /**
- * Assembles the `aiGradingInfo` displayed in the manual-grading instance
- * question page from a pre-queried AI grading job row. Returns `undefined` if
- * the submission has not been AI-graded.
- *
- * Callers are responsible for running the underlying SQL (so that schema
- * changes in nearby SQL files stay local to the page); the schema for the
- * `aiGradingJobData` row is exported as `AiGradingJobDataForSubmissionSchema`.
- *
- * `submissionHtmls` is used to detect whether the current rendered submission
- * contains an image-capture element; pass the array straight from
- * `resLocals.submissionHtmls`.
+ * Builds the `aiGradingInfo` displayed in the manual-grading instance question
+ * page for the most-recent submission of the given instance question. Returns
+ * `undefined` if the submission has not been AI-graded.
  */
 export async function buildAiGradingInfo({
-  aiGradingJobData,
-  submissionManuallyGraded,
+  submission_id,
   submissionHtmls,
 }: {
-  aiGradingJobData: AiGradingJobDataForSubmission | null;
-  submissionManuallyGraded: boolean;
+  submission_id: string;
   submissionHtmls: string[];
 }): Promise<InstanceQuestionAIGradingInfo | undefined> {
+  const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
+    queryOptionalRow(
+      sql.select_ai_grading_job_data_for_submission,
+      { submission_id },
+      AiGradingJobDataForSubmissionSchema,
+    ),
+    queryOptionalScalar(
+      sql.select_exists_manual_grading_job_for_submission,
+      { submission_id },
+      z.boolean(),
+    ).then((manuallyGraded) => manuallyGraded ?? false),
+  ]);
+
   if (!aiGradingJobData) return undefined;
 
   const promptForGradingJob = aiGradingJobData.prompt;
@@ -1009,14 +1005,9 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  // We're dealing with a schemaless JSON blob here. We'll be defensive and
-  // try to avoid errors when extracting the explanation. Note that for some
-  // time, the explanation wasn't included in the completion at all, so it
-  // may legitimately be missing.
-  //
-  // Over the lifetime of this feature, we've changed which APIs/libraries we
-  // use to generate the completion, so we need to handle all formats we've ever
-  // used for backwards-compatibility. Each one is documented below.
+  // The `completion` shape has changed across libraries we've used over time,
+  // and older runs may not include an explanation at all. Probe each known
+  // format defensively rather than schema-validating.
   const explanation = run(() => {
     const completion = aiGradingJobData.completion;
     if (!completion) return null;

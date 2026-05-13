@@ -409,7 +409,7 @@ ${submission.feedback?.manual}</textarea
                   >
                     Grade
                   </button>
-                  ${resLocals.assessment_question.ai_grading_mode
+                  ${context === 'main' && resLocals.assessment_question.ai_grading_mode
                     ? html`
                         <button
                           id="ai-grade-button"

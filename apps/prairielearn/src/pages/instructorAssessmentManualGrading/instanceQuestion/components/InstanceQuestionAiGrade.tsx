@@ -23,14 +23,15 @@ declare global {
   }
 }
 
-/**
- * Fetches the current grading-rubric panels JSON and swaps the affected DOM
- * regions in place: the AI-grading explanation card inside the question
- * container (which itself wraps the student submission), and the main grading
- * panel. Falls back to a full page reload if any expected field is missing or
- * the target element can't be found, so the user always sees fresh data.
- */
-async function refreshGradingPanels() {
+function isInFlight(status: JobItemStatus | undefined) {
+  return status === JobItemStatus.queued || status === JobItemStatus.in_progress;
+}
+
+function isDone(status: JobItemStatus | undefined) {
+  return status === JobItemStatus.complete || status === JobItemStatus.failed;
+}
+
+async function refreshGradingPanels(): Promise<boolean> {
   const reload = (reason: string) => {
     console.warn('[InstanceQuestionAiGrade] reloading page:', reason);
     window.location.reload();
@@ -44,7 +45,7 @@ async function refreshGradingPanels() {
     });
     if (!res.ok) {
       reload(`fetch failed (status ${res.status})`);
-      return;
+      return false;
     }
     const data = (await res.json()) as {
       gradingPanel?: string;
@@ -53,41 +54,33 @@ async function refreshGradingPanels() {
     };
     if (data.err) {
       reload(`server returned err: ${data.err}`);
-      return;
+      return false;
     }
     if (!data.gradingPanel || !data.questionContainer) {
       reload('missing gradingPanel or questionContainer in response');
-      return;
+      return false;
     }
 
-    // The CSRF tokens embedded in the swapped HTML are signed for the
-    // `/grading_rubric_panels` URL, not the base instance question URL the
-    // form actually submits to. Capture the existing token before any swap so
-    // we can re-apply it to all `__csrf_token` inputs afterwards (same trick
-    // RubricSettings uses when it swaps the panel after saving rubric
-    // settings).
+    // The CSRF tokens embedded in the swapped HTML are signed for
+    // `/grading_rubric_panels`, not the base URL the form actually posts to,
+    // so reuse the existing token afterwards (same as `RubricSettings`).
     const existingCsrfToken =
       document.querySelector<HTMLInputElement>('.js-main-grading-panel input[name="__csrf_token"]')
         ?.value ?? '';
 
-    // Swap the question container first — it wraps the freshly-rendered
-    // submission panel and the AI grading explanation card (both server-
-    // rendered from the same `aiGradingInfo` used to render the grading
-    // panel, so the three regions stay in sync).
     const container = document.getElementById('js-question-container');
     if (!container) {
       reload('missing #js-question-container');
-      return;
+      return false;
     }
     container.innerHTML = data.questionContainer;
     executeScripts(container);
     await window.mathjaxTypeset([container]);
 
-    // Swap the main grading panel — score, rubric items, feedback textarea.
     const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
     if (!gradingPanel) {
       reload('missing .js-main-grading-panel');
-      return;
+      return false;
     }
     gradingPanel.innerHTML = data.gradingPanel;
     if (typeof window.resetInstructorGradingPanel === 'function') {
@@ -100,8 +93,10 @@ async function refreshGradingPanels() {
         input.value = existingCsrfToken;
       });
     }
+    return true;
   } catch (err) {
     reload(`exception: ${String(err)}`);
+    return false;
   }
 }
 
@@ -145,43 +140,64 @@ function InstanceQuestionAiGradeInner({
   });
 
   const submissionStatus = serverJobProgress.displayedStatuses[instanceQuestionId];
-  const completedJobsRef = useRef<Set<string>>(new Set());
 
-  // When any tracked AI grading job completes, refresh the affected page
-  // regions in place (submission panel, AI grading explanation, main grading
-  // panel) so the user sees the new grade without losing scroll position.
-  // The job-state transition only fires here once because each job_sequence_id
-  // is tracked in `completedJobsRef`.
+  // The CustomEvent listener below closes over `submissionStatus` once at mount;
+  // mirror it into a ref so the click handler always sees the live value
+  // without re-binding the listener on every status change.
+  const submissionStatusRef = useRef(submissionStatus);
+  submissionStatusRef.current = submissionStatus;
+
+  // Tracks whether the user has touched any input inside the grading panel
+  // since the last server-rendered HTML was applied. Used to guard against
+  // wiping in-flight manual grading work when an AI job completes.
+  const formDirtyRef = useRef(false);
   useEffect(() => {
-    let shouldRefresh = false;
-    for (const job of Object.values(serverJobProgress.jobsProgress)) {
-      const isComplete = job.num_total > 0 && job.num_complete >= job.num_total;
-      if (isComplete && !completedJobsRef.current.has(job.job_sequence_id)) {
-        completedJobsRef.current.add(job.job_sequence_id);
-        shouldRefresh = true;
+    const handler = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.js-main-grading-panel')) {
+        formDirtyRef.current = true;
       }
-    }
-    if (shouldRefresh) {
-      void refreshGradingPanels();
-    }
-  }, [serverJobProgress.jobsProgress]);
+    };
+    document.addEventListener('input', handler);
+    document.addEventListener('change', handler);
+    return () => {
+      document.removeEventListener('input', handler);
+      document.removeEventListener('change', handler);
+    };
+  }, []);
 
-  // Reflect the AI grading status on the placeholder `#ai-grade-button` rendered
-  // by `gradingPanel.html.ts`. The button stays disabled while an item is queued
-  // or in-progress so the user can't kick off a duplicate run.
+  // Refresh the grading panel only when *this* instance question's per-item
+  // status transitions from in-flight to done, not when any unrelated job
+  // completes for the same assessment question.
+  const prevSubmissionStatusRef = useRef<JobItemStatus | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevSubmissionStatusRef.current;
+    prevSubmissionStatusRef.current = submissionStatus;
+    if (!isInFlight(prev) || !isDone(submissionStatus)) return;
+    if (formDirtyRef.current) {
+      console.warn(
+        '[InstanceQuestionAiGrade] AI grading complete but the grading panel has unsaved edits; not refreshing in place. Reload to see the new state.',
+      );
+      return;
+    }
+    void refreshGradingPanels().then((swapped) => {
+      if (swapped) formDirtyRef.current = false;
+    });
+  }, [submissionStatus]);
+
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
-    const inProgress =
-      submissionStatus === JobItemStatus.queued || submissionStatus === JobItemStatus.in_progress;
+    const inProgress = isInFlight(submissionStatus);
     button.disabled = inProgress;
     button.title = inProgress ? 'AI grading in progress…' : '';
   }, [submissionStatus]);
 
-  // Listen for click events from the server-rendered AI grade button.
   useEffect(() => {
-    const handler = () =>
+    const handler = () => {
+      if (isInFlight(submissionStatusRef.current)) return;
       setModalState({ type: 'selected', ids: [instanceQuestionId], numToGrade: 1 });
+    };
     document.addEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
     return () => document.removeEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
   }, [instanceQuestionId]);

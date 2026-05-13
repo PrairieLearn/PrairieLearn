@@ -14,7 +14,6 @@ import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-gr
 import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  AiGradingJobDataForSubmissionSchema,
   buildAiGradingInfo,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -49,34 +48,6 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-async function fetchAiGradingInfo({
-  submission_id,
-  submissionHtmls,
-}: {
-  submission_id: string;
-  submissionHtmls: string[];
-}) {
-  const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
-    sqldb.queryOptionalRow(
-      sql.select_ai_grading_job_data_for_submission,
-      { submission_id },
-      AiGradingJobDataForSubmissionSchema,
-    ),
-    sqldb
-      .queryOptionalScalar(
-        sql.select_exists_manual_grading_job_for_submission,
-        { submission_id },
-        z.boolean(),
-      )
-      .then((manuallyGraded) => manuallyGraded ?? false),
-  ]);
-  return await buildAiGradingInfo({
-    aiGradingJobData,
-    submissionManuallyGraded,
-    submissionHtmls,
-  });
-}
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
@@ -167,7 +138,7 @@ router.get(
       const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
       const aiGradingInfo = aiGradingEnabled
-        ? await fetchAiGradingInfo({
+        ? await buildAiGradingInfo({
             submission_id: res.locals.submission!.id,
             submissionHtmls: localsForRender.resLocals.submissionHtmls,
           })
@@ -370,7 +341,7 @@ router.get(
         });
 
         const aiGradingInfo = aiGradingEnabled
-          ? await fetchAiGradingInfo({
+          ? await buildAiGradingInfo({
               submission_id: submission.id,
               submissionHtmls: res.locals.submissionHtmls,
             })
