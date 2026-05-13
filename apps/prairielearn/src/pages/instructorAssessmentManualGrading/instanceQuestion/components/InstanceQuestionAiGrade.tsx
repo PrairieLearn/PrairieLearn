@@ -63,6 +63,16 @@ async function refreshGradingPanels() {
       return;
     }
 
+    // The CSRF tokens embedded in the swapped HTML are signed for the
+    // `/grading_rubric_panels` URL, not the base instance question URL the
+    // form actually submits to. Capture the existing token before any swap so
+    // we can re-apply it to all `__csrf_token` inputs afterwards (same trick
+    // RubricSettings uses when it swaps the panel after saving rubric
+    // settings).
+    const existingCsrfToken =
+      document.querySelector<HTMLInputElement>('.js-main-grading-panel input[name="__csrf_token"]')
+        ?.value ?? '';
+
     // Swap the question container first — it wraps the freshly-rendered
     // submission panel and the AI grading explanation card (both server-
     // rendered from the same `aiGradingInfo` used to render the grading
@@ -87,6 +97,12 @@ async function refreshGradingPanels() {
       window.resetInstructorGradingPanel();
     }
     await window.mathjaxTypeset([gradingPanel]);
+
+    if (existingCsrfToken) {
+      document.querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]').forEach((input) => {
+        input.value = existingCsrfToken;
+      });
+    }
   } catch (err) {
     reload(`exception: ${String(err)}`);
   }
