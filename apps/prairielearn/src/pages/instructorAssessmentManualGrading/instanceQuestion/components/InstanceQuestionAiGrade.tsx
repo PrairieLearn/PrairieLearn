@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
-import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
+import { executeScripts } from '@prairielearn/browser-utils';
 
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
@@ -26,11 +26,17 @@ declare global {
 
 /**
  * Fetches the current grading-rubric panels JSON and swaps the affected DOM
- * regions in place: the student submission, the AI-grading explanation card
- * inside the question container, and the main grading panel. Falls back to a
- * full page reload if anything goes wrong so the user always sees fresh data.
+ * regions in place: the AI-grading explanation card inside the question
+ * container (which itself wraps the student submission), and the main grading
+ * panel. Falls back to a full page reload if any expected field is missing or
+ * the target element can't be found, so the user always sees fresh data.
  */
 async function refreshGradingPanels() {
+  const reload = (reason: string) => {
+    console.warn('[InstanceQuestionAiGrade] reloading page:', reason);
+    window.location.reload();
+  };
+
   try {
     const url = `${window.location.pathname.replace(/\/$/, '')}/grading_rubric_panels`;
     const res = await fetch(url, {
@@ -38,7 +44,7 @@ async function refreshGradingPanels() {
       headers: { Accept: 'application/json' },
     });
     if (!res.ok) {
-      window.location.reload();
+      reload(`fetch failed (status ${res.status})`);
       return;
     }
     const data = (await res.json()) as {
@@ -49,39 +55,40 @@ async function refreshGradingPanels() {
       err?: string;
     };
     if (data.err) {
-      window.location.reload();
+      reload(`server returned err: ${data.err}`);
+      return;
+    }
+    if (!data.gradingPanel || !data.questionContainer) {
+      reload('missing gradingPanel or questionContainer in response');
       return;
     }
 
-    if (data.submissionPanel && data.submissionId) {
-      const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
-      if (oldSubmission) {
-        const newSubmission = parseHTMLElement(document, data.submissionPanel);
-        oldSubmission.replaceWith(newSubmission);
-        executeScripts(newSubmission);
-        await window.mathjaxTypeset([newSubmission]);
-      }
+    // Swap the question container first — it wraps the freshly-rendered
+    // submission panel and the AI grading explanation card (both server-
+    // rendered from the same `aiGradingInfo` used to render the grading
+    // panel, so the three regions stay in sync).
+    const container = document.getElementById('js-question-container');
+    if (!container) {
+      reload('missing #js-question-container');
+      return;
     }
+    container.innerHTML = data.questionContainer;
+    executeScripts(container);
+    await window.mathjaxTypeset([container]);
 
-    if (data.questionContainer) {
-      const container = document.getElementById('js-question-container');
-      if (container) {
-        container.innerHTML = data.questionContainer;
-        executeScripts(container);
-        await window.mathjaxTypeset([container]);
-      }
+    // Swap the main grading panel — score, rubric items, feedback textarea.
+    const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
+    if (!gradingPanel) {
+      reload('missing .js-main-grading-panel');
+      return;
     }
-
-    if (data.gradingPanel) {
-      const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-      if (gradingPanel) {
-        gradingPanel.innerHTML = data.gradingPanel;
-        window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset([gradingPanel]);
-      }
+    gradingPanel.innerHTML = data.gradingPanel;
+    if (typeof window.resetInstructorGradingPanel === 'function') {
+      window.resetInstructorGradingPanel();
     }
-  } catch {
-    window.location.reload();
+    await window.mathjaxTypeset([gradingPanel]);
+  } catch (err) {
+    reload(`exception: ${String(err)}`);
   }
 }
 
