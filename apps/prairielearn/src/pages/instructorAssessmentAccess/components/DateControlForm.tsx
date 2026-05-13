@@ -1,4 +1,4 @@
-import { Col, Form, Row } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -87,14 +87,14 @@ export function DefaultDateControlForm({
               <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
             </>
           )}
-          <Row className="gy-3">
-            <Col md={6}>
+          <div className="d-flex flex-column gap-3">
+            <div>
               <DefaultDurationField />
-            </Col>
-            <Col md={6}>
+            </div>
+            <div>
               <DefaultPasswordField />
-            </Col>
-          </Row>
+            </div>
+          </div>
         </div>
       ) : (
         <p className="text-body-secondary mt-2 mb-0">
@@ -130,14 +130,14 @@ export function OverrideDateControlForm({
         <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
         <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
-        <Row className="gy-3">
-          <Col md={6}>
+        <div className="d-flex flex-column gap-3">
+          <div>
             <OverrideDurationField index={index} />
-          </Col>
-          <Col md={6}>
+          </div>
+          <div>
             <OverridePasswordField index={index} />
-          </Col>
-        </Row>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -115,13 +115,6 @@ body.pl-ui-no-user-select {
   container-type: inline-size;
 }
 
-@container (max-width: 600px) {
-  .pl-ui-split-pane__right-body .row > [class*='col-'] {
-    flex: 0 0 auto;
-    width: 100%;
-  }
-}
-
 /* Wide: hide right panel + separator when collapsed */
 .pl-ui-split-pane[data-collapsed] .pl-ui-split-pane__separator,
 .pl-ui-split-pane[data-collapsed] .pl-ui-split-pane__right {
