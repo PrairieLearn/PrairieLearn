@@ -136,6 +136,19 @@ FROM
 WHERE
   id = $job_sequence_id;
 
+-- BLOCK finalize_stopped_job_sequence
+-- Idempotent transition from 'Stopping' to the terminal 'Stopped' status.
+-- Used by orchestrators that observed a stop request mid-loop and want to
+-- settle the sequence themselves before the inner job's natural finisher
+-- runs.
+UPDATE job_sequences
+SET
+  status = 'Stopped',
+  finish_date = CURRENT_TIMESTAMP
+WHERE
+  id = $job_sequence_id
+  AND status = 'Stopping';
+
 -- BLOCK update_job_on_finish
 WITH
   updated_job AS (

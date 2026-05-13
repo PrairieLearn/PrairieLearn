@@ -42,7 +42,11 @@ import {
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
+import {
+  createServerJob,
+  finalizeStoppedJobSequence,
+  selectJobSequenceStatus,
+} from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
@@ -1263,9 +1267,7 @@ export async function aiGrade({
       job.info(
         `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
       );
-      await execute(sql.finalize_stopped_job_sequence, {
-        job_sequence_id: serverJob.jobSequenceId,
-      });
+      await finalizeStoppedJobSequence(serverJob.jobSequenceId);
       await emitServerJobProgressUpdate({
         job_sequence_id: serverJob.jobSequenceId,
         num_complete,

@@ -8,15 +8,6 @@ WHERE
   AND type = 'ai_grading'
   AND status IN ('Running', 'Stopping');
 
--- BLOCK finalize_stopped_job_sequence
-UPDATE job_sequences
-SET
-  status = 'Stopped',
-  finish_date = CURRENT_TIMESTAMP
-WHERE
-  id = $job_sequence_id
-  AND status = 'Stopping';
-
 -- BLOCK ai_grading_concurrency_advisory_lock
 -- Serializes the concurrent-job admission check + insert per course instance,
 -- preventing two requests from both reading a count below the limit and then

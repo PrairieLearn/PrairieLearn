@@ -35,6 +35,12 @@ import type { JobProgressWithStatus } from './useServerJobProgress.js';
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button on running jobs. Called with the job sequence ID when the user confirms the stop action.
+ *
+ * @param params.stopConfirmation Optional text for the confirmation modal opened when the user clicks Stop. Falls back to generic strings when not provided.
+ * @param params.stopConfirmation.title Modal title.
+ * @param params.stopConfirmation.body Modal body text.
+ * @param params.stopConfirmation.confirmLabel Label for the confirm button.
+ * @param params.stopConfirmation.cancelLabel Label for the cancel button.
  */
 export function ServerJobsProgressInfo({
   itemNames,
@@ -44,6 +50,7 @@ export function ServerJobsProgressInfo({
   statusText = {},
   onDismissCompleteJobSequence,
   onStopJobSequence,
+  stopConfirmation,
 }: {
   itemNames: string;
   jobsProgress: JobProgressWithStatus[];
@@ -64,6 +71,12 @@ export function ServerJobsProgressInfo({
   };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   onStopJobSequence?: (jobSequenceId: string) => void;
+  stopConfirmation?: {
+    title?: string;
+    body?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+  };
 }) {
   return (
     <div className={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
@@ -86,6 +99,7 @@ export function ServerJobsProgressInfo({
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
+          stopConfirmation={stopConfirmation}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
           onStopJobSequence={onStopJobSequence}
         />
@@ -93,6 +107,13 @@ export function ServerJobsProgressInfo({
     </div>
   );
 }
+
+const DEFAULT_STOP_CONFIRMATION = {
+  title: 'Stop job?',
+  body: 'In-progress work will finish; no new work will be started.',
+  confirmLabel: 'Stop',
+  cancelLabel: 'Keep running',
+};
 
 const DEFAULT_DISPLAY: Record<JobStatus, { text: string; icon: string; variant: string }> = {
   inProgress: { text: 'Job in progress', icon: 'bi-hourglass-split', variant: 'info' },
@@ -135,6 +156,12 @@ const DEFAULT_DISPLAY: Record<JobStatus, { text: string; icon: string; variant: 
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  * @param params.onStopJobSequence Optional callback that, when provided, renders a Stop button. Called with the job sequence ID when the user confirms.
+ *
+ * @param params.stopConfirmation Optional text overrides for the confirmation modal opened when the user clicks Stop.
+ * @param params.stopConfirmation.title Modal title.
+ * @param params.stopConfirmation.body Modal body text.
+ * @param params.stopConfirmation.confirmLabel Label for the confirm button.
+ * @param params.stopConfirmation.cancelLabel Label for the cancel button.
  */
 function ServerJobProgressInfo({
   jobSequenceId,
@@ -148,6 +175,7 @@ function ServerJobProgressInfo({
   numItemsIncurredCost,
   onDismissCompleteJobSequence,
   onStopJobSequence,
+  stopConfirmation,
 }: {
   jobSequenceId: string;
   courseInstanceId: string;
@@ -172,6 +200,12 @@ function ServerJobProgressInfo({
   numItemsIncurredCost?: number;
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   onStopJobSequence?: (jobSequenceId: string) => void;
+  stopConfirmation?: {
+    title?: string;
+    body?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+  };
 }) {
   const [showStopConfirm, setShowStopConfirm] = useState(false);
 
@@ -179,6 +213,13 @@ function ServerJobProgressInfo({
     text: statusText[status] ?? DEFAULT_DISPLAY[status].text,
     icon: statusIcons[status] ?? DEFAULT_DISPLAY[status].icon,
     variant: DEFAULT_DISPLAY[status].variant,
+  };
+
+  const stopCopy = {
+    title: stopConfirmation?.title ?? DEFAULT_STOP_CONFIRMATION.title,
+    body: stopConfirmation?.body ?? DEFAULT_STOP_CONFIRMATION.body,
+    confirmLabel: stopConfirmation?.confirmLabel ?? DEFAULT_STOP_CONFIRMATION.confirmLabel,
+    cancelLabel: stopConfirmation?.cancelLabel ?? DEFAULT_STOP_CONFIRMATION.cancelLabel,
   };
 
   const progressPercent = nums.total !== 0 ? (nums.complete / nums.total) * 100 : 0;
@@ -320,12 +361,12 @@ function ServerJobProgressInfo({
       {onStopJobSequence != null && (
         <Modal show={showStopConfirm} onHide={() => setShowStopConfirm(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Stop AI grading</Modal.Title>
+            <Modal.Title>{stopCopy.title}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>In-progress submissions will finish. The rest will be skipped.</Modal.Body>
+          <Modal.Body>{stopCopy.body}</Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowStopConfirm(false)}>
-              Keep grading
+              {stopCopy.cancelLabel}
             </Button>
             <Button
               variant="danger"
@@ -334,7 +375,7 @@ function ServerJobProgressInfo({
                 setShowStopConfirm(false);
               }}
             >
-              Stop grading
+              {stopCopy.confirmLabel}
             </Button>
           </Modal.Footer>
         </Modal>

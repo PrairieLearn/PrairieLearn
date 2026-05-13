@@ -486,6 +486,16 @@ export async function selectJobSequenceStatus(job_sequence_id: string) {
   );
 }
 
+/**
+ * Idempotent transition from 'Stopping' to the terminal 'Stopped' status.
+ * Returns true if this call transitioned the row; false if the row was
+ * already past 'Stopping' (or doesn't exist).
+ */
+export async function finalizeStoppedJobSequence(job_sequence_id: string): Promise<boolean> {
+  const rowCount = await execute(sql.finalize_stopped_job_sequence, { job_sequence_id });
+  return rowCount > 0;
+}
+
 /*
   SocketIO configuration
 

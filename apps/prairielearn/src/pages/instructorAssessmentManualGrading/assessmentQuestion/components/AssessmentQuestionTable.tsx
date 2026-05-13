@@ -628,6 +628,12 @@ export function AssessmentQuestionTable({
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
+          stopConfirmation={{
+            title: 'Stop AI grading',
+            body: 'In-progress submissions will finish. The rest will be skipped.',
+            confirmLabel: 'Stop grading',
+            cancelLabel: 'Keep grading',
+          }}
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
           onStopJobSequence={
             hasCourseInstancePermissionEdit
