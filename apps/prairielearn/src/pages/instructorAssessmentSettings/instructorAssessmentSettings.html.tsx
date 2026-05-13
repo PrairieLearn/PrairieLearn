@@ -24,6 +24,14 @@ import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-s
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
+function syncJobFailedRenderer(urlPrefix: string) {
+  return ({ message, jobSequenceId }: { message: string; jobSequenceId: string }) => (
+    <>
+      {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+    </>
+  );
+}
+
 function ScoringSummary({
   zonePointsRange,
   useCustomMaxPoints,
@@ -258,11 +266,7 @@ function CopyAssessmentModal({
           <AppErrorAlert
             error={copyError}
             render={{
-              SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
-                <>
-                  {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
-                </>
-              ),
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
               UNKNOWN: ({ message }) => message,
             }}
             onDismiss={() => copyMutation.reset()}
@@ -453,11 +457,7 @@ function InstructorAssessmentSettingsInner({
       return {
         variant: 'danger',
         message: renderAppError(appError, {
-          SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
-            <>
-              {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
-            </>
-          ),
+          SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
           UNKNOWN: ({ message }) => message,
         }),
         onDismiss: () => saveMutation.reset(),
@@ -534,11 +534,7 @@ function InstructorAssessmentSettingsInner({
           <AppErrorAlert
             error={deleteError}
             render={{
-              SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
-                <>
-                  {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
-                </>
-              ),
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
               UNKNOWN: ({ message }) => message,
             }}
             onDismiss={() => deleteMutation.reset()}
