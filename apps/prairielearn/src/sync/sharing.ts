@@ -174,6 +174,10 @@ export async function checkInvalidSharingSetRemovals(
 
   if (removedQuestionSharingSets.length === 0) return false;
 
+  // This check intentionally ignores `questions.share_publicly`: a publicly
+  // shared question still gets blocked if a consumer with access via the set
+  // uses it. To loosen this so public sharing acts as a fallback path, add
+  // `AND NOT q.share_publicly` to `select_in_use_question_sharing_set_removals`.
   const blockedPairs = await sqldb.queryRows(
     sql.select_in_use_question_sharing_set_removals,
     {
@@ -193,12 +197,11 @@ export async function checkInvalidSharingSetRemovals(
     invalidSharingSetRemovals[qid].push(sharing_set_name);
   }
 
+  const blockedLines = Object.entries(invalidSharingSetRemovals).map(
+    ([qid, sharingSets]) => `  - ${qid}: ${sharingSets.join(', ')}`,
+  );
   logger.error(
-    `✖ Course sync completely failed. The following questions are used by consuming courses through the listed sharing sets, so they cannot be removed from those sets: ${Object.keys(
-      invalidSharingSetRemovals,
-    )
-      .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
-      .join(', ')}`,
+    `✖ Course sync completely failed. The following questions cannot be removed from these sharing sets because at least one consuming course with access to the sharing set uses the question:\n${blockedLines.join('\n')}`,
   );
 
   return true;
