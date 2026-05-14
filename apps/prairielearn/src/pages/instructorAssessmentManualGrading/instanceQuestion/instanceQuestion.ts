@@ -175,13 +175,12 @@ router.get(
       const shared = await loadSharedInstanceQuestionData(res.locals);
       const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-      const aiGradingInfo =
-        (shared.aiGradingEnabled
-          ? await buildAiGradingInfo({
-              submission_id: res.locals.submission!.id,
-              submissionHtmls: localsForRender.resLocals.submissionHtmls,
-            })
-          : null) ?? undefined;
+      const aiGradingInfo = shared.aiGradingEnabled
+        ? ((await buildAiGradingInfo({
+            submission_id: res.locals.submission!.id,
+            submissionHtmls: localsForRender.resLocals.submissionHtmls,
+          })) ?? undefined)
+        : undefined;
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
       req.session.show_submissions_assigned_to_me_only =
@@ -354,13 +353,12 @@ router.get(
           groupRolePermissions: null,
         });
 
-        const aiGradingInfo =
-          (shared.aiGradingEnabled
-            ? await buildAiGradingInfo({
-                submission_id: submission.id,
-                submissionHtmls: res.locals.submissionHtmls,
-              })
-            : null) ?? undefined;
+        const aiGradingInfo = shared.aiGradingEnabled
+          ? ((await buildAiGradingInfo({
+              submission_id: submission.id,
+              submissionHtmls: res.locals.submissionHtmls,
+            })) ?? undefined)
+          : undefined;
 
         const gradingPanel = GradingPanel({
           ...locals,
