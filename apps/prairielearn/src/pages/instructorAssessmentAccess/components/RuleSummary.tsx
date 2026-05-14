@@ -205,7 +205,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: 'Release',
-      access: '—',
+      access: 'Opens',
       error: releaseDateError,
     });
   }

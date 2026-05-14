@@ -308,7 +308,7 @@ export function AccessControlForm({
                     {alert.message}
                   </Alert>
                 )}
-                <div className="p-3">
+                <div className="container py-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
@@ -342,7 +342,6 @@ export function AccessControlForm({
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
-                  fullWidth
                   onCancel={() => reset()}
                 />
               </>
