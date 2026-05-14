@@ -25,12 +25,16 @@ async function selectStatus(job_sequence_id: string): Promise<string> {
   return await queryScalar(sql.select_status, { job_sequence_id }, EnumJobStatusSchema);
 }
 
+async function selectJobStatus(job_id: string): Promise<string> {
+  return await queryScalar(sql.select_job_status, { job_id }, EnumJobStatusSchema);
+}
+
 describe('server-jobs SQL transitions', () => {
   beforeAll(helperDb.before);
   afterAll(helperDb.after);
 
   describe('update_job_on_finish', () => {
-    it('Running + Success → Success', async () => {
+    it('Running + Success → Success on both rows', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
@@ -40,9 +44,10 @@ describe('server-jobs SQL transitions', () => {
         status: 'Success',
       });
       assert.equal(await selectStatus(job_sequence_id), 'Success');
+      assert.equal(await selectJobStatus(job_id), 'Success');
     });
 
-    it('Running + Error → Error', async () => {
+    it('Running + Error → Error on both rows', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Running');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
@@ -52,9 +57,23 @@ describe('server-jobs SQL transitions', () => {
         status: 'Error',
       });
       assert.equal(await selectStatus(job_sequence_id), 'Error');
+      assert.equal(await selectJobStatus(job_id), 'Error');
     });
 
-    it('Stopping + Success → Stopped (settle the race where stop landed mid-finish)', async () => {
+    it('Running + Stopped → Stopped on both rows (explicit job.stop())', async () => {
+      const { job_sequence_id, job_id } = await insertJobSequence('Running');
+      await execute(productionSql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Stopped',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectJobStatus(job_id), 'Stopped');
+    });
+
+    it('Stopping + Success → Stopped on both rows (race where stop landed mid-finish)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
@@ -64,9 +83,10 @@ describe('server-jobs SQL transitions', () => {
         status: 'Success',
       });
       assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
 
-    it('Stopping + Error → Stopped (stop intent wins over a clean inner-job error)', async () => {
+    it('Stopping + Error → Stopped on both rows (stop intent wins over a clean error)', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
@@ -76,6 +96,7 @@ describe('server-jobs SQL transitions', () => {
         status: 'Error',
       });
       assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
   });
 

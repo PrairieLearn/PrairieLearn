@@ -100,6 +100,12 @@ export interface ServerJobLogger {
 
 export interface ServerJob extends ServerJobLogger {
   fail(msg: string): never;
+  /**
+   * Terminates the job as a successful cancellation. The inner job row and
+   * the surrounding job sequence both land in 'Stopped' status, and the
+   * provided message is written to the job output.
+   */
+  stop(msg: string): never;
   exec(file: string, args: string[], options: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
@@ -134,6 +140,17 @@ class ServerJobAbortError extends Error {
   }
 }
 
+/**
+ * Internal error subclass so we can identify when `stop()` is called and
+ * settle the job and its sequence as 'Stopped' instead of 'Error'.
+ */
+class ServerJobStopSignal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerJobStopSignal';
+  }
+}
+
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private static readonly FLUSH_INTERVAL_MS = 500;
 
@@ -164,6 +181,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   fail(msg: string): never {
     this.error(msg);
     throw new ServerJobAbortError(msg);
+  }
+
+  stop(msg: string): never {
+    this.info(msg);
+    throw new ServerJobStopSignal(msg);
   }
 
   error(msg: string) {
@@ -266,9 +288,14 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       await fn(this);
       await this.finish();
     } catch (err) {
-      // Report unexpected errors to Sentry if enabled.
-      // ServerJobAbortError is expected (thrown by job.fail()) and should not be reported.
-      if (this.reportErrorsToSentry && !(err instanceof ServerJobAbortError)) {
+      // Report unexpected errors to Sentry if enabled. ServerJobAbortError
+      // (from job.fail()) and ServerJobStopSignal (from job.stop()) are both
+      // expected control-flow signals, not real errors.
+      if (
+        this.reportErrorsToSentry &&
+        !(err instanceof ServerJobAbortError) &&
+        !(err instanceof ServerJobStopSignal)
+      ) {
         Sentry.captureException(err, {
           tags: {
             'job_sequence.id': this.jobSequenceId,
@@ -334,10 +361,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     if (this.finished) return;
     this.finished = true;
 
-    // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
-    // any details about the error object itself, as `fail` will have already
-    // printed the message. This error is just used as a form of control flow.
-    if (err && !(err instanceof ServerJobAbortError)) {
+    const isStop = err instanceof ServerJobStopSignal;
+    const isAbort = err instanceof ServerJobAbortError;
+
+    // `ServerJobAbortError` (fail) and `ServerJobStopSignal` (stop) are
+    // control-flow signals — their message was already printed by the
+    // throwing method, so we don't re-print details here.
+    if (err && !isAbort && !isStop) {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
@@ -361,12 +391,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
+    const finalStatus = isStop ? 'Stopped' : err ? 'Error' : 'Success';
     await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      status: err ? 'Error' : 'Success',
+      status: finalStatus,
     });
 
     // Notify sockets.
@@ -484,16 +515,6 @@ export async function selectJobSequenceStatus(job_sequence_id: string) {
     { job_sequence_id },
     z.object({ status: EnumJobStatusSchema.nullable() }),
   );
-}
-
-/**
- * Idempotent transition from 'Stopping' to the terminal 'Stopped' status.
- * Returns true if this call transitioned the row; false if the row was
- * already past 'Stopping' (or doesn't exist).
- */
-export async function finalizeStoppedJobSequence(job_sequence_id: string): Promise<boolean> {
-  const rowCount = await execute(sql.finalize_stopped_job_sequence, { job_sequence_id });
-  return rowCount > 0;
 }
 
 /*

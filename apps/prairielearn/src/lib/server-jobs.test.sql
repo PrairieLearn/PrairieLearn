@@ -44,6 +44,14 @@ FROM
 WHERE
   id = $job_sequence_id;
 
+-- BLOCK select_job_status
+SELECT
+  status::text
+FROM
+  jobs
+WHERE
+  id = $job_id;
+
 -- BLOCK force_old_start_date
 UPDATE job_sequences
 SET

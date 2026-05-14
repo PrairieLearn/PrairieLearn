@@ -130,22 +130,36 @@ FROM
 WHERE
   id = $job_sequence_id;
 
--- BLOCK finalize_stopped_job_sequence
-UPDATE job_sequences
-SET
-  status = 'Stopped',
-  finish_date = CURRENT_TIMESTAMP
-WHERE
-  id = $job_sequence_id
-  AND status = 'Stopping';
-
 -- BLOCK update_job_on_finish
+-- If a stop landed after the orchestrator's last poll (or via an early
+-- return), project the natural finish onto 'Stopped' on BOTH the inner job
+-- and the sequence so the rows stay consistent and the sequence doesn't
+-- linger in 'Stopping' until the hourly sweeper.
 WITH
+  computed_status AS (
+    SELECT
+      CASE
+        WHEN (
+          SELECT
+            status
+          FROM
+            job_sequences
+          WHERE
+            id = $job_sequence_id
+        ) = 'Stopping'::enum_job_status THEN 'Stopped'::enum_job_status
+        ELSE $status::enum_job_status
+      END AS status
+  ),
   updated_job AS (
     UPDATE jobs AS j
     SET
       finish_date = CURRENT_TIMESTAMP,
-      status = $status::enum_job_status,
+      status = (
+        SELECT
+          status
+        FROM
+          computed_status
+      ),
       output = $output,
       data = $data::jsonb
     WHERE
@@ -155,13 +169,12 @@ WITH
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  -- If a stop landed after the orchestrator's last poll (or via an early
-  -- return), project the natural finish onto 'Stopped' so the sequence
-  -- doesn't stay stuck in 'Stopping' until the hourly sweeper.
-  status = CASE
-    WHEN js.status = 'Stopping'::enum_job_status THEN 'Stopped'::enum_job_status
-    ELSE $status::enum_job_status
-  END
+  status = (
+    SELECT
+      status
+    FROM
+      computed_status
+  )
 WHERE
   js.id = $job_sequence_id
   AND js.status IN (

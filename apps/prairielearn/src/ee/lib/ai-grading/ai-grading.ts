@@ -42,11 +42,7 @@ import {
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import {
-  createServerJob,
-  finalizeStoppedJobSequence,
-  selectJobSequenceStatus,
-} from '../../../lib/server-jobs.js';
+import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
@@ -1263,10 +1259,6 @@ export async function aiGrade({
 
     if (stopRequested) {
       const num_skipped = instance_questions.length - num_complete;
-      job.info(
-        `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
-      );
-      await finalizeStoppedJobSequence(serverJob.jobSequenceId);
       await emitServerJobProgressUpdate({
         job_sequence_id: serverJob.jobSequenceId,
         num_complete,
@@ -1276,7 +1268,12 @@ export async function aiGrade({
         stop_state: 'stopped',
         ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
       });
-      return;
+      // `job.stop` writes the message to the output and throws a control-flow
+      // signal that the ServerJob wrapper catches; the inner jobs row and the
+      // surrounding job_sequences row both land in 'Stopped' status.
+      job.stop(
+        `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
+      );
     }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
