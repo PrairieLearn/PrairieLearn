@@ -5,7 +5,7 @@ import {
 } from '@reteps/tree-sitter-htmlmustache/browser';
 import type ace from 'ace-builds';
 
-import { htmlMustacheConfig } from './htmlMustacheConfig.js';
+import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
 const RUNTIME_WASM_FILENAME = 'web-tree-sitter.wasm';
