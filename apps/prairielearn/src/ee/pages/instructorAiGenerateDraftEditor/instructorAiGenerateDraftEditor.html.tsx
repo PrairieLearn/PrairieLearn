@@ -18,21 +18,30 @@ import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationEditor } from './components/AiQuestionGenerationEditor.js';
+import type { SelectedQuestionFile } from './selectedQuestionFile.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
   question,
   messages,
   questionFiles,
+  allQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
+  editorUrl,
+  search,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
+  allQuestionFiles: { path: string; size: number }[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
+  editorUrl: string;
+  search: string;
 }) {
   const chatCsrfToken = generatePrefixCsrfToken(
     {
@@ -86,6 +95,8 @@ export function InstructorAiGenerateDraftEditor({
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
+          allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}
@@ -93,6 +104,8 @@ export function InstructorAiGenerateDraftEditor({
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
+          editorUrl={editorUrl}
+          search={search}
         />
       </Hydrate>
     ),

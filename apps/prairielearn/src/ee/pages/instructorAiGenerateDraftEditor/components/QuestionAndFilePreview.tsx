@@ -1,12 +1,15 @@
 import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
+import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
+import { SelectedQuestionFileEditor } from './SelectedQuestionFileEditor.js';
 
 export interface NewVariantHandle {
   newVariant: () => void;
@@ -19,6 +22,11 @@ export interface CodeEditorsHandle {
 interface VariantResponse {
   questionContainerHtml: string;
   extraHeadersHtml: string;
+}
+
+interface QuestionFileEntry {
+  path: string;
+  size: number;
 }
 
 function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string) {
@@ -280,11 +288,130 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
   return <div ref={ref} suppressHydrationWarning />;
 }
 
+function encodeFilePath(filePath: string) {
+  return filePath.split('/').map(encodeURIComponent).join('/');
+}
+
+function getEditorUrlWithSelectedFile(editorUrl: string, filePath: string) {
+  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
+  return `${editorUrl}?${params.toString()}`;
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AllQuestionFiles({
+  allQuestionFiles,
+  selectedFile,
+  qid,
+  questionId,
+  urlPrefix,
+  editorUrl,
+  csrfToken,
+}: {
+  allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
+  qid: string | null;
+  questionId: string;
+  urlPrefix: string;
+  editorUrl: string;
+  csrfToken: string;
+}) {
+  if (!qid) return null;
+
+  const rootPath = `questions/${qid}`;
+
+  if (selectedFile != null) {
+    return (
+      <SelectedQuestionFileEditor
+        key={`${selectedFile.path}:${selectedFile.contents}`}
+        selectedFile={selectedFile}
+        csrfToken={csrfToken}
+        editorUrl={editorUrl}
+      />
+    );
+  }
+
+  return (
+    <div className="p-3">
+      <div className="d-flex justify-content-end mb-2">
+        <a
+          className="btn btn-sm btn-outline-secondary"
+          href={`${urlPrefix}/question/${questionId}/file_view/${encodeFilePath(rootPath)}`}
+        >
+          Open standalone file browser
+        </a>
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover align-middle mb-0" aria-label="Question files">
+          <thead>
+            <tr>
+              <th scope="col">File</th>
+              <th scope="col" className="text-end">
+                Size
+              </th>
+              <th scope="col" className="text-end">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {allQuestionFiles.map((file) => {
+              const pathFromCourseRoot = `${rootPath}/${file.path}`;
+              const encodedPath = encodeFilePath(pathFromCourseRoot);
+
+              return (
+                <tr key={file.path}>
+                  <td className="font-monospace">{file.path}</td>
+                  <td className="text-end text-muted">{formatFileSize(file.size)}</td>
+                  <td>
+                    <div className="d-flex gap-2 justify-content-end">
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
+                      >
+                        View
+                      </a>
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
+                      >
+                        Edit
+                      </a>
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+                          file.path.split('/').at(-1) ?? file.path,
+                        )}`}
+                      >
+                        Download
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function QuestionAndFilePreview({
   questionFiles,
+  allQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
+  editorUrl,
+  questionId,
+  qid,
+  urlPrefix,
   variantUrl,
   variantCsrfToken,
   newVariantRef,
@@ -293,11 +420,18 @@ export function QuestionAndFilePreview({
   onHasUnsavedChanges,
   filesError,
   onRetryFiles,
+  onSelectTab,
 }: {
   questionFiles: Record<string, string>;
+  allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
+  editorUrl: string;
+  questionId: string;
+  qid: string | null;
+  urlPrefix: string;
   variantUrl: string;
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
@@ -306,6 +440,7 @@ export function QuestionAndFilePreview({
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
   filesError?: Error | null;
   onRetryFiles?: () => void;
+  onSelectTab: (tab: 'files') => void;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
@@ -324,13 +459,8 @@ export function QuestionAndFilePreview({
   );
 
   return (
-    <div className="tab-content" style={{ height: '100%' }}>
-      <div
-        role="tabpanel"
-        id="question-preview"
-        className="tab-pane active"
-        style={{ height: '100%' }}
-      >
+    <Tab.Content className="h-100">
+      <Tab.Pane eventKey="preview" className="h-100">
         {isQuestionEmpty && (
           <div className="d-flex align-items-center justify-content-center h-100">
             {isGenerating ? (
@@ -352,11 +482,7 @@ export function QuestionAndFilePreview({
                   <button
                     type="button"
                     className="btn btn-link p-0 align-baseline fw-bold"
-                    // TODO: Replace with controlled tab state when converting to react-bootstrap tabs.
-                    onClick={() => {
-                      const tab = document.querySelector<HTMLElement>('a[href="#question-code"]');
-                      tab?.click();
-                    }}
+                    onClick={() => onSelectTab('files')}
                   >
                     Files
                   </button>{' '}
@@ -376,8 +502,8 @@ export function QuestionAndFilePreview({
         >
           <QuestionPreview questionContainerHtml={questionContainerHtml} />
         </div>
-      </div>
-      <div role="tabpanel" id="question-code" className="tab-pane" style={{ height: '100%' }}>
+      </Tab.Pane>
+      <Tab.Pane eventKey="files" className="h-100">
         <QuestionCodeEditors
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
@@ -388,13 +514,19 @@ export function QuestionAndFilePreview({
           onHasChangesChange={onHasUnsavedChanges}
           onRetryFiles={onRetryFiles}
         />
-      </div>
-      <div
-        role="tabpanel"
-        id="question-rich-text-editor"
-        className="tab-pane"
-        style={{ height: '100%' }}
-      >
+      </Tab.Pane>
+      <Tab.Pane eventKey="all-files" className="h-100">
+        <AllQuestionFiles
+          allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
+          qid={qid}
+          questionId={questionId}
+          urlPrefix={urlPrefix}
+          editorUrl={editorUrl}
+          csrfToken={csrfToken}
+        />
+      </Tab.Pane>
+      <Tab.Pane eventKey="rich-text-editor" className="h-100">
         {richTextEditorEnabled && (
           <RichTextEditor
             htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
@@ -402,7 +534,7 @@ export function QuestionAndFilePreview({
             isGenerating={isGenerating}
           />
         )}
-      </div>
-    </div>
+      </Tab.Pane>
+    </Tab.Content>
   );
 }

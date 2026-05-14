@@ -1,7 +1,9 @@
+import * as path from 'node:path';
 import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { Router } from 'express';
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -29,6 +31,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
+import { getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
@@ -44,9 +47,54 @@ import {
   DraftNotFound,
   InstructorAiGenerateDraftEditor,
 } from './instructorAiGenerateDraftEditor.html.js';
+import {
+  getEditorUrlWithSelectedFile,
+  getSelectedQuestionFilePath,
+  normalizeQuestionFilePath,
+  readSelectedQuestionFile,
+} from './selectedQuestionFile.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+interface QuestionFileEntry {
+  path: string;
+  size: number;
+}
+
+async function listQuestionFiles({
+  course,
+  question,
+}: {
+  course: Course;
+  question: Question;
+}): Promise<QuestionFileEntry[]> {
+  if (!question.qid) return [];
+
+  const questionPath = path.join(course.path, 'questions', question.qid);
+  const entries: QuestionFileEntry[] = [];
+
+  async function walk(directoryPath: string) {
+    const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
+
+    for (const dirent of dirents) {
+      const filePath = path.join(directoryPath, dirent.name);
+      if (dirent.isDirectory()) {
+        await walk(filePath);
+      } else if (dirent.isFile()) {
+        const stat = await fs.stat(filePath);
+        entries.push({
+          path: path.relative(questionPath, filePath).split(path.sep).join('/'),
+          size: stat.size,
+        });
+      }
+    }
+  }
+
+  await walk(questionPath);
+
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
 
 async function saveRevisedQuestion({
   course,
@@ -113,6 +161,45 @@ async function saveRevisedQuestion({
     html,
     python,
   });
+}
+
+async function saveDraftQuestionFile({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  filePath,
+  contents,
+}: {
+  course: Course;
+  question: Question;
+  user: User;
+  authn_user: User;
+  authz_data: {
+    has_course_permission_edit: boolean;
+  };
+  urlPrefix: string;
+  filePath: string;
+  contents: string;
+}) {
+  const client = getCourseFilesClient();
+
+  const result = await client.updateQuestionFiles.mutate({
+    course_id: course.id,
+    user_id: user.id,
+    authn_user_id: authn_user.id,
+    question_id: question.id,
+    has_course_permission_edit: authz_data.has_course_permission_edit,
+    files: {
+      [filePath]: b64EncodeUnicode(contents),
+    },
+  });
+
+  if (result.status === 'error') {
+    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+  }
 }
 
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
@@ -213,17 +300,27 @@ router.get(
       course_id: res.locals.course.id,
       question_id: res.locals.question.id,
     });
+    const allQuestionFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question: res.locals.question,
+    });
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+    const editorUrl = `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`;
+    const selectedFile = await readSelectedQuestionFile({
+      course: res.locals.course,
+      question: res.locals.question,
+      filePath: getSelectedQuestionFilePath(req.query.file),
+    });
 
     // Render the preview.
     await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+        newVariantUrl: editorUrl,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -239,8 +336,12 @@ router.get(
         question: res.locals.question,
         messages: validatedInitialMessages,
         questionFiles,
+        allQuestionFiles,
+        selectedFile,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
+        editorUrl,
+        search: getUrl(req).search,
       }),
     );
   }),
@@ -421,6 +522,25 @@ router.post(
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
+    } else if (req.body.__action === 'submit_file_revision') {
+      const filePath = normalizeQuestionFilePath(req.body.filePath);
+      await saveDraftQuestionFile({
+        course: res.locals.course,
+        question: res.locals.question,
+        user: res.locals.user,
+        authn_user: res.locals.authn_user,
+        authz_data: res.locals.authz_data,
+        urlPrefix: res.locals.urlPrefix,
+        filePath,
+        contents: b64DecodeUnicode(req.body.contents),
+      });
+
+      res.redirect(
+        getEditorUrlWithSelectedFile({
+          editorUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+          filePath,
+        }),
+      );
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
@@ -496,8 +616,17 @@ router.get(
       course_id: res.locals.course.id,
       question_id: res.locals.question.id,
     });
+    const allFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question: res.locals.question,
+    });
+    const selectedFile = await readSelectedQuestionFile({
+      course: res.locals.course,
+      question: res.locals.question,
+      filePath: getSelectedQuestionFilePath(req.query.file),
+    });
 
-    res.json({ files });
+    res.json({ files, allFiles, selectedFile });
   }),
 );
 
