@@ -690,6 +690,10 @@ export type Author = z.infer<typeof AuthorSchema>;
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
 
+// Schema lives in `@prairielearn/workflows` (see packages/workflows/src/workflows.types.ts),
+// alongside the engine code that reads and writes this table.
+export const WorkflowRunSchema = null;
+
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_id: IdSchema,
