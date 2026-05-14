@@ -18,8 +18,14 @@ import {
   aiGrade,
   getRunningAiGradingJobCountForCourseInstance,
 } from '../../ee/lib/ai-grading/ai-grading.js';
+import { MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE } from '../../ee/lib/ai-grading-free-credit-constants.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import {
+  FreeCreditRedemptionCapReachedError,
+  redeemFreeAiGradingCredit,
+  selectCourseFreeCreditRedemptionsUsed,
+} from '../../ee/models/ai-grading-free-credit-redemption.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
@@ -227,18 +233,49 @@ const aiGradingAvailabilityInfo = t.procedure
       running_job_count: z.number(),
       max_concurrent_jobs: z.number(),
       credit_balance_milli_dollars: z.number(),
+      free_credit_redemptions_remaining: z.number(),
     }),
   )
   .query(async (opts) => {
-    const [running_job_count, creditPool] = await Promise.all([
+    const [running_job_count, creditPool, freeCreditRedemptionsUsed] = await Promise.all([
       getRunningAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
       selectCreditPool(opts.ctx.course_instance.id),
+      selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id),
     ]);
     return {
       running_job_count,
       max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
       credit_balance_milli_dollars: creditPool.total_milli_dollars,
+      free_credit_redemptions_remaining: Math.max(
+        0,
+        MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE - freeCreditRedemptionsUsed,
+      ),
     };
+  });
+
+const redeemFreeCreditMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      redemptions_used: z.number(),
+      redemptions_remaining: z.number(),
+      amount_milli_dollars: z.number(),
+    }),
+  )
+  .mutation(async (opts) => {
+    try {
+      return await redeemFreeAiGradingCredit({
+        course_id: opts.ctx.course.id,
+        course_instance_id: opts.ctx.course_instance.id,
+        user_id: opts.ctx.authn_user.id,
+      });
+    } catch (err) {
+      if (err instanceof FreeCreditRedemptionCapReachedError) {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: err.message });
+      }
+      throw err;
+    }
   });
 
 export const manualGradingRouter = t.router({
@@ -251,4 +288,5 @@ export const manualGradingRouter = t.router({
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
+  redeemFreeCredit: redeemFreeCreditMutation,
 });
