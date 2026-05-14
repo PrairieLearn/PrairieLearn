@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import { TRPCClientError } from '@trpc/client';
+import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
@@ -36,6 +37,12 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const DraftQuestionMetadataSchema = z.object({ id: IdSchema });
+const QuestionsTableRowSchema = z.object({
+  id: IdSchema,
+  qid: z.string(),
+  draft: z.boolean(),
+  status: z.enum(['Draft', 'Finalized']),
+});
 
 let courseRepo: CourseRepoFixture;
 const originalIsEnterprise = config.isEnterprise;
@@ -83,6 +90,18 @@ async function assertRedirects(fromUrl: string, toUrl: string) {
   assert.equal(response.headers.get('location'), toUrl);
 }
 
+async function getQuestionsTableData() {
+  const response = await fetch(`${siteUrl}/pl/course/1/course_admin/questions`, {
+    headers: { cookie: 'pl_test_user=test_instructor' },
+  });
+  assert.equal(response.status, 200);
+
+  const $ = cheerio.load(await response.text());
+  assert.include($('#questionsTable thead').text(), 'Status');
+
+  return z.array(QuestionsTableRowSchema).parse($('#questionsTable').data('data'));
+}
+
 describe('Question draft finalization', { timeout: 20_000 }, () => {
   beforeAll(async () => {
     config.isEnterprise = true;
@@ -120,6 +139,7 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
   test.sequential('rejects invalid finalized QIDs for a draft question', async () => {
     const trpc = createTrpcClient();
     const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
+    const draftQuestion = await selectQuestionById(draft.questionId);
 
     await assertBadRequest(
       trpc.questions.finalizeDraft.mutate({
@@ -138,6 +158,15 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
       }),
       'Finalized question QIDs cannot be in the draft namespace.',
     );
+
+    const tableData = await getQuestionsTableData();
+    assert.deepInclude(tableData, {
+      id: draft.questionId,
+      qid: draftQuestion.qid,
+      draft: true,
+      status: 'Draft',
+    });
+    assert.isTrue(tableData.some((row) => row.draft === false && row.status === 'Finalized'));
   });
 
   test.sequential('finalizes a draft question', async () => {

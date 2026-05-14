@@ -1,12 +1,23 @@
-import * as path from 'path';
+import * as path from 'node:path';
 
+import { TRPCClientError } from '@trpc/client';
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { z } from 'zod';
 
+import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
+
+import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { selectQuestionById } from '../models/question.js';
+import { createCourseTrpcClient } from '../trpc/course/client.js';
+import type { CourseRouter } from '../trpc/course/trpc.js';
 
-import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
@@ -16,513 +27,276 @@ import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const DraftQuestionMetadataSchema = z.object({ id: IdSchema });
+const InfoJsonSchema = z.object({
+  title: z.string(),
+  topic: z.string(),
+  shareSourcePublicly: z.unknown().optional(),
+});
 
 let courseRepo: CourseRepoFixture;
 
-describe('Creating a question', () => {
+function createTrpcClient() {
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getCourseTrpcUrl('1'), authn_user_id: '2' },
+    config.secretKey,
+  );
+
+  return createCourseTrpcClient({
+    csrfToken,
+    courseId: '1',
+    urlBase: siteUrl,
+    extraHeaders: { cookie: 'pl_test_user=test_instructor' },
+  });
+}
+
+async function selectDraftQuestionMetadata(questionId: string) {
+  return await sqldb.queryOptionalRow(
+    sql.select_draft_question_metadata,
+    { question_id: questionId },
+    DraftQuestionMetadataSchema,
+  );
+}
+
+async function assertDraftQuestion({
+  questionId,
+  draftNumber,
+}: {
+  questionId: string;
+  draftNumber: number;
+}) {
+  const question = await selectQuestionById(questionId);
+  const qid = `__drafts__/draft_${draftNumber}`;
+
+  assert.equal(question.qid, qid);
+  assert.equal(question.title, `draft #${draftNumber}`);
+  assert.isTrue(question.draft);
+  assert.isNotNull(await selectDraftQuestionMetadata(questionId));
+
+  return {
+    qid,
+    path: path.join(courseRepo.courseLiveDir, 'questions', ...qid.split('/')),
+  };
+}
+
+async function readInfoJson(questionPath: string) {
+  return InfoJsonSchema.parse(await fs.readJson(path.join(questionPath, 'info.json')));
+}
+
+async function assertCreateDraftEditorJobFailed(promise: Promise<unknown>) {
+  try {
+    await promise;
+    assert.fail('Expected mutation to throw');
+  } catch (err: unknown) {
+    assert.instanceOf(err, TRPCClientError);
+    assert.equal((err as TRPCClientError<CourseRouter>).data?.code, 'BAD_REQUEST');
+    assert.include((err as Error).message, 'Failed to create the draft question.');
+  }
+}
+
+async function assertCreateDraftBadRequest(promise: Promise<unknown>, message: string) {
+  try {
+    await promise;
+    assert.fail('Expected mutation to throw');
+  } catch (err: unknown) {
+    assert.instanceOf(err, TRPCClientError);
+    assert.equal((err as TRPCClientError<CourseRouter>).data?.code, 'BAD_REQUEST');
+    assert.include((err as Error).message, message);
+  }
+}
+
+describe('Creating a question draft', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
   });
 
   afterAll(helperServer.after);
 
-  test.sequential('create a new empty question', async () => {
-    // Fetch the questions page for the course instance. This will fail loudly
-    // if any of the template questions are misconfigured.
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-    );
+  test.sequential('creates a new empty question draft', async () => {
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
 
-    assert.equal(questionsResponse.status, 200);
+    assert.match(draft.editorUrl, new RegExp(`/question/${draft.questionId}/draft$`));
 
-    // Create the new empty question
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'Test Question',
-          qid: 'test-question',
-          start_from: 'empty',
-        }),
-      },
-    );
+    const { path: draftPath } = await assertDraftQuestion({
+      questionId: draft.questionId,
+      draftNumber: 1,
+    });
+    const questionInfo = await readInfoJson(draftPath);
 
-    assert.equal(createQuestionResponse.status, 200);
-
-    assert.equal(
-      createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/2/file_edit/questions/test-question/question.html`,
-    );
-  });
-
-  test.sequential('verify that the new empty question has the correct info', async () => {
-    const questionLiveInfoPath = path.join(
-      courseRepo.courseLiveDir,
-      'questions',
-      'test-question', // Verify that the qid was used as the question folder's name
-      'info.json',
-    );
-    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-
-    assert.equal(questionInfo.title, 'Test Question');
+    assert.equal(questionInfo.title, 'draft #1');
     assert.equal(questionInfo.topic, 'Default');
     assert.isUndefined(questionInfo.shareSourcePublicly);
+    assert.isTrue(await fs.pathExists(path.join(draftPath, 'question.html')));
+    assert.isTrue(await fs.pathExists(path.join(draftPath, 'server.py')));
   });
 
-  test.sequential('create a new question from the example course templates', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-    );
+  test.sequential('creates a new question draft from the example course templates', async () => {
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({
+      startFrom: 'example',
+      templateQid: 'template/matrix-component-input/random-graph',
+    });
 
-    assert.equal(questionsResponse.status, 200);
+    assert.match(draft.editorUrl, new RegExp(`/question/${draft.questionId}/draft$`));
 
-    // Create the new template question based on the random graph template question
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'Test Random Graph',
-          qid: 'test-random-graph',
-          start_from: 'example',
-          template_qid: 'template/matrix-component-input/random-graph',
-        }),
-      },
-    );
+    const { path: draftPath } = await assertDraftQuestion({
+      questionId: draft.questionId,
+      draftNumber: 2,
+    });
+    const questionInfo = await readInfoJson(draftPath);
 
-    assert.equal(createQuestionResponse.status, 200);
-
-    assert.equal(
-      createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/3/preview`,
-    );
-  });
-
-  test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(courseRepo.courseLiveDir, 'questions', 'test-random-graph');
-    const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
-    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-
-    assert.equal(questionInfo.title, 'Test Random Graph');
+    assert.equal(questionInfo.title, 'draft #2');
     assert.equal(questionInfo.topic, 'Default');
     assert.isUndefined(questionInfo.shareSourcePublicly);
 
-    // Check that the server.py file has the correct contents
-    const newQuestionServerFilePath = path.join(questionLivePath, 'server.py');
-    const originalQuestionServerFilePath = path.join(
+    const originalQuestionPath = path.join(
       EXAMPLE_COURSE_PATH,
       'questions',
       'template',
       'matrix-component-input',
       'random-graph',
-      'server.py',
     );
-
-    const newQuestionServerFileContent = await fs.readFile(newQuestionServerFilePath, 'utf8');
-    const originalQuestionServerFileContent = await fs.readFile(
-      originalQuestionServerFilePath,
-      'utf8',
-    );
-
-    assert.equal(newQuestionServerFileContent, originalQuestionServerFileContent);
-
-    // Check that the question.html file has the correct contents
-    const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
-    const originalQuestionHtmlFilePath = path.join(
-      EXAMPLE_COURSE_PATH,
-      'questions',
-      'template',
-      'matrix-component-input',
-      'random-graph',
-      'question.html',
-    );
-
-    const newQuestionHtmlFileContent = await fs.readFile(newQuestionHtmlFilePath, 'utf8');
-    const originalQuestionHtmlFileContent = await fs.readFile(originalQuestionHtmlFilePath, 'utf8');
-
-    assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
-  });
-
-  test.sequential('create a new question to be used as template', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-    );
-
-    assert.equal(questionsResponse.status, 200);
-
-    // Create the new empty question
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'Test Template Question',
-          qid: 'template/courseTemplate',
-          start_from: 'empty',
-        }),
-      },
-    );
-
-    assert.equal(createQuestionResponse.status, 200);
 
     assert.equal(
-      createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/4/file_edit/questions/template/courseTemplate/question.html`,
+      await fs.readFile(path.join(draftPath, 'server.py'), 'utf8'),
+      await fs.readFile(path.join(originalQuestionPath, 'server.py'), 'utf8'),
     );
+    assert.equal(
+      await fs.readFile(path.join(draftPath, 'question.html'), 'utf8'),
+      await fs.readFile(path.join(originalQuestionPath, 'question.html'), 'utf8'),
+    );
+  });
 
-    const questionLivePath = path.join(
+  test.sequential('creates a new question draft from a course-specific template', async () => {
+    const templateQid = 'template/courseTemplate';
+    const templatePath = path.join(
+      courseRepo.courseOriginDir,
+      'questions',
+      ...templateQid.split('/'),
+    );
+    const liveTemplatePath = path.join(
       courseRepo.courseLiveDir,
       'questions',
-      'template/courseTemplate',
+      ...templateQid.split('/'),
     );
-    const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
+    await fs.ensureDir(templatePath);
+    await fs.writeJson(
+      path.join(templatePath, 'info.json'),
+      {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        title: 'Test Template Question',
+        topic: 'Test',
+        tags: ['tbretl'],
+        type: 'v3',
+        shareSourcePublicly: true,
+      },
+      { spaces: 2 },
+    );
     await fs.writeFile(
-      newQuestionHtmlFilePath,
+      path.join(templatePath, 'question.html'),
       '<pl-question-panel>Test Course Template</pl-question-panel>\n',
     );
-    const newQuestionServerFilePath = path.join(questionLivePath, 'server.py');
-    await fs.writeFile(newQuestionServerFilePath, 'def grade(data):\n    data["score"] = 0.5\n');
-  });
-
-  test.sequential('create a new question from the new course-specific template', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    await fs.writeFile(
+      path.join(templatePath, 'server.py'),
+      'def grade(data):\n    data["score"] = 0.5\n',
     );
-
-    assert.equal(questionsResponse.status, 200);
-
-    // Create the new template question based on the course-specific template question
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'Test Course-specific Template',
-          qid: 'test-course-template',
-          start_from: 'course',
-          template_qid: 'template/courseTemplate',
-        }),
-      },
+    await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
+    await execa(
+      'git',
+      [
+        '-c',
+        'user.name=Test User',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-m',
+        'Add course template question',
+      ],
+      { cwd: courseRepo.courseOriginDir },
     );
+    await execa('git', ['pull'], { cwd: courseRepo.courseLiveDir });
 
-    assert.equal(createQuestionResponse.status, 200);
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({
+      startFrom: 'course',
+      templateQid,
+    });
 
-    assert.equal(
-      createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/5/preview`,
-    );
-  });
+    assert.match(draft.editorUrl, new RegExp(`/question/${draft.questionId}/draft$`));
 
-  test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(
-      courseRepo.courseLiveDir,
-      'questions',
-      'test-course-template',
-    );
-    const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
-    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    const { path: draftPath } = await assertDraftQuestion({
+      questionId: draft.questionId,
+      draftNumber: 3,
+    });
+    const questionInfo = await readInfoJson(draftPath);
 
-    assert.equal(questionInfo.title, 'Test Course-specific Template');
-    assert.equal(questionInfo.topic, 'Default');
+    assert.equal(questionInfo.title, 'draft #3');
+    assert.equal(questionInfo.topic, 'Test');
     assert.isUndefined(questionInfo.shareSourcePublicly);
-
-    // Check that the server.py file has the correct contents
-    const newQuestionServerFilePath = path.join(questionLivePath, 'server.py');
-    const originalQuestionServerFilePath = path.join(
-      courseRepo.courseLiveDir,
-      'questions',
-      'template',
-      'courseTemplate',
-      'server.py',
-    );
-
-    const newQuestionServerFileContent = await fs.readFile(newQuestionServerFilePath, 'utf8');
-    const originalQuestionServerFileContent = await fs.readFile(
-      originalQuestionServerFilePath,
-      'utf8',
-    );
-
-    assert.equal(newQuestionServerFileContent, originalQuestionServerFileContent);
-
-    // Check that the question.html file has the correct contents
-    const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
-    const originalQuestionHtmlFilePath = path.join(
-      courseRepo.courseLiveDir,
-      'questions',
-      'template',
-      'courseTemplate',
-      'question.html',
-    );
-
-    const newQuestionHtmlFileContent = await fs.readFile(newQuestionHtmlFilePath, 'utf8');
-    const originalQuestionHtmlFileContent = await fs.readFile(originalQuestionHtmlFilePath, 'utf8');
-
-    assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
-  });
-
-  test.sequential('create new question with duplicate qid, title', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-    );
-    assert.equal(questionsResponse.status, 200);
-
-    // Create the new empty question with the same qid and title as the first question
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'Test Question',
-          qid: 'test-question',
-          start_from: 'empty',
-        }),
-      },
-    );
-    assert.equal(createQuestionResponse.status, 200);
     assert.equal(
-      createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/6/file_edit/questions/test-question_2/question.html`,
+      await fs.readFile(path.join(draftPath, 'server.py'), 'utf8'),
+      await fs.readFile(path.join(liveTemplatePath, 'server.py'), 'utf8'),
+    );
+    assert.equal(
+      await fs.readFile(path.join(draftPath, 'question.html'), 'utf8'),
+      await fs.readFile(path.join(liveTemplatePath, 'question.html'), 'utf8'),
     );
   });
 
-  test.sequential('verify that the title and qid had 2 appended to them', async () => {
-    const questionLiveInfoPath = path.join(
-      courseRepo.courseLiveDir,
-      'questions',
-      'test-question_2', // Verify that the qid with 2 appended to it was used as the name of the question folder
-      'info.json',
+  test.sequential('rejects a non-existent template question', async () => {
+    const trpc = createTrpcClient();
+
+    await assertCreateDraftEditorJobFailed(
+      trpc.questions.createDraft.mutate({
+        startFrom: 'example',
+        templateQid: 'template/non-existent-template',
+      }),
     );
-    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-    assert.equal(questionInfo.title, 'Test Question (2)'); // Verify that the title had (2) appended to it
-    assert.equal(questionInfo.topic, 'Default');
-    assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  test.sequential('should not be able to create a question without a title or qid', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-    );
-    assert.equal(questionsResponse.status, 200);
+  test.sequential('rejects missing template_qid values for template starts', async () => {
+    const trpc = createTrpcClient();
 
-    // Create a new empty question without a title or qid
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          start_from: 'empty',
-        }),
-      },
+    await assertCreateDraftBadRequest(
+      trpc.questions.createDraft.mutate({ startFrom: 'example' }),
+      'templateQid is required.',
     );
-    assert.equal(createQuestionResponse.status, 400);
+    await assertCreateDraftBadRequest(
+      trpc.questions.createDraft.mutate({ startFrom: 'course' }),
+      'templateQid is required.',
+    );
   });
 
-  test.sequential(
-    'should not be able to create a question without specifying start_from',
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test.sequential('rejects template_qid values for empty starts', async () => {
+    const trpc = createTrpcClient();
 
-      // Create a new empty question without specifying start_from
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-          }),
-        },
-      );
-      assert.equal(createQuestionResponse.status, 400);
-    },
-  );
+    await assertCreateDraftBadRequest(
+      trpc.questions.createDraft.mutate({
+        startFrom: 'empty',
+        templateQid: 'template/matrix-component-input/random-graph',
+      }),
+      'templateQid cannot be supplied for an empty question.',
+    );
+  });
 
-  test.sequential(
-    'should not be able to create a question with qid not contained in the root directory',
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test.sequential('rejects template_qid values outside the root directory', async () => {
+    const trpc = createTrpcClient();
 
-      // Create a new empty question with a qid not contained in the root directory
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: '../new-test-question',
-            start_from: 'empty',
-          }),
-        },
-      );
-
-      assert.equal(createQuestionResponse.status, 400);
-    },
-  );
-
-  test.sequential(
-    'should not be able to create a question from a non-existent template question',
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
-
-      // Create a new empty question with a non-existent template question qid
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-            start_from: 'example',
-            template_qid: 'template/non-existent-template',
-          }),
-        },
-      );
-
-      assert.equal(createQuestionResponse.status, 200);
-      assert.match(
-        createQuestionResponse.url,
-        /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
-      );
-    },
-  );
-
-  test.sequential(
-    'should not be able to create a question with template_qid not contained in the root directory',
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
-
-      // Create a new question from a template with a template_qid not contained in the correct root directory
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-            start_from: 'example',
-            template_qid: '../template/matrix-component-input/random-graph',
-          }),
-        },
-      );
-
-      assert.equal(createQuestionResponse.status, 200);
-      assert.match(
-        createQuestionResponse.url,
-        /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
-      );
-    },
-  );
-
-  test.sequential(
-    'should not be able to create a question that is a subdirectory of an existing question',
-    async () => {
-      // "test-question" already exists. Try to create "test-question/nested".
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
-
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Nested Question',
-            qid: 'test-question/nested',
-            start_from: 'empty',
-          }),
-        },
-      );
-
-      await assertEditError(createQuestionResponse, 'is a subdirectory of the existing question');
-    },
-  );
-
-  test.sequential(
-    'should not be able to create a question that is a parent directory of an existing question',
-    async () => {
-      // "test/question" already exists. Try to create "test".
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
-
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Parent Question',
-            qid: 'test',
-            start_from: 'empty',
-          }),
-        },
-      );
-
-      await assertEditError(
-        createQuestionResponse,
-        'would be a parent directory of the existing question',
-      );
-    },
-  );
+    await assertCreateDraftEditorJobFailed(
+      trpc.questions.createDraft.mutate({
+        startFrom: 'example',
+        templateQid: '../template/matrix-component-input/random-graph',
+      }),
+    );
+  });
 });
