@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
@@ -297,7 +297,9 @@ function AiGradingSettingsContent({
           />
           <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
           <div className="small text-muted">
-            Provide your own API keys instead of using the platform defaults.
+            {canEdit
+              ? 'Provide your own API keys instead of using the platform defaults.'
+              : 'You must be a course owner to manage custom API keys.'}
           </div>
         </Form.Check>
 
@@ -434,6 +436,27 @@ function CreditPoolSection({
   const purchaseModalState = useModalState();
   const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
 
+  // Reuses CreditPoolDashboard's TanStack cache to detect the empty state.
+  const poolQuery = useQuery(trpc.creditPool.queryOptions());
+  const changesQuery = useQuery({
+    ...trpc.creditPoolChanges.queryOptions({ page: 1 }),
+    enabled: poolQuery.data != null,
+  });
+  const hasNoBalance =
+    poolQuery.data?.credit_transferable_milli_dollars === 0 &&
+    poolQuery.data.credit_non_transferable_milli_dollars === 0;
+  // While the balance is zero, wait for `changesQuery` before deciding whether
+  // we're in the empty state — otherwise the top-right Purchase button flickers
+  // in for one render between the two queries resolving.
+  const isLoading =
+    poolQuery.data == null || (hasNoBalance && !useCustomApiKeys && !changesQuery.isFetched);
+  const isCreditPoolEmpty =
+    hasNoBalance &&
+    !useCustomApiKeys &&
+    changesQuery.isFetched &&
+    !changesQuery.isError &&
+    (changesQuery.data?.totalCount ?? 0) === 0;
+
   useEffect(() => {
     if (initialCheckoutStatus === 'success') {
       // Refetch credit pool data after a successful purchase.
@@ -463,20 +486,18 @@ function CreditPoolSection({
       <div
         className={clsx(
           'd-flex justify-content-between align-items-center',
-          useCustomApiKeys ? 'mb-1' : 'mb-3',
+          useCustomApiKeys || (!canEdit && !isLoading && !isCreditPoolEmpty) ? 'mb-1' : 'mb-3',
         )}
       >
         <div className="d-flex align-items-center gap-2">
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {stripePurchasingEnabled && (
+        {stripePurchasingEnabled && !isLoading && !isCreditPoolEmpty && (
           <button
             type="button"
             className="btn btn-sm btn-primary d-flex align-items-center gap-2"
             disabled={!canEdit}
-            title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
-            style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => purchaseModalState.showWithData(null)}
           >
             <i className="bi bi-cart-plus" aria-hidden="true" />
@@ -489,14 +510,18 @@ function CreditPoolSection({
           While custom API keys are active, PrairieLearn AI grading credits are not deducted.
         </p>
       )}
+      {!canEdit && !isLoading && !isCreditPoolEmpty && (
+        <p className="text-muted small mb-3">
+          You must be a course owner to purchase AI grading credits.
+        </p>
+      )}
       <CreditPoolDashboard
         trpc={trpc}
         balanceContext="instructor"
         dimmed={useCustomApiKeys}
+        canEdit={canEdit}
         onPurchaseClick={
-          stripePurchasingEnabled && canEdit
-            ? () => purchaseModalState.showWithData(null)
-            : undefined
+          stripePurchasingEnabled ? () => purchaseModalState.showWithData(null) : undefined
         }
       />
       <PurchaseCreditsModal {...purchaseModalState} />
