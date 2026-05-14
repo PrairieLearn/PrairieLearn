@@ -1,5 +1,8 @@
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
+import { queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
+
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
@@ -16,6 +19,16 @@ import {
 
 const COURSE_ID = '1';
 const COURSE_INSTANCE_ID = '1';
+
+async function insertSecondCourseInstance() {
+  return await queryScalar(
+    `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
+     VALUES ($course_id, 'CI-2', 'Second Course Instance', 'America/Chicago', 'TESTCI-002')
+     RETURNING id`,
+    { course_id: COURSE_ID },
+    IdSchema,
+  );
+}
 
 async function createTestUser() {
   const user = await getOrCreateUser({
@@ -93,5 +106,55 @@ describe('ai-grading-free-credit-redemption', () => {
 
     const usedAfter = await selectCourseFreeCreditRedemptionsUsed(COURSE_ID);
     assert.equal(usedAfter, MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE);
+  });
+
+  it('shares the cap across course instances of the same course', async () => {
+    const userId = await createTestUser();
+    const secondCourseInstanceId = await insertSecondCourseInstance();
+
+    await redeemFreeAiGradingCredit({
+      course_id: COURSE_ID,
+      course_instance_id: COURSE_INSTANCE_ID,
+      user_id: userId,
+    });
+    await redeemFreeAiGradingCredit({
+      course_id: COURSE_ID,
+      course_instance_id: COURSE_INSTANCE_ID,
+      user_id: userId,
+    });
+    await redeemFreeAiGradingCredit({
+      course_id: COURSE_ID,
+      course_instance_id: secondCourseInstanceId,
+      user_id: userId,
+    });
+
+    const used = await selectCourseFreeCreditRedemptionsUsed(COURSE_ID);
+    assert.equal(used, MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE);
+
+    const poolFirst = await selectCreditPool(COURSE_INSTANCE_ID);
+    assert.equal(
+      poolFirst.credit_non_transferable_milli_dollars,
+      2 * FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION,
+    );
+    const poolSecond = await selectCreditPool(secondCourseInstanceId);
+    assert.equal(
+      poolSecond.credit_non_transferable_milli_dollars,
+      FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION,
+    );
+
+    await expect(
+      redeemFreeAiGradingCredit({
+        course_id: COURSE_ID,
+        course_instance_id: secondCourseInstanceId,
+        user_id: userId,
+      }),
+    ).rejects.toThrow(/free AI grading credit redemptions/);
+    await expect(
+      redeemFreeAiGradingCredit({
+        course_id: COURSE_ID,
+        course_instance_id: COURSE_INSTANCE_ID,
+        user_id: userId,
+      }),
+    ).rejects.toThrow(/free AI grading credit redemptions/);
   });
 });
