@@ -60,9 +60,9 @@
     "brotli": 517
   },
   "scripts/instructorAssessmentInstancesClient.tsx": {
-    "raw": 574685,
-    "gzip": 173252,
-    "brotli": 127136
+    "raw": 574690,
+    "gzip": 173254,
+    "brotli": 127389
   },
   "scripts/instructorAssessmentManualGradingAssessmentClient.ts": {
     "raw": 1186,
