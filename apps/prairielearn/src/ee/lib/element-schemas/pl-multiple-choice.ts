@@ -40,17 +40,27 @@ const plMultipleChoiceAttributesSchema = z
     order: z.enum(['random', 'ascend', 'descend', 'fixed']).optional(),
     display: z.enum(['block', 'inline', 'dropdown']).optional(),
     'hide-letter-keys': plBoolean().optional(),
-    'fixed-order': plBoolean().optional(),
-    inline: plBoolean().optional(),
+    'fixed-order': plBoolean()
+      .meta({ deprecated: true, description: 'Use the "order" attribute instead.' })
+      .optional(),
+    inline: plBoolean()
+      .meta({ deprecated: true, description: 'Use the "display" attribute instead.' })
+      .optional(),
     'hide-score-badge': plBoolean().optional(),
     'allow-blank': plBoolean().optional(),
     'builtin-grading': plBoolean().optional(),
     size: plInteger().optional(),
     placeholder: z.string().optional(),
     'aria-label': z.string().optional(),
-    'external-json': z.string().optional(),
-    'external-json-correct-key': z.string().optional(),
-    'external-json-incorrect-key': z.string().optional(),
+    'external-json': z
+      .string()
+      .meta({
+        deprecated: true,
+        description: 'Define answer choices inline with <pl-answer> instead.',
+      })
+      .optional(),
+    'external-json-correct-key': z.string().meta({ deprecated: true }).optional(),
+    'external-json-incorrect-key': z.string().meta({ deprecated: true }).optional(),
     'all-of-the-above': aotaNotaAttribute().optional(),
     'none-of-the-above': aotaNotaAttribute().optional(),
     'all-of-the-above-feedback': z.string().optional(),

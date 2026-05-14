@@ -64,9 +64,7 @@ def _unique_child_inner_html(
             continue
         inner_html_value = inner_html_value.strip()
         if inner_html_value in seen:
-            yield ValidationError(
-                f"Duplicate child inner HTML: {inner_html_value!r}"
-            )
+            yield ValidationError(f"Duplicate child inner HTML: {inner_html_value!r}")
         seen.add(inner_html_value)
 
 

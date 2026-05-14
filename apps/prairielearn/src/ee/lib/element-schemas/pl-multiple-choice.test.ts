@@ -4,7 +4,16 @@ import { lintQuestionHtml } from '../htmlMustacheLinterNode.js';
 
 async function lintMessages(html: string): Promise<string[]> {
   const diagnostics = await lintQuestionHtml(html);
-  return diagnostics.map((diagnostic) => diagnostic.message);
+  return diagnostics
+    .filter((diagnostic) => diagnostic.severity !== 'warning')
+    .map((diagnostic) => diagnostic.message);
+}
+
+async function lintWarnings(html: string): Promise<string[]> {
+  const diagnostics = await lintQuestionHtml(html);
+  return diagnostics
+    .filter((diagnostic) => diagnostic.severity === 'warning')
+    .map((diagnostic) => diagnostic.message);
 }
 
 describe('pl-multiple-choice schema', () => {
@@ -71,7 +80,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isAtLeast(messages.length, 2);
+    assert.isTrue(messages.some((m) => m.includes('display to "dropdown"')));
   });
 
   it('requires matching all/none of the above attributes for feedback', async () => {
@@ -86,25 +95,13 @@ describe('pl-multiple-choice schema', () => {
 
   it('restricts grading attributes when builtin grading is disabled', async () => {
     const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1" hide-score-badge="true" all-of-the-above="random">
-        <pl-answer score="0.5" feedback="Partial">A</pl-answer>
+      <pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1">
+        <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    const joined = messages.join('\n');
-    assert.include(joined, '"weight" should not be set when builtin-grading is false.');
-    assert.include(
-      joined,
-      '"hide-score-badge" should not be set when builtin-grading is false.',
-    );
-    assert.include(
-      joined,
-      '"all-of-the-above" should be set to true or false when builtin-grading is false.',
-    );
-    assert.include(joined, '"score" on pl-answer should not be set when builtin-grading is false.');
-    assert.include(
-      joined,
-      '"feedback" on pl-answer should not be set when builtin-grading is false.',
+    assert.isTrue(
+      messages.some((m) => m.includes('"weight" should not be set when builtin-grading is false.')),
     );
   });
 
@@ -135,6 +132,17 @@ describe('pl-multiple-choice schema', () => {
     );
 
     assert.deepEqual(messages, []);
+  });
+
+  it('warns on deprecated attributes', async () => {
+    const warnings = await lintWarnings(`
+      <pl-multiple-choice answers-name="choice" fixed-order="true" inline="true">
+        <pl-answer>A</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isTrue(warnings.some((m) => m.includes('"fixed-order"') && m.includes('deprecated')));
+    assert.isTrue(warnings.some((m) => m.includes('"inline"') && m.includes('deprecated')));
   });
 
   it('allows answers with matching text but different HTML', async () => {

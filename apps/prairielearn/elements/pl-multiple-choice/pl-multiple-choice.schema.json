@@ -374,6 +374,8 @@
           ]
         },
         "fixed-order": {
+          "deprecated": true,
+          "description": "Use the \"order\" attribute instead.",
           "anyOf": [
             {
               "type": "boolean"
@@ -385,6 +387,8 @@
           ]
         },
         "inline": {
+          "deprecated": true,
+          "description": "Use the \"display\" attribute instead.",
           "anyOf": [
             {
               "type": "boolean"
@@ -439,12 +443,16 @@
           "type": "string"
         },
         "external-json": {
+          "deprecated": true,
+          "description": "Define answer choices inline with <pl-answer> instead.",
           "type": "string"
         },
         "external-json-correct-key": {
+          "deprecated": true,
           "type": "string"
         },
         "external-json-incorrect-key": {
+          "deprecated": true,
           "type": "string"
         },
         "all-of-the-above": {
