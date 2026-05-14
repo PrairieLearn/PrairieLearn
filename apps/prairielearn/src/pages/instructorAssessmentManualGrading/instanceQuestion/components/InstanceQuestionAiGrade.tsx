@@ -14,7 +14,7 @@ import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
-import { OPEN_AI_GRADE_MODAL_EVENT } from '../instanceQuestionAiGradeEvent.js';
+import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
 
 import { reloadGradingPanel } from './reloadGradingPanel.js';
 
@@ -65,19 +65,9 @@ function InstanceQuestionAiGradeInner({
 
   const submissionStatus = serverJobProgress.displayedStatuses[instanceQuestionId];
 
-  // Stale-closure shield: the OPEN_AI_GRADE_MODAL_EVENT listener is bound once
-  // (per `instanceQuestionId`) so it doesn't churn on every status tick; read
-  // the latest status through a ref so the click handler sees fresh values.
-  const submissionStatusRef = useRef(submissionStatus);
-  submissionStatusRef.current = submissionStatus;
-
-  // Refresh the grading panel when *this* instance question's per-item status
-  // transitions from in-flight to complete, so the new score/feedback appear
-  // without a full page reload. Unrelated AI grading jobs (e.g., bulk grading
-  // for other submissions in the same assessment question) don't trigger a
-  // refresh because their per-item statuses for this instance question never
-  // change. Failures are surfaced by ServerJobsProgressInfo below; nothing to
-  // refresh in the panel in that case.
+  // Refresh the grading panel on transition from in-flight to complete.
+  // Tracked via ref (not state) so the comparison doesn't trigger renders.
+  // Failures are surfaced by the progress row below.
   const prevSubmissionStatusRef = useRef<JobItemStatus | undefined>(undefined);
   useEffect(() => {
     const prev = prevSubmissionStatusRef.current;
@@ -86,6 +76,9 @@ function InstanceQuestionAiGradeInner({
     void reloadGradingPanel();
   }, [submissionStatus]);
 
+  // Imperatively toggle the AI grade button's disabled state because the
+  // button lives in the server-rendered grading panel — making this
+  // declarative would require porting the entire grading panel to React.
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
@@ -96,15 +89,14 @@ function InstanceQuestionAiGradeInner({
 
   useEffect(() => {
     const handler = () => {
-      if (isInFlight(submissionStatusRef.current)) return;
       modelSelectionModalState.showWithData({
         type: 'selected',
         ids: [instanceQuestionId],
         numToGrade: 1,
       });
     };
-    document.addEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
-    return () => document.removeEventListener(OPEN_AI_GRADE_MODAL_EVENT, handler);
+    document.addEventListener(AI_GRADING_MODAL_OPEN_EVENT, handler);
+    return () => document.removeEventListener(AI_GRADING_MODAL_OPEN_EVENT, handler);
   }, [instanceQuestionId, modelSelectionModalState]);
 
   return (

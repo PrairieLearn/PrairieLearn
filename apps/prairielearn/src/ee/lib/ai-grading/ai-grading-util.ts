@@ -973,7 +973,7 @@ const AiGradingJobDataForSubmissionSchema = z.object({
 /**
  * Builds the `aiGradingInfo` displayed in the manual-grading instance question
  * page for the most-recent submission of the given instance question. Returns
- * `undefined` if the submission has not been AI-graded.
+ * `null` if the submission has not been AI-graded.
  */
 export async function buildAiGradingInfo({
   submission_id,
@@ -981,21 +981,21 @@ export async function buildAiGradingInfo({
 }: {
   submission_id: string;
   submissionHtmls: string[];
-}): Promise<InstanceQuestionAIGradingInfo | undefined> {
-  const [aiGradingJobData, submissionManuallyGraded] = await Promise.all([
-    queryOptionalRow(
-      sql.select_ai_grading_job_data_for_submission,
-      { submission_id },
-      AiGradingJobDataForSubmissionSchema,
-    ),
-    queryOptionalScalar(
+}): Promise<InstanceQuestionAIGradingInfo | null> {
+  const aiGradingJobData = await queryOptionalRow(
+    sql.select_ai_grading_job_data_for_submission,
+    { submission_id },
+    AiGradingJobDataForSubmissionSchema,
+  );
+
+  if (!aiGradingJobData) return null;
+
+  const submissionManuallyGraded =
+    (await queryOptionalScalar(
       sql.select_exists_manual_grading_job_for_submission,
       { submission_id },
       z.boolean(),
-    ).then((manuallyGraded) => manuallyGraded ?? false),
-  ]);
-
-  if (!aiGradingJobData) return undefined;
+    )) ?? false;
 
   const selectedRubricItems = await selectRubricGradingItems(
     aiGradingJobData.manual_rubric_grading_id,
@@ -1008,9 +1008,14 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  // The `completion` shape has changed across libraries we've used over time,
-  // and older runs may not include an explanation at all. Probe each known
-  // format defensively rather than schema-validating.
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
   const explanation = run(() => {
     const completion = aiGradingJobData.completion;
     if (!completion) return null;

@@ -17,7 +17,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
-import { OPEN_AI_GRADE_MODAL_EVENT } from './instanceQuestionAiGradeEvent.js';
+import { AI_GRADING_MODAL_OPEN_EVENT } from './instanceQuestion.shared.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
 
 interface SubmissionOrGradingJob {
@@ -453,7 +453,7 @@ ${submission.feedback?.manual}</textarea
                           id="ai-grade-button"
                           type="button"
                           class="btn btn-primary ms-1"
-                          onclick="document.dispatchEvent(new CustomEvent('${OPEN_AI_GRADE_MODAL_EVENT}'))"
+                          onclick="document.dispatchEvent(new CustomEvent('${AI_GRADING_MODAL_OPEN_EVENT}'))"
                         >
                           <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
                         </button>
