@@ -5,14 +5,38 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { EnumJobStatusSchema } from '../../../lib/db-types.js';
 import { stopJobSequence } from '../../../lib/server-jobs.js';
+import { selectAssessmentQuestionByQuestionId } from '../../../models/assessment-question.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
+import { selectCourseByShortName } from '../../../models/course.js';
+import { selectQuestionByQid } from '../../../models/question.js';
 import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * testCourse seeds an `aiGradingRubrics` question under `hw10-aiGrading` in
+ * the `Sp15` course instance — purpose-built for AI grading tests, so we pin
+ * to it instead of picking an arbitrary row from `assessment_questions`.
+ */
 async function pickAssessmentQuestionId(): Promise<string> {
-  return await queryScalar(sql.select_ai_grading_rubrics_assessment_question_id, {}, IdSchema);
+  const course = await selectCourseByShortName('QA 101');
+  const courseInstance = await selectCourseInstanceByShortName({
+    course,
+    shortName: 'Sp15',
+  });
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'hw10-aiGrading',
+  });
+  const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+  const assessmentQuestion = await selectAssessmentQuestionByQuestionId({
+    assessment_id: assessment.id,
+    question_id: question.id,
+  });
+  return assessmentQuestion.id;
 }
 
 async function insertAiGradingJobSequence(params: {
