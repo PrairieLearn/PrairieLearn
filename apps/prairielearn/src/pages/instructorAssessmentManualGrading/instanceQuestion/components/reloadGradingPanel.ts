@@ -1,5 +1,7 @@
 import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { getManualGradingInstanceQuestionRubricPanelsUrl } from '../../../../lib/client/url.js';
+
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
@@ -21,29 +23,54 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
  * server-rendered HTML; a declarative React version would require porting the
  * entire panel (and its many imperative `js-*` handlers) to React.
  */
-export async function reloadGradingPanel(): Promise<void> {
-  const res = await fetch(`${window.location.pathname}/grading_rubric_panels`, {
-    headers: { Accept: 'application/json' },
+export async function reloadGradingPanel({
+  courseInstanceId,
+  assessmentId,
+  instanceQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  instanceQuestionId: string;
+}): Promise<void> {
+  const url = getManualGradingInstanceQuestionRubricPanelsUrl({
+    courseInstanceId,
+    assessmentId,
+    instanceQuestionId,
   });
-  if (!res.ok) return;
-  const data = await res.json();
-  if (!data.gradingPanel) return;
+  let data: any;
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) {
+      console.error(`Failed to refresh grading panel: HTTP ${res.status}`);
+      return;
+    }
+    data = await res.json();
+  } catch (err) {
+    console.error('Failed to refresh grading panel:', err);
+    return;
+  }
+  if (!data?.gradingPanel) return;
 
   const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
   if (!gradingPanel) return;
 
   // The CSRF token returned by /grading_rubric_panels is issued for that URL,
-  // not for the main form's POST URL, so preserve the existing one.
+  // not for the main form's POST URL, so preserve the existing one. Scope both
+  // the read and the write to the manual-grading form so any future sibling
+  // form (e.g., nested action) keeps its own token.
+  const manualGradingForm = gradingPanel.querySelector<HTMLFormElement>(
+    'form[name="manual-grading-form"]',
+  );
   const oldCsrfToken =
-    gradingPanel.querySelector<HTMLInputElement>(
-      'form[name="manual-grading-form"] [name=__csrf_token]',
-    )?.value ?? '';
+    manualGradingForm?.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
 
   gradingPanel.innerHTML = data.gradingPanel;
 
-  gradingPanel.querySelectorAll<HTMLInputElement>('input[name=__csrf_token]').forEach((input) => {
-    input.value = oldCsrfToken;
-  });
+  gradingPanel
+    .querySelectorAll<HTMLInputElement>('form[name="manual-grading-form"] input[name=__csrf_token]')
+    .forEach((input) => {
+      input.value = oldCsrfToken;
+    });
 
   const explanationSlot = swapSlot(
     '.js-ai-grading-explanation-slot',

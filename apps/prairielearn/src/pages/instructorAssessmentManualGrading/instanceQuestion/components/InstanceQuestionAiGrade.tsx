@@ -20,6 +20,7 @@ import { reloadGradingPanel } from './reloadGradingPanel.js';
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
+  assessmentId: string;
   instanceQuestionId: string;
   hasRubric: boolean;
   useCustomApiKeys: boolean;
@@ -32,7 +33,6 @@ interface InstanceQuestionAiGradeInnerProps {
 }
 
 export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInnerProps {
-  assessmentId: string;
   assessmentQuestionId: string;
   trpcCsrfToken: string;
   isDevMode: boolean;
@@ -40,6 +40,7 @@ export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInn
 
 function InstanceQuestionAiGradeInner({
   courseInstanceId,
+  assessmentId,
   instanceQuestionId,
   hasRubric,
   useCustomApiKeys,
@@ -84,9 +85,9 @@ function InstanceQuestionAiGradeInner({
     if (!expectReloadRef.current) return;
     expectReloadRef.current = false;
     if (submissionStatus === JobItemStatus.complete) {
-      void reloadGradingPanel();
+      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId });
     }
-  }, [submissionStatus]);
+  }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
   // Imperatively toggle the AI grade button's disabled state because the
   // button lives in the server-rendered grading panel — making this
@@ -134,10 +135,6 @@ function InstanceQuestionAiGradeInner({
         aiGradingSettingsUrl={aiGradingSettingsUrl}
         hasRubric={hasRubric}
         totalSubmissionCount={1}
-        onSelectFirstSubmissions={() => {
-          // No-op: this modal is opened for a single instance question, so there
-          // is no "first N submissions" reduction to make.
-        }}
         onHide={modelSelectionModalState.onHide}
         onExited={modelSelectionModalState.onExited}
         onSuccess={(data, modelId) => {

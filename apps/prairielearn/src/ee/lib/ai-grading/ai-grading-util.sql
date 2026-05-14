@@ -295,7 +295,6 @@ WHERE
 
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT
-  gj.id,
   gj.manual_rubric_grading_id,
   agj.prompt,
   agj.completion,

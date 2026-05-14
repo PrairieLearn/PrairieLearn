@@ -254,7 +254,7 @@ function buildBeforeYouGradeItems({
   numToGrade: number;
   totalSubmissionCount: number;
   onOpenRubricSettings: () => void;
-  onSelectFirstSubmissions: (n: number) => void;
+  onSelectFirstSubmissions?: (n: number) => void;
 }): BeforeYouGradeItem[] {
   const items: BeforeYouGradeItem[] = [];
   if (!hasRubric) {
@@ -265,7 +265,7 @@ function buildBeforeYouGradeItems({
       onClick: onOpenRubricSettings,
     });
   }
-  if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
+  if (onSelectFirstSubmissions && !hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
     const n = Math.min(5, totalSubmissionCount);
     items.push({
       key: 'test_with_n',
@@ -445,7 +445,7 @@ export function AiGradingModelSelectionModal({
   aiGradingSettingsUrl: string;
   hasRubric: boolean;
   totalSubmissionCount: number;
-  onSelectFirstSubmissions: (n: number) => void;
+  onSelectFirstSubmissions?: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,

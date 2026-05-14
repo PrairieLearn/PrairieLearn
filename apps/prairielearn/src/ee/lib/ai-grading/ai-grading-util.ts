@@ -963,7 +963,6 @@ export function correctGeminiMalformedRubricGradingJson(rawResponseText: string)
 }
 
 const AiGradingJobDataForSubmissionSchema = z.object({
-  id: GradingJobSchema.shape.id,
   manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
   prompt: AiGradingJobSchema.shape.prompt,
   completion: AiGradingJobSchema.shape.completion,
