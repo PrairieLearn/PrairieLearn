@@ -1,7 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
-import { executeScripts } from '@prairielearn/browser-utils';
 import { useModalState } from '@prairielearn/ui';
 
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
@@ -17,88 +16,10 @@ import {
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
 import { OPEN_AI_GRADE_MODAL_EVENT } from '../instanceQuestionAiGradeEvent.js';
 
-declare global {
-  interface Window {
-    resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
-  }
-}
+import { reloadGradingPanel } from './reloadGradingPanel.js';
 
 function isInFlight(status: JobItemStatus | undefined) {
   return status === JobItemStatus.queued || status === JobItemStatus.in_progress;
-}
-
-function isDone(status: JobItemStatus | undefined) {
-  return status === JobItemStatus.complete || status === JobItemStatus.failed;
-}
-
-async function refreshGradingPanels(): Promise<boolean> {
-  const reload = (reason: string) => {
-    console.warn('[InstanceQuestionAiGrade] reloading page:', reason);
-    window.location.reload();
-  };
-
-  try {
-    const url = `${window.location.pathname.replace(/\/$/, '')}/grading_rubric_panels`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) {
-      reload(`fetch failed (status ${res.status})`);
-      return false;
-    }
-    const data = (await res.json()) as {
-      gradingPanel?: string;
-      questionContainer?: string;
-      err?: string;
-    };
-    if (data.err) {
-      reload(`server returned err: ${data.err}`);
-      return false;
-    }
-    if (!data.gradingPanel || !data.questionContainer) {
-      reload('missing gradingPanel or questionContainer in response');
-      return false;
-    }
-
-    // The CSRF tokens embedded in the swapped HTML are signed for
-    // `/grading_rubric_panels`, not the base URL the form actually posts to,
-    // so reuse the existing token afterwards (same as `RubricSettings`).
-    const existingCsrfToken =
-      document.querySelector<HTMLInputElement>('.js-main-grading-panel input[name="__csrf_token"]')
-        ?.value ?? '';
-
-    const container = document.getElementById('js-question-container');
-    if (!container) {
-      reload('missing #js-question-container');
-      return false;
-    }
-    container.innerHTML = data.questionContainer;
-    executeScripts(container);
-    await window.mathjaxTypeset([container]);
-
-    const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-    if (!gradingPanel) {
-      reload('missing .js-main-grading-panel');
-      return false;
-    }
-    gradingPanel.innerHTML = data.gradingPanel;
-    if (typeof window.resetInstructorGradingPanel === 'function') {
-      window.resetInstructorGradingPanel();
-    }
-    await window.mathjaxTypeset([gradingPanel]);
-
-    if (existingCsrfToken) {
-      document.querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]').forEach((input) => {
-        input.value = existingCsrfToken;
-      });
-    }
-    return true;
-  } catch (err) {
-    reload(`exception: ${String(err)}`);
-    return false;
-  }
 }
 
 interface InstanceQuestionAiGradeInnerProps {
@@ -144,48 +65,25 @@ function InstanceQuestionAiGradeInner({
 
   const submissionStatus = serverJobProgress.displayedStatuses[instanceQuestionId];
 
-  // The CustomEvent listener below closes over `submissionStatus` once at mount;
-  // mirror it into a ref so the click handler always sees the live value
-  // without re-binding the listener on every status change.
+  // Stale-closure shield: the OPEN_AI_GRADE_MODAL_EVENT listener is bound once
+  // (per `instanceQuestionId`) so it doesn't churn on every status tick; read
+  // the latest status through a ref so the click handler sees fresh values.
   const submissionStatusRef = useRef(submissionStatus);
   submissionStatusRef.current = submissionStatus;
 
-  // Tracks whether the user has touched any input inside the grading panel
-  // since the last server-rendered HTML was applied. Used to guard against
-  // wiping in-flight manual grading work when an AI job completes.
-  const formDirtyRef = useRef(false);
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const target = event.target;
-      if (target instanceof Element && target.closest('.js-main-grading-panel')) {
-        formDirtyRef.current = true;
-      }
-    };
-    document.addEventListener('input', handler);
-    document.addEventListener('change', handler);
-    return () => {
-      document.removeEventListener('input', handler);
-      document.removeEventListener('change', handler);
-    };
-  }, []);
-
-  // Refresh the grading panel only when *this* instance question's per-item
-  // status transitions from in-flight to done, not when any unrelated job
-  // completes for the same assessment question.
+  // Refresh the grading panel when *this* instance question's per-item status
+  // transitions from in-flight to complete, so the new score/feedback appear
+  // without a full page reload. Unrelated AI grading jobs (e.g., bulk grading
+  // for other submissions in the same assessment question) don't trigger a
+  // refresh because their per-item statuses for this instance question never
+  // change. Failures are surfaced by ServerJobsProgressInfo below; nothing to
+  // refresh in the panel in that case.
   const prevSubmissionStatusRef = useRef<JobItemStatus | undefined>(undefined);
   useEffect(() => {
     const prev = prevSubmissionStatusRef.current;
     prevSubmissionStatusRef.current = submissionStatus;
-    if (!isInFlight(prev) || !isDone(submissionStatus)) return;
-    if (formDirtyRef.current) {
-      console.warn(
-        '[InstanceQuestionAiGrade] AI grading complete but the grading panel has unsaved edits; not refreshing in place. Reload to see the new state.',
-      );
-      return;
-    }
-    void refreshGradingPanels().then((swapped) => {
-      if (swapped) formDirtyRef.current = false;
-    });
+    if (!isInFlight(prev) || submissionStatus !== JobItemStatus.complete) return;
+    void reloadGradingPanel();
   }, [submissionStatus]);
 
   useEffect(() => {

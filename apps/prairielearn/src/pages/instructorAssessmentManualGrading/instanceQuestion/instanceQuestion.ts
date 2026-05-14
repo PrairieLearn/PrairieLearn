@@ -9,7 +9,7 @@ import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { AIGradingExplanation, AIGradingPrompt } from '../../../components/QuestionContainer.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
@@ -392,16 +392,22 @@ router.get(
           gradedByHumanName: lastHumanGraderRow?.grader_name ?? null,
         }).toString();
 
-        const questionContainer = QuestionContainer({
-          resLocals: res.locals,
-          questionContext: 'manual_grading',
-          showFooter: false,
-          aiGradingInfo,
-        }).toString();
+        const aiGradingExplanation = aiGradingInfo
+          ? AIGradingExplanation({
+              explanation: aiGradingInfo.explanation,
+              hasImage: aiGradingInfo.hasImage,
+              rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+            }).toString()
+          : '';
+
+        const aiGradingPrompt = aiGradingInfo?.prompt
+          ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }).toString()
+          : '';
 
         res.json({
           gradingPanel,
-          questionContainer,
+          aiGradingExplanation,
+          aiGradingPrompt,
           rubric_data,
           submissionPanel: panels.submissionPanel,
           submissionId: submission.id,
