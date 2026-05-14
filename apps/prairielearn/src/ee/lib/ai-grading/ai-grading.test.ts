@@ -43,9 +43,7 @@ describe('stopJobSequence (AI grading scope)', () => {
   beforeAll(async () => {
     await helperDb.before();
     await helperCourse.syncCourse();
-    // testCourse seeds an `aiGradingRubrics` question under `hw10-aiGrading`
-    // in the `Sp15` course instance — purpose-built for AI grading tests, so
-    // we pin to it instead of picking an arbitrary row.
+
     const course = await selectCourseByShortName('QA 101');
     const courseInstance = await selectCourseInstanceByShortName({
       course,
