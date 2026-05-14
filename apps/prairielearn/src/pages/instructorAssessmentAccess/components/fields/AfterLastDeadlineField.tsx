@@ -208,9 +208,8 @@ function AfterLastDeadlineInput({
       </div>
       {showExamSubmissionsWarning && (
         <Alert variant="warning" className="mt-2 mb-0">
-          This is an Exam assessment. Allowing submissions after the {deadlineNoun} may let students
-          continue working after the exam window. For exams, prefer disallowing submissions after
-          the {deadlineNoun} unless that is intentional.
+          This is an Exam assessment. Consider disallowing submissions after the {deadlineNoun}{' '}
+          unless you want students to keep working.
         </Alert>
       )}
       {mode === 'partial_credit' && (
