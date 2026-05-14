@@ -130,7 +130,7 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
     if (resource == null || typeof resource !== 'object') continue;
     const r = resource as Record<string, unknown>;
     const type = attr(r, 'type').toLowerCase();
-    if (!type.includes('qti')) continue;
+    if (!type.includes('qti') || !type.includes('assessment')) continue;
 
     // Resolve the primary QTI file path.
     // Canvas IMS CC: path is in a <file href="..."> child element.
