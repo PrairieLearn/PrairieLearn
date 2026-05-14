@@ -171,6 +171,8 @@ onDocumentReady(() => {
   };
 
   window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
+    if (question.draft) return '';
+
     const items = [];
     if (question.share_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
@@ -222,6 +224,8 @@ onDocumentReady(() => {
     course_instance_id: string,
     question: QuestionsPageData,
   ) {
+    if (question.draft) return '';
+
     return (question.assessments ?? [])
       .filter((a) => a.assessment.course_instance_id.toString() === course_instance_id.toString())
       .map((a) =>

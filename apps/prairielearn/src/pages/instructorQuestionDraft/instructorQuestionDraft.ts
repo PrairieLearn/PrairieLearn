@@ -5,6 +5,8 @@ import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { features } from '../../lib/features/index.js';
+import { isEnterprise } from '../../lib/license.js';
 import {
   DraftFinalizationEditorJobError,
   DraftFinalizationInputError,
@@ -12,6 +14,7 @@ import {
 } from '../../lib/question-drafts.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getSearchParams } from '../../lib/url.js';
 
 const router = Router();
 
@@ -27,6 +30,17 @@ router.get(
 
     if (!question.draft) {
       res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+      return;
+    }
+
+    if (
+      isEnterprise() &&
+      (await features.enabledFromLocals('ai-question-generation', res.locals))
+    ) {
+      const search = getSearchParams(req).toString();
+      res.redirect(
+        `${res.locals.urlPrefix}/ai_generate_editor/${question.id}/editor${search ? `?${search}` : ''}`,
+      );
       return;
     }
 

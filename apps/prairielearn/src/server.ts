@@ -123,6 +123,32 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
   };
 }
 
+function redirectDraftQuestionToDraftEditor(req: Request, res: Response, next: NextFunction) {
+  if (!res.locals.question?.draft) {
+    next();
+    return;
+  }
+
+  const questionBasePath = `${res.locals.urlPrefix}/question/${res.locals.question.id}`;
+  const requestPath = req.originalUrl.split('?')[0];
+  const suffix = requestPath.startsWith(questionBasePath)
+    ? requestPath.slice(questionBasePath.length)
+    : '';
+  const redirectDraftRouteSuffixes = ['', '/preview', '/settings', '/statistics'];
+
+  if (!redirectDraftRouteSuffixes.includes(suffix)) {
+    next();
+    return;
+  }
+
+  res.redirect(
+    url.format({
+      pathname: `${questionBasePath}/draft`,
+      search: getSearchParams(req).toString(),
+    }),
+  );
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @returns The express "app" object that was created.
@@ -1093,6 +1119,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
+    redirectDraftQuestionToDraftEditor,
+  );
+  app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
     (req, res, _next) => {
       // Redirect legacy question URLs to their preview page.
@@ -1602,6 +1632,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)',
+    redirectDraftQuestionToDraftEditor,
   );
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.

@@ -23,6 +23,8 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { selectTagsByCourseId } from '../models/tags.js';
+import { selectTopicsByCourseId } from '../models/topics.js';
 import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -1382,11 +1384,26 @@ export class QuestionAddEditor extends Editor {
       infoJson.title = title;
       infoJson.uuid = this.uuid;
 
-      // Reset the topic.
-      infoJson.topic = 'Default';
+      const courseTopicNames = new Set(
+        (await selectTopicsByCourseId(this.course.id)).map((topic) => topic.name),
+      );
+      if (!courseTopicNames.has(infoJson.topic)) {
+        infoJson.topic = 'Default';
+      }
+
+      const courseTagNames = new Set(
+        (await selectTagsByCourseId(this.course.id)).map((tag) => tag.name),
+      );
+      if (Array.isArray(infoJson.tags)) {
+        infoJson.tags = infoJson.tags.filter(
+          (tag: unknown) => typeof tag === 'string' && courseTagNames.has(tag),
+        );
+        if (infoJson.tags.length === 0) delete infoJson.tags;
+      } else {
+        delete infoJson.tags;
+      }
 
       // Delete values that might not make sense in the target course.
-      delete infoJson.tags;
       delete infoJson.shareSourcePublicly;
       delete infoJson.sharingSets;
       delete infoJson.sharePublicly;

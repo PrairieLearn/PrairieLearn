@@ -113,6 +113,7 @@ SELECT
   q.id,
   q.qid,
   q.title,
+  q.draft,
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
@@ -120,6 +121,7 @@ SELECT
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'
   END AS display_type,
+  'Finalized' AS status,
   row_to_json(top) AS topic,
   (
     SELECT

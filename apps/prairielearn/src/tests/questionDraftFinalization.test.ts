@@ -1,6 +1,9 @@
 import * as path from 'node:path';
 
 import { TRPCClientError } from '@trpc/client';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
@@ -10,12 +13,15 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import {
   selectOptionalQuestionByQid,
   selectQuestionById,
   selectQuestionByQid,
 } from '../models/question.js';
+import { selectTagsByQuestionId } from '../models/tags.js';
+import { selectTopicsByCourseId } from '../models/topics.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 import type { CourseRouter } from '../trpc/course/trpc.js';
 
@@ -32,6 +38,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const DraftQuestionMetadataSchema = z.object({ id: IdSchema });
 
 let courseRepo: CourseRepoFixture;
+const originalIsEnterprise = config.isEnterprise;
 
 function createTrpcClient() {
   const csrfToken = generatePrefixCsrfToken(
@@ -66,8 +73,19 @@ async function selectDraftQuestionMetadata(questionId: string) {
   );
 }
 
+async function assertRedirects(fromUrl: string, toUrl: string) {
+  const response = await fetch(fromUrl, {
+    redirect: 'manual',
+    headers: { cookie: 'pl_test_user=test_instructor' },
+  });
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), toUrl);
+}
+
 describe('Question draft finalization', { timeout: 20_000 }, () => {
   beforeAll(async () => {
+    config.isEnterprise = true;
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
@@ -77,9 +95,13 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
       course_role: 'Owner',
       authn_user_id: '1',
     });
+    await features.enable('ai-question-generation');
   });
 
-  afterAll(helperServer.after);
+  afterAll(async () => {
+    await helperServer.after();
+    config.isEnterprise = originalIsEnterprise;
+  });
 
   test.sequential('rejects finalizing a non-draft question', async () => {
     const trpc = createTrpcClient();
@@ -126,6 +148,28 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
     if (draftQid == null) throw new Error('Expected draft question to have a QID');
 
     assert.isNotNull(await selectDraftQuestionMetadata(draft.questionId));
+    await assertRedirects(
+      `${siteUrl}/pl/course/1/ai_generate_editor/${draft.questionId}`,
+      `/pl/course/1/question/${draft.questionId}/draft`,
+    );
+    await assertRedirects(
+      `${siteUrl}/pl/course/1/ai_generate_editor/${draft.questionId}?variant_id=123`,
+      `/pl/course/1/question/${draft.questionId}/draft?variant_id=123`,
+    );
+    await assertRedirects(
+      `${siteUrl}/pl/course/1/question/${draft.questionId}/draft`,
+      `/pl/course/1/ai_generate_editor/${draft.questionId}/editor`,
+    );
+    await assertRedirects(
+      `${siteUrl}/pl/course/1/question/${draft.questionId}/draft?variant_id=123`,
+      `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?variant_id=123`,
+    );
+    for (const suffix of ['', '/preview', '/settings', '/statistics']) {
+      await assertRedirects(
+        `${siteUrl}/pl/course/1/question/${draft.questionId}${suffix}`,
+        `/pl/course/1/question/${draft.questionId}/draft`,
+      );
+    }
 
     const finalQid = 'finalized-question-success';
     const finalTitle = 'Finalized question success';
@@ -137,6 +181,10 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
 
     assert.equal(result.questionId, draft.questionId);
     assert.match(result.previewUrl, new RegExp(`/question/${draft.questionId}/preview$`));
+    await assertRedirects(
+      `${siteUrl}/pl/course/1/ai_generate_editor/${draft.questionId}`,
+      `/pl/course/1/question/${draft.questionId}/preview`,
+    );
 
     const finalizedQuestion = await selectQuestionByQid({ course_id: '1', qid: finalQid });
     assert.equal(finalizedQuestion.id, draft.questionId);
@@ -145,5 +193,62 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
 
     assert.isNull(await selectOptionalQuestionByQid({ course_id: '1', qid: draftQid }));
     assert.isNull(await selectDraftQuestionMetadata(draft.questionId));
+  });
+
+  test.sequential('preserves valid template topic and tags when creating a draft', async () => {
+    const templateQid = 'template/preserved-topic-tag';
+    const templatePath = path.join(
+      courseRepo.courseOriginDir,
+      'questions',
+      ...templateQid.split('/'),
+    );
+    await fs.copy(
+      path.join(courseRepo.courseOriginDir, 'questions', 'test', 'question'),
+      templatePath,
+    );
+    await fs.writeJson(
+      path.join(templatePath, 'info.json'),
+      {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        title: 'Template with topic and tag',
+        topic: 'Test',
+        tags: ['tbretl'],
+        type: 'v3',
+      },
+      { spaces: 2 },
+    );
+    await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
+    await execa(
+      'git',
+      [
+        '-c',
+        'user.name=Test User',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-m',
+        'Add test template question',
+      ],
+      { cwd: courseRepo.courseOriginDir },
+    );
+    await execa('git', ['fetch', 'origin', 'master'], { cwd: courseRepo.courseLiveDir });
+
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({
+      startFrom: 'course',
+      templateQid,
+    });
+    const draftQuestion = await selectQuestionById(draft.questionId);
+    const topics = await selectTopicsByCourseId('1');
+    const tags = await selectTagsByQuestionId(draft.questionId);
+
+    assert.equal(draftQuestion.topic_id, topics.find((topic) => topic.name === 'Test')?.id);
+    assert.sameMembers(
+      tags.map((tag) => tag.name),
+      ['tbretl'],
+    );
+    assert.isFalse(draftQuestion.share_source_publicly);
+    assert.isFalse(draftQuestion.share_publicly);
+    assert.isNotNull(await selectDraftQuestionMetadata(draft.questionId));
   });
 });

@@ -29,6 +29,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
+import { getSearchParams } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
@@ -170,6 +171,16 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+    const search = getSearchParams(req).toString();
+    res.redirect(
+      `${res.locals.urlPrefix}/question/${res.locals.question.id}/draft${search ? `?${search}` : ''}`,
+    );
+  }),
+);
+
+router.get(
+  '/editor',
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
@@ -223,7 +234,7 @@ router.get(
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -344,7 +355,7 @@ router.post(
 );
 
 router.post(
-  '/',
+  ['/', '/editor'],
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {
       const client = getCourseFilesClient();
@@ -420,11 +431,11 @@ router.post(
         promptType: 'manual_change',
       });
 
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}?variant_id=${variantId}`,
+        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor?variant_id=${variantId}`,
       );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
@@ -443,7 +454,7 @@ router.get(
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -469,7 +480,7 @@ router.post(
 
       await getAndRenderVariant(variantId, null, res.locals, {
         urlOverrides: {
-          newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+          newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`,
         },
       });
 

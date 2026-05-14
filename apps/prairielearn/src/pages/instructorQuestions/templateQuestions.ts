@@ -163,7 +163,7 @@ export async function getTemplateQuestions(
 ): Promise<TemplateQuestionsData> {
   const exampleCourseZones = await getExampleCourseZones();
   const courseTemplates = questions
-    .filter(({ qid }) => qid.startsWith(TEMPLATE_QID_PREFIX))
+    .filter(({ draft, qid }) => !draft && qid.startsWith(TEMPLATE_QID_PREFIX))
     .map(({ qid, title }) => ({ qid, title }));
 
   return { exampleCourseZones, courseTemplates };
