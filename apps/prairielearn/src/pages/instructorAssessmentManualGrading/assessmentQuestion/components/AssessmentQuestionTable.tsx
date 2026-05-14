@@ -15,6 +15,7 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
   OverlayTrigger,
@@ -24,6 +25,7 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useModalState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -60,6 +62,7 @@ import {
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
+import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
@@ -101,10 +104,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
+  hint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
+  hint?: string;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -112,6 +117,11 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
+      {hint && (
+        <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
+          {hint}
+        </div>
+      )}
     </Dropdown.Item>
   );
 }
@@ -200,10 +210,15 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Controls the AI grading model selection modal: null = hidden, otherwise
-  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
-  const [modelSelectionModalState, setModelSelectionModalState] =
-    useState<AiGradingModelSelectionModalState>(null);
+  // Track completed AI grading job IDs so the "Review AI-graded submissions"
+  // alert survives dismissal of the "AI grading complete" progress alert
+  // (which clears the job from `serverJobProgress.jobsProgress`). The ref
+  // dedupes by job_sequence_id; the boolean drives alert visibility and is
+  // reset on dismissal.
+  const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
+  const [hasUnacknowledgedReview, setHasUnacknowledgedReview] = useState(false);
+
+  const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
@@ -364,6 +379,27 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Show the review alert when a job completes that we haven't already
+  // recorded. The seen set is genuinely history-dependent (it must outlive
+  // the job leaving `jobsProgress`), so this is a legitimate accumulator
+  // rather than derived state.
+  useEffect(() => {
+    let added = false;
+    for (const j of Object.values(serverJobProgress.jobsProgress)) {
+      if (
+        j.num_total > 0 &&
+        j.num_complete >= j.num_total &&
+        j.num_failed === 0 &&
+        !seenCompletedJobIdsRef.current.has(j.job_sequence_id)
+      ) {
+        seenCompletedJobIdsRef.current.add(j.job_sequence_id);
+        added = true;
+      }
+    }
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    if (added) setHasUnacknowledgedReview(true);
+  }, [serverJobProgress.jobsProgress]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -613,20 +649,25 @@ export function AssessmentQuestionTable({
         />
       </div>
       {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
+        <>
+          <ServerJobsProgressInfo
+            itemNames="submissions graded"
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            statusIcons={{
+              inProgress: 'bi-stars',
+            }}
+            statusText={{
+              inProgress: 'AI grading in progress',
+              complete: 'AI grading complete',
+              failed: 'AI grading failed',
+            }}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          />
+          {hasUnacknowledgedReview && (
+            <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
+          )}
+        </>
       )}
       <QueryErrors<ManualGradingError>
         queries={[
@@ -715,7 +756,7 @@ export function AssessmentQuestionTable({
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'human_graded',
                           numToGrade: aiGradingCounts.humanGraded,
                         })
@@ -724,8 +765,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
+                      hint={
+                        aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
+                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'selected',
                           ids: selectedIds,
                           numToGrade: aiGradingCounts.selected,
@@ -735,8 +781,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
+                      hint={
+                        aiGradingCounts.all === 0
+                          ? 'Receive at least one submission to perform AI grading.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'all',
                           numToGrade: aiGradingCounts.all,
                         })
@@ -954,12 +1005,38 @@ export function AssessmentQuestionTable({
 
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        modalState={modelSelectionModalState}
+        show={modelSelectionModalState.show}
+        data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
+        totalSubmissionCount={aiGradingCounts.all}
+        onHide={modelSelectionModalState.onHide}
+        onExited={modelSelectionModalState.onExited}
+        onSelectFirstSubmissions={(n) => {
+          const candidateIds = run(() => {
+            if (modelSelectionModalState.data?.type === 'selected') {
+              return modelSelectionModalState.data.ids;
+            }
+            if (modelSelectionModalState.data?.type === 'human_graded') {
+              return instanceQuestionsInfo
+                .filter((row) => row.instance_question.last_human_grader != null)
+                .map((row) => row.instance_question.id);
+            }
+            return instanceQuestionsInfo.map((row) => row.instance_question.id);
+          });
+          const ids = candidateIds.slice(0, n);
+          const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
+          setRowSelection(nextSelection);
+          modelSelectionModalState.showWithData({
+            type: 'selected',
+            ids,
+            numToGrade: ids.length,
+          });
+        }}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
@@ -968,7 +1045,6 @@ export function AssessmentQuestionTable({
           setLastSelectedModel(modelId);
           setRowSelection({});
         }}
-        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}

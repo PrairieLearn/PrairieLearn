@@ -34,6 +34,7 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  lastHumanGraderName,
   selectedInstanceQuestionGroup,
   aiGradingEnabled,
   aiGradingMode,
@@ -49,6 +50,7 @@ export function InstanceQuestion({
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  lastHumanGraderName: string | null;
   selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
@@ -233,6 +235,7 @@ export function InstanceQuestion({
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
                 show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                gradedByHumanName: lastHumanGraderName,
               })}
             </div>
           </div>
