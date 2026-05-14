@@ -1,4 +1,4 @@
--- BLOCK count_running_ai_grading_jobs_for_course_instance
+-- BLOCK count_active_ai_grading_jobs_for_course_instance
 SELECT
   COUNT(*)::integer
 FROM
@@ -6,7 +6,7 @@ FROM
 WHERE
   course_instance_id = $course_instance_id
   AND type = 'ai_grading'
-  AND status = 'Running';
+  AND status IN ('Running', 'Stopping');
 
 -- BLOCK ai_grading_concurrency_advisory_lock
 -- Serializes the concurrent-job admission check + insert per course instance,
