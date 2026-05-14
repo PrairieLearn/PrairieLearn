@@ -1,6 +1,6 @@
-import { format, toZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 
+import { formatDateISO } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -45,16 +45,8 @@ export function InstructorEffectiveUser({
   // fall back to the course, which is guaranteed to have a display timezone.
   const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
-  const formattedTrueReqDate = format(
-    toZonedTime(true_req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
-  const formattedReqDate = format(
-    toZonedTime(req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
+  const formattedTrueReqDate = formatDateISO(true_req_date, displayTimezone, { includeMs: true });
+  const formattedReqDate = formatDateISO(req_date, displayTimezone, { includeMs: true });
 
   return PageLayout({
     pageTitle: 'Change Effective User',
