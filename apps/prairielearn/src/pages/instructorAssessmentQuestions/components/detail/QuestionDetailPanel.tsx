@@ -20,6 +20,7 @@ import type {
   QuestionAlternativeForm,
   QuestionWithId,
   SelectedItem,
+  StandaloneQuestionBlockForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../../types.js';
@@ -38,6 +39,7 @@ import {
 } from '../../utils/formHelpers.js';
 import {
   questionHasTitle,
+  resolveRolePermissionCascade,
   toAssessmentForPicker,
   validatePositiveInteger,
 } from '../../utils/questions.js';
@@ -48,6 +50,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 interface QuestionFormData {
   id?: string;
@@ -62,6 +65,8 @@ interface QuestionFormData {
   gradeRateMinutes?: number;
   forceMaxPoints?: boolean;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function QuestionDetailPanel({
@@ -99,6 +104,11 @@ export function QuestionDetailPanel({
     assessmentDefaults,
     courseInstanceId,
     hasCoursePermissionPreview,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
   } = state;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
@@ -140,6 +150,17 @@ export function QuestionDetailPanel({
     triesPerVariant: question.triesPerVariant != null,
   }));
 
+  const standaloneQuestion = isAlternative ? null : (question as StandaloneQuestionBlockForm);
+  const canViewParent = resolveRolePermissionCascade([
+    { value: zone?.canView, source: 'zone' },
+    { value: assessmentCanView, source: 'assessment' },
+  ]);
+  const canSubmitParent = resolveRolePermissionCascade([
+    { value: zone?.canSubmit, source: 'zone' },
+    { value: assessmentCanSubmit, source: 'assessment' },
+  ]);
+  const hasRoles = groupRoles.length > 0;
+
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
   const hasForceMaxPointsParent = isAlternative && zoneQuestionBlock.forceMaxPoints != null;
@@ -163,6 +184,8 @@ export function QuestionDetailPanel({
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
       allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
+      canView: standaloneQuestion?.canView,
+      canSubmit: standaloneQuestion?.canSubmit,
     },
     // Prevent autosave from clobbering in-progress typing. Without this,
     // the autosave feedback loop (edit → save → parent state update →
@@ -560,6 +583,58 @@ export function QuestionDetailPanel({
             </Wrapper>
           </>
         )}
+
+      {!isAlternative && groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view this question."
+                editMode={editMode}
+                isInherited={watch('canView') == null}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watch('canView') ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to this question."
+                editMode={editMode}
+                isInherited={watch('canSubmit') == null}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watch('canSubmit') ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
+      )}
 
       {/* Advanced fields */}
       <AdvancedFields
