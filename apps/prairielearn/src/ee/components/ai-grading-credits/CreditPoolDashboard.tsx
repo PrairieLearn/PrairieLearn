@@ -20,6 +20,7 @@ export function CreditPoolDashboard({
   dimmed,
   onPurchaseClick,
   onRedeemFreeCreditClick,
+  canEdit = true,
   header,
   children,
   showRefundActions,
@@ -31,6 +32,7 @@ export function CreditPoolDashboard({
   dimmed?: boolean;
   onPurchaseClick?: () => void;
   onRedeemFreeCreditClick?: () => void;
+  canEdit?: boolean;
   header?: React.ReactNode;
   children?: React.ReactNode;
   showRefundActions?: boolean;
@@ -98,12 +100,17 @@ export function CreditPoolDashboard({
             style={{ fontSize: '2.5rem' }}
           />
           <h3 className="h5 mb-2">Get started with AI grading</h3>
-          <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
+          <p className="text-muted mb-3">
+            {canEdit
+              ? 'Buy credits to start grading submissions with AI.'
+              : 'You must be a course owner to purchase AI grading credits.'}
+          </p>
           <div className="d-flex flex-column align-items-center gap-2">
             {onRedeemFreeCreditClick && (
               <button
                 type="button"
                 className="btn btn-success d-inline-flex align-items-center gap-2"
+                disabled={!canEdit}
                 onClick={onRedeemFreeCreditClick}
               >
                 <i className="bi bi-gift-fill" aria-hidden="true" />
@@ -114,6 +121,7 @@ export function CreditPoolDashboard({
               <button
                 type="button"
                 className="btn btn-primary d-inline-flex align-items-center gap-2"
+                disabled={!canEdit}
                 onClick={onPurchaseClick}
               >
                 <i className="bi bi-cart-plus" aria-hidden="true" />
