@@ -49,6 +49,16 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+async function computeUseInstanceQuestionGroups(resLocals: Record<string, any>): Promise<boolean> {
+  const groupingAvailable =
+    (await features.enabledFromLocals('ai-submission-grouping', resLocals)) &&
+    resLocals.assessment_question.ai_grading_mode;
+  if (!groupingAvailable) return false;
+  return await selectAssessmentQuestionHasInstanceQuestionGroups({
+    assessmentQuestionId: resLocals.assessment_question.id,
+  });
+}
+
 async function prepareLocalsForRender(
   query: Record<string, any>,
   resLocals: ResLocalsForPage<'instructor-instance-question'> & ResLocalsInstanceQuestionRender,
@@ -105,8 +115,18 @@ router.get(
       const assignedGrader = res.locals.instance_question.assigned_grader
         ? await selectUserById(res.locals.instance_question.assigned_grader)
         : null;
+      // `last_grader` records whoever last graded — manual or AI. When it's
+      // null nobody has graded, so we can skip the "last manual grader" lookup
+      // entirely (the query filters by grading_method = 'Manual').
       const lastGrader = res.locals.instance_question.last_grader
         ? await selectUserById(res.locals.instance_question.last_grader)
+        : null;
+      const lastHumanGraderRow = res.locals.instance_question.last_grader
+        ? await sqldb.queryOptionalRow(
+            sql.select_last_manual_grader_for_instance_question,
+            { instance_question_id: res.locals.instance_question.id },
+            z.object({ grader_name: z.string() }),
+          )
         : null;
 
       const instance_question = res.locals.instance_question;
@@ -280,6 +300,7 @@ router.get(
           ...localsForRender,
           assignedGrader,
           lastGrader,
+          lastHumanGraderName: lastHumanGraderRow?.grader_name ?? null,
           selectedInstanceQuestionGroup: instanceQuestionGroup,
           instanceQuestionGroups,
           aiGradingEnabled,
@@ -337,6 +358,7 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
@@ -375,6 +397,7 @@ router.get(
         const submission = res.locals.submission!;
         const panels = await renderPanelsForSubmission({
           unsafe_submission_id: submission.id,
+          course: res.locals.course,
           question: res.locals.question,
           instance_question: res.locals.instance_question,
           variant: res.locals.variant,
@@ -528,17 +551,7 @@ router.post(
         });
       }
 
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -556,17 +569,7 @@ router.post(
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -738,21 +741,7 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
-      req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-      req.session.show_submissions_assigned_to_me_only =
-        req.session.show_submissions_assigned_to_me_only ?? true;
-
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;

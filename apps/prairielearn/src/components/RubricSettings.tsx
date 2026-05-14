@@ -532,7 +532,11 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editor" className="card overflow-hidden mb-3">
+    <div
+      id="rubric-editor"
+      className="card overflow-hidden mb-3"
+      style={{ scrollMarginTop: '10px' }}
+    >
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="modify_rubric_settings" />
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
@@ -553,7 +557,11 @@ export function RubricSettings({
           <i className="fa fa-angle-up ms-1 expand-icon" aria-hidden="true" />
         </button>
       </div>
-      <div id="rubric-setting" className="js-collapsible-card-body p-2 collapse">
+      <div
+        id="rubric-setting"
+        className="js-collapsible-card-body p-2 collapse"
+        style={{ scrollMarginTop: '10px' }}
+      >
         {/* Settings */}
         <div>
           {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (
@@ -780,18 +788,33 @@ export function RubricSettings({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>
-                    <em>
-                      This question does not have any rubric items! Click "Add item" below to add
-                      some
-                      {wasUsingRubric && (
-                        <>
-                          , or select <strong>Disable rubric</strong> below to switch back to manual
-                          grade input
-                        </>
-                      )}
-                      .
-                    </em>
+                  <td colSpan={7} className="text-muted py-3">
+                    This question does not have any rubric items.
+                    {hasCourseInstancePermissionEdit && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 align-baseline text-decoration-none"
+                          onClick={addRubricItemRow}
+                        >
+                          Add item
+                        </button>
+                        {wasUsingRubric && (
+                          <>
+                            , or{' '}
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 align-baseline text-decoration-none"
+                              onClick={() => submitSettings(false)}
+                            >
+                              Disable rubric
+                            </button>{' '}
+                            to switch back to manual grade input.
+                          </>
+                        )}
+                      </>
+                    )}
                   </td>
                 </tr>
               )}
@@ -816,7 +839,7 @@ export function RubricSettings({
           </div>
         ))}
         <div className="mb-3 gap-1 d-flex">
-          {hasCourseInstancePermissionEdit && (
+          {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
               Add item
             </button>
