@@ -18,11 +18,6 @@ const STOP_CONFIRMATION = {
   cancelLabel: 'Keep grading',
 };
 
-/**
- * Renders the AI-grading progress alert with consistent labels, icons, and
- * stop-confirmation copy across the bulk assessment-question page and the
- * per-instance-question page. Editors get a Stop button; viewers don't.
- */
 export function AiGradingProgressInfo({
   jobsProgress,
   courseInstanceId,

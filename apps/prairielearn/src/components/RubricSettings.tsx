@@ -117,6 +117,13 @@ export function RubricSettings({
   const [rubricActionNotification, setRubricActionNotification] = useState<
     'saved' | 'discarded' | null
   >(null);
+  // Latch the most recent non-null value so the message stays put while the
+  // Alert fades out. Without this, the ternary in render reads `null` after
+  // dismissal and the text flashes to the "other" branch mid-fade.
+  const lastNotificationRef = useRef<'saved' | 'discarded'>('saved');
+  if (rubricActionNotification !== null) {
+    lastNotificationRef.current = rubricActionNotification;
+  }
 
   useEffect(() => {
     if (!rubricActionNotification) return;
@@ -859,7 +866,7 @@ export function RubricSettings({
           dismissible
           onClose={() => setRubricActionNotification(null)}
         >
-          {rubricActionNotification === 'saved' ? 'Rubric saved' : 'Changes discarded'}
+          {lastNotificationRef.current === 'saved' ? 'Rubric saved' : 'Changes discarded'}
         </Alert>
         <div className="mb-3 gap-1 d-flex">
           {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
