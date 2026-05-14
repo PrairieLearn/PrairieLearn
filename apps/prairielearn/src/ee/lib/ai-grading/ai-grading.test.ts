@@ -16,29 +16,6 @@ import { getOrCreateUser } from '../../../tests/utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/**
- * testCourse seeds an `aiGradingRubrics` question under `hw10-aiGrading` in
- * the `Sp15` course instance — purpose-built for AI grading tests, so we pin
- * to it instead of picking an arbitrary row from `assessment_questions`.
- */
-async function pickAssessmentQuestionId(): Promise<string> {
-  const course = await selectCourseByShortName('QA 101');
-  const courseInstance = await selectCourseInstanceByShortName({
-    course,
-    shortName: 'Sp15',
-  });
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'hw10-aiGrading',
-  });
-  const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
-  const assessmentQuestion = await selectAssessmentQuestionByQuestionId({
-    assessment_id: assessment.id,
-    question_id: question.id,
-  });
-  return assessmentQuestion.id;
-}
-
 async function insertAiGradingJobSequence(params: {
   assessment_question_id: string;
   status: 'Running' | 'Stopping' | 'Stopped' | 'Success' | 'Error';
@@ -66,7 +43,24 @@ describe('stopJobSequence (AI grading scope)', () => {
   beforeAll(async () => {
     await helperDb.before();
     await helperCourse.syncCourse();
-    assessment_question_id = await pickAssessmentQuestionId();
+    // testCourse seeds an `aiGradingRubrics` question under `hw10-aiGrading`
+    // in the `Sp15` course instance — purpose-built for AI grading tests, so
+    // we pin to it instead of picking an arbitrary row.
+    const course = await selectCourseByShortName('QA 101');
+    const courseInstance = await selectCourseInstanceByShortName({
+      course,
+      shortName: 'Sp15',
+    });
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw10-aiGrading',
+    });
+    const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+    const assessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: question.id,
+    });
+    assessment_question_id = assessmentQuestion.id;
     const user = await getOrCreateUser({
       uid: 'admin@example.com',
       name: 'Test Admin',
