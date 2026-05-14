@@ -117,6 +117,20 @@ describe('PLEmitter', () => {
     );
   });
 
+  it('wraps non-input paragraphs in pl-question-panel for fill-in-blanks', () => {
+    const q = makeQuestion({
+      promptHtml: '<p>Fill in the blanks below.</p>\n<p>The capital is [capital1].</p>',
+      body: {
+        type: 'fill-in-blanks',
+        blanks: [{ id: 'capital1', correctText: 'bogota', ignoreCase: true }],
+      },
+    });
+    assert.equal(
+      emitter.emit(makeAssessment([q])).questions[0].questionHtml,
+      '<pl-question-panel>\n<p>Fill in the blanks below.</p>\n</pl-question-panel>\n\n<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
+    );
+  });
+
   describe('feedback rendering', () => {
     it('emits pl-answer-panel with both correct and incorrect feedback', () => {
       const q = makeQuestion({

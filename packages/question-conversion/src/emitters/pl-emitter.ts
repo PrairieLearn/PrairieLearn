@@ -272,7 +272,7 @@ export class PLEmitter implements OutputEmitter {
     }
 
     const parts: string[] = handler.inlineInputs
-      ? [promptHtml, '']
+      ? wrapInlineInputPrompt(promptHtml)
       : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
     // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
@@ -330,6 +330,46 @@ export class PLEmitter implements OutputEmitter {
     return clientFiles;
   }
 }
+
+/**
+ * Split transformed prompt HTML into top-level blocks and wrap non-input
+ * blocks in `<pl-question-panel>`.  Blocks that contain a PL input element
+ * (e.g. `<pl-string-input>`) are emitted bare.
+ */
+function wrapInlineInputPrompt(html: string): string[] {
+  // Split after closing block-level tags that precede a newline.
+  const blocks = html.split(
+    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\n/,
+  );
+
+  const parts: string[] = [];
+  let panel: string[] = [];
+
+  function flushPanel() {
+    if (panel.length > 0) {
+      parts.push('<pl-question-panel>', ...panel, '</pl-question-panel>', '');
+      panel = [];
+    }
+  }
+
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+    if (PL_INPUT_RE.test(block)) {
+      flushPanel();
+      parts.push(block);
+    } else {
+      panel.push(block);
+    }
+  }
+  flushPanel();
+
+  // Trailing empty string so parts.join('\n') ends with a newline.
+  parts.push('');
+  return parts;
+}
+
+const PL_INPUT_RE =
+  /<pl-(?:big-o-input|checkbox|excalidraw|image-capture|integer-input|matching|matrix-component-input|matrix-input|multiple-choice|number-input|order-blocks|rich-text-editor|string-input|symbolic-input|units-input|file-upload)\b/;
 
 /** Render the grade(data) function for types with only global correct/incorrect feedback. */
 function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {
