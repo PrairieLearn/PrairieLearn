@@ -662,8 +662,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     test.sequential(
       'Remove a used question from a sharing set, ensure sync error message identifies it',
       async () => {
-        assert(sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets);
-        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets;
+        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
         await fs.writeJSON(
           path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
@@ -686,8 +685,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       async () => {
         // Pins the decision in `checkInvalidSharingSetRemovals` to ignore
         // `share_publicly`. Update this test if we loosen that rule.
-        assert(sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets);
-        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets;
+        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
         sharingCourseData.questions[SHARING_QUESTION_QID].sharePublicly = true;
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
         await fs.writeJSON(
@@ -706,11 +704,9 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     test.sequential(
       'Remove a question from a sharing set with no consumers, even when the question is consumed via another set',
       async () => {
-        assert(sharingCourseData.course.sharingSets);
-        const saveCourseSharingSets = sharingCourseData.course.sharingSets;
-        assert(sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets);
+        const saveCourseSharingSets = sharingCourseData.course.sharingSets!;
         const saveQuestionSharingSets =
-          sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets;
+          sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
 
         sharingCourseData.course.sharingSets = [
           ...saveCourseSharingSets,
