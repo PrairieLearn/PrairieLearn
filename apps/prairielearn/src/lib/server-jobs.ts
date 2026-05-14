@@ -399,7 +399,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      // SQL handles the late-stop projection atomically; see update_job_on_finish.
       status: run(() => {
         if (isStop) return 'Stopped';
         if (err) return 'Error';
