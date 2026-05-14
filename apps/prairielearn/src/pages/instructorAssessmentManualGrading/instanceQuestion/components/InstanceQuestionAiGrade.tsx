@@ -1,5 +1,6 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
 import { useModalState } from '@prairielearn/ui';
 
@@ -56,6 +57,7 @@ function InstanceQuestionAiGradeInner({
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
   );
+  const [showReloadError, setShowReloadError] = useState(false);
 
   const stopAiGradingJobMutation = useMutation(
     trpc.manualGrading.stopAiGradingJob.mutationOptions(),
@@ -85,7 +87,9 @@ function InstanceQuestionAiGradeInner({
     if (!expectReloadRef.current) return;
     expectReloadRef.current = false;
     if (submissionStatus === JobItemStatus.complete) {
-      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId });
+      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then((ok) => {
+        if (!ok) setShowReloadError(true);
+      });
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
@@ -115,6 +119,15 @@ function InstanceQuestionAiGradeInner({
 
   return (
     <>
+      <Alert
+        show={showReloadError}
+        variant="warning"
+        dismissible
+        onClose={() => setShowReloadError(false)}
+      >
+        AI grading finished, but the grading panel couldn't refresh. Reload the page to see the
+        latest grade and feedback.
+      </Alert>
       <AiGradingProgressInfo
         jobsProgress={Object.values(serverJobProgress.jobsProgress)}
         courseInstanceId={courseInstanceId}

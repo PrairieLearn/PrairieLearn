@@ -151,7 +151,7 @@ export function getAiGradingSettingsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/ai_grading`;
 }
 
-export function getManualGradingInstanceQuestionUrl({
+export function getManualGradingInstanceQuestionRubricPanelsUrl({
   courseInstanceId,
   assessmentId,
   instanceQuestionId,
@@ -160,15 +160,7 @@ export function getManualGradingInstanceQuestionUrl({
   assessmentId: string;
   instanceQuestionId: string;
 }): string {
-  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${instanceQuestionId}`;
-}
-
-export function getManualGradingInstanceQuestionRubricPanelsUrl(parts: {
-  courseInstanceId: string;
-  assessmentId: string;
-  instanceQuestionId: string;
-}): string {
-  return `${getManualGradingInstanceQuestionUrl(parts)}/grading_rubric_panels`;
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${instanceQuestionId}/grading_rubric_panels`;
 }
 
 export function getAdministratorJobSequenceUrl(jobSequenceId: string): string {

@@ -31,7 +31,7 @@ export async function reloadGradingPanel({
   courseInstanceId: string;
   assessmentId: string;
   instanceQuestionId: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const url = getManualGradingInstanceQuestionRubricPanelsUrl({
     courseInstanceId,
     assessmentId,
@@ -42,17 +42,17 @@ export async function reloadGradingPanel({
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
       console.error(`Failed to refresh grading panel: HTTP ${res.status}`);
-      return;
+      return false;
     }
     data = await res.json();
   } catch (err) {
     console.error('Failed to refresh grading panel:', err);
-    return;
+    return false;
   }
-  if (!data?.gradingPanel) return;
+  if (!data?.gradingPanel) return false;
 
   const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-  if (!gradingPanel) return;
+  if (!gradingPanel) return false;
 
   // The CSRF token returned by /grading_rubric_panels is issued for that URL,
   // not for the main form's POST URL, so preserve the existing one. Scope both
@@ -94,4 +94,5 @@ export async function reloadGradingPanel({
 
   window.resetInstructorGradingPanel();
   await window.mathjaxTypeset(typesetTargets);
+  return true;
 }
