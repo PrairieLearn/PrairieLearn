@@ -100,20 +100,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_last_submission_id
-SELECT
-  s.id
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
 -- BLOCK delete_ai_grading_jobs
 WITH
   deleted_grading_jobs AS (

@@ -472,7 +472,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion({
   );
 }
 
-export async function selectRubricGradingItems(
+async function selectRubricGradingItems(
   manual_rubric_grading_id: string | null,
 ): Promise<RubricItem[]> {
   return await queryRows(
@@ -613,10 +613,6 @@ export async function selectLastVariantAndSubmission(
     { instance_question_id },
     SubmissionVariantSchema,
   );
-}
-
-export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function hasPriorAiGradingJobs(assessment_question_id: string): Promise<boolean> {
