@@ -102,4 +102,53 @@ describe('renderRubricItemFields', () => {
     expect(item.explanation_rendered).toContain('template error');
     expect(item.grader_note_rendered).not.toContain('template error');
   });
+
+  it('renders description as inline markdown (no <p> wrapper) and explanation/grader_note as block', () => {
+    const item = makeRenderedItem({
+      description: 'Correct **answer**',
+      explanation: 'See `note`.',
+      grader_note: 'Use `regex`.',
+    });
+    renderRubricItemFields(item, {});
+
+    // Inline rendering: description is not wrapped in <p>...</p>.
+    expect(item.description_rendered).toBe('Correct <strong>answer</strong>');
+    // Block rendering: explanation and grader_note are wrapped in <p>...</p>.
+    expect(item.explanation_rendered?.trim()).toBe('<p>See <code>note</code>.</p>');
+    expect(item.grader_note_rendered?.trim()).toBe('<p>Use <code>regex</code>.</p>');
+  });
+
+  it('substitutes nested mustache fields from all three mustacheParams scopes', () => {
+    const item = makeRenderedItem({
+      description: 'Param x = {{params.x}}',
+      explanation: 'Expected {{correct_answers.y}}; got {{submitted_answers.y}}.',
+      grader_note: 'Threshold: {{params.threshold}}',
+    });
+    renderRubricItemFields(item, {
+      params: { x: 1, threshold: 0.5 },
+      correct_answers: { y: 42 },
+      submitted_answers: { y: 41 },
+    });
+
+    expect(item.description_rendered).toContain('Param x = 1');
+    expect(item.explanation_rendered).toContain('Expected 42; got 41.');
+    expect(item.grader_note_rendered).toContain('Threshold: 0.5');
+    expect(item.description_rendered).not.toContain('template error');
+    expect(item.explanation_rendered).not.toContain('template error');
+    expect(item.grader_note_rendered).not.toContain('template error');
+  });
+
+  it('passes through valid LaTeX with no mustache delimiters untouched', () => {
+    const item = makeRenderedItem({
+      description: 'Use $\\mathbb{R}^n$.',
+      explanation: 'Magnitude is $|\\vec{v}| = \\sqrt{x^2 + y^2}$.',
+    });
+    renderRubricItemFields(item, {});
+
+    // Markdown escapes `\` somewhat, but the user-visible LaTeX content survives.
+    expect(item.description_rendered).toContain('\\mathbb{R}^n');
+    expect(item.explanation_rendered).toContain('\\sqrt{x^2 + y^2}');
+    expect(item.description_rendered).not.toContain('template error');
+    expect(item.explanation_rendered).not.toContain('template error');
+  });
 });
