@@ -398,8 +398,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      // The SQL's CASE projects 'Stopping' to 'Stopped' atomically when
-      // status='Success', so we don't need to pre-read the sequence here.
+      // SQL handles the late-stop projection atomically; see update_job_on_finish.
       status: isStop ? 'Stopped' : err ? 'Error' : 'Success',
     });
 

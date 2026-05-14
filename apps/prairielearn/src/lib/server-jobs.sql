@@ -131,11 +131,8 @@ WHERE
   id = $job_sequence_id;
 
 -- BLOCK update_job_on_finish
--- The CASE atomically projects 'Stopping' to 'Stopped' for the natural
--- finish path. Without it, a stop click that flips the sequence to
--- 'Stopping' between the caller's read and this UPDATE would be silently
--- overwritten back to 'Success'. Real failures (status='Error') and
--- explicit stops (status='Stopped') write through unchanged.
+-- Atomically project 'Stopping' → 'Stopped' on a successful finish so a
+-- concurrent stop click can't be overwritten by Success.
 WITH
   updated_job AS (
     UPDATE jobs AS j

@@ -73,50 +73,26 @@ describe('server-jobs SQL transitions', () => {
       assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
 
-    it('Stopping + Success → Stopped on both rows (atomic late-stop projection)', async () => {
-      // The SQL must project Stopping → Stopped atomically: if the wrapper
-      // observed status=Running but a stop click flipped the sequence to
-      // Stopping before the UPDATE ran, $status='Success' would otherwise
-      // silently overwrite the stop intent.
+    // Stop-intent semantics on a Stopping sequence:
+    //   Success → Stopped (atomic projection; covers the race where the stop
+    //     click landed between the caller's read and this UPDATE)
+    //   Error   → Error   (real failures are preserved over the stop projection)
+    //   Stopped → Stopped (explicit job.stop())
+    it.each([
+      ['Success', 'Stopped'],
+      ['Error', 'Error'],
+      ['Stopped', 'Stopped'],
+    ] as const)('Stopping + %s → %s on both rows', async (inputStatus, expectedStatus) => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
         job_id,
         output: '',
         data: {},
-        status: 'Success',
+        status: inputStatus,
       });
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
-      assert.equal(await selectJobStatus(job_id), 'Stopped');
-    });
-
-    it('Stopping + Error → Error on both rows (real failure preserved)', async () => {
-      // Only the Success path is projected; a real failure during stop
-      // must surface as Error so DB readers and the job-detail page see
-      // the failure rather than a clean cancellation.
-      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute(productionSql.update_job_on_finish, {
-        job_sequence_id,
-        job_id,
-        output: '',
-        data: {},
-        status: 'Error',
-      });
-      assert.equal(await selectStatus(job_sequence_id), 'Error');
-      assert.equal(await selectJobStatus(job_id), 'Error');
-    });
-
-    it('Stopping + Stopped → Stopped on both rows (explicit job.stop())', async () => {
-      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute(productionSql.update_job_on_finish, {
-        job_sequence_id,
-        job_id,
-        output: '',
-        data: {},
-        status: 'Stopped',
-      });
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
-      assert.equal(await selectJobStatus(job_id), 'Stopped');
+      assert.equal(await selectStatus(job_sequence_id), expectedStatus);
+      assert.equal(await selectJobStatus(job_id), expectedStatus);
     });
   });
 
