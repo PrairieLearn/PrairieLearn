@@ -1,4 +1,4 @@
--- BLOCK insert_second_course_instance
+-- BLOCK insert_course_instance
 INSERT INTO
   course_instances (
     course_id,

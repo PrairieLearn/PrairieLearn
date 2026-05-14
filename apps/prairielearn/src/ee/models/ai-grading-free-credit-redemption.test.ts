@@ -24,7 +24,7 @@ const COURSE_INSTANCE_ID = '1';
 
 async function insertSecondCourseInstance() {
   return await queryScalar(
-    sql.insert_second_course_instance,
+    sql.insert_course_instance,
     {
       course_id: COURSE_ID,
       short_name: 'CI-2',
