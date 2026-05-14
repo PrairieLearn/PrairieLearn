@@ -997,14 +997,13 @@ export async function buildAiGradingInfo({
 
   if (!aiGradingJobData) return undefined;
 
-  const promptForGradingJob = aiGradingJobData.prompt;
   const selectedRubricItems = await selectRubricGradingItems(
     aiGradingJobData.manual_rubric_grading_id,
   );
 
   const formattedPrompt =
-    promptForGradingJob !== null
-      ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
+    aiGradingJobData.prompt !== null
+      ? (await formatJsonWithPrettier(JSON.stringify(aiGradingJobData.prompt, null, 2)))
           .replaceAll('\\n', '\n')
           .trimStart()
       : '';
