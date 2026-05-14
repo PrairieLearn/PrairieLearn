@@ -1,20 +1,17 @@
-import path from 'node:path';
-
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
-import { QuestionRenameEditor, validateQidNesting } from '../../lib/editors.js';
+import {
+  DraftFinalizationEditorJobError,
+  DraftFinalizationInputError,
+  finalizeDraftQuestion,
+} from '../../lib/question-drafts.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { validateShortName } from '../../lib/short-name.js';
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router();
 
@@ -101,59 +98,25 @@ router.post(
     const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
     const qid = typeof req.body.qid === 'string' ? req.body.qid.trim() : '';
 
-    if (title === '') {
-      throw new error.HttpStatusError(400, 'Title is required.');
-    }
-
-    const validation = validateShortName(qid);
-    if (!validation.valid) {
-      throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}.`);
-    }
-
-    if (qid === '__drafts__' || qid.startsWith('__drafts__/')) {
-      throw new error.HttpStatusError(
-        400,
-        'Finalized question QIDs cannot be in the draft namespace.',
-      );
-    }
-
-    const existingQids = await discoverInfoDirs(
-      path.join(res.locals.course.path, 'questions'),
-      'info.json',
-    );
-    if (existingQids.includes(qid)) {
-      throw new error.HttpStatusError(400, `A question with QID "${qid}" already exists.`);
-    }
-
     try {
-      validateQidNesting(qid, existingQids, question.qid ?? undefined);
-    } catch (err) {
-      throw new error.HttpStatusError(400, err instanceof Error ? err.message : 'Invalid QID.');
-    }
-
-    const editor = new QuestionRenameEditor({
-      locals: {
-        authz_data: {
-          has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-          authn_user: res.locals.authn_user,
-        },
+      await finalizeDraftQuestion({
         course: res.locals.course,
-        user: res.locals.user,
         question,
-      },
-      qid_new: qid,
-      title_new: title,
-    });
-
-    const serverJob = await editor.prepareServerJob();
-
-    try {
-      await editor.executeWithServerJob(serverJob);
-    } catch {
-      throw new HttpRedirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+        user: res.locals.user,
+        authnUser: res.locals.authn_user,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+        qid,
+        title,
+      });
+    } catch (err) {
+      if (err instanceof DraftFinalizationInputError) {
+        throw new error.HttpStatusError(400, err.message);
+      }
+      if (err instanceof DraftFinalizationEditorJobError) {
+        throw new HttpRedirect(`${res.locals.urlPrefix}/edit_error/${err.jobSequenceId}`);
+      }
+      throw err;
     }
-
-    await execute(sql.delete_draft_question_metadata, { question_id: question.id });
 
     flash('success', `Your question is ready for use as ${qid}.`);
     res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);

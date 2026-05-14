@@ -9,7 +9,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
+import { getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
@@ -55,7 +55,7 @@ export function InstructorAiGenerateDraftEditor({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'AI Question Editor',
+    pageTitle: 'Draft question editor',
     navContext: {
       type: 'instructor',
       page: 'course_admin',
@@ -126,12 +126,9 @@ export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'cour
           </p>
         </div>
         <div className="card-footer">
-          <a
-            href={getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}
-            className="btn btn-primary"
-          >
+          <a href={`${resLocals.urlPrefix}/course_admin/questions`} className="btn btn-primary">
             <i className="fa fa-arrow-left" aria-hidden="true" />
-            Back to AI question drafts
+            Back to questions
           </a>
         </div>
       </div>
