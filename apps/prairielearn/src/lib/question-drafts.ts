@@ -44,6 +44,12 @@ export async function finalizeDraftQuestion({
     );
   }
 
+  if (question.sync_errors) {
+    throw new DraftFinalizationInputError(
+      'Draft question sync errors must be resolved before finalization.',
+    );
+  }
+
   if (finalTitle === '') {
     throw new DraftFinalizationInputError('Title is required.');
   }

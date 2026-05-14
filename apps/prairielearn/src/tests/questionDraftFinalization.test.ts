@@ -169,6 +169,24 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
     assert.isTrue(tableData.some((row) => row.draft === false && row.status === 'Finalized'));
   });
 
+  test.sequential('rejects finalizing a draft question with sync errors', async () => {
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
+    await sqldb.execute(sql.update_question_sync_errors, {
+      question_id: draft.questionId,
+      sync_errors: 'Example sync error',
+    });
+
+    await assertBadRequest(
+      trpc.questions.finalizeDraft.mutate({
+        questionId: draft.questionId,
+        qid: 'sync-error-draft',
+        title: 'Sync error draft',
+      }),
+      'Draft question sync errors must be resolved before finalization.',
+    );
+  });
+
   test.sequential('finalizes a draft question', async () => {
     const trpc = createTrpcClient();
     const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
