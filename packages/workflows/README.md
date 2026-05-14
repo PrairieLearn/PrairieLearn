@@ -30,8 +30,10 @@ The workflow moves through these steps:
 ```ts
 import { registerWorkflow } from '@prairielearn/workflows';
 
+type RubricAssistantStep = 'rubric_check' | 'rubric_ready' | 'awaiting_input' | 'agent_running';
+
 interface RubricAssistantState {
-  step: string;
+  step: RubricAssistantStep;
   rubric_exists?: boolean;
   message_id?: string;
   user_message?: string;

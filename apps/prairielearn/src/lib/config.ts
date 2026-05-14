@@ -179,6 +179,14 @@ export const ConfigSchema = z.object({
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
+  /**
+   * Whether this server initializes the `@prairielearn/workflows` engine and
+   * runs its crash-recovery loop. Should be `true` only on servers that
+   * actually need to drive workflow execution (today: the main app servers).
+   * Deployments running chunk consumers or workspace-proxy-only roles should
+   * set this to `false`, since they don't register any workflow types and
+   * spinning up the dedicated connection pool would only waste resources.
+   */
   workflowsActive: z.boolean().default(true),
   cronActive: z.boolean().default(true),
   /**

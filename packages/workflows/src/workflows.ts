@@ -28,6 +28,20 @@ const serverUuid = crypto.randomUUID();
 // How often the recovery loop checks for abandoned workflow runs.
 const DEFAULT_RECOVERY_INTERVAL_MS = 60_000;
 
+// Cap on how many `'continue'` steps a single executeWorkflow call may take
+// before yielding back to the recovery loop. This prevents a single
+// long-running workflow on one server from monopolizing the loop and
+// starving other workflows that are waiting for crash recovery to pick
+// them up. After yielding, the lock is released and the next recovery
+// tick (or another server) will resume the run from its persisted state.
+const MAX_STEPS_PER_EXECUTION = 100;
+
+// Cap on how many stale runs a single server processes in parallel per
+// recovery tick. Each recovered run holds a soft lock and runs its step
+// loop concurrently with the others, so this bounds the workflow load
+// any one server imposes on itself during recovery.
+const MAX_CONCURRENT_RECOVERY = 10;
+
 let recoveryInterval: NodeJS.Timeout | null = null;
 let recoveryInProgress = false;
 
@@ -315,7 +329,8 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
   // and persisted to the DB; unexpected errors (e.g. persistStep failure)
   // propagate to the caller and the crash-recovery loop picks up the run.
   try {
-    while (true) {
+    let stepsTaken = 0;
+    while (stepsTaken < MAX_STEPS_PER_EXECUTION) {
       // Read current run state from DB
       const currentRun = await getWorkflowRun<TState>(runId);
 
@@ -357,6 +372,8 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
         status: dbStatus,
         error_message: stepResult.error_message,
       });
+
+      stepsTaken += 1;
 
       if (!updated || stepResult.status !== 'continue') {
         break;
@@ -472,38 +489,39 @@ export async function stopRecoveryLoop(): Promise<void> {
 
 async function recoverStaleRuns(): Promise<void> {
   // Find runs with stale heartbeats (locked but heartbeat > 2 minutes ago)
-  const staleRuns = await pool.queryRows(sql.select_stale_runs, {}, WorkflowRunSchema);
+  // and runs that are 'running' but have no lock (e.g. server crashed before
+  // it ever wrote a heartbeat). Both queries order by `created_at ASC` so
+  // older runs are recovered first if more runs are stale than this server
+  // can process in a single tick.
+  const [staleRuns, unlockedRuns] = await Promise.all([
+    pool.queryRows(sql.select_stale_runs, {}, WorkflowRunSchema),
+    pool.queryRows(sql.select_unlocked_running_runs, {}, WorkflowRunSchema),
+  ]);
 
-  for (const run of staleRuns) {
-    logger.info(`Recovering stale workflow run ${run.id} (type: ${run.type})`);
-    try {
-      await resumeWorkflow(run.id);
-    } catch (err) {
-      logger.error(`Failed to recover workflow ${run.id}`, err);
-      Sentry.captureException(err);
-    }
-  }
-
-  // Also pick up runs that are 'running' but have no lock (e.g., server crashed before locking)
-  const unlockedRuns = await pool.queryRows(
-    sql.select_unlocked_running_runs,
-    {},
-    WorkflowRunSchema,
+  // Filter out runs whose type isn't registered on this server. During rolling
+  // deploys, a server running old code may not have a newly-added workflow
+  // type yet; silently skip so a server with the updated code handles it.
+  const candidates = [...staleRuns, ...unlockedRuns].filter((run) =>
+    registeredWorkflows.has(run.type),
   );
 
-  for (const run of unlockedRuns) {
-    const definition = registeredWorkflows.get(run.type);
-    // During rolling deploys, a server running old code may not have a
-    // newly-added workflow type registered yet. Silently skip so that a
-    // server with the updated code handles recovery instead.
-    if (!definition) continue;
-
-    logger.info(`Resuming unlocked workflow run ${run.id} (type: ${run.type})`);
-    try {
-      await executeWorkflow(run.id, definition);
-    } catch (err) {
-      logger.error(`Failed to resume unlocked workflow ${run.id}`, err);
-      Sentry.captureException(err);
-    }
+  // Bound parallelism so a backlog of stale runs can't pin every CPU on a
+  // single server. Locks (`acquire_lock` filters to free / stale-heartbeat
+  // rows) prevent two servers from picking up the same run.
+  for (let i = 0; i < candidates.length; i += MAX_CONCURRENT_RECOVERY) {
+    const batch = candidates.slice(i, i + MAX_CONCURRENT_RECOVERY);
+    await Promise.all(
+      batch.map(async (run) => {
+        const definition = registeredWorkflows.get(run.type);
+        if (!definition) return;
+        logger.info(`Recovering workflow run ${run.id} (type: ${run.type})`);
+        try {
+          await executeWorkflow(run.id, definition);
+        } catch (err) {
+          logger.error(`Failed to recover workflow ${run.id}`, err);
+          Sentry.captureException(err);
+        }
+      }),
+    );
   }
 }

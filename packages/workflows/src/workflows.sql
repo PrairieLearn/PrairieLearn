@@ -120,7 +120,9 @@ FROM
 WHERE
   status = 'running'
   AND locked_by IS NOT NULL
-  AND heartbeat_at < now() - interval '2 minutes';
+  AND heartbeat_at < now() - interval '2 minutes'
+ORDER BY
+  created_at ASC;
 
 -- BLOCK select_unlocked_running_runs
 SELECT
@@ -129,7 +131,9 @@ FROM
   workflow_runs
 WHERE
   status = 'running'
-  AND locked_by IS NULL;
+  AND locked_by IS NULL
+ORDER BY
+  created_at ASC;
 
 -- BLOCK append_output
 UPDATE workflow_runs
