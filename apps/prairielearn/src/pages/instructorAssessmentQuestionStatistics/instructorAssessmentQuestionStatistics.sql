@@ -6,18 +6,6 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK assessment_stats_last_updated
-SELECT
-  CASE
-    WHEN a.stats_last_updated IS NULL THEN 'never'
-    ELSE format_date_full_compact (a.stats_last_updated, ci.display_timezone)
-  END AS stats_last_updated
-FROM
-  assessments AS a
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-WHERE
-  a.id = $assessment_id;
-
 -- BLOCK questions
 SELECT
   c.short_name AS course_short_name,

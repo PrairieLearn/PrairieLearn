@@ -694,9 +694,11 @@ export function GroupsCard({
   const refreshMutation = useMutation(
     trpc.assessmentGroups.refreshGroups.mutationOptions({
       onSuccess: ({ groups: newGroups, notAssigned: newNotAssigned }) => {
+        const refreshedAt = Date.now();
         setGroups(newGroups);
         setNotAssigned(newNotAssigned);
-        setLastRefreshedAt(Date.now());
+        setLastRefreshedAt(refreshedAt);
+        setNow(refreshedAt);
       },
     }),
   );
