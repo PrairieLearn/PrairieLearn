@@ -16,7 +16,6 @@ export interface SubmissionPanels {
 }
 
 export const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string(),
   // Nullable from left join.
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
@@ -62,7 +61,7 @@ export interface ResLocalsInstanceQuestionRenderAdded {
   allowGradeLeftMs: number;
 }
 
-export interface ResLocalsBuildLocals {
+interface ResLocalsBuildLocals {
   showGradeButton: boolean;
   showSaveButton: boolean;
   disableGradeButton: boolean;

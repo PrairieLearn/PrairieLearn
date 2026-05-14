@@ -36,12 +36,14 @@ BEGIN
         before_release_listed,
         target_type,
         date_control_release_date,
-        date_control_due_date_overridden,
+        date_control_due_overridden,
         date_control_due_date,
+        date_control_due_credit,
         date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions,
         date_control_after_last_deadline_credit,
+        date_control_after_last_deadline_overridden,
         date_control_duration_minutes_overridden,
         date_control_duration_minutes,
         date_control_password_overridden,
@@ -59,12 +61,14 @@ BEGIN
         (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
-        (rule ->> 'date_control_due_date_overridden')::boolean,
+        (rule ->> 'date_control_due_overridden')::boolean,
         input_date(rule ->> 'date_control_due_date', ci_timezone),
+        (rule ->> 'date_control_due_credit')::integer,
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
         (rule ->> 'date_control_after_last_deadline_credit')::integer,
+        (rule ->> 'date_control_after_last_deadline_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes')::integer,
         (rule ->> 'date_control_password_overridden')::boolean,
@@ -79,12 +83,14 @@ BEGIN
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,
-        date_control_due_date_overridden = EXCLUDED.date_control_due_date_overridden,
+        date_control_due_overridden = EXCLUDED.date_control_due_overridden,
         date_control_due_date = EXCLUDED.date_control_due_date,
+        date_control_due_credit = EXCLUDED.date_control_due_credit,
         date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
         date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
+        date_control_after_last_deadline_overridden = EXCLUDED.date_control_after_last_deadline_overridden,
         date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
         date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
         date_control_password_overridden = EXCLUDED.date_control_password_overridden,
@@ -146,7 +152,7 @@ BEGIN
     ON CONFLICT (assessment_access_control_rule_id, date) DO UPDATE SET
         credit = EXCLUDED.credit;
 
-    -- Upsert PrairieTest exams (main rules only).
+    -- Upsert PrairieTest exams (default rules only).
     INSERT INTO assessment_access_control_prairietest_exams (
         assessment_access_control_rule_id,
         uuid,

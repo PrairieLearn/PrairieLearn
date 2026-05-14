@@ -4,7 +4,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { RawStaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
 
-export const AssessmentForSetSchema = z.object({
+const AssessmentForSetSchema = z.object({
   assessment_id: IdSchema,
   tid: z.string(),
   title: z.string(),

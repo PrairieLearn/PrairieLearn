@@ -24,7 +24,7 @@ export interface IRBlank {
 }
 
 /** A blank with dropdown choices for multiple-dropdowns questions. */
-export interface IRDropdownBlank {
+interface IRDropdownBlank {
   id: string;
   choices: IRChoice[];
 }
@@ -45,7 +45,7 @@ export interface IRNumericAnswer {
 }
 
 /** Integer answer specification. */
-export interface IRIntegerAnswer {
+interface IRIntegerAnswer {
   correctValue: number;
 }
 
@@ -132,6 +132,11 @@ export interface IRQuestion {
   points?: number;
   feedback?: IRFeedback;
   assets: Map<string, AssetReference>;
+  /**
+   * Filenames the parser chose to omit. Their referencing tags have been commented out
+   * in `promptHtml` and the files are not included in `assets`.
+   */
+  skippedFiles?: string[];
   metadata?: Record<string, string>;
   shuffleAnswers?: boolean;
   gradingMethod: IRQuestionGradingMethod;

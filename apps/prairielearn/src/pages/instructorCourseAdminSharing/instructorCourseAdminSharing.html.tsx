@@ -4,7 +4,6 @@ import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const SharingSetRowSchema = z.object({
@@ -137,7 +136,6 @@ export function InstructorCourseAdminSharing({
       page: 'course_admin',
       subPage: 'sharing',
     },
-    headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -175,11 +173,11 @@ export function InstructorCourseAdminSharing({
                   ${sharingToken}
                   <button
                     type="button"
-                    class="btn btn-copy btn-xs btn-secondary mx-2"
+                    class="btn js-copy-button btn-xs btn-secondary mx-2"
                     data-clipboard-text="${sharingToken}"
                     aria-label="Copy"
                   >
-                    <i class="fa fa-copy"></i>
+                    <i class="bi bi-clipboard"></i>
                     <span>Copy</span>
                   </button>
                   <form name="sharing-id-regenerate" method="POST" class="d-inline">
@@ -198,10 +196,10 @@ export function InstructorCourseAdminSharing({
                   <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
                   <button
                     type="button"
-                    class="btn btn-copy btn-xs btn-secondary mx-2"
+                    class="btn js-copy-button btn-xs btn-secondary mx-2"
                     data-clipboard-text="${publicSharingLink}"
                   >
-                    <i class="fa fa-copy"></i>
+                    <i class="bi bi-clipboard"></i>
                     <span>Copy</span>
                   </button>
                 </td>

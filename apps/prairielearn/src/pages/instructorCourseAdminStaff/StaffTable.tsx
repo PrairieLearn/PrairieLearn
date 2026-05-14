@@ -14,24 +14,21 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
-import {
-  parseAsArrayOf,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-  useQueryStates,
-} from 'nuqs';
+import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
-  CategoricalColumnFilter,
   IndeterminateCheckbox,
+  MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
+  applyMultiSelectFilter,
   parseAsColumnPinningState,
+  parseAsMultiSelectFilter,
   parseAsSortingState,
   useColumnVisibilityQueryState,
   useShiftClickCheckbox,
@@ -110,6 +107,15 @@ const DEFAULT_SORT: SortingState = [
 ];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'uid'], right: [] };
 
+const EMPTY_COURSE_ROLE_FILTER: MultiSelectFilterValue<CourseRole> = {
+  values: [],
+  mode: 'include',
+};
+const EMPTY_INSTANCE_ROLE_FILTER: MultiSelectFilterValue<InstanceRole> = {
+  values: [],
+  mode: 'include',
+};
+
 interface StaffTableInnerProps {
   courseInstances: CourseInstanceAuthz[];
   courseUsers: CourseUsersRow[];
@@ -164,7 +170,7 @@ function CoursePermissionCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['UpdateCourseRole']>(mutation.error);
 
   if (!canChangeCourseRole) {
     return (
@@ -260,14 +266,13 @@ function CoursePermissionCell({
   );
 }
 
+/** Only course owners can access this page, so instance roles are always editable. */
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
-  canChangeInstanceRole,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstanceAuthz;
-  canChangeInstanceRole: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => cir.id === courseInstance.id,
@@ -285,22 +290,7 @@ function CourseInstanceAccessCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
-
-  if (!canChangeInstanceRole) {
-    return (
-      <span
-        className={clsx(
-          'btn btn-sm disabled',
-          `bg-${instanceRoleColor(currentRole)}-subtle`,
-          `text-${instanceRoleColor(currentRole)}-emphasis`,
-        )}
-        style={{ width: 90 }}
-      >
-        {INSTANCE_ROLE_LABELS[currentRole]}
-      </span>
-    );
-  }
+  const appError = getAppError<CourseStaffError['UpdateInstanceRole']>(mutation.error);
 
   return (
     <OverlayTrigger
@@ -422,7 +412,7 @@ function AddUsersModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['InsertByUserUids']>(mutation.error);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -595,7 +585,7 @@ function BulkDeleteModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkDelete']>(mutation.error);
 
   return (
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
@@ -671,7 +661,7 @@ function BulkEditAccessModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkEditAccess']>(mutation.error);
 
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user.id);
@@ -845,9 +835,9 @@ function StaffTableInner({
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  const [courseRoleFilter, setCourseRoleFilter] = useQueryState<CourseRole[]>(
+  const [courseRoleFilter, setCourseRoleFilter] = useQueryState(
     'role',
-    parseAsArrayOf(parseAsStringLiteral(COURSE_ROLE_VALUES)).withDefault([]),
+    parseAsMultiSelectFilter(COURSE_ROLE_VALUES).withDefault(EMPTY_COURSE_ROLE_FILTER),
   );
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
@@ -888,7 +878,7 @@ function StaffTableInner({
       Object.fromEntries(
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          parseAsArrayOf(parseAsStringLiteral(INSTANCE_ROLE_VALUES)).withDefault([]),
+          parseAsMultiSelectFilter(INSTANCE_ROLE_VALUES).withDefault(EMPTY_INSTANCE_ROLE_FILTER),
         ]),
       ),
     [courseInstances],
@@ -902,7 +892,7 @@ function StaffTableInner({
       { id: 'course_role', value: courseRoleFilter },
       ...courseInstances.map((ci) => ({
         id: `ci_${ci.id}`,
-        value: instanceFilterValues[`ci_${ci.id}`] ?? [],
+        value: instanceFilterValues[`ci_${ci.id}`] ?? EMPTY_INSTANCE_ROLE_FILTER,
       })),
     ],
     [courseRoleFilter, instanceFilterValues, courseInstances],
@@ -917,7 +907,7 @@ function StaffTableInner({
       ...Object.fromEntries(
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          (value: InstanceRole[]) =>
+          (value: MultiSelectFilterValue<InstanceRole>) =>
             setInstanceFilterValues((prev) => ({ ...prev, [`ci_${ci.id}`]: value })),
         ]),
       ),
@@ -994,9 +984,9 @@ function StaffTableInner({
         enableHiding: true,
         enableGlobalFilter: false,
         meta: { label: 'Course content access' },
-        filterFn: (row, _columnId, filterValues: CourseRole[]) => {
-          if (filterValues.length === 0) return true;
-          return filterValues.includes(row.original.course_permission.course_role ?? 'None');
+        filterFn: (row, _columnId, filter: MultiSelectFilterValue<CourseRole>) => {
+          const role = row.original.course_permission.course_role ?? 'None';
+          return applyMultiSelectFilter(filter, (values) => values.includes(role));
         },
         sortingFn: (rowA, rowB) => {
           const indexA = COURSE_ROLE_VALUES.indexOf(
@@ -1033,22 +1023,13 @@ function StaffTableInner({
             enableGlobalFilter: false,
             enableSorting: false,
             enableHiding: true,
-            filterFn: (row, columnId, filterValues: InstanceRole[]) => {
-              if (filterValues.length === 0) return true;
+            filterFn: (row, columnId, filter: MultiSelectFilterValue<InstanceRole>) => {
               const role = row.getValue<InstanceRole>(columnId);
-              return filterValues.includes(role);
+              return applyMultiSelectFilter(filter, (values) => values.includes(role));
             },
             cell: (info) => (
               <div className="text-center">
-                <CourseInstanceAccessCell
-                  courseUser={info.row.original}
-                  courseInstance={ci}
-                  canChangeInstanceRole={
-                    (info.row.original.user.id !== authnUserId &&
-                      info.row.original.user.id !== userId) ||
-                    isAdministrator
-                  }
-                />
+                <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
               </div>
             ),
           },
@@ -1119,7 +1100,7 @@ function StaffTableInner({
   const filters = useMemo(
     () => ({
       course_role: ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
-        <CategoricalColumnFilter
+        <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={[...COURSE_ROLE_VALUES]}
           renderValueLabel={({ value }) => <span>{value}</span>}
@@ -1129,7 +1110,7 @@ function StaffTableInner({
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
           ({ header }: { header: Header<CourseUsersRow, unknown> }) => (
-            <CategoricalColumnFilter
+            <MultiSelectColumnFilter
               column={header.column}
               allColumnValues={[...INSTANCE_ROLE_VALUES]}
               renderValueLabel={({ value }) => <span>{INSTANCE_ROLE_LABELS[value]}</span>}

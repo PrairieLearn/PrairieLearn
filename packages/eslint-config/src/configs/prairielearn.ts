@@ -48,5 +48,11 @@ export function prairieLearnConfig(
         '@prairielearn/html-no-duplicate-id': 'error',
       },
     },
+    {
+      files: ['**/src/trpc/**/*.ts'],
+      rules: {
+        '@prairielearn/require-trpc-permission-middleware': 'error',
+      },
+    },
   ];
 }

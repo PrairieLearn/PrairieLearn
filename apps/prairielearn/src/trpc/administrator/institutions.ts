@@ -7,6 +7,11 @@ import { insertInstitution } from '../../models/institution.js';
 
 import { requireAdministrator, t } from './init.js';
 
+export interface AdministratorInstitutionsError {
+  SuggestTimezone: never;
+  AddInstitution: never;
+}
+
 const suggestTimezone = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))

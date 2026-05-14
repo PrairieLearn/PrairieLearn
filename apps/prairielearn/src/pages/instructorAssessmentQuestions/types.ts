@@ -329,6 +329,11 @@ export interface DetailState {
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;

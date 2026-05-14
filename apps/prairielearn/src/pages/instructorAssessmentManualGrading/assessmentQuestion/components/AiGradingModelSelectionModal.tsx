@@ -28,12 +28,9 @@ type AiGradingAvailabilityState =
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
   | { type: 'human_graded'; numToGrade: number }
-  | { type: 'selected'; ids: string[]; numToGrade: number }
-  | null;
+  | { type: 'selected'; ids: string[]; numToGrade: number };
 
-function getSelection(
-  state: NonNullable<AiGradingModelSelectionModalState>,
-): 'all' | 'human_graded' | string[] {
+function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_graded' | string[] {
   if (state.type === 'selected') return state.ids;
   return state.type;
 }
@@ -216,6 +213,110 @@ function SettingsLink({ url, text }: { url: string; text: string }) {
   );
 }
 
+/**
+ * Opens the rubric settings collapse panel (if not already open) and scrolls
+ * to the editor. Used by the BeforeYouGradeCard "Create a rubric" action to
+ * guide the instructor to the authoring UI after the modal closes.
+ */
+function openRubricSettings() {
+  const panel = document.getElementById('rubric-setting');
+  if (!panel) return;
+  const target = document.getElementById('rubric-editor') ?? panel;
+  const scroll = () => target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel.classList.contains('show')) {
+    scroll();
+    return;
+  }
+  // Wait for the Bootstrap collapse animation to finish so the post-expansion
+  // layout is what gets scrolled to, not the pre-expansion (zero-height) one.
+  panel.addEventListener('shown.bs.collapse', scroll, { once: true });
+  const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+  toggle?.click();
+}
+
+interface BeforeYouGradeItem {
+  key: string;
+  title: string;
+  description: string;
+  onClick?: () => void;
+}
+
+function buildBeforeYouGradeItems({
+  hasRubric,
+  hasPriorJobs,
+  numToGrade,
+  totalSubmissionCount,
+  onOpenRubricSettings,
+  onSelectFirstSubmissions,
+}: {
+  hasRubric: boolean;
+  hasPriorJobs: boolean;
+  numToGrade: number;
+  totalSubmissionCount: number;
+  onOpenRubricSettings: () => void;
+  onSelectFirstSubmissions: (n: number) => void;
+}): BeforeYouGradeItem[] {
+  const items: BeforeYouGradeItem[] = [];
+  if (!hasRubric) {
+    items.push({
+      key: 'no_rubric',
+      title: 'Create a rubric',
+      description: 'Rubrics significantly improve accuracy and consistency.',
+      onClick: onOpenRubricSettings,
+    });
+  }
+  if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
+    const n = Math.min(5, totalSubmissionCount);
+    items.push({
+      key: 'test_with_n',
+      title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
+      description: 'Confirm your rubric works well before running on all submissions.',
+      onClick: () => onSelectFirstSubmissions(n),
+    });
+  }
+  return items;
+}
+
+function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
+  return (
+    <div className="rounded-2 px-3 py-2 border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2">
+      <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
+      <div className="flex-grow-1">
+        {item.onClick ? (
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 align-baseline fw-medium text-decoration-none"
+            style={{ fontSize: 'inherit' }}
+            onClick={item.onClick}
+          >
+            {item.title}
+          </Button>
+        ) : (
+          <div className="fw-medium">{item.title}</div>
+        )}
+        <div className="text-muted small">{item.description}</div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+        <span className="fw-semibold">Before you grade</span>
+      </div>
+      <div className="d-flex flex-column gap-2">
+        {items.map((item) => (
+          <BeforeYouGradeCard key={item.key} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AiGradingAvailabilityAlert({
   state,
   aiGradingSettingsUrl,
@@ -321,32 +422,41 @@ function AiGradingAvailabilityAlert({
 }
 
 export function AiGradingModelSelectionModal({
-  modalState,
+  show,
+  data: modalState,
   availableProviders,
   aiGradingLastSelectedModel,
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
+  hasRubric,
+  totalSubmissionCount,
+  onSelectFirstSubmissions,
   onSuccess,
   onHide,
+  onExited,
 }: {
-  modalState: AiGradingModelSelectionModalState;
+  show: boolean;
+  data: AiGradingModelSelectionModalState | null;
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
+  hasRubric: boolean;
+  totalSubmissionCount: number;
+  onSelectFirstSubmissions: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
   ) => void;
   onHide: () => void;
+  onExited: () => void;
 }) {
   const trpc = useTRPC();
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
-  const isModalOpen = modalState != null;
   const {
     data: aiGradingAvailabilityInfo,
     isFetching: isAvailabilityFetching,
@@ -354,7 +464,7 @@ export function AiGradingModelSelectionModal({
     refetch: refetchAvailabilityInfo,
   } = useQuery({
     ...trpc.manualGrading.aiGradingAvailabilityInfo.queryOptions(),
-    enabled: isModalOpen,
+    enabled: show,
     refetchOnMount: 'always',
   });
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
@@ -365,6 +475,11 @@ export function AiGradingModelSelectionModal({
     reset();
     onHide();
   }, [onHide, reset, defaultModel]);
+
+  const handleOpenRubricSettings = useCallback(() => {
+    openRubricSettings();
+    onHide();
+  }, [onHide]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -422,8 +537,26 @@ export function AiGradingModelSelectionModal({
     aiGradingAvailabilityState.kind === 'ready_with_keys' ||
     aiGradingAvailabilityState.kind === 'ready_with_credits';
 
+  const beforeYouGradeItems = aiGradingEnabled
+    ? buildBeforeYouGradeItems({
+        hasRubric,
+        hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
+        numToGrade: modalState?.numToGrade ?? 0,
+        totalSubmissionCount,
+        onOpenRubricSettings: handleOpenRubricSettings,
+        onSelectFirstSubmissions,
+      })
+    : [];
+
   return (
-    <Modal show={isModalOpen} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
+    <Modal
+      show={show}
+      size="lg"
+      backdrop="static"
+      keyboard={false}
+      onHide={handleClose}
+      onExited={onExited}
+    >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>Select grading model</Modal.Title>
@@ -444,6 +577,7 @@ export function AiGradingModelSelectionModal({
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
+          <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 
         <Modal.Footer>

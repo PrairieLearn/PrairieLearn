@@ -198,11 +198,10 @@ extra:
 
 nav:
   - Overview: 'index.md'
-  - Getting Started:
-      - getting-started/index.md
+  - Getting started:
+      - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Quick start': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
@@ -210,6 +209,8 @@ nav:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
+      # Hidden until the qti-content-import feature flag is generally available:
+      # - 'Importing content from other platforms': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
@@ -349,6 +350,7 @@ not_in_nav: |
   elements/pl-variable-score.md
   dev-guide/contrib/*
   assessment/accessControlModern.md
+  importingContent.md
 
 validation:
   omitted_files: warn

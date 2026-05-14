@@ -1,5 +1,20 @@
 # @prairielearn/flash
 
+## 3.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
 ## 3.0.2
 
 ### Patch Changes

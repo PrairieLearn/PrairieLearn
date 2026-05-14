@@ -13,7 +13,7 @@ import { getAppError } from '../lib/client/errors.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import {
   type AssessmentSettingsError,
@@ -369,7 +369,8 @@ describe('Editing assessment settings', () => {
       } catch (err: unknown) {
         const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
         assert.isNotNull(appError);
-        assert.equal(appError.code, 'INVALID_SHORT_NAME');
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.match(appError.message, /path segments cannot start with a dot/i);
       }
     },
   );

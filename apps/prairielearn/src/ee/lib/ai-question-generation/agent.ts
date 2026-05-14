@@ -134,7 +134,7 @@ const QUESTION_GENERATION_TOOLS = {
   }),
 } satisfies ToolSet;
 
-export type QuestionGenerationUIMessageTools = InferUITools<typeof QUESTION_GENERATION_TOOLS>;
+type QuestionGenerationUIMessageTools = InferUITools<typeof QUESTION_GENERATION_TOOLS>;
 
 export type QuestionGenerationUIMessage = UIMessage<
   QuestionGenerationUIMessageMetadata,

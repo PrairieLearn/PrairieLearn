@@ -8,8 +8,10 @@ columns
     before_release_listed: boolean
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
+    date_control_after_last_deadline_overridden: boolean not null default false
+    date_control_due_credit: integer
     date_control_due_date: timestamp with time zone
-    date_control_due_date_overridden: boolean not null default false
+    date_control_due_overridden: boolean not null default false
     date_control_duration_minutes: integer
     date_control_duration_minutes_overridden: boolean not null default false
     date_control_early_deadlines_overridden: boolean not null default false
@@ -29,6 +31,7 @@ indexes
 check constraints
     assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
     assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
+    assessment_access_control_rules_date_control_due_credit_check: CHECK (date_control_due_credit >= 0)
     check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))
 
 foreign-key constraints
