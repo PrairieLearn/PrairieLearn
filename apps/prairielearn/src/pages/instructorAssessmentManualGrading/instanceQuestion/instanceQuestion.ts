@@ -33,7 +33,7 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -207,19 +207,17 @@ router.get(
           config.secretKey,
         );
 
-        const ongoingJobSequenceIds = await getJobSequenceIds({
+        const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
           assessment_question_id: res.locals.assessment_question.id,
-          status: 'Running',
           type: 'ai_grading',
         });
 
-        const initialOngoingJobSequenceTokens = ongoingJobSequenceIds.reduce(
-          (acc, jobSequenceId) => {
-            acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
-            return acc;
-          },
-          {} as Record<string, string>,
-        );
+        const initialOngoingJobSequenceTokens = ongoingJobSequenceIds.reduce<
+          Record<string, string>
+        >((acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
+          return acc;
+        }, {});
 
         return {
           courseInstanceId: res.locals.course_instance.id,
@@ -238,6 +236,8 @@ router.get(
           aiGradingLastSelectedModel:
             res.locals.assessment_question.ai_grading_last_selected_model ?? null,
           initialOngoingJobSequenceTokens,
+          hasCourseInstancePermissionEdit:
+            res.locals.authz_data.has_course_instance_permission_edit,
         };
       });
 

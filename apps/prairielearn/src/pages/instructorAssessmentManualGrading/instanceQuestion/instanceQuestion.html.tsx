@@ -229,6 +229,9 @@ export function InstanceQuestion({
               initialOngoingJobSequenceTokens={
                 instanceQuestionAiGradeProps.initialOngoingJobSequenceTokens
               }
+              hasCourseInstancePermissionEdit={
+                instanceQuestionAiGradeProps.hasCourseInstancePermissionEdit
+              }
             />,
           )
         : ''}

@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
@@ -9,7 +9,7 @@ import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.j
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import { createAssessmentQuestionTrpcClient } from '../../../../trpc/assessmentQuestion/client.js';
-import { TRPCProvider } from '../../../../trpc/assessmentQuestion/context.js';
+import { TRPCProvider, useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 import {
   AiGradingModelSelectionModal,
   type AiGradingModelSelectionModalState,
@@ -32,6 +32,7 @@ interface InstanceQuestionAiGradeInnerProps {
   aiGradingRelativeCosts: Record<string, string>;
   aiGradingLastSelectedModel: string | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
+  hasCourseInstancePermissionEdit: boolean;
 }
 
 export interface InstanceQuestionAiGradeProps extends InstanceQuestionAiGradeInnerProps {
@@ -51,10 +52,16 @@ function InstanceQuestionAiGradeInner({
   aiGradingRelativeCosts,
   aiGradingLastSelectedModel,
   initialOngoingJobSequenceTokens,
+  hasCourseInstancePermissionEdit,
 }: InstanceQuestionAiGradeInnerProps) {
+  const trpc = useTRPC();
   const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
+  );
+
+  const stopAiGradingJobMutation = useMutation(
+    trpc.manualGrading.stopAiGradingJob.mutationOptions(),
   );
 
   const serverJobProgress = useServerJobProgress({
@@ -110,18 +117,47 @@ function InstanceQuestionAiGradeInner({
 
   return (
     <>
-      <ServerJobsProgressInfo
-        itemNames="submissions graded"
-        jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-        courseInstanceId={courseInstanceId}
-        statusIcons={{ inProgress: 'bi-stars' }}
-        statusText={{
-          inProgress: 'AI grading in progress',
-          complete: 'AI grading complete',
-          failed: 'AI grading failed',
-        }}
-        onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-      />
+      {hasCourseInstancePermissionEdit ? (
+        <ServerJobsProgressInfo
+          itemNames="submissions graded"
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          courseInstanceId={courseInstanceId}
+          statusIcons={{ inProgress: 'bi-stars' }}
+          statusText={{
+            inProgress: 'AI grading in progress',
+            stopping: 'Stopping AI grading…',
+            stopped: 'AI grading stopped',
+            complete: 'AI grading complete',
+            failed: 'AI grading failed',
+          }}
+          stopConfirmation={{
+            title: 'Stop AI grading',
+            body: 'In-progress submissions will finish. The rest will be skipped.',
+            confirmLabel: 'Stop grading',
+            cancelLabel: 'Keep grading',
+          }}
+          stoppable
+          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+          onStopJobSequence={(jobSequenceId) =>
+            stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+          }
+        />
+      ) : (
+        <ServerJobsProgressInfo
+          itemNames="submissions graded"
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          courseInstanceId={courseInstanceId}
+          statusIcons={{ inProgress: 'bi-stars' }}
+          statusText={{
+            inProgress: 'AI grading in progress',
+            stopping: 'Stopping AI grading…',
+            stopped: 'AI grading stopped',
+            complete: 'AI grading complete',
+            failed: 'AI grading failed',
+          }}
+          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+        />
+      )}
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
         show={modelSelectionModalState.show}
