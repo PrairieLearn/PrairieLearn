@@ -131,22 +131,38 @@ WHERE
   id = $job_sequence_id;
 
 -- BLOCK update_job_on_finish
+-- The CASE atomically projects 'Stopping' to 'Stopped' for the natural
+-- finish path. Without it, a stop click that flips the sequence to
+-- 'Stopping' between the caller's read and this UPDATE would be silently
+-- overwritten back to 'Success'. Real failures (status='Error') and
+-- explicit stops (status='Stopped') write through unchanged.
 WITH
   updated_job AS (
     UPDATE jobs AS j
     SET
       finish_date = CURRENT_TIMESTAMP,
-      status = $status::enum_job_status,
+      status = CASE
+        WHEN js.status = 'Stopping'::enum_job_status
+        AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+        ELSE $status::enum_job_status
+      END,
       output = $output,
       data = $data::jsonb
+    FROM
+      job_sequences AS js
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status
+      AND js.id = $job_sequence_id
   )
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = $status::enum_job_status
+  status = CASE
+    WHEN js.status = 'Stopping'::enum_job_status
+    AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+    ELSE $status::enum_job_status
+  END
 WHERE
   js.id = $job_sequence_id
   AND js.status IN (

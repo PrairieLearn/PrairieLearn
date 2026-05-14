@@ -73,11 +73,40 @@ describe('server-jobs SQL transitions', () => {
       assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
 
-    it('lands a Stopping sequence in Stopped when finish() passes status=Stopped', async () => {
-      // After moving the projection into TS, this is the path the wrapper
-      // uses for any late-stop: read sequence status, observe 'Stopping',
-      // then call update_job_on_finish with status='Stopped' so both rows
-      // terminate consistently.
+    it('Stopping + Success → Stopped on both rows (atomic late-stop projection)', async () => {
+      // The SQL must project Stopping → Stopped atomically: if the wrapper
+      // observed status=Running but a stop click flipped the sequence to
+      // Stopping before the UPDATE ran, $status='Success' would otherwise
+      // silently overwrite the stop intent.
+      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
+      await execute(productionSql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Success',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
+      assert.equal(await selectJobStatus(job_id), 'Stopped');
+    });
+
+    it('Stopping + Error → Error on both rows (real failure preserved)', async () => {
+      // Only the Success path is projected; a real failure during stop
+      // must surface as Error so DB readers and the job-detail page see
+      // the failure rather than a clean cancellation.
+      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
+      await execute(productionSql.update_job_on_finish, {
+        job_sequence_id,
+        job_id,
+        output: '',
+        data: {},
+        status: 'Error',
+      });
+      assert.equal(await selectStatus(job_sequence_id), 'Error');
+      assert.equal(await selectJobStatus(job_id), 'Error');
+    });
+
+    it('Stopping + Stopped → Stopped on both rows (explicit job.stop())', async () => {
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,

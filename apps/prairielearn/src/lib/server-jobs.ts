@@ -15,7 +15,6 @@ import {
   queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -317,7 +316,9 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
           throw err;
         }
       }
-      if (shouldThrow) {
+      // `job.stop()` is a successful cancellation, not a failure — don't
+      // surface its control-flow signal to `executeUnsafe()` callers.
+      if (shouldThrow && !(err instanceof ServerJobStopSignal)) {
         throw err;
       }
     }
@@ -397,21 +398,9 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      status: await run(async () => {
-        // Intentional cancellation always wins.
-        if (isStop) return 'Stopped';
-        // Any other thrown error must be preserved as 'Error' so a real
-        // failure isn't masked as 'Stopped' just because a stop landed
-        // concurrently on the sequence.
-        if (err) return 'Error';
-        // No error, no stop signal: if a stop landed after the orchestrator's
-        // last poll (or via an early-return path), the sequence is already
-        // 'Stopping'. Project the natural finish onto 'Stopped' so the inner
-        // job row and the sequence row stay consistent.
-        const { status: seqStatus } = await selectJobSequenceStatus(this.jobSequenceId);
-        if (seqStatus === 'Stopping') return 'Stopped';
-        return 'Success';
-      }),
+      // The SQL's CASE projects 'Stopping' to 'Stopped' atomically when
+      // status='Success', so we don't need to pre-read the sequence here.
+      status: isStop ? 'Stopped' : err ? 'Error' : 'Success',
     });
 
     // Notify sockets.
