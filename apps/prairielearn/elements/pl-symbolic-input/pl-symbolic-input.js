@@ -464,7 +464,7 @@
           '[separator]',
           allowSets ? '[' : 'x',
           allowSets ? ']' : 'y',
-          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', insert: '{#?} \\cup {#?}' }, mf)),
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],
         [
@@ -486,7 +486,7 @@
           '[separator]',
           '(',
           ')',
-          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', insert: '{#?} \\cap {#?}' }, mf)),
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', key: '&' }, mf)),
           allowSets ? 'x' : signKey,
         ],
         [
@@ -734,11 +734,11 @@
     };
 
     if (allowSets) {
-      inlineShortcuts.cup = { value: '{#@} \\cup {#?}' };
+      inlineShortcuts.cup = { value: '{#@}\\cup}' };
       inlineShortcuts['\\cup'] = inlineShortcuts.cup;
       inlineShortcuts.U = inlineShortcuts.cup;
 
-      inlineShortcuts.cap = { value: '{#@} \\cap {#?}' };
+      inlineShortcuts.cap = { value: '{#@}\\cap' };
       inlineShortcuts['\\cap'] = inlineShortcuts.cap;
       inlineShortcuts['&'] = inlineShortcuts.cap;
     }
