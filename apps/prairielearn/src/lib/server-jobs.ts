@@ -398,14 +398,19 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       output: this.output,
       data: this.data,
       status: await run(async () => {
+        // Intentional cancellation always wins.
         if (isStop) return 'Stopped';
-        // If a stop landed after the orchestrator's last poll (or via an
-        // early-return path), the sequence has already been flipped to
-        // 'Stopping'. Project the natural finish onto 'Stopped' so the
-        // inner job row and the sequence row stay consistent.
+        // Any other thrown error must be preserved as 'Error' so a real
+        // failure isn't masked as 'Stopped' just because a stop landed
+        // concurrently on the sequence.
+        if (err) return 'Error';
+        // No error, no stop signal: if a stop landed after the orchestrator's
+        // last poll (or via an early-return path), the sequence is already
+        // 'Stopping'. Project the natural finish onto 'Stopped' so the inner
+        // job row and the sequence row stay consistent.
         const { status: seqStatus } = await selectJobSequenceStatus(this.jobSequenceId);
         if (seqStatus === 'Stopping') return 'Stopped';
-        return err ? 'Error' : 'Success';
+        return 'Success';
       }),
     });
 

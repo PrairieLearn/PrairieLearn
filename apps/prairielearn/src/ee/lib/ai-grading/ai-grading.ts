@@ -1258,6 +1258,10 @@ export async function aiGrade({
     await refreshStopRequested();
 
     if (stopRequested) {
+      // num_complete counts every item the worker processed (incremented in
+      // the per-item finally), so the actually-graded count is num_complete
+      // minus the failures.
+      const num_graded = num_complete - num_failed;
       const num_skipped = instance_questions.length - num_complete;
       await emitServerJobProgressUpdate({
         job_sequence_id: serverJob.jobSequenceId,
@@ -1272,7 +1276,7 @@ export async function aiGrade({
       // signal that the ServerJob wrapper catches; the inner jobs row and the
       // surrounding job_sequences row both land in 'Stopped' status.
       job.stop(
-        `\nAI grading stopped by instructor. ${num_complete} graded, ${num_skipped} skipped.`,
+        `\nAI grading stopped by instructor. ${num_graded} graded, ${num_failed} failed, ${num_skipped} skipped.`,
       );
     }
 
