@@ -1,12 +1,17 @@
+import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { Button } from 'react-bootstrap';
 import ReactMarkdown from 'react-markdown';
 
 import { run } from '@prairielearn/run';
 
 import { NewToPrairieLearnCard } from '../../../components/NewToPrairieLearnCard.js';
-import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
-import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import { createCourseTrpcClient } from '../../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
+import type { QuestionsError } from '../../../trpc/course/questions.js';
 import type {
   TemplateQuestion,
   TemplateQuestionZone,
@@ -306,19 +311,67 @@ function matchesCourseTemplateSearch(
 export function CreateQuestionForm({
   exampleCourseZones,
   courseTemplates,
-  csrfToken,
+  trpcCsrfToken,
+  courseId,
   questionsUrl,
+  editErrorUrlPrefix,
 }: {
   exampleCourseZones: TemplateQuestionZone[];
   courseTemplates: { qid: string; title: string }[];
-  csrfToken: string;
+  trpcCsrfToken: string;
+  courseId: string;
   questionsUrl: string;
+  editErrorUrlPrefix: string;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: trpcCsrfToken, courseId }),
+  );
+
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <CreateQuestionFormInner
+          exampleCourseZones={exampleCourseZones}
+          courseTemplates={courseTemplates}
+          questionsUrl={questionsUrl}
+          editErrorUrlPrefix={editErrorUrlPrefix}
+        />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+function CreateQuestionFormInner({
+  exampleCourseZones,
+  courseTemplates,
+  questionsUrl,
+  editErrorUrlPrefix,
+}: {
+  exampleCourseZones: TemplateQuestionZone[];
+  courseTemplates: { qid: string; title: string }[];
+  questionsUrl: string;
+  editErrorUrlPrefix: string;
 }) {
   const [startFrom, setStartFrom] = useState(
     exampleCourseZones.length > 0 ? 'example' : courseTemplates.length > 0 ? 'course' : 'empty',
   );
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const trpc = useTRPC();
+  const createDraftMutation = useMutation({
+    ...trpc.questions.createDraft.mutationOptions(),
+    onSuccess: ({ editorUrl }) => {
+      window.location.assign(editorUrl);
+    },
+  });
+  const {
+    error: createDraftMutationError,
+    isPending: isCreatingDraft,
+    mutate: createDraft,
+    reset: resetCreateDraft,
+  } = createDraftMutation;
+  const createDraftError = getAppError<QuestionsError['CreateDraft']>(createDraftMutationError);
 
   const hasExampleTemplates = exampleCourseZones.length > 0;
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
@@ -394,6 +447,17 @@ export function CreateQuestionForm({
     setSearchQuery('');
   }, []);
 
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      createDraft({
+        startFrom: startFrom as 'empty' | 'example' | 'course',
+        templateQid: isTemplateSelected ? selectedTemplateQid : undefined,
+      });
+    },
+    [createDraft, isTemplateSelected, selectedTemplateQid, startFrom],
+  );
+
   // Build start from options
   const startFromOptions = [];
 
@@ -431,46 +495,19 @@ export function CreateQuestionForm({
             </li>
           </ol>
         </nav>
-        <form method="POST" autoComplete="off">
-          <div className="mb-5">
-            <h2 className="h5">Name your question</h2>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="title">
-                Title
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="title"
-                name="title"
-                aria-describedby="title_help"
-                required
-              />
-              <small id="title_help" className="form-text text-muted">
-                The full name of the question, visible to users.
-              </small>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label" htmlFor="qid">
-                Question identifier (QID)
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="qid"
-                name="qid"
-                aria-describedby="qid_help"
-                // TODO: use `validateShortName` with react-hook-form to provide more specific
-                //validation feedback (e.g., "cannot start with a slash").
-                pattern={SHORT_NAME_PATTERN}
-                required
-              />
-              <small id="qid_help" className="form-text text-muted">
-                <QuestionShortNameDescription />
-              </small>
-            </div>
-          </div>
+        <form autoComplete="off" onSubmit={handleSubmit}>
+          <AppErrorAlert
+            error={createDraftError}
+            render={{
+              EDITOR_JOB_FAILED: ({ message, jobSequenceId }) => (
+                <>
+                  {message} <a href={`${editErrorUrlPrefix}/${jobSequenceId}`}>View edit error</a>
+                </>
+              ),
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={resetCreateDraft}
+          />
 
           <div className="mb-3 mt-4">
             <h2 className="h5 mb-1">Choose a starting point</h2>
@@ -484,14 +521,6 @@ export function CreateQuestionForm({
               onChange={handleStartFromChange}
             />
           </div>
-
-          {/* Hidden inputs for form submission */}
-          <input type="hidden" name="start_from" value={startFrom} />
-          <input
-            type="hidden"
-            name="template_qid"
-            value={isTemplateSelected ? selectedTemplateQid : ''}
-          />
 
           {/* Search + template gallery */}
           {isTemplateSelected && (
@@ -602,11 +631,10 @@ export function CreateQuestionForm({
             </div>
           )}
 
-          <input type="hidden" name="__action" value="add_question" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-
           {/* Empty question state */}
-          {startFrom === 'empty' && <StartFromScratchState />}
+          {startFrom === 'empty' && (
+            <StartFromScratchState isCreating={isCreatingDraft} />
+          )}
 
           {/* Sticky footer for template states */}
           {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
@@ -619,13 +647,15 @@ export function CreateQuestionForm({
                 }}
               />
               <div className="d-grid pb-3" style={{ backgroundColor: 'white' }}>
-                <button
+                <Button
                   type="submit"
-                  className="btn btn-primary text-center"
-                  disabled={!selectedTemplateQid}
+                  variant="primary"
+                  className="text-center"
+                  disabled={!selectedTemplateQid || isCreatingDraft}
                 >
-                  Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
-                </button>
+                  {isCreatingDraft ? 'Creating draft…' : 'Create draft'}{' '}
+                  <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+                </Button>
               </div>
             </div>
           )}
@@ -666,16 +696,17 @@ function EmptyCourseTemplatesState() {
   );
 }
 
-function StartFromScratchState() {
+function StartFromScratchState({ isCreating }: { isCreating: boolean }) {
   return (
     <div className="d-grid gap-3">
       <p className="mb-0">
         You'll start with empty <code>question.html</code> and <code>server.py</code> files.
       </p>
       <NewToPrairieLearnCard />
-      <button type="submit" className="btn btn-primary text-nowrap">
-        Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
-      </button>
+      <Button type="submit" variant="primary" className="text-nowrap" disabled={isCreating}>
+        {isCreating ? 'Creating draft…' : 'Create draft'}{' '}
+        <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+      </Button>
     </div>
   );
 }

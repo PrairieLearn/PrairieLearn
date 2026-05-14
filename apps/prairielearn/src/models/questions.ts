@@ -19,14 +19,16 @@ const QuestionsPageDataSchema = QuestionSchema.pick({
   workspace_image: true,
   share_publicly: true,
   share_source_publicly: true,
+  draft: true,
 }).extend({
-  // These are non-nullable in this context because the queries filter out draft questions.
+  // Synced draft questions also have these values from their draft info.json files.
   qid: z.string(),
   title: z.string(),
   // The public questions query does not select these columns, so they must be optional.
   sync_errors: QuestionSchema.shape.sync_errors.optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings.optional(),
   display_type: z.string(),
+  status: z.enum(['Draft', 'Finalized']),
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),

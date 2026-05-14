@@ -8,8 +8,6 @@ import * as error from '@prairielearn/error';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { features } from '../../lib/features/index.js';
-import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getSearchParams } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -71,11 +69,6 @@ router.get(
         course_instances: courseInstances,
         showAddQuestionButton:
           authzData.has_course_permission_edit && !course.example_course && courseDirExists,
-        showAiGenerateQuestionButton:
-          authzData.has_course_permission_edit &&
-          !course.example_course &&
-          isEnterprise() &&
-          (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),
     );

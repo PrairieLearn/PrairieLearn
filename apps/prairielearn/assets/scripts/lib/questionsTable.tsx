@@ -9,7 +9,6 @@ import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { assessmentLabel } from '../../../src/lib/assessment.shared.js';
-import { getAiQuestionGenerationDraftsUrl } from '../../../src/lib/client/url.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
@@ -28,10 +27,12 @@ declare global {
     topicList: () => any;
     tagsList: () => any;
     sharingSetsList: () => any;
+    statusList: () => any;
     versionList: () => any;
     externalGradingImageList: () => any;
     workspaceImageList: () => any;
     qidFormatter: (_qid: any, question: QuestionsPageData) => any;
+    statusFormatter: (_status: any, question: QuestionsPageData) => any;
     topicFormatter: (_topic: any, question: QuestionsPageData) => any;
     tagsFormatter: (_tags: any, question: QuestionsPageData) => any;
     sharingSetFormatter: (_sharing_sets: any, question: QuestionsPageData) => any;
@@ -43,13 +44,8 @@ declare global {
 }
 
 onDocumentReady(() => {
-  const {
-    course_instance_ids,
-    showAddQuestionButton,
-    showAiGenerateQuestionButton,
-    qidPrefix,
-    urlPrefix,
-  } = decodeData<QuestionsTableData>('questions-table-data');
+  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix } =
+    decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
@@ -82,6 +78,11 @@ onDocumentReady(() => {
       'Public source': 'Public source',
       ...Object.fromEntries(sharingSetNames.map((name) => [name, name])),
     };
+  };
+
+  window.statusList = function () {
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    return Object.fromEntries(data.map(({ status }) => [status, status]));
   };
 
   window.versionList = function () {
@@ -123,6 +124,17 @@ onDocumentReady(() => {
       }).toString();
     }
 
+    if (question.draft) {
+      const draftMatch = question.qid.match(/^__drafts__\/draft_(\d+)$/);
+      const draftLabel = draftMatch ? `Draft #${draftMatch[1]}` : 'Draft';
+      text += html`
+        <a class="formatter-data" href="${urlPrefix}/question/${question.id}/draft">
+          ${draftLabel}</a
+        >
+      `.toString();
+      return text.toString();
+    }
+
     // We only want to show the sharing name prefix for publicly-shared questions.
     // Those that only have their source shared publicly (and thus that are not
     // available to be imported by other courses) won't show the prefix.
@@ -142,6 +154,12 @@ onDocumentReady(() => {
       }).toString();
     }
     return text.toString();
+  };
+
+  window.statusFormatter = function (_status: any, question: QuestionsPageData) {
+    return html`<span class="badge color-${question.draft ? 'yellow2' : 'green1'} formatter-data"
+      >${question.status}</span
+    >`.toString();
   };
 
   window.topicFormatter = function (_topic: any, question: QuestionsPageData) {
@@ -285,18 +303,7 @@ onDocumentReady(() => {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/create">
           <i class="fa fa-plus" aria-hidden="true"></i>
-          Add question
-        </a>
-      `.toString(),
-    };
-  }
-
-  if (showAiGenerateQuestionButton) {
-    tableSettings.buttons.aiGenerateQuestion = {
-      html: html`
-        <a class="btn btn-secondary" href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}">
-          <i class="bi bi-stars" aria-hidden="true"></i>
-          Generate question with AI
+          Create question
         </a>
       `.toString(),
     };

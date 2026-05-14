@@ -1379,7 +1379,7 @@ export class QuestionAddEditor extends Editor {
       const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
 
       debug('Write info.json with the new title and uuid');
-      infoJson.title = this.title;
+      infoJson.title = title;
       infoJson.uuid = this.uuid;
 
       // Reset the topic.

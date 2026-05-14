@@ -19,6 +19,7 @@ SELECT
   q.title,
   q.sync_errors,
   q.sync_warnings,
+  q.draft,
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
@@ -26,6 +27,10 @@ SELECT
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'
   END AS display_type,
+  CASE
+    WHEN q.draft THEN 'Draft'
+    ELSE 'Finalized'
+  END AS status,
   coalesce(issue_count.open_issue_count, 0)::int AS open_issue_count,
   row_to_json(top) AS topic,
   (
@@ -96,7 +101,6 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
-  AND q.draft IS FALSE
 GROUP BY
   q.id,
   top.id,

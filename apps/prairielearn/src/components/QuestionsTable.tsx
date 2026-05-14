@@ -2,7 +2,6 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
-import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
@@ -28,7 +27,6 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
-  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -37,7 +35,6 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageData[];
   showAddQuestionButton?: boolean;
-  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -51,7 +48,6 @@ export function QuestionsTable({
       {
         course_instance_ids,
         showAddQuestionButton,
-        showAiGenerateQuestionButton,
         qidPrefix,
         urlPrefix,
       },
@@ -87,6 +83,19 @@ export function QuestionsTable({
             >
               <thead>
                 <tr>
+                  <th
+                    data-field="status"
+                    data-sortable="true"
+                    data-class="align-middle text-nowrap"
+                    data-formatter="statusFormatter"
+                    data-filter-control="select"
+                    data-filter-control-placeholder="(All Statuses)"
+                    data-filter-data="func:statusList"
+                    data-filter-custom-search="badgeFilterSearch"
+                    data-switchable="true"
+                  >
+                    Status
+                  </th>
                   <th
                     data-field="qid"
                     data-sortable="true"
@@ -244,19 +253,8 @@ export function QuestionsTable({
                         href="${urlPrefix}/course_admin/questions/create"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>
-                        Add question
+                        Create question
                       </a>
-                      ${showAiGenerateQuestionButton
-                        ? html`
-                            <a
-                              class="btn btn-sm btn-primary"
-                              href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}"
-                            >
-                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
-                              Generate question with AI
-                            </a>
-                          `
-                        : ''}
                     </div>
                   `
                 : ''}

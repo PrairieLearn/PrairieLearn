@@ -1114,6 +1114,10 @@ export async function initExpress(): Promise<Express> {
     },
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/draft',
+    (await import('./pages/instructorQuestionDraft/instructorQuestionDraft.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   );
@@ -1226,7 +1230,9 @@ export async function initExpress(): Promise<Express> {
     );
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
-      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+      (req: Request, res: Response) => {
+        res.redirect(`${res.locals.urlPrefix}/course_admin/questions`);
+      },
     );
   }
   app.use(
@@ -1619,6 +1625,10 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/draft',
+    (await import('./pages/instructorQuestionDraft/instructorQuestionDraft.js')).default,
+  );
+  app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   );
@@ -1712,7 +1722,9 @@ export async function initExpress(): Promise<Express> {
     );
     app.use(
       '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
-      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+      (req: Request, res: Response) => {
+        res.redirect(`${res.locals.urlPrefix}/course_admin/questions`);
+      },
     );
   }
   app.use(
