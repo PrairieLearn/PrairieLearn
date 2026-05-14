@@ -32,7 +32,8 @@
         { "id": "element/fileUpload", "manualPoints": 2 },
         { "id": "element/codeDocumentation", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/excalidraw", "manualPoints": 2 },
-        { "id": "element/sketch", "points": 2, "maxPoints": 10 },
+        { "id": "element/sketch", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "element/sketchAdvanced", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/imageCapture", "manualPoints": 2 }
       ]
     },

@@ -125,16 +125,17 @@ lint-js:
 # Separate target since the caches don't respect updates to plugins.
 # Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
 # pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
+# Keep the Prettier cache locations split too: each Prettier run reconciles all entries in its cache, even entries outside the current glob.
 lint-js-cached:
 	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
-	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
+	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/apps-prairielearn-tsx
 	@yarn eslint --cache --cache-strategy content \
 		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
 		"!apps/prairielearn/**/*.{ts,tsx}" \
-		--check --cache --cache-strategy content
+		--check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/non-apps-prairielearn-tsx
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
