@@ -1,10 +1,14 @@
--- BLOCK select_first_assessment_question_id
+-- BLOCK select_ai_grading_rubrics_assessment_question_id
+-- testCourse seeds an "aiGradingRubrics" question attached to the
+-- hw10-aiGrading homework in the Sp15 course instance — purpose-built for
+-- AI grading tests, so we pin to it instead of picking an arbitrary row.
 SELECT
-  id
+  aq.id
 FROM
-  assessment_questions
-ORDER BY
-  id ASC
+  assessment_questions AS aq
+  JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+  q.qid = 'aiGradingRubrics'
 LIMIT
   1;
 

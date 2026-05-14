@@ -12,7 +12,7 @@ import { getOrCreateUser } from '../../../tests/utils/auth.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 async function pickAssessmentQuestionId(): Promise<string> {
-  return await queryScalar(sql.select_first_assessment_question_id, {}, IdSchema);
+  return await queryScalar(sql.select_ai_grading_rubrics_assessment_question_id, {}, IdSchema);
 }
 
 async function insertAiGradingJobSequence(params: {
