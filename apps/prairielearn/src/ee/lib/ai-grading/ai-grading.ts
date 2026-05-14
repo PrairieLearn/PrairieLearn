@@ -701,7 +701,7 @@ export async function aiGrade({
           rubricItemShape[String(number)] = z
             .boolean()
             .describe(
-              `True if rubric item number ${number} applies to the student's response. rubric item number ${number}: ${item.description}`,
+              `True if rubric item number ${number} applies to the student's response. Rubric item number ${number}: ${item.description}`,
             );
         }
         const RubricGradingItemsSchema = z.object(rubricItemShape);
