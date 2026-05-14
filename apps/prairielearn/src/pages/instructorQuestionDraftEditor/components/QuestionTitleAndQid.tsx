@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
-import { validateShortName } from '../../../../lib/short-name.js';
+import { validateShortName } from '../../../lib/short-name.js';
 
 export const DRAFT_QID_PREFIX = '__drafts__/';
 

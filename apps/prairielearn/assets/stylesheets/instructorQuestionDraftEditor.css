@@ -14,6 +14,11 @@
   grid-template-columns: 1fr auto;
 }
 
+.app-content-no-chat {
+  grid-template-areas: 'preview-tabs' 'preview';
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .app-chat-container {
   grid-area: chat;
   min-height: 0;

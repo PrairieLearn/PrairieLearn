@@ -187,6 +187,36 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
     );
   });
 
+  test.sequential('shows the shared draft editor without chat when AI is disabled', async () => {
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
+
+    await features.runWithGlobalOverrides({ 'ai-question-generation': false }, async () => {
+      await assertRedirects(
+        `${siteUrl}/pl/course/1/question/${draft.questionId}/draft`,
+        `/pl/course/1/question/${draft.questionId}/draft/editor`,
+      );
+
+      const response = await fetch(
+        `${siteUrl}/pl/course/1/question/${draft.questionId}/draft/editor`,
+        {
+          headers: { cookie: 'pl_test_user=test_instructor' },
+        },
+      );
+      assert.equal(response.status, 200);
+
+      const $ = cheerio.load(await response.text());
+      assert.sameMembers(
+        $('.nav-tabs .nav-link')
+          .map((_, element) => $(element).text().trim())
+          .get()
+          .filter((text) => ['Preview', 'Question', 'All files'].includes(text)),
+        ['Preview', 'Question', 'All files'],
+      );
+      assert.lengthOf($('.app-chat-container'), 0);
+    });
+  });
+
   test.sequential('finalizes a draft question', async () => {
     const trpc = createTrpcClient();
     const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });

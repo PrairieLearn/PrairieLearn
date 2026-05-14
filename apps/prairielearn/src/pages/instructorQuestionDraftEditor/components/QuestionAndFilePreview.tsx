@@ -2,8 +2,8 @@ import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef 
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
-import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
-import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
+import { NewToPrairieLearnCard } from '../../../components/NewToPrairieLearnCard.js';
+import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
@@ -19,6 +19,11 @@ export interface CodeEditorsHandle {
 interface VariantResponse {
   questionContainerHtml: string;
   extraHeadersHtml: string;
+}
+
+interface QuestionFileEntry {
+  path: string;
+  size: number;
 }
 
 function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string) {
@@ -280,8 +285,100 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
   return <div ref={ref} suppressHydrationWarning />;
 }
 
+function encodeFilePath(filePath: string) {
+  return filePath.split('/').map(encodeURIComponent).join('/');
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AllQuestionFiles({
+  allQuestionFiles,
+  qid,
+  questionId,
+  urlPrefix,
+}: {
+  allQuestionFiles: QuestionFileEntry[];
+  qid: string | null;
+  questionId: string;
+  urlPrefix: string;
+}) {
+  if (!qid) return null;
+
+  const rootPath = `questions/${qid}`;
+
+  return (
+    <div className="p-3">
+      <div className="d-flex justify-content-end mb-2">
+        <a
+          className="btn btn-sm btn-outline-secondary"
+          href={`${urlPrefix}/question/${questionId}/file_view/${encodeFilePath(rootPath)}`}
+        >
+          Open file browser
+        </a>
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover align-middle mb-0" aria-label="Question files">
+          <thead>
+            <tr>
+              <th scope="col">File</th>
+              <th scope="col" className="text-end">
+                Size
+              </th>
+              <th scope="col" className="text-end">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {allQuestionFiles.map((file) => {
+              const pathFromCourseRoot = `${rootPath}/${file.path}`;
+              const encodedPath = encodeFilePath(pathFromCourseRoot);
+
+              return (
+                <tr key={file.path}>
+                  <td className="font-monospace">{file.path}</td>
+                  <td className="text-end text-muted">{formatFileSize(file.size)}</td>
+                  <td>
+                    <div className="d-flex gap-2 justify-content-end">
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={`${urlPrefix}/question/${questionId}/file_view/${encodedPath}`}
+                      >
+                        View
+                      </a>
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={`${urlPrefix}/question/${questionId}/file_edit/${encodedPath}`}
+                      >
+                        Edit
+                      </a>
+                      <a
+                        className="btn btn-xs btn-secondary text-nowrap"
+                        href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+                          file.path.split('/').at(-1) ?? file.path,
+                        )}`}
+                      >
+                        Download
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function QuestionAndFilePreview({
   questionFiles,
+  allQuestionFiles,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
@@ -293,8 +390,13 @@ export function QuestionAndFilePreview({
   onHasUnsavedChanges,
   filesError,
   onRetryFiles,
+  hasAiSidebar,
+  qid,
+  questionId,
+  urlPrefix,
 }: {
   questionFiles: Record<string, string>;
+  allQuestionFiles: QuestionFileEntry[];
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
@@ -306,6 +408,10 @@ export function QuestionAndFilePreview({
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
   filesError?: Error | null;
   onRetryFiles?: () => void;
+  hasAiSidebar: boolean;
+  qid: string | null;
+  questionId: string;
+  urlPrefix: string;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
@@ -358,9 +464,10 @@ export function QuestionAndFilePreview({
                       tab?.click();
                     }}
                   >
-                    Files
+                    Question
                   </button>{' '}
-                  tab, or use the chat to create a question with AI.
+                  tab
+                  {hasAiSidebar ? ', or use the chat to create a question with AI.' : '.'}
                 </p>
                 <div className="mt-4">
                   <NewToPrairieLearnCard />
@@ -387,6 +494,14 @@ export function QuestionAndFilePreview({
           editorRef={internalCodeEditorsRef}
           onHasChangesChange={onHasUnsavedChanges}
           onRetryFiles={onRetryFiles}
+        />
+      </div>
+      <div role="tabpanel" id="question-all-files" className="tab-pane" style={{ height: '100%' }}>
+        <AllQuestionFiles
+          allQuestionFiles={allQuestionFiles}
+          qid={qid}
+          questionId={questionId}
+          urlPrefix={urlPrefix}
         />
       </div>
       <div

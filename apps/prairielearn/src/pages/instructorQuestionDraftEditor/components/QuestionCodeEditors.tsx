@@ -1,7 +1,7 @@
 import ace from 'ace-builds';
 import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
-import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 
 export interface QuestionCodeEditorsHandle {
   /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */

@@ -1,10 +1,16 @@
+import * as path from 'node:path';
+
 import { Router } from 'express';
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
-import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getCourseFilesClient } from '../../lib/course-files-api.js';
+import { type Course, type Question } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import {
@@ -12,15 +18,109 @@ import {
   DraftFinalizationInputError,
   finalizeDraftQuestion,
 } from '../../lib/question-drafts.js';
+import { getAndRenderVariant } from '../../lib/question-render.js';
+import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
+import { processSubmission } from '../../lib/question-submission.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getSearchParams } from '../../lib/url.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { selectQuestionById } from '../../models/question.js';
+import { InstructorQuestionDraftEditor } from '../instructorQuestionDraftEditor/instructorQuestionDraftEditor.html.js';
 
 const router = Router();
 
-function formatDraftLabel(qid: string | null): string {
-  const match = qid?.match(/^__drafts__\/draft_(\d+)$/);
-  return match ? `Draft #${match[1]}` : 'Draft question';
+interface QuestionFileEntry {
+  path: string;
+  size: number;
+}
+
+function assertCanEditDraft(resLocals: UntypedResLocals) {
+  if (!resLocals.authz_data.has_course_permission_edit) {
+    throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+  }
+
+  if (resLocals.course.example_course) {
+    throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
+  }
+}
+
+async function listQuestionFiles({
+  course,
+  question,
+}: {
+  course: Course;
+  question: Question;
+}): Promise<QuestionFileEntry[]> {
+  if (!question.qid) return [];
+
+  const questionPath = path.join(course.path, 'questions', question.qid);
+  const entries: QuestionFileEntry[] = [];
+
+  async function walk(directoryPath: string) {
+    const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
+
+    for (const dirent of dirents) {
+      const filePath = path.join(directoryPath, dirent.name);
+      if (dirent.isDirectory()) {
+        await walk(filePath);
+      } else if (dirent.isFile()) {
+        const stat = await fs.stat(filePath);
+        entries.push({
+          path: path.relative(questionPath, filePath).split(path.sep).join('/'),
+          size: stat.size,
+        });
+      }
+    }
+  }
+
+  await walk(questionPath);
+
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function saveDraftQuestionFiles({
+  course,
+  question,
+  userId,
+  authnUserId,
+  hasCoursePermissionEdit,
+  urlPrefix,
+  html,
+  python,
+}: {
+  course: Course;
+  question: Question;
+  userId: string;
+  authnUserId: string;
+  hasCoursePermissionEdit: boolean;
+  urlPrefix: string;
+  html: string;
+  python?: string;
+}) {
+  const client = getCourseFilesClient();
+
+  const files: Record<string, string | null> = {
+    'question.html': b64EncodeUnicode(html),
+  };
+
+  const trimmedPython = python?.trim() ?? '';
+  files['server.py'] = trimmedPython === '' ? null : b64EncodeUnicode(trimmedPython);
+
+  const result = await client.updateQuestionFiles.mutate({
+    course_id: course.id,
+    user_id: userId,
+    authn_user_id: authnUserId,
+    question_id: question.id,
+    has_course_permission_edit: hasCoursePermissionEdit,
+    files,
+  });
+
+  if (result.status === 'error') {
+    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+  }
 }
 
 router.get(
@@ -44,54 +144,197 @@ router.get(
       return;
     }
 
-    const editQuestionHtmlUrl = `${res.locals.urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/question.html`;
+    res.redirect(`${res.locals.urlPrefix}/question/${question.id}/draft/editor`);
+  }),
+);
+
+router.get(
+  '/editor',
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+    const question = res.locals.question;
+
+    if (!question.draft) {
+      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+      return;
+    }
+
+    assertCanEditDraft(res.locals);
+
+    const courseFilesClient = getCourseFilesClient();
+    const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: question.id,
+    });
+    const allQuestionFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question,
+    });
+
+    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+
+    await getAndRenderVariant(variant_id, null, res.locals, {
+      urlOverrides: {
+        newVariantUrl: `${res.locals.urlPrefix}/question/${question.id}/draft/editor`,
+      },
+    });
+    await logPageView('instructorQuestionPreview', req, res);
+
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
 
     res.send(
-      PageLayout({
+      InstructorQuestionDraftEditor({
         resLocals: res.locals,
-        pageTitle: formatDraftLabel(question.qid),
-        navContext: {
-          type: 'instructor',
-          page: 'course_admin',
-          subPage: 'questions',
-        },
-        content: html`
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">${formatDraftLabel(question.qid)}</div>
-            <div class="card-body">
-              <p class="text-muted">
-                Edit the draft files until the question is ready, then choose its final title and
-                QID.
-              </p>
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                <a class="btn btn-primary" href="${editQuestionHtmlUrl}">Edit question.html</a>
-                <a
-                  class="btn btn-outline-secondary"
-                  href="${res.locals.urlPrefix}/question/${question.id}/preview"
-                  >Preview draft</a
-                >
-              </div>
-              <form method="POST" autocomplete="off" class="border rounded p-3">
-                <h2 class="h5">Finalize question</h2>
-                <div class="mb-3">
-                  <label class="form-label" for="question-title">Title</label>
-                  <input class="form-control" id="question-title" name="title" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label" for="question-qid">QID</label>
-                  <input class="form-control" id="question-qid" name="qid" required />
-                  <div class="form-text">
-                    The final QID must be unique and cannot be in the draft namespace.
-                  </div>
-                </div>
-                <input type="hidden" name="__csrf_token" value="${res.locals.__csrf_token}" />
-                <button class="btn btn-success" type="submit">Finalize question</button>
-              </form>
-            </div>
-          </div>
-        `,
+        question,
+        questionFiles,
+        allQuestionFiles,
+        richTextEditorEnabled,
+        questionContainerHtml: questionContainerHtml.toString(),
       }),
     );
+  }),
+);
+
+router.post(
+  '/editor',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const question = res.locals.question;
+
+    if (!question.draft) {
+      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+      return;
+    }
+
+    assertCanEditDraft(res.locals);
+
+    if (req.body.__action === 'rename_draft_question') {
+      if (req.accepts('html')) {
+        throw new error.HttpStatusError(406, 'Not Acceptable');
+      }
+
+      const qid =
+        typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
+          ? req.body.qid
+          : question.qid;
+      const title =
+        typeof req.body.title === 'string' && req.body.title.trim() !== ''
+          ? req.body.title
+          : question.title;
+
+      const validation = validateShortName(qid);
+      if (!validation.valid) {
+        throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
+      }
+
+      const client = getCourseFilesClient();
+      const result = await client.renameQuestion.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_id: question.id,
+        qid,
+        title,
+      });
+
+      if (result.status === 'error') {
+        throw new Error('Renaming question failed.');
+      }
+
+      const updatedQuestion = await selectQuestionById(question.id);
+      res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
+    } else if (req.body.__action === 'submit_manual_revision') {
+      await saveDraftQuestionFiles({
+        course: res.locals.course,
+        question,
+        userId: res.locals.user.id,
+        authnUserId: res.locals.authn_user.id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+        urlPrefix: res.locals.urlPrefix,
+        html: b64DecodeUnicode(req.body.html),
+        python: b64DecodeUnicode(req.body.python),
+      });
+
+      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/draft/editor`);
+    } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      const variantId = await processSubmission(req, res);
+      res.redirect(
+        `${res.locals.urlPrefix}/question/${question.id}/draft/editor?variant_id=${variantId}`,
+      );
+    } else {
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
+  }),
+);
+
+router.get(
+  '/variant',
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+
+    await getAndRenderVariant(variant_id, null, res.locals, {
+      urlOverrides: {
+        newVariantUrl: `${res.locals.urlPrefix}/question/${res.locals.question.id}/draft/editor`,
+      },
+    });
+    await logPageView('instructorQuestionPreview', req, res);
+
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
+
+    res.json({
+      questionContainerHtml: questionContainerHtml.toString(),
+      extraHeadersHtml: res.locals.extraHeadersHtml,
+    });
+  }),
+);
+
+router.post(
+  '/variant',
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      const variantId = await processSubmission(req, res);
+
+      await getAndRenderVariant(variantId, null, res.locals, {
+        urlOverrides: {
+          newVariantUrl: `${res.locals.urlPrefix}/question/${res.locals.question.id}/draft/editor`,
+        },
+      });
+
+      const questionContainerHtml = QuestionContainer({
+        resLocals: res.locals,
+        questionContext: 'instructor',
+      });
+
+      res.json({
+        questionContainerHtml: questionContainerHtml.toString(),
+        extraHeadersHtml: res.locals.extraHeadersHtml,
+      });
+    } else {
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
+  }),
+);
+
+router.get(
+  '/files',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const courseFilesClient = getCourseFilesClient();
+    const { files } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: res.locals.question.id,
+    });
+    const allFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question: res.locals.question,
+    });
+
+    res.json({ files, allFiles });
   }),
 );
 

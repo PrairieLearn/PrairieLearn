@@ -1,7 +1,9 @@
+import * as path from 'node:path';
 import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { Router } from 'express';
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -48,6 +50,45 @@ import {
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+interface QuestionFileEntry {
+  path: string;
+  size: number;
+}
+
+async function listQuestionFiles({
+  course,
+  question,
+}: {
+  course: Course;
+  question: Question;
+}): Promise<QuestionFileEntry[]> {
+  if (!question.qid) return [];
+
+  const questionPath = path.join(course.path, 'questions', question.qid);
+  const entries: QuestionFileEntry[] = [];
+
+  async function walk(directoryPath: string) {
+    const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
+
+    for (const dirent of dirents) {
+      const filePath = path.join(directoryPath, dirent.name);
+      if (dirent.isDirectory()) {
+        await walk(filePath);
+      } else if (dirent.isFile()) {
+        const stat = await fs.stat(filePath);
+        entries.push({
+          path: path.relative(questionPath, filePath).split(path.sep).join('/'),
+          size: stat.size,
+        });
+      }
+    }
+  }
+
+  await walk(questionPath);
+
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
 
 async function saveRevisedQuestion({
   course,
@@ -128,11 +169,16 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
+async function assertAiQuestionGenerationEnabled(resLocals: UntypedResLocals) {
+  if (!(await features.enabledFromLocals('ai-question-generation', resLocals))) {
+    throw new error.HttpStatusError(403, 'Feature not enabled');
+  }
+}
+
 router.use(
   typedAsyncHandler<'instructor-question'>(async (req, res, next) => {
-    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
-      throw new error.HttpStatusError(403, 'Feature not enabled');
-    }
+    await assertAiQuestionGenerationEnabled(res.locals);
+
     const question = await selectOptionalQuestionById(req.params.question_id);
 
     if (
@@ -224,6 +270,10 @@ router.get(
       course_id: res.locals.course.id,
       question_id: res.locals.question.id,
     });
+    const allQuestionFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question: res.locals.question,
+    });
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -250,6 +300,7 @@ router.get(
         question: res.locals.question,
         messages: validatedInitialMessages,
         questionFiles,
+        allQuestionFiles,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
       }),
@@ -260,6 +311,8 @@ router.get(
 router.get(
   '/chat/stream',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    await assertAiQuestionGenerationEnabled(res.locals);
+
     const latestMessage = await queryOptionalRow(
       sql.select_latest_ai_question_generation_message,
       { question_id: res.locals.question.id },
@@ -294,6 +347,8 @@ router.get(
 router.post(
   '/chat',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    await assertAiQuestionGenerationEnabled(res.locals);
+
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -344,6 +399,8 @@ router.post(
 router.post(
   '/chat/cancel',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    await assertAiQuestionGenerationEnabled(res.locals);
+
     assertCanCreateQuestion(res.locals);
 
     await execute(sql.cancel_latest_streaming_message, {
@@ -507,8 +564,12 @@ router.get(
       course_id: res.locals.course.id,
       question_id: res.locals.question.id,
     });
+    const allFiles = await listQuestionFiles({
+      course: res.locals.course,
+      question: res.locals.question,
+    });
 
-    res.json({ files });
+    res.json({ files, allFiles });
   }),
 );
 

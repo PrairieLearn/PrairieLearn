@@ -1,8 +1,8 @@
 import { Modal } from 'react-bootstrap';
 
-import { type AppError, AppErrorAlert } from '../../../../lib/client/errors.js';
-import { SHORT_NAME_PATTERN } from '../../../../lib/short-name.js';
-import type { QuestionsError } from '../../../../trpc/course/questions.js';
+import { type AppError, AppErrorAlert } from '../../../lib/client/errors.js';
+import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
+import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 export function FinalizeModal({
   csrfToken,
