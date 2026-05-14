@@ -15,6 +15,7 @@ import {
   queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -399,7 +400,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       output: this.output,
       data: this.data,
       // SQL handles the late-stop projection atomically; see update_job_on_finish.
-      status: isStop ? 'Stopped' : err ? 'Error' : 'Success',
+      status: run(() => {
+        if (isStop) return 'Stopped';
+        if (err) return 'Error';
+        return 'Success';
+      }),
     });
 
     // Notify sockets.
