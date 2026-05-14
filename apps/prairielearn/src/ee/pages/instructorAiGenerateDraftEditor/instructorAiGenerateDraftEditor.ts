@@ -35,6 +35,12 @@ import { getSearchParams } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
+  getEditorUrlWithSelectedFile,
+  getSelectedQuestionFilePath,
+  normalizeQuestionFilePath,
+  readSelectedQuestionFile,
+} from '../../../pages/instructorQuestionDraft/selectedQuestionFile.js';
+import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
   getAgenticModel,
@@ -155,6 +161,45 @@ async function saveRevisedQuestion({
     html,
     python,
   });
+}
+
+async function saveDraftQuestionFile({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  filePath,
+  contents,
+}: {
+  course: Course;
+  question: Question;
+  user: User;
+  authn_user: User;
+  authz_data: {
+    has_course_permission_edit: boolean;
+  };
+  urlPrefix: string;
+  filePath: string;
+  contents: string;
+}) {
+  const client = getCourseFilesClient();
+
+  const result = await client.updateQuestionFiles.mutate({
+    course_id: course.id,
+    user_id: user.id,
+    authn_user_id: authn_user.id,
+    question_id: question.id,
+    has_course_permission_edit: authz_data.has_course_permission_edit,
+    files: {
+      [filePath]: b64EncodeUnicode(contents),
+    },
+  });
+
+  if (result.status === 'error') {
+    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+  }
 }
 
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
@@ -278,13 +323,19 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+    const editorUrl = `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`;
+    const selectedFile = await readSelectedQuestionFile({
+      course: res.locals.course,
+      question: res.locals.question,
+      filePath: getSelectedQuestionFilePath(req.query.file),
+    });
 
     // Render the preview.
     await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`,
+        newVariantUrl: editorUrl,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -301,8 +352,10 @@ router.get(
         messages: validatedInitialMessages,
         questionFiles,
         allQuestionFiles,
+        selectedFile,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
+        editorUrl,
       }),
     );
   }),
@@ -489,6 +542,25 @@ router.post(
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`);
+    } else if (req.body.__action === 'submit_file_revision') {
+      const filePath = normalizeQuestionFilePath(req.body.filePath);
+      await saveDraftQuestionFile({
+        course: res.locals.course,
+        question: res.locals.question,
+        user: res.locals.user,
+        authn_user: res.locals.authn_user,
+        authz_data: res.locals.authz_data,
+        urlPrefix: res.locals.urlPrefix,
+        filePath,
+        contents: b64DecodeUnicode(req.body.contents),
+      });
+
+      res.redirect(
+        getEditorUrlWithSelectedFile({
+          editorUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/editor`,
+          filePath,
+        }),
+      );
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(

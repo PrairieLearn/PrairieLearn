@@ -16,22 +16,29 @@ import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 
-import { DraftQuestionEditor } from './components/DraftQuestionEditor.js';
+import {
+  DraftQuestionEditor,
+  type SelectedQuestionFile,
+} from './components/DraftQuestionEditor.js';
 
 export function InstructorQuestionDraftEditor({
   resLocals,
   question,
   questionFiles,
   allQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
+  editorUrl,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   questionFiles: Record<string, string>;
   allQuestionFiles: { path: string; size: number }[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
+  editorUrl: string;
 }) {
   const variantUrl = `${resLocals.urlPrefix}/question/${question.id}/draft/variant`;
   const filesUrl = `${resLocals.urlPrefix}/question/${question.id}/draft/files`;
@@ -80,8 +87,10 @@ export function InstructorQuestionDraftEditor({
           question={StaffQuestionSchema.parse(question)}
           questionFiles={questionFiles}
           allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
+          editorUrl={editorUrl}
           filesUrl={filesUrl}
           csrfToken={resLocals.__csrf_token}
           questionContainerHtml={questionContainerHtml}

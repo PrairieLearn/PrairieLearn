@@ -7,6 +7,10 @@ import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
+import {
+  type SelectedQuestionFile,
+  SelectedQuestionFileEditor,
+} from './SelectedQuestionFileEditor.js';
 
 export interface NewVariantHandle {
   newVariant: () => void;
@@ -289,6 +293,10 @@ function encodeFilePath(filePath: string) {
   return filePath.split('/').map(encodeURIComponent).join('/');
 }
 
+function getEditorUrlWithSelectedFile(editorUrl: string, filePath: string) {
+  return `${editorUrl}?file=${encodeURIComponent(filePath)}`;
+}
+
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -297,18 +305,37 @@ function formatFileSize(size: number) {
 
 function AllQuestionFiles({
   allQuestionFiles,
+  selectedFile,
   qid,
   questionId,
   urlPrefix,
+  editorUrl,
+  csrfToken,
+  isGenerating,
 }: {
   allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
   qid: string | null;
   questionId: string;
   urlPrefix: string;
+  editorUrl: string;
+  csrfToken: string;
+  isGenerating: boolean;
 }) {
   if (!qid) return null;
 
   const rootPath = `questions/${qid}`;
+
+  if (selectedFile != null) {
+    return (
+      <SelectedQuestionFileEditor
+        selectedFile={selectedFile}
+        csrfToken={csrfToken}
+        editorUrl={editorUrl}
+        isGenerating={isGenerating}
+      />
+    );
+  }
 
   return (
     <div className="p-3">
@@ -352,7 +379,7 @@ function AllQuestionFiles({
                       </a>
                       <a
                         className="btn btn-xs btn-secondary text-nowrap"
-                        href={`${urlPrefix}/question/${questionId}/file_edit/${encodedPath}`}
+                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
                       >
                         Edit
                       </a>
@@ -379,6 +406,7 @@ function AllQuestionFiles({
 export function QuestionAndFilePreview({
   questionFiles,
   allQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
@@ -394,9 +422,11 @@ export function QuestionAndFilePreview({
   qid,
   questionId,
   urlPrefix,
+  editorUrl,
 }: {
   questionFiles: Record<string, string>;
   allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
@@ -412,6 +442,7 @@ export function QuestionAndFilePreview({
   qid: string | null;
   questionId: string;
   urlPrefix: string;
+  editorUrl: string;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
@@ -434,7 +465,7 @@ export function QuestionAndFilePreview({
       <div
         role="tabpanel"
         id="question-preview"
-        className="tab-pane active"
+        className={`tab-pane ${selectedFile == null ? 'active' : ''}`}
         style={{ height: '100%' }}
       >
         {isQuestionEmpty && (
@@ -496,12 +527,21 @@ export function QuestionAndFilePreview({
           onRetryFiles={onRetryFiles}
         />
       </div>
-      <div role="tabpanel" id="question-all-files" className="tab-pane" style={{ height: '100%' }}>
+      <div
+        role="tabpanel"
+        id="question-all-files"
+        className={`tab-pane ${selectedFile != null ? 'active' : ''}`}
+        style={{ height: '100%' }}
+      >
         <AllQuestionFiles
           allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
           qid={qid}
           questionId={questionId}
           urlPrefix={urlPrefix}
+          editorUrl={editorUrl}
+          csrfToken={csrfToken}
+          isGenerating={isGenerating}
         />
       </div>
       <div

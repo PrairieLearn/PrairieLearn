@@ -18,6 +18,7 @@ import {
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import type { SelectedQuestionFile } from './SelectedQuestionFileEditor.js';
 
 async function fetchQuestionFiles(
   filesUrl: string,
@@ -50,8 +51,10 @@ export interface DraftQuestionEditorProps {
   question: StaffQuestion;
   questionFiles: Record<string, string>;
   allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
+  editorUrl: string;
   filesUrl: string;
   csrfToken: string;
   questionContainerHtml: string;
@@ -66,8 +69,10 @@ export function DraftQuestionEditorContent({
   question,
   questionFiles: initialQuestionFiles,
   allQuestionFiles: initialAllQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   urlPrefix,
+  editorUrl,
   filesUrl,
   csrfToken,
   questionContainerHtml,
@@ -154,9 +159,9 @@ export function DraftQuestionEditorContent({
           <ul className="nav nav-tabs me-auto ps-2 pt-2">
             <li className="nav-item">
               <a
-                className="nav-link active"
+                className={`nav-link ${selectedFile == null ? 'active' : ''}`}
                 data-bs-toggle="tab"
-                aria-current="page"
+                aria-current={selectedFile == null ? 'page' : undefined}
                 href="#question-preview"
               >
                 Preview
@@ -168,7 +173,12 @@ export function DraftQuestionEditorContent({
               </a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" data-bs-toggle="tab" href="#question-all-files">
+              <a
+                className={`nav-link ${selectedFile != null ? 'active' : ''}`}
+                data-bs-toggle="tab"
+                aria-current={selectedFile != null ? 'page' : undefined}
+                href="#question-all-files"
+              >
                 All files
               </a>
             </li>
@@ -201,6 +211,7 @@ export function DraftQuestionEditorContent({
         <QuestionAndFilePreview
           questionFiles={questionFiles}
           allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
           csrfToken={csrfToken}
@@ -214,6 +225,7 @@ export function DraftQuestionEditorContent({
           questionId={question.id}
           qid={currentQid}
           urlPrefix={urlPrefix}
+          editorUrl={editorUrl}
           onHasUnsavedChanges={setHasUnsavedChanges}
           onRetryFiles={() => refetchFiles()}
         />
@@ -265,3 +277,5 @@ export function DraftQuestionEditor(props: DraftQuestionEditorProps) {
 }
 
 DraftQuestionEditor.displayName = 'DraftQuestionEditor';
+
+export type { SelectedQuestionFile } from './SelectedQuestionFileEditor.js';

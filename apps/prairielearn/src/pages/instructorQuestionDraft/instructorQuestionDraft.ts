@@ -30,6 +30,13 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../models/question.js';
 import { InstructorQuestionDraftEditor } from '../instructorQuestionDraftEditor/instructorQuestionDraftEditor.html.js';
 
+import {
+  getEditorUrlWithSelectedFile,
+  getSelectedQuestionFilePath,
+  normalizeQuestionFilePath,
+  readSelectedQuestionFile,
+} from './selectedQuestionFile.js';
+
 const router = Router();
 
 interface QuestionFileEntry {
@@ -123,6 +130,43 @@ async function saveDraftQuestionFiles({
   }
 }
 
+async function saveDraftQuestionFile({
+  course,
+  question,
+  userId,
+  authnUserId,
+  hasCoursePermissionEdit,
+  urlPrefix,
+  filePath,
+  contents,
+}: {
+  course: Course;
+  question: Question;
+  userId: string;
+  authnUserId: string;
+  hasCoursePermissionEdit: boolean;
+  urlPrefix: string;
+  filePath: string;
+  contents: string;
+}) {
+  const client = getCourseFilesClient();
+
+  const result = await client.updateQuestionFiles.mutate({
+    course_id: course.id,
+    user_id: userId,
+    authn_user_id: authnUserId,
+    question_id: question.id,
+    has_course_permission_edit: hasCoursePermissionEdit,
+    files: {
+      [filePath]: b64EncodeUnicode(contents),
+    },
+  });
+
+  if (result.status === 'error') {
+    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+  }
+}
+
 router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
@@ -172,10 +216,16 @@ router.get(
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+    const editorUrl = `${res.locals.urlPrefix}/question/${question.id}/draft/editor`;
+    const selectedFile = await readSelectedQuestionFile({
+      course: res.locals.course,
+      question,
+      filePath: getSelectedQuestionFilePath(req.query.file),
+    });
 
     await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
-        newVariantUrl: `${res.locals.urlPrefix}/question/${question.id}/draft/editor`,
+        newVariantUrl: editorUrl,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -191,8 +241,10 @@ router.get(
         question,
         questionFiles,
         allQuestionFiles,
+        selectedFile,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
+        editorUrl,
       }),
     );
   }),
@@ -259,6 +311,25 @@ router.post(
       });
 
       res.redirect(`${res.locals.urlPrefix}/question/${question.id}/draft/editor`);
+    } else if (req.body.__action === 'submit_file_revision') {
+      const filePath = normalizeQuestionFilePath(req.body.filePath);
+      await saveDraftQuestionFile({
+        course: res.locals.course,
+        question,
+        userId: res.locals.user.id,
+        authnUserId: res.locals.authn_user.id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+        urlPrefix: res.locals.urlPrefix,
+        filePath,
+        contents: b64DecodeUnicode(req.body.contents),
+      });
+
+      res.redirect(
+        getEditorUrlWithSelectedFile({
+          editorUrl: `${res.locals.urlPrefix}/question/${question.id}/draft/editor`,
+          filePath,
+        }),
+      );
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(

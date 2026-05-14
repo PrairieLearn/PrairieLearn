@@ -15,6 +15,7 @@ import { type Question } from '../../../lib/db-types.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
+import type { SelectedQuestionFile } from '../../../pages/instructorQuestionDraftEditor/components/DraftQuestionEditor.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationEditor } from './components/AiQuestionGenerationEditor.js';
@@ -25,16 +26,20 @@ export function InstructorAiGenerateDraftEditor({
   messages,
   questionFiles,
   allQuestionFiles,
+  selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
+  editorUrl,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
   allQuestionFiles: { path: string; size: number }[];
+  selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
+  editorUrl: string;
 }) {
   const chatCsrfToken = generatePrefixCsrfToken(
     {
@@ -95,8 +100,10 @@ export function InstructorAiGenerateDraftEditor({
           initialMessages={messages}
           questionFiles={questionFiles}
           allQuestionFiles={allQuestionFiles}
+          selectedFile={selectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
+          editorUrl={editorUrl}
           filesUrl={filesUrl}
           csrfToken={resLocals.__csrf_token}
           questionContainerHtml={questionContainerHtml}

@@ -217,6 +217,41 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
     });
   });
 
+  test.sequential('keeps draft file editing inside the AI draft editor', async () => {
+    const trpc = createTrpcClient();
+    const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
+    const editorUrl = `${siteUrl}/pl/course/1/ai_generate_editor/${draft.questionId}/editor`;
+
+    const response = await fetch(editorUrl, {
+      headers: { cookie: 'pl_test_user=test_instructor' },
+    });
+    assert.equal(response.status, 200);
+
+    const $ = cheerio.load(await response.text());
+    const editHrefs = $('a')
+      .filter((_, element) => $(element).text().trim() === 'Edit')
+      .map((_, element) => $(element).attr('href'))
+      .get();
+
+    assert.isTrue(editHrefs.length > 0);
+    assert.isFalse(editHrefs.some((href) => href.includes('/file_edit/')));
+    assert.isTrue(
+      editHrefs.includes(
+        `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?file=question.html`,
+      ),
+    );
+
+    const selectedFileResponse = await fetch(`${editorUrl}?file=question.html`, {
+      headers: { cookie: 'pl_test_user=test_instructor' },
+    });
+    assert.equal(selectedFileResponse.status, 200);
+
+    const $selectedFile = cheerio.load(await selectedFileResponse.text());
+    assert.lengthOf($selectedFile('.app-chat-container'), 1);
+    assert.equal($selectedFile('input[name="filePath"]').attr('value'), 'question.html');
+    assert.include($selectedFile.text(), 'Save edits');
+  });
+
   test.sequential('finalizes a draft question', async () => {
     const trpc = createTrpcClient();
     const draft = await trpc.questions.createDraft.mutate({ startFrom: 'empty' });
