@@ -872,6 +872,13 @@ export function GroupsCard({
             </div>
           </div>
 
+          {!canEdit && (
+            <Alert variant="info" className="mb-3">
+              You can view group memberships, but editing memberships requires Student Data Editor
+              permission.
+            </Alert>
+          )}
+
           {notAssigned && notAssigned.length > 0 && (
             <Alert
               variant="warning"
