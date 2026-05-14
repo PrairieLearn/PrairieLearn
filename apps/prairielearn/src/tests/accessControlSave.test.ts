@@ -337,6 +337,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(courseEditorOnlyResponse.status, 200);
     const courseEditorOnlyHtml = await courseEditorOnlyResponse.text();
     assert.notInclude(courseEditorOnlyHtml, enrollmentOverrideStudentUid);
+    assert.include(courseEditorOnlyHtml, '"hiddenEnrollmentRuleCount":1');
 
     const courseEditorWithStudentDataViewResponse = await helperClient.fetchCheerio(accessUrl, {
       headers: {
@@ -344,10 +345,10 @@ describe('Access control save via tRPC', () => {
       },
     });
     assert.equal(courseEditorWithStudentDataViewResponse.status, 200);
-    assert.include(
-      await courseEditorWithStudentDataViewResponse.text(),
-      enrollmentOverrideStudentUid,
-    );
+    const courseEditorWithStudentDataViewHtml =
+      await courseEditorWithStudentDataViewResponse.text();
+    assert.include(courseEditorWithStudentDataViewHtml, enrollmentOverrideStudentUid);
+    assert.include(courseEditorWithStudentDataViewHtml, '"hiddenEnrollmentRuleCount":0');
   });
 
   test.sequential('rejects save with stale origHash', async () => {

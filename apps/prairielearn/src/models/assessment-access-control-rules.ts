@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { callScalar, execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callScalar, execute, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -263,6 +263,14 @@ export async function selectAccessControlRules(
     RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
+}
+
+export async function countEnrollmentAccessControlRules(assessment: Assessment): Promise<number> {
+  return await queryScalar(
+    sql.count_enrollment_access_control_rules,
+    { assessment_id: assessment.id },
+    z.number(),
+  );
 }
 
 const PrairieTestExamMetadataSchema = z.object({

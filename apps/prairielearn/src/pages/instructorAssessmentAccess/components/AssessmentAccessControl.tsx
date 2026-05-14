@@ -28,6 +28,7 @@ interface AssessmentAccessControlProps {
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  hiddenEnrollmentRuleCount: number;
 }
 
 function AssessmentAccessControlInner({
@@ -38,6 +39,7 @@ function AssessmentAccessControlInner({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  hiddenEnrollmentRuleCount,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
@@ -119,6 +121,7 @@ function AssessmentAccessControlInner({
         alert={saveAlert}
         canEdit={canEdit}
         canEditEnrollmentRules={canEditEnrollmentRules}
+        hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         onSubmit={handleFormSubmit}
       />
     </div>

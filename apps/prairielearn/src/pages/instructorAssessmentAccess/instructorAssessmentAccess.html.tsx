@@ -383,6 +383,7 @@ export function InstructorAssessmentAccessNew({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  hiddenEnrollmentRuleCount,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string | null;
@@ -392,6 +393,7 @@ export function InstructorAssessmentAccessNew({
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const pageContext = extractPageContext(resLocals, {
     pageType: 'courseInstance',
@@ -426,6 +428,7 @@ export function InstructorAssessmentAccessNew({
           ptHost={ptHost}
           canEdit={canEdit}
           canEditEnrollmentRules={canEditEnrollmentRules}
+          hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         />
       </Hydrate>
     ),

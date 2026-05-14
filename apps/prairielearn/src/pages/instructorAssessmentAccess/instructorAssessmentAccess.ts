@@ -23,6 +23,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
+  countEnrollmentAccessControlRules,
   selectAccessControlRules,
   selectPrairieTestExamMetadataByUuids,
 } from '../../models/assessment-access-control-rules.js';
@@ -69,9 +70,12 @@ router.get(
       canEdit && res.locals.authz_data.has_course_instance_permission_edit;
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
-      const jsonRules = canViewEnrollmentRules
-        ? await selectAccessControlRules(res.locals.assessment)
-        : await selectAccessControlRules(res.locals.assessment, ['none', 'student_label']);
+      const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
+        canViewEnrollmentRules
+          ? selectAccessControlRules(res.locals.assessment)
+          : selectAccessControlRules(res.locals.assessment, ['none', 'student_label']),
+        canViewEnrollmentRules ? 0 : countEnrollmentAccessControlRules(res.locals.assessment),
+      ]);
       const initialExamUuids = Array.from(
         new Set(
           jsonRules.flatMap(
@@ -105,6 +109,7 @@ router.get(
           ptHost: config.ptHost,
           canEdit,
           canEditEnrollmentRules,
+          hiddenEnrollmentRuleCount,
         }),
       );
       return;

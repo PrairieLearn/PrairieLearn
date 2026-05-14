@@ -44,6 +44,7 @@ export function AccessControlForm({
   alert,
   canEdit,
   canEditEnrollmentRules,
+  hiddenEnrollmentRuleCount,
 }: {
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
@@ -54,6 +55,7 @@ export function AccessControlForm({
   alert?: StickySaveBarAlert | null;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -367,6 +369,7 @@ export function AccessControlForm({
                     ptHost={ptHost}
                     canEdit={canEdit}
                     canEditEnrollmentRules={canEditEnrollmentRules}
+                    hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={handleMoveOverride}

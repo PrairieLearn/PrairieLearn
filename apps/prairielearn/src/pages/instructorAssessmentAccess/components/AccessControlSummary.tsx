@@ -11,7 +11,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import { Fragment, useId, useMemo } from 'react';
-import { Badge, Button } from 'react-bootstrap';
+import { Alert, Badge, Button } from 'react-bootstrap';
 import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
@@ -165,6 +165,7 @@ export function AccessControlSummary({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  hiddenEnrollmentRuleCount,
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
@@ -185,6 +186,7 @@ export function AccessControlSummary({
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const dndId = useId();
   const sensors = useSensors(
@@ -212,6 +214,8 @@ export function AccessControlSummary({
   const { errors } = useFormState<AccessControlFormData>();
   const defaultRuleErrorCount = countErrors(errors.defaultRule);
   const overridesErrorCount = countErrors(errors.overrides);
+  const hiddenEnrollmentRuleNoun =
+    hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
 
   return (
     <div>
@@ -289,12 +293,22 @@ export function AccessControlSummary({
           from the defaults and any earlier overrides.
         </small>
 
+        {hiddenEnrollmentRuleCount > 0 && (
+          <Alert variant="info" className="mb-3">
+            This assessment has {hiddenEnrollmentRuleCount} {hiddenEnrollmentRuleNoun} hidden
+            because you do not have Student Data Viewer permission. These overrides will be
+            preserved when you save other access settings.
+          </Alert>
+        )}
+
         {overrides.length === 0 ? (
           <div
             className="rounded text-center py-3 text-body-secondary"
             style={{ border: '2px dashed var(--bs-border-color)' }}
           >
-            No overrides configured.
+            {hiddenEnrollmentRuleCount > 0
+              ? 'No visible overrides configured.'
+              : 'No overrides configured.'}
           </div>
         ) : (
           <DndContext
