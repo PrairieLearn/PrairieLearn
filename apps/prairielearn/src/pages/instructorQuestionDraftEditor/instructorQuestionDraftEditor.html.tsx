@@ -30,6 +30,7 @@ export function InstructorQuestionDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
   editorUrl,
+  search,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
@@ -39,6 +40,7 @@ export function InstructorQuestionDraftEditor({
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   editorUrl: string;
+  search: string;
 }) {
   const variantUrl = `${resLocals.urlPrefix}/question/${question.id}/draft/variant`;
   const filesUrlBase = `${resLocals.urlPrefix}/question/${question.id}/draft/files`;
@@ -103,6 +105,7 @@ export function InstructorQuestionDraftEditor({
           trpcCsrfToken={trpcCsrfToken}
           courseId={resLocals.course.id}
           editErrorUrlPrefix={`${resLocals.urlPrefix}/edit_error`}
+          search={search}
         />
       </Hydrate>
     ),

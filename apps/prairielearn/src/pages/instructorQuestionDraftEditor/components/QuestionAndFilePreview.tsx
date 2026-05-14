@@ -1,4 +1,5 @@
 import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
@@ -294,7 +295,8 @@ function encodeFilePath(filePath: string) {
 }
 
 function getEditorUrlWithSelectedFile(editorUrl: string, filePath: string) {
-  return `${editorUrl}?file=${encodeURIComponent(filePath)}`;
+  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
+  return `${editorUrl}?${params.toString()}`;
 }
 
 function formatFileSize(size: number) {
@@ -424,6 +426,7 @@ export function QuestionAndFilePreview({
   questionId,
   urlPrefix,
   editorUrl,
+  onSelectTab,
 }: {
   questionFiles: Record<string, string>;
   allQuestionFiles: QuestionFileEntry[];
@@ -444,6 +447,7 @@ export function QuestionAndFilePreview({
   questionId: string;
   urlPrefix: string;
   editorUrl: string;
+  onSelectTab: (tab: 'question') => void;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
@@ -462,13 +466,8 @@ export function QuestionAndFilePreview({
   );
 
   return (
-    <div className="tab-content" style={{ height: '100%' }}>
-      <div
-        role="tabpanel"
-        id="question-preview"
-        className={`tab-pane ${selectedFile == null ? 'active' : ''}`}
-        style={{ height: '100%' }}
-      >
+    <Tab.Content className="h-100">
+      <Tab.Pane eventKey="preview" className="h-100">
         {isQuestionEmpty && (
           <div className="d-flex align-items-center justify-content-center h-100">
             {isGenerating ? (
@@ -490,11 +489,7 @@ export function QuestionAndFilePreview({
                   <button
                     type="button"
                     className="btn btn-link p-0 align-baseline fw-bold"
-                    // TODO: Replace with controlled tab state when converting to react-bootstrap tabs.
-                    onClick={() => {
-                      const tab = document.querySelector<HTMLElement>('a[href="#question-code"]');
-                      tab?.click();
-                    }}
+                    onClick={() => onSelectTab('question')}
                   >
                     Question
                   </button>{' '}
@@ -515,8 +510,8 @@ export function QuestionAndFilePreview({
         >
           <QuestionPreview questionContainerHtml={questionContainerHtml} />
         </div>
-      </div>
-      <div role="tabpanel" id="question-code" className="tab-pane" style={{ height: '100%' }}>
+      </Tab.Pane>
+      <Tab.Pane eventKey="question" className="h-100">
         <QuestionCodeEditors
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
@@ -527,13 +522,8 @@ export function QuestionAndFilePreview({
           onHasChangesChange={onHasUnsavedChanges}
           onRetryFiles={onRetryFiles}
         />
-      </div>
-      <div
-        role="tabpanel"
-        id="question-all-files"
-        className={`tab-pane ${selectedFile != null ? 'active' : ''}`}
-        style={{ height: '100%' }}
-      >
+      </Tab.Pane>
+      <Tab.Pane eventKey="all-files" className="h-100">
         <AllQuestionFiles
           allQuestionFiles={allQuestionFiles}
           selectedFile={selectedFile}
@@ -544,13 +534,8 @@ export function QuestionAndFilePreview({
           csrfToken={csrfToken}
           isGenerating={isGenerating}
         />
-      </div>
-      <div
-        role="tabpanel"
-        id="question-rich-text-editor"
-        className="tab-pane"
-        style={{ height: '100%' }}
-      >
+      </Tab.Pane>
+      <Tab.Pane eventKey="rich-text-editor" className="h-100">
         {richTextEditorEnabled && (
           <RichTextEditor
             htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
@@ -558,7 +543,7 @@ export function QuestionAndFilePreview({
             isGenerating={isGenerating}
           />
         )}
-      </div>
-    </div>
+      </Tab.Pane>
+    </Tab.Content>
   );
 }

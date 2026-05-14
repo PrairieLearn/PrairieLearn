@@ -30,6 +30,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
   editorUrl,
+  search,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
@@ -40,6 +41,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   editorUrl: string;
+  search: string;
 }) {
   const chatCsrfToken = generatePrefixCsrfToken(
     {
@@ -117,6 +119,7 @@ export function InstructorAiGenerateDraftEditor({
           trpcCsrfToken={trpcCsrfToken}
           courseId={resLocals.course.id}
           editErrorUrlPrefix={`${resLocals.urlPrefix}/edit_error`}
+          search={search}
         />
       </Hydrate>
     ),

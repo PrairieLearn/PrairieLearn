@@ -232,7 +232,7 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
       .filter((_, element) => ['View', 'Edit'].includes($(element).text().trim()))
       .map((_, element) => $(element).attr('href'))
       .get();
-    const questionHtmlEditorUrl = `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?file=question.html`;
+    const questionHtmlEditorUrl = `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?file=question.html&tab=all-files`;
 
     assert.isTrue(fileActionHrefs.length > 0);
     assert.isFalse(fileActionHrefs.some((href) => href.includes('/file_edit/')));

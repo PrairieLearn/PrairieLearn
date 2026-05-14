@@ -31,7 +31,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
-import { getSearchParams } from '../../../lib/url.js';
+import { getSearchParams, getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
@@ -356,6 +356,7 @@ router.get(
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
         editorUrl,
+        search: getUrl(req).search,
       }),
     );
   }),

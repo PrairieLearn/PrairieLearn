@@ -99,5 +99,6 @@ export function getEditorUrlWithSelectedFile({
   editorUrl: string;
   filePath: string;
 }) {
-  return `${editorUrl}?file=${encodeURIComponent(filePath)}`;
+  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
+  return `${editorUrl}?${params.toString()}`;
 }

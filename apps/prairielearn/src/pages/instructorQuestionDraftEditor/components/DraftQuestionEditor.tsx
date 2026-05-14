@@ -1,7 +1,10 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { Nav, Tab } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { NuqsAdapter } from '@prairielearn/ui';
 
 import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import { getAppError } from '../../../lib/client/errors.js';
@@ -19,6 +22,14 @@ import {
 } from './QuestionAndFilePreview.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import type { SelectedQuestionFile } from './SelectedQuestionFileEditor.js';
+
+const DRAFT_QUESTION_EDITOR_TABS = [
+  'preview',
+  'question',
+  'all-files',
+  'rich-text-editor',
+] as const;
+type DraftQuestionEditorTab = (typeof DRAFT_QUESTION_EDITOR_TABS)[number];
 
 async function fetchQuestionFiles(filesUrl: string): Promise<{
   questionFiles: Record<string, string>;
@@ -69,6 +80,7 @@ export interface DraftQuestionEditorProps {
   trpcCsrfToken: string;
   courseId: string;
   editErrorUrlPrefix: string;
+  search: string;
 }
 
 export function DraftQuestionEditorContent({
@@ -138,6 +150,20 @@ export function DraftQuestionEditorContent({
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
   const { questionFiles, allQuestionFiles, selectedFile: currentSelectedFile } = questionFilesData;
+  const [activeTab, setActiveTab] = useQueryState(
+    'tab',
+    parseAsStringLiteral(DRAFT_QUESTION_EDITOR_TABS).withDefault(
+      currentSelectedFile == null ? 'preview' : 'all-files',
+    ),
+  );
+  const handleSelectTab = useCallback(
+    (tab: string | null) => {
+      if (tab && DRAFT_QUESTION_EDITOR_TABS.includes(tab as DraftQuestionEditorTab)) {
+        void setActiveTab(tab as DraftQuestionEditorTab);
+      }
+    },
+    [setActiveTab],
+  );
 
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
@@ -155,119 +181,104 @@ export function DraftQuestionEditorContent({
   });
 
   return (
-    <div className={sidebar ? 'app-content' : 'app-content app-content-no-chat'}>
-      {sidebar}
+    <Tab.Container activeKey={activeTab} onSelect={handleSelectTab}>
+      <div className={sidebar ? 'app-content' : 'app-content app-content-no-chat'}>
+        {sidebar}
 
-      <div className="app-preview-tabs z-1">
-        <QuestionTitleAndQid
-          currentQid={currentQid}
-          currentTitle={currentTitle}
-          csrfToken={csrfToken}
-          onSaved={handleTitleAndQidSaved}
-        />
-        <div className="d-flex flex-row align-items-stretch bg-light">
-          <ul className="nav nav-tabs me-auto ps-2 pt-2">
-            <li className="nav-item">
-              <a
-                className={`nav-link ${currentSelectedFile == null ? 'active' : ''}`}
-                data-bs-toggle="tab"
-                aria-current={currentSelectedFile == null ? 'page' : undefined}
-                href="#question-preview"
-              >
-                Preview
-              </a>
-            </li>
-            <li className="nav-item">
-              <a className="nav-link" data-bs-toggle="tab" href="#question-code">
-                Question
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className={`nav-link ${currentSelectedFile != null ? 'active' : ''}`}
-                data-bs-toggle="tab"
-                aria-current={currentSelectedFile != null ? 'page' : undefined}
-                href="#question-all-files"
-              >
-                All files
-              </a>
-            </li>
-            {richTextEditorEnabled ? (
-              <li className="nav-item">
-                <a className="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
-                  Rich text editor
-                </a>
-              </li>
-            ) : null}
-          </ul>
-          <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
-            {!isQuestionEmpty && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
-                data-bs-toggle="tooltip"
-                data-bs-title="Finalize a question to use it on assessments and make manual edits"
-                disabled={isGenerating}
-                onClick={() => setShowFinalizeModal(true)}
-              >
-                <i className="fa fa-check" aria-hidden="true" />
-                Finalize question
-              </button>
-            )}
+        <div className="app-preview-tabs z-1">
+          <QuestionTitleAndQid
+            currentQid={currentQid}
+            currentTitle={currentTitle}
+            csrfToken={csrfToken}
+            onSaved={handleTitleAndQidSaved}
+          />
+          <div className="d-flex flex-row align-items-stretch bg-light">
+            <Nav variant="tabs" className="me-auto ps-2 pt-2">
+              <Nav.Item>
+                <Nav.Link eventKey="preview">Preview</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="question">Question</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="all-files">All files</Nav.Link>
+              </Nav.Item>
+              {richTextEditorEnabled ? (
+                <Nav.Item>
+                  <Nav.Link eventKey="rich-text-editor">Rich text editor</Nav.Link>
+                </Nav.Item>
+              ) : null}
+            </Nav>
+            <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
+              {!isQuestionEmpty && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  data-bs-toggle="tooltip"
+                  data-bs-title="Finalize a question to use it on assessments and make manual edits"
+                  disabled={isGenerating}
+                  onClick={() => setShowFinalizeModal(true)}
+                >
+                  <i className="fa fa-check" aria-hidden="true" />
+                  Finalize question
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="app-preview">
-        <QuestionAndFilePreview
-          questionFiles={questionFiles}
-          allQuestionFiles={allQuestionFiles}
-          selectedFile={currentSelectedFile}
-          richTextEditorEnabled={richTextEditorEnabled}
-          questionContainerHtml={questionContainerHtml}
+        <div className="app-preview">
+          <QuestionAndFilePreview
+            questionFiles={questionFiles}
+            allQuestionFiles={allQuestionFiles}
+            selectedFile={currentSelectedFile}
+            richTextEditorEnabled={richTextEditorEnabled}
+            questionContainerHtml={questionContainerHtml}
+            csrfToken={csrfToken}
+            variantUrl={variantUrl}
+            variantCsrfToken={variantCsrfToken}
+            newVariantRef={newVariantRef}
+            codeEditorsRef={codeEditorsRef}
+            isGenerating={isGenerating}
+            filesError={filesError}
+            hasAiSidebar={sidebar != null}
+            questionId={question.id}
+            qid={currentQid}
+            urlPrefix={urlPrefix}
+            editorUrl={editorUrl}
+            onSelectTab={(tab) => void setActiveTab(tab)}
+            onHasUnsavedChanges={setHasUnsavedChanges}
+            onRetryFiles={() => refetchFiles()}
+          />
+        </div>
+        <FinalizeModal
+          // Key on the current values so the uncontrolled inputs reset when the
+          // user edits the title/QID inline and reopens the modal.
+          key={`${currentTitle ?? ''}::${currentQid ?? ''}`}
           csrfToken={csrfToken}
-          variantUrl={variantUrl}
-          variantCsrfToken={variantCsrfToken}
-          newVariantRef={newVariantRef}
-          codeEditorsRef={codeEditorsRef}
-          isGenerating={isGenerating}
-          filesError={filesError}
-          hasAiSidebar={sidebar != null}
-          questionId={question.id}
-          qid={currentQid}
-          urlPrefix={urlPrefix}
-          editorUrl={editorUrl}
-          onHasUnsavedChanges={setHasUnsavedChanges}
-          onRetryFiles={() => refetchFiles()}
+          editErrorUrlPrefix={editErrorUrlPrefix}
+          isFinalizing={isFinalizingDraft}
+          error={finalizeDraftError}
+          show={showFinalizeModal}
+          // Don't pre-fill auto-generated placeholder values like "draft #3" or
+          // "draft_3" — these are system defaults that users almost certainly
+          // want to replace when finalizing, so showing them would just force
+          // the user to clear the field before typing a real value.
+          defaultTitle={
+            currentTitle && !/^draft #\d+$/i.test(currentTitle) ? currentTitle : undefined
+          }
+          defaultQid={run(() => {
+            const suffix = currentQid?.startsWith(DRAFT_QID_PREFIX)
+              ? currentQid.slice(DRAFT_QID_PREFIX.length)
+              : (currentQid ?? undefined);
+            if (suffix && /^draft_\d+$/.test(suffix)) return undefined;
+            return suffix;
+          })}
+          onDismissError={resetFinalizeDraft}
+          onFinalize={({ title, qid }) => finalizeDraft({ questionId: question.id, title, qid })}
+          onHide={() => setShowFinalizeModal(false)}
         />
       </div>
-      <FinalizeModal
-        // Key on the current values so the uncontrolled inputs reset when the
-        // user edits the title/QID inline and reopens the modal.
-        key={`${currentTitle ?? ''}::${currentQid ?? ''}`}
-        csrfToken={csrfToken}
-        editErrorUrlPrefix={editErrorUrlPrefix}
-        isFinalizing={isFinalizingDraft}
-        error={finalizeDraftError}
-        show={showFinalizeModal}
-        // Don't pre-fill auto-generated placeholder values like "draft #3" or
-        // "draft_3" — these are system defaults that users almost certainly
-        // want to replace when finalizing, so showing them would just force
-        // the user to clear the field before typing a real value.
-        defaultTitle={
-          currentTitle && !/^draft #\d+$/i.test(currentTitle) ? currentTitle : undefined
-        }
-        defaultQid={run(() => {
-          const suffix = currentQid?.startsWith(DRAFT_QID_PREFIX)
-            ? currentQid.slice(DRAFT_QID_PREFIX.length)
-            : (currentQid ?? undefined);
-          if (suffix && /^draft_\d+$/.test(suffix)) return undefined;
-          return suffix;
-        })}
-        onDismissError={resetFinalizeDraft}
-        onFinalize={({ title, qid }) => finalizeDraft({ questionId: question.id, title, qid })}
-        onHide={() => setShowFinalizeModal(false)}
-      />
-    </div>
+    </Tab.Container>
   );
 }
 
@@ -280,7 +291,9 @@ export function DraftQuestionEditor(props: DraftQuestionEditorProps) {
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <DraftQuestionEditorContent {...props} />
+        <NuqsAdapter search={props.search}>
+          <DraftQuestionEditorContent {...props} />
+        </NuqsAdapter>
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

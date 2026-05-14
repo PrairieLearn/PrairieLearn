@@ -25,6 +25,7 @@ export function SelectedQuestionFileEditor({
   const savedContents = b64DecodeUnicode(selectedFile.contents);
   const [value, setValue] = useState(savedContents);
   const hasChanges = value !== savedContents;
+  const allFilesUrl = `${editorUrl}?tab=all-files`;
 
   // The Ace editor owns its DOM, so it must be initialized after React mounts the container.
   useEffect(() => {
@@ -70,7 +71,7 @@ export function SelectedQuestionFileEditor({
           </div>
         </div>
         <div className="d-flex align-items-center gap-2">
-          <a href={editorUrl} className="btn btn-sm btn-outline-secondary text-nowrap">
+          <a href={allFilesUrl} className="btn btn-sm btn-outline-secondary text-nowrap">
             All files
           </a>
           <form method="post" className="mb-0">
