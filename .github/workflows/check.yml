@@ -107,6 +107,7 @@ jobs:
           key: >-
             lint-${{ runner.os }}-${{ hashFiles(
               'yarn.lock',
+              'Makefile',
               'eslint.config.mjs',
               'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
