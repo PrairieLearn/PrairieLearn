@@ -16,6 +16,10 @@ const generatedFiles: Record<string, unknown> = {};
 const serialized = serializeElementSchemas();
 
 generatedFiles[
+  path.resolve(import.meta.dirname, '../apps/prairielearn/elements/pl-answer.schema.json')
+] = serialized.schemas['pl-answer'];
+
+generatedFiles[
   path.resolve(
     import.meta.dirname,
     '../apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.schema.json',

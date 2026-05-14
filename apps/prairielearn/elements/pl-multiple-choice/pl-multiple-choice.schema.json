@@ -1,556 +1,164 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "not": {
-              "required": ["external-json"]
-            }
-          }
-        },
-        "required": ["attributes"]
-      },
-      "then": {
-        "properties": {
-          "children": {
-            "minItems": 1
-          }
-        }
-      },
-      "errorMessage": "pl-multiple-choice element must have at least 1 answer choice."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["fixed-order"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "not": {
-              "required": ["order"]
-            }
-          }
-        }
-      },
-      "errorMessage": "Setting answer choice order should be done with the \"order\" attribute."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["inline"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "not": {
-              "required": ["display"]
-            }
-          }
-        }
-      },
-      "errorMessage": "Cannot set both 'display' and 'inline' attributes. Use only 'display'; the 'inline' attribute is deprecated."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["size"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "display": {
-                "const": "dropdown"
-              }
-            },
-            "required": ["display"]
-          }
-        }
-      },
-      "errorMessage": "pl-multiple-choice: if using size, you must also set display to \"dropdown\"."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["placeholder"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "display": {
-                "const": "dropdown"
-              }
-            },
-            "required": ["display"]
-          }
-        }
-      },
-      "errorMessage": "pl-multiple-choice: if using placeholder, you must also set display to \"dropdown\"."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["all-of-the-above-feedback"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "all-of-the-above": {
-                "not": {
-                  "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-                }
-              }
-            },
-            "required": ["all-of-the-above"]
-          }
-        }
-      },
-      "errorMessage": "pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "required": ["none-of-the-above-feedback"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "none-of-the-above": {
-                "not": {
-                  "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-                }
-              }
-            },
-            "required": ["none-of-the-above"]
-          }
-        }
-      },
-      "errorMessage": "pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "not": {
-              "required": ["weight"]
-            }
-          }
-        }
-      },
-      "errorMessage": "\"weight\" should not be set when builtin-grading is false."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "not": {
-              "required": ["hide-score-badge"]
-            }
-          }
-        }
-      },
-      "errorMessage": "\"hide-score-badge\" should not be set when builtin-grading is false."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "all-of-the-above": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "string",
-                    "format": "pl-boolean"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "errorMessage": "\"all-of-the-above\" should be set to true or false when builtin-grading is false."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "none-of-the-above": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "string",
-                    "format": "pl-boolean"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "errorMessage": "\"none-of-the-above\" should be set to true or false when builtin-grading is false."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "children": {
-            "items": {
-              "properties": {
-                "attributes": {
-                  "not": {
-                    "required": ["score"]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "errorMessage": "\"score\" on pl-answer should not be set when builtin-grading is false."
-    },
-    {
-      "if": {
-        "properties": {
-          "attributes": {
-            "properties": {
-              "builtin-grading": {
-                "enum": ["false", "f", "0", "False", "F", "FALSE", "no", "n", "No", "N", "NO"]
-              }
-            },
-            "required": ["builtin-grading"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "children": {
-            "items": {
-              "properties": {
-                "attributes": {
-                  "not": {
-                    "required": ["feedback"]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "errorMessage": "\"feedback\" on pl-answer should not be set when builtin-grading is false."
-    }
-  ],
+  "$schema": "http://json-schema.org/draft-06/schema#",
   "type": "object",
   "properties": {
-    "tag": {
+    "answers-name": {
+      "type": "string"
+    },
+    "weight": {
+      "format": "pl-integer",
+      "type": "string"
+    },
+    "number-answers": {
+      "format": "pl-integer",
+      "type": "string"
+    },
+    "order": {
       "type": "string",
-      "const": "pl-multiple-choice"
+      "enum": ["random", "ascend", "descend", "fixed"]
     },
-    "text": {
-      "type": "string"
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline", "dropdown"]
     },
-    "innerHtml": {
-      "type": "string"
-    },
-    "attributes": {
-      "type": "object",
-      "properties": {
-        "answers-name": {
-          "type": "string"
+    "hide-letter-keys": {
+      "anyOf": [
+        {
+          "type": "boolean"
         },
-        "weight": {
-          "format": "pl-integer",
-          "type": "string"
-        },
-        "number-answers": {
-          "format": "pl-integer",
-          "type": "string"
-        },
-        "order": {
-          "type": "string",
-          "enum": ["random", "ascend", "descend", "fixed"]
-        },
-        "display": {
-          "type": "string",
-          "enum": ["block", "inline", "dropdown"]
-        },
-        "hide-letter-keys": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "fixed-order": {
-          "deprecated": true,
-          "description": "Use the \"order\" attribute instead.",
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "inline": {
-          "deprecated": true,
-          "description": "Use the \"display\" attribute instead.",
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "hide-score-badge": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "allow-blank": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "builtin-grading": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
-        },
-        "size": {
-          "format": "pl-integer",
-          "type": "string"
-        },
-        "placeholder": {
-          "type": "string"
-        },
-        "aria-label": {
-          "type": "string"
-        },
-        "external-json": {
-          "deprecated": true,
-          "description": "Define answer choices inline with <pl-answer> instead.",
-          "type": "string"
-        },
-        "external-json-correct-key": {
-          "deprecated": true,
-          "type": "string"
-        },
-        "external-json-incorrect-key": {
-          "deprecated": true,
-          "type": "string"
-        },
-        "all-of-the-above": {
-          "anyOf": [
-            {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "format": "pl-boolean",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "type": "string",
-              "enum": ["false", "random", "correct", "incorrect"]
-            }
-          ]
-        },
-        "none-of-the-above": {
-          "anyOf": [
-            {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "format": "pl-boolean",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "type": "string",
-              "enum": ["false", "random", "correct", "incorrect"]
-            }
-          ]
-        },
-        "all-of-the-above-feedback": {
-          "type": "string"
-        },
-        "none-of-the-above-feedback": {
+        {
+          "format": "pl-boolean",
           "type": "string"
         }
-      },
-      "required": ["answers-name"],
-      "additionalProperties": false
+      ]
     },
-    "children": {
-      "unique-child-inner-html": true,
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "tag": {
-            "type": "string",
-            "const": "pl-answer"
-          },
-          "text": {
-            "type": "string"
-          },
-          "innerHtml": {
-            "type": "string"
-          },
-          "attributes": {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "format": "pl-boolean",
-                    "type": "string"
-                  }
-                ]
-              },
-              "feedback": {
-                "type": "string"
-              },
-              "score": {
-                "format": "pl-float",
-                "pl-float-range": [0, 1],
-                "errorMessage": "Score must be in the range [0.0, 1.0].",
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          }
+    "fixed-order": {
+      "deprecated": true,
+      "description": "Use the \"order\" attribute instead.",
+      "anyOf": [
+        {
+          "type": "boolean"
         },
-        "required": ["tag", "attributes"],
-        "additionalProperties": false
-      }
+        {
+          "format": "pl-boolean",
+          "type": "string"
+        }
+      ]
+    },
+    "inline": {
+      "deprecated": true,
+      "description": "Use the \"display\" attribute instead.",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "format": "pl-boolean",
+          "type": "string"
+        }
+      ]
+    },
+    "hide-score-badge": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "format": "pl-boolean",
+          "type": "string"
+        }
+      ]
+    },
+    "allow-blank": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "format": "pl-boolean",
+          "type": "string"
+        }
+      ]
+    },
+    "builtin-grading": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "format": "pl-boolean",
+          "type": "string"
+        }
+      ]
+    },
+    "size": {
+      "format": "pl-integer",
+      "type": "string"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "external-json": {
+      "deprecated": true,
+      "description": "Define answer choices inline with <pl-answer> instead.",
+      "type": "string"
+    },
+    "external-json-correct-key": {
+      "deprecated": true,
+      "type": "string"
+    },
+    "external-json-incorrect-key": {
+      "deprecated": true,
+      "type": "string"
+    },
+    "all-of-the-above": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "format": "pl-boolean",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "string",
+          "enum": ["false", "random", "correct", "incorrect"]
+        }
+      ]
+    },
+    "none-of-the-above": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "format": "pl-boolean",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "string",
+          "enum": ["false", "random", "correct", "incorrect"]
+        }
+      ]
+    },
+    "all-of-the-above-feedback": {
+      "type": "string"
+    },
+    "none-of-the-above-feedback": {
+      "type": "string"
     }
   },
-  "required": ["tag", "attributes", "children"],
+  "required": ["answers-name"],
   "additionalProperties": false
 }

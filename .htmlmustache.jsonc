@@ -11,7 +11,7 @@
     "testCourse/questions/addVectors/question.html"
   ],
   "printWidth": 100,
-  "ajvModule": "./apps/prairielearn/src/ee/lib/element-schemas/ajv-extensions.ts",
+  "pluginModule": "./apps/prairielearn/src/ee/lib/element-schemas/htmlmustache-plugin.mjs",
   "noBreakDelimiters": [
     { "start": "$", "end": "$" },
     { "start": "$$", "end": "$$" },
@@ -262,7 +262,10 @@
     },
     { "name": "pl-order-blocks" },
     { "name": "pl-block-group" }, // pl-order-blocks
-    { "name": "pl-answer" }, // pl-multiple-choice / pl-checkbox / pl-order-blocks
+    {
+      "name": "pl-answer",
+      "schema": "./apps/prairielearn/elements/pl-answer.schema.json"
+    },
     { "name": "pl-number-input" },
     { "name": "pl-string-input" },
     { "name": "pl-symbolic-input" },

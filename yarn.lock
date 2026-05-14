@@ -5296,7 +5296,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.0.4"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.1.0"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.14.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -5996,17 +5996,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.0.4"
+"@reteps/tree-sitter-htmlmustache@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.1.0"
   dependencies:
     ajv: "npm:^8.20.0"
     ajv-errors: "npm:^3.0.0"
     ajv-i18n: "npm:^4.2.0"
-    aria-attributes: "npm:^2.0.1"
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
-    html-element-attributes: "npm:^3.5.0"
     node-gyp: "npm:latest"
     vscode-languageserver-textdocument: "npm:^1.0.12"
     web-tree-sitter: "npm:^0.26.5"
@@ -6026,7 +6024,7 @@ __metadata:
       optional: true
   bin:
     htmlmustache: dist/cli/main.js
-  checksum: 10c0/86d2ef6eeba281daf3ce8a7cb775225a07b5a6aa6b9a57f0b1508cadf8c2d7a6c53cf6467044a9905de33702df5042bb5db089e61f39b0abfdaa75261966b832
+  checksum: 10c0/db4633a38576b0b07526e522fdc5f5dc1efce4f4c0c9e650d0d71f25132e5bbfd9e7ca0e1a21239375b532c013034b7c5eda3ece7a02f102b1a0ed8faecbc0e8
   languageName: node
   linkType: hard
 
@@ -9458,13 +9456,6 @@ __metadata:
   version: 2.0.1
   resolution: "argparse@npm:2.0.1"
   checksum: 10c0/c5640c2d89045371c7cedd6a70212a04e360fd34d6edeae32f6952c63949e3525ea77dbec0289d8213a99bbaeab5abfa860b5c12cf88a2e6cf8106e90dd27a7e
-  languageName: node
-  linkType: hard
-
-"aria-attributes@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "aria-attributes@npm:2.0.1"
-  checksum: 10c0/801b027126ab83fb27261d6f52568be524fd6ccac86421fcc7926c2f4e6f68c66ab2c68686cc1ebc49e6ff4a315176177c155c13d6e6fec316a7aec26e93e818
   languageName: node
   linkType: hard
 
@@ -13570,13 +13561,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-element-attributes@npm:^3.5.0":
-  version: 3.5.0
-  resolution: "html-element-attributes@npm:3.5.0"
-  checksum: 10c0/b48a586fa3868e5a00b600bed1fcd56e12537f4bcdc073d52eb124921d48a2527a403b34088ed5b543d89d3dbf851dfe780fa2911e9f88691bc2f9a69dece988
-  languageName: node
-  linkType: hard
-
 "html-encoding-sniffer@npm:^6.0.0":
   version: 6.0.0
   resolution: "html-encoding-sniffer@npm:6.0.0"
@@ -17544,7 +17528,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.0.4"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.1.0"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"

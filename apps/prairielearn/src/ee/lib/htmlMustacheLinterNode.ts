@@ -8,7 +8,7 @@ import {
 
 import { htmlMustacheConfig } from '../../lib/htmlMustacheConfig.js';
 
-import { formats, keywords } from './element-schemas/ajv-extensions.js';
+import { formats, validators } from './element-schemas/index.js';
 
 const require = createRequire(import.meta.url);
 
@@ -29,7 +29,7 @@ function getLinter(): Promise<Linter> {
       return name;
     },
     formats,
-    keywords,
+    validators,
   });
 
   return linterPromise;
