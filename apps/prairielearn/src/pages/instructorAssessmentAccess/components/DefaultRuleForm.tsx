@@ -20,7 +20,13 @@ const beforeReleasePopoverConfig = {
   props: { id: 'before-release-info-popover' },
 };
 
-export function DefaultRuleForm({ displayTimezone }: { displayTimezone: string }) {
+export function DefaultRuleForm({
+  displayTimezone,
+  isExam,
+}: {
+  displayTimezone: string;
+  isExam: boolean;
+}) {
   const { register } = useFormContext<AccessControlFormData>();
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -45,7 +51,7 @@ export function DefaultRuleForm({ displayTimezone }: { displayTimezone: string }
 
   return (
     <div className="d-flex flex-column gap-3">
-      <DefaultDateControlForm displayTimezone={displayTimezone} />
+      <DefaultDateControlForm displayTimezone={displayTimezone} isExam={isExam} />
       <IntegrationsSection />
       <div>
         <div className="d-flex align-items-center section-header mb-3">
