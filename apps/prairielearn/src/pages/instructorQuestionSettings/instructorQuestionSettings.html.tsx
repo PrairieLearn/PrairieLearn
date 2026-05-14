@@ -950,7 +950,7 @@ export const InstructorQuestionSettingsForm = ({
                   !canUnsharePublicly &&
                   (sharing.constraints.used_in_other_course
                     ? ' This question is publicly shared and used by another course, so it cannot be un-shared.'
-                    : ' This question is used by a publicly-shared assessment in this course; uncheck "Share source publicly" first to allow un-sharing.')}
+                    : ' Re-check "Share source publicly" first to allow un-sharing publicly.')}
               </small>
 
               {question.share_source_publicly && !canUnshareSourcePublicly && (
