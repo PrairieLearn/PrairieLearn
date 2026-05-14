@@ -29,13 +29,8 @@ import { throwAppError } from '../app-errors.js';
 import { requireCoursePermissionEdit, t } from './init.js';
 
 export interface AssessmentSettingsError {
-  UpdateAssessment:
-    | { code: 'INVALID_SHORT_NAME' }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  CopyAssessment:
-    | { code: 'INVALID_SHORT_NAME' }
-    | { code: 'DUPLICATE_SHORT_NAME' }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  UpdateAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -99,8 +94,8 @@ const updateAssessment = t.procedure
 
     const shortNameValidation = validateShortName(input.aid, assessment.tid ?? undefined);
     if (!shortNameValidation.valid) {
-      throwAppError<AssessmentSettingsError['UpdateAssessment']>({
-        code: 'INVALID_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: shortNameValidation.lowercaseMessage,
       });
     }
@@ -302,8 +297,8 @@ const copyAssessment = t.procedure
 
     const shortNameValidation = validateShortName(aid);
     if (!shortNameValidation.valid) {
-      throwAppError<AssessmentSettingsError['CopyAssessment']>({
-        code: 'INVALID_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: shortNameValidation.lowercaseMessage,
       });
     }
@@ -312,8 +307,8 @@ const copyAssessment = t.procedure
       course_instance_id: course_instance.id,
     });
     if (existingAssessments.some((a) => a.tid === aid)) {
-      throwAppError<AssessmentSettingsError['CopyAssessment']>({
-        code: 'DUPLICATE_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: `An assessment with the short name "${aid}" already exists.`,
       });
     }
