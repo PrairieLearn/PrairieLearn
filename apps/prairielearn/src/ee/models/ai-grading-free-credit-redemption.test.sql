@@ -10,10 +10,10 @@ INSERT INTO
 VALUES
   (
     $course_id,
-    'CI-2',
-    'Second Course Instance',
-    'America/Chicago',
-    'TESTCI-002'
+    $short_name,
+    $long_name,
+    $display_timezone,
+    $enrollment_code
   )
 RETURNING
   id;

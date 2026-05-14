@@ -23,7 +23,17 @@ const COURSE_ID = '1';
 const COURSE_INSTANCE_ID = '1';
 
 async function insertSecondCourseInstance() {
-  return await queryScalar(sql.insert_second_course_instance, { course_id: COURSE_ID }, IdSchema);
+  return await queryScalar(
+    sql.insert_second_course_instance,
+    {
+      course_id: COURSE_ID,
+      short_name: 'CI-2',
+      long_name: 'Second Course Instance',
+      display_timezone: 'America/Chicago',
+      enrollment_code: 'TESTCI-002',
+    },
+    IdSchema,
+  );
 }
 
 async function createTestUser() {
