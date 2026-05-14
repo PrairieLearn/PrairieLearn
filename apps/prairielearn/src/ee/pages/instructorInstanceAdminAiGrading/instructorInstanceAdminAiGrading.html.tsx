@@ -303,7 +303,9 @@ function AiGradingSettingsContent({
           />
           <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
           <div className="small text-muted">
-            Provide your own API keys instead of using the platform defaults.
+            {canEdit
+              ? 'Provide your own API keys instead of using the platform defaults.'
+              : 'You must be a course owner to manage custom API keys.'}
           </div>
         </Form.Check>
 
@@ -447,8 +449,7 @@ function CreditPoolSection({
 
   const freeCreditStatusQuery = useQuery(trpc.freeCreditStatus.queryOptions());
 
-  // Mirror the empty-state detection in `CreditPoolDashboard`. These reads share
-  // a TanStack cache with the dashboard, so they don't trigger extra fetches.
+  // Reuses CreditPoolDashboard's TanStack cache to detect the empty state.
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page: 1 }),
@@ -457,6 +458,11 @@ function CreditPoolSection({
   const hasNoBalance =
     poolQuery.data?.credit_transferable_milli_dollars === 0 &&
     poolQuery.data.credit_non_transferable_milli_dollars === 0;
+  // While the balance is zero, wait for `changesQuery` before deciding whether
+  // we're in the empty state — otherwise the top-right Purchase button flickers
+  // in for one render between the two queries resolving.
+  const isLoading =
+    poolQuery.data == null || (hasNoBalance && !useCustomApiKeys && !changesQuery.isFetched);
   const isCreditPoolEmpty =
     hasNoBalance &&
     !useCustomApiKeys &&
@@ -503,22 +509,20 @@ function CreditPoolSection({
       <div
         className={clsx(
           'd-flex justify-content-between align-items-center flex-wrap gap-2',
-          useCustomApiKeys ? 'mb-1' : 'mb-3',
+          useCustomApiKeys || (!canEdit && !isLoading && !isCreditPoolEmpty) ? 'mb-1' : 'mb-3',
         )}
       >
         <div className="d-flex align-items-center gap-2">
           <h2 className="h5 mb-0">AI grading credits</h2>
           {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
         </div>
-        {!isCreditPoolEmpty && (
+        {!isLoading && !isCreditPoolEmpty && (
           <div className="d-flex align-items-center gap-2 flex-wrap">
             {hasFreeCreditAvailable && (
               <button
                 type="button"
                 className="btn btn-sm btn-success d-flex align-items-center gap-2"
                 disabled={!canEdit}
-                title={!canEdit ? 'You must be a course owner to redeem free credit' : undefined}
-                style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                 onClick={() => redeemModalState.showWithData(null)}
               >
                 <i className="bi bi-gift" aria-hidden="true" />
@@ -530,8 +534,6 @@ function CreditPoolSection({
                 type="button"
                 className="btn btn-sm btn-primary d-flex align-items-center gap-2"
                 disabled={!canEdit}
-                title={!canEdit ? 'You must be a course owner to purchase credits' : undefined}
-                style={!canEdit ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                 onClick={() => purchaseModalState.showWithData(null)}
               >
                 <i className="bi bi-cart-plus" aria-hidden="true" />
@@ -546,17 +548,21 @@ function CreditPoolSection({
           While custom API keys are active, PrairieLearn AI grading credits are not deducted.
         </p>
       )}
+      {!canEdit && !isLoading && !isCreditPoolEmpty && (
+        <p className="text-muted small mb-3">
+          You must be a course owner to purchase AI grading credits.
+        </p>
+      )}
       <CreditPoolDashboard
         trpc={trpc}
         balanceContext="instructor"
         dimmed={useCustomApiKeys}
+        canEdit={canEdit}
         onPurchaseClick={
-          stripePurchasingEnabled && canEdit
-            ? () => purchaseModalState.showWithData(null)
-            : undefined
+          stripePurchasingEnabled ? () => purchaseModalState.showWithData(null) : undefined
         }
         onRedeemFreeCreditClick={
-          hasFreeCreditAvailable && canEdit ? () => redeemModalState.showWithData(null) : undefined
+          hasFreeCreditAvailable ? () => redeemModalState.showWithData(null) : undefined
         }
       />
       <PurchaseCreditsModal {...purchaseModalState} />
