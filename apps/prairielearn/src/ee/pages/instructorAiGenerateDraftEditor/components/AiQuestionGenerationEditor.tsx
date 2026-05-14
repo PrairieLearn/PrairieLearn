@@ -1,6 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { NuqsAdapter } from '@prairielearn/ui';
+
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import {
   DraftQuestionEditorContent,
@@ -34,17 +36,19 @@ export function AiQuestionGenerationEditor({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <DraftQuestionEditorContent
-          {...props}
-          renderSidebar={(sidebarProps) => (
-            <AiQuestionGenerationChat
-              chatCsrfToken={chatCsrfToken}
-              initialMessages={initialMessages}
-              showJobLogsLink={showJobLogsLink}
-              {...sidebarProps}
-            />
-          )}
-        />
+        <NuqsAdapter search={props.search}>
+          <DraftQuestionEditorContent
+            {...props}
+            renderSidebar={(sidebarProps) => (
+              <AiQuestionGenerationChat
+                chatCsrfToken={chatCsrfToken}
+                initialMessages={initialMessages}
+                showJobLogsLink={showJobLogsLink}
+                {...sidebarProps}
+              />
+            )}
+          />
+        </NuqsAdapter>
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
