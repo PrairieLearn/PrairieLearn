@@ -28,6 +28,8 @@ import { requireAdministrator, t } from './init.js';
 const NullableStaffCourseSchema = StaffCourseSchema.nullable();
 
 export interface AdminCourseRequestError {
+  Deny: never;
+  UpdateNote: never;
   CreateCourse: {
     code: 'CONFLICTS';
     repoCourse: StaffCourse | null;

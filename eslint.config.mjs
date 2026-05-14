@@ -60,6 +60,10 @@ export default [
       ),
       // This has false positives in our codebase.
       '@eslint-react/jsx-no-leaked-semicolon': 'off',
+      // False positive on renderer/dispatch maps (e.g. AppErrorAlert's `render`
+      // prop): callbacks invoked directly via `renderer(arg)` are flagged as
+      // nested components even though they're never used as components.
+      '@eslint-react/no-nested-component-definitions': 'off',
       // We don't want these style rules
       '@html-eslint/attrs-newline': 'off',
       '@html-eslint/element-newline': 'off',

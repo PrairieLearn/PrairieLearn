@@ -209,6 +209,8 @@ nav:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
+      # Hidden until the qti-content-import feature flag is generally available:
+      # - 'Importing content from other platforms': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
@@ -349,6 +351,7 @@ not_in_nav: |
   elements/pl-variable-score.md
   dev-guide/contrib/*
   assessment/accessControlModern.md
+  importingContent.md
 
 validation:
   omitted_files: warn

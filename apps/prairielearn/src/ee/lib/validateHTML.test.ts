@@ -302,6 +302,52 @@ describe('validateHTML float attributes', () => {
   });
 });
 
+describe('validateHTML pl-multiple-choice', () => {
+  it('accepts boolean all/none of the above values when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="true" none-of-the-above="true" order="fixed">
+        <pl-answer>Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects grading attributes when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" weight="1" hide-score-badge="true" builtin-grading="false" order="fixed">
+        <pl-answer score="0.5" feedback="Partial">Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.isTrue(errors.some((e) => e.includes('weight cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('hide-score-badge cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('score cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('feedback cannot be used')));
+  });
+
+  it('rejects correctness semantics for all/none of the above when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="random" none-of-the-above="correct" order="fixed">
+        <pl-answer>Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.isTrue(
+      errors.some((e) => e.includes('all-of-the-above') && e.includes('must be in true')),
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('none-of-the-above') && e.includes('must be in true')),
+    );
+  });
+});
+
 describe('validateHTML panel nesting', () => {
   it('warns about input element inside pl-submission-panel', () => {
     const { warnings } = validateHTML(
