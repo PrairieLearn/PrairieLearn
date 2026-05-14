@@ -87,6 +87,7 @@ export function ServerJobsProgressInfo({
           itemNames={itemNames}
           totalCostMilliDollars={jobProgress.total_cost_milli_dollars}
           numItemsIncurredCost={jobProgress.num_items_incurred_cost}
+          jobFailureDetail={jobProgress.job_failure_detail}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
           {...stopProps}
         />
@@ -141,6 +142,7 @@ function ServerJobProgressInfo(
     };
     totalCostMilliDollars?: number;
     numItemsIncurredCost?: number;
+    jobFailureDetail?: string;
     onDismissCompleteJobSequence: (jobSequenceId: string) => void;
   } & StopProps,
 ) {
@@ -154,6 +156,7 @@ function ServerJobProgressInfo(
     statusText,
     totalCostMilliDollars,
     numItemsIncurredCost,
+    jobFailureDetail,
     onDismissCompleteJobSequence,
   } = props;
   const [showStopConfirm, setShowStopConfirm] = useState(false);
@@ -309,6 +312,12 @@ function ServerJobProgressInfo(
             )}
           </div>
         </div>
+        {status === 'failed' && jobFailureDetail && (
+          <div className="small text-body-secondary mt-2">
+            <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+            <strong>Error:</strong> {jobFailureDetail}
+          </div>
+        )}
       </Alert>
 
       {props.stoppable === true && (

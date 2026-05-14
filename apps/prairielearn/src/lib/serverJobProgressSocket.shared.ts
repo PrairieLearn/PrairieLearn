@@ -34,6 +34,14 @@ export const JobProgressSchema = z.object({
    * Displayed if num_failed > 0.
    */
   job_failure_message: z.string().optional(),
+  /**
+   * Optional supplemental failure detail. Rendered as a secondary line
+   * underneath the banner's main row when present and num_failed > 0. Use
+   * for surfacing a representative per-item failure cause; the run-level
+   * `job_failure_message` (which replaces the header) is still the right
+   * slot for batch-level fatal reasons (rate limit, credit exhaustion).
+   */
+  job_failure_detail: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
   /**
    * Optional cost tracking for the server job. When `total_cost_milli_dollars`

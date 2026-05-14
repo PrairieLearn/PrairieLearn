@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type RubricItem } from '../../../lib/db-types.js';
 
-import { parseAiRubricItems, parseSubmission } from './ai-grading-util.js';
+import { generatePrompt, parseAiRubricItems, parseSubmission } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
   return {
@@ -231,5 +231,55 @@ describe('parseAiRubricItems', () => {
       'Wrote "QED"\nat end',
     ]);
     expect(result.unrecognizedKeys).toEqual([]);
+  });
+});
+
+describe('generatePrompt', () => {
+  const baseArgs = {
+    questionPrompt: 'What is 2+2?',
+    questionAnswer: '4',
+    submission_text: '4',
+    submitted_answer: null,
+    rubric_items: [],
+    params: {},
+    true_answer: {},
+    model_id: 'gpt-5.4-mini-2026-03-17' as const,
+  };
+
+  it('renders valid grader_guidelines mustache with substituted variables', async () => {
+    const messages = await generatePrompt({
+      ...baseArgs,
+      grader_guidelines: 'Correct answer is {{correct_answers.x}}.',
+      true_answer: { x: 42 },
+    });
+    const guidelinesMessage = messages.find(
+      (m) => typeof m.content === 'string' && m.content.includes('Correct answer is'),
+    );
+    expect(guidelinesMessage).toBeDefined();
+    expect(guidelinesMessage?.content).toBe('Correct answer is 42.');
+  });
+
+  it('falls back to the raw template when grader_guidelines has malformed mustache', async () => {
+    const brokenTemplate = 'Correct.   "HELLO". \\mathbb{{X+Y}/2}';
+    const messages = await generatePrompt({
+      ...baseArgs,
+      grader_guidelines: brokenTemplate,
+    });
+    const guidelinesMessage = messages.find(
+      (m) => typeof m.content === 'string' && m.content.includes('\\mathbb'),
+    );
+    expect(guidelinesMessage).toBeDefined();
+    expect(guidelinesMessage?.content).toBe(brokenTemplate);
+  });
+
+  it('omits grader_guidelines messages when grader_guidelines is null', async () => {
+    const messages = await generatePrompt({
+      ...baseArgs,
+      grader_guidelines: null,
+    });
+    const guidelinesPreamble = messages.find(
+      (m) => typeof m.content === 'string' && m.content.includes('grader guidelines'),
+    );
+    expect(guidelinesPreamble).toBeUndefined();
   });
 });

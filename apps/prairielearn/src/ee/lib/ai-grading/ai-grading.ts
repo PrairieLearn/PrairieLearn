@@ -5,7 +5,6 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type GenerateObjectResult, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -34,6 +33,7 @@ import {
   type Question,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
@@ -443,6 +443,7 @@ export async function aiGrade({
       trackRateLimitAndCost &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
     let hasAiGradingCredits = true;
+    let firstFailureMessage: string | undefined;
 
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
@@ -612,14 +613,33 @@ export async function aiGrade({
         params: submission.params ?? {},
         submitted_answers: submission.submitted_answer,
       };
+      const renderRubricField = (
+        template: string | null,
+        fieldName: string,
+        rubric_item_id: string,
+      ): string | null => {
+        if (!template) return template;
+        const { rendered, error } = safeMustacheRender(template, mustacheParams);
+        if (error) {
+          logger.error(
+            `Rubric item ${rubric_item_id} ${fieldName} template error: ${error}. Using raw template.`,
+          );
+        }
+        return rendered;
+      };
       for (const rubric_item of rubric_items) {
-        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
-        rubric_item.explanation = rubric_item.explanation
-          ? mustache.render(rubric_item.explanation, mustacheParams)
-          : null;
-        rubric_item.grader_note = rubric_item.grader_note
-          ? mustache.render(rubric_item.grader_note, mustacheParams)
-          : null;
+        rubric_item.description =
+          renderRubricField(rubric_item.description, 'description', rubric_item.id) ?? '';
+        rubric_item.explanation = renderRubricField(
+          rubric_item.explanation,
+          'explanation',
+          rubric_item.id,
+        );
+        rubric_item.grader_note = renderRubricField(
+          rubric_item.grader_note,
+          'grader_note',
+          rubric_item.id,
+        );
       }
 
       let input = await generatePrompt({
@@ -713,6 +733,12 @@ export async function aiGrade({
                 model,
                 schema: RubricGradingResultSchema,
                 messages: input,
+                // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
+                // intentionally interleave `role: 'system'` and `role: 'user'`
+                // messages. All system-role content is hard-coded authored strings;
+                // no user-supplied text is ever placed in a system message, so the
+                // SDK's prompt-injection warning does not apply here.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -725,6 +751,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -774,6 +802,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -953,6 +983,8 @@ export async function aiGrade({
                 model,
                 schema: GradingResultSchema,
                 messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -965,6 +997,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1003,6 +1037,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1183,6 +1219,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
             ...costFields,
           });
 
@@ -1198,9 +1235,15 @@ export async function aiGrade({
 
           return gradingSuccessful;
         } catch (err: any) {
-          logger.error(err);
+          const message = err?.message ?? String(err);
+          logger.error(
+            `AI grading failed for instance question ${instance_question.id}: ${message}`,
+          );
           item_statuses[instance_question.id] = JobItemStatus.failed;
           num_failed += 1;
+          if (firstFailureMessage === undefined) {
+            firstFailureMessage = message;
+          }
           return false;
         } finally {
           num_complete += 1;
@@ -1212,6 +1255,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             stop_state: stopRequested ? 'stopping' : undefined,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),

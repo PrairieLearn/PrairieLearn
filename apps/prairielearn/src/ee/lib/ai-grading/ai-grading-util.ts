@@ -9,7 +9,6 @@ import {
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
-import mustache from 'mustache';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -23,6 +22,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -44,6 +44,7 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
@@ -106,11 +107,11 @@ export async function generatePrompt({
         },
         {
           role: 'user',
-          content: mustache.render(grader_guidelines, {
+          content: safeMustacheRender(grader_guidelines, {
             submitted_answers: submitted_answer,
             correct_answers: true_answer,
             params,
-          }),
+          }).rendered,
         },
       ] satisfies ModelMessage[])
     : [];
@@ -496,8 +497,8 @@ export async function insertAiGradingJob({
     {
       grading_job_id,
       job_sequence_id,
-      prompt: JSON.stringify(prompt),
-      completion: response,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(response),
       rotation_correction_degrees: null,
       model: model_id,
       prompt_tokens: response.usage.inputTokens ?? 0,
@@ -582,8 +583,8 @@ export async function insertAiGradingJobWithRotationCorrection({
     {
       grading_job_id,
       job_sequence_id,
-      prompt: JSON.stringify(prompt),
-      completion: gradingResponseWithRotationCorrection,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(gradingResponseWithRotationCorrection),
       rotation_correction_degrees: rotationCorrectionDegrees,
       model: model_id,
       prompt_tokens,
@@ -839,6 +840,8 @@ async function correctImageOrientation({
     model,
     schema: RotationCorrectionOutputSchema,
     messages: prompt,
+    // System messages in `messages` are hard-coded authored strings; safe to allow.
+    allowSystemInMessages: true,
   });
 
   const index = Number.parseInt(response.object.upright_image) - 1;
