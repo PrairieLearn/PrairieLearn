@@ -46,7 +46,7 @@ function getAssessmentPath(
 router.get(
   '/',
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
+    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (_req, res) => {

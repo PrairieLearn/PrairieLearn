@@ -91,7 +91,7 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential(
-    'course viewer can load groups page without receiving membership data',
+    'course previewer can load groups page without receiving membership data',
     async () => {
       const groupsUrl = `${siteUrl}${getAssessmentUrl({
         courseInstanceId,
@@ -100,7 +100,7 @@ describe('Instructor group controls', () => {
       const response = await helperClient.fetchCheerio(groupsUrl, {
         headers: {
           cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
+            'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
         },
       });
       assert.isTrue(response.ok);
