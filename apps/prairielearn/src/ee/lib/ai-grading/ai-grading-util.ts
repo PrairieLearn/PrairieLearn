@@ -144,7 +144,7 @@ export async function generatePrompt({
           .map((item, index) => {
             const number = index + 1;
             const itemParts: string[] = [
-              `Rubric item number ${number}:`,
+              `rubric item number ${number}:`,
               `description: ${item.description}`,
             ];
             if (item.explanation) {
