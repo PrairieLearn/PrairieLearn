@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Modal, Overlay, Popover } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
@@ -108,11 +108,21 @@ export function RubricSettings({
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
+  const [rubricActionNotification, setRubricActionNotification] = useState<
+    'saved' | 'discarded' | null
+  >(null);
+
+  useEffect(() => {
+    if (!rubricActionNotification) return;
+    const t = setTimeout(() => setRubricActionNotification(null), 3000);
+    return () => clearTimeout(t);
+  }, [rubricActionNotification]);
 
   // Also define default for rubric-related variables
   const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -526,6 +536,9 @@ export function RubricSettings({
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
+      if (use_rubric) {
+        setRubricActionNotification('saved');
+      }
     } else {
       window.location.replace(res.url);
     }
@@ -838,6 +851,16 @@ export function RubricSettings({
             />
           </div>
         ))}
+        <Alert
+          show={rubricActionNotification !== null}
+          variant="success"
+          role="status"
+          aria-live="polite"
+          dismissible
+          onClose={() => setRubricActionNotification(null)}
+        >
+          {rubricActionNotification === 'saved' ? 'Rubric saved' : 'Changes discarded'}
+        </Alert>
         <div className="mb-3 gap-1 d-flex">
           {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
@@ -995,12 +1018,47 @@ export function RubricSettings({
               <button
                 type="button"
                 className="btn btn-link btn-sm me-auto text-danger"
-                onClick={() => submitSettings(false)}
+                onClick={() => setShowDeleteConfirmModal(true)}
               >
                 Delete rubric
               </button>
             )}
-            <button type="button" className="btn btn-secondary me-2" onClick={onCancel}>
+            <Modal show={showDeleteConfirmModal} onHide={() => setShowDeleteConfirmModal(false)}>
+              <Modal.Header closeButton>
+                <Modal.Title>Delete rubric?</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                This will remove the rubric and clear any rubric-derived scores from previously
+                graded submissions. This action cannot be undone.
+              </Modal.Body>
+              <Modal.Footer>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    void submitSettings(false);
+                  }}
+                >
+                  Delete rubric
+                </button>
+              </Modal.Footer>
+            </Modal>
+            <button
+              type="button"
+              className="btn btn-secondary me-2"
+              onClick={() => {
+                onCancel();
+                setRubricActionNotification('discarded');
+              }}
+            >
               Discard changes
             </button>
             <button type="button" className="btn btn-primary" onClick={() => submitSettings(true)}>
