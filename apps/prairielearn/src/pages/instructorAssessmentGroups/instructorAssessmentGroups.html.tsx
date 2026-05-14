@@ -37,8 +37,8 @@ function NoGroupConfigCard({
     origHash: string;
     groupConfig: StaffGroupConfig;
     groupSettingsDefaults: GroupSettingsFormValues | null;
-    groups: GroupUsersRow[];
-    notAssigned: string[];
+    groups?: GroupUsersRow[];
+    notAssigned?: string[];
   }) => void;
 }) {
   const trpc = useTRPC();
@@ -46,7 +46,7 @@ function NoGroupConfigCard({
   const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
 
   const description = canEdit
-    ? 'Enable group work to allow students to collaborate and submit as teams.'
+    ? 'Enable group work to allow students to collaborate and submit as groups.'
     : 'Group work is not enabled for this assessment.';
 
   return (
@@ -85,12 +85,29 @@ function NoGroupConfigCard({
   );
 }
 
+function StudentDataPermissionCard() {
+  return (
+    <div className="card">
+      <div className="card-body">
+        <h5 className="mb-1">Groups</h5>
+        <div className="text-muted small mb-3">
+          View and manage student group assignments for this assessment.
+        </div>
+        <Alert variant="info" className="mb-0">
+          You must have student data permission to view and edit group memberships.
+        </Alert>
+      </div>
+    </div>
+  );
+}
+
 interface InstructorAssessmentGroupsProps {
   courseInstanceId: string;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
-  canEditCourse: boolean;
-  canEditCourseInstance: boolean;
+  canEditGroupSettings: boolean;
+  canViewStudentData: boolean;
+  canEditStudentData: boolean;
   csrfToken: string;
   groupsCsvFilename?: string;
   groupConfigInfo?: StaffGroupConfig;
@@ -107,8 +124,9 @@ export function InstructorAssessmentGroups({
   courseInstanceId,
   assessment,
   assessmentSet,
-  canEditCourse,
-  canEditCourseInstance,
+  canEditGroupSettings,
+  canViewStudentData,
+  canEditStudentData,
   csrfToken,
   groupsCsvFilename,
   groupConfigInfo,
@@ -136,8 +154,9 @@ export function InstructorAssessmentGroups({
           courseInstanceId={courseInstanceId}
           assessment={assessment}
           assessmentSet={assessmentSet}
-          canEditCourse={canEditCourse}
-          canEditCourseInstance={canEditCourseInstance}
+          canEditGroupSettings={canEditGroupSettings}
+          canViewStudentData={canViewStudentData}
+          canEditStudentData={canEditStudentData}
           csrfToken={csrfToken}
           groupsCsvFilename={groupsCsvFilename}
           groupConfigInfo={groupConfigInfo}
@@ -158,8 +177,9 @@ function InstructorAssessmentGroupsInner({
   courseInstanceId,
   assessment,
   assessmentSet,
-  canEditCourse,
-  canEditCourseInstance,
+  canEditGroupSettings,
+  canViewStudentData,
+  canEditStudentData,
   csrfToken,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
@@ -188,7 +208,7 @@ function InstructorAssessmentGroupsInner({
     return (
       <NoGroupConfigCard
         origHash={origHash}
-        canEdit={canEditCourse}
+        canEdit={canEditGroupSettings}
         hasAssessmentInstances={hasAssessmentInstances}
         courseInstanceId={courseInstanceId}
         assessment={assessment}
@@ -216,7 +236,7 @@ function InstructorAssessmentGroupsInner({
           groupConfigInfo={groupConfigInfo}
           groupSettingsDefaults={groupSettingsDefaults}
           origHash={origHash}
-          canEdit={canEditCourse}
+          canEdit={canEditGroupSettings}
           onOrigHashChange={setOrigHash}
           onGroupSizeSaved={(min, max) => {
             setMinGroupSize(min ?? 2);
@@ -226,19 +246,23 @@ function InstructorAssessmentGroupsInner({
           onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
           onClearSaveStatus={() => setSaveStatus(null)}
         />
-        <GroupsCard
-          groupsCsvFilename={groupsCsvFilename}
-          initialGroups={groups}
-          initialNotAssigned={notAssigned}
-          assessment={assessment}
-          assessmentSet={assessmentSet}
-          courseInstanceId={courseInstanceId}
-          csrfToken={csrfToken}
-          canEdit={canEditCourseInstance}
-          minGroupSize={minGroupSize}
-          maxGroupSize={maxGroupSize}
-        />
-        {canEditCourse && (
+        {canViewStudentData ? (
+          <GroupsCard
+            groupsCsvFilename={groupsCsvFilename}
+            initialGroups={groups}
+            initialNotAssigned={notAssigned}
+            assessment={assessment}
+            assessmentSet={assessmentSet}
+            courseInstanceId={courseInstanceId}
+            csrfToken={csrfToken}
+            canEdit={canEditStudentData}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
+          />
+        ) : (
+          <StudentDataPermissionCard />
+        )}
+        {canEditGroupSettings && canEditStudentData && (
           <ManageGroupWorkCard
             origHash={origHash}
             hasAssessmentInstances={hasAssessmentInstances}
@@ -254,7 +278,7 @@ function InstructorAssessmentGroupsInner({
           />
         )}
       </div>
-      {canEditCourse && saveStatus && (
+      {canEditGroupSettings && saveStatus && (
         <div className="position-sticky bottom-0 z-3 bg-body border-top">
           {saveStatus.kind === 'success' && (
             <Alert

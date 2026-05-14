@@ -46,7 +46,7 @@ function getAssessmentPath(
 router.get(
   '/',
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_instance_permission_view'],
+    oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (_req, res) => {
@@ -55,8 +55,9 @@ router.get(
       accessType: 'instructor',
     });
     const { assessment, assessment_set, course, course_instance, authz_data } = pageContext;
-    const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
-    const canEditCourseInstance =
+    const canEditGroupSettings = authz_data.has_course_permission_edit && !course.example_course;
+    const canViewStudentData = authz_data.has_course_instance_permission_view;
+    const canEditStudentData =
       authz_data.has_course_instance_permission_edit && !course.example_course;
 
     const groupsCsvFilename =
@@ -67,15 +68,16 @@ router.get(
       ? StaffGroupConfigSchema.parse(groupConfigInfo)
       : undefined;
 
-    const [groups, notAssigned] = groupConfigInfo
-      ? await Promise.all([
-          selectGroupsForConfig(groupConfigInfo.id),
-          selectUidsNotInGroup({
-            group_config_id: groupConfigInfo.id,
-            course_instance_id: groupConfigInfo.course_instance_id,
-          }),
-        ])
-      : [undefined, undefined];
+    const [groups, notAssigned] =
+      groupConfigInfo && canViewStudentData
+        ? await Promise.all([
+            selectGroupsForConfig(groupConfigInfo.id),
+            selectUidsNotInGroup({
+              group_config_id: groupConfigInfo.id,
+              course_instance_id: groupConfigInfo.course_instance_id,
+            }),
+          ])
+        : [undefined, undefined];
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -123,10 +125,11 @@ router.get(
               courseInstanceId={course_instance.id}
               assessment={assessment}
               assessmentSet={assessment_set}
-              canEditCourse={canEditCourse}
-              canEditCourseInstance={canEditCourseInstance}
+              canEditGroupSettings={canEditGroupSettings}
+              canViewStudentData={canViewStudentData}
+              canEditStudentData={canEditStudentData}
               csrfToken={pageContext.__csrf_token}
-              groupsCsvFilename={groupsCsvFilename}
+              groupsCsvFilename={canViewStudentData ? groupsCsvFilename : undefined}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
               notAssigned={notAssigned}

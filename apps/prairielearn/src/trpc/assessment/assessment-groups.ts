@@ -307,13 +307,15 @@ const enableGroupWork = t.procedure
       });
     }
 
-    const [groups, notAssigned] = await Promise.all([
-      selectGroupsForConfig(groupConfig.id),
-      selectUidsNotInGroup({
-        group_config_id: groupConfig.id,
-        course_instance_id: groupConfig.course_instance_id,
-      }),
-    ]);
+    const [groups, notAssigned] = ctx.authz_data.has_course_instance_permission_view
+      ? await Promise.all([
+          selectGroupsForConfig(groupConfig.id),
+          selectUidsNotInGroup({
+            group_config_id: groupConfig.id,
+            course_instance_id: groupConfig.course_instance_id,
+          }),
+        ])
+      : [undefined, undefined];
 
     return {
       origHash: newHash,
@@ -425,6 +427,7 @@ const updateGroupConfig = t.procedure
 
 const disableGroupWork = t.procedure
   .use(requireCoursePermissionEdit)
+  .use(requireCourseInstancePermissionEdit)
   .input(z.object({ origHash: z.string().nullable() }))
   .mutation(async ({ input, ctx }) => {
     if (await selectAssessmentHasInstances(ctx.assessment.id)) {

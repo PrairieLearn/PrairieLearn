@@ -4,23 +4,51 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getAssessmentTrpcUrl } from '../lib/client/url.js';
+import { getAssessmentTrpcUrl, getAssessmentUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type User } from '../lib/db-types.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
+import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 describe('Instructor group controls', () => {
-  beforeAll(helperServer.before());
-
-  afterAll(helperServer.after);
-
   const siteUrl = 'http://localhost:' + config.serverPort;
   const courseInstanceId = '1';
+
+  beforeAll(helperServer.before());
+
+  beforeAll(async () => {
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: instructor.uid,
+      course_role: 'Owner',
+      authn_user_id: instructor.id,
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: instructor.id,
+      course_instance_id: courseInstanceId,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: instructor.id,
+    });
+  });
+
+  afterAll(helperServer.after);
 
   let users: User[] = [];
   let assessment_id: string;
@@ -60,6 +88,47 @@ describe('Instructor group controls', () => {
     assert.equal(group.name, 'TestGroup');
     assert.deepEqual(group.users.map((u) => u.uid).sort(), [users[0].uid, users[1].uid].sort());
     group1RowId = group.group_id;
+  });
+
+  test.sequential(
+    'course viewer can load groups page without receiving membership data',
+    async () => {
+      const groupsUrl = `${siteUrl}${getAssessmentUrl({
+        courseInstanceId,
+        assessmentId: assessment_id,
+      })}/groups`;
+      const response = await helperClient.fetchCheerio(groupsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
+        },
+      });
+      assert.isTrue(response.ok);
+      const body = await response.text();
+      assert.include(
+        body,
+        'You must have student data permission to view and edit group memberships.',
+      );
+      assert.notInclude(body, users[0].uid);
+      assert.notInclude(body, users[1].uid);
+    },
+  );
+
+  test.sequential('student data viewer can see group memberships', async () => {
+    const groupsUrl = `${siteUrl}${getAssessmentUrl({
+      courseInstanceId,
+      assessmentId: assessment_id,
+    })}/groups`;
+    const response = await helperClient.fetchCheerio(groupsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
+      },
+    });
+    assert.isTrue(response.ok);
+    const body = await response.text();
+    assert.include(body, users[0].uid);
+    assert.include(body, users[1].uid);
   });
 
   test.sequential('cannot create a group with a user already in another group', async () => {
