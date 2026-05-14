@@ -62,9 +62,16 @@ router.get(
       'enhanced-access-control',
       res.locals,
     );
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const canViewEnrollmentRules = res.locals.authz_data.has_course_instance_permission_view;
+    const canEditEnrollmentRules =
+      canEdit && res.locals.authz_data.has_course_instance_permission_edit;
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
-      const jsonRules = await selectAccessControlRules(res.locals.assessment);
+      const jsonRules = canViewEnrollmentRules
+        ? await selectAccessControlRules(res.locals.assessment)
+        : await selectAccessControlRules(res.locals.assessment, ['none', 'student_label']);
       const initialExamUuids = Array.from(
         new Set(
           jsonRules.flatMap(
@@ -96,6 +103,8 @@ router.get(
           initialData: jsonRules,
           prairieTestExamMetadata,
           ptHost: config.ptHost,
+          canEdit,
+          canEditEnrollmentRules,
         }),
       );
       return;
@@ -161,9 +170,6 @@ router.get(
     }
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-
     res.send(
       InstructorAssessmentAccess({
         resLocals: res.locals,

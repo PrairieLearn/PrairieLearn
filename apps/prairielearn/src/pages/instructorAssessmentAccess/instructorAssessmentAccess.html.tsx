@@ -381,6 +381,8 @@ export function InstructorAssessmentAccessNew({
   initialData,
   prairieTestExamMetadata,
   ptHost,
+  canEdit,
+  canEditEnrollmentRules,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string | null;
@@ -388,6 +390,8 @@ export function InstructorAssessmentAccessNew({
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canEdit: boolean;
+  canEditEnrollmentRules: boolean;
 }) {
   const pageContext = extractPageContext(resLocals, {
     pageType: 'courseInstance',
@@ -420,6 +424,8 @@ export function InstructorAssessmentAccessNew({
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
+          canEdit={canEdit}
+          canEditEnrollmentRules={canEditEnrollmentRules}
         />
       </Hydrate>
     ),

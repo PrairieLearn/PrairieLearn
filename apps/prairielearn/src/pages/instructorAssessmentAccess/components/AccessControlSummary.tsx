@@ -47,6 +47,8 @@ function SortableOverrideCard({
   onEdit,
   onRemove,
   isActive,
+  canEdit,
+  editLabel,
 }: {
   id: string;
   override: OverrideData;
@@ -56,6 +58,8 @@ function SortableOverrideCard({
   isActive: boolean;
   onEdit: () => void;
   onRemove: () => void;
+  canEdit: boolean;
+  editLabel: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -75,9 +79,10 @@ function SortableOverrideCard({
         displayTimezone={displayTimezone}
         formErrors={formErrors}
         isActive={isActive}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragHandleProps={canEdit ? { ...attributes, ...listeners } : undefined}
+        editLabel={editLabel}
         onEdit={onEdit}
-        onRemove={onRemove}
+        onRemove={canEdit ? onRemove : undefined}
       />
     </div>
   );
@@ -158,6 +163,8 @@ export function AccessControlSummary({
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
+  canEdit,
+  canEditEnrollmentRules,
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
@@ -176,6 +183,8 @@ export function AccessControlSummary({
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canEdit: boolean;
+  canEditEnrollmentRules: boolean;
 }) {
   const dndId = useId();
   const sensors = useSensors(
@@ -186,6 +195,7 @@ export function AccessControlSummary({
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!canEdit) return;
     if (!over || active.id === over.id) return;
     const oldIndex = sortableIds.indexOf(String(active.id));
     const newIndex = sortableIds.indexOf(String(over.id));
@@ -219,23 +229,25 @@ export function AccessControlSummary({
             <Button
               variant="outline-primary"
               size="sm"
-              aria-label="Edit"
+              aria-label={canEdit ? 'Edit' : 'View'}
               className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
-              <i className="bi bi-pencil" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Edit</span>
+              <i className={canEdit ? 'bi bi-pencil' : 'bi bi-eye'} aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">{canEdit ? 'Edit' : 'View'}</span>
             </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              aria-label="Clear"
-              className="d-inline-flex align-items-center"
-              onClick={onClearDefaultRule}
-            >
-              <i className="bi bi-trash" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Clear</span>
-            </Button>
+            {canEdit && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                aria-label="Clear"
+                className="d-inline-flex align-items-center"
+                onClick={onClearDefaultRule}
+              >
+                <i className="bi bi-trash" aria-hidden="true" />
+                <span className="toolbar-btn-label ms-1">Clear</span>
+              </Button>
+            )}
           </div>
         </div>
         <small className="text-body-secondary d-block mb-3">
@@ -261,14 +273,16 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button
-            variant="primary"
-            size="sm"
-            className="d-inline-flex align-items-center"
-            onClick={onAddOverride}
-          >
-            <i className="bi bi-plus-lg me-1" /> Add override
-          </Button>
+          {canEdit && (
+            <Button
+              variant="primary"
+              size="sm"
+              className="d-inline-flex align-items-center"
+              onClick={onAddOverride}
+            >
+              <i className="bi bi-plus-lg me-1" /> Add override
+            </Button>
+          )}
         </div>
         <small className="text-body-secondary d-block mb-3">
           Customize settings for specific students or groups. Fields not overridden are inherited
@@ -298,6 +312,9 @@ export function AccessControlSummary({
                   override.appliesTo.targetType === 'enrollment'
                     ? 'Overrides for specific students'
                     : 'Overrides for student labels';
+                const canEditOverride =
+                  canEdit &&
+                  (override.appliesTo.targetType !== 'enrollment' || canEditEnrollmentRules);
 
                 return (
                   <Fragment key={sortableIds[index]}>
@@ -315,6 +332,8 @@ export function AccessControlSummary({
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
                       isActive={selectedOverrideIndex === index}
+                      canEdit={canEditOverride}
+                      editLabel={canEditOverride ? 'Edit' : 'View'}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

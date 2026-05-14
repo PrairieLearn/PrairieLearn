@@ -26,6 +26,8 @@ interface AssessmentAccessControlProps {
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canEdit: boolean;
+  canEditEnrollmentRules: boolean;
 }
 
 function AssessmentAccessControlInner({
@@ -34,6 +36,8 @@ function AssessmentAccessControlInner({
   initialData,
   prairieTestExamMetadata,
   ptHost,
+  canEdit,
+  canEditEnrollmentRules,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
@@ -49,6 +53,8 @@ function AssessmentAccessControlInner({
   );
 
   const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
+    if (!canEdit) return;
+
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
@@ -57,10 +63,13 @@ function AssessmentAccessControlInner({
         enrollmentIds: (enrollments ?? []).map((e) => e.enrollmentId),
         ruleJson,
       }));
+    const shouldSyncEnrollmentRules =
+      canEditEnrollmentRules &&
+      (initialData.some((r) => r.ruleType === 'enrollment') || enrollmentRules.length > 0);
 
     await saveMutation.mutateAsync({
       rules: jsonRules,
-      enrollmentRules,
+      ...(shouldSyncEnrollmentRules ? { enrollmentRules } : {}),
       origHash,
     });
   };
@@ -108,6 +117,8 @@ function AssessmentAccessControlInner({
         ptHost={ptHost}
         isSaving={saveMutation.isPending}
         alert={saveAlert}
+        canEdit={canEdit}
+        canEditEnrollmentRules={canEditEnrollmentRules}
         onSubmit={handleFormSubmit}
       />
     </div>

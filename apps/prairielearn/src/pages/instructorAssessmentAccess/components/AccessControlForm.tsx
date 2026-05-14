@@ -42,6 +42,8 @@ export function AccessControlForm({
   courseInstance,
   isSaving = false,
   alert,
+  canEdit,
+  canEditEnrollmentRules,
 }: {
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
@@ -50,6 +52,8 @@ export function AccessControlForm({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
+  canEdit: boolean;
+  canEditEnrollmentRules: boolean;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -125,17 +129,32 @@ export function AccessControlForm({
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
+    if (!canEdit) return;
+
     await onSubmit(formDataToJson(data));
     reset(data);
   };
 
   const addOverride = () => {
+    if (!canEdit) return;
+
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
+    if (!canEditEnrollmentRules) {
+      newOverride.appliesTo.targetType = 'student_label';
+    }
     appendOverride(newOverride);
     setSelectedRule({ type: 'override', index: watchedData.overrides.length });
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
+    if (!canEdit) return;
+    if (
+      !canEditEnrollmentRules &&
+      (targetType === 'enrollment' ||
+        watchedData.overrides[index].appliesTo.targetType === 'enrollment')
+    ) {
+      return;
+    }
     if (watchedData.overrides[index].appliesTo.targetType === targetType) return;
 
     const labelCount = watchedData.overrides.filter(
@@ -160,12 +179,29 @@ export function AccessControlForm({
   };
 
   const handleDeleteClick = (index: number) => {
+    if (!canEdit) return;
+    if (
+      !canEditEnrollmentRules &&
+      watchedData.overrides[index]?.appliesTo.targetType === 'enrollment'
+    ) {
+      return;
+    }
+
     deleteModal.showWithData({ index, name: getOverrideName(index) });
   };
 
   const handleDeleteConfirm = () => {
+    if (!canEdit) return;
+
     if (deleteModal.data !== null) {
       const deletedIndex = deleteModal.data.index;
+      if (
+        !canEditEnrollmentRules &&
+        watchedData.overrides[deletedIndex]?.appliesTo.targetType === 'enrollment'
+      ) {
+        deleteModal.hide();
+        return;
+      }
       if (selectedRule?.type === 'override') {
         if (selectedRule.index === deletedIndex) {
           setSelectedRule(null);
@@ -179,6 +215,15 @@ export function AccessControlForm({
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    if (!canEdit) return;
+    if (
+      !canEditEnrollmentRules &&
+      (watchedData.overrides[fromIndex]?.appliesTo.targetType === 'enrollment' ||
+        watchedData.overrides[toIndex]?.appliesTo.targetType === 'enrollment')
+    ) {
+      return;
+    }
+
     moveOverride(fromIndex, toIndex);
 
     if (selectedRule?.type !== 'override') return;
@@ -245,6 +290,12 @@ export function AccessControlForm({
     </button>
   ) : undefined;
 
+  const selectedRuleCanEdit =
+    canEdit &&
+    (selectedRule?.type !== 'override' ||
+      watchedData.overrides[selectedRule.index]?.appliesTo.targetType !== 'enrollment' ||
+      canEditEnrollmentRules);
+
   const rightPanel =
     selectedRule?.type === 'default' ? (
       <div className="px-3 pb-3">
@@ -260,6 +311,7 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              canTargetEnrollments={canEditEnrollmentRules}
               onTargetTypeChange={(targetType) =>
                 handleOverrideTargetTypeChange(selectedRule.index, targetType)
               }
@@ -313,6 +365,8 @@ export function AccessControlForm({
                     }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
+                    canEdit={canEdit}
+                    canEditEnrollmentRules={canEditEnrollmentRules}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={handleMoveOverride}
@@ -332,17 +386,23 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickySaveBar
-                  visible={isDirty}
-                  isSaving={isSaving}
-                  saveDisabledReason={saveDisabledReason}
-                  onCancel={() => reset()}
-                />
+                {canEdit && (
+                  <StickySaveBar
+                    visible={isDirty}
+                    isSaving={isSaving}
+                    saveDisabledReason={saveDisabledReason}
+                    onCancel={() => reset()}
+                  />
+                )}
               </>
             ),
           }}
           right={{
-            content: rightPanel,
+            content: (
+              <fieldset disabled={!selectedRuleCanEdit} className="border-0 p-0 m-0">
+                {rightPanel}
+              </fieldset>
+            ),
             title: rightTitle,
             headerAction: rightHeaderAction,
             collapsed: selectedRule == null ? true : undefined,

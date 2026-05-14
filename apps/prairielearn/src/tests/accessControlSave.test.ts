@@ -6,23 +6,38 @@ import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import {
+  type EnrollmentAccessControlRuleData,
+  syncEnrollmentAccessControl,
+} from '../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
+import {
+  generateAndEnrollUsers,
+  selectUsersAndEnrollmentsByUidsInCourseInstance,
+} from '../models/enrollment.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
+import * as helperClient from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { getConfiguredUser } from './utils/auth.js';
+import { getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
@@ -38,9 +53,39 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
   );
 }
 
+function makeEnrollmentRuleData(
+  overrides: Partial<EnrollmentAccessControlRuleData> = {},
+): EnrollmentAccessControlRuleData {
+  return {
+    beforeReleaseListed: null,
+    releaseDate: null,
+    dueOverridden: false,
+    dueDate: null,
+    dueCredit: null,
+    earlyDeadlinesOverridden: false,
+    lateDeadlinesOverridden: false,
+    afterLastDeadlineOverridden: false,
+    afterLastDeadlineAllowSubmissions: null,
+    afterLastDeadlineCredit: null,
+    durationMinutesOverridden: false,
+    durationMinutes: null,
+    passwordOverridden: false,
+    password: null,
+    questionsHidden: null,
+    questionsVisibleFromDate: null,
+    questionsVisibleUntilDate: null,
+    scoreHidden: null,
+    scoreVisibleFromDate: null,
+    earlyDeadlines: [],
+    lateDeadlines: [],
+    ...overrides,
+  };
+}
+
 describe('Access control save via tRPC', () => {
   let courseRepo: CourseRepoFixture;
   let assessmentId: string;
+  let enrollmentOverrideStudentUid: string;
 
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
@@ -48,11 +93,49 @@ describe('Access control save via tRPC', () => {
     await features.enable('enhanced-access-control');
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
 
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: instructor.uid,
+      course_role: 'Owner',
+      authn_user_id: instructor.id,
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: instructor.id,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: instructor.id,
+    });
+
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'hw19-accessControlUi',
     });
     assessmentId = assessment.id;
+
+    const courseInstance = await selectCourseInstanceById('1');
+    const [student] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    enrollmentOverrideStudentUid = student.uid;
+    const [{ enrollment }] = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+      uids: [student.uid],
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    await syncEnrollmentAccessControl(
+      assessment,
+      makeEnrollmentRuleData({
+        dueOverridden: true,
+        dueDate: '2024-04-18T23:59:00',
+      }),
+      [enrollment.id],
+    );
   });
 
   afterAll(helperServer.after);
@@ -143,6 +226,128 @@ describe('Access control save via tRPC', () => {
 
     assert.equal(parsed.accessControl.length, 1);
     assert.notProperty(parsed.accessControl[0], 'beforeRelease');
+  });
+
+  test.sequential(
+    'allows course editors without student data edit to save JSON rules',
+    async () => {
+      const courseEditor = {
+        uid: 'access-control-editor@example.com',
+        name: 'Access Control Editor',
+        uin: '100000001',
+        email: 'access-control-editor@example.com',
+      };
+      const user = await getOrCreateUser(courseEditor);
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: courseEditor.uid,
+        course_role: 'Editor',
+        authn_user_id: user.id,
+      });
+
+      await withUser(courseEditor, async () => {
+        const client = await createClient();
+        const origHash = await getOrigHash();
+        const result = await client.accessControl.saveAllRules.mutate({
+          rules: [makeRule({ dateControl: { due: { date: '2024-04-15T23:59:00' } } })],
+          origHash,
+        });
+        assert.isString(result.newHash);
+        assert.notEqual(result.newHash, origHash);
+      });
+
+      const fileContent = await fs.readFile(assessmentPath(), 'utf8');
+      const parsed = JSON.parse(fileContent);
+      assert.equal(parsed.accessControl[0].dateControl.due?.date, '2024-04-15T23:59:00');
+    },
+  );
+
+  test.sequential('requires student data edit to sync enrollment-specific rules', async () => {
+    const courseEditor = {
+      uid: 'access-control-enrollment-editor@example.com',
+      name: 'Access Control Enrollment Editor',
+      uin: '100000002',
+      email: 'access-control-enrollment-editor@example.com',
+    };
+    const user = await getOrCreateUser(courseEditor);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: courseEditor.uid,
+      course_role: 'Editor',
+      authn_user_id: user.id,
+    });
+
+    await withUser(courseEditor, async () => {
+      const client = await createClient();
+      const origHash = await getOrigHash();
+      await expect(
+        client.accessControl.saveAllRules.mutate({
+          rules: [makeRule()],
+          enrollmentRules: [],
+          origHash,
+        }),
+      ).rejects.toThrow(/student data editor/);
+    });
+  });
+
+  test.sequential('requires student data view to render enrollment-specific rules', async () => {
+    const accessUrl = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access`;
+    const courseEditorOnlyUser = {
+      uid: 'access-control-page-editor@example.com',
+      name: 'Access Control Page Editor',
+      uin: '100000003',
+      email: 'access-control-page-editor@example.com',
+    };
+    const courseEditorOnly = await getOrCreateUser(courseEditorOnlyUser);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: courseEditorOnlyUser.uid,
+      course_role: 'Editor',
+      authn_user_id: courseEditorOnly.id,
+    });
+
+    const courseEditorWithStudentDataViewUser = {
+      uid: 'access-control-page-student-data-viewer@example.com',
+      name: 'Access Control Page Student Data Viewer',
+      uin: '100000004',
+      email: 'access-control-page-student-data-viewer@example.com',
+    };
+    const courseEditorWithStudentDataView = await getOrCreateUser(
+      courseEditorWithStudentDataViewUser,
+    );
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: courseEditorWithStudentDataViewUser.uid,
+      course_role: 'Editor',
+      authn_user_id: courseEditorWithStudentDataView.id,
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: courseEditorWithStudentDataView.id,
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: courseEditorWithStudentDataView.id,
+    });
+
+    const courseEditorOnlyResponse = await helperClient.fetchCheerio(accessUrl, {
+      headers: {
+        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorOnlyUser.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None`,
+      },
+    });
+    assert.equal(courseEditorOnlyResponse.status, 200);
+    const courseEditorOnlyHtml = await courseEditorOnlyResponse.text();
+    assert.notInclude(courseEditorOnlyHtml, enrollmentOverrideStudentUid);
+
+    const courseEditorWithStudentDataViewResponse = await helperClient.fetchCheerio(accessUrl, {
+      headers: {
+        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorWithStudentDataViewUser.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Viewer`,
+      },
+    });
+    assert.equal(courseEditorWithStudentDataViewResponse.status, 200);
+    assert.include(
+      await courseEditorWithStudentDataViewResponse.text(),
+      enrollmentOverrideStudentUid,
+    );
   });
 
   test.sequential('rejects save with stale origHash', async () => {

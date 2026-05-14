@@ -31,8 +31,8 @@ import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
-  requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireCoursePermissionEdit,
   requireEnhancedAccessControl,
   t,
 } from './init.js';
@@ -187,7 +187,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
 
 const saveAllRules = t.procedure
   .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
@@ -197,6 +197,13 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
+    if (enrollmentRules !== undefined && !opts.ctx.authz_data.has_course_instance_permission_edit) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a student data editor)',
+      });
+    }
+
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
 

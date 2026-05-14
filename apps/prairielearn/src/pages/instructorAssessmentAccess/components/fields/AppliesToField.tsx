@@ -14,10 +14,12 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  canTargetEnrollments,
   onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  canTargetEnrollments: boolean;
   onTargetTypeChange: (targetType: TargetType) => void;
 }) {
   const trpc = useTRPC();
@@ -55,12 +57,19 @@ export function AppliesToField({
   const excludedUids = new Set(enrollments.map((i) => i.uid));
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+  const studentSpecificPermissionMessageId = `${namePrefix}-student-specific-permission-message`;
 
   return (
     <div className="mb-3">
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
+      {!canTargetEnrollments && (
+        <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
+          You must have Student Data Editor permission to create or edit overrides for specific
+          students.
+        </Alert>
+      )}
       <fieldset className="mb-3">
         <legend className="visually-hidden">Target type</legend>
         <Form.Check
@@ -69,6 +78,8 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
+          disabled={!canTargetEnrollments}
+          aria-describedby={!canTargetEnrollments ? studentSpecificPermissionMessageId : undefined}
           onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
