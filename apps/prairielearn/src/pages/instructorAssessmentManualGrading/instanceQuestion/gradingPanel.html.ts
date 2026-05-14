@@ -35,6 +35,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  aiGradingMode = false,
   showInstanceQuestionGroup = false,
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
@@ -52,6 +53,13 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  /**
+   * Controls whether the "AI grade" button renders. Must match the hydrated
+   * InstanceQuestionAiGrade component's gating — both should depend on the
+   * `ai-grading` feature flag AND the assessment question's `ai_grading_mode`
+   * — so the button never appears without its event handler.
+   */
+  aiGradingMode?: boolean;
   showInstanceQuestionGroup?: boolean;
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
@@ -447,7 +455,7 @@ ${submission.feedback?.manual}</textarea
                   >
                     Grade
                   </button>
-                  ${context === 'main' && resLocals.assessment_question.ai_grading_mode
+                  ${context === 'main' && aiGradingMode
                     ? html`
                         <button
                           id="ai-grade-button"

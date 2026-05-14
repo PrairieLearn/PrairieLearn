@@ -65,15 +65,24 @@ function InstanceQuestionAiGradeInner({
 
   const submissionStatus = serverJobProgress.displayedStatuses[instanceQuestionId];
 
-  // Refresh the grading panel on transition from in-flight to complete.
-  // Tracked via ref (not state) so the comparison doesn't trigger renders.
-  // Failures are surfaced by the progress row below.
-  const prevSubmissionStatusRef = useRef<JobItemStatus | undefined>(undefined);
+  // Refresh the grading panel once when a job we're watching reaches a
+  // terminal state. A previous-vs-current comparison misses the case where
+  // the job completes between page render and the WebSocket join, so we
+  // explicitly mark whether there's a pending reload to wait for instead.
+  // Tracked via ref (not state) to avoid render churn.
+  const expectReloadRef = useRef(
+    initialOngoingJobSequenceTokens != null &&
+      Object.keys(initialOngoingJobSequenceTokens).length > 0,
+  );
   useEffect(() => {
-    const prev = prevSubmissionStatusRef.current;
-    prevSubmissionStatusRef.current = submissionStatus;
-    if (!isInFlight(prev) || submissionStatus !== JobItemStatus.complete) return;
-    void reloadGradingPanel();
+    if (submissionStatus !== JobItemStatus.complete && submissionStatus !== JobItemStatus.failed) {
+      return;
+    }
+    if (!expectReloadRef.current) return;
+    expectReloadRef.current = false;
+    if (submissionStatus === JobItemStatus.complete) {
+      void reloadGradingPanel();
+    }
   }, [submissionStatus]);
 
   // Imperatively toggle the AI grade button's disabled state because the
@@ -135,6 +144,7 @@ function InstanceQuestionAiGradeInner({
             data.job_sequence_id,
             data.job_sequence_token,
           );
+          expectReloadRef.current = true;
           setLastSelectedModel(modelId);
         }}
       />

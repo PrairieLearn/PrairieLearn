@@ -1,3 +1,5 @@
+import { executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
+
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
@@ -42,8 +44,20 @@ export async function reloadGradingPanel(): Promise<void> {
   );
   const promptSlot = swapSlot('.js-ai-grading-prompt-slot', data.aiGradingPrompt ?? '');
 
-  window.resetInstructorGradingPanel();
-  await window.mathjaxTypeset(
-    [gradingPanel, explanationSlot, promptSlot].filter((el): el is HTMLElement => el != null),
+  const typesetTargets: HTMLElement[] = [gradingPanel, explanationSlot, promptSlot].filter(
+    (el): el is HTMLElement => el != null,
   );
+
+  if (data.submissionPanel && data.submissionId) {
+    const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+    if (oldSubmission) {
+      const newSubmission = parseHTMLElement<HTMLElement>(document, data.submissionPanel);
+      oldSubmission.replaceWith(newSubmission);
+      executeScripts(newSubmission);
+      typesetTargets.push(newSubmission);
+    }
+  }
+
+  window.resetInstructorGradingPanel();
+  await window.mathjaxTypeset(typesetTargets);
 }

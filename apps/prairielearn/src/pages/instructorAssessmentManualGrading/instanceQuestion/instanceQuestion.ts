@@ -364,6 +364,7 @@ router.get(
           ...locals,
           context: 'main',
           aiGradingInfo,
+          aiGradingMode: shared.aiGradingMode,
           selectedInstanceQuestionGroup: shared.instanceQuestionGroup,
           showInstanceQuestionGroup:
             shared.instanceQuestionGroups.length > 0 && shared.aiGradingMode,
