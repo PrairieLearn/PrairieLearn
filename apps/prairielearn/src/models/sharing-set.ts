@@ -85,13 +85,3 @@ export async function selectSharingSetUsage({
     }),
   );
 }
-
-export async function deleteSharingSet({
-  course_id,
-  name,
-}: {
-  course_id: string;
-  name: string;
-}): Promise<void> {
-  await sqldb.execute(sql.delete_sharing_set, { course_id, name });
-}

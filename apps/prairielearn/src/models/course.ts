@@ -8,9 +8,9 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryOptionalScalar,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -424,11 +424,7 @@ export async function selectCanChooseSharingName(course: {
 }): Promise<boolean> {
   return (
     course.sharing_name === null ||
-    !(await queryOptionalScalar(
-      sql.select_shared_question_exists,
-      { course_id: course.id },
-      z.boolean().nullable(),
-    ))
+    !(await queryScalar(sql.select_shared_question_exists, { course_id: course.id }, z.boolean()))
   );
 }
 
@@ -461,9 +457,10 @@ export async function updateCourseSharingName({
 /**
  * Updates `sharing_name` only if the course is still allowed to change it
  * (i.e., no sharing name yet, or no shared questions). The check and the
- * write run in one transaction so a question being shared between page-load
- * and submit cannot slip past the guard. Returns the new sharing name on
- * success, or `null` if the check failed at the time of the write.
+ * write run in one transaction with `SELECT ... FOR UPDATE` on the courses
+ * row, so concurrent calls serialize and a question being shared between
+ * page-load and submit cannot slip past the guard. Returns `true` on
+ * success, `false` if the check failed at the time of the write.
  */
 export async function updateCourseSharingNameIfAllowed({
   course_id,
@@ -471,12 +468,12 @@ export async function updateCourseSharingNameIfAllowed({
 }: {
   course_id: string;
   sharing_name: string;
-}): Promise<string | null> {
+}): Promise<boolean> {
   return await runInTransactionAsync(async () => {
-    const course = await selectCourseById(course_id);
-    if (!(await selectCanChooseSharingName(course))) return null;
+    const course = await queryRow(sql.select_course_by_id_for_update, { course_id }, CourseSchema);
+    if (!(await selectCanChooseSharingName(course))) return false;
     await execute(sql.update_course_sharing_name, { course_id, sharing_name });
-    return sharing_name;
+    return true;
   });
 }
 

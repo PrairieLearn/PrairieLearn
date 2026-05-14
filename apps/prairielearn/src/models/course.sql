@@ -6,6 +6,15 @@ FROM
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_id_for_update
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id
+FOR UPDATE;
+
 -- BLOCK select_course_by_short_name
 SELECT
   c.*

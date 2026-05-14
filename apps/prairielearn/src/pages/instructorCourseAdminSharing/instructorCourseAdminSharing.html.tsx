@@ -162,15 +162,17 @@ function InstructorCourseAdminSharingInner({
                 <th>Sharing name</th>
                 <td data-testid="sharing-name">
                   {sharingName !== null ? sharingName : ''}
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-secondary mx-2"
-                    aria-label="Choose sharing name"
-                    onClick={() => chooseSharingNameModal.showWithData(null)}
-                  >
-                    <i className="bi bi-share-fill" aria-hidden="true" />
-                    <span className="d-none d-sm-inline"> Choose sharing name</span>
-                  </button>
+                  {canChooseSharingName && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-secondary mx-2"
+                      aria-label="Choose sharing name"
+                      onClick={() => chooseSharingNameModal.showWithData(null)}
+                    >
+                      <i className="bi bi-share-fill" aria-hidden="true" />
+                      <span className="d-none d-sm-inline"> Choose sharing name</span>
+                    </button>
+                  )}
                 </td>
               </tr>
               <tr>
@@ -443,7 +445,7 @@ function ChooseSharingNameModal({
   const onSubmit = (data: { courseSharingName: string }) => {
     mutation.mutate(
       { courseSharingName: data.courseSharingName },
-      { onSuccess: ({ sharingName }) => onSuccess(sharingName) },
+      { onSuccess: () => onSuccess(data.courseSharingName) },
     );
   };
 

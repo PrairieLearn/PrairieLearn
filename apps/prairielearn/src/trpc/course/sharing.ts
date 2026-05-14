@@ -17,11 +17,7 @@ import {
   selectOptionalCourseBySharingToken,
   updateCourseSharingNameIfAllowed,
 } from '../../models/course.js';
-import {
-  deleteSharingSet,
-  selectSharingSetUsage,
-  selectSharingSetsForCourse,
-} from '../../models/sharing-set.js';
+import { selectSharingSetUsage, selectSharingSetsForCourse } from '../../models/sharing-set.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
@@ -135,16 +131,6 @@ async function writeCourseInfo({
   return { ok: true, newHash };
 }
 
-async function assertCourseInfoHashMatches(infoCoursePath: string, origHash: string) {
-  const currentHash = (await getOriginalHash(infoCoursePath)) ?? '';
-  if (currentHash !== origHash) {
-    throw new TRPCError({
-      code: 'CONFLICT',
-      message: 'infoCourse.json changed since this page loaded. Reload the page and try again.',
-    });
-  }
-}
-
 const regenerateSharingToken = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
@@ -194,8 +180,8 @@ const addCourseToSharingSet = t.procedure
       sql.course_sharing_set_add,
       {
         sharing_course_id: ctx.course.id,
-        unsafe_sharing_set_id: input.sharingSetId,
-        unsafe_course_sharing_token: input.courseSharingToken,
+        sharing_set_id: input.sharingSetId,
+        course_sharing_token: input.courseSharingToken,
       },
       z.string().nullable(),
     );
@@ -339,12 +325,7 @@ const deleteSharingSetProcedure = t.procedure
       });
     }
 
-    // We check this before doing any DB-only changes
-    await assertCourseInfoHashMatches(infoCoursePath, input.origHash);
-
     sharingSets.splice(0, sharingSets.length, ...filtered);
-
-    await deleteSharingSet({ course_id: ctx.course.id, name: input.name });
 
     const result = await writeCourseInfo({
       locals: ctx.locals,
@@ -382,18 +363,16 @@ const chooseSharingName = t.procedure
       });
     }
 
-    const updatedName = await updateCourseSharingNameIfAllowed({
+    const updated = await updateCourseSharingNameIfAllowed({
       course_id: ctx.course.id,
       sharing_name: input.courseSharingName,
     });
-    if (updatedName === null) {
+    if (!updated) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Unable to change sharing name. At least one question has been shared.',
       });
     }
-
-    return { sharingName: updatedName };
   });
 
 const listSharingSets = t.procedure

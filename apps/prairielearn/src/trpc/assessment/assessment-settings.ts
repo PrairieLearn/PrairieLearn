@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
@@ -18,10 +19,7 @@ import {
   MultiEditor,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import {
-  SharingValidationError,
-  assertAssessmentCanBeSharedPublicly,
-} from '../../lib/sharing-validation.js';
+import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
 import {
@@ -226,7 +224,7 @@ const updateAssessment = t.procedure
         try {
           await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
         } catch (err) {
-          if (err instanceof SharingValidationError) {
+          if (err instanceof HttpStatusError) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
           }
           throw err;

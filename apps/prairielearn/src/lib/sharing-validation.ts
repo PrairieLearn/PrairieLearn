@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -46,12 +47,8 @@ function formatTruncatedList(names: string[], maxListed = 5): string {
   return `${names.slice(0, maxListed).join(', ')}, and ${remaining} more`;
 }
 
-export class SharingValidationError extends Error {
-  status = 400 as const;
-}
-
 /**
- * Throws a 400-style error if the assessment cannot transition to publicly
+ * Throws a 400 HttpStatusError if the assessment cannot transition to publicly
  * shared because one or more of its questions are not publicly shared. Used at
  * both page-load time (to disable the checkbox + render the warning) and
  * submit time (to enforce the invariant server-side).
@@ -63,15 +60,16 @@ export async function assertAssessmentCanBeSharedPublicly({
 }): Promise<void> {
   const nonPublic = await selectNonPublicQuestionsInAssessment({ assessment_id });
   if (nonPublic.length > 0) {
-    throw new SharingValidationError(
+    throw new HttpStatusError(
+      400,
       `Cannot share this assessment publicly because it contains questions that are not publicly shared: ${formatTruncatedList(nonPublic.map((q) => q.qid))}.`,
     );
   }
 }
 
 /**
- * Throws a 400-style error if the course instance cannot transition to publicly
- * shared because one or more of its assessments are not publicly shared.
+ * Throws a 400 HttpStatusError if the course instance cannot transition to
+ * publicly shared because one or more of its assessments are not publicly shared.
  */
 export async function assertCourseInstanceCanBeSharedPublicly({
   course_instance_id,
@@ -80,7 +78,8 @@ export async function assertCourseInstanceCanBeSharedPublicly({
 }): Promise<void> {
   const nonPublic = await selectNonPublicAssessmentsInCourseInstance({ course_instance_id });
   if (nonPublic.length > 0) {
-    throw new SharingValidationError(
+    throw new HttpStatusError(
+      400,
       `Cannot share this course instance publicly because it contains assessments that are not publicly shared: ${formatTruncatedList(nonPublic.map((a) => a.tid))}.`,
     );
   }

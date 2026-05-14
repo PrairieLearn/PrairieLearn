@@ -50,12 +50,6 @@ SELECT
       AND ss.name = $name
   ) AS consumer_count;
 
--- BLOCK delete_sharing_set
-DELETE FROM sharing_sets
-WHERE
-  course_id = $course_id
-  AND name = $name;
-
 -- BLOCK select_sharing_sets_for_course
 SELECT
   ss.name,

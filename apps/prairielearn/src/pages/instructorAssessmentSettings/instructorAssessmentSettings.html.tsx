@@ -11,7 +11,12 @@ import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { AppErrorAlert, getAppError, renderAppError } from '../../lib/client/errors.js';
+import {
+  AppErrorAlert,
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
@@ -25,14 +30,6 @@ import { validateShortName } from '../../lib/short-name.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
-
-function syncJobFailedRenderer(urlPrefix: string) {
-  return ({ message, jobSequenceId }: { message: string; jobSequenceId: string }) => (
-    <>
-      {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
-    </>
-  );
-}
 
 function ScoringSummary({
   zonePointsRange,

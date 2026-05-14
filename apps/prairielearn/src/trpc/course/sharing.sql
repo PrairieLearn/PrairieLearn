@@ -18,10 +18,14 @@ FROM
   JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id
   JOIN courses AS consuming_course ON consuming_course.id <> sharing_course.id
 WHERE
-  consuming_course.sharing_token = $unsafe_course_sharing_token
-  AND ss.id = $unsafe_sharing_set_id
+  consuming_course.sharing_token = $course_sharing_token
+  AND ss.id = $sharing_set_id
   AND sharing_course.id = $sharing_course_id
-  -- Idempotent: a no-op UPDATE so RETURNING fires for both new and existing rows.
+  -- A no-op UPDATE is required (not `DO NOTHING`) so that RETURNING fires on
+  -- both insert and conflict. Callers rely on the returned row to confirm the
+  -- consuming course was found and belongs to this sharing course; switching
+  -- to `DO NOTHING` would silently return zero rows on the idempotent path
+  -- and break that check.
 ON CONFLICT (sharing_set_id, course_id) DO UPDATE
 SET
   course_id = EXCLUDED.course_id

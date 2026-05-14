@@ -37,7 +37,6 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
-  SharingValidationError,
   assertCourseInstanceCanBeSharedPublicly,
   selectNonPublicAssessmentsInCourseInstance,
 } from '../../lib/sharing-validation.js';
@@ -451,16 +450,9 @@ router.post(
       }
       if (res.locals.question_sharing_enabled) {
         if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
-          try {
-            await assertCourseInstanceCanBeSharedPublicly({
-              course_instance_id: courseInstance.id,
-            });
-          } catch (err) {
-            if (err instanceof SharingValidationError) {
-              throw new error.HttpStatusError(400, err.message);
-            }
-            throw err;
-          }
+          await assertCourseInstanceCanBeSharedPublicly({
+            course_instance_id: courseInstance.id,
+          });
         }
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,

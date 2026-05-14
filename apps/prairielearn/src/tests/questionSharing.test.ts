@@ -1401,8 +1401,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       } catch (err: unknown) {
         const appError = getAppError<SharingError['DeleteSharingSet']>(err);
         assert.isNotNull(appError);
-        assert.equal(appError.code, 'UNKNOWN');
-        assert.include(appError.message, 'infoCourse.json changed since this page loaded');
+        assert.equal(appError.code, 'SYNC_JOB_FAILED');
       }
 
       assert.isNotNull(await selectSharingSet(STALE_DELETE_SET_NAME));
