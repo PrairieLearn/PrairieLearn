@@ -209,10 +209,7 @@ export function InstanceQuestion({
       </div>
 
       ${instanceQuestionAiGradeProps
-        ? // Props are spelled out (rather than spread) because the safe-db-types
-          // lint rule needs to see each prop's type to ensure no raw db-types
-          // leak into the hydrated client.
-          hydrateHtml(
+        ? hydrateHtml(
             <InstanceQuestionAiGrade
               courseInstanceId={instanceQuestionAiGradeProps.courseInstanceId}
               assessmentId={instanceQuestionAiGradeProps.assessmentId}

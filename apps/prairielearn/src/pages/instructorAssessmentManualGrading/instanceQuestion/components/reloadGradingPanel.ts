@@ -14,6 +14,13 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
   return slot;
 }
 
+/**
+ * Refreshes the grading panel, AI explanation/prompt slots, and submission
+ * panel in place after AI grading completes. Done imperatively (innerHTML
+ * swaps + `window.resetInstructorGradingPanel`) because the grading panel is
+ * server-rendered HTML; a declarative React version would require porting the
+ * entire panel (and its many imperative `js-*` handlers) to React.
+ */
 export async function reloadGradingPanel(): Promise<void> {
   const res = await fetch(`${window.location.pathname}/grading_rubric_panels`, {
     headers: { Accept: 'application/json' },

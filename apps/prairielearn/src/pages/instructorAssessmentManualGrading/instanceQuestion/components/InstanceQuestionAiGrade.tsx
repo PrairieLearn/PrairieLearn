@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
-import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
@@ -17,10 +17,6 @@ import {
 import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
 
 import { reloadGradingPanel } from './reloadGradingPanel.js';
-
-function isInFlight(status: JobItemStatus | undefined) {
-  return status === JobItemStatus.queued || status === JobItemStatus.in_progress;
-}
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
@@ -98,7 +94,8 @@ function InstanceQuestionAiGradeInner({
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
-    const inProgress = isInFlight(submissionStatus);
+    const inProgress =
+      submissionStatus === JobItemStatus.queued || submissionStatus === JobItemStatus.in_progress;
     button.disabled = inProgress;
     button.title = inProgress ? 'AI grading in progress…' : '';
   }, [submissionStatus]);
@@ -117,47 +114,15 @@ function InstanceQuestionAiGradeInner({
 
   return (
     <>
-      {hasCourseInstancePermissionEdit ? (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstanceId}
-          statusIcons={{ inProgress: 'bi-stars' }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            stopping: 'Stopping AI grading…',
-            stopped: 'AI grading stopped',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          stopConfirmation={{
-            title: 'Stop AI grading',
-            body: 'In-progress submissions will finish. The rest will be skipped.',
-            confirmLabel: 'Stop grading',
-            cancelLabel: 'Keep grading',
-          }}
-          stoppable
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-          onStopJobSequence={(jobSequenceId) =>
-            stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
-          }
-        />
-      ) : (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstanceId}
-          statusIcons={{ inProgress: 'bi-stars' }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            stopping: 'Stopping AI grading…',
-            stopped: 'AI grading stopped',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
-      )}
+      <AiGradingProgressInfo
+        jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+        courseInstanceId={courseInstanceId}
+        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+        onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+        onStopJobSequence={(jobSequenceId) =>
+          stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+        }
+      />
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
         show={modelSelectionModalState.show}
