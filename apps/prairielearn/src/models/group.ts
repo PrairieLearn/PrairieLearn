@@ -31,6 +31,14 @@ export async function selectGroupConfigForAssessment(
   );
 }
 
+export async function selectGroupRoleNamesForAssessment(assessment_id: string): Promise<string[]> {
+  return await queryScalars(
+    sql.select_group_role_names_for_assessment,
+    { assessment_id },
+    z.string(),
+  );
+}
+
 export async function selectGroupsForConfig(group_config_id: string): Promise<GroupUsersRow[]> {
   return await queryRows(sql.select_groups_for_config, { group_config_id }, GroupUsersRowSchema);
 }
