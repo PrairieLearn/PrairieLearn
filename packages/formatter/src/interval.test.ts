@@ -32,10 +32,7 @@ describe('interval formatting', () => {
       assert.equal(formatInterval(0), '0s');
     });
     it('should handle negative intervals', () => {
-      assert.equal(
-        formatInterval(-(((4 * 24 + 3) * 60 + 2) * 60 + 7) * 1000),
-        '-4d -3h -2min -7s',
-      );
+      assert.equal(formatInterval(-(((4 * 24 + 3) * 60 + 2) * 60 + 7) * 1000), '-4d -3h -2min -7s');
     });
   });
   describe('formatIntervalRelative()', () => {
