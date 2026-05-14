@@ -315,7 +315,7 @@ onDocumentReady(() => {
         switchable: true,
       },
       {
-        field: 'duration',
+        field: 'duration_formatted',
         title: html`
           Duration
           <button
@@ -329,7 +329,7 @@ onDocumentReady(() => {
           </button>
         `,
         sortable: true,
-        sortName: 'duration_secs',
+        sortName: 'duration',
         class: 'text-center align-middle text-nowrap',
         switchable: true,
       },
