@@ -1,11 +1,15 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
+import { getAppError } from '../../../../lib/client/errors.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
+import type { QuestionsError } from '../../../../trpc/course/questions.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -41,6 +45,9 @@ interface AiQuestionGenerationEditorProps {
   showJobLogsLink: boolean;
   variantUrl: string;
   variantCsrfToken: string;
+  trpcCsrfToken: string;
+  courseId: string;
+  editErrorUrlPrefix: string;
 }
 
 function AiQuestionGenerationEditorInner({
@@ -55,6 +62,7 @@ function AiQuestionGenerationEditorInner({
   showJobLogsLink,
   variantUrl,
   variantCsrfToken,
+  editErrorUrlPrefix,
 }: AiQuestionGenerationEditorProps) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -63,6 +71,22 @@ function AiQuestionGenerationEditorInner({
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
+  const trpc = useTRPC();
+  const finalizeDraftMutation = useMutation({
+    ...trpc.questions.finalizeDraft.mutationOptions(),
+    onSuccess: ({ previewUrl }) => {
+      window.location.assign(previewUrl);
+    },
+  });
+  const {
+    error: finalizeDraftMutationError,
+    isPending: isFinalizingDraft,
+    mutate: finalizeDraft,
+    reset: resetFinalizeDraft,
+  } = finalizeDraftMutation;
+  const finalizeDraftError = getAppError<QuestionsError['FinalizeDraft']>(
+    finalizeDraftMutationError,
+  );
 
   const handleTitleAndQidSaved = useCallback(
     (update: { qid: string | null; title: string | null }) => {
@@ -176,6 +200,9 @@ function AiQuestionGenerationEditorInner({
         // user edits the title/QID inline and reopens the modal.
         key={`${currentTitle ?? ''}::${currentQid ?? ''}`}
         csrfToken={csrfToken}
+        editErrorUrlPrefix={editErrorUrlPrefix}
+        isFinalizing={isFinalizingDraft}
+        error={finalizeDraftError}
         show={showFinalizeModal}
         // Don't pre-fill auto-generated placeholder values like "draft #3" or
         // "draft_3" — these are system defaults that users almost certainly
@@ -191,6 +218,8 @@ function AiQuestionGenerationEditorInner({
           if (suffix && /^draft_\d+$/.test(suffix)) return undefined;
           return suffix;
         })}
+        onDismissError={resetFinalizeDraft}
+        onFinalize={({ title, qid }) => finalizeDraft({ questionId: question.id, title, qid })}
         onHide={() => setShowFinalizeModal(false)}
       />
     </div>
@@ -199,10 +228,15 @@ function AiQuestionGenerationEditorInner({
 
 export function AiQuestionGenerationEditor(props: AiQuestionGenerationEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: props.trpcCsrfToken, courseId: props.courseId }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient}>
-      <AiQuestionGenerationEditorInner {...props} />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <AiQuestionGenerationEditorInner {...props} />
+      </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }

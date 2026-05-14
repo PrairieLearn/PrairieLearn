@@ -434,7 +434,7 @@ export abstract class Editor {
  * @param existingQids - List of existing question QIDs.
  * @param skipQid - Optional QID to skip (e.g., the question being renamed).
  */
-function validateQidNesting(newQid: string, existingQids: string[], skipQid?: string): void {
+export function validateQidNesting(newQid: string, existingQids: string[], skipQid?: string): void {
   const normalizedNewQid = path.normalize(newQid);
   for (const existingQid of existingQids) {
     if (skipQid != null && existingQid === skipQid) continue;
