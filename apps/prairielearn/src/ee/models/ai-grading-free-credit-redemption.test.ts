@@ -1,6 +1,6 @@
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
-import { queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
@@ -17,17 +17,13 @@ import {
   selectCourseFreeCreditRedemptionsUsed,
 } from './ai-grading-free-credit-redemption.js';
 
+const sql = loadSqlEquiv(import.meta.url);
+
 const COURSE_ID = '1';
 const COURSE_INSTANCE_ID = '1';
 
 async function insertSecondCourseInstance() {
-  return await queryScalar(
-    `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
-     VALUES ($course_id, 'CI-2', 'Second Course Instance', 'America/Chicago', 'TESTCI-002')
-     RETURNING id`,
-    { course_id: COURSE_ID },
-    IdSchema,
-  );
+  return await queryScalar(sql.insert_second_course_instance, { course_id: COURSE_ID }, IdSchema);
 }
 
 async function createTestUser() {
