@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -29,9 +30,8 @@ export const LtiDataSchema = z.object({
           consumer_key: true,
           secret: true,
           created_at: true,
+          deleted_at: true,
         }).shape,
-        created: z.string(),
-        deleted: z.string().nullable(),
       }),
     )
     .nullable(),
@@ -45,7 +45,6 @@ export const LtiDataSchema = z.object({
           assessment_id: true,
           created_at: true,
         }).shape,
-        created: z.string(),
       }),
     )
     .nullable(),
@@ -74,17 +73,6 @@ export function InstructorInstanceAdminLti({
     options: {
       fullWidth: true,
     },
-    preContent: html`
-      <script>
-        function copyToClipboard(element) {
-          var $temp = $('<input>');
-          $('body').append($temp);
-          $temp.val($(element).text()).select();
-          document.execCommand('copy');
-          $temp.remove();
-        }
-      </script>
-    `,
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -121,8 +109,17 @@ export function InstructorInstanceAdminLti({
 
       ${resLocals.lti11_enabled
         ? html`
-            ${LtiCredentialCard({ lti_credentials, csrfToken: resLocals.__csrf_token })}
-            ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken: resLocals.__csrf_token })}
+            ${LtiCredentialCard({
+              lti_credentials,
+              csrfToken: resLocals.__csrf_token,
+              timezone: resLocals.course_instance.display_timezone,
+            })}
+            ${LtiLinkTargetsCard({
+              lti_links,
+              assessments,
+              csrfToken: resLocals.__csrf_token,
+              timezone: resLocals.course_instance.display_timezone,
+            })}
           `
         : ''}
     `,
@@ -132,9 +129,11 @@ export function InstructorInstanceAdminLti({
 function LtiCredentialCard({
   lti_credentials,
   csrfToken,
+  timezone,
 }: {
   lti_credentials: LtiData['lti_credentials'];
   csrfToken: string;
+  timezone: string;
 }) {
   return html`
     <div class="card mb-4">
@@ -166,59 +165,60 @@ function LtiCredentialCard({
                         <code>${config.ltiRedirectUrl}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${config.ltiRedirectUrl}"
                           aria-label="Copy redirect URL to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
                       <td>
                         <code>${tc.consumer_key}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${tc.consumer_key}"
                           aria-label="Copy consumer key to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
                       <td>
                         <code>${tc.secret}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-ghost"
+                          class="btn btn-sm btn-ghost js-copy-button"
+                          data-clipboard-text="${tc.secret}"
                           aria-label="Copy shared secret to clipboard"
-                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          <i class="far fa-copy"></i>
+                          <i class="bi bi-clipboard"></i>
                         </button>
                       </td>
-                      <td>${tc.created}</td>
+                      <td>${formatDate(tc.created_at!, timezone)}</td>
                       <td>
-                        ${tc.deleted ||
-                        html`
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Confirm delete"
-                            data-bs-content="${escapeHtml(html`
-                              <form method="post">
-                                <input type="hidden" name="__action" value="lti_del_cred" />
-                                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                                <input type="hidden" name="lti_link_id" value="${tc.id}" />
-                                <input type="submit" class="btn btn-danger" value="Delete" />
-                              </form>
-                            `)}"
-                          >
-                            Delete
-                          </button>
-                        `}
+                        ${tc.deleted_at != null
+                          ? formatDate(tc.deleted_at, timezone)
+                          : html`
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="popover"
+                                data-bs-container="body"
+                                data-bs-html="true"
+                                data-bs-placement="auto"
+                                data-bs-title="Confirm delete"
+                                data-bs-content="${escapeHtml(html`
+                                  <form method="post">
+                                    <input type="hidden" name="__action" value="lti_del_cred" />
+                                    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                                    <input type="hidden" name="lti_link_id" value="${tc.id}" />
+                                    <input type="submit" class="btn btn-danger" value="Delete" />
+                                  </form>
+                                `)}"
+                              >
+                                Delete
+                              </button>
+                            `}
                       </td>
                     </tr>
                   `,
@@ -249,10 +249,12 @@ function LtiLinkTargetsCard({
   lti_links,
   assessments,
   csrfToken,
+  timezone,
 }: {
   lti_links: LtiData['lti_links'];
   assessments: LtiData['assessments'];
   csrfToken: string;
+  timezone: string;
 }) {
   return html`
     <div class="card mb-4">
@@ -311,7 +313,7 @@ function LtiLinkTargetsCard({
                           </select>
                         </form>
                       </td>
-                      <td>${link.created}</td>
+                      <td>${formatDate(link.created_at, timezone)}</td>
                     </tr>
                   `,
                 )

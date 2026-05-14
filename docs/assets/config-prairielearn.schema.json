@@ -301,6 +301,10 @@
       "type": "number",
       "default": 600
     },
+    "cronIntervalFetchNewsItemsSec": {
+      "type": "number",
+      "default": 300
+    },
     "cronDailySec": {
       "type": "number",
       "default": 28800
@@ -879,9 +883,9 @@
       "type": "boolean",
       "default": false
     },
-    "prairieTestAuthSecret": {
+    "prairieTestSharedAuthSecret": {
       "type": "string",
-      "default": "THIS_SHOULD_MATCH_THE_PT_KEY"
+      "default": "CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET"
     },
     "openTelemetryEnabled": {
       "type": "boolean",
@@ -1206,6 +1210,21 @@
     "courseFilesApiUrl": {
       "type": ["string", "null"],
       "default": null
+    },
+    "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedBlogUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     },
     "costPerMillionTokens": {
       "type": "object",

@@ -29,7 +29,7 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -86,10 +86,9 @@ router.get(
         return null;
       }
 
-      const ongoingJobSequenceIds = await getJobSequenceIds({
-        assessment_question_id: res.locals.assessment_question.id,
-        status: 'Running',
+      const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
         type: 'ai_grading',
+        assessment_question_id: res.locals.assessment_question.id,
       });
 
       const jobSequenceTokens = ongoingJobSequenceIds.reduce(
@@ -118,7 +117,7 @@ router.get(
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
-    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit;
     const search = getUrl(req).search;
 
     const trpcCsrfToken = generatePrefixCsrfToken(

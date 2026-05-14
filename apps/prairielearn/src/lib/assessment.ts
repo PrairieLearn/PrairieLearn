@@ -4,6 +4,7 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -18,6 +19,7 @@ import {
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
+  CourseInstanceSchema,
   CourseSchema,
   QuestionSchema,
   type User,
@@ -31,10 +33,10 @@ import { createServerJob } from './server-jobs.js';
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
@@ -46,12 +48,15 @@ export const InstanceLogSchema = z.object({
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
+  assessment_instance_date: DateFromISOString,
+  display_timezone: CourseInstanceSchema.shape.display_timezone,
 });
-export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+export type InstanceLogEntry = Omit<
+  z.infer<typeof InstanceLogSchema>,
+  'display_timezone' | 'assessment_instance_date'
+>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -533,6 +538,35 @@ export async function setAssessmentInstancePoints(
   });
 }
 
+function formatLogEntryValues({
+  display_timezone,
+  assessment_instance_date,
+  ...row
+}: z.infer<typeof InstanceLogSchema>): InstanceLogEntry {
+  if (row.event_name === 'Open') {
+    const dateLimit = DateFromISOString.nullable().parse(row.data?.date_limit);
+    if (dateLimit == null) {
+      row.data = {
+        ...row.data,
+        date_limit: 'Unlimited',
+        time_limit: 'Unlimited',
+        remaining_time: 'Unlimited',
+      };
+    } else {
+      row.data = {
+        ...row.data,
+        date_limit: formatDate(dateLimit, display_timezone),
+        time_limit: formatInterval(dateLimit.getTime() - assessment_instance_date.getTime()),
+        remaining_time: formatInterval(dateLimit.getTime() - row.event_date.getTime()),
+      };
+    }
+  } else if (row.event_name === 'Time limit expiry') {
+    const dateLimit = DateFromISOString.parse(row.data?.date_limit);
+    row.data = { ...row.data, date_limit: formatDate(dateLimit, display_timezone) };
+  }
+  return row;
+}
+
 /**
  * Selects a log of all events associated to an assessment instance.
  *
@@ -548,7 +582,7 @@ export async function selectAssessmentInstanceLog(
   const log: InstanceLogEntry[] = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
   const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
@@ -571,7 +605,7 @@ export async function selectAssessmentInstanceLogCursor(
   return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
 }
 

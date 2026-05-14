@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AI_GRADING_MODEL_IDS,
@@ -10,15 +11,22 @@ import {
 import { fillInstanceQuestionColumnEntries } from '../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  hasPriorAiGradingJobs,
   setAiGradingLastSelectedModel,
   setAiGradingMode,
 } from '../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../ee/lib/ai-grading/ai-grading.js';
+import {
+  MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+  aiGrade,
+  getActiveAiGradingJobCountForCourseInstance,
+} from '../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { stopJobSequence } from '../../lib/server-jobs.js';
+import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 import {
@@ -32,7 +40,17 @@ import {
   t,
 } from './init.js';
 
-export interface ManualGradingError {}
+export interface ManualGradingError {
+  Instances: never;
+  AiGradingAvailabilityInfo: never;
+  SetAiGradingMode: never;
+  DeleteAiGradingJobs: never;
+  DeleteAiInstanceQuestionGroupings: never;
+  AiGroupInstanceQuestions: never;
+  AiGradeInstanceQuestions: never;
+  SetAssignedGrader: never;
+  SetRequiresManualGrading: never;
+}
 
 const requireAiGradingFeature = t.middleware(async (opts) => {
   const enabled = await features.enabled('ai-grading', {
@@ -164,6 +182,25 @@ const aiGradeInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
+const stopAiGradingJobMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .input(z.object({ job_sequence_id: IdSchema }))
+  .mutation(async (opts) => {
+    const stopped = await stopJobSequence({
+      job_sequence_id: opts.input.job_sequence_id,
+      assessment_question_id: opts.ctx.assessment_question.id,
+      authn_user_id: opts.ctx.authn_user.id,
+      type: 'ai_grading',
+    });
+    if (!stopped) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: 'AI grading job is no longer running.',
+      });
+    }
+  });
+
 const setAssignedGraderMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
@@ -214,13 +251,40 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+const aiGradingAvailabilityInfo = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .use(requireAiGradingFeature)
+  .output(
+    z.object({
+      running_job_count: z.number(),
+      max_concurrent_jobs: z.number(),
+      credit_balance_milli_dollars: z.number(),
+      has_prior_jobs: z.boolean(),
+    }),
+  )
+  .query(async (opts) => {
+    const [running_job_count, creditPool, has_prior_jobs] = await Promise.all([
+      getActiveAiGradingJobCountForCourseInstance(opts.ctx.course_instance.id),
+      selectCreditPool(opts.ctx.course_instance.id),
+      hasPriorAiGradingJobs(opts.ctx.assessment_question.id),
+    ]);
+    return {
+      running_job_count,
+      max_concurrent_jobs: MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE,
+      credit_balance_milli_dollars: creditPool.total_milli_dollars,
+      has_prior_jobs,
+    };
+  });
+
 export const manualGradingRouter = t.router({
   instances,
+  aiGradingAvailabilityInfo,
   setAiGradingMode: setAiGradingModeMutation,
   deleteAiGradingJobs: deleteAiGradingJobsMutation,
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
+  stopAiGradingJob: stopAiGradingJobMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
 });

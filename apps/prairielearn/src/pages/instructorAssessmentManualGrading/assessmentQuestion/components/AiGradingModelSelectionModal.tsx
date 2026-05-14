@@ -1,9 +1,11 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import {
   AI_GRADING_MODELS,
@@ -14,15 +16,21 @@ import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 
+type AiGradingAvailabilityState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'concurrency_limit'; maxConcurrentJobs: number }
+  | { kind: 'no_keys' }
+  | { kind: 'ready_with_keys' }
+  | { kind: 'no_credits' }
+  | { kind: 'ready_with_credits'; creditBalanceMilliDollars: number };
+
 export type AiGradingModelSelectionModalState =
   | { type: 'all'; numToGrade: number }
   | { type: 'human_graded'; numToGrade: number }
-  | { type: 'selected'; ids: string[]; numToGrade: number }
-  | null;
+  | { type: 'selected'; ids: string[]; numToGrade: number };
 
-function getSelection(
-  state: NonNullable<AiGradingModelSelectionModalState>,
-): 'all' | 'human_graded' | string[] {
+function getSelection(state: AiGradingModelSelectionModalState): 'all' | 'human_graded' | string[] {
   if (state.type === 'selected') return state.ids;
   return state.type;
 }
@@ -52,25 +60,28 @@ function ModelOption({
   model,
   isSelected,
   isAvailable,
+  aiGradingEnabled,
   relativeCost,
   onSelect,
 }: {
   model: (typeof AI_GRADING_MODELS)[number];
   isSelected: boolean;
   isAvailable: boolean;
+  aiGradingEnabled: boolean;
   relativeCost: string;
   onSelect: () => void;
 }) {
+  const isInteractive = isAvailable && aiGradingEnabled;
   const option = (
     <label
       key={model.modelId}
       htmlFor={`model-${model.modelId}`}
       className={clsx('rounded-2 px-3 py-2 mb-0 border', {
         'border-primary bg-primary bg-opacity-10': isSelected,
-        'border-transparent': !isSelected && isAvailable,
-        'opacity-75 border-transparent': !isAvailable,
+        'border-transparent': !isSelected && isInteractive,
+        'opacity-75 border-transparent': !isInteractive,
       })}
-      style={{ cursor: isAvailable ? 'pointer' : 'default' }}
+      style={{ cursor: isInteractive ? 'pointer' : 'default' }}
     >
       <div className="d-flex align-items-center justify-content-between">
         <Form.Check
@@ -78,7 +89,7 @@ function ModelOption({
           id={`model-${model.modelId}`}
           name="ai-grading-model"
           className="mb-0"
-          disabled={!isAvailable}
+          disabled={!isInteractive}
           checked={isSelected}
           label={
             <div>
@@ -115,11 +126,13 @@ function ModelOption({
 function ModelList({
   selectedModel,
   availableProviders,
+  aiGradingEnabled,
   relativeCosts,
   onSelect,
 }: {
   selectedModel: AiGradingModelId;
   availableProviders: EnumAiGradingProvider[];
+  aiGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
   onSelect: (modelId: AiGradingModelId) => void;
 }) {
@@ -153,6 +166,7 @@ function ModelList({
               model={model}
               isSelected={selectedModel === model.modelId}
               isAvailable={availableProviders.includes(model.provider)}
+              aiGradingEnabled={aiGradingEnabled}
               relativeCost={relativeCosts[model.modelId]}
               onSelect={() => onSelect(model.modelId)}
             />
@@ -179,6 +193,7 @@ function ModelList({
                 model={model}
                 isSelected={selectedModel === model.modelId}
                 isAvailable={availableProviders.includes(model.provider)}
+                aiGradingEnabled={aiGradingEnabled}
                 relativeCost={relativeCosts[model.modelId]}
                 onSelect={() => onSelect(model.modelId)}
               />
@@ -190,92 +205,268 @@ function ModelList({
   );
 }
 
-function BillingAlert({
-  useCustomApiKeys,
-  hasKeys,
-  hasCredits,
-  creditBalanceMilliDollars,
-  aiGradingSettingsUrl,
-}: {
-  useCustomApiKeys: boolean;
-  hasKeys: boolean;
-  hasCredits: boolean;
-  creditBalanceMilliDollars: number;
-  aiGradingSettingsUrl: string;
-}) {
-  if (useCustomApiKeys) {
-    return (
-      <Alert variant={hasKeys ? 'info' : 'danger'} className="mb-3 py-2 small">
-        {hasKeys ? (
-          <>
-            Billing to custom API key &middot;{' '}
-            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-              Manage keys
-            </a>
-          </>
-        ) : (
-          <>
-            No custom API keys configured &middot;{' '}
-            <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-              Manage keys
-            </a>
-          </>
-        )}
-      </Alert>
-    );
+function SettingsLink({ url, text }: { url: string; text: string }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {text}
+    </a>
+  );
+}
+
+/**
+ * Opens the rubric settings collapse panel (if not already open) and scrolls
+ * to the editor. Used by the BeforeYouGradeCard "Create a rubric" action to
+ * guide the instructor to the authoring UI after the modal closes.
+ */
+function openRubricSettings() {
+  const panel = document.getElementById('rubric-setting');
+  if (!panel) return;
+  const target = document.getElementById('rubric-editor') ?? panel;
+  const scroll = () => target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel.classList.contains('show')) {
+    scroll();
+    return;
   }
+  // Wait for the Bootstrap collapse animation to finish so the post-expansion
+  // layout is what gets scrolled to, not the pre-expansion (zero-height) one.
+  panel.addEventListener('shown.bs.collapse', scroll, { once: true });
+  const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+  toggle?.click();
+}
+
+interface BeforeYouGradeItem {
+  key: string;
+  title: string;
+  description: string;
+  onClick?: () => void;
+}
+
+function buildBeforeYouGradeItems({
+  hasRubric,
+  hasPriorJobs,
+  numToGrade,
+  totalSubmissionCount,
+  onOpenRubricSettings,
+  onSelectFirstSubmissions,
+}: {
+  hasRubric: boolean;
+  hasPriorJobs: boolean;
+  numToGrade: number;
+  totalSubmissionCount: number;
+  onOpenRubricSettings: () => void;
+  onSelectFirstSubmissions: (n: number) => void;
+}): BeforeYouGradeItem[] {
+  const items: BeforeYouGradeItem[] = [];
+  if (!hasRubric) {
+    items.push({
+      key: 'no_rubric',
+      title: 'Create a rubric',
+      description: 'Rubrics significantly improve accuracy and consistency.',
+      onClick: onOpenRubricSettings,
+    });
+  }
+  if (!hasPriorJobs && numToGrade > 5 && totalSubmissionCount >= 2) {
+    const n = Math.min(5, totalSubmissionCount);
+    items.push({
+      key: 'test_with_n',
+      title: `Test with ${n} ${n === 1 ? 'submission' : 'submissions'}`,
+      description: 'Confirm your rubric works well before running on all submissions.',
+      onClick: () => onSelectFirstSubmissions(n),
+    });
+  }
+  return items;
+}
+
+function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
+  return (
+    <div className="rounded-2 px-3 py-2 border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2">
+      <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
+      <div className="flex-grow-1">
+        {item.onClick ? (
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 align-baseline fw-medium text-decoration-none"
+            style={{ fontSize: 'inherit' }}
+            onClick={item.onClick}
+          >
+            {item.title}
+          </Button>
+        ) : (
+          <div className="fw-medium">{item.title}</div>
+        )}
+        <div className="text-muted small">{item.description}</div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeYouGradeSection({ items }: { items: BeforeYouGradeItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+        <span className="fw-semibold">Before you grade</span>
+      </div>
+      <div className="d-flex flex-column gap-2">
+        {items.map((item) => (
+          <BeforeYouGradeCard key={item.key} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AiGradingAvailabilityAlert({
+  state,
+  aiGradingSettingsUrl,
+  onRetryAvailability,
+}: {
+  state: AiGradingAvailabilityState;
+  aiGradingSettingsUrl: string;
+  onRetryAvailability: () => void;
+}) {
+  const { variant, content } = run<{
+    variant: 'info' | 'warning' | 'danger';
+    content: React.ReactNode;
+  }>(() => {
+    switch (state.kind) {
+      case 'loading':
+        return {
+          variant: 'info',
+          content: (
+            <span className="d-flex align-items-center gap-2">
+              <Spinner animation="border" size="sm" />
+              Loading AI grading status...
+            </span>
+          ),
+        };
+      case 'error':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              Unable to load AI grading status.{' '}
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 align-baseline"
+                style={{ fontSize: 'inherit' }}
+                onClick={onRetryAvailability}
+              >
+                Try again.
+              </Button>
+            </>
+          ),
+        };
+      case 'concurrency_limit':
+        return {
+          variant: 'warning',
+          content: (
+            <>
+              You've reached the limit of {state.maxConcurrentJobs} concurrent AI grading jobs.
+              Please wait for running jobs to finish.
+            </>
+          ),
+        };
+      case 'ready_with_keys':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to custom API key &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
+            </>
+          ),
+        };
+      case 'no_keys':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No custom API keys configured &middot;{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="Manage keys" />
+            </>
+          ),
+        };
+      case 'ready_with_credits':
+        return {
+          variant: 'info',
+          content: (
+            <>
+              Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
+              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
+            </>
+          ),
+        };
+      case 'no_credits':
+        return {
+          variant: 'danger',
+          content: (
+            <>
+              No credits remaining. Purchase credits on the{' '}
+              <SettingsLink url={aiGradingSettingsUrl} text="AI grading settings" /> page.
+            </>
+          ),
+        };
+      default:
+        return assertNever(state);
+    }
+  });
 
   return (
-    <Alert variant={hasCredits ? 'info' : 'danger'} className="mb-3 py-2 small">
-      {hasCredits ? (
-        <>
-          Billing to credit pool &middot; {formatMilliDollars(creditBalanceMilliDollars)} available
-          &middot;{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            Manage credits
-          </a>
-        </>
-      ) : (
-        <>
-          No credits remaining. Purchase credits on the{' '}
-          <a href={aiGradingSettingsUrl} target="_blank" rel="noopener noreferrer">
-            AI grading settings
-          </a>{' '}
-          page.
-        </>
-      )}
+    <Alert variant={variant} className="mb-3 py-2 small">
+      {content}
     </Alert>
   );
 }
 
 export function AiGradingModelSelectionModal({
-  modalState,
+  show,
+  data: modalState,
   availableProviders,
   aiGradingLastSelectedModel,
   relativeCosts,
   useCustomApiKeys,
-  creditBalanceMilliDollars,
   aiGradingSettingsUrl,
+  hasRubric,
+  totalSubmissionCount,
+  onSelectFirstSubmissions,
   onSuccess,
   onHide,
+  onExited,
 }: {
-  modalState: AiGradingModelSelectionModalState;
+  show: boolean;
+  data: AiGradingModelSelectionModalState | null;
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
-  creditBalanceMilliDollars: number;
   aiGradingSettingsUrl: string;
+  hasRubric: boolean;
+  totalSubmissionCount: number;
+  onSelectFirstSubmissions: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
     modelId: AiGradingModelId,
   ) => void;
   onHide: () => void;
+  onExited: () => void;
 }) {
   const trpc = useTRPC();
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
   );
+  const {
+    data: aiGradingAvailabilityInfo,
+    isFetching: isAvailabilityFetching,
+    isError: isAvailabilityError,
+    refetch: refetchAvailabilityInfo,
+  } = useQuery({
+    ...trpc.manualGrading.aiGradingAvailabilityInfo.queryOptions(),
+    enabled: show,
+    refetchOnMount: 'always',
+  });
   const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
   const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
 
@@ -284,6 +475,11 @@ export function AiGradingModelSelectionModal({
     reset();
     onHide();
   }, [onHide, reset, defaultModel]);
+
+  const handleOpenRubricSettings = useCallback(() => {
+    openRubricSettings();
+    onHide();
+  }, [onHide]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -313,17 +509,53 @@ export function AiGradingModelSelectionModal({
   const isSelectedModelAvailable = selectedModelProvider
     ? availableProviders.includes(selectedModelProvider)
     : false;
-  const hasCredits = creditBalanceMilliDollars > 0;
-  const hasKeys = availableProviders.length > 0;
-  const isGradingEnabled = useCustomApiKeys ? hasKeys : hasCredits;
+
+  const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
+    // Show the spinner while a refetch is in flight so the error UI doesn't
+    // persist after the user clicks "Try again".
+    if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
+    if (isAvailabilityError) return { kind: 'error' };
+
+    const { running_job_count, max_concurrent_jobs, credit_balance_milli_dollars } =
+      aiGradingAvailabilityInfo;
+
+    if (running_job_count >= max_concurrent_jobs) {
+      return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
+    }
+    if (useCustomApiKeys) {
+      if (availableProviders.length === 0) return { kind: 'no_keys' };
+      return { kind: 'ready_with_keys' };
+    }
+    if (credit_balance_milli_dollars <= 0) return { kind: 'no_credits' };
+    return {
+      kind: 'ready_with_credits',
+      creditBalanceMilliDollars: credit_balance_milli_dollars,
+    };
+  });
+
+  const aiGradingEnabled =
+    aiGradingAvailabilityState.kind === 'ready_with_keys' ||
+    aiGradingAvailabilityState.kind === 'ready_with_credits';
+
+  const beforeYouGradeItems = aiGradingEnabled
+    ? buildBeforeYouGradeItems({
+        hasRubric,
+        hasPriorJobs: aiGradingAvailabilityInfo?.has_prior_jobs ?? true,
+        numToGrade: modalState?.numToGrade ?? 0,
+        totalSubmissionCount,
+        onOpenRubricSettings: handleOpenRubricSettings,
+        onSelectFirstSubmissions,
+      })
+    : [];
 
   return (
     <Modal
-      show={modalState != null}
+      show={show}
       size="lg"
       backdrop="static"
       keyboard={false}
       onHide={handleClose}
+      onExited={onExited}
     >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
@@ -331,19 +563,21 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          <BillingAlert
-            useCustomApiKeys={useCustomApiKeys}
-            hasKeys={hasKeys}
-            hasCredits={hasCredits}
-            creditBalanceMilliDollars={creditBalanceMilliDollars}
+          <AiGradingAvailabilityAlert
+            state={aiGradingAvailabilityState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
+            onRetryAvailability={() => {
+              void refetchAvailabilityInfo();
+            }}
           />
           <ModelList
             selectedModel={selectedModel}
             availableProviders={availableProviders}
+            aiGradingEnabled={aiGradingEnabled}
             relativeCosts={relativeCosts}
             onSelect={setSelectedModel}
           />
+          <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 
         <Modal.Footer>
@@ -359,7 +593,7 @@ export function AiGradingModelSelectionModal({
               </Button>
               <Button
                 variant="primary"
-                disabled={isPending || !isSelectedModelAvailable || !isGradingEnabled}
+                disabled={isPending || !isSelectedModelAvailable || !aiGradingEnabled}
                 type="submit"
               >
                 {isPending

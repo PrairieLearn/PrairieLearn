@@ -64,11 +64,34 @@ The CSRF token is generated server-side with `generatePrefixCsrfToken` using the
 
 ## Errors
 
-- **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata (extra fields beyond `message`) or must take structurally different actions per error code. If the error message is static and displayed as-is, a plain `TRPCError` is sufficient — reserve app errors for cases where the client needs dynamic, structured data (e.g., a job sequence ID to link to).
-- **Every subrouter** exports an error interface (empty if no typed errors). See `trpc/courseInstance/student-labels.ts` (typed) and `trpc/administrator/courses.ts` (empty).
-- **`message: string` is automatically included** by `throwAppError` and `getAppError` — do not declare it in error type definitions. Only declare procedure-specific fields (e.g., `jobSequenceId`).
-- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'UNKNOWN'` fallback code (for untyped errors). Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
-- See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed client) and `pages/administratorCourses/administratorCourses.html.tsx` (plain client) for examples.
+- **Default to plain `TRPCError`**. Use `throwAppError` only when the client needs extra fields beyond `message` (e.g. `jobSequenceId` to link to logs) or must branch on the code. A code that the client just renders as `message` is indistinguishable from `UNKNOWN` — don't add it.
+- **Every subrouter exports an error interface enumerating each procedure**, with `never` for procedures that have no typed errors:
+  ```ts
+  export interface AssessmentGroupsError {
+    AddGroup: never;
+    EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  }
+  ```
+  Don't use `Record<string, never>` or empty `interface XError {}`.
+- **`message: string` is added automatically** by `throwAppError` and `getAppError` — only declare procedure-specific fields.
+- **Client uses `getAppError<XError['Procedure']>(mutation.error)`** — procedure-keyed even when the entry is `never`. Never read raw mutation/query errors.
+- **Render with `<AppErrorAlert>` or `renderAppError`**, not `{appError.message}` directly. The exhaustive renderer map makes it a compile error to forget a variant or silently drop fields like `jobSequenceId`:
+  ```tsx
+  <AppErrorAlert
+    error={copyError}
+    onDismiss={() => copyMutation.reset()}
+    render={{
+      SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+        <>
+          {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+        </>
+      ),
+      UNKNOWN: ({ message }) => message,
+    }}
+  />
+  ```
+  Use `renderAppError(error, {...})` when you need a `ReactNode` to pass elsewhere (e.g. `StickySaveBar`'s `alert.message`).
+- See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed) and `pages/administratorCourses/administratorCourses.html.tsx` (`never`-keyed) for examples.
 
 ## Testing
 

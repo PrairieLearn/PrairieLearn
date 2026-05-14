@@ -53,7 +53,11 @@ async function createEnrollment(courseInstanceId = '1'): Promise<Enrollment> {
 
 async function createTestLabel(
   name: string,
-  { courseInstanceId = '1', color = 'gray1' as ColorJson, uuid = crypto.randomUUID() } = {},
+  {
+    courseInstanceId = '1',
+    color = 'gray1',
+    uuid = crypto.randomUUID(),
+  }: { courseInstanceId?: string; color?: ColorJson; uuid?: string } = {},
 ) {
   const courseInstance = await selectCourseInstanceById(courseInstanceId);
   return createStudentLabel({ courseInstance, uuid, name, color });
