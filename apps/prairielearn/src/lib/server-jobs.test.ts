@@ -73,10 +73,11 @@ describe('server-jobs SQL transitions', () => {
       assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
 
-    it('Stopping + Stopped → Stopped on both rows (TS projects late stops to Stopped)', async () => {
-      // The wrapper's finish() reads the sequence status first and passes
-      // 'Stopped' when it observes 'Stopping'; this test exercises the SQL
-      // path that lands those rows in their terminal state.
+    it('lands a Stopping sequence in Stopped when finish() passes status=Stopped', async () => {
+      // After moving the projection into TS, this is the path the wrapper
+      // uses for any late-stop: read sequence status, observe 'Stopping',
+      // then call update_job_on_finish with status='Stopped' so both rows
+      // terminate consistently.
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
