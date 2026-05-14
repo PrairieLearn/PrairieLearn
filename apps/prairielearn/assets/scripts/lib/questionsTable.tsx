@@ -44,7 +44,7 @@ declare global {
 }
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix } =
+  const { course_instance_ids, qidPrefix, urlPrefix } =
     decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
@@ -301,17 +301,6 @@ onDocumentReady(() => {
       });
     },
   };
-
-  if (showAddQuestionButton) {
-    tableSettings.buttons.addQuestion = {
-      html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/create">
-          <i class="fa fa-plus" aria-hidden="true"></i>
-          Create question
-        </a>
-      `.toString(),
-    };
-  }
 
   $('#questionsTable').bootstrapTable(tableSettings);
 

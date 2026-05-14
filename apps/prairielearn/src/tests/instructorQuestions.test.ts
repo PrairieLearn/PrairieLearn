@@ -103,6 +103,15 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       questionData.forEach((question) => assert.isObject(question));
     });
 
+    it('should include the create question action in the header', function () {
+      assert.equal(
+        parsedPage('.card-header a[href="/pl/course/1/course_admin/questions/create"]')
+          .text()
+          .trim(),
+        'Create question',
+      );
+    });
+
     for (const testQuestion of testQuestions) {
       it(`should include ${testQuestion.qid} question`, function () {
         const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
@@ -130,6 +139,18 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
+
+    it('should include the create question action in the header', function () {
+      assert.equal(
+        parsedPage(
+          '.card-header a[href="/pl/course_instance/1/instructor/course_admin/questions/create"]',
+        )
+          .text()
+          .trim(),
+        'Create question',
+      );
+    });
+
     for (const testQuestion of testQuestions) {
       it(`should include ${testQuestion.qid} question`, function () {
         const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));

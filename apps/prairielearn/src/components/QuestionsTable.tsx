@@ -47,15 +47,24 @@ export function QuestionsTable({
     ${EncodedData<QuestionsTableData>(
       {
         course_instance_ids,
-        showAddQuestionButton,
         qidPrefix,
         urlPrefix,
       },
       'questions-table-data',
     )}
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <h1>Questions</h1>
+      <div
+        class="card-header bg-primary text-white d-flex align-items-center justify-content-between gap-3"
+      >
+        <h1 class="mb-0">Questions</h1>
+        ${showAddQuestionButton
+          ? html`
+              <a class="btn btn-sm btn-light" href="${urlPrefix}/course_admin/questions/create">
+                <i class="fa fa-plus" aria-hidden="true"></i>
+                Create question
+              </a>
+            `
+          : ''}
       </div>
 
       ${questions.length > 0
