@@ -1,11 +1,8 @@
 import type { CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { formats } from './ajv-extensions.js';
-import {
-  plAnswerJsonSchema,
-  plMultipleChoiceJsonSchema,
-  validators,
-} from './pl-multiple-choice.js';
+import { formats } from './htmlmustache-plugin-utils.js';
+import { plAnswerJsonSchema, plMultipleChoiceJsonSchema } from './pl-multiple-choice.js';
+import { validators } from './pl-multiple-choice.validator.js';
 
 const elementSchemas = {
   'pl-answer': plAnswerJsonSchema(),

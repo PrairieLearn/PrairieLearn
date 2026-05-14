@@ -5296,7 +5296,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.1.0"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.2.0"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.14.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -5996,9 +5996,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.1.0"
+"@reteps/tree-sitter-htmlmustache@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.2.0"
   dependencies:
     ajv: "npm:^8.20.0"
     ajv-errors: "npm:^3.0.0"
@@ -6024,7 +6024,7 @@ __metadata:
       optional: true
   bin:
     htmlmustache: dist/cli/main.js
-  checksum: 10c0/db4633a38576b0b07526e522fdc5f5dc1efce4f4c0c9e650d0d71f25132e5bbfd9e7ca0e1a21239375b532c013034b7c5eda3ece7a02f102b1a0ed8faecbc0e8
+  checksum: 10c0/cd45e65efb673101e11cda02363e9fd7b0e276988d46a24fdaa0996fcdc18a45bb5b65ac59a4265d05795e43a1b7b48dc035dabe6e860e3e403aabfb4991817b
   languageName: node
   linkType: hard
 
@@ -17528,7 +17528,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.1.0"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.2.0"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"

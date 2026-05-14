@@ -14,6 +14,8 @@
       // typechecking individual files in isolation.
       "multer"
     ],
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "jsx": "react-jsx"
   },
   "include": ["**/*"]

@@ -14,23 +14,12 @@ export const BOOLEAN_TRUE_VALUES = [
   'YES',
 ];
 
-export const BOOLEAN_FALSE_VALUES = [
-  'false',
-  'f',
-  '0',
-  'False',
-  'F',
-  'FALSE',
-  'no',
-  'n',
-  'No',
-  'N',
-  'NO',
-];
+const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
 
 export const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const booleanValueSet = new Set(BOOLEAN_VALUES);
+const booleanFalseValueSet = new Set(BOOLEAN_FALSE_VALUES);
 
 const plBoolean: SchemaFormat = (value) => typeof value === 'string' && booleanValueSet.has(value);
 
@@ -44,3 +33,11 @@ export const formats = {
   'pl-integer': plInteger,
   'pl-float': plFloat,
 };
+
+export function isBooleanValue(value: string | true): boolean {
+  return value === true || booleanValueSet.has(value);
+}
+
+export function isFalseValue(value: string | true): boolean {
+  return typeof value === 'string' && booleanFalseValueSet.has(value);
+}
