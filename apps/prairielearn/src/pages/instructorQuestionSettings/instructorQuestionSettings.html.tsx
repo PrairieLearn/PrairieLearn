@@ -113,7 +113,15 @@ export const InstructorQuestionSettingsForm = ({
   hasCoursePermissionView: boolean;
   editableCourses: EditableCourse[];
   questionGHLink: string | null;
-  sharing: { enabled: boolean; sets: QuestionSharingSetRow[] };
+  sharing: {
+    enabled: boolean;
+    sets: QuestionSharingSetRow[];
+    constraints: {
+      used_in_other_course: boolean;
+      used_in_same_course_public_assessment: boolean;
+      locked_sharing_set_names: string[];
+    };
+  };
   questionTest: { path: string; csrfToken: string };
 }) => {
   const canCopy = editableCourses.length > 0 && hasCoursePermissionView;
@@ -193,10 +201,17 @@ export const InstructorQuestionSettingsForm = ({
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
-  const lockedSharingSetNames = sharing.sets.filter((s) => s.in_set).map((s) => s.name);
-  const lockedSharingSetNamesSet = new Set(lockedSharingSetNames);
-  const addableSharingSets = sharing.sets.filter((s) => !s.in_set);
-  const addedSharingSetNames = watchedSharingSets.filter((n) => !lockedSharingSetNamesSet.has(n));
+  const watchedSharePublicly = watch('share_publicly');
+  const watchedShareSourcePublicly = watch('share_source_publicly');
+  const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
+  const canUnsharePublicly =
+    !sharing.constraints.used_in_other_course &&
+    (!sharing.constraints.used_in_same_course_public_assessment || watchedShareSourcePublicly);
+  const wouldUncheckPublic = question.share_publicly && !watchedSharePublicly;
+  const canUnshareSourcePublicly =
+    !question.share_source_publicly ||
+    !wouldUncheckPublic ||
+    !sharing.constraints.used_in_same_course_public_assessment;
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -915,25 +930,30 @@ export const InstructorQuestionSettingsForm = ({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">Sharing</h2>
-              {/* The visible checkboxes below are disabled once a value is locked in (already shared),
-                  and disabled inputs are not submitted. These hidden inputs preserve the locked-in
-                  `true` value on submit; they must mirror the disabled condition exactly. */}
-              {question.share_publicly && <input type="hidden" name="share_publicly" value="on" />}
+              {/* Hidden inputs preserve locked-on flags whose checkbox is disabled;
+                  must mirror the disabled gate to avoid silently flipping the value. */}
+              {question.share_publicly && !canUnsharePublicly && (
+                <input type="hidden" name="share_publicly" value="on" />
+              )}
               <Form.Check
                 type="checkbox"
                 id="share_publicly"
                 label="Share publicly"
                 className="mb-1"
-                disabled={!canEdit || question.share_publicly}
+                disabled={!canEdit || (question.share_publicly && !canUnsharePublicly)}
                 defaultChecked={defaultValues.share_publicly}
                 {...register('share_publicly')}
               />
               <small className="form-text text-muted d-block mb-2">
                 Any course may import this question.
-                {question.share_publicly && ' This question is already publicly shared.'}
+                {question.share_publicly &&
+                  !canUnsharePublicly &&
+                  (sharing.constraints.used_in_other_course
+                    ? ' This question is publicly shared and used by another course, so it cannot be un-shared.'
+                    : ' This question is used by a publicly-shared assessment in this course; uncheck "Share source publicly" first to allow un-sharing.')}
               </small>
 
-              {question.share_source_publicly && (
+              {question.share_source_publicly && !canUnshareSourcePublicly && (
                 <input type="hidden" name="share_source_publicly" value="on" />
               )}
               <Form.Check
@@ -941,14 +961,15 @@ export const InstructorQuestionSettingsForm = ({
                 id="share_source_publicly"
                 label="Share source publicly"
                 className="mb-1"
-                disabled={!canEdit || question.share_source_publicly}
+                disabled={!canEdit || !canUnshareSourcePublicly}
                 defaultChecked={defaultValues.share_source_publicly}
                 {...register('share_source_publicly')}
               />
               <small className="form-text text-muted d-block mb-3">
                 The question's source is publicly shared.
                 {question.share_source_publicly &&
-                  ' This question already has publicly shared source.'}
+                  !canUnshareSourcePublicly &&
+                  ' Re-check "Share publicly" first to allow un-sharing the source.'}
               </small>
 
               <div>
@@ -969,55 +990,55 @@ export const InstructorQuestionSettingsForm = ({
                     {watchedSharingSets.map((name) => (
                       <input key={name} type="hidden" name="sharing_sets" value={name} />
                     ))}
-                    {lockedSharingSetNames.length > 0 && (
+                    {lockedSharingSetNamesSet.size > 0 && (
                       <div className="d-flex flex-wrap gap-1 mb-2">
-                        {lockedSharingSetNames.map((name) => (
-                          <span key={name} className="badge color-gray1">
+                        {Array.from(lockedSharingSetNamesSet).map((name) => (
+                          <span
+                            key={name}
+                            className="badge color-gray1"
+                            title="Cannot remove: a consuming course with access via this set uses this question."
+                          >
                             {name}
                           </span>
                         ))}
                       </div>
                     )}
-                    {addableSharingSets.length > 0 ? (
-                      <TagPicker
-                        id="sharing_sets"
-                        items={addableSharingSets.map((s) => ({
+                    <TagPicker
+                      id="sharing_sets"
+                      items={sharing.sets
+                        .filter((s) => !lockedSharingSetNamesSet.has(s.name))
+                        .map((s) => ({
                           id: s.name,
                           data: s,
                           label: s.name,
                           searchableText: s.name,
                         }))}
-                        value={addedSharingSetNames}
-                        placeholder="Add sharing sets"
-                        aria-labelledby="sharing-sets-label"
-                        disabled={!canEdit}
-                        renderTagContent={(data) => data.name}
-                        tagClassName={() => 'badge color-gray1'}
-                        onChange={(value) => {
-                          setValue('sharing_sets', [...lockedSharingSetNames, ...value], {
+                      value={watchedSharingSets.filter((n) => !lockedSharingSetNamesSet.has(n))}
+                      placeholder="Select sharing sets"
+                      aria-labelledby="sharing-sets-label"
+                      disabled={!canEdit}
+                      renderTagContent={(data) => data.name}
+                      tagClassName={() => 'badge color-gray1'}
+                      onChange={(value) => {
+                        setValue(
+                          'sharing_sets',
+                          [...Array.from(lockedSharingSetNamesSet), ...value],
+                          {
                             shouldDirty: true,
-                          });
-                        }}
-                      />
-                    ) : (
-                      <div className="small text-muted">
-                        This question is in every sharing set defined for this course.
-                      </div>
-                    )}
+                          },
+                        );
+                      }}
+                    />
                     <small className="form-text text-muted">
-                      <strong>
-                        Adding a question to a{' '}
-                        <a
-                          href="https://docs.prairielearn.com/contentSharing/#sharing-sets"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          sharing set
-                        </a>{' '}
-                        is permanent and cannot be undone.
-                      </strong>{' '}
-                      The question cannot be renamed or deleted, and any later changes to its
-                      content will be applied to every course that has imported it.
+                      Memberships can be removed if no course granted access via the{' '}
+                      <a
+                        href="https://docs.prairielearn.com/contentSharing/#sharing-sets"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        sharing set
+                      </a>{' '}
+                      uses this question.
                     </small>
                   </>
                 )}

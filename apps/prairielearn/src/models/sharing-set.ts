@@ -64,6 +64,52 @@ export async function selectSharingSetsForQuestion({
   );
 }
 
+/**
+ * Returns the sync-time constraints that gate which sharing toggles can be
+ * unset for a question, so the UI can disable controls whose change would
+ * fail sync. Mirrors the checks in `sync/sharing.ts`:
+ *
+ * - `used_in_other_course`: any assessment in a different course uses Q.
+ *   While true, `share_publicly` cannot transition from true to false.
+ * - `used_in_same_course_public_assessment`: an assessment in this same
+ *   course is `share_source_publicly` and uses Q. While true,
+ *   `share_publicly` can transition to false only if `share_source_publicly`
+ *   stays true.
+ * - `locked_sharing_set_names`: sharing sets the question is in where some
+ *   course granted access via that set has an assessment that uses Q;
+ *   those memberships cannot be removed.
+ */
+export async function selectQuestionSharingConstraints({
+  question_id,
+  course_id,
+}: {
+  question_id: string;
+  course_id: string;
+}): Promise<{
+  used_in_other_course: boolean;
+  used_in_same_course_public_assessment: boolean;
+  locked_sharing_set_names: string[];
+}> {
+  const usage = await sqldb.queryRow(
+    sql.select_question_sharing_constraints,
+    { question_id, course_id },
+    z.object({
+      used_in_other_course: z.boolean(),
+      used_in_same_course_public_assessment: z.boolean(),
+    }),
+  );
+  const locked_sharing_set_names = await sqldb.queryScalars(
+    sql.select_locked_sharing_set_memberships,
+    { question_id, course_id },
+    z.string(),
+  );
+  return {
+    used_in_other_course: usage.used_in_other_course,
+    used_in_same_course_public_assessment: usage.used_in_same_course_public_assessment,
+    locked_sharing_set_names,
+  };
+}
+
 interface SharingSetUsage {
   question_count: number;
   consumer_count: number;

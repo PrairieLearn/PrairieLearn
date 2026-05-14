@@ -53,6 +53,7 @@ import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import {
   type QuestionSharingSetRow,
+  selectQuestionSharingConstraints,
   selectSharingSetsForQuestion,
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
@@ -259,35 +260,16 @@ router.post(
       const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
       let resolvedSharingSets: string[] | undefined;
       if (sharingEnabled) {
-        if (res.locals.question.share_publicly && !body.share_publicly) {
-          throw new error.HttpStatusError(400, 'A publicly shared question cannot be un-shared.');
-        }
-        if (res.locals.question.share_source_publicly && !body.share_source_publicly) {
-          throw new error.HttpStatusError(
-            400,
-            'A question with publicly shared source cannot be un-shared.',
-          );
-        }
-
         const sharingSetRows = await selectSharingSetsForQuestion({
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         });
         const validSetNames = new Set(sharingSetRows.map((r) => r.name));
-        const currentSetNames = new Set(sharingSetRows.filter((r) => r.in_set).map((r) => r.name));
         const requestedSetNames = new Set(body.sharing_sets);
 
         for (const name of requestedSetNames) {
           if (!validSetNames.has(name)) {
             throw new error.HttpStatusError(400, `Unknown sharing set: "${name}"`);
-          }
-        }
-        for (const name of currentSetNames) {
-          if (!requestedSetNames.has(name)) {
-            throw new error.HttpStatusError(
-              400,
-              `Cannot remove question from sharing set "${name}" after it has been added.`,
-            );
           }
         }
         resolvedSharingSets = [...requestedSetNames];
@@ -648,8 +630,15 @@ router.get(
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
     let sharingSets: QuestionSharingSetRow[] | undefined;
+    let sharingConstraints:
+      | Awaited<ReturnType<typeof selectQuestionSharingConstraints>>
+      | undefined;
     if (sharingEnabled) {
       sharingSets = await selectSharingSetsForQuestion({
+        question_id: question.id,
+        course_id: course.id,
+      });
+      sharingConstraints = await selectQuestionSharingConstraints({
         question_id: question.id,
         course_id: course.id,
       });
@@ -695,7 +684,15 @@ router.get(
               questionTags={parsedQuestionTags}
               qids={qids}
               assessmentsWithQuestion={assessmentsWithQuestion}
-              sharing={{ enabled: sharingEnabled, sets: sharingSets ?? [] }}
+              sharing={{
+                enabled: sharingEnabled,
+                sets: sharingSets ?? [],
+                constraints: sharingConstraints ?? {
+                  used_in_other_course: false,
+                  used_in_same_course_public_assessment: false,
+                  locked_sharing_set_names: [],
+                },
+              }}
               editableCourses={parsedEditableCourses}
               origHash={origHash}
               canEdit={canEdit}

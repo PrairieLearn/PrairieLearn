@@ -27,6 +27,46 @@ FROM
 WHERE
   ss.course_id = $course_id;
 
+-- BLOCK select_question_sharing_constraints
+SELECT
+  COALESCE(bool_or(ci.course_id != $course_id), FALSE) AS used_in_other_course,
+  COALESCE(
+    bool_or(
+      a.share_source_publicly
+      AND ci.course_id = $course_id
+    ),
+    FALSE
+  ) AS used_in_same_course_public_assessment
+FROM
+  questions AS q
+  LEFT JOIN assessment_questions AS aq ON aq.question_id = q.id
+  AND aq.deleted_at IS NULL
+  LEFT JOIN assessments AS a ON a.id = aq.assessment_id
+  AND a.deleted_at IS NULL
+  LEFT JOIN course_instances AS ci ON ci.id = a.course_instance_id
+  AND ci.deleted_at IS NULL
+WHERE
+  q.id = $question_id
+  AND q.deleted_at IS NULL;
+
+-- BLOCK select_locked_sharing_set_memberships
+SELECT DISTINCT
+  ss.name
+FROM
+  sharing_set_questions AS ssq
+  JOIN sharing_sets AS ss ON ss.id = ssq.sharing_set_id
+  JOIN sharing_set_courses AS ssc ON ssc.sharing_set_id = ss.id
+  JOIN course_instances AS ci ON ci.course_id = ssc.course_id
+  JOIN assessments AS a ON a.course_instance_id = ci.id
+  JOIN assessment_questions AS aq ON aq.assessment_id = a.id
+  AND aq.question_id = ssq.question_id
+WHERE
+  ssq.question_id = $question_id
+  AND ss.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND aq.deleted_at IS NULL;
+
 -- BLOCK select_sharing_set_usage
 SELECT
   (
