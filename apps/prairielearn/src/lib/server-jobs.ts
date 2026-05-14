@@ -15,6 +15,7 @@ import {
   queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -391,13 +392,21 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    const finalStatus = isStop ? 'Stopped' : err ? 'Error' : 'Success';
     await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      status: finalStatus,
+      status: await run(async () => {
+        if (isStop) return 'Stopped';
+        // If a stop landed after the orchestrator's last poll (or via an
+        // early-return path), the sequence has already been flipped to
+        // 'Stopping'. Project the natural finish onto 'Stopped' so the
+        // inner job row and the sequence row stay consistent.
+        const { status: seqStatus } = await selectJobSequenceStatus(this.jobSequenceId);
+        if (seqStatus === 'Stopping') return 'Stopped';
+        return err ? 'Error' : 'Success';
+      }),
     });
 
     // Notify sockets.

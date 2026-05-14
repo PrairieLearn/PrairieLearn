@@ -73,27 +73,17 @@ describe('server-jobs SQL transitions', () => {
       assert.equal(await selectJobStatus(job_id), 'Stopped');
     });
 
-    it('Stopping + Success → Stopped on both rows (race where stop landed mid-finish)', async () => {
+    it('Stopping + Stopped → Stopped on both rows (TS projects late stops to Stopped)', async () => {
+      // The wrapper's finish() reads the sequence status first and passes
+      // 'Stopped' when it observes 'Stopping'; this test exercises the SQL
+      // path that lands those rows in their terminal state.
       const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
       await execute(productionSql.update_job_on_finish, {
         job_sequence_id,
         job_id,
         output: '',
         data: {},
-        status: 'Success',
-      });
-      assert.equal(await selectStatus(job_sequence_id), 'Stopped');
-      assert.equal(await selectJobStatus(job_id), 'Stopped');
-    });
-
-    it('Stopping + Error → Stopped on both rows (stop intent wins over a clean error)', async () => {
-      const { job_sequence_id, job_id } = await insertJobSequence('Stopping');
-      await execute(productionSql.update_job_on_finish, {
-        job_sequence_id,
-        job_id,
-        output: '',
-        data: {},
-        status: 'Error',
+        status: 'Stopped',
       });
       assert.equal(await selectStatus(job_sequence_id), 'Stopped');
       assert.equal(await selectJobStatus(job_id), 'Stopped');
