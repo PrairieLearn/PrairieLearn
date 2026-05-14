@@ -162,7 +162,7 @@ function InstructorCourseAdminSharingInner({
                 <th>Sharing name</th>
                 <td data-testid="sharing-name">
                   {sharingName !== null ? sharingName : ''}
-                  {canChooseSharingName && (
+                  {canEdit && canChooseSharingName && (
                     <button
                       type="button"
                       className="btn btn-xs btn-secondary mx-2"
@@ -184,7 +184,7 @@ function InstructorCourseAdminSharingInner({
                     label="Copy"
                     className="btn-xs btn-secondary mx-2"
                   />
-                  <RegenerateSharingTokenButton onRegenerated={setSharingToken} />
+                  {canEdit && <RegenerateSharingTokenButton onRegenerated={setSharingToken} />}
                 </td>
               </tr>
               <tr>
@@ -306,17 +306,19 @@ function SharingSetTableRow({
               {courseSharedWith}
             </span>
           ))}
-          <div className="btn-group btn-group-sm" role="group">
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-dark"
-              aria-label="Add course to sharing set"
-              onClick={onAddCourse}
-            >
-              Add...
-              <i className="bi bi-plus-lg" aria-hidden="true" />
-            </button>
-          </div>
+          {canEdit && (
+            <div className="btn-group btn-group-sm" role="group">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-dark"
+                aria-label="Add course to sharing set"
+                onClick={onAddCourse}
+              >
+                Add...
+                <i className="bi bi-plus-lg" aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </td>
         {canEdit && (
           <td className="align-middle">
