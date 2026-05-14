@@ -337,9 +337,11 @@ export class PLEmitter implements OutputEmitter {
  * (e.g. `<pl-string-input>`) are emitted bare.
  */
 function wrapInlineInputPrompt(html: string): string[] {
-  // Split after closing block-level tags that precede a newline.
+  // Split between adjacent top-level block elements. The lookbehind matches
+  // after a closing block tag; the lookahead matches the start of the next tag.
+  // Whitespace between them is consumed so it doesn't become a stray text node.
   const blocks = html.split(
-    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\n/,
+    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\s*(?=<)/,
   );
 
   const parts: string[] = [];
