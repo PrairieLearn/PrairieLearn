@@ -342,12 +342,16 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
 }
 
 /**
- * Strip HTML tags from code content. Converts `<br>` to newlines and removes
- * all other tags (e.g. `<span>`, `<code>`) that Canvas sometimes wraps around
- * code inside `<pre>` blocks.
+ * Strip Canvas wrapper tags from code content. Converts `<br>` to newlines and
+ * removes known inline/block wrapper tags that Canvas adds inside `<pre>` blocks
+ * for styling. Only targets specific tag names to avoid stripping legitimate
+ * angle-bracket content (e.g. generics, comparisons) that might not be
+ * entity-encoded.
  */
 function stripHtmlFromCode(code: string): string {
-  return code.replaceAll(/<br\s*\/?>/gi, '\n').replaceAll(/<[^>]+>/g, '');
+  return code
+    .replaceAll(/<br\s*\/?>/gi, '\n')
+    .replaceAll(/<\/?(?:span|div|font|b|i|u|em|strong|sub|sup|a|p|code)(?:\s[^>]*)?\/?>/gi, '');
 }
 
 const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
