@@ -53,6 +53,12 @@ export function getAfterLastDeadlineLabel(lateDeadlines: DeadlineEntry[]): strin
   return 'After late deadlines';
 }
 
+function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
+  if (lateDeadlines.length === 0) return 'due date';
+  if (lateDeadlines.length === 1) return 'late deadline';
+  return 'late deadlines';
+}
+
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   if (value == null) return 'no_access';
   if (!value.allowSubmissions) return 'no_submissions';
@@ -185,6 +191,7 @@ function AfterLastDeadlineInput({
   };
 
   const showExamSubmissionsWarning = isExam && value?.allowSubmissions === true;
+  const deadlineNoun = isOverride ? 'last deadline' : getLastDeadlineNoun(lateDeadlines);
 
   return (
     <Form.Group>
@@ -201,9 +208,9 @@ function AfterLastDeadlineInput({
       </div>
       {showExamSubmissionsWarning && (
         <Alert variant="warning" className="mt-2 mb-0">
-          This is an Exam assessment. Allowing submissions after the last deadline may let students
-          continue working after the exam window. For exams, prefer closing submissions at the last
-          deadline unless this is intentional.
+          This is an Exam assessment. Allowing submissions after the {deadlineNoun} may let students
+          continue working after the exam window. For exams, prefer closing submissions at the{' '}
+          {deadlineNoun} unless this is intentional.
         </Alert>
       )}
       {mode === 'partial_credit' && (
