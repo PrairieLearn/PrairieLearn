@@ -13,8 +13,10 @@ export const multipleDropdownsHandler: BodyEmitHandler = {
     const md = body as MDBody;
     let result = promptHtml;
     for (const blank of md.blanks) {
+      const hasCorrect = blank.choices.some((c) => c.correct);
+      const gradingAttr = hasCorrect ? '' : ' builtin-grading="false"';
       const lines = [
-        `<pl-multiple-choice answers-name="${he.escape(blank.id)}" display="dropdown">`,
+        `<pl-multiple-choice answers-name="${he.escape(blank.id)}" display="dropdown"${gradingAttr}>`,
       ];
       for (const choice of blank.choices) {
         lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);

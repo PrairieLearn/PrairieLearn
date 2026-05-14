@@ -524,6 +524,60 @@ describe('PLEmitter', () => {
     });
   });
 
+  describe('builtin-grading="false" on multiple-choice', () => {
+    it('emits builtin-grading="false" when no choice is correct', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'Red', correct: false },
+            { id: 'b', html: 'Blue', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+    });
+
+    it('does not emit builtin-grading when a correct choice exists', () => {
+      const q = makeQuestion();
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.notInclude(html, 'builtin-grading');
+    });
+
+    it('emits builtin-grading="false" on dropdown when no choice is correct', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          display: 'dropdown',
+          choices: [
+            { id: 'a', html: 'Maybe', correct: false },
+            { id: 'b', html: 'Perhaps', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+      assert.include(html, 'display="dropdown"');
+    });
+
+    it('suppresses feedback attributes when builtin-grading="false"', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'Red', correct: false },
+            { id: 'b', html: 'Blue', correct: false },
+          ],
+        },
+        feedback: { perAnswer: { Red: 'Interesting!', Blue: 'Cool!' } },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+      assert.notInclude(html, 'feedback=');
+    });
+  });
+
   describe('inferSetAndNumber from title', () => {
     it('infers Midterm set', () => {
       const assessment = { ...makeAssessment([makeQuestion()]), title: 'Midterm 2' };
