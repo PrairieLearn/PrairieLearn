@@ -5,6 +5,8 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 - Course staff may download a CSV file with student answers, perform any grading tasks offline, and upload a CSV file with question scores and optional per-question feedback.
 - An online web interface is available for grading individual instance questions.
 
+Manually graded questions can also be graded with [AI grading](../aiGrading/index.md), which uses a large language model to apply your rubric to each submission.
+
 ## Configuring a question for manual grading
 
 For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/configuration.md#question-specification), like this:

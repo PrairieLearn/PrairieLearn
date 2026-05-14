@@ -12,11 +12,11 @@ AI grading works on any manually graded question.
 
 **Supported elements:**
 
-- `pl-image-capture`
-- `pl-rich-text-editor`
-- `pl-file-upload`
-- `pl-file-editor`
-- `pl-string-input`
+- [`pl-image-capture`](../elements/pl-image-capture.md)
+- [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md)
+- [`pl-file-upload`](../elements/pl-file-upload.md)
+- [`pl-file-editor`](../elements/pl-file-editor.md)
+- [`pl-string-input`](../elements/pl-string-input.md)
 
 **Common use cases:**
 
@@ -58,7 +58,7 @@ Before you can use AI grading, you'll need:
 
 ## Best practices
 
-- **Use PrairieLearn's recommended model.** Model choice can significantly impact grading accuracy, particularly for image submissions — Gemini currently outperforms GPT and Claude at transcription.
+- **Use PrairieLearn's recommended model.** Model choice can significantly impact grading accuracy, particularly for image submissions. The recommended model is updated as provider capabilities change.
 - **Use rubrics over point-based grading.** Rubrics give the model clear, discrete criteria, which significantly improves consistency.
 - **Write well-specified rubric items.** Each item should describe exactly what earns or loses credit. Ambiguous items produce ambiguous grades.
 - **Use grader guidelines.** This field is for instructions the model should follow but that shouldn't appear in the student-facing rubric — e.g., "accept equivalent algebraic forms" or "do not penalize minor notation differences."
