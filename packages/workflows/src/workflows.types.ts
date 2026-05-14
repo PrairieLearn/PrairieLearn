@@ -7,7 +7,7 @@
 // the table is created by a migration in `apps/prairielearn`. But keeping
 // the schema here, next to the engine code that reads/writes the table,
 // avoids duplication, keeps types close to their consumers, and ensures
-// the correct dependency direction (app imports from package, not the 
+// the correct dependency direction (app imports from package, not the
 // other way around).
 
 import { z } from 'zod';

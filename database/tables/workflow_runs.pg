@@ -21,7 +21,5 @@ indexes
 
 check constraints
     workflow_runs_context_type_check: CHECK (jsonb_typeof(context) = 'object'::text)
-    workflow_runs_context_value_type_check: CHECK ((NOT (EXISTS ( SELECT 1
-   FROM jsonb_each(context) context_item(k, v)
-  WHERE (jsonb_typeof(context_item.v) <> 'string'::text)))))
+    workflow_runs_context_value_type_check: CHECK ((NOT jsonb_path_exists(context, '$.*?(@.type() != "string")'::jsonpath)))
     workflow_runs_state_type_check: CHECK (jsonb_typeof(state) = 'object'::text)

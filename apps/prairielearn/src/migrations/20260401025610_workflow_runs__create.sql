@@ -22,14 +22,7 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   output text NOT NULL DEFAULT '',
   CONSTRAINT workflow_runs_context_type_check CHECK (jsonb_typeof(context) = 'object'),
   CONSTRAINT workflow_runs_context_value_type_check CHECK (
-    NOT EXISTS (
-      SELECT
-        1
-      FROM
-        jsonb_each(context) AS context_item (k, v)
-      WHERE
-        jsonb_typeof(context_item.v) <> 'string'
-    )
+    NOT jsonb_path_exists(context, '$.* ? (@.type() != "string")')
   ),
   CONSTRAINT workflow_runs_state_type_check CHECK (jsonb_typeof(state) = 'object')
 );
