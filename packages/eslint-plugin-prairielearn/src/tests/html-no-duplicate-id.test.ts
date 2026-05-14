@@ -11,6 +11,9 @@ RuleTester.it = it;
 const ruleTester = new RuleTester({
   languageOptions: {
     parser: htmlParser,
+    parserOptions: {
+      templateEngineSyntax: htmlParser.TEMPLATE_ENGINE_SYNTAX.HANDLEBAR,
+    },
   },
 });
 
@@ -29,6 +32,9 @@ ruleTester.run('html-no-duplicate-id', rule, {
         <pl-sketch>
           <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
         </pl-sketch>`,
+    },
+    {
+      code: '<div id="question-{{params.name}}"></div><span id="question-{{params.name}}"></span>',
     },
   ],
   invalid: [

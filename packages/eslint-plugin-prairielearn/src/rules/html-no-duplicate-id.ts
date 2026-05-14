@@ -3,6 +3,7 @@ import { ESLintUtils } from '@typescript-eslint/utils';
 interface AttributeValueNode {
   type: 'AttributeValue';
   value: string;
+  parts?: { type: string }[];
 }
 
 interface AttributeKeyNode {
@@ -24,6 +25,10 @@ interface TagNode {
 
 function findIdAttr(node: TagNode): AttributeNode | undefined {
   return node.attributes.find((attr) => attr.key && attr.key.value.toLowerCase() === 'id');
+}
+
+function hasTemplatePart(node: AttributeValueNode): boolean {
+  return node.parts?.some((part) => part.type === 'Template') ?? false;
 }
 
 /**
@@ -49,6 +54,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         if (node.name.toLowerCase().startsWith('pl-')) return;
         const idAttr = findIdAttr(node);
         if (!idAttr?.value) return;
+        if (hasTemplatePart(idAttr.value)) return;
         const list = idAttrs.get(idAttr.value.value) ?? [];
         list.push(idAttr.value);
         idAttrs.set(idAttr.value.value, list);
