@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import {
   AssessmentInstanceSchema,
@@ -9,16 +9,13 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 
-export const AssessmentInstanceRowSchema = z.object({
+export const AssessmentInstanceRowQuerySchema = z.object({
   assessment_instance_id: IdSchema,
   assessment_label: z.string(),
   client_fingerprint_id_change_count:
     AssessmentInstanceSchema.shape.client_fingerprint_id_change_count,
-  date_formatted: z.string(),
   date: AssessmentInstanceSchema.shape.date,
-  duration_mins: z.number(),
-  duration_secs: z.number(),
-  duration: z.string(),
+  duration: IntervalSchema,
   group_id: AssessmentInstanceSchema.shape.team_id,
   group_name: GroupSchema.shape.name.nullable(),
   group_roles: z.array(z.string()).nullable(),
@@ -40,4 +37,8 @@ export const AssessmentInstanceRowSchema = z.object({
   user_name_list: z.array(UserSchema.shape.name).nullable(),
   username: z.string().nullable(),
 });
-export type AssessmentInstanceRow = z.infer<typeof AssessmentInstanceRowSchema>;
+type AssessmentInstanceRowQuery = z.infer<typeof AssessmentInstanceRowQuerySchema>;
+export type AssessmentInstanceRow = AssessmentInstanceRowQuery & {
+  date_formatted: string;
+  duration_formatted: string;
+};
