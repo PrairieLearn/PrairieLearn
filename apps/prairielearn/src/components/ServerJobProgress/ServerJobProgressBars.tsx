@@ -7,7 +7,7 @@ import type { JobStatus } from '../../lib/serverJobProgressSocket.shared.js';
 
 import type { JobProgressWithStatus } from './useServerJobProgress.js';
 
-export type StopProps =
+type StopProps =
   | { stoppable?: false }
   | {
       stoppable: true;
