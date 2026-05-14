@@ -24,6 +24,10 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
+import {
+  selectGroupConfigForAssessment,
+  selectGroupRoleNamesForAssessment,
+} from '../../models/group.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
@@ -72,6 +76,18 @@ router.get(
     );
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+
+    const groupConfig = await selectGroupConfigForAssessment(res.locals.assessment.id);
+    const groupsConfigured = groupConfig != null;
+    const groupRoles = groupConfig
+      ? await selectGroupRoleNamesForAssessment(res.locals.assessment.id)
+      : [];
+    const assessmentCanView = res.locals.assessment.json_can_view?.length
+      ? res.locals.assessment.json_can_view
+      : undefined;
+    const assessmentCanSubmit = res.locals.assessment.json_can_submit?.length
+      ? res.locals.assessment.json_can_submit
+      : undefined;
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
@@ -165,6 +181,11 @@ router.get(
                 jsonZones={jsonZones}
                 assessment={pageContext.assessment}
                 assessmentToolDefaults={assessmentToolDefaults}
+                groupsConfigured={groupsConfigured}
+                groupRoles={groupRoles}
+                assessmentCanView={assessmentCanView}
+                assessmentCanSubmit={assessmentCanSubmit}
+                groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
                   pageContext.authz_data.has_course_instance_permission_edit
