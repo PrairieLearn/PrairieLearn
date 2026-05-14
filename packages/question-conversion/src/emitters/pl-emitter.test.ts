@@ -111,11 +111,10 @@ describe('PLEmitter', () => {
         ],
       },
     });
-    const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-    assert.include(html, 'answers-name="capital1"');
-    assert.include(html, 'answers-name="capital2"');
-    // Inline-input types must not wrap content in pl-question-panel
-    assert.notInclude(html, '<pl-question-panel>');
+    assert.equal(
+      emitter.emit(makeAssessment([q])).questions[0].questionHtml,
+      '<p>Colombia: <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>, Estonia: <pl-string-input answers-name="capital2" correct-answer="tallinn" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
+    );
   });
 
   describe('feedback rendering', () => {
