@@ -640,8 +640,13 @@ router.get(
       course: res.locals.course,
       question: res.locals.question,
     });
+    const selectedFile = await readSelectedQuestionFile({
+      course: res.locals.course,
+      question: res.locals.question,
+      filePath: getSelectedQuestionFilePath(req.query.file),
+    });
 
-    res.json({ files, allFiles });
+    res.json({ files, allFiles, selectedFile });
   }),
 );
 

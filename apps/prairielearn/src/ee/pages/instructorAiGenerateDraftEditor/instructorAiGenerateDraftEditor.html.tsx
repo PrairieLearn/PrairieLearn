@@ -50,7 +50,11 @@ export function InstructorAiGenerateDraftEditor({
   );
 
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
-  const filesUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/files`;
+  const filesUrlBase = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/files`;
+  const filesUrl =
+    selectedFile == null
+      ? filesUrlBase
+      : `${filesUrlBase}?file=${encodeURIComponent(selectedFile.path)}`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
     authnUserId: resLocals.authn_user.id,

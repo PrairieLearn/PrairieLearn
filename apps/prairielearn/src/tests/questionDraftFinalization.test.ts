@@ -228,18 +228,16 @@ describe('Question draft finalization', { timeout: 20_000 }, () => {
     assert.equal(response.status, 200);
 
     const $ = cheerio.load(await response.text());
-    const editHrefs = $('a')
-      .filter((_, element) => $(element).text().trim() === 'Edit')
+    const fileActionHrefs = $('a')
+      .filter((_, element) => ['View', 'Edit'].includes($(element).text().trim()))
       .map((_, element) => $(element).attr('href'))
       .get();
+    const questionHtmlEditorUrl = `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?file=question.html`;
 
-    assert.isTrue(editHrefs.length > 0);
-    assert.isFalse(editHrefs.some((href) => href.includes('/file_edit/')));
-    assert.isTrue(
-      editHrefs.includes(
-        `/pl/course/1/ai_generate_editor/${draft.questionId}/editor?file=question.html`,
-      ),
-    );
+    assert.isTrue(fileActionHrefs.length > 0);
+    assert.isFalse(fileActionHrefs.some((href) => href.includes('/file_edit/')));
+    assert.isFalse(fileActionHrefs.some((href) => href.includes('/file_view/')));
+    assert.equal(fileActionHrefs.filter((href) => href === questionHtmlEditorUrl).length, 2);
 
     const selectedFileResponse = await fetch(`${editorUrl}?file=question.html`, {
       headers: { cookie: 'pl_test_user=test_instructor' },

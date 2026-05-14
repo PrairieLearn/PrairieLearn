@@ -20,15 +20,21 @@ import {
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import type { SelectedQuestionFile } from './SelectedQuestionFileEditor.js';
 
-async function fetchQuestionFiles(
-  filesUrl: string,
-): Promise<{ questionFiles: Record<string, string>; allQuestionFiles: QuestionFileEntry[] }> {
+async function fetchQuestionFiles(filesUrl: string): Promise<{
+  questionFiles: Record<string, string>;
+  allQuestionFiles: QuestionFileEntry[];
+  selectedFile: SelectedQuestionFile | null;
+}> {
   const response = await fetch(filesUrl, {
     headers: { Accept: 'application/json' },
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error);
-  return { questionFiles: data.files, allQuestionFiles: data.allFiles };
+  return {
+    questionFiles: data.files,
+    allQuestionFiles: data.allFiles,
+    selectedFile: data.selectedFile,
+  };
 }
 
 interface QuestionFileEntry {
@@ -123,11 +129,15 @@ export function DraftQuestionEditorContent({
     queryKey: ['question-files', filesUrl],
     queryFn: () => fetchQuestionFiles(filesUrl),
     staleTime: Infinity,
-    initialData: { questionFiles: initialQuestionFiles, allQuestionFiles: initialAllQuestionFiles },
+    initialData: {
+      questionFiles: initialQuestionFiles,
+      allQuestionFiles: initialAllQuestionFiles,
+      selectedFile,
+    },
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
-  const { questionFiles, allQuestionFiles } = questionFilesData;
+  const { questionFiles, allQuestionFiles, selectedFile: currentSelectedFile } = questionFilesData;
 
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
@@ -159,9 +169,9 @@ export function DraftQuestionEditorContent({
           <ul className="nav nav-tabs me-auto ps-2 pt-2">
             <li className="nav-item">
               <a
-                className={`nav-link ${selectedFile == null ? 'active' : ''}`}
+                className={`nav-link ${currentSelectedFile == null ? 'active' : ''}`}
                 data-bs-toggle="tab"
-                aria-current={selectedFile == null ? 'page' : undefined}
+                aria-current={currentSelectedFile == null ? 'page' : undefined}
                 href="#question-preview"
               >
                 Preview
@@ -174,9 +184,9 @@ export function DraftQuestionEditorContent({
             </li>
             <li className="nav-item">
               <a
-                className={`nav-link ${selectedFile != null ? 'active' : ''}`}
+                className={`nav-link ${currentSelectedFile != null ? 'active' : ''}`}
                 data-bs-toggle="tab"
-                aria-current={selectedFile != null ? 'page' : undefined}
+                aria-current={currentSelectedFile != null ? 'page' : undefined}
                 href="#question-all-files"
               >
                 All files
@@ -211,7 +221,7 @@ export function DraftQuestionEditorContent({
         <QuestionAndFilePreview
           questionFiles={questionFiles}
           allQuestionFiles={allQuestionFiles}
-          selectedFile={selectedFile}
+          selectedFile={currentSelectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
           csrfToken={csrfToken}

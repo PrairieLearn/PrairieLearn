@@ -41,7 +41,11 @@ export function InstructorQuestionDraftEditor({
   editorUrl: string;
 }) {
   const variantUrl = `${resLocals.urlPrefix}/question/${question.id}/draft/variant`;
-  const filesUrl = `${resLocals.urlPrefix}/question/${question.id}/draft/files`;
+  const filesUrlBase = `${resLocals.urlPrefix}/question/${question.id}/draft/files`;
+  const filesUrl =
+    selectedFile == null
+      ? filesUrlBase
+      : `${filesUrlBase}?file=${encodeURIComponent(selectedFile.path)}`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
     authnUserId: resLocals.authn_user.id,

@@ -329,6 +329,7 @@ function AllQuestionFiles({
   if (selectedFile != null) {
     return (
       <SelectedQuestionFileEditor
+        key={`${selectedFile.path}:${selectedFile.contents}`}
         selectedFile={selectedFile}
         csrfToken={csrfToken}
         editorUrl={editorUrl}
@@ -344,7 +345,7 @@ function AllQuestionFiles({
           className="btn btn-sm btn-outline-secondary"
           href={`${urlPrefix}/question/${questionId}/file_view/${encodeFilePath(rootPath)}`}
         >
-          Open file browser
+          Open standalone file browser
         </a>
       </div>
       <div className="table-responsive">
@@ -373,7 +374,7 @@ function AllQuestionFiles({
                     <div className="d-flex gap-2 justify-content-end">
                       <a
                         className="btn btn-xs btn-secondary text-nowrap"
-                        href={`${urlPrefix}/question/${questionId}/file_view/${encodedPath}`}
+                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
                       >
                         View
                       </a>
