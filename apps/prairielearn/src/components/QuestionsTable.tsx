@@ -177,6 +177,11 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
         defaultColumnVisibilityRef.current,
       ),
+    // `hasLegacyQuestions` and `currentCourseInstanceId` drive the default
+    // visibility captured by `.withDefault(...)`. The lint rule can't see
+    // them inside the ref read, so list them explicitly to re-create the
+    // parser when those defaults change.
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [allColumnIds, hasLegacyQuestions, currentCourseInstanceId],
   );
 
