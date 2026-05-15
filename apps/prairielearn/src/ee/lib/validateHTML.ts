@@ -754,7 +754,9 @@ export async function validateHTML(
 
   const diagnostics = await lintQuestionHtml(file);
   for (const diagnostic of diagnostics) {
-    if (diagnostic.ruleName !== 'customTagSchema') continue;
+    if (diagnostic.ruleName !== 'customTagSchema' && !diagnostic.ruleName?.startsWith('pl/')) {
+      continue;
+    }
     (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);
   }
 

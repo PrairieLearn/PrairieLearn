@@ -378,6 +378,19 @@ describe('validateHTML htmlmustache schema diagnostics', () => {
     assert.isTrue(errors.some((error) => error.includes('bogus')));
   });
 
+  it('surfaces pl-multiple-choice semantic validator errors', async () => {
+    const { errors } = await validateHTML(
+      '<pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes('"weight" should not be set when builtin-grading is false.'),
+      ),
+    );
+  });
+
   it('does not surface non-schema htmlmustache diagnostics', async () => {
     const { errors, warnings } = await validateHTML(
       '<pl-question-panel><img src="foo.png"></pl-question-panel>',

@@ -31,7 +31,6 @@ export const elementCustomTags: CustomTag[] = [
   {
     name: 'pl-multiple-choice',
     schema: elementSchemas['pl-multiple-choice'],
-    allowAdditionalChildren: true,
     children: [
       {
         name: 'pl-answer',

@@ -38,7 +38,7 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(messages.some((message) => message.includes('answers-name')));
   });
 
-  it('rejects unknown attributes while allowing additional children', async () => {
+  it('rejects unknown attributes and additional child tags', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" bogus="true">
         <p>A</p>
@@ -46,9 +46,7 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(messages.some((message) => message.includes('bogus')));
-    assert.isFalse(
-      messages.some((message) => message.includes('only allows these child elements')),
-    );
+    assert.isTrue(messages.some((message) => message.includes('only allows these child elements')));
   });
 
   it('rejects invalid attribute values', async () => {
