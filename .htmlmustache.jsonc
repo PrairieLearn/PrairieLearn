@@ -262,10 +262,7 @@
     },
     { "name": "pl-order-blocks" },
     { "name": "pl-block-group" }, // pl-order-blocks
-    {
-      "name": "pl-answer",
-      "schema": "./apps/prairielearn/elements/pl-answer.schema.json"
-    },
+    { "name": "pl-answer" }, // parent-specific validation is handled by plugin validators
     { "name": "pl-number-input" },
     { "name": "pl-string-input" },
     { "name": "pl-symbolic-input" },

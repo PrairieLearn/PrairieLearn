@@ -7,7 +7,8 @@ from collections.abc import Mapping
 from typing import Any
 
 import lxml.html
-from jsonschema import Draft202012Validator, FormatChecker, ValidationError
+from jsonschema import FormatChecker, ValidationError
+from jsonschema.validators import validator_for
 
 from prairielearn.html_utils import is_pl_boolean, is_pl_float, is_pl_integer
 
@@ -32,14 +33,16 @@ pl_format_checker.checks("pl-float")(_check_pl_float)
 
 
 @functools.cache
-def _load_schema(path: pathlib.Path) -> dict[str, Any]:
-    return json.loads(path.read_text())
+def _load_validator(path: pathlib.Path) -> Any:
+    schema = json.loads(path.read_text())
+    validator_cls = validator_for(schema)
+    validator_cls.check_schema(schema)
+    return validator_cls(schema, format_checker=pl_format_checker)
 
 
 def validate_element(element: lxml.html.HtmlElement, schema_path: pathlib.Path) -> None:
     """Validate an element's attributes against a PrairieLearn element schema."""
-    schema = _load_schema(schema_path)
-    validator = Draft202012Validator(schema, format_checker=pl_format_checker)
+    validator = _load_validator(schema_path)
     first = next(validator.iter_errors(_normalize_attrs(dict(element.attrib))), None)
     if first is not None:
         raise ValueError(_render_error(first))

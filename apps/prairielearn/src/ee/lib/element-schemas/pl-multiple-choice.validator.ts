@@ -5,7 +5,7 @@ import {
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.js';
+import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
 
 const plAnswerAttributes = new Set(['correct', 'feedback', 'score']);
 const numberRegex = /^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
