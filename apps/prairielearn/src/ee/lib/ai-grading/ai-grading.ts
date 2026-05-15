@@ -623,14 +623,13 @@ export async function aiGrade({
         if (error) {
           // Treat rubric-template errors as per-submission failures: the rubric
           // the AI would see is degraded, so we don't trust any grade derived
-          // from it. The outer catch in async.mapLimit prefixes this message
-          // with the instance-question id and surfaces it via the banner's
-          // job_failure_detail field. `displayNumber` is the 1-indexed
-          // position of the rubric item, matching the numbering shown to the
-          // instructor in the rubric editor.
-          throw new Error(
-            `Rubric item ${displayNumber} ${fieldName} had an error: ${error}. Correct the rubric item to perform grading.`,
-          );
+          // from it. The thrown message becomes the banner's job_failure_detail
+          // subtext, so keep it short and user-facing; the underlying Mustache
+          // error is logged separately to the server-job log for debugging.
+          // `displayNumber` is the 1-indexed position of the rubric item,
+          // matching the numbering shown to the instructor in the rubric editor.
+          logger.error(`Rubric item ${displayNumber} ${fieldName} mustache error: ${error}`);
+          throw new Error(`Invalid rubric item ${displayNumber} ${fieldName}`);
         }
         return rendered;
       };
