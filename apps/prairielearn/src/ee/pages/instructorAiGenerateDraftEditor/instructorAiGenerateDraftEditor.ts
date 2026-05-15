@@ -49,7 +49,9 @@ import {
   InstructorAiGenerateDraftEditor,
 } from './instructorAiGenerateDraftEditor.html.js';
 import {
+  getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
+  getSelectedQuestionDirectory,
   getSelectedQuestionFilePath,
   normalizeQuestionFilePath,
   readSelectedQuestionFile,
@@ -76,19 +78,35 @@ function encodeCourseFilePath(filePath: string) {
 async function renderAllQuestionFilesHtml({
   resLocals,
   editorUrl,
+  selectedDirectory,
 }: {
   resLocals: InstructorQuestionLocals;
   editorUrl: string;
+  selectedDirectory: string | null;
 }) {
   if (!resLocals.question.qid) return '';
 
   const questionRootPath = `questions/${resLocals.question.qid}`;
-  const paths = getPaths(undefined, {
+  const requestedPath =
+    selectedDirectory == null
+      ? questionRootPath
+      : path.posix.join(questionRootPath, selectedDirectory);
+  const paths = getPaths(requestedPath, {
     ...resLocals,
     navPage: 'question',
   });
   const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
-  const successfulActionRedirectUrl = `${editorUrl}?tab=all-files`;
+  const successfulActionRedirectUrl = getEditorUrlWithSelectedDirectory({
+    editorUrl,
+    directory: selectedDirectory,
+  });
+  const getDirectoryRelativeToQuestion = (directoryPath: string) => {
+    const relativePath = path.posix.relative(
+      questionRootPath,
+      directoryPath.split(path.sep).join('/'),
+    );
+    return relativePath === '' ? null : relativePath;
+  };
 
   return (
     await createDirectoryBrowserHtml({
@@ -99,6 +117,14 @@ async function renderAllQuestionFilesHtml({
         fileViewBaseUrl,
         formAction: `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`,
         successfulActionRedirectUrl,
+        directoryUrl: (directoryPath) =>
+          getEditorUrlWithSelectedDirectory({
+            editorUrl,
+            directory: getDirectoryRelativeToQuestion(directoryPath),
+          }),
+        directoryAttributes: (directoryPath) => ({
+          'data-selected-directory-path': getDirectoryRelativeToQuestion(directoryPath) ?? '',
+        }),
         editFileUrl: (file) =>
           getEditorUrlWithSelectedFile({
             editorUrl,
@@ -115,15 +141,24 @@ async function renderAllQuestionFilesHtml({
   ).toString();
 }
 
-async function getQuestionFilesData(resLocals: InstructorQuestionLocals, selectedFile: unknown) {
+async function getQuestionFilesData({
+  resLocals,
+  selectedFile,
+  selectedDirectory,
+}: {
+  resLocals: InstructorQuestionLocals;
+  selectedFile: unknown;
+  selectedDirectory: unknown;
+}) {
   const courseFilesClient = getCourseFilesClient();
   const editorUrl = getEditorUrl(resLocals);
+  const directory = getSelectedQuestionDirectory(selectedDirectory);
   const [{ files }, allFilesHtml, selectedQuestionFile] = await Promise.all([
     courseFilesClient.getQuestionFiles.query({
       course_id: resLocals.course.id,
       question_id: resLocals.question.id,
     }),
-    renderAllQuestionFilesHtml({ resLocals, editorUrl }),
+    renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory: directory }),
     readSelectedQuestionFile({
       course: resLocals.course,
       question: resLocals.question,
@@ -362,7 +397,11 @@ router.get(
     const [richTextEditorEnabled, messages, questionFilesData] = await Promise.all([
       features.enabledFromLocals('rich-text-editor', res.locals),
       getValidatedInitialMessages(res.locals.question),
-      getQuestionFilesData(res.locals, req.query.file),
+      getQuestionFilesData({
+        resLocals: res.locals,
+        selectedFile: req.query.file,
+        selectedDirectory: req.query.dir,
+      }),
     ]);
 
     const { questionContainerHtml } = await renderQuestionPreview(
@@ -633,7 +672,13 @@ router.post(
 router.get(
   '/files',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    res.json(await getQuestionFilesData(res.locals, req.query.file));
+    res.json(
+      await getQuestionFilesData({
+        resLocals: res.locals,
+        selectedFile: req.query.file,
+        selectedDirectory: req.query.dir,
+      }),
+    );
   }),
 );
 

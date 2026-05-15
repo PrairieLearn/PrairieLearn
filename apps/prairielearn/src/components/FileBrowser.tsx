@@ -80,6 +80,8 @@ interface DirectoryBrowserOptions {
   fileViewBaseUrl?: string;
   formAction?: string;
   successfulActionRedirectUrl?: string;
+  directoryUrl?: (directoryPath: string) => string;
+  directoryAttributes?: (directoryPath: string) => Record<string, string>;
   editFileUrl?: (file: DirectoryEntryFile) => string;
   editFileAttributes?: (file: DirectoryEntryFile) => Record<string, string>;
 }
@@ -556,6 +558,32 @@ function DirectoryBrowser({
 }) {
   return (
     <>
+      {options?.directoryUrl ? (
+        <nav aria-label="File browser breadcrumb" className="mb-2">
+          <ol className="breadcrumb mb-0">
+            {paths.branch
+              .filter((dir) => dir.canView)
+              .map((dir, index, dirs) => (
+                <li
+                  key={dir.path}
+                  className={`breadcrumb-item ${index === dirs.length - 1 ? 'active' : ''}`}
+                  aria-current={index === dirs.length - 1 ? 'page' : undefined}
+                >
+                  {index === dirs.length - 1 ? (
+                    dir.name
+                  ) : (
+                    <a
+                      href={options.directoryUrl?.(dir.path)}
+                      {...options.directoryAttributes?.(dir.path)}
+                    >
+                      {dir.name}
+                    </a>
+                  )}
+                </li>
+              ))}
+          </ol>
+        </nav>
+      ) : null}
       {paths.hasEditPermission && !isReadOnly ? (
         <div className="d-flex justify-content-end mb-2">
           <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} options={options} />
@@ -755,11 +783,15 @@ function DirectoryBrowserTable({
                 <i className="fa fa-folder" />{' '}
                 {d.canView ? (
                   <a
-                    href={getFileViewUrl({
-                      paths,
-                      fileViewBaseUrl: options?.fileViewBaseUrl,
-                      filePath: d.path,
-                    })}
+                    href={
+                      options?.directoryUrl?.(d.path) ??
+                      getFileViewUrl({
+                        paths,
+                        fileViewBaseUrl: options?.fileViewBaseUrl,
+                        filePath: d.path,
+                      })
+                    }
+                    {...options?.directoryAttributes?.(d.path)}
                   >
                     {d.name}
                   </a>

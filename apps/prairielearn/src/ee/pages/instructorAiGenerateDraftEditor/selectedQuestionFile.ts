@@ -28,10 +28,25 @@ export function getSelectedQuestionFilePath(queryValue: unknown): string | null 
   return normalizeQuestionFilePath(queryValue);
 }
 
-export function normalizeQuestionFilePath(filePath: string): string {
+export function getSelectedQuestionDirectory(queryValue: unknown): string | null {
+  if (queryValue == null) return null;
+  if (Array.isArray(queryValue)) {
+    throw new error.HttpStatusError(400, 'Invalid selected directory');
+  }
+  if (typeof queryValue !== 'string') {
+    throw new error.HttpStatusError(400, 'Invalid selected directory');
+  }
+
+  const trimmedPath = queryValue.trim();
+  if (trimmedPath === '' || trimmedPath === '.') return null;
+
+  return normalizeQuestionPath(trimmedPath, 'directory');
+}
+
+function normalizeQuestionPath(filePath: string, pathType: 'file' | 'directory'): string {
   const trimmedPath = filePath.trim();
   if (trimmedPath === '' || trimmedPath.includes('\0') || trimmedPath.includes('\\')) {
-    throw new error.HttpStatusError(400, 'Invalid selected file path');
+    throw new error.HttpStatusError(400, `Invalid selected ${pathType} path`);
   }
 
   const normalizedPath = path.posix.normalize(trimmedPath);
@@ -41,10 +56,14 @@ export function normalizeQuestionFilePath(filePath: string): string {
     normalizedPath.startsWith('../') ||
     path.posix.isAbsolute(normalizedPath)
   ) {
-    throw new error.HttpStatusError(400, 'Invalid selected file path');
+    throw new error.HttpStatusError(400, `Invalid selected ${pathType} path`);
   }
 
   return normalizedPath;
+}
+
+export function normalizeQuestionFilePath(filePath: string): string {
+  return normalizeQuestionPath(filePath, 'file');
 }
 
 export async function readSelectedQuestionFile({
@@ -100,5 +119,17 @@ export function getEditorUrlWithSelectedFile({
   filePath: string;
 }) {
   const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
+  return `${editorUrl}?${params.toString()}`;
+}
+
+export function getEditorUrlWithSelectedDirectory({
+  editorUrl,
+  directory,
+}: {
+  editorUrl: string;
+  directory: string | null;
+}) {
+  const params = new URLSearchParams({ tab: 'all-files' });
+  if (directory != null) params.set('dir', directory);
   return `${editorUrl}?${params.toString()}`;
 }

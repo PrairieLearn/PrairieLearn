@@ -297,6 +297,7 @@ function AllQuestionFiles({
   editorUrl,
   csrfToken,
   onSelectFile,
+  onSelectDirectory,
   onClearSelectedFile,
   onSelectedFileSaved,
 }: {
@@ -308,6 +309,7 @@ function AllQuestionFiles({
   editorUrl: string;
   csrfToken: string;
   onSelectFile: (filePath: string) => void;
+  onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
   onSelectedFileSaved: () => Promise<unknown>;
 }) {
@@ -323,10 +325,18 @@ function AllQuestionFiles({
 
       const link = target.closest<HTMLAnchorElement>('a[data-selected-file-path]');
       const filePath = link?.dataset.selectedFilePath;
-      if (!filePath) return;
+      if (filePath != null) {
+        event.preventDefault();
+        onSelectFile(filePath);
+        return;
+      }
+
+      const directoryLink = target.closest<HTMLAnchorElement>('a[data-selected-directory-path]');
+      const directoryPath = directoryLink?.dataset.selectedDirectoryPath;
+      if (directoryPath == null) return;
 
       event.preventDefault();
-      onSelectFile(filePath);
+      onSelectDirectory(directoryPath === '' ? null : directoryPath);
     };
 
     fileListing.addEventListener('click', handleClick);
@@ -334,7 +344,7 @@ function AllQuestionFiles({
     return () => {
       fileListing.removeEventListener('click', handleClick);
     };
-  }, [onSelectFile]);
+  }, [onSelectDirectory, onSelectFile]);
 
   if (!qid) return null;
 
@@ -393,6 +403,7 @@ export function QuestionAndFilePreview({
   onRetryFiles,
   onSelectTab,
   onSelectFile,
+  onSelectDirectory,
   onClearSelectedFile,
   onSelectedFileSaved,
 }: {
@@ -416,6 +427,7 @@ export function QuestionAndFilePreview({
   onRetryFiles?: () => void;
   onSelectTab: (tab: 'files') => void;
   onSelectFile: (filePath: string) => void;
+  onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
   onSelectedFileSaved: () => Promise<unknown>;
 }) {
@@ -502,6 +514,7 @@ export function QuestionAndFilePreview({
           editorUrl={editorUrl}
           csrfToken={csrfToken}
           onSelectFile={onSelectFile}
+          onSelectDirectory={onSelectDirectory}
           onClearSelectedFile={onClearSelectedFile}
           onSelectedFileSaved={onSelectedFileSaved}
         />

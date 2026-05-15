@@ -35,9 +35,14 @@ async function fetchQuestionFiles(
   urlPrefix: string,
   questionId: string,
   selectedFilePath: string | null,
+  selectedDirectory: string | null,
 ): Promise<QuestionFilesData> {
-  const params = selectedFilePath == null ? '' : `?file=${encodeURIComponent(selectedFilePath)}`;
-  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files${params}`, {
+  const params = new URLSearchParams();
+  if (selectedFilePath != null) params.set('file', selectedFilePath);
+  if (selectedDirectory != null) params.set('dir', selectedDirectory);
+  const queryString = params.toString();
+  const query = queryString === '' ? '' : `?${queryString}`;
+  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files${query}`, {
     headers: { Accept: 'application/json' },
   });
   const data = await response.json();
@@ -87,14 +92,15 @@ function AiQuestionGenerationEditorInner({
   const newVariantRef = useRef<NewVariantHandle>(null);
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
   const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
+  const [selectedDirectory, setSelectedDirectory] = useQueryState('dir', parseAsString);
 
   const {
     data: questionFilesData,
     error: filesError,
     refetch: refetchFiles,
   } = useQuery({
-    queryKey: ['question-files', urlPrefix, question.id, selectedFilePath],
-    queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFilePath),
+    queryKey: ['question-files', urlPrefix, question.id, selectedFilePath, selectedDirectory],
+    queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFilePath, selectedDirectory),
     staleTime: Infinity,
     initialData: {
       files: initialQuestionFiles,
@@ -147,6 +153,15 @@ function AiQuestionGenerationEditorInner({
     await setSelectedFilePath(null);
     await setActiveTab('all-files');
   }, [setActiveTab, setSelectedFilePath]);
+
+  const handleSelectDirectory = useCallback(
+    async (directory: string | null) => {
+      await setSelectedFilePath(null);
+      await setSelectedDirectory(directory);
+      await setActiveTab('all-files');
+    },
+    [setActiveTab, setSelectedDirectory, setSelectedFilePath],
+  );
 
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
@@ -233,9 +248,11 @@ function AiQuestionGenerationEditorInner({
             onRetryFiles={() => refetchFiles()}
             onSelectTab={(tab) => void setActiveTab(tab)}
             onSelectFile={(filePath) => void handleSelectFile(filePath)}
+            onSelectDirectory={(directory) => void handleSelectDirectory(directory)}
             onClearSelectedFile={() => void handleClearSelectedFile()}
             onSelectedFileSaved={async () => {
               await refetchFiles();
+              newVariantRef.current?.newVariant();
             }}
           />
         </div>

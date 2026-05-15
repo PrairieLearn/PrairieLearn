@@ -127,14 +127,18 @@ export function SelectedQuestionFileEditor({
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
     });
-    editor.getSession().setTabSize(2);
-    editor.getSession().setValue(savedContents);
+    const session = editor.getSession();
+    session.setTabSize(2);
+    session.setValue(savedContents);
     editor.gotoLine(1, 0, false);
-    editor.getSession().getUndoManager().reset();
-    editor.getSession().on('change', () => setContents(editor.getValue()));
+    session.getUndoManager().reset();
+    const handleChange = () => setContents(editor.getValue());
+    session.on('change', handleChange);
 
     return () => {
+      session.off('change', handleChange);
       editor.destroy();
+      editor.container.remove();
     };
   }, [savedContents, selectedFile.aceMode]);
 
