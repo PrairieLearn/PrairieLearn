@@ -16,9 +16,7 @@ const RUNTIME_WASM_FILENAME = 'web-tree-sitter.wasm';
 let linterPromise: Promise<Linter> | null = null;
 let formatterPromise: Promise<Formatter> | null = null;
 
-function getLinter(): Promise<Linter> {
-  if (linterPromise) return linterPromise;
-
+function locateWasm(name: string): string {
   const grammarWasm = document
     .querySelector('meta[name="htmlmustache-grammar-wasm"]')
     ?.getAttribute('content');
@@ -27,15 +25,19 @@ function getLinter(): Promise<Linter> {
     ?.getAttribute('content');
 
   if (!grammarWasm || !runtimeWasm) {
-    return Promise.reject(new Error('Missing htmlmustache wasm meta tags'));
+    throw new Error('Missing htmlmustache wasm meta tags');
   }
 
+  if (name === GRAMMAR_WASM_FILENAME) return grammarWasm;
+  if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
+  return name;
+}
+
+function getLinter(): Promise<Linter> {
+  if (linterPromise) return linterPromise;
+
   linterPromise = createLinter({
-    locateWasm: (name) => {
-      if (name === GRAMMAR_WASM_FILENAME) return grammarWasm;
-      if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
-      return name;
-    },
+    locateWasm,
     formats,
     validators,
   });
@@ -45,23 +47,8 @@ function getLinter(): Promise<Linter> {
 function getFormatter(): Promise<Formatter> {
   if (formatterPromise) return formatterPromise;
 
-  const grammarWasm = document
-    .querySelector('meta[name="htmlmustache-grammar-wasm"]')
-    ?.getAttribute('content');
-  const runtimeWasm = document
-    .querySelector('meta[name="htmlmustache-runtime-wasm"]')
-    ?.getAttribute('content');
-
-  if (!grammarWasm || !runtimeWasm) {
-    return Promise.reject(new Error('Missing htmlmustache wasm meta tags'));
-  }
-
   formatterPromise = createFormatter({
-    locateWasm: (name) => {
-      if (name === GRAMMAR_WASM_FILENAME) return grammarWasm;
-      if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
-      return name;
-    },
+    locateWasm,
   });
   return formatterPromise;
 }

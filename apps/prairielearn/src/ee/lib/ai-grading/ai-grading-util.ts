@@ -17,6 +17,8 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   queryScalar,
@@ -31,6 +33,7 @@ import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
 import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import { config } from '../../../lib/config.js';
 import {
+  AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
   GradingJobSchema,
@@ -44,10 +47,16 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
+import {
+  type CounterClockwiseRotationDegrees,
+  type InstanceQuestionAIGradingInfo,
+  type InstanceQuestionAIGradingInfoBase,
+  RotationCorrectionOutputSchema,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -463,7 +472,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion({
   );
 }
 
-export async function selectRubricGradingItems(
+async function selectRubricGradingItems(
   manual_rubric_grading_id: string | null,
 ): Promise<RubricItem[]> {
   return await queryRows(
@@ -604,10 +613,6 @@ export async function selectLastVariantAndSubmission(
     { instance_question_id },
     SubmissionVariantSchema,
   );
-}
-
-export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function hasPriorAiGradingJobs(assessment_question_id: string): Promise<boolean> {
@@ -955,4 +960,132 @@ export function correctGeminiMalformedRubricGradingJson(rawResponseText: string)
   );
 
   return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
+}
+
+const AiGradingJobDataForSubmissionSchema = z.object({
+  manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  prompt: AiGradingJobSchema.shape.prompt,
+  completion: AiGradingJobSchema.shape.completion,
+  rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
+});
+
+/**
+ * Builds the `aiGradingInfo` displayed in the manual-grading instance question
+ * page for the most-recent submission of the given instance question. Returns
+ * `null` if the submission has not been AI-graded.
+ */
+export async function buildAiGradingInfo({
+  submission_id,
+  submissionHtmls,
+}: {
+  submission_id: string;
+  submissionHtmls: string[];
+}): Promise<InstanceQuestionAIGradingInfo | null> {
+  const aiGradingJobData = await queryOptionalRow(
+    sql.select_ai_grading_job_data_for_submission,
+    { submission_id },
+    AiGradingJobDataForSubmissionSchema,
+  );
+
+  if (!aiGradingJobData) return null;
+
+  const submissionManuallyGraded =
+    (await queryOptionalScalar(
+      sql.select_exists_manual_grading_job_for_submission,
+      { submission_id },
+      z.boolean(),
+    )) ?? false;
+
+  const selectedRubricItems = await selectRubricGradingItems(
+    aiGradingJobData.manual_rubric_grading_id,
+  );
+
+  const formattedPrompt =
+    aiGradingJobData.prompt !== null
+      ? (await formatJsonWithPrettier(JSON.stringify(aiGradingJobData.prompt, null, 2)))
+          .replaceAll('\\n', '\n')
+          .trimStart()
+      : '';
+
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
+  const explanation = run(() => {
+    const completion = aiGradingJobData.completion;
+    if (!completion) return null;
+
+    // OpenAI chat completion format
+    if (completion.choices) {
+      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // OpenAI response format
+    if (completion.output_parsed) {
+      const explanation = completion?.output_parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // `ai` package format
+    if (completion.object) {
+      const explanation = completion?.object?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    return null;
+  });
+
+  const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
+  const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
+  const validatedDegrees = parsed.success ? parsed.data : {};
+  const rotationCorrectionDegrees = Object.fromEntries(
+    Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+  );
+
+  const hasPersistedRotationCorrectionData =
+    correctedDegrees != null &&
+    typeof correctedDegrees === 'object' &&
+    Object.keys(correctedDegrees).length > 0;
+
+  const hasImage = run(() => {
+    // Use persisted rotation metadata to infer image context. This preserves
+    // historical AI grading context even if the current rendered HTML no
+    // longer includes image-capture markers.
+    if (hasPersistedRotationCorrectionData) return true;
+    if (submissionHtmls.length > 0) {
+      return containsImageCapture(submissionHtmls[0]);
+    }
+    return false;
+  });
+
+  const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    submissionManuallyGraded,
+    prompt: formattedPrompt,
+    selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+    explanation,
+  };
+
+  if (hasImage) {
+    return {
+      ...aiGradingInfoBase,
+      hasImage: true,
+      rotationCorrectionDegrees,
+    };
+  }
+  return {
+    ...aiGradingInfoBase,
+    hasImage: false,
+    rotationCorrectionDegrees: null,
+  };
 }

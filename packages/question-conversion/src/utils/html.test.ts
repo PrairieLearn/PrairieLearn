@@ -273,6 +273,17 @@ describe('rewritePreAsPlCode', () => {
     const html = '<p>No code here</p>';
     assert.equal(await rewritePreAsPlCode(html), html);
   });
+
+  it('strips <span> and <br> tags from code content', async () => {
+    const input =
+      '<pre><span>for (int i = 0; i &lt;= n; i++)<br></span><span>  // body<br></span></pre>';
+    const result = await rewritePreAsPlCode(input);
+    assert.include(result, '<pl-code');
+    assert.notInclude(result, '<span>');
+    assert.notInclude(result, '<br>');
+    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, '  // body\n');
+  });
 });
 
 describe('cleanQuestionHtml', () => {
