@@ -178,14 +178,13 @@ export function RubricSettings({
     if (rubricItems.length === 0) return warnings;
     if (totalPositive < maxPoints) {
       warnings.push(
-        `Max score from items: ${totalPositive} points · Max question score: ${maxPoints} points`,
+        `Rubric item points reach at most ${totalPositive} points. ${roundPoints(
+          maxPoints - totalPositive,
+        )} left to reach maximum.`,
       );
     }
-    const min = minPoints ?? 0;
-    if (totalNegative > min) {
-      warnings.push(
-        `Min score from items: ${totalNegative} points · Min rubric score: ${min} points`,
-      );
+    if (totalNegative > (minPoints ?? 0)) {
+      warnings.push(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
     }
     return warnings;
   }, [rubricItems.length, totalPositive, totalNegative, maxPoints, minPoints]);
