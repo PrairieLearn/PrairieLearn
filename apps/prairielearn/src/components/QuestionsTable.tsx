@@ -1,4 +1,3 @@
-import { rankItem } from '@tanstack/match-sorter-utils';
 import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
@@ -30,6 +29,7 @@ import {
 } from '@prairielearn/ui';
 
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
+import { rankSearchText } from '../lib/client/search.js';
 import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
@@ -39,7 +39,7 @@ import {
 } from './questionsTableColumns.js';
 
 const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addMeta) => {
-  const itemRank = rankItem(row.getValue(columnId), value);
+  const itemRank = rankSearchText(row.getValue(columnId), value);
   addMeta({ itemRank });
   return itemRank.passed;
 };
