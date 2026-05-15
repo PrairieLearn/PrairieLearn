@@ -87,9 +87,11 @@ function InstanceQuestionAiGradeInner({
     if (!expectReloadRef.current) return;
     expectReloadRef.current = false;
     if (submissionStatus === JobItemStatus.complete) {
-      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then((ok) => {
-        if (!ok) setShowReloadError(true);
-      });
+      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then(
+        (result) => {
+          if (!result.ok) setShowReloadError(true);
+        },
+      );
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
@@ -119,15 +121,6 @@ function InstanceQuestionAiGradeInner({
 
   return (
     <>
-      <Alert
-        show={showReloadError}
-        variant="warning"
-        dismissible
-        onClose={() => setShowReloadError(false)}
-      >
-        AI grading finished, but the grading panel couldn't refresh. Reload the page to see the
-        latest grade and feedback.
-      </Alert>
       <AiGradingProgressInfo
         jobsProgress={Object.values(serverJobProgress.jobsProgress)}
         courseInstanceId={courseInstanceId}
@@ -137,6 +130,28 @@ function InstanceQuestionAiGradeInner({
           stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
         }
       />
+      <Alert
+        show={showReloadError}
+        variant="warning"
+        dismissible
+        onClose={() => setShowReloadError(false)}
+      >
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <i className="bi bi-exclamation-triangle-fill fs-5" aria-hidden="true" />
+          <strong>Failed to refresh grading panel</strong>
+          <span className="text-body-secondary opacity-50" aria-hidden="true">
+            &middot;
+          </span>
+          <button
+            type="button"
+            className="btn btn-link p-0 align-baseline border-0 text-decoration-none"
+            style={{ fontSize: 'inherit' }}
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </button>
+        </div>
+      </Alert>
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
         show={modelSelectionModalState.show}

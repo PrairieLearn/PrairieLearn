@@ -16,6 +16,8 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
   return slot;
 }
 
+export type ReloadGradingPanelResult = { ok: true } | { ok: false; message: string };
+
 /**
  * Refreshes the grading panel, AI explanation/prompt slots, and submission
  * panel in place after AI grading completes. Done imperatively (innerHTML
@@ -31,7 +33,7 @@ export async function reloadGradingPanel({
   courseInstanceId: string;
   assessmentId: string;
   instanceQuestionId: string;
-}): Promise<boolean> {
+}): Promise<ReloadGradingPanelResult> {
   const url = getManualGradingInstanceQuestionRubricPanelsUrl({
     courseInstanceId,
     assessmentId,
@@ -41,18 +43,33 @@ export async function reloadGradingPanel({
   try {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
-      console.error(`Failed to refresh grading panel: HTTP ${res.status}`);
-      return false;
+      let serverMessage: string | null = null;
+      try {
+        const json = await res.json();
+        if (typeof json?.err === 'string') serverMessage = json.err;
+      } catch {
+        // Response body wasn't JSON; fall back to the status code.
+      }
+      const message = serverMessage
+        ? `${serverMessage} (HTTP ${res.status})`
+        : `Server returned HTTP ${res.status}.`;
+      console.error(`Failed to refresh grading panel: ${message}`);
+      return { ok: false, message };
     }
     data = await res.json();
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error('Failed to refresh grading panel:', err);
-    return false;
+    return { ok: false, message };
   }
-  if (!data?.gradingPanel) return false;
+  if (!data?.gradingPanel) {
+    return { ok: false, message: 'Server response was missing the grading panel.' };
+  }
 
   const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-  if (!gradingPanel) return false;
+  if (!gradingPanel) {
+    return { ok: false, message: 'Could not find the grading panel on this page.' };
+  }
 
   // The CSRF token returned by /grading_rubric_panels is issued for that URL,
   // not for the main form's POST URL, so preserve the existing one. Scope both
@@ -94,5 +111,5 @@ export async function reloadGradingPanel({
 
   window.resetInstructorGradingPanel();
   await window.mathjaxTypeset(typesetTargets);
-  return true;
+  return { ok: true };
 }
