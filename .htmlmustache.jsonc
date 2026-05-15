@@ -124,11 +124,6 @@
       "severity": "warning"
     },
     {
-      "id": "pl-stray-drawing-group",
-      "selector": "pl-drawing-group:not(pl-drawing-answer pl-drawing-group):not(pl-drawing-initial pl-drawing-group):not(pl-drawing-group pl-drawing-group)",
-      "message": "pl-drawing-group must be nested inside pl-drawing-answer, pl-drawing-initial, or another pl-drawing-group."
-    },
-    {
       // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
       "id": "pl-input-in-panel",
       "selector": ":is(pl-question-panel, pl-answer-panel, pl-submission-panel) :is(pl-big-o-input, pl-excalidraw:not([gradable=\"false\"]), pl-image-capture, pl-integer-input, pl-matching, pl-matrix-component-input, pl-matrix-input, pl-checkbox, pl-multiple-choice, pl-order-blocks, pl-number-input, pl-rich-text-editor, pl-string-input, pl-symbolic-input, pl-units-input)",
@@ -200,37 +195,48 @@
     { "name": "pl-integer-input" },
     {
       "name": "pl-matching",
-      "children": {
-        "tags": [{ "name": "pl-statement" }, { "name": "pl-option" }]
-      }
+      "children": [
+        {
+          "name": "pl-statement"
+        },
+        {
+          "name": "pl-option"
+        }
+      ]
     },
     { "name": "pl-matrix-component-input" },
     { "name": "pl-matrix-input" },
     {
       "name": "pl-checkbox",
-      "children": {
-        "tags": [{ "name": "pl-answer" }]
-      }
+      "children": [
+        {
+          "name": "pl-answer"
+        }
+      ]
     },
     {
       "name": "pl-multiple-choice",
-      "children": {
-        "tags": [{ "name": "pl-answer" }]
-      }
+      "children": [
+        {
+          "name": "pl-answer"
+        }
+      ]
     },
     {
       "name": "pl-order-blocks",
-      "children": {
-        "tags": [
-          { "name": "pl-answer" },
-          {
-            "name": "pl-block-group",
-            "children": {
-              "tags": [{ "name": "pl-answer" }]
+      "children": [
+        {
+          "name": "pl-answer"
+        },
+        {
+          "name": "pl-block-group",
+          "children": [
+            {
+              "name": "pl-answer"
             }
-          }
-        ]
-      }
+          ]
+        }
+      ]
     },
     { "name": "pl-number-input" },
     { "name": "pl-string-input" },
@@ -241,9 +247,11 @@
     { "name": "pl-dataframe" },
     {
       "name": "pl-external-grader-variables",
-      "children": {
-        "tags": [{ "name": "pl-variable" }]
-      }
+      "children": [
+        {
+          "name": "pl-variable"
+        }
+      ]
     },
     { "name": "pl-figure" },
     { "name": "pl-file-download" },
@@ -252,30 +260,44 @@
     { "name": "pl-python-variable" },
     {
       "name": "pl-template",
-      "children": {
-        "tags": [{ "name": "pl-variable" }]
-      }
+      "children": [
+        {
+          "name": "pl-variable"
+        }
+      ]
     },
     {
       "name": "pl-variable-output",
-      "children": {
-        "tags": [{ "name": "pl-variable" }, { "name": "variable" }]
-      }
+      "children": [
+        {
+          "name": "pl-variable"
+        },
+        {
+          "name": "variable"
+        }
+      ]
     },
     { "name": "pl-xss-safe" },
     {
       "name": "pl-overlay",
-      "children": {
-        "tags": [{ "name": "pl-background" }, { "name": "pl-location" }]
-      }
+      "children": [
+        {
+          "name": "pl-background"
+        },
+        {
+          "name": "pl-location"
+        }
+      ]
     },
     // Conditional elements
     { "name": "pl-external-grader-results" },
     {
       "name": "pl-hidden-hints",
-      "children": {
-        "tags": [{ "name": "pl-hint" }]
-      }
+      "children": [
+        {
+          "name": "pl-hint"
+        }
+      ]
     },
     { "name": "pl-hide-in-manual-grading" },
     { "name": "pl-manual-grading-only" },
@@ -285,180 +307,510 @@
     // Deprecated elements
     {
       "name": "pl-dropdown",
-      "children": {
-        "tags": [{ "name": "pl-answer" }]
-      }
+      "children": [
+        {
+          "name": "pl-answer"
+        }
+      ]
     },
     { "name": "pl-prairiedraw-figure" },
     { "name": "pl-variable-score" },
     {
       "name": "pl-matrix-output",
-      "children": {
-        "tags": [{ "name": "variable" }]
-      }
+      "children": [
+        {
+          "name": "variable"
+        }
+      ]
     },
     { "name": "pl-github-link" }, // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
     {
       "name": "pl-drawing",
-      "children": {
-        "tags": [
-          {
-            "name": "pl-drawing-answer",
-            "children": {
-              "tags": [
-                { "name": "pl-drawing-group" },
-                { "name": "pl-3pointrod" },
-                { "name": "pl-4pointrod" },
-                { "name": "pl-arc" },
-                { "name": "pl-arc-dimensions" },
-                { "name": "pl-arc-vector" },
-                { "name": "pl-axes" },
-                { "name": "pl-battery" },
-                { "name": "pl-capacitor" },
-                { "name": "pl-circle" },
-                { "name": "pl-clamped" },
-                { "name": "pl-coil" },
-                { "name": "pl-collar-rod" },
-                { "name": "pl-controlled-curved-line" },
-                { "name": "pl-controlled-line" },
-                { "name": "pl-coordinates" },
-                { "name": "pl-dimensions" },
-                { "name": "pl-distributed-load" },
-                { "name": "pl-double-headed-vector" },
-                { "name": "pl-fixed-pin" },
-                { "name": "pl-graph-line" },
-                { "name": "pl-inductor" },
-                { "name": "pl-line" },
-                { "name": "pl-paired-vector" },
-                { "name": "pl-point" },
-                { "name": "pl-polygon" },
-                { "name": "pl-pulley" },
-                { "name": "pl-rectangle" },
-                { "name": "pl-resistor" },
-                { "name": "pl-rod" },
-                { "name": "pl-roller" },
-                { "name": "pl-spring" },
-                { "name": "pl-switch" },
-                { "name": "pl-text" },
-                { "name": "pl-triangle" },
-                { "name": "pl-vector" }
-              ]
-            }
-          },
-          {
-            "name": "pl-drawing-initial",
-            "children": {
-              "tags": [
-                { "name": "pl-drawing-group" },
-                { "name": "pl-3pointrod" },
-                { "name": "pl-4pointrod" },
-                { "name": "pl-arc" },
-                { "name": "pl-arc-dimensions" },
-                { "name": "pl-arc-vector" },
-                { "name": "pl-axes" },
-                { "name": "pl-battery" },
-                { "name": "pl-capacitor" },
-                { "name": "pl-circle" },
-                { "name": "pl-clamped" },
-                { "name": "pl-coil" },
-                { "name": "pl-collar-rod" },
-                { "name": "pl-controlled-curved-line" },
-                { "name": "pl-controlled-line" },
-                { "name": "pl-coordinates" },
-                { "name": "pl-dimensions" },
-                { "name": "pl-distributed-load" },
-                { "name": "pl-double-headed-vector" },
-                { "name": "pl-fixed-pin" },
-                { "name": "pl-graph-line" },
-                { "name": "pl-inductor" },
-                { "name": "pl-line" },
-                { "name": "pl-paired-vector" },
-                { "name": "pl-point" },
-                { "name": "pl-polygon" },
-                { "name": "pl-pulley" },
-                { "name": "pl-rectangle" },
-                { "name": "pl-resistor" },
-                { "name": "pl-rod" },
-                { "name": "pl-roller" },
-                { "name": "pl-spring" },
-                { "name": "pl-switch" },
-                { "name": "pl-text" },
-                { "name": "pl-triangle" },
-                { "name": "pl-vector" }
-              ]
-            }
-          },
-          {
-            "name": "pl-controls",
-            "children": {
-              "tags": [
-                { "name": "pl-drawing-button" },
+      "children": [
+        {
+          "name": "pl-drawing-answer",
+          "children": [
+            {
+              "name": "pl-drawing-group",
+              "children": [
                 {
-                  "name": "pl-controls-group",
-                  "children": {
-                    "tags": [{ "name": "pl-drawing-button" }]
-                  }
+                  "name": "pl-drawing-group"
+                },
+                {
+                  "name": "pl-3pointrod"
+                },
+                {
+                  "name": "pl-4pointrod"
+                },
+                {
+                  "name": "pl-arc"
+                },
+                {
+                  "name": "pl-arc-dimensions"
+                },
+                {
+                  "name": "pl-arc-vector"
+                },
+                {
+                  "name": "pl-axes"
+                },
+                {
+                  "name": "pl-battery"
+                },
+                {
+                  "name": "pl-capacitor"
+                },
+                {
+                  "name": "pl-circle"
+                },
+                {
+                  "name": "pl-clamped"
+                },
+                {
+                  "name": "pl-coil"
+                },
+                {
+                  "name": "pl-collar-rod"
+                },
+                {
+                  "name": "pl-controlled-curved-line"
+                },
+                {
+                  "name": "pl-controlled-line"
+                },
+                {
+                  "name": "pl-coordinates"
+                },
+                {
+                  "name": "pl-dimensions"
+                },
+                {
+                  "name": "pl-distributed-load"
+                },
+                {
+                  "name": "pl-double-headed-vector"
+                },
+                {
+                  "name": "pl-fixed-pin"
+                },
+                {
+                  "name": "pl-graph-line"
+                },
+                {
+                  "name": "pl-inductor"
+                },
+                {
+                  "name": "pl-line"
+                },
+                {
+                  "name": "pl-paired-vector"
+                },
+                {
+                  "name": "pl-point"
+                },
+                {
+                  "name": "pl-polygon"
+                },
+                {
+                  "name": "pl-pulley"
+                },
+                {
+                  "name": "pl-rectangle"
+                },
+                {
+                  "name": "pl-resistor"
+                },
+                {
+                  "name": "pl-rod"
+                },
+                {
+                  "name": "pl-roller"
+                },
+                {
+                  "name": "pl-spring"
+                },
+                {
+                  "name": "pl-switch"
+                },
+                {
+                  "name": "pl-text"
+                },
+                {
+                  "name": "pl-triangle"
+                },
+                {
+                  "name": "pl-vector"
+                }
+              ],
+              "allowAdditionalChildren": true
+            },
+            {
+              "name": "pl-3pointrod"
+            },
+            {
+              "name": "pl-4pointrod"
+            },
+            {
+              "name": "pl-arc"
+            },
+            {
+              "name": "pl-arc-dimensions"
+            },
+            {
+              "name": "pl-arc-vector"
+            },
+            {
+              "name": "pl-axes"
+            },
+            {
+              "name": "pl-battery"
+            },
+            {
+              "name": "pl-capacitor"
+            },
+            {
+              "name": "pl-circle"
+            },
+            {
+              "name": "pl-clamped"
+            },
+            {
+              "name": "pl-coil"
+            },
+            {
+              "name": "pl-collar-rod"
+            },
+            {
+              "name": "pl-controlled-curved-line"
+            },
+            {
+              "name": "pl-controlled-line"
+            },
+            {
+              "name": "pl-coordinates"
+            },
+            {
+              "name": "pl-dimensions"
+            },
+            {
+              "name": "pl-distributed-load"
+            },
+            {
+              "name": "pl-double-headed-vector"
+            },
+            {
+              "name": "pl-fixed-pin"
+            },
+            {
+              "name": "pl-graph-line"
+            },
+            {
+              "name": "pl-inductor"
+            },
+            {
+              "name": "pl-line"
+            },
+            {
+              "name": "pl-paired-vector"
+            },
+            {
+              "name": "pl-point"
+            },
+            {
+              "name": "pl-polygon"
+            },
+            {
+              "name": "pl-pulley"
+            },
+            {
+              "name": "pl-rectangle"
+            },
+            {
+              "name": "pl-resistor"
+            },
+            {
+              "name": "pl-rod"
+            },
+            {
+              "name": "pl-roller"
+            },
+            {
+              "name": "pl-spring"
+            },
+            {
+              "name": "pl-switch"
+            },
+            {
+              "name": "pl-text"
+            },
+            {
+              "name": "pl-triangle"
+            },
+            {
+              "name": "pl-vector"
+            }
+          ],
+          "allowAdditionalChildren": true
+        },
+        {
+          "name": "pl-drawing-initial",
+          "children": [
+            {
+              "name": "pl-drawing-group",
+              "children": [
+                {
+                  "name": "pl-drawing-group"
+                },
+                {
+                  "name": "pl-3pointrod"
+                },
+                {
+                  "name": "pl-4pointrod"
+                },
+                {
+                  "name": "pl-arc"
+                },
+                {
+                  "name": "pl-arc-dimensions"
+                },
+                {
+                  "name": "pl-arc-vector"
+                },
+                {
+                  "name": "pl-axes"
+                },
+                {
+                  "name": "pl-battery"
+                },
+                {
+                  "name": "pl-capacitor"
+                },
+                {
+                  "name": "pl-circle"
+                },
+                {
+                  "name": "pl-clamped"
+                },
+                {
+                  "name": "pl-coil"
+                },
+                {
+                  "name": "pl-collar-rod"
+                },
+                {
+                  "name": "pl-controlled-curved-line"
+                },
+                {
+                  "name": "pl-controlled-line"
+                },
+                {
+                  "name": "pl-coordinates"
+                },
+                {
+                  "name": "pl-dimensions"
+                },
+                {
+                  "name": "pl-distributed-load"
+                },
+                {
+                  "name": "pl-double-headed-vector"
+                },
+                {
+                  "name": "pl-fixed-pin"
+                },
+                {
+                  "name": "pl-graph-line"
+                },
+                {
+                  "name": "pl-inductor"
+                },
+                {
+                  "name": "pl-line"
+                },
+                {
+                  "name": "pl-paired-vector"
+                },
+                {
+                  "name": "pl-point"
+                },
+                {
+                  "name": "pl-polygon"
+                },
+                {
+                  "name": "pl-pulley"
+                },
+                {
+                  "name": "pl-rectangle"
+                },
+                {
+                  "name": "pl-resistor"
+                },
+                {
+                  "name": "pl-rod"
+                },
+                {
+                  "name": "pl-roller"
+                },
+                {
+                  "name": "pl-spring"
+                },
+                {
+                  "name": "pl-switch"
+                },
+                {
+                  "name": "pl-text"
+                },
+                {
+                  "name": "pl-triangle"
+                },
+                {
+                  "name": "pl-vector"
+                }
+              ],
+              "allowAdditionalChildren": true
+            },
+            {
+              "name": "pl-3pointrod"
+            },
+            {
+              "name": "pl-4pointrod"
+            },
+            {
+              "name": "pl-arc"
+            },
+            {
+              "name": "pl-arc-dimensions"
+            },
+            {
+              "name": "pl-arc-vector"
+            },
+            {
+              "name": "pl-axes"
+            },
+            {
+              "name": "pl-battery"
+            },
+            {
+              "name": "pl-capacitor"
+            },
+            {
+              "name": "pl-circle"
+            },
+            {
+              "name": "pl-clamped"
+            },
+            {
+              "name": "pl-coil"
+            },
+            {
+              "name": "pl-collar-rod"
+            },
+            {
+              "name": "pl-controlled-curved-line"
+            },
+            {
+              "name": "pl-controlled-line"
+            },
+            {
+              "name": "pl-coordinates"
+            },
+            {
+              "name": "pl-dimensions"
+            },
+            {
+              "name": "pl-distributed-load"
+            },
+            {
+              "name": "pl-double-headed-vector"
+            },
+            {
+              "name": "pl-fixed-pin"
+            },
+            {
+              "name": "pl-graph-line"
+            },
+            {
+              "name": "pl-inductor"
+            },
+            {
+              "name": "pl-line"
+            },
+            {
+              "name": "pl-paired-vector"
+            },
+            {
+              "name": "pl-point"
+            },
+            {
+              "name": "pl-polygon"
+            },
+            {
+              "name": "pl-pulley"
+            },
+            {
+              "name": "pl-rectangle"
+            },
+            {
+              "name": "pl-resistor"
+            },
+            {
+              "name": "pl-rod"
+            },
+            {
+              "name": "pl-roller"
+            },
+            {
+              "name": "pl-spring"
+            },
+            {
+              "name": "pl-switch"
+            },
+            {
+              "name": "pl-text"
+            },
+            {
+              "name": "pl-triangle"
+            },
+            {
+              "name": "pl-vector"
+            }
+          ],
+          "allowAdditionalChildren": true
+        },
+        {
+          "name": "pl-controls",
+          "children": [
+            {
+              "name": "pl-drawing-button"
+            },
+            {
+              "name": "pl-controls-group",
+              "children": [
+                {
+                  "name": "pl-drawing-button"
                 }
               ]
             }
-          }
-        ]
-      }
+          ]
+        }
+      ]
     },
-    {
-      "name": "pl-drawing-group",
-      "children": {
-        "tags": [
-          { "name": "pl-drawing-group" },
-          { "name": "pl-3pointrod" },
-          { "name": "pl-4pointrod" },
-          { "name": "pl-arc" },
-          { "name": "pl-arc-dimensions" },
-          { "name": "pl-arc-vector" },
-          { "name": "pl-axes" },
-          { "name": "pl-battery" },
-          { "name": "pl-capacitor" },
-          { "name": "pl-circle" },
-          { "name": "pl-clamped" },
-          { "name": "pl-coil" },
-          { "name": "pl-collar-rod" },
-          { "name": "pl-controlled-curved-line" },
-          { "name": "pl-controlled-line" },
-          { "name": "pl-coordinates" },
-          { "name": "pl-dimensions" },
-          { "name": "pl-distributed-load" },
-          { "name": "pl-double-headed-vector" },
-          { "name": "pl-fixed-pin" },
-          { "name": "pl-graph-line" },
-          { "name": "pl-inductor" },
-          { "name": "pl-line" },
-          { "name": "pl-paired-vector" },
-          { "name": "pl-point" },
-          { "name": "pl-polygon" },
-          { "name": "pl-pulley" },
-          { "name": "pl-rectangle" },
-          { "name": "pl-resistor" },
-          { "name": "pl-rod" },
-          { "name": "pl-roller" },
-          { "name": "pl-spring" },
-          { "name": "pl-switch" },
-          { "name": "pl-text" },
-          { "name": "pl-triangle" },
-          { "name": "pl-vector" }
-        ]
-      }
-    },
-    // pl-sketch
     {
       "name": "pl-sketch",
-      "children": {
-        "tags": [
-          { "name": "pl-sketch-grade" },
-          { "name": "pl-sketch-initial" },
-          { "name": "pl-sketch-solution" },
-          { "name": "pl-sketch-tool" }
-        ]
-      }
+      "children": [
+        {
+          "name": "pl-sketch-grade"
+        },
+        {
+          "name": "pl-sketch-initial"
+        },
+        {
+          "name": "pl-sketch-solution"
+        },
+        {
+          "name": "pl-sketch-tool"
+        }
+      ]
     },
     // Non-PL custom elements (don't copy to htmlMustacheConfig.ts)
     { "name": "clickable-image" },

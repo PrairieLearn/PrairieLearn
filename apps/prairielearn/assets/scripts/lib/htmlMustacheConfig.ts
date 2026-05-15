@@ -40,7 +40,11 @@ const drawingObjectTags: CustomTag[] = [
 ];
 
 const drawingObjectContainerTags: CustomTag[] = [
-  { name: 'pl-drawing-group' },
+  {
+    name: 'pl-drawing-group',
+    children: [{ name: 'pl-drawing-group' }, ...drawingObjectTags],
+    allowAdditionalChildren: true,
+  },
   ...drawingObjectTags,
 ];
 
@@ -182,13 +186,6 @@ export const htmlMustacheConfig: Config = {
       severity: 'warning',
     },
     {
-      id: 'pl-stray-drawing-group',
-      selector:
-        'pl-drawing-group:not(pl-drawing-answer pl-drawing-group):not(pl-drawing-initial pl-drawing-group):not(pl-drawing-group pl-drawing-group)',
-      message:
-        'pl-drawing-group must be nested inside pl-drawing-answer, pl-drawing-initial, or another pl-drawing-group.',
-    },
-    {
       // pl-file-upload is omitted: its render() returns ""; nesting it inside any panel is harmless.
       id: 'pl-input-in-panel',
       selector:
@@ -245,37 +242,27 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-integer-input' },
     {
       name: 'pl-matching',
-      children: {
-        tags: [{ name: 'pl-statement' }, { name: 'pl-option' }],
-      },
+      children: [{ name: 'pl-statement' }, { name: 'pl-option' }],
     },
     { name: 'pl-matrix-component-input' },
     { name: 'pl-matrix-input' },
     {
       name: 'pl-checkbox',
-      children: {
-        tags: [{ name: 'pl-answer' }],
-      },
+      children: [{ name: 'pl-answer' }],
     },
     {
       name: 'pl-multiple-choice',
-      children: {
-        tags: [{ name: 'pl-answer' }],
-      },
+      children: [{ name: 'pl-answer' }],
     },
     {
       name: 'pl-order-blocks',
-      children: {
-        tags: [
-          { name: 'pl-answer' },
-          {
-            name: 'pl-block-group',
-            children: {
-              tags: [{ name: 'pl-answer' }],
-            },
-          },
-        ],
-      },
+      children: [
+        { name: 'pl-answer' },
+        {
+          name: 'pl-block-group',
+          children: [{ name: 'pl-answer' }],
+        },
+      ],
     },
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },
@@ -286,9 +273,7 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-dataframe' },
     {
       name: 'pl-external-grader-variables',
-      children: {
-        tags: [{ name: 'pl-variable' }],
-      },
+      children: [{ name: 'pl-variable' }],
     },
     { name: 'pl-figure' },
     { name: 'pl-file-download' },
@@ -297,30 +282,22 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-python-variable' },
     {
       name: 'pl-template',
-      children: {
-        tags: [{ name: 'pl-variable' }],
-      },
+      children: [{ name: 'pl-variable' }],
     },
     {
       name: 'pl-variable-output',
-      children: {
-        tags: [{ name: 'pl-variable' }, { name: 'variable' }],
-      },
+      children: [{ name: 'pl-variable' }, { name: 'variable' }],
     },
     { name: 'pl-xss-safe' },
     {
       name: 'pl-overlay',
-      children: {
-        tags: [{ name: 'pl-background' }, { name: 'pl-location' }],
-      },
+      children: [{ name: 'pl-background' }, { name: 'pl-location' }],
     },
     // Conditional elements
     { name: 'pl-external-grader-results' },
     {
       name: 'pl-hidden-hints',
-      children: {
-        tags: [{ name: 'pl-hint' }],
-      },
+      children: [{ name: 'pl-hint' }],
     },
     { name: 'pl-hide-in-manual-grading' },
     { name: 'pl-manual-grading-only' },
@@ -330,70 +307,50 @@ export const htmlMustacheConfig: Config = {
     // Deprecated elements
     {
       name: 'pl-dropdown',
-      children: {
-        tags: [{ name: 'pl-answer' }],
-      },
+      children: [{ name: 'pl-answer' }],
     },
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
-    { name: 'pl-github-link' },
     {
       name: 'pl-matrix-output',
-      children: {
-        tags: [{ name: 'variable' }],
-      },
+      children: [{ name: 'variable' }],
     },
+    { name: 'pl-github-link' },
     // pl-drawing
     {
       name: 'pl-drawing',
-      children: {
-        tags: [
-          {
-            name: 'pl-drawing-answer',
-            children: {
-              tags: drawingObjectContainerTags,
+      children: [
+        {
+          name: 'pl-drawing-answer',
+          children: drawingObjectContainerTags,
+          allowAdditionalChildren: true,
+        },
+        {
+          name: 'pl-drawing-initial',
+          children: drawingObjectContainerTags,
+          allowAdditionalChildren: true,
+        },
+        {
+          name: 'pl-controls',
+          children: [
+            { name: 'pl-drawing-button' },
+            {
+              name: 'pl-controls-group',
+              children: [{ name: 'pl-drawing-button' }],
             },
-          },
-          {
-            name: 'pl-drawing-initial',
-            children: {
-              tags: drawingObjectContainerTags,
-            },
-          },
-          {
-            name: 'pl-controls',
-            children: {
-              tags: [
-                { name: 'pl-drawing-button' },
-                {
-                  name: 'pl-controls-group',
-                  children: {
-                    tags: [{ name: 'pl-drawing-button' }],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      name: 'pl-drawing-group',
-      children: {
-        tags: drawingObjectContainerTags,
-      },
+          ],
+        },
+      ],
     },
     // pl-sketch
     {
       name: 'pl-sketch',
-      children: {
-        tags: [
-          { name: 'pl-sketch-grade' },
-          { name: 'pl-sketch-initial' },
-          { name: 'pl-sketch-solution' },
-          { name: 'pl-sketch-tool' },
-        ],
-      },
+      children: [
+        { name: 'pl-sketch-grade' },
+        { name: 'pl-sketch-initial' },
+        { name: 'pl-sketch-solution' },
+        { name: 'pl-sketch-tool' },
+      ],
     },
   ],
 };
