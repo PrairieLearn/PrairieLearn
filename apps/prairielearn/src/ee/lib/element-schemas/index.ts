@@ -31,14 +31,13 @@ export const elementCustomTags: CustomTag[] = [
   {
     name: 'pl-multiple-choice',
     schema: elementSchemas['pl-multiple-choice'],
-    children: {
-      tags: [
-        {
-          name: 'pl-answer',
-          schema: elementChildSchemas['pl-multiple-choice']['pl-answer'],
-        },
-      ],
-    },
+    allowAdditionalChildren: true,
+    children: [
+      {
+        name: 'pl-answer',
+        schema: elementChildSchemas['pl-multiple-choice']['pl-answer'],
+      },
+    ],
   },
 ];
 
