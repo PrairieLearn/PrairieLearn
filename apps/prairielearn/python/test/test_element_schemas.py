@@ -17,7 +17,16 @@ def test_normalize_attrs_replaces_underscores() -> None:
         (
             {"type": "object", "required": ["answers-name"]},
             "<pl-widget></pl-widget>",
-            "'answers-name' is a required property",
+            r'Attribute "answers-name" is required\.',
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {"answers-name": {"type": "string"}},
+                "additionalProperties": False,
+            },
+            '<pl-widget answers-name="x" bogus="true"></pl-widget>',
+            r'Attribute "bogus" is not allowed\.',
         ),
         (
             {
@@ -25,7 +34,49 @@ def test_normalize_attrs_replaces_underscores() -> None:
                 "properties": {"weight": {"type": "string", "format": "pl-integer"}},
             },
             '<pl-widget weight="1.5"></pl-widget>',
-            "pl-integer",
+            r'Attribute "weight" must be an integer\.',
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "display": {"type": "string", "enum": ["block", "inline"]}
+                },
+            },
+            '<pl-widget display="grid"></pl-widget>',
+            r'Attribute "display" must be one of: block, inline\.',
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "all-of-the-above": {
+                        "anyOf": [
+                            {"type": "string", "format": "pl-boolean"},
+                            {"type": "string", "enum": ["false", "random", "correct"]},
+                        ]
+                    }
+                },
+            },
+            '<pl-widget all-of-the-above="maybe"></pl-widget>',
+            (
+                r'Attribute "all-of-the-above" must be a boolean value '
+                r"or one of: false, random, correct\."
+            ),
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "weight": {
+                        "type": "string",
+                        "format": "pl-integer",
+                        "errorMessage": "Use a real weight.",
+                    }
+                },
+            },
+            '<pl-widget weight="1.5"></pl-widget>',
+            "Use a real weight.",
         ),
     ],
 )
