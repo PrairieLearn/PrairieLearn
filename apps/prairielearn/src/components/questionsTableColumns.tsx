@@ -9,9 +9,8 @@ import {
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
-import { getQuestionPreviewUrl } from '../lib/client/url.js';
+import { getAssessmentQuestionEditorUrl, getQuestionPreviewUrl } from '../lib/client/url.js';
 
-import { AssessmentBadge } from './AssessmentBadge.js';
 import { CopyButton } from './CopyButton.js';
 import { IssueBadge } from './IssueBadge.js';
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
@@ -21,9 +20,21 @@ import { TopicBadge } from './TopicBadge.js';
 
 const columnHelper = createColumnHelper<SafeQuestionsPageData>();
 const NONE_FILTER_VALUE = '(None)';
+const AUTO_SIZE_SAMPLE_COUNT = 5;
 
 function imageFilterValue(value: string | null | undefined): string {
   return value == null || value.trim() === '' ? NONE_FILTER_VALUE : value;
+}
+
+function autoSizeSampleByMeasure(
+  questions: SafeQuestionsPageData[],
+  measureQuestion: (question: SafeQuestionsPageData) => number,
+) {
+  return questions
+    .map((question, index) => ({ measure: measureQuestion(question), index }))
+    .sort((a, b) => b.measure - a.measure)
+    .slice(0, AUTO_SIZE_SAMPLE_COUNT)
+    .map(({ index }) => index);
 }
 
 export function createQuestionsTableColumns({
@@ -51,7 +62,11 @@ export function createQuestionsTableColumns({
 
         return (
           <span className="d-inline-flex align-items-center text-nowrap" style={{ minWidth: 0 }}>
-            <CopyButton text={`${prefix}${question.qid}`} ariaLabel="Copy QID" />
+            <CopyButton
+              text={`${prefix}${question.qid}`}
+              className="p-0 me-1"
+              ariaLabel="Copy QID"
+            />
             {run(() => {
               if (question.sync_errors) {
                 return <SyncProblemButton type="error" output={question.sync_errors} />;
@@ -86,22 +101,12 @@ export function createQuestionsTableColumns({
       },
       meta: {
         autoSize: true,
-        autoSizeSample: (questions: SafeQuestionsPageData[]) => {
-          if (questions.length === 0) return [];
-
-          const measureQuestion = (q: SafeQuestionsPageData) => {
+        autoSizeSample: (questions) =>
+          autoSizeSampleByMeasure(questions, (q) => {
             const issueCountChars = q.open_issue_count.toString().length;
             const qidChars = q.qid.length;
             return qidChars + issueCountChars;
-          };
-
-          // Do not mutate the original array
-          return questions
-            .map((q, i) => ({ measure: measureQuestion(q), i }))
-            .sort((a, b) => b.measure - a.measure)
-            .slice(0, 5)
-            .map(({ i }) => i);
-        },
+          }),
       },
       size: 250,
     }),
@@ -111,6 +116,11 @@ export function createQuestionsTableColumns({
       header: 'Title',
       cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
       size: 300,
+      maxSize: 600,
+      meta: {
+        autoSize: true,
+        autoSizeSample: (questions) => autoSizeSampleByMeasure(questions, (q) => q.title.length),
+      },
     }),
 
     columnHelper.accessor('topic', {
@@ -145,6 +155,15 @@ export function createQuestionsTableColumns({
         );
       },
       size: 200,
+      maxSize: 500,
+      meta: {
+        autoSize: true,
+        autoSizeSample: (questions) =>
+          autoSizeSampleByMeasure(
+            questions,
+            (q) => q.tags?.reduce((sum, tag) => sum + tag.name.length, 0) ?? 0,
+          ),
+      },
     }),
 
     ...(showSharingSets
@@ -183,6 +202,19 @@ export function createQuestionsTableColumns({
               );
             },
             size: 150,
+            maxSize: 500,
+            meta: {
+              autoSize: true,
+              autoSizeSample: (questions) =>
+                autoSizeSampleByMeasure(questions, (q) => {
+                  let measure = 0;
+                  if (q.share_publicly) measure += 'Public'.length;
+                  if (q.share_source_publicly) measure += 'Public source'.length;
+                  measure +=
+                    q.sharing_sets?.reduce((sum, set) => sum + (set.name?.length ?? 0), 0) ?? 0;
+                  return measure;
+                }),
+            },
           }),
         ]
       : []),
@@ -256,7 +288,22 @@ export function createQuestionsTableColumns({
                   id: `ci_${ci.id}`,
                   // TODO: Make non-nullable once we update the database schema
                   header: ci.short_name,
-                  meta: { label: ci.short_name },
+                  meta: {
+                    label: ci.short_name,
+                    autoSize: true,
+                    autoSizeSample: (questions) =>
+                      autoSizeSampleByMeasure(
+                        questions,
+                        (q) =>
+                          q.assessments
+                            ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                            .reduce(
+                              (sum, a) =>
+                                sum + assessmentLabel(a.assessment, a.assessment_set).length,
+                              0,
+                            ) ?? 0,
+                      ),
+                  },
                   cell: (info) => {
                     const assessments =
                       info.row.original.assessments
@@ -274,15 +321,17 @@ export function createQuestionsTableColumns({
                     return (
                       <div className="d-flex flex-wrap gap-1">
                         {assessments.map((a) => (
-                          <AssessmentBadge
+                          <a
                             key={a.assessment.id}
-                            assessment={{
-                              assessment_id: a.assessment.id,
-                              color: a.assessment_set.color,
-                              label: assessmentLabel(a.assessment, a.assessment_set),
-                            }}
-                            courseInstanceId={ci.id}
-                          />
+                            href={getAssessmentQuestionEditorUrl({
+                              courseInstanceId: ci.id,
+                              assessmentId: a.assessment.id,
+                              qid: info.row.original.qid,
+                            })}
+                            className={`btn btn-badge color-${a.assessment_set.color}`}
+                          >
+                            {assessmentLabel(a.assessment, a.assessment_set)}
+                          </a>
                         ))}
                       </div>
                     );

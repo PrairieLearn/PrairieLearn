@@ -1,5 +1,7 @@
 import type { ColumnFiltersState, Updater } from '@tanstack/react-table';
 
+import type { MultiSelectFilterValue } from './MultiSelectColumnFilter.js';
+
 interface ColumnWithOptionalChildren {
   id?: string | null;
   columns?: ColumnWithOptionalChildren[];
@@ -30,7 +32,10 @@ export function extractLeafColumnIds(columns: ColumnWithOptionalChildren[]): str
  */
 export function createColumnFiltersChangeHandler(
   columnFilters: ColumnFiltersState,
-  columnFilterSetters: Record<string, ((columnId: string, value: any) => void) | undefined>,
+  columnFilterSetters: Record<
+    string,
+    ((columnId: string, value: MultiSelectFilterValue | null) => void) | undefined
+  >,
 ): (updaterOrValue: Updater<ColumnFiltersState>) => void {
   return (updaterOrValue: Updater<ColumnFiltersState>) => {
     const newFilters =
@@ -41,7 +46,7 @@ export function createColumnFiltersChangeHandler(
 
     // Update filters that changed or were added
     for (const filter of newFilters) {
-      columnFilterSetters[filter.id]?.(filter.id, filter.value);
+      columnFilterSetters[filter.id]?.(filter.id, filter.value as MultiSelectFilterValue);
     }
 
     // Clear filters that were removed. We use `null` rather than a type-specific

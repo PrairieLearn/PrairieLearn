@@ -64,6 +64,10 @@ const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
 };
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
+function displayQid(row: SafeQuestionsPageData, qidPrefix?: string): string {
+  return qidPrefix && row.share_publicly ? `${qidPrefix}${row.qid}` : row.qid;
+}
+
 interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
@@ -299,7 +303,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
             {
               name: 'QID',
-              value: qidPrefix && row.share_publicly ? `${qidPrefix}${row.qid}` : row.qid,
+              value: displayQid(row, qidPrefix),
             },
             { name: 'Title', value: row.title },
             { name: 'Topic', value: row.topic.name },
@@ -312,6 +316,16 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             },
             { name: 'Workspace image', value: row.workspace_image },
           ],
+          mapRowToJsonData: (row: SafeQuestionsPageData) => ({
+            qid: displayQid(row, qidPrefix),
+            title: row.title,
+            topic: row.topic.name,
+            tags: row.tags?.map((tag) => tag.name) ?? [],
+            type: row.display_type,
+            grading_method: row.grading_method,
+            external_grading_image: row.external_grading_image,
+            workspace_image: row.workspace_image,
+          }),
         }}
         headerButtons={
           addQuestionUrl || showAiGenerateQuestionButton ? (

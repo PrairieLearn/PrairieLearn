@@ -25,6 +25,13 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentQuestionEditorUrl(
+  parts: { assessmentId: string; qid: string } & AssessmentUrlParts,
+): string {
+  const encodedQid = encodeURIComponent(parts.qid).replaceAll('%2F', '/');
+  return `${getAssessmentUrl(parts)}/questions?selected=q:${encodedQid}`;
+}
+
 export function getAssessmentStudentsUrl(
   parts: { assessmentId: string } & AssessmentUrlParts,
 ): string {
