@@ -334,18 +334,19 @@ export function createQuestionsTableFilters({
 
   const allGradingMethods = [...new Set(questions.map((q) => q.grading_method))].sort();
 
+  const isNonBlankString = (value: string | null | undefined): value is string =>
+    value != null && value.trim() !== '';
+
   const allExternalGradingImages = [
     '(None)',
     ...Array.from(
-      new Set(questions.map((q) => q.external_grading_image).filter((v): v is string => v != null)),
+      new Set(questions.map((q) => q.external_grading_image).filter(isNonBlankString)),
     ).sort(),
   ];
 
   const allWorkspaceImages = [
     '(None)',
-    ...Array.from(
-      new Set(questions.map((q) => q.workspace_image).filter((v): v is string => v != null)),
-    ).sort(),
+    ...Array.from(new Set(questions.map((q) => q.workspace_image).filter(isNonBlankString))).sort(),
   ];
 
   const allSharingSets = run(() => {
