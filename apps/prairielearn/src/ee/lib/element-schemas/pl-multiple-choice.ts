@@ -5,7 +5,7 @@ import { plBoolean, plInteger, toDraft06JsonSchema } from './element-schema-help
 const aotaNotaAttribute = () =>
   z.union([plBoolean(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
 
-const plAnswerAttributesSchema = z
+const plMultipleChoiceAnswerAttributesSchema = z
   .object({
     correct: plBoolean().optional(),
     feedback: z.string().optional(),
@@ -15,14 +15,6 @@ const plAnswerAttributesSchema = z
       .max(1)
       .meta({ errorMessage: 'Score must be in the range [0.0, 1.0].' })
       .optional(),
-    tag: z.string().optional(),
-    ranking: plInteger().optional(),
-    depends: z.string().optional(),
-    indent: plInteger().optional(),
-    final: plBoolean().optional(),
-    'initially-placed': plBoolean().optional(),
-    'distractor-feedback': z.string().optional(),
-    'ordering-feedback': z.string().optional(),
   })
   .strict();
 
@@ -66,6 +58,6 @@ export function plMultipleChoiceJsonSchema(): Record<string, unknown> {
   return toDraft06JsonSchema(plMultipleChoiceAttributesSchema);
 }
 
-export function plAnswerJsonSchema(): Record<string, unknown> {
-  return toDraft06JsonSchema(plAnswerAttributesSchema);
+export function plMultipleChoiceAnswerJsonSchema(): Record<string, unknown> {
+  return toDraft06JsonSchema(plMultipleChoiceAnswerAttributesSchema);
 }

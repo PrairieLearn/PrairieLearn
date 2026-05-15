@@ -1,31 +1,33 @@
 import type { CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
 
 import { formats } from './htmlmustache-plugin-utils.js';
-import { plAnswerJsonSchema, plMultipleChoiceJsonSchema } from './pl-multiple-choice.js';
+import {
+  plMultipleChoiceAnswerJsonSchema,
+  plMultipleChoiceJsonSchema,
+} from './pl-multiple-choice.js';
 import { validators } from './pl-multiple-choice.validator.js';
 
 const elementSchemas = {
-  'pl-answer': plAnswerJsonSchema(),
   'pl-multiple-choice': plMultipleChoiceJsonSchema(),
+};
+
+const elementChildSchemas = {
+  'pl-multiple-choice': {
+    'pl-answer': plMultipleChoiceAnswerJsonSchema(),
+  },
 };
 
 export function serializeElementSchemas(): {
   schemas: Record<string, Record<string, unknown>>;
-  keywords: string[];
-  formats: string[];
+  childSchemas: Record<string, Record<string, Record<string, unknown>>>;
 } {
   return {
     schemas: elementSchemas,
-    keywords: [],
-    formats: Object.keys(formats),
+    childSchemas: elementChildSchemas,
   };
 }
 
 export const elementCustomTags: CustomTag[] = [
-  {
-    name: 'pl-answer',
-    schema: elementSchemas['pl-answer'],
-  },
   {
     name: 'pl-multiple-choice',
     schema: elementSchemas['pl-multiple-choice'],

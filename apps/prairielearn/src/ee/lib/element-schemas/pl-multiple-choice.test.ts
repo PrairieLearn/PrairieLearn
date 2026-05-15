@@ -62,6 +62,26 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(messages.some((message) => message.includes('range')));
   });
 
+  it('rejects attributes from other pl-answer owners', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer ranking="1">A</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('ranking')));
+  });
+
+  it('does not apply the multiple-choice answer schema to other owners', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks">
+        <pl-answer ranking="1">A</pl-answer>
+      </pl-order-blocks>
+    `);
+
+    assert.deepEqual(messages, []);
+  });
+
   it('accepts score strings parsed by Python float', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">

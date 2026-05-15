@@ -266,6 +266,7 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-matrix-input' },
     { name: 'pl-checkbox' },
     ...elementCustomTags,
+    { name: 'pl-answer' },
     { name: 'pl-order-blocks' },
     { name: 'pl-block-group' },
     { name: 'pl-number-input' },

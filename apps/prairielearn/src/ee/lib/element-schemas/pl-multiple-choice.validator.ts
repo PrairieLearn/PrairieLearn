@@ -5,9 +5,10 @@ import {
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
+import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.js';
 
 const plAnswerAttributes = new Set(['correct', 'feedback', 'score']);
+const numberRegex = /^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 
 function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
   const value = element.getLiteralAttribute(attribute);
@@ -43,6 +44,29 @@ function requireEnabledAotaNota(
       feedbackAttribute,
       `pl-multiple-choice: if using ${feedbackAttribute}, you must also use ${matchingAttribute}.`,
     );
+  }
+}
+
+function validateAnswerAttributeValue(
+  child: TagElement,
+  context: ValidatorContext,
+  attribute: string,
+) {
+  const value = child.getLiteralAttribute(attribute);
+  if (value === undefined) return;
+
+  if (attribute === 'correct' && !isBooleanValue(value)) {
+    context.reportAttribute(child, attribute, '"correct" on pl-answer must be a boolean value.');
+  }
+
+  if (attribute === 'score') {
+    if (value === true || !numberRegex.test(value) || Number(value) < 0 || Number(value) > 1) {
+      context.reportAttribute(
+        child,
+        attribute,
+        '"score" on pl-answer must be in the range [0.0, 1.0].',
+      );
+    }
   }
 }
 
@@ -131,7 +155,9 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
             attribute,
             `Unknown attribute "${attribute}" on <pl-answer>.`,
           );
+          continue;
         }
+        validateAnswerAttributeValue(child, context, attribute);
       }
     }
   },
