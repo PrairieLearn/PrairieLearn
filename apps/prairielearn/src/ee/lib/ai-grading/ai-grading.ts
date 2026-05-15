@@ -621,9 +621,12 @@ export async function aiGrade({
         if (!template) return template;
         const { rendered, error } = safeMustacheRender(template, mustacheParams);
         if (error) {
-          logger.error(
-            `Rubric item ${rubric_item_id} ${fieldName} template error: ${error}. Using raw template.`,
-          );
+          // Treat rubric-template errors as per-submission failures: the rubric
+          // the AI would see is degraded, so we don't trust any grade derived
+          // from it. The outer catch in async.mapLimit prefixes this message
+          // with the instance-question id and surfaces it via the banner's
+          // job_failure_detail field.
+          throw new Error(`Rubric item ${rubric_item_id} ${fieldName} template error: ${error}`);
         }
         return rendered;
       };

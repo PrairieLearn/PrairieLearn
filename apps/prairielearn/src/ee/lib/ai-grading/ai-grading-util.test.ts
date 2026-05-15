@@ -259,17 +259,14 @@ describe('generatePrompt', () => {
     expect(guidelinesMessage?.content).toBe('Correct answer is 42.');
   });
 
-  it('falls back to the raw template when grader_guidelines has malformed mustache', async () => {
+  it('throws when grader_guidelines has malformed mustache', async () => {
     const brokenTemplate = 'Correct.   "HELLO". \\mathbb{{X+Y}/2}';
-    const messages = await generatePrompt({
-      ...baseArgs,
-      grader_guidelines: brokenTemplate,
-    });
-    const guidelinesMessage = messages.find(
-      (m) => typeof m.content === 'string' && m.content.includes('\\mathbb'),
-    );
-    expect(guidelinesMessage).toBeDefined();
-    expect(guidelinesMessage?.content).toBe(brokenTemplate);
+    await expect(
+      generatePrompt({
+        ...baseArgs,
+        grader_guidelines: brokenTemplate,
+      }),
+    ).rejects.toThrow(/Grader guidelines template error.*Unclosed tag/);
   });
 
   it('omits grader_guidelines messages when grader_guidelines is null', async () => {

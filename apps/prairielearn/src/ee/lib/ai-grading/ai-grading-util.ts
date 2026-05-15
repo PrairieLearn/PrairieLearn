@@ -108,22 +108,29 @@ export async function generatePrompt({
     ? 'system'
     : 'user';
 
-  const graderGuidelinesMessages = grader_guidelines
-    ? ([
-        {
-          role: systemRoleAfterUserMessage,
-          content: 'The instructor has provided the following grader guidelines:',
-        },
-        {
-          role: 'user',
-          content: safeMustacheRender(grader_guidelines, {
-            submitted_answers: submitted_answer,
-            correct_answers: true_answer,
-            params,
-          }).rendered,
-        },
-      ] satisfies ModelMessage[])
-    : [];
+  const graderGuidelinesMessages = run((): ModelMessage[] => {
+    if (!grader_guidelines) return [];
+    const { rendered, error } = safeMustacheRender(grader_guidelines, {
+      submitted_answers: submitted_answer,
+      correct_answers: true_answer,
+      params,
+    });
+    if (error) {
+      // Treat as a per-submission failure for the same reason as rubric-item
+      // template errors: the rubric the AI would see is degraded.
+      throw new Error(`Grader guidelines template error: ${error}`);
+    }
+    return [
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'The instructor has provided the following grader guidelines:',
+      },
+      {
+        role: 'user',
+        content: rendered,
+      },
+    ];
+  });
 
   // Instructions for grading
   if (rubric_items.length > 0) {
