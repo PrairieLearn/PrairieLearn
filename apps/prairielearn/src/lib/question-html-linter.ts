@@ -4,7 +4,7 @@ import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/browser';
+} from '@reteps/tree-sitter-htmlmustache/linter';
 
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
