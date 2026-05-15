@@ -249,7 +249,7 @@ function NoCreditsAlertContent({
         )}
         <Button
           type="button"
-          variant="outline-secondary"
+          variant={canRedeem ? 'outline-secondary' : 'primary'}
           size="sm"
           href={aiGradingSettingsUrl}
           target="_blank"
