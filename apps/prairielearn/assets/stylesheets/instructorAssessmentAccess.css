@@ -1,0 +1,173 @@
+/* Container query on the left pane drives the toolbar-label collapse below. */
+.pl-ui-split-pane__left {
+  container-type: inline-size;
+  container-name: split-left;
+}
+
+/* Hide toolbar button labels when the left pane is narrow. */
+@container split-left (max-width: 650px) {
+  .toolbar-btn-label {
+    display: none;
+  }
+}
+
+.assessment-access-date-cell-current {
+  position: relative;
+}
+
+.assessment-access-date-cell-current::before {
+  content: '';
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 4px;
+  border-radius: 999px;
+  background-color: var(--bs-primary);
+}
+
+.assessment-access-date-cell-current-success::before {
+  background-color: var(--bs-success);
+}
+
+/* Access summary tables: base styles assume no subgrid (each card sizes
+   its own columns); the @supports block at the bottom enhances to
+   cross-card alignment in Chrome 117+, Safari 16+, Firefox 71+. */
+
+/* min-width: 0 lets the wrapper shrink below its flex parent's intrinsic
+   size, which is what makes overflow-x kick in on narrow viewports. */
+.access-summary-grid-scroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.access-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* The card is a plain visual container; the role="table" grid lives on
+   `.access-summary-rows` inside it so the table's children are only rows
+   (header and footer sit outside the table, preserving the ARIA model). */
+.access-summary-card {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  overflow: hidden;
+}
+
+/* The rows wrapper is the grid; rows use `display: contents` so cells
+   flow as direct children. Sharing one grid lets every cell in a column
+   share a track, so columns align across rows within a card (the
+   within-card half of what subgrid achieves across cards). Leading
+   tracks are max-content so badges abut their row labels; the trailing
+   1fr absorbs leftover width so the table fills its container. */
+.access-summary-rows {
+  display: grid;
+}
+
+.access-summary-card--cols-2 .access-summary-rows {
+  grid-template-columns: max-content 1fr;
+}
+
+.access-summary-card--cols-3 .access-summary-rows {
+  grid-template-columns: max-content max-content 1fr;
+}
+
+/* `display: contents` lets cells flow as direct children of the rows grid.
+   Note: Firefox <89 had a bug where ARIA roles on display: contents
+   elements were not exposed to assistive tech, so AT users on Firefox 70
+   (the same browsers hitting this fallback) lose the role="row" semantic.
+   The visual layout is correct; AT semantics are mildly degraded. */
+.access-summary-row {
+  display: contents;
+}
+
+.access-summary-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.access-summary-card-header h6 {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
+/* Border-bottom lives on the cells (not the row), because in fallback
+   the row is display: contents and its own border wouldn't render. With
+   column-gap: 0, cell borders form a continuous line under the header. */
+.access-summary-row--headers .access-summary-cell {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.access-summary-cell {
+  padding: 0.5rem;
+}
+
+.access-summary-cell--first {
+  padding-left: 1rem;
+}
+
+.access-summary-cell--header {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+/* In subgrid mode, spans the 2-col card's "Access" cell across tracks
+   2 & 3 of the parent grid. In the fallback (2-col card grid with
+   max-content max-content), 2 / -1 resolves to col 2 — natural placement. */
+.access-summary-cell--span-rest {
+  grid-column: 2 / -1;
+}
+
+.access-summary-card-footer {
+  border-top: 1px solid var(--bs-border-color);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+}
+
+/* Enhancement: cards share a single 3-track grid so columns line up
+   across all cards. `auto` sizes each track to the widest content across
+   every participating card. column-gap is 0 so cells visually abut.
+   Three nested subgrids — card, rows wrapper, individual rows — all
+   inherit the parent's tracks so cells in different cards align. */
+@supports (grid-template-columns: subgrid) {
+  .access-summary-grid {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    column-gap: 0;
+    row-gap: 0.5rem;
+  }
+
+  .access-summary-card {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+
+  .access-summary-card-header,
+  .access-summary-card-footer {
+    grid-column: 1 / -1;
+  }
+
+  /* `.access-summary-card .access-summary-rows` matches the specificity of
+     the `.access-summary-card--cols-N .access-summary-rows` fallback rules
+     so the later source order (this @supports block) wins. */
+  .access-summary-card .access-summary-rows {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .access-summary-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+}

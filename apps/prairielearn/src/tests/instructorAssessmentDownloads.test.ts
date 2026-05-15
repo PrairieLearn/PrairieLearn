@@ -7,7 +7,9 @@ import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type Assessment, type User, type Variant, VariantSchema } from '../lib/db-types.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
@@ -18,6 +20,7 @@ import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import type { Filenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.html.js';
 import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import { getCSRFToken } from './helperClient.js';
 import * as helperExam from './helperExam.js';
@@ -327,7 +330,38 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
   });
 
-  describe('13. Comprehensive test of all downloads', function () {
+  describe('13. Enroll a student and have them start the exam', function () {
+    it('should generate a student and create an assessment instance', async () => {
+      const [studentUser] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+      await helperExam.withPTReservation(
+        {
+          userId: studentUser.id,
+          accessStart: new Date(Date.now() - 60_000),
+          accessEnd: new Date(Date.now() + 600_000),
+        },
+        () =>
+          withUser(studentUser, async () => {
+            const assessmentUrl =
+              locals.siteUrl + '/pl/course_instance/1/assessment/' + locals.assessment_id;
+
+            const res = await fetch(assessmentUrl);
+            assert.equal(res.status, 200);
+            const $ = cheerio.load(await res.text());
+
+            const instanceRes = await fetch(assessmentUrl, {
+              method: 'POST',
+              body: new URLSearchParams({
+                __action: 'new_instance',
+                __csrf_token: getCSRFToken($),
+              }),
+            });
+            assert.equal(instanceRes.status, 200);
+          }),
+      );
+    });
+  });
+
+  describe('14. Comprehensive test of all downloads', function () {
     it('should attempt to download every file in getFilenames', async () => {
       const assessment = await selectAssessmentById(locals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);
@@ -388,16 +422,23 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
       ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
       ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
-      const res = await fetch(ctx.instructorAssessmentGroupsUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_group',
-          __csrf_token: getCSRFToken(ctx.$),
-          group_name: 'testteam',
-          uids: ctx.studentUsers.map((u) => u.uid).join(','),
-        }),
+
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken: generatePrefixCsrfToken(
+          {
+            url: getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: ctx.assessment_id }),
+            authn_user_id: '1',
+          },
+          config.secretKey,
+        ),
+        courseInstanceId: '1',
+        assessmentId: ctx.assessment_id,
+        urlBase: ctx.siteUrl,
       });
-      assert.equal(res.status, 200);
+      await trpcClient.assessmentGroups.addGroup.mutate({
+        groupName: 'testteam',
+        uids: ctx.studentUsers.map((u) => u.uid).join(','),
+      });
 
       await withUser(ctx.studentUsers[0], async () => {
         let studentRes = await fetch(ctx.assessmentUrl);

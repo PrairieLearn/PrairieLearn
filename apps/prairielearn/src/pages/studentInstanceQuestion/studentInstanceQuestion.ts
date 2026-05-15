@@ -1,5 +1,4 @@
 import assert from 'assert';
-import url from 'node:url';
 
 import { type Request, type Response, Router } from 'express';
 
@@ -19,6 +18,7 @@ import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -36,7 +36,7 @@ router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
   // We deliberately use `url` instead of `originalUrl`. The former is relative to
   // where this router is mounted, while the latter is absolute to the app.
-  const pathname = url.parse(req.url).pathname ?? '/';
+  const { pathname } = new URL(req.url, getCanonicalHost(req));
 
   // Because this router is mounted a general path, its middleware will also
   // be run for sub-routes like `submissions/:submission_id/file/:filename`
@@ -292,10 +292,12 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
@@ -337,6 +339,7 @@ router.get(
         res.status(403).send(
           StudentInstanceQuestion({
             resLocals: res.locals,
+            renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
           }),
@@ -349,7 +352,8 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+
+    const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
@@ -397,6 +401,7 @@ router.get(
     res.send(
       StudentInstanceQuestion({
         resLocals: res.locals,
+        renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,

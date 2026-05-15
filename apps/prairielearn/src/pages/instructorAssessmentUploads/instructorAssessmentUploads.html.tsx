@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { JobStatusHtml } from '../../components/JobStatus.js';
@@ -11,7 +12,6 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
-  start_date_formatted: z.string(),
   user_uid: UserSchema.shape.uid,
 });
 type UploadJobSequence = z.infer<typeof UploadJobSequenceSchema>;
@@ -57,6 +57,7 @@ export function InstructorAssessmentUploads({
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
         uploadJobSequences,
         urlPrefix: resLocals.urlPrefix,
+        timezone: resLocals.course_instance.display_timezone,
       })}
     `,
   });
@@ -69,6 +70,7 @@ function AssessmentUploadCard({
   authzHasPermissionEdit,
   uploadJobSequences,
   urlPrefix,
+  timezone,
 }: {
   groupWork: boolean;
   assessmentSetName: string;
@@ -76,6 +78,7 @@ function AssessmentUploadCard({
   authzHasPermissionEdit: boolean;
   uploadJobSequences: UploadJobSequence[];
   urlPrefix: string;
+  timezone: string;
 }) {
   return html`
     <div class="card mb-4">
@@ -181,7 +184,7 @@ function AssessmentUploadCard({
                   return html`
                     <tr>
                       <td>${job_sequence.job_sequence.number}</td>
-                      <td>${job_sequence.start_date_formatted}</td>
+                      <td>${formatDate(job_sequence.job_sequence.start_date!, timezone)}</td>
                       <td>${job_sequence.job_sequence.description}</td>
                       <td>${job_sequence.user_uid}</td>
                       <td>${JobStatusHtml({ status: job_sequence.job_sequence.status })}</td>

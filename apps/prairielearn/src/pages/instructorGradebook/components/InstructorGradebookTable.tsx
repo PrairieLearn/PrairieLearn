@@ -13,30 +13,24 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
-import {
-  parseAsArrayOf,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-  useQueryStates,
-} from 'nuqs';
+import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
-  CategoricalColumnFilter,
   MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
   NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
-  createColumnFiltersChangeHandler,
-  extractLeafColumnIds,
+  applyMultiSelectFilter,
   numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
 } from '@prairielearn/ui';
@@ -53,17 +47,45 @@ import {
   GradebookRowSchema,
 } from '../instructorGradebook.types.js';
 
+import { CanvasCsvModal } from './CanvasCsvModal.js';
 import { EditScoreButton } from './EditScoreModal.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
-const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = ['Student'];
+type RoleValue = (typeof ROLE_VALUES)[number];
 const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
-const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
+const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const EMPTY_ROLE_FILTER: MultiSelectFilterValue<RoleValue> = { values: [], mode: 'include' };
+const EMPTY_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ROLE_FILTER: MultiSelectFilterValue<RoleValue> = {
+  values: ['Student'],
+  mode: 'include',
+};
+const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
+  values: ['joined'],
+  mode: 'include',
+};
 
 const columnHelper = createColumnHelper<GradebookRow>();
+
+function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
+  const leafIds: string[] = [];
+  for (const col of columns) {
+    if (col.columns && Array.isArray(col.columns) && col.columns.length > 0) {
+      // This is a group column, recurse into its children
+      leafIds.push(...extractLeafColumnIds(col.columns as typeof columns));
+    } else if (col.id) {
+      // This is a leaf column
+      leafIds.push(col.id);
+    }
+  }
+  return leafIds;
+}
 
 type ColumnId =
   | 'uid'
@@ -73,7 +95,6 @@ type ColumnId =
   | 'enrollment_status'
   | 'student_labels'
   | `a${number}`;
-
 
 interface GradebookTableProps {
   csrfToken: string;
@@ -104,17 +125,17 @@ function GradebookTable({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
-  const [roleFilter, setRoleFilter] = useQueryState<(typeof ROLE_VALUES)[number][]>(
+  const [roleFilter, setRoleFilter] = useQueryState(
     'role',
-    parseAsArrayOf(parseAsStringLiteral(ROLE_VALUES)).withDefault(DEFAULT_ROLE_FILTER),
+    parseAsMultiSelectFilter(ROLE_VALUES).withDefault(DEFAULT_ROLE_FILTER),
   );
-  const [statusFilter, setStatusFilter] = useQueryState<EnumEnrollmentStatus[]>(
+  const [statusFilter, setStatusFilter] = useQueryState(
     'status',
-    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
+    parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_STATUS_FILTER),
   );
-  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState<string[]>(
+  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
     'student_labels',
-    parseAsArrayOf(parseAsString).withDefault([]),
+    parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
   );
 
   const assessmentIds = useMemo(() => {
@@ -139,10 +160,11 @@ function GradebookTable({
       uid: undefined,
       user_name: undefined,
       uin: undefined,
-      role: (_columnId: string, value: GradebookRow['role'][]) => setRoleFilter(value),
-      enrollment_status: (_columnId: string, value: EnumEnrollmentStatus[]) =>
+      role: (_columnId: string, value: MultiSelectFilterValue<RoleValue>) => setRoleFilter(value),
+      enrollment_status: (_columnId: string, value: MultiSelectFilterValue<EnumEnrollmentStatus>) =>
         setStatusFilter(value),
-      student_labels: (_columnId: string, value: string[]) => setStudentLabelsFilter(value),
+      student_labels: (_columnId: string, value: MultiSelectFilterValue) =>
+        setStudentLabelsFilter(value),
       ...Object.fromEntries(
         assessmentIds.map((assessmentId) => [
           `a${assessmentId}`,
@@ -166,19 +188,14 @@ function GradebookTable({
   ]);
 
   const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const filters: ColumnFiltersState = [];
-
-    if (statusFilter.length > 0) {
-      filters.push({ id: 'enrollment_status', value: statusFilter });
-    }
-
-    if (roleFilter.length > 0) {
-      filters.push({ id: 'role', value: roleFilter });
-    }
-
-    if (studentLabelsFilter.length > 0) {
-      filters.push({ id: 'student_labels', value: studentLabelsFilter });
-    }
+    // Always include the multi-select filters so `PresetFilterDropdown` can
+    // match presets that pin them to empty (e.g., "All students & staff").
+    // `applyMultiSelectFilter` treats empty values as a no-op.
+    const filters: ColumnFiltersState = [
+      { id: 'enrollment_status', value: statusFilter },
+      { id: 'role', value: roleFilter },
+      { id: 'student_labels', value: studentLabelsFilter },
+    ];
 
     Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
       filters.push({ id: columnId, value: filterValue });
@@ -188,7 +205,21 @@ function GradebookTable({
   }, [statusFilter, roleFilter, studentLabelsFilter, assessmentFilterValues]);
 
   const handleColumnFiltersChange = useMemo(
-    () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      const present = new Set(newFilters.map((f) => f.id));
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.id, filter.value);
+      }
+      // A column missing from the new filters means it has no active filter.
+      // Pass `null` to nuqs setters to reset the URL state to its default.
+      for (const id of Object.keys(columnFilterSetters) as ColumnId[]) {
+        if (!present.has(id)) {
+          columnFilterSetters[id]?.(id, null);
+        }
+      }
+    },
     [columnFilters, columnFilterSetters],
   );
 
@@ -277,10 +308,9 @@ function GradebookTable({
           </span>
         ),
         cell: (info) => info.getValue(),
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) => {
           const current = row.getValue<GradebookRow['role']>(columnId);
-          return filterValues.includes(current);
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
         },
       }),
 
@@ -291,11 +321,12 @@ function GradebookTable({
           const status = info.getValue();
           return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
         },
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
           const current = row.getValue<EnumEnrollmentStatus | undefined>(columnId);
-          if (!current) return false;
-          return filterValues.includes(current);
+          // Rows without an enrollment status can't satisfy any include filter,
+          // and shouldn't be hidden by an exclude filter that doesn't reference them.
+          if (!current) return filter.values.length === 0 || filter.mode === 'exclude';
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
         },
       }),
 
@@ -324,10 +355,9 @@ function GradebookTable({
             </div>
           );
         },
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
           const labelIds = new Set(row.getValue<GradebookRow['student_label_ids']>(columnId));
-          return filterValues.some((id) => labelIds.has(id));
+          return applyMultiSelectFilter(filter, (values) => values.some((id) => labelIds.has(id)));
         },
       }),
 
@@ -448,14 +478,14 @@ function GradebookTable({
 
     return {
       role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
-        <CategoricalColumnFilter
+        <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={ROLE_VALUES}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
       enrollment_status: ({ header }: { header: Header<GradebookRow, EnumEnrollmentStatus> }) => (
-        <CategoricalColumnFilter
+        <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={STATUS_VALUES}
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
@@ -515,6 +545,35 @@ function GradebookTable({
     },
   });
 
+  const allRows = table.getCoreRowModel().rows.map((row) => row.original);
+  const filteredRows = table.getRowModel().rows.map((row) => row.original);
+
+  const [canvasCsvTarget, setCanvasCsvTarget] = useState<'all' | 'filtered' | null>(null);
+
+  const canvasCsvMenuItems = [
+    <hr key="divider" className="dropdown-divider" />,
+    <button
+      key="all"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={allRows.length === 0}
+      onClick={() => setCanvasCsvTarget('all')}
+    >
+      All users' grades ({allRows.length}) as Canvas CSV
+    </button>,
+    <button
+      key="filtered"
+      className="dropdown-item"
+      type="button"
+      role="menuitem"
+      disabled={filteredRows.length === 0}
+      onClick={() => setCanvasCsvTarget('filtered')}
+    >
+      Filtered users' grades ({filteredRows.length}) as Canvas CSV
+    </button>,
+  ];
+
   return (
     <>
       <TanstackTableCard
@@ -539,7 +598,6 @@ function GradebookTable({
                     ? row.student_label_ids
                         .map((id) => studentLabelsById.get(id)?.name)
                         .filter((name): name is string => name != null)
-                        .join(', ')
                     : null,
               },
             ];
@@ -555,6 +613,7 @@ function GradebookTable({
           pluralLabel: "users' grades",
           singularLabel: "user's grades",
           hasSelection: false,
+          additionalMenuItems: canvasCsvMenuItems,
         }}
         columnManager={{
           buttons: (
@@ -563,11 +622,17 @@ function GradebookTable({
               label="Filter"
               options={{
                 'Joined students': [
-                  { id: 'enrollment_status', value: ['joined'] },
-                  { id: 'role', value: ['Student'] },
+                  { id: 'enrollment_status', value: DEFAULT_STATUS_FILTER },
+                  { id: 'role', value: DEFAULT_ROLE_FILTER },
                 ],
-                'All students': [{ id: 'role', value: ['Student'] }],
-                'All students & staff': [],
+                'All students': [
+                  { id: 'enrollment_status', value: EMPTY_STATUS_FILTER },
+                  { id: 'role', value: DEFAULT_ROLE_FILTER },
+                ],
+                'All students & staff': [
+                  { id: 'enrollment_status', value: EMPTY_STATUS_FILTER },
+                  { id: 'role', value: EMPTY_ROLE_FILTER },
+                ],
               }}
               onSelect={handleEnrollmentFilterSelect}
             />
@@ -580,6 +645,15 @@ function GradebookTable({
           filters,
           scrollRef: tableRef,
         }}
+      />
+      <CanvasCsvModal
+        show={canvasCsvTarget != null}
+        courseAssessments={courseAssessments}
+        studentRows={(canvasCsvTarget === 'filtered' ? filteredRows : allRows).filter(
+          (row) => row.role === 'Student' && row.user_name != null,
+        )}
+        filename={`${filenameBase}_canvas${canvasCsvTarget === 'filtered' ? '_filtered' : ''}.csv`}
+        onHide={() => setCanvasCsvTarget(null)}
       />
     </>
   );

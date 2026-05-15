@@ -75,7 +75,6 @@ function makeAssessmentSet() {
 
 function getGroupsConfig(): GroupsJsonInput {
   return {
-    enabled: true,
     roles: [{ name: 'Recorder', minMembers: 1, maxMembers: 4 }, { name: 'Contributor' }],
     studentPermissions: {
       canCreateGroup: false,
@@ -217,6 +216,29 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('newhomework');
     assert.isTrue(syncedData.assessment.shuffle_questions);
+  });
+
+  it('syncs showQuestionTitles configuration', async () => {
+    const courseData = util.getCourseData();
+
+    const explicitExam = makeAssessment(courseData, 'Exam');
+    explicitExam.showQuestionTitles = true;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['explicitexam'] = explicitExam;
+
+    const defaultHomework = makeAssessment(courseData, 'Homework');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaulthomework'] =
+      defaultHomework;
+
+    const defaultExam = makeAssessment(courseData, 'Exam');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaultexam'] = defaultExam;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    assert.isTrue((await getSyncedAssessmentData('explicitexam')).assessment.show_question_titles);
+    assert.isTrue(
+      (await getSyncedAssessmentData('defaulthomework')).assessment.show_question_titles,
+    );
+    assert.isFalse((await getSyncedAssessmentData('defaultexam')).assessment.show_question_titles);
   });
 
   it('syncs alternatives in an Exam zone', async () => {
@@ -1262,7 +1284,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       roles: [{ name: 'Recorder' }],
       rolePermissions: {
         canAssignRoles: [],
@@ -1285,7 +1306,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 4,
       roles: [
         { name: 'Manager', minMembers: 10 },
@@ -1316,7 +1336,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1340,7 +1359,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
     teamAssessment.groups = {
-      enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
@@ -1374,7 +1392,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1493,7 +1510,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
 
     const singleRoleConfig = {
-      enabled: true,
       roles: [{ name: 'Recorder', minMembers: 1 }],
       rolePermissions: {
         canAssignRoles: ['Recorder'],
@@ -2651,7 +2667,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       roles: [
         { name: 'Manager', minMembers: 1, maxMembers: 1 },
         { name: 'Recorder', minMembers: 1, maxMembers: 1 },
@@ -2786,7 +2801,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: 'alternative group comment',
+          comment: 'alternative pool comment',
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2820,7 +2835,7 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
     assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
-    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative pool comment');
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
@@ -2847,7 +2862,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: ['alternative group comment 1', 'alternative group comment 2'],
+          comment: ['alternative pool comment 1', 'alternative pool comment 2'],
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2891,8 +2906,8 @@ describe('Assessment syncing', () => {
       'question comment 2',
     ]);
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, [
-      'alternative group comment 1',
-      'alternative group comment 2',
+      'alternative pool comment 1',
+      'alternative pool comment 2',
     ]);
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -2936,8 +2951,8 @@ describe('Assessment syncing', () => {
         {
           points: 1,
           comment: {
-            comment: 'alternative group comment',
-            comment2: 'alternative group comment 2',
+            comment: 'alternative pool comment',
+            comment2: 'alternative pool comment 2',
           },
           alternatives: [
             {
@@ -2988,8 +3003,8 @@ describe('Assessment syncing', () => {
       comment2: 'question comment 2',
     });
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, {
-      comment: 'alternative group comment',
-      comment2: 'alternative group comment 2',
+      comment: 'alternative pool comment',
+      comment2: 'alternative pool comment 2',
     });
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -3305,7 +3320,7 @@ describe('Assessment syncing', () => {
       assert.isNotEmpty(syncedData.zones);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
-      // Alternative group JSON config is not explicitly set.
+      // Alternative pool JSON config is not explicitly set.
       assert.isNotEmpty(syncedData.alternative_groups);
       assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
 
@@ -3690,7 +3705,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with own points',
+        name: 'alternative pool level with own points',
         zone: {
           questions: [
             {
@@ -3737,7 +3752,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with inherited points',
+        name: 'alternative pool level with inherited points',
         zone: {
           questions: [
             {
@@ -4074,7 +4089,6 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }],
@@ -4100,7 +4114,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 5,
       roles: [
@@ -4161,7 +4174,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
     teamAssessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],

@@ -1,10 +1,12 @@
 import os
+import posixpath
 from enum import Enum
+from typing import assert_never
+from urllib.parse import quote
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class FileType(Enum):
@@ -127,7 +129,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         assert_never(file_type)
 
     # Get full url
-    file_url = os.path.join(base_url, file_name)
+    file_url = posixpath.join(base_url, quote(file_name))
 
     # Get width (optional)
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)

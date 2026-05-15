@@ -70,6 +70,21 @@ VALUES
 RETURNING
   id;
 
+-- BLOCK select_has_prior_ai_grading_jobs
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      ai_grading_jobs AS agj
+      JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+      JOIN submissions AS s ON s.id = gj.submission_id
+      JOIN variants AS v ON v.id = s.variant_id
+      JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+  ) AS has_prior_ai_grading_jobs;
+
 -- BLOCK select_last_variant_and_submission
 SELECT
   to_jsonb(v.*) AS variant,
@@ -282,5 +297,12 @@ WHERE
 UPDATE assessment_questions
 SET
   ai_grading_mode = $ai_grading_mode
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_last_selected_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = $model_id
 WHERE
   id = $assessment_question_id;

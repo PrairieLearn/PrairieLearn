@@ -238,8 +238,9 @@ export function TreeQuestionRow({
       role="button"
       tabIndex={0}
       className={clsx(
-        'tree-row d-flex align-items-center py-1 border-bottom',
+        'tree-row d-flex align-items-center py-1 border-bottom position-relative',
         isSelected ? 'tree-row-selected' : 'list-group-item-action',
+        hasManualGradingAutoPointsWarning && 'tree-row-warning-indicator',
       )}
       style={{
         paddingLeft: indent,
@@ -248,9 +249,6 @@ export function TreeQuestionRow({
         // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
         paddingRight: '1.5rem',
         cursor: 'pointer',
-        ...(hasManualGradingAutoPointsWarning && {
-          borderLeft: '6px solid var(--bs-warning)',
-        }),
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -274,6 +272,8 @@ export function TreeQuestionRow({
             <>
               <a
                 href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
+                target={editMode ? '_blank' : undefined}
+                rel="noopener noreferrer"
                 className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -282,10 +282,8 @@ export function TreeQuestionRow({
               {!hasTitle && (
                 <CopyButton
                   text={question.id}
-                  tooltipId={`copy-qid-${question.id}`}
                   ariaLabel="Copy QID"
-                  className="hover-show ms-1"
-                  onClick={(e) => e.stopPropagation()}
+                  className="btn-xs btn-ghost hover-show ms-1"
                 />
               )}
             </>
@@ -323,10 +321,8 @@ export function TreeQuestionRow({
             <span className="text-truncate">{question.id}</span>
             <CopyButton
               text={question.id}
-              tooltipId={`copy-qid-${question.id}`}
               ariaLabel="Copy QID"
-              className="hover-show ms-1"
-              onClick={(e) => e.stopPropagation()}
+              className="btn-xs btn-ghost hover-show ms-1"
             />
           </div>
         )}
@@ -369,8 +365,11 @@ export function TreeQuestionRow({
       {editMode && onDelete && (
         <button
           type="button"
-          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
-          aria-label={`Delete ${question.id}`}
+          className={clsx(
+            'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
+            !isSelected && 'hover-show',
+          )}
+          aria-label={`Delete question ${question.id}`}
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();

@@ -19,7 +19,8 @@ import { type z } from 'zod';
 
 import {
   AccessTokenSchema as RawAccessTokenSchema,
-  AlternativeGroupSchema as RawAlternativeGroupSchema,
+  AlternativePoolSchema as RawAlternativePoolSchema,
+  AssessmentAccessControlRuleSchema as RawAssessmentAccessControlRuleSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
@@ -31,6 +32,7 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
+  GroupConfigSchema as RawGroupConfigSchema,
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
@@ -38,6 +40,7 @@ import {
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
   SharingSetSchema as RawSharingSetSchema,
+  SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -56,10 +59,17 @@ export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
 export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
 export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
-/** Alternative Groups */
-export const StaffAlternativeGroupSchema =
-  RawAlternativeGroupSchema.brand<'StaffAlternativeGroup'>();
-export type StaffAlternativeGroup = z.infer<typeof StaffAlternativeGroupSchema>;
+/** Alternative Pools */
+export const StaffAlternativePoolSchema = RawAlternativePoolSchema.brand<'StaffAlternativePool'>();
+export type StaffAlternativePool = z.infer<typeof StaffAlternativePoolSchema>;
+
+/** Assessment Access Control Rules */
+export const RawStaffAssessmentAccessControlRuleSchema = RawAssessmentAccessControlRuleSchema;
+export const StaffAssessmentAccessControlRuleSchema =
+  RawAssessmentAccessControlRuleSchema.brand<'StaffAssessmentAccessControlRule'>();
+export type StaffAssessmentAccessControlRule = z.infer<
+  typeof StaffAssessmentAccessControlRuleSchema
+>;
 
 /** Assessments */
 export const RawStaffAssessmentSchema = RawAssessmentSchema;
@@ -138,6 +148,24 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
   typeof StudentAssessmentInstanceSchema__UNSAFE
 >;
 
+/** Assessment Instance Authz Results */
+export const RawStudentAssessmentInstanceAuthzResultSchema =
+  RawSprocAuthzAssessmentInstanceSchema.pick({
+    active: true,
+    authorized_edit: true,
+    credit_date_string: true,
+    password: true,
+    show_closed_assessment: true,
+  }).transform(({ password, ...rest }) => ({
+    ...rest,
+    has_password: password != null,
+  }));
+export const StudentAssessmentInstanceAuthzResultSchema =
+  RawStudentAssessmentInstanceAuthzResultSchema.brand<'StudentAssessmentInstanceAuthzResult'>();
+export type StudentAssessmentInstanceAuthzResult = z.infer<
+  typeof StudentAssessmentInstanceAuthzResultSchema
+>;
+
 /** Assessment Modules */
 
 export const RawStaffAssessmentModuleSchema = RawAssessmentModuleSchema;
@@ -185,6 +213,18 @@ export const RawStaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
 export const StaffAssessmentQuestionSchema =
   RawStaffAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
 export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
+
+export const RawStudentAssessmentQuestionSchema = RawStaffAssessmentQuestionSchema.pick({
+  allow_real_time_grading: true,
+  grade_rate_minutes: true,
+  init_points: true,
+  max_auto_points: true,
+  max_manual_points: true,
+  max_points: true,
+});
+export const StudentAssessmentQuestionSchema =
+  RawStudentAssessmentQuestionSchema.brand<'StudentAssessmentQuestion'>();
+export type StudentAssessmentQuestion = z.infer<typeof StudentAssessmentQuestionSchema>;
 
 /** Audit Events */
 export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
@@ -326,6 +366,11 @@ export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
 export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'StudentEnrollment'>();
 export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
 
+/** Group Configs */
+export const RawStaffGroupConfigSchema = RawGroupConfigSchema;
+export const StaffGroupConfigSchema = RawStaffGroupConfigSchema.brand<'StaffGroupConfig'>();
+export type StaffGroupConfig = z.infer<typeof StaffGroupConfigSchema>;
+
 /** Instance Question Groups */
 export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;
 export const StaffInstanceQuestionGroupSchema =
@@ -337,6 +382,25 @@ export const RawStaffInstanceQuestionSchema = RawInstanceQuestionSchema;
 export const StaffInstanceQuestionSchema =
   RawStaffInstanceQuestionSchema.brand<'StaffInstanceQuestion'>();
 export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
+
+export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema.pick({
+  auto_points: true,
+  current_value: true,
+  highest_submission_score: true,
+  id: true,
+  manual_points: true,
+  number_attempts: true,
+  open: true,
+  points: true,
+  points_list: true,
+  points_list_original: true,
+  requires_manual_grading: true,
+  score_perc: true,
+  status: true,
+});
+export const StudentInstanceQuestionSchema =
+  RawStudentInstanceQuestionSchema.brand<'StudentInstanceQuestion'>();
+export type StudentInstanceQuestion = z.infer<typeof StudentInstanceQuestionSchema>;
 
 /** Institutions */
 export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
@@ -373,6 +437,13 @@ export type StaffCourseInstancePublishingExtension = z.infer<
 export const RawStaffQuestionSchema = RawQuestionSchema;
 export const StaffQuestionSchema = RawStaffQuestionSchema.brand<'StaffQuestion'>();
 export type StaffQuestion = z.infer<typeof StaffQuestionSchema>;
+
+export const RawStudentQuestionSchema = RawStaffQuestionSchema.pick({
+  id: true,
+  title: true,
+});
+export const StudentQuestionSchema = RawStudentQuestionSchema.brand<'StudentQuestion'>();
+export type StudentQuestion = z.infer<typeof StudentQuestionSchema>;
 
 export const RawPublicQuestionSchema = RawStaffQuestionSchema.pick({
   id: true,
@@ -437,6 +508,17 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
+
+export const RawStudentZoneSchema = RawZoneSchema.pick({
+  best_questions: true,
+  id: true,
+  lockpoint: true,
+  max_points: true,
+  number: true,
+  title: true,
+});
+export const StudentZoneSchema = RawStudentZoneSchema.brand<'StudentZone'>();
+export type StudentZone = z.infer<typeof StudentZoneSchema>;
 
 export const StaffRubricSchema = RawRubricSchema.brand<'StaffRubric'>();
 export type StaffRubric = z.infer<typeof StaffRubricSchema>;

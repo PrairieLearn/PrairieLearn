@@ -1,10 +1,10 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -29,11 +29,6 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const DateDurationResultSchema = z.object({
-  assessment_instance_date_formatted: z.string(),
-  assessment_instance_duration: z.string(),
-});
 
 function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
@@ -65,15 +60,6 @@ router.get(
       AssessmentInstanceStatsSchema,
     );
 
-    const dateDurationResult = await sqldb.queryRow(
-      sql.select_date_formatted_duration,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      DateDurationResultSchema,
-    );
-    const assessment_instance_date_formatted =
-      dateDurationResult.assessment_instance_date_formatted;
-    const assessment_instance_duration = dateDurationResult.assessment_instance_duration;
-
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions,
       { assessment_instance_id: res.locals.assessment_instance.id },
@@ -90,8 +76,6 @@ router.get(
         resLocals: res.locals,
         logCsvFilename,
         assessment_instance_stats,
-        assessment_instance_date_formatted,
-        assessment_instance_duration,
         instance_questions,
         assessmentInstanceLog,
       }),
@@ -133,7 +117,7 @@ router.get(
             }
           }
           return [
-            record.date_iso8601,
+            formatDateISO(record.event_date, res.locals.course_instance.display_timezone),
             record.auth_user_uid,
             fingerprintNumbers.get(record.client_fingerprint?.id) ?? null,
             record.client_fingerprint?.ip_address ?? null,

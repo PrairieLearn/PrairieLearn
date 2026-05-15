@@ -163,7 +163,7 @@ export function useAutoSizeColumns<TData>(
 
       // Render headers and sample cells into hidden container. We need to use
       // `flushSync` to ensure it's rendered synchronously before we measure.
-      // eslint-disable-next-line @eslint-react/dom/no-flush-sync
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync
       flushSync(() => {
         measurementRootRef.current?.render(
           <>

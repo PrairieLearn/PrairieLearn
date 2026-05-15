@@ -13,10 +13,12 @@ export function RubricInputSection({
   resLocals,
   disable,
   aiGradingInfo,
+  context,
 }: {
   resLocals: UntypedResLocals;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  context: 'main' | 'existing' | 'conflicting';
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
@@ -43,6 +45,7 @@ export function RubricInputSection({
       assessment_question: resLocals.assessment_question,
       disable,
       aiGradingInfo,
+      showEditRubricButton: context === 'main',
     })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
@@ -110,33 +113,44 @@ function RubricItems({
   assessment_question,
   disable,
   aiGradingInfo,
+  showEditRubricButton,
 }: {
   rubric_items: RubricData['rubric_items'][0][] | null | undefined;
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
   assessment_question: AssessmentQuestion;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  showEditRubricButton: boolean;
 }) {
   const ai_selected_rubric_item_ids_set = aiGradingInfo?.submissionManuallyGraded
     ? new Set(aiGradingInfo.selectedRubricItemIds)
     : null;
 
   return html`
-    ${aiGradingInfo?.submissionManuallyGraded
-      ? html`
-          <div
-            class="d-flex align-items-center gap-2 text-secondary mb-1"
-            style="padding-left: 3px;"
-          >
-            <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-              <i class="bi bi-stars"></i>
-            </div>
-            <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
-              <i class="bi bi-person-fill"></i>
-            </div>
-          </div>
-        `
-      : ''}
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <div class="d-flex align-items-center gap-2 text-secondary" style="padding-left: 3px;">
+        ${aiGradingInfo?.submissionManuallyGraded
+          ? html`
+              <div data-bs-toggle="tooltip" data-bs-title="AI grading">
+                <i class="bi bi-stars"></i>
+              </div>
+              <div data-bs-toggle="tooltip" data-bs-title="Human grading">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            `
+          : ''}
+      </div>
+      ${!disable && showEditRubricButton
+        ? html`
+            <button
+              type="button"
+              class="btn btn-sm btn-link p-0 text-decoration-none js-show-rubric-settings-button"
+            >
+              <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit rubric
+            </button>
+          `
+        : ''}
+    </div>
     ${rubric_items
       ? rubric_items.map((item) =>
           RubricItem({

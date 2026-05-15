@@ -63,7 +63,7 @@ export function RubricSettings({
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
-  rubricData: RubricData | null;
+  rubricData: RubricData | null | undefined;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
@@ -97,7 +97,7 @@ export function RubricSettings({
     rubricData?.rubric.starting_points ?? 0,
   );
   const [minPoints, setMinPoints] = useState<number | null>(rubricData?.rubric.min_points ?? 0);
-  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number | null>(
     rubricData?.rubric.max_extra_points ?? 0,
   );
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
@@ -139,7 +139,7 @@ export function RubricSettings({
   const maxPoints = roundPoints(
     (replaceAutoPoints
       ? (assessmentQuestion.max_points ?? 0)
-      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints,
+      : (assessmentQuestion.max_manual_points ?? 0)) + (maxExtraPoints ?? 0),
   );
 
   const pointsWarnings: string[] = useMemo(() => {
@@ -247,7 +247,7 @@ export function RubricSettings({
       return;
     }
     const rubricData: ExportedRubricData = {
-      max_extra_points: maxExtraPoints,
+      max_extra_points: maxExtraPoints ?? 0,
       min_points: minPoints ?? 0,
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
@@ -383,9 +383,14 @@ export function RubricSettings({
   };
 
   const reportInputValidity = () => {
-    // Performs validation on the required inputs
-    const required = document.querySelectorAll<HTMLInputElement>('#rubric-editor input[required]');
-    return Array.from(required).every((input) => input.reportValidity());
+    // Performs validation on the all inputs
+    // This will make sure that all non-nullable inputs are filled, and number inputs parse as numbers
+    const inputs = document.querySelectorAll<HTMLInputElement>('#rubric-editor input');
+    const textareas = document.querySelectorAll<HTMLTextAreaElement>('#rubric-editor textarea');
+    return (
+      Array.from(inputs).every((input) => input.reportValidity()) &&
+      Array.from(textareas).every((input) => input.reportValidity())
+    );
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -527,12 +532,16 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editor" className="card overflow-hidden mb-3">
+    <div
+      id="rubric-editor"
+      className="card overflow-hidden mb-3"
+      style={{ scrollMarginTop: '10px' }}
+    >
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="modify_rubric_settings" />
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
       <input type="hidden" name="starting_points" value={startingPoints} />
-      <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
+      <input type="hidden" name="max_extra_points" value={maxExtraPoints ?? ''} />
       <input type="hidden" name="min_points" value={minPoints ?? ''} />
       <div className="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
@@ -548,7 +557,11 @@ export function RubricSettings({
           <i className="fa fa-angle-up ms-1 expand-icon" aria-hidden="true" />
         </button>
       </div>
-      <div id="rubric-setting" className="js-collapsible-card-body p-2 collapse">
+      <div
+        id="rubric-setting"
+        className="js-collapsible-card-body p-2 collapse"
+        style={{ scrollMarginTop: '10px' }}
+      >
         {/* Settings */}
         <div>
           {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (
@@ -687,6 +700,7 @@ export function RubricSettings({
                       type="number"
                       value={minPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
+                      required
                       onInput={({ currentTarget }) =>
                         setMinPoints(
                           currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
@@ -711,9 +725,14 @@ export function RubricSettings({
                     <input
                       className="form-control"
                       type="number"
-                      value={maxExtraPoints}
+                      value={maxExtraPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
-                      onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
+                      required
+                      onInput={({ currentTarget }) =>
+                        setMaxExtraPoints(
+                          currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
+                        )
+                      }
                     />
                   </label>
                 </div>
@@ -769,18 +788,33 @@ export function RubricSettings({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>
-                    <em>
-                      This question does not have any rubric items! Click "Add item" below to add
-                      some
-                      {wasUsingRubric && (
-                        <>
-                          , or select <strong>Disable rubric</strong> below to switch back to manual
-                          grade input
-                        </>
-                      )}
-                      .
-                    </em>
+                  <td colSpan={7} className="text-muted py-3">
+                    This question does not have any rubric items.
+                    {hasCourseInstancePermissionEdit && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 align-baseline text-decoration-none"
+                          onClick={addRubricItemRow}
+                        >
+                          Add item
+                        </button>
+                        {wasUsingRubric && (
+                          <>
+                            , or{' '}
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 align-baseline text-decoration-none"
+                              onClick={() => submitSettings(false)}
+                            >
+                              Disable rubric
+                            </button>{' '}
+                            to switch back to manual grade input.
+                          </>
+                        )}
+                      </>
+                    )}
                   </td>
                 </tr>
               )}
@@ -805,7 +839,7 @@ export function RubricSettings({
           </div>
         ))}
         <div className="mb-3 gap-1 d-flex">
-          {hasCourseInstancePermissionEdit && (
+          {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
               Add item
             </button>

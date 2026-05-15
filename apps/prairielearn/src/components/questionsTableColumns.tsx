@@ -1,7 +1,11 @@
 import { type Header, createColumnHelper } from '@tanstack/react-table';
 
 import { run } from '@prairielearn/run';
-import { CategoricalColumnFilter } from '@prairielearn/ui';
+import {
+  MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
+  applyMultiSelectFilter,
+} from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
@@ -42,11 +46,7 @@ export function createQuestionsTableColumns({
 
         return (
           <span className="d-inline-flex align-items-center text-nowrap" style={{ minWidth: 0 }}>
-            <CopyButton
-              text={`${prefix}${question.qid}`}
-              tooltipId={`copy-qid-${question.qid}`}
-              ariaLabel="Copy QID"
-            />
+            <CopyButton text={`${prefix}${question.qid}`} ariaLabel="Copy QID" />
             {run(() => {
               if (question.sync_errors) {
                 return <SyncProblemButton type="error" output={question.sync_errors} />;
@@ -118,10 +118,9 @@ export function createQuestionsTableColumns({
         const topicB = rowB.getValue<SafeQuestionsPageData['topic']>(columnId);
         return topicA.name.localeCompare(topicB.name);
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const topic = row.getValue<SafeQuestionsPageData['topic']>(columnId);
-        return filterValues.includes(topic.name);
+        return applyMultiSelectFilter(filter, (values) => values.includes(topic.name));
       },
       size: 150,
     }),
@@ -135,10 +134,11 @@ export function createQuestionsTableColumns({
         </div>
       ),
       enableSorting: false,
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const tags = row.getValue<SafeQuestionsPageData['tags']>(columnId) ?? [];
-        return filterValues.some((v) => tags.some((t) => t.name === v));
+        return applyMultiSelectFilter(filter, (values) =>
+          values.some((v) => tags.some((t) => t.name === v)),
+        );
       },
       size: 200,
     }),
@@ -167,15 +167,16 @@ export function createQuestionsTableColumns({
               );
             },
             enableSorting: false,
-            filterFn: (row, _columnId, filterValues: string[]) => {
-              if (filterValues.length === 0) return true;
+            filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
               const items: string[] = [];
               if (row.original.share_publicly) items.push('Public');
               if (row.original.share_source_publicly) items.push('Public source');
               row.original.sharing_sets?.forEach((s) => {
                 if (s.name) items.push(s.name);
               });
-              return filterValues.some((v) => items.includes(v));
+              return applyMultiSelectFilter(filter, (values) =>
+                values.some((v) => items.includes(v)),
+              );
             },
             size: 150,
           }),
@@ -189,9 +190,9 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return <span className={`badge color-${value === 'v3' ? 'green1' : 'red1'}`}>{value}</span>;
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        return filterValues.includes(row.getValue<SafeQuestionsPageData['display_type']>(columnId));
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+        const value = row.getValue<SafeQuestionsPageData['display_type']>(columnId);
+        return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 200,
     }),
@@ -200,11 +201,9 @@ export function createQuestionsTableColumns({
       id: 'grading_method',
       header: 'Grading Method',
       cell: (info) => info.getValue(),
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        return filterValues.includes(
-          row.getValue<SafeQuestionsPageData['grading_method']>(columnId),
-        );
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+        const value = row.getValue<SafeQuestionsPageData['grading_method']>(columnId);
+        return applyMultiSelectFilter(filter, (values) => values.includes(value));
       },
       size: 150,
     }),
@@ -216,11 +215,11 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const value = row.getValue<SafeQuestionsPageData['external_grading_image']>(columnId);
-        if (!value) return filterValues.includes('(None)');
-        return filterValues.includes(value);
+        return applyMultiSelectFilter(filter, (values) =>
+          value == null ? values.includes('(None)') : values.includes(value),
+        );
       },
       size: 200,
     }),
@@ -232,11 +231,11 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const value = row.getValue<SafeQuestionsPageData['workspace_image']>(columnId);
-        if (!value) return filterValues.includes('(None)');
-        return filterValues.includes(value);
+        return applyMultiSelectFilter(filter, (values) =>
+          value == null ? values.includes('(None)') : values.includes(value),
+        );
       },
       size: 200,
     }),
@@ -256,8 +255,8 @@ export function createQuestionsTableColumns({
                 {
                   id: `ci_${ci.id}`,
                   // TODO: Make non-nullable once we update the database schema
-                  header: ci.short_name!,
-                  meta: { label: ci.short_name! },
+                  header: ci.short_name,
+                  meta: { label: ci.short_name },
                   cell: (info) => {
                     const assessments =
                       info.row.original.assessments
@@ -289,20 +288,21 @@ export function createQuestionsTableColumns({
                     );
                   },
                   enableSorting: false,
-                  filterFn: (row, _columnId, filterValues: string[]) => {
-                    if (filterValues.length === 0) return true;
+                  filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
                     const assessments =
                       row.original.assessments?.filter(
                         (a) => a.assessment.course_instance_id === ci.id,
                       ) ?? [];
-                    if (assessments.length === 0) {
-                      return filterValues.includes('(None)');
-                    }
-                    return filterValues.some((v) =>
-                      assessments.some(
-                        (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
-                      ),
-                    );
+                    return applyMultiSelectFilter(filter, (values) => {
+                      if (assessments.length === 0) {
+                        return values.includes('(None)');
+                      }
+                      return values.some((v) =>
+                        assessments.some(
+                          (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+                        ),
+                      );
+                    });
                   },
                   size: 500,
                   maxSize: 800,
@@ -377,25 +377,25 @@ export function createQuestionsTableFilters({
     (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
   > = {
     topic: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allTopics} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allTopics} />
     ),
     tags: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allTags} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allTags} />
     ),
     display_type: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allVersions} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allVersions} />
     ),
     grading_method: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allGradingMethods} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allGradingMethods} />
     ),
     external_grading_image: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allExternalGradingImages} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allExternalGradingImages} />
     ),
     workspace_image: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
     ),
     sharing_sets: ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={allSharingSets} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} />
     ),
   };
 
@@ -407,7 +407,7 @@ export function createQuestionsTableFilters({
     ];
 
     filterMap[`ci_${ci.id}`] = ({ header }) => (
-      <CategoricalColumnFilter column={header.column} allColumnValues={assessmentLabels} />
+      <MultiSelectColumnFilter column={header.column} allColumnValues={assessmentLabels} />
     );
   });
 
