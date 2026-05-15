@@ -64,7 +64,8 @@ function HiddenMeasurementCells<TData>({
   table: Table<TData>;
   columnsToMeasure: Column<TData, unknown>[];
 }) {
-  const rows = table.getCoreRowModel().rows;
+  const rows = table.getRowModel().rows;
+  const data = rows.map((row) => row.original);
 
   return (
     <div
@@ -81,7 +82,7 @@ function HiddenMeasurementCells<TData>({
             const sampleFn = col.columnDef.meta?.autoSizeSample;
             if (!sampleFn) return null;
 
-            const sampleIndices = sampleFn(table.options.data);
+            const sampleIndices = sampleFn(data);
 
             return sampleIndices.map((idx) => {
               const row = rows[idx];
