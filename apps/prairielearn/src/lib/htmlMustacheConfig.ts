@@ -266,9 +266,9 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-matrix-input' },
     { name: 'pl-checkbox' },
     ...elementCustomTags,
-    { name: 'pl-answer' },
     { name: 'pl-order-blocks' },
     { name: 'pl-block-group' },
+    { name: 'pl-answer' },
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },
     { name: 'pl-symbolic-input' },
@@ -302,9 +302,9 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-dropdown' },
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
-    { name: 'pl-github-link' },
     { name: 'pl-matrix-output' },
     { name: 'variable' }, // Deprecated alias for pl-variable
+    { name: 'pl-github-link' },
     // pl-drawing
     { name: 'pl-drawing' },
     { name: 'pl-drawing-answer' },

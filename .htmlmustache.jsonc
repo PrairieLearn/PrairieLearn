@@ -260,14 +260,12 @@
     {
       "name": "pl-multiple-choice",
       "schema": "./apps/prairielearn/elements/pl-multiple-choice/pl-multiple-choice.schema.json",
-      "children": {
-        "tags": [
-          {
-            "name": "pl-answer",
-            "schema": "./apps/prairielearn/elements/pl-multiple-choice/pl-answer.schema.json"
-          }
-        ]
-      }
+      "children": [
+        {
+          "name": "pl-answer",
+          "schema": "./apps/prairielearn/elements/pl-multiple-choice/pl-answer.schema.json"
+        }
+      ]
     },
     { "name": "pl-order-blocks" },
     { "name": "pl-block-group" }, // pl-order-blocks
