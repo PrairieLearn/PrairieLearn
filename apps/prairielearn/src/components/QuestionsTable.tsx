@@ -1,5 +1,5 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
-import { type QueryFunctionContext, useQuery } from '@tanstack/react-query';
+import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -76,7 +76,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   qidPrefix?: string;
   questionsQueryOptions: {
     queryKey: TQueryKey;
-    queryFn?: (context: QueryFunctionContext<TQueryKey>) => Promise<SafeQuestionsPageData[]>;
+    queryFn?: QueryFunction<SafeQuestionsPageData[], TQueryKey>;
   };
 }
 
