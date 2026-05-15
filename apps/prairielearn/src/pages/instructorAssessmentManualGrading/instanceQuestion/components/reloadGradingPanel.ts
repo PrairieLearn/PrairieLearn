@@ -16,7 +16,7 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
   return slot;
 }
 
-export type ReloadGradingPanelResult = { ok: true } | { ok: false; message: string };
+type ReloadGradingPanelResult = { ok: true } | { ok: false; message: string };
 
 /**
  * Refreshes the grading panel, AI explanation/prompt slots, and submission
