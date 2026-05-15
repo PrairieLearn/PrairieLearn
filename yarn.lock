@@ -5287,7 +5287,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.3.3"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.14.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -5962,15 +5962,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:^0.9.3":
-  version: 0.9.3
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.9.3"
+"@reteps/tree-sitter-htmlmustache@npm:^1.3.3":
+  version: 1.3.3
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.3.3"
   dependencies:
+    ajv: "npm:^8.20.0"
+    ajv-errors: "npm:^3.0.0"
+    ajv-i18n: "npm:^4.2.0"
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
     node-gyp: "npm:latest"
     vscode-languageserver-textdocument: "npm:^1.0.12"
     web-tree-sitter: "npm:^0.26.5"
+    zod: "npm:^4.4.3"
   peerDependencies:
     node-addon-api: ^8.2.2
     node-gyp-build: ^4.8.2
@@ -5986,8 +5990,8 @@ __metadata:
     tree-sitter:
       optional: true
   bin:
-    htmlmustache: cli/out/main.js
-  checksum: 10c0/e38bb19d24098ca3097205453d48320b2daad9fcf09b4cc62355e7900c907581013d2107a69bbeea07f4abc9c23816c0934b762f2331354c8f72d8abe7b6090f
+    htmlmustache: dist/cli/main.js
+  checksum: 10c0/5b830e3174e2f8780042356d6207983b9913d80808f04750dd4408ff6bdd630f6d8bd80aa9e20234e66094d5bc14a02027d9caf53908b045f3b92192cee7235c
   languageName: node
   linkType: hard
 
@@ -9201,6 +9205,24 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/a4357c95fc602344d33aa23cdee5ea92203d9be75eee1a3dac8cb8d361f7edcf4606fc4182c8000be6a092f8477fd77bf4d695e10c1825ad6588fb994b752385
+  languageName: node
+  linkType: hard
+
+"ajv-errors@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "ajv-errors@npm:3.0.0"
+  peerDependencies:
+    ajv: ^8.0.1
+  checksum: 10c0/f3d864ebd4bc0b51ad622b5a889cc8903000295eaa058d59c2102f293fe126c3d901419da143eaa817b863cac2e92ae2ef6f55e6c31d07bf272099afe73961ae
+  languageName: node
+  linkType: hard
+
+"ajv-i18n@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "ajv-i18n@npm:4.2.0"
+  peerDependencies:
+    ajv: ^8.0.0-beta.0
+  checksum: 10c0/8c27882f2d46147600538aa8f48a633c72cd65baa37e0fae7159e832122b4ee504f4076f81ea3f78c15d7236a2d499d42a34d1a27b202066edc620f23963f6db
   languageName: node
   linkType: hard
 
@@ -17356,7 +17378,7 @@ __metadata:
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.9.3"
+    "@reteps/tree-sitter-htmlmustache": "npm:^1.3.3"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.5"
     async: "npm:^3.2.6"
