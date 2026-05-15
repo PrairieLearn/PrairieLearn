@@ -27,7 +27,7 @@ The `pl-image-capture` element is particularly useful for capturing handwritten 
 
 A single question page can contain multiple `pl-image-capture` elements, each operating independently and saving files under its specified `file-name`.
 
-In manual grading mode, staff can view submitted images in the submission panel and, if added, through the [`pl-file-preview`](pl-file-preview.md) element, where submitted images will appear under their associated `file-name`.
+In manual grading mode, staff can view submitted images in the submission panel and, if added, through the [`pl-file-preview`](pl-file-preview.md) element, where submitted images will appear under their associated `file-name`. Submitted images can also be graded with [AI grading](../aiGrading/index.md).
 
 By default, the `mobile-capture-enabled` setting is `true`. We strongly recommend keeping mobile capture enabled for most questions to allow students to capture high-quality images easily.
 
@@ -40,6 +40,7 @@ Using mobile device capture in a local development environment requires addition
 ## See also
 
 - [`pl-file-preview` to display previously submitted files](pl-file-preview.md)
+- [AI grading for handwritten and image submissions](../aiGrading/index.md)
 
 ---
 

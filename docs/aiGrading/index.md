@@ -187,9 +187,9 @@ Costs vary course-to-course depending on rubric length, submission length, and m
 
 _Benchmarks below were run using PrairieLearn-managed keys and include the 20% infrastructure fee._
 
-**Numerical methods question -- text grading (139 submissions):**
+**Numerical methods problem -- text grading (139 submissions):**
 
-This was a Numerical methods problem with typed responses and a rubric.
+This was a Numerical Methods question with typed, paragraph-length submissions, no randomization, and a rubric.
 
 | Model          | Cost / submission | Time / submission |
 | -------------- | ----------------- | ----------------- |
@@ -197,14 +197,14 @@ This was a Numerical methods problem with typed responses and a rubric.
 | GPT-5.4        | $0.0058           | 0.2s              |
 | Gemini 3.1 Pro | $0.0126           | 0.6s              |
 
-**Dynamics problem -- image grading (~241 submissions):**
+**Dynamics problem -- image grading (242 submissions):**
 
 This was an Intro Dynamics problem that had image submissions, randomization, and a rubric.
 
 | Model          | Cost / submission | Time / submission |
 | -------------- | ----------------- | ----------------- |
-| GPT-5.4 mini   | $0.0067           | 2.9s              |
-| GPT-5.4        | $0.0159           | 1.4s              |
-| Gemini 3.1 Pro | $0.0504           | 1.5s              |
+| GPT-5.4 mini   | $0.0042           | 0.3s              |
+| GPT-5.4        | $0.0159           | 0.5s              |
+| Gemini 3.1 Pro | $0.0488           | 1.5s              |
 
 _Per-submission times are measured with many submissions in flight — a single submission graded on its own will take longer._
