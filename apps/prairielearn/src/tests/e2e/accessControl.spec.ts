@@ -235,7 +235,7 @@ test.describe('Access control UI', () => {
 
     // Verify summary shows the changes
     await expect(page.getByText('60 minutes')).toBeVisible();
-    await expect(page.getByText('Questions hidden after completion')).toBeVisible();
+    await expect(page.getByText('Hidden after completion')).toBeVisible();
 
     // Save
     await page.getByRole('button', { name: /Save and sync/i }).click();

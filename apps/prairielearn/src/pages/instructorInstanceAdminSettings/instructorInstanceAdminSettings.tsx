@@ -36,6 +36,10 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import {
+  assertCourseInstanceCanBeSharedPublicly,
+  selectNonPublicAssessmentsInCourseInstance,
+} from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -104,6 +108,14 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const questionSharingEnabled = res.locals.question_sharing_enabled;
+    const nonPublicAssessmentsInCourseInstance =
+      !questionSharingEnabled || courseInstance.share_source_publicly
+        ? []
+        : await selectNonPublicAssessmentsInCourseInstance({
+            course_instance_id: courseInstance.id,
+          });
+
     const enhancedAccessControlEnabled = await features.enabledFromLocals(
       'enhanced-access-control',
       res.locals,
@@ -150,6 +162,8 @@ router.get(
                 selfEnrollLink={selfEnrollLink}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
+                questionSharingEnabled={questionSharingEnabled}
                 enhancedAccessControlEnabled={enhancedAccessControlEnabled}
               />
             </Hydrate>
@@ -433,6 +447,19 @@ router.post(
         };
       } else {
         courseInstanceInfo.selfEnrollment = undefined;
+      }
+      if (res.locals.question_sharing_enabled) {
+        if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
+          await assertCourseInstanceCanBeSharedPublicly({
+            course_instance_id: courseInstance.id,
+          });
+        }
+        courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
+          courseInstanceInfo.shareSourcePublicly,
+          // If source is already public, preserve that setting regardless of the submitted value.
+          courseInstance.share_source_publicly || (parsedBody.share_source_publicly ?? false),
+          false,
+        );
       }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));

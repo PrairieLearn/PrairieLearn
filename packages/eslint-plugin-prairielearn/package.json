@@ -31,7 +31,6 @@
     "@typescript-eslint/types": "^8.59.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",
-    "tsx": "^4.21.0",
     "vitest": "^4.1.5"
   }
 }

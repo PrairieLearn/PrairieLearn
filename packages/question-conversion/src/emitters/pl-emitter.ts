@@ -271,7 +271,9 @@ export class PLEmitter implements OutputEmitter {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
     }
 
-    const parts: string[] = ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
+    const parts: string[] = handler.inlineInputs
+      ? wrapInlineInputPrompt(promptHtml)
+      : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
     // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
     // show together — PL only surfaces one feedback attribute per element, so don't put them in HTML.
@@ -328,6 +330,48 @@ export class PLEmitter implements OutputEmitter {
     return clientFiles;
   }
 }
+
+/**
+ * Split transformed prompt HTML into top-level blocks and wrap non-input
+ * blocks in `<pl-question-panel>`.  Blocks that contain a PL input element
+ * (e.g. `<pl-string-input>`) are emitted bare.
+ */
+function wrapInlineInputPrompt(html: string): string[] {
+  // Split between adjacent top-level block elements. The lookbehind matches
+  // after a closing block tag; the lookahead matches the start of the next tag.
+  // Whitespace between them is consumed so it doesn't become a stray text node.
+  const blocks = html.split(
+    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\s*(?=<)/,
+  );
+
+  const parts: string[] = [];
+  let panel: string[] = [];
+
+  function flushPanel() {
+    if (panel.length > 0) {
+      parts.push('<pl-question-panel>', ...panel, '</pl-question-panel>', '');
+      panel = [];
+    }
+  }
+
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+    if (PL_INPUT_RE.test(block)) {
+      flushPanel();
+      parts.push(block);
+    } else {
+      panel.push(block);
+    }
+  }
+  flushPanel();
+
+  // Trailing empty string so parts.join('\n') ends with a newline.
+  parts.push('');
+  return parts;
+}
+
+const PL_INPUT_RE =
+  /<pl-(?:big-o-input|checkbox|excalidraw|image-capture|integer-input|matching|matrix-component-input|matrix-input|multiple-choice|number-input|order-blocks|rich-text-editor|string-input|symbolic-input|units-input|file-upload)\b/;
 
 /** Render the grade(data) function for types with only global correct/incorrect feedback. */
 function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {
