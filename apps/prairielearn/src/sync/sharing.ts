@@ -154,38 +154,55 @@ export async function checkInvalidSharingSetRemovals(
     }),
   );
 
-  const invalidSharingSetRemovals: Record<string, string[]> = {};
+  const removedQuestionSharingSets: { question_id: string; sharing_set_name: string }[] = [];
   sharedQuestions.forEach((question) => {
     if (!(question.qid in courseData.questions)) {
       // this case is handled by the checks for shared questions being
       // renamed or deleted
       return;
     }
-    if (!courseData.questions[question.qid].data?.sharingSets) {
-      invalidSharingSetRemovals[question.qid] = question.sharing_sets;
-      return;
-    }
-
+    const diskSharingSets = courseData.questions[question.qid].data?.sharingSets ?? [];
     question.sharing_sets.forEach((sharingSet) => {
-      if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
-        if (!(question.qid in invalidSharingSetRemovals)) {
-          invalidSharingSetRemovals[question.qid] = [];
-        }
-        invalidSharingSetRemovals[question.qid].push(sharingSet);
+      if (!diskSharingSets.includes(sharingSet)) {
+        removedQuestionSharingSets.push({
+          question_id: question.id,
+          sharing_set_name: sharingSet,
+        });
       }
     });
   });
 
-  const existInvalidSharingSetRemovals = Object.keys(invalidSharingSetRemovals).length > 0;
-  if (existInvalidSharingSetRemovals) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
-        invalidSharingSetRemovals,
-      )
-        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
-        .join(', ')}`,
-    );
+  if (removedQuestionSharingSets.length === 0) return false;
+
+  // This check intentionally ignores `questions.share_publicly`: a publicly
+  // shared question still gets blocked if a consumer with access via the set
+  // uses it. To loosen this so public sharing acts as a fallback path, add
+  // `AND NOT q.share_publicly` to `select_in_use_question_sharing_set_removals`.
+  const blockedPairs = await sqldb.queryRows(
+    sql.select_in_use_question_sharing_set_removals,
+    {
+      course_id: courseId,
+      removed_question_sharing_sets: JSON.stringify(removedQuestionSharingSets),
+    },
+    z.object({ qid: z.string(), sharing_set_name: z.string() }),
+  );
+
+  if (blockedPairs.length === 0) return false;
+
+  const invalidSharingSetRemovals: Record<string, string[]> = {};
+  for (const { qid, sharing_set_name } of blockedPairs) {
+    if (!(qid in invalidSharingSetRemovals)) {
+      invalidSharingSetRemovals[qid] = [];
+    }
+    invalidSharingSetRemovals[qid].push(sharing_set_name);
   }
 
-  return existInvalidSharingSetRemovals;
+  const blockedLines = Object.entries(invalidSharingSetRemovals).map(
+    ([qid, sharingSets]) => `  - ${qid}: ${sharingSets.join(', ')}`,
+  );
+  logger.error(
+    `✖ Course sync completely failed. The following questions cannot be removed from these sharing sets because at least one consuming course with access to the sharing set uses the question:\n${blockedLines.join('\n')}`,
+  );
+
+  return true;
 }

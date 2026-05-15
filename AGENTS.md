@@ -61,7 +61,7 @@ Linting:
 
 - Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
-- Check for dead code with `make check-dependencies`.
+- Check for dead code with `make lint-dependencies`.
 
 Formatting:
 
@@ -141,6 +141,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 - When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
+- When formatting dates and intervals, use the functions from `@prairielearn/formatter` to ensure consistent formatting across the application. The timezone should be retrieved from the course instance, the course, or the institution, in this order of preference, using the values from `res.locals` where available.
 
 ### User interface conventions
 

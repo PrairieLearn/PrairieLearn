@@ -69,6 +69,16 @@ WHERE
   AND tc.assessment_id = $assessment_id
   AND tc.deleted_at IS NULL;
 
+-- BLOCK select_group_role_names_for_assessment
+SELECT
+  role_name
+FROM
+  team_roles
+WHERE
+  assessment_id = $assessment_id
+ORDER BY
+  id;
+
 -- BLOCK select_uids_not_in_group
 SELECT
   u.uid

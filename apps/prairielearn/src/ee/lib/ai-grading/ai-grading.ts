@@ -42,7 +42,7 @@ import {
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
+import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
@@ -283,11 +283,11 @@ async function finalizeAiGradingPersistence({
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE = 5;
 
-export async function getRunningAiGradingJobCountForCourseInstance(
+export async function getActiveAiGradingJobCountForCourseInstance(
   course_instance_id: string,
 ): Promise<number> {
   return await queryScalar(
-    sql.count_running_ai_grading_jobs_for_course_instance,
+    sql.count_active_ai_grading_jobs_for_course_instance,
     { course_instance_id },
     z.number(),
   );
@@ -382,8 +382,8 @@ export async function aiGrade({
       course_instance_id: course_instance.id,
     });
 
-    const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
-    if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
+    const activeJobCount = await getActiveAiGradingJobCountForCourseInstance(course_instance.id);
+    if (activeJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
       throw new error.HttpStatusError(
         429,
         `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please wait for running jobs to finish.`,
@@ -1145,6 +1145,14 @@ export async function aiGrade({
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
     let num_items_incurred_cost = 0;
+    // Polled before every per-item dispatch and finally emit so a Stop click
+    // can't get masked by a stale local flag.
+    let stopRequested = false as boolean;
+    const refreshStopRequested = async () => {
+      if (stopRequested) return;
+      const { status } = await selectJobSequenceStatus(serverJob.jobSequenceId);
+      if (status === 'Stopping' || status === 'Stopped') stopRequested = true;
+    };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1178,6 +1186,14 @@ export async function aiGrade({
           return undefined;
         };
 
+        await refreshStopRequested();
+        if (stopRequested) {
+          // Skip queued items entirely so they don't appear graded by this
+          // job, leaving any concurrent job's status to win in the table UI.
+          delete item_statuses[instance_question.id];
+          return false;
+        }
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1208,6 +1224,7 @@ export async function aiGrade({
           return false;
         } finally {
           num_complete += 1;
+          await refreshStopRequested();
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,
             num_complete,
@@ -1215,6 +1232,8 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            stop_state: stopRequested ? 'stopping' : undefined,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
@@ -1232,6 +1251,34 @@ export async function aiGrade({
         }
       },
     );
+
+    // Final poll: catches Stop clicks that arrived during the last batch. A
+    // Stop click that lands after this poll is still handled — the inner
+    // job's finisher in `update_job_on_finish` projects Stopping → Stopped.
+    await refreshStopRequested();
+
+    if (stopRequested) {
+      // num_complete counts every item the worker processed (incremented in
+      // the per-item finally), so the actually-graded count is num_complete
+      // minus the failures.
+      const num_graded = num_complete - num_failed;
+      const num_skipped = instance_questions.length - num_complete;
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete,
+        num_failed,
+        num_total: instance_questions.length,
+        item_statuses,
+        stop_state: 'stopped',
+        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+      });
+      // `job.stop` writes the message to the output and throws a control-flow
+      // signal that the ServerJob wrapper catches; the inner jobs row and the
+      // surrounding job_sequences row both land in 'Stopped' status.
+      job.stop(
+        `\nAI grading stopped by instructor. ${num_graded} graded, ${num_failed} failed, ${num_skipped} skipped.`,
+      );
+    }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

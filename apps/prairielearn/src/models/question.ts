@@ -1,4 +1,12 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import assert from 'assert';
+
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { type Question, QuestionSchema } from '../lib/db-types.js';
 
@@ -30,6 +38,49 @@ export async function selectOptionalQuestionByQid({
   course_id: string;
 }): Promise<Question | null> {
   return await queryOptionalRow(sql.select_question_by_qid, { qid, course_id }, QuestionSchema);
+}
+
+function getQuestionUpdateParams(patch: {
+  deleted_at?: Date | null;
+  share_publicly?: boolean;
+  share_source_publicly?: boolean;
+}) {
+  assert(process.env.NODE_ENV === 'test');
+
+  const hasDeletedAt = patch.deleted_at !== undefined;
+  const hasSharePublicly = patch.share_publicly !== undefined;
+  const hasShareSourcePublicly = patch.share_source_publicly !== undefined;
+  assert(hasDeletedAt || hasSharePublicly || hasShareSourcePublicly);
+
+  return {
+    update_deleted_at: hasDeletedAt,
+    deleted_at: patch.deleted_at ?? null,
+    update_share_publicly: hasSharePublicly,
+    share_publicly: patch.share_publicly ?? false,
+    update_share_source_publicly: hasShareSourcePublicly,
+    share_source_publicly: patch.share_source_publicly ?? false,
+  };
+}
+
+/**
+ * Testing helper for temporarily changing a whitelisted subset of fields on one question.
+ * Must only be called in test environments.
+ */
+export async function updateQuestion({
+  question_id,
+  patch,
+}: {
+  question_id: string;
+  patch: {
+    deleted_at?: Date | null;
+    share_publicly?: boolean;
+    share_source_publicly?: boolean;
+  };
+}): Promise<void> {
+  await execute(sql.update_question, {
+    ...getQuestionUpdateParams(patch),
+    question_id,
+  });
 }
 
 export async function selectQuestionByUuid({
