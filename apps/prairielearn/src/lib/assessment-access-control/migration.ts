@@ -1,30 +1,72 @@
 /**
  * Migration library for converting legacy allowAccess arrays to modern accessControl format.
+ *
+ * Architecture:
+ *   1. normalizeRules — strip uids, non-Student roles, mode:Public
+ *   2. Extract orthogonal concerns (PrairieTest, password)
+ *   3. Precondition: reject non-contiguous access gaps
+ *   4. Unified credit-timeline builder (releaseDate, dueDate, deadlines, afterLastDeadline, duration)
+ *   5. Apply visibility (afterComplete, listBeforeRelease)
+ *   6. Merge all pieces into final result
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
+import { Temporal } from '@js-temporal/polyfill';
+
+import { assertNever } from '@prairielearn/utils';
+
+import {
+  type AccessControlJsonInput,
+  AccessControlJsonSchema,
+} from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
+
+import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './validation.js';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface Migration {
+  accessControl: AccessControlJsonInput;
+  errors: string[];
+  notes: string[];
+  hasUidRules: boolean;
+}
 
 export interface AssessmentMigrationAnalysis {
   tid: string;
   title: string;
   type: string;
-  archetype: string;
-  canMigrate: boolean;
   ruleCount: number;
   hasUidRules: boolean;
+  errors: string[];
+  notes: string[];
 }
 
 interface CourseInstanceMigrationAnalysis {
   assessments: AssessmentMigrationAnalysis[];
   hasLegacyRules: boolean;
-  allCanMigrate: boolean;
 }
+
+interface QuestionReviewWindow {
+  visibleFromDate: string;
+  visibleUntilDate?: string;
+}
+
+interface VisibilityMigration {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  beforeRelease: AccessControlJsonInput['beforeRelease'] | undefined;
+  notes: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Rule helpers
+// ---------------------------------------------------------------------------
 
 function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
@@ -40,449 +82,969 @@ function getVisibilityRules(rules: AssessmentAccessRuleJson[]): AssessmentAccess
   return rules.filter((r) => (r.active ?? true) === false && !r.examUuid && !r.password);
 }
 
+function findFirstCreditStartDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  const startDates = getCreditRules(rules)
+    .map((r) => r.startDate)
+    .filter(Boolean)
+    .sort() as string[];
+  return startDates[0];
+}
+
+function findLastCreditEndDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  const endDates = getCreditRules(rules)
+    .map((r) => r.endDate)
+    .filter(Boolean)
+    .sort() as string[];
+  return endDates[endDates.length - 1];
+}
+
+function normalizeDateForInputDate(date: string): string {
+  // Match the `input_date` sproc behavior: only the date and whole-second time
+  // are used, so fractional seconds and trailing timezone markers are ignored.
+  const dateParts = /([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})/.exec(date);
+  if (!dateParts) return date;
+  return `${dateParts[1]}T${dateParts[2]}`;
+}
+
+function addOneSecondToInputDate(date: string): string {
+  return Temporal.PlainDateTime.from(date).add({ seconds: 1 }).toString();
+}
+
+function normalizeRuleDates(rule: AssessmentAccessRuleJson): AssessmentAccessRuleJson {
+  return {
+    ...rule,
+    ...(rule.startDate ? { startDate: normalizeDateForInputDate(rule.startDate) } : {}),
+    ...(rule.endDate ? { endDate: normalizeDateForInputDate(rule.endDate) } : {}),
+  };
+}
+
+/**
+ * Returns true when `outer`'s [start, end] window fully covers `inner`'s.
+ * Both rules must be closed (have an endDate). A missing startDate on `outer`
+ * means -∞; a missing startDate on `inner` makes coverage impossible unless
+ * `outer` is also unbounded on the start side.
+ */
+function ruleCovers(outer: AssessmentAccessRuleJson, inner: AssessmentAccessRuleJson): boolean {
+  if (!outer.endDate || !inner.endDate) return false;
+  if (outer.endDate < inner.endDate) return false;
+  if (outer.startDate) {
+    if (!inner.startDate) return false;
+    if (outer.startDate > inner.startDate) return false;
+  }
+  return true;
+}
+
 function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined {
+  // The new format's `release` is the start of submittability, not visibility.
+  // When credit rules exist, release must coincide with the first credit window
+  // — otherwise the resolver would treat any earlier visibility-rule startDate
+  // as a submittable 100%-credit window. Pre-credit visibility is preserved
+  // separately via `beforeRelease.listed`.
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (firstCreditStartDate) return firstCreditStartDate;
+
   const visibilityDates = getVisibilityRules(rules)
     .map((r) => r.startDate)
-    .filter(Boolean) as string[];
-  if (visibilityDates.length > 0) return visibilityDates.sort()[0];
-
-  const creditDates = getCreditRules(rules)
-    .map((r) => r.startDate)
-    .filter(Boolean) as string[];
-  if (creditDates.length > 0) return creditDates.sort()[0];
-
-  return undefined;
+    .filter((date): date is string => !!date)
+    .sort();
+  return visibilityDates[0];
 }
 
-function anyHidesClosedAssessment(rules: AssessmentAccessRuleJson[]): boolean {
-  return rules.some((r) => r.showClosedAssessment === false);
+// ---------------------------------------------------------------------------
+// Normalization
+// ---------------------------------------------------------------------------
+
+/**
+ * Filters and normalizes legacy rules before migration:
+ * - Removes rules with `uids` (handled separately as enrollment overrides).
+ * - Removes rules with a `role` that is neither absent nor 'Student'.
+ * - Strips `mode: 'Public'` (effectively a no-op for students).
+ */
+export function normalizeRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+  return rules
+    .filter((r) => !r.uids)
+    .filter((r) => r.role == null || r.role === 'Student')
+    .map((r) => {
+      if (r.mode === 'Public') {
+        const { mode: _mode, ...rest } = r;
+        return rest;
+      }
+      return r;
+    })
+    .map(normalizeRuleDates);
 }
 
-function anyHidesClosedScore(rules: AssessmentAccessRuleJson[]): boolean {
-  return rules.some((r) => r.showClosedAssessmentScore === false);
+// ---------------------------------------------------------------------------
+// Gap detection (precondition)
+// ---------------------------------------------------------------------------
+
+const MAX_CONTIGUOUS_GAP_MS = 90 * 1000; // 90 seconds
+
+function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
+  // Include zero-credit (practice) rules — they also collapse into a single
+  // span during migration, so non-contiguous practice windows would silently
+  // grant access through the gap if not detected here.
+  const accessRules = rules.filter((r) => r.active !== false);
+  if (accessRules.length === 0) return false;
+  if (accessRules.some((r) => !r.startDate && !r.endDate)) return false;
+
+  const sorted = [...accessRules].sort((a, b) =>
+    (a.startDate ?? '').localeCompare(b.startDate ?? ''),
+  );
+
+  let furthestEnd: string | null = sorted[0].endDate ?? null;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const rule = sorted[i];
+    if (furthestEnd === null) break;
+    if (rule.startDate && rule.startDate > furthestEnd) {
+      const gapMs = new Date(rule.startDate).getTime() - new Date(furthestEnd).getTime();
+      if (gapMs > MAX_CONTIGUOUS_GAP_MS) return true;
+    }
+    if (!rule.endDate) {
+      furthestEnd = null;
+    } else if (rule.endDate > furthestEnd) {
+      furthestEnd = rule.endDate;
+    }
+  }
+
+  return false;
 }
 
-function buildAfterComplete(
-  rules: AssessmentAccessRuleJson[],
-): AccessControlJsonInput['afterComplete'] | undefined {
-  const hidesAssessment = anyHidesClosedAssessment(rules);
-  const hidesScore = anyHidesClosedScore(rules);
-  if (!hidesAssessment && !hidesScore) return undefined;
+function hasNonMonotonicCredit(rules: AssessmentAccessRuleJson[]): boolean {
+  const creditRules = rules.filter((r) => (r.credit ?? 0) > 0);
+  if (creditRules.length === 0) return false;
+
+  const dates = new Set<string>();
+  for (const r of creditRules) {
+    if (r.startDate) dates.add(r.startDate);
+    if (r.endDate) dates.add(r.endDate);
+  }
+  const sortedDates = Array.from(dates).sort();
+
+  // Build half-open intervals across the timeline. `null` represents -∞ for
+  // `start` and +∞ for `end`. A rule with no startDate is active from -∞,
+  // and a rule with no endDate is active until +∞.
+  const intervals: { start: string | null; end: string | null }[] = [
+    { start: null, end: sortedDates[0] ?? null },
+  ];
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    intervals.push({ start: sortedDates[i], end: sortedDates[i + 1] });
+  }
+  if (sortedDates.length > 0) {
+    intervals.push({ start: sortedDates[sortedDates.length - 1], end: null });
+  }
+
+  let prev = -1;
+  for (const { start, end } of intervals) {
+    let maxCredit = 0;
+    for (const r of creditRules) {
+      if (r.startDate && (start === null || r.startDate > start)) continue;
+      if (r.endDate && (end === null || r.endDate < end)) continue;
+      maxCredit = Math.max(maxCredit, r.credit ?? 0);
+    }
+    if (maxCredit === 0) continue;
+    if (prev >= 0 && maxCredit > prev) return true;
+    prev = maxCredit;
+  }
+
+  return false;
+}
+
+function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (!firstCreditStartDate) return false;
+
+  return rules.some(
+    (r) =>
+      (r.credit ?? 0) === 0 &&
+      (r.active ?? true) &&
+      r.startDate != null &&
+      r.startDate < firstCreditStartDate,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Visibility helpers (afterComplete, listBeforeRelease)
+// ---------------------------------------------------------------------------
+
+function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  notes: string[];
+} {
+  const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
+  const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
+  const questionReviewWindows = getQuestionReviewWindows(rules);
+
+  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) {
+    return { afterComplete: undefined, notes: [] };
+  }
 
   const result: AccessControlJsonInput['afterComplete'] = {};
-  if (hidesAssessment) result.hideQuestions = true;
-  if (hidesScore) result.hideScore = true;
-  return result;
+  if (hidesAssessment || questionReviewWindows.length > 0) result.questions = { hidden: true };
+  if (hidesScore) result.score = { hidden: true };
+
+  const lastCreditEndDate = findLastCreditEndDate(rules);
+  const visibilityRules = getVisibilityRules(rules);
+  const questionReviewWindow = questionReviewWindows[0];
+  const visibleUntilDate =
+    questionReviewWindows.length === 1 ? questionReviewWindow.visibleUntilDate : undefined;
+
+  const questions = result.questions;
+  if (lastCreditEndDate && questions) {
+    if (questionReviewWindows.length > 0) {
+      questions.visibleFromDate = questionReviewWindow.visibleFromDate;
+      if (visibleUntilDate) questions.visibleUntilDate = visibleUntilDate;
+    } else if (hidesAssessment) {
+      const questionRevealDates = visibilityRules
+        .filter((r) => r.showClosedAssessment !== false)
+        .map((r) => r.startDate)
+        .filter((date): date is string => !!date && date > lastCreditEndDate)
+        .sort();
+      if (questionRevealDates[0]) questions.visibleFromDate = questionRevealDates[0];
+    }
+
+    if (hidesScore && result.score) {
+      const scoreRevealDates = visibilityRules
+        .filter((r) => r.showClosedAssessmentScore !== false)
+        .map((r) => r.startDate)
+        .filter((date): date is string => !!date && date > lastCreditEndDate)
+        .sort();
+      if (scoreRevealDates[0]) result.score.visibleFromDate = scoreRevealDates[0];
+    }
+  }
+
+  // Enforce the same afterComplete cross-field invariant used by sync/UI.
+  // If the legacy rules revealed questions before the score, push questions'
+  // reveal forward to match the score's reveal date. The migration only ever
+  // constructs questions/score with hidden=true, so the third issue kind
+  // (score_hidden_requires_questions_hidden) is unreachable here.
+  const notes: string[] = [];
+  if (result.questions !== undefined && result.score !== undefined) {
+    const issue = getAfterCompleteCrossFieldIssue(result.questions, result.score);
+    if (issue?.kind === 'questions_reveal_requires_score_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      delete result.questions.visibleFromDate;
+      delete result.questions.visibleUntilDate;
+      notes.push(
+        `Questions reveal date ${questionsFrom} was removed because score remains hidden after completion.`,
+      );
+    } else if (issue?.kind === 'score_reveal_after_questions_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      const questionsUntil = result.questions.visibleUntilDate;
+      result.questions.visibleFromDate = result.score.visibleFromDate;
+      // The original review-window end is no longer meaningful once the start
+      // is pushed forward; drop it to keep the migrated config valid.
+      delete result.questions.visibleUntilDate;
+      const untilNote = questionsUntil ? ` (review-window end ${questionsUntil} dropped)` : '';
+      notes.push(
+        `Questions reveal date changed from ${questionsFrom} to ${result.score.visibleFromDate} so questions do not become visible while the score is still hidden${untilNote}.`,
+      );
+    }
+  }
+
+  return { afterComplete: result, notes };
 }
 
-interface RuleAnalysis {
-  isPrairieTest: boolean;
-  hasPassword: boolean;
-  creditType: 'bonus' | 'full' | 'reduced' | 'none';
-  hasDates: boolean;
-  isActive: boolean;
-  isTimed: boolean;
-  hasMode: boolean;
-  hidesClosedAssessment: boolean;
-  hidesClosedScore: boolean;
-  isOpenCredit: boolean;
-}
+function getQuestionReviewWindows(rules: AssessmentAccessRuleJson[]): QuestionReviewWindow[] {
+  // Legacy active:false rules can create bounded review-only windows after the
+  // last deadline. In accessControl, completed questions are hidden by default,
+  // so model that window as hidden except visible starting at that window. If
+  // there is exactly one bounded review window, preserve its end date too.
+  const lastCreditEndDate = findLastCreditEndDate(rules);
+  if (lastCreditEndDate == null) return [];
 
-function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
-  const hasStart = 'startDate' in rule;
-  const hasEnd = 'endDate' in rule;
-  const credit = rule.credit ?? 0;
-  const active = rule.active ?? true;
-
-  let creditType: RuleAnalysis['creditType'] = 'none';
-  if (credit > 100) creditType = 'bonus';
-  else if (credit === 100) creditType = 'full';
-  else if (credit > 0) creditType = 'reduced';
-
-  return {
-    isPrairieTest: !!rule.examUuid,
-    hasPassword: !!rule.password,
-    creditType,
-    hasDates: hasStart || hasEnd,
-    isActive: active,
-    isTimed: !!rule.timeLimitMin,
-    hasMode: !!rule.mode,
-    hidesClosedAssessment: (rule.showClosedAssessment ?? true) === false,
-    hidesClosedScore: (rule.showClosedAssessmentScore ?? true) === false,
-    isOpenCredit: credit > 0 && !hasStart && !hasEnd,
-  };
-}
-
-function withMods(
-  base: string,
-  has: {
-    creditModeGated: boolean;
-    modeGate: boolean;
-    viewing: boolean;
-    hiding: boolean;
-    creditHidesClosed: boolean;
-    creditHidesScore: boolean;
-  },
-): string {
-  const mods: string[] = [];
-  if (has.creditModeGated) mods.push('mode-gated');
-  else if (has.modeGate && !has.viewing && !has.hiding) mods.push('mode-gated');
-  if (has.creditHidesClosed) mods.push('hides-closed');
-  else if (has.creditHidesScore) mods.push('hides-score');
-  if (mods.length === 0) return base;
-  return `${base} (${mods.join(', ')})`;
-}
-
-export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
-  rules = rules.filter((r) => !r.uids);
-  const analyzed = rules.map(analyzeRule);
-  const creditRules = analyzed.filter((r) => r.creditType !== 'none');
-  const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
-
-  const has = {
-    prairieTest: analyzed.some((r) => r.isPrairieTest),
-    password: analyzed.some((r) => r.hasPassword),
-    timed: analyzed.some((r) => r.isTimed && r.creditType !== 'none'),
-    bonusCredit: creditRules.some((r) => r.creditType === 'bonus'),
-    fullCredit: creditRules.some((r) => r.creditType === 'full'),
-    reducedCredit: creditRules.some((r) => r.creditType === 'reduced'),
-    openCredit: creditRules.some((r) => r.isOpenCredit),
-    viewing: nonCreditRules.some(
+  const windows = getVisibilityRules(rules)
+    .filter(
       (r) =>
-        !r.isActive && r.hasDates && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
-    ),
-    hiding: nonCreditRules.some(
-      (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
-    ),
-    modeGate: analyzed.some((r) => r.hasMode),
-    creditModeGated: creditRules.some((r) => r.hasMode),
-    creditHidesClosed: creditRules.some((r) => r.hidesClosedAssessment),
-    creditHidesScore: creditRules.some((r) => r.hidesClosedScore),
-  };
+        r.showClosedAssessment !== false &&
+        ((r.startDate != null && r.startDate > lastCreditEndDate) ||
+          (r.endDate != null && r.endDate > lastCreditEndDate)),
+    )
+    .map((r) => {
+      // afterComplete dates must be strictly post-deadline, so clamp legacy
+      // review windows that started before or exactly at the final deadline.
+      const visibleFromDate =
+        r.startDate && r.startDate > lastCreditEndDate
+          ? r.startDate
+          : addOneSecondToInputDate(lastCreditEndDate);
+      return { visibleFromDate, visibleUntilDate: r.endDate };
+    })
+    .filter(
+      (window) =>
+        window.visibleUntilDate == null || window.visibleFromDate < window.visibleUntilDate,
+    )
+    .sort((a, b) => a.visibleFromDate.localeCompare(b.visibleFromDate));
 
-  const allNoOp = analyzed.every(
-    (r) =>
-      r.creditType === 'none' &&
-      r.isActive &&
-      !r.hasDates &&
-      !r.isTimed &&
-      !r.hasMode &&
-      !r.isPrairieTest &&
-      !r.hasPassword &&
-      !r.hidesClosedAssessment &&
-      !r.hidesClosedScore,
-  );
-  if (allNoOp) return 'no-op';
-  if (has.prairieTest) return 'prairietest-exam';
-  if (has.password) return 'password-gated';
-  if (has.timed) return withMods('timed-assessment', has);
+  return mergeQuestionReviewWindows(windows);
+}
+
+function mergeQuestionReviewWindows(windows: QuestionReviewWindow[]): QuestionReviewWindow[] {
+  const merged: QuestionReviewWindow[] = [];
+
+  for (const window of windows) {
+    const previous = merged.at(-1);
+    if (previous == null) {
+      merged.push(window);
+      continue;
+    }
+
+    if (previous.visibleUntilDate == null) continue;
+
+    const contiguousVisibleUntilDate = addOneSecondToInputDate(previous.visibleUntilDate);
+    // Overlapping or immediately adjacent legacy review rules are still one representable window.
+    // Separate windows remain separate so the caller can warn about the gap.
+    if (window.visibleFromDate <= contiguousVisibleUntilDate) {
+      if (window.visibleUntilDate == null) {
+        delete previous.visibleUntilDate;
+      } else if (window.visibleUntilDate > previous.visibleUntilDate) {
+        previous.visibleUntilDate = window.visibleUntilDate;
+      }
+    } else {
+      merged.push(window);
+    }
+  }
+
+  return merged;
+}
+
+function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
+  const firstCreditStartDate = findFirstCreditStartDate(rules);
+  if (!firstCreditStartDate) return false;
+
+  // Any visibility rule that covers some pre-release time is enough to list
+  // the assessment beforehand. The rule's endDate is irrelevant — `listed` is
+  // a binary flag for the pre-release segment, not a full visibility schedule.
+  return getVisibilityRules(rules).some((rule) => {
+    if (rule.showClosedAssessment === false || rule.showClosedAssessmentScore === false) {
+      return false;
+    }
+    if (rule.startDate && rule.startDate >= firstCreditStartDate) return false;
+    return true;
+  });
+}
+
+function buildVisibilityMigration(rules: AssessmentAccessRuleJson[]): VisibilityMigration {
+  const { afterComplete, notes } = buildAfterComplete(rules);
+  const beforeRelease = shouldListBeforeRelease(rules) ? { listed: true as const } : undefined;
+  return { afterComplete, beforeRelease, notes };
+}
+
+function applyVisibilityMigration(
+  accessControl: AccessControlJsonInput,
+  visibilityMigration: VisibilityMigration,
+): void {
+  const { afterComplete, beforeRelease } = visibilityMigration;
+  if (afterComplete) accessControl.afterComplete = afterComplete;
+  if (beforeRelease) accessControl.beforeRelease = beforeRelease;
+}
+
+// ---------------------------------------------------------------------------
+// Deadline normalization
+// ---------------------------------------------------------------------------
+
+function normalizeCreditDeadlines(
+  rules: AssessmentAccessRuleJson[],
+  deadlineKind: 'early' | 'late',
+): { deadlines: { date: string; credit: number }[]; notes: string[] } {
+  const bestCreditByDate = new Map<string, number>();
+  for (const rule of rules) {
+    if (!rule.endDate || rule.credit == null) continue;
+    const previousCredit = bestCreditByDate.get(rule.endDate);
+    if (previousCredit == null || rule.credit > previousCredit) {
+      bestCreditByDate.set(rule.endDate, rule.credit);
+    }
+  }
+
+  const sorted = Array.from(bestCreditByDate.entries())
+    .map(([date, credit]) => ({ date, credit }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const kept: { date: string; credit: number }[] = [];
+  let maxCreditSeen = -Infinity;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const deadline = sorted[i];
+    if (deadline.credit > maxCreditSeen) {
+      kept.push(deadline);
+      maxCreditSeen = deadline.credit;
+    }
+  }
+  kept.reverse();
+
+  const droppedCount = rules.filter((rule) => rule.endDate).length - kept.length;
+  const notes =
+    droppedCount > 0
+      ? [
+          `${droppedCount} ${deadlineKind} deadline${
+            droppedCount === 1 ? '' : 's'
+          } collapsed because higher-credit rules cover the same period.`,
+        ]
+      : [];
+
+  return { deadlines: kept, notes };
+}
+
+// ---------------------------------------------------------------------------
+// Unified credit-timeline builder
+// ---------------------------------------------------------------------------
+
+/**
+ * If afterLastDeadline grants credit >= dueDateCredit and there are no
+ * early/late deadlines describing intermediate credit windows, the dueDate
+ * is meaningless — credit continues at the same or higher level forever.
+ * Collapse to "always open from release": omit `due` entirely when the
+ * collapsed credit is 100%, or use `due: { date: null, credit: X }` to
+ * preserve a non-100% open-ended credit.
+ *
+ * When late deadlines exist, skip the collapse so we don't drop those windows
+ * on the floor. Early deadlines can be preserved with `due: { date: null }`.
+ * If an open-ended full-credit-or-bonus rule follows a higher-credit due
+ * window, preserve the higher-credit due window as an early deadline instead
+ * of emitting post-due credit at or above 100%.
+ */
+function simplifyTimeline(
+  dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
+  dueDateCredit: number,
+): void {
+  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
   if (
-    (has.fullCredit && has.reducedCredit) ||
-    (has.bonusCredit && has.reducedCredit) ||
-    (has.bonusCredit && has.fullCredit)
+    dateControl.afterLastDeadline &&
+    !dateControl.lateDeadlines?.length &&
+    afterLastCredit >= dueDateCredit
   ) {
-    return withMods('declining-credit', has);
+    if (afterLastCredit === 100 && !dateControl.earlyDeadlines?.length) {
+      delete dateControl.due;
+    } else {
+      dateControl.due =
+        afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
+    }
+    delete dateControl.afterLastDeadline;
   }
-  if ((has.fullCredit || has.bonusCredit) && creditRules.length === 1) {
-    const base = has.viewing || has.hiding ? 'single-deadline-with-viewing' : 'single-deadline';
-    return withMods(base, has);
+
+  if (
+    dateControl.afterLastDeadline &&
+    !dateControl.lateDeadlines?.length &&
+    afterLastCredit >= 100 &&
+    dateControl.due?.date &&
+    dueDateCredit > afterLastCredit
+  ) {
+    dateControl.earlyDeadlines = [
+      ...(dateControl.earlyDeadlines ?? []),
+      { date: dateControl.due.date, credit: dueDateCredit },
+    ];
+    dateControl.due =
+      afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
+    delete dateControl.afterLastDeadline;
   }
-  if (has.fullCredit && creditRules.length > 1) return withMods('multi-deadline', has);
-  if (has.reducedCredit && creditRules.length === 1) return withMods('single-reduced-credit', has);
-  if (has.openCredit) return withMods('always-open', has);
-  if (has.viewing && creditRules.length === 0) return withMods('view-only', has);
-  if (has.hiding && creditRules.length === 0 && !has.viewing) return 'hidden';
-  if (has.modeGate && creditRules.length === 0) return 'mode-gated';
-  return 'unclassified';
 }
 
-function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
-  const creditRules = getCreditRules(rules);
-  const creditRule = creditRules[0] as AssessmentAccessRuleJson | undefined;
-
-  if (!creditRule) {
-    warnings.push('No credit rule found');
-    return { result: {}, warnings };
-  }
-
-  const result: AccessControlJsonInput = {};
-
-  const releaseDate = findReleaseDate(rules);
-  if (creditRule.startDate || creditRule.endDate || releaseDate) {
-    result.dateControl = {};
-    if (releaseDate) result.dateControl.releaseDate = releaseDate;
-    if (creditRule.endDate) result.dateControl.dueDate = creditRule.endDate;
-    if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
-  }
-
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
-
-  return { result, warnings };
+interface BuilderResult {
+  dateControl: AccessControlJsonInput['dateControl'];
+  errors: string[];
+  notes: string[];
 }
 
-function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
+function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
+  const errors: string[] = [];
+  const notes: string[] = [];
+
   const creditRules = getCreditRules(rules);
+  const allClosedCreditRules = creditRules.filter((r) => r.endDate);
+  const openEndedCreditRules = creditRules.filter((r) => !r.endDate);
+
+  // Drop closed rules whose window is fully covered by a strictly-higher-credit
+  // closed rule.
+  const dominatedRules = new Set<AssessmentAccessRuleJson>();
+  for (const rule of allClosedCreditRules) {
+    for (const other of allClosedCreditRules) {
+      if (other === rule) continue;
+      if ((other.credit ?? 0) > (rule.credit ?? 0) && ruleCovers(other, rule)) {
+        dominatedRules.add(rule);
+        break;
+      }
+    }
+  }
+  if (dominatedRules.size > 0) {
+    notes.push(
+      `${dominatedRules.size} credit window${dominatedRules.size === 1 ? '' : 's'} dropped because higher-credit rules cover the same period.`,
+    );
+  }
+  const closedCreditRules = allClosedCreditRules.filter((r) => !dominatedRules.has(r));
+
+  // No positive credit rules. If there are credit:0 rules with dates, treat
+  // them as a credit-0 due window using `due.credit: 0`.
   if (creditRules.length === 0) {
-    warnings.push('No credit rules found');
-    return { result: {}, warnings };
-  }
+    const zeroCreditRules = rules.filter(
+      (r) => (r.credit ?? 0) === 0 && (r.active ?? true) && (r.startDate || r.endDate),
+    );
+    if (zeroCreditRules.length === 0) {
+      return { dateControl: undefined, errors, notes };
+    }
 
-  const bonusRules = creditRules.filter((r) => (r.credit ?? 0) > 100);
-  const fullRules = creditRules.filter((r) => (r.credit ?? 0) === 100);
-  const reducedRules = creditRules.filter((r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100);
+    const startDates = zeroCreditRules
+      .map((r) => r.startDate)
+      .filter(Boolean)
+      .sort() as string[];
+    const endDates = zeroCreditRules
+      .map((r) => r.endDate)
+      .filter(Boolean)
+      .sort() as string[];
 
-  const primaryRules = fullRules.length > 0 ? fullRules : bonusRules;
-  const primaryEndDates = primaryRules
-    .map((r) => r.endDate)
-    .filter(Boolean)
-    .sort() as string[];
-  const dueDate = primaryEndDates[primaryEndDates.length - 1];
+    const releaseDate = startDates[0];
+    const dueDate = endDates.length > 0 ? endDates[endDates.length - 1] : null;
 
-  const releaseDate = findReleaseDate(rules);
-
-  const result: AccessControlJsonInput = {
-    dateControl: {},
-  };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
-  if (dueDate) result.dateControl!.dueDate = dueDate;
-
-  if (bonusRules.length > 0 && fullRules.length > 0) {
-    result.dateControl!.earlyDeadlines = bonusRules
-      .filter((r) => r.endDate)
-      .map((r) => ({ date: r.endDate!, credit: r.credit! }));
-  }
-
-  if (reducedRules.length > 0) {
-    result.dateControl!.lateDeadlines = reducedRules
-      .filter((r) => r.endDate)
-      .sort((a, b) => (b.credit ?? 0) - (a.credit ?? 0))
-      .map((r) => ({ date: r.endDate!, credit: r.credit! }));
-  }
-
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
-
-  return { result, warnings };
-}
-
-function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
-  const examRules = rules.filter((r) => r.examUuid);
-
-  if (examRules.length === 0) {
-    warnings.push('No examUuid rule found');
-    return { result: {}, warnings };
-  }
-
-  const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
-
-  const result: AccessControlJsonInput = {
-    integrations: {
-      prairieTest: {
-        exams,
-      },
-    },
-  };
-
-  const releaseDate = findReleaseDate(rules);
-  if (releaseDate) {
-    result.dateControl = {
-      releaseDate,
-      dueDate: null,
+    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {
+      due: { date: dueDate, credit: 0 },
     };
+    if (releaseDate) dateControl.release = { date: releaseDate };
+
+    const timedRule = zeroCreditRules.find((r) => r.timeLimitMin);
+    if (timedRule?.timeLimitMin) {
+      dateControl.durationMinutes = timedRule.timeLimitMin;
+    }
+
+    return { dateControl, errors, notes };
   }
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
-
-  return { result, warnings };
-}
-
-function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
-  const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
-  const releaseDate = allDates.sort()[0];
-
-  const result: AccessControlJsonInput = {
-    dateControl: {
-      dueDate: null,
-    },
-  };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
-
-  return { result, warnings };
-}
-
-function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
-  const creditRules = getCreditRules(rules);
-
-  if (creditRules.length === 0) {
-    warnings.push('No credit rules found');
-    return { result: {}, warnings };
+  // All credit rules are open-ended (no endDate).
+  if (closedCreditRules.length === 0) {
+    const allFull = openEndedCreditRules.every((r) => (r.credit ?? 0) === 100);
+    if (!allFull) {
+      errors.push('Open-ended credit windows without a 100% credit rule cannot be migrated.');
+      return { dateControl: undefined, errors, notes };
+    }
+    const releaseDate = findReleaseDate(rules);
+    const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
+    if (releaseDate) dateControl.release = { date: releaseDate };
+    return { dateControl, errors, notes };
   }
 
-  const startDates = creditRules
-    .map((r) => r.startDate)
-    .filter(Boolean)
-    .sort() as string[];
-  const endDates = creditRules
+  // --- Pick dueDate from the first drop below full credit ---
+  const fullOrBonusCreditRules = closedCreditRules.filter((r) => (r.credit ?? 0) >= 100);
+  let dueDateRules: AssessmentAccessRuleJson[];
+  let dueDateCredit: number;
+
+  if (fullOrBonusCreditRules.length > 0) {
+    dueDateCredit = Math.min(...fullOrBonusCreditRules.map((r) => r.credit ?? 0));
+    dueDateRules = fullOrBonusCreditRules.filter((r) => (r.credit ?? 0) === dueDateCredit);
+  } else {
+    const highestCredit = Math.max(...closedCreditRules.map((r) => r.credit ?? 0));
+    dueDateRules = closedCreditRules.filter((r) => (r.credit ?? 0) === highestCredit);
+    dueDateCredit = highestCredit;
+  }
+
+  const dueDateEndDates = dueDateRules
     .map((r) => r.endDate)
     .filter(Boolean)
     .sort() as string[];
-  const releaseDate = findReleaseDate(rules) ?? startDates[0];
-  const dueDate = endDates[endDates.length - 1];
+  const dueDate = dueDateEndDates[dueDateEndDates.length - 1];
 
-  if (creditRules.length > 1) {
-    warnings.push(
-      `${creditRules.length} full-credit windows collapsed into single span: ${startDates[0]} to ${dueDate}`,
+  // Note when multiple closed rules at dueDateCredit collapse into a single
+  // span. Open-ended rules at the same credit don't count — they become
+  // `afterLastDeadline`, not part of the collapsed dueDate window. Defer
+  // pushing the note until after simplifyTimeline; if the timeline collapses
+  // to always-open the "single span" wording would mislead.
+  let pendingCollapseNote: string | null = null;
+  if (dueDateRules.length > 1) {
+    const startDates = dueDateRules
+      .map((r) => r.startDate)
+      .filter(Boolean)
+      .sort() as string[];
+    pendingCollapseNote = `${dueDateRules.length} ${dueDateCredit}% credit windows collapsed into single span: ${startDates[0] ?? '(open)'} to ${dueDate}`;
+  }
+
+  // --- Build dateControl ---
+  const releaseDate = findReleaseDate(rules);
+  const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
+  if (releaseDate) dateControl.release = { date: releaseDate };
+  if (dueDate) {
+    dateControl.due =
+      dueDateCredit !== 100 ? { date: dueDate, credit: dueDateCredit } : { date: dueDate };
+  }
+
+  // --- Place other closed credit rules as early/late deadlines ---
+  const otherClosedRules = closedCreditRules.filter((r) => (r.credit ?? 0) !== dueDateCredit);
+  const earlyRules: AssessmentAccessRuleJson[] = [];
+  const lateRules: AssessmentAccessRuleJson[] = [];
+  let dominatedLateCount = 0;
+
+  for (const rule of otherClosedRules) {
+    const credit = rule.credit ?? 0;
+    if (credit > dueDateCredit) {
+      earlyRules.push(rule);
+    } else if (credit < dueDateCredit) {
+      // Drop late rules whose window ends on or before the chosen due date —
+      // the higher-credit due-date rule already covers them at higher credit,
+      // so emitting a late deadline before dueDate would be redundant and
+      // would fail downstream date-ordering validation.
+      if (rule.endDate && dueDate && rule.endDate <= dueDate) {
+        dominatedLateCount++;
+        continue;
+      }
+      lateRules.push(rule);
+    } else {
+      errors.push(
+        `Cannot place ${credit}% credit rule as early or late deadline (due date credit is ${dueDateCredit}%).`,
+      );
+    }
+  }
+
+  if (dominatedLateCount > 0) {
+    notes.push(
+      `${dominatedLateCount} late deadline${dominatedLateCount === 1 ? '' : 's'} dropped because the higher-credit due window covers the same period.`,
     );
   }
 
-  const result: AccessControlJsonInput = {
-    dateControl: {},
-  };
-  if (releaseDate) result.dateControl!.releaseDate = releaseDate;
-  if (dueDate) result.dateControl!.dueDate = dueDate;
-
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
-
-  return { result, warnings };
-}
-
-function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
-  const warnings: string[] = [];
-  const passwordRule = rules.find((r) => r.password);
-
-  if (!passwordRule) {
-    warnings.push('No password rule found');
-    return { result: {}, warnings };
+  if (earlyRules.length > 0) {
+    const { deadlines, notes: deadlineNotes } = normalizeCreditDeadlines(earlyRules, 'early');
+    notes.push(...deadlineNotes);
+    if (deadlines.length > 0) dateControl.earlyDeadlines = deadlines;
   }
 
-  const result: AccessControlJsonInput = {
-    dateControl: {
-      password: passwordRule.password!,
-    },
-  };
-  if (passwordRule.startDate) result.dateControl!.releaseDate = passwordRule.startDate;
-  if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
+  if (lateRules.length > 0) {
+    const { deadlines, notes: deadlineNotes } = normalizeCreditDeadlines(lateRules, 'late');
+    notes.push(...deadlineNotes);
+    if (deadlines.length > 0) dateControl.lateDeadlines = deadlines;
+  }
 
-  const afterComplete = buildAfterComplete(rules);
-  if (afterComplete) result.afterComplete = afterComplete;
+  // --- afterLastDeadline from open-ended credit rules ---
+  if (openEndedCreditRules.length > 0) {
+    const maxOpenCredit = Math.max(...openEndedCreditRules.map((r) => r.credit ?? 0));
+    dateControl.afterLastDeadline = { allowSubmissions: true, credit: maxOpenCredit };
+  }
 
-  return { result, warnings };
+  // --- Practice window (active credit:0 rules extending past last deadline) ---
+  // `active: false` rules forbid submissions in the legacy resolver, so
+  // treating them as practice would silently grant submission rights they
+  // never had.
+  if (!dateControl.afterLastDeadline) {
+    const lastDeadline = findLastCreditEndDate(rules) ?? dueDate;
+    if (lastDeadline) {
+      const hasPracticeWindow = rules.some(
+        (r) => (r.credit ?? 0) === 0 && (r.active ?? true) && r.endDate && r.endDate > lastDeadline,
+      );
+      if (hasPracticeWindow) {
+        dateControl.afterLastDeadline = { allowSubmissions: true, credit: 0 };
+      }
+    }
+  }
+
+  simplifyTimeline(dateControl, dueDateCredit);
+
+  // Only emit the collapse note if a concrete due date survived the
+  // simplification; otherwise the "single span" wording would mislead.
+  if (pendingCollapseNote && dateControl.due?.date != null) {
+    notes.push(pendingCollapseNote);
+  }
+
+  // --- Duration ---
+  const timedRule = creditRules.find((r) => r.timeLimitMin);
+  if (timedRule?.timeLimitMin) {
+    dateControl.durationMinutes = timedRule.timeLimitMin;
+  }
+
+  return { dateControl, errors, notes };
 }
 
-function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
+// ---------------------------------------------------------------------------
+// Orthogonal concern extractors
+// ---------------------------------------------------------------------------
+
+function extractPassword(rules: AssessmentAccessRuleJson[]): {
+  password: string;
+  remainingRules: AssessmentAccessRuleJson[];
+  notes: string[];
+} | null {
+  const passwordRules = rules.filter((r) => r.password);
+  if (passwordRules.length === 0) return null;
+
+  const distinctPasswords = Array.from(new Set(passwordRules.map((r) => r.password!)));
+  const password = distinctPasswords[0];
+
+  const notes: string[] = [];
+  if (distinctPasswords.length > 1) {
+    notes.push(
+      'Multiple distinct passwords were used in legacy access rules; only the first password was kept in the migrated configuration.',
+    );
+  }
+
+  // Strip the password from rules. Keep the rule itself for credit/date
+  // processing. Password rules without explicit credit (credit omitted) but
+  // with dates are treated as 100% credit (the implicit meaning of a
+  // password-gated exam). Rules with explicit credit: 0 are left as-is.
+  const remainingRules = rules
+    .map((r) => {
+      if (!r.password) return r;
+      const { password: _pw, ...rest } = r;
+      if (rest.credit == null && (rest.startDate || rest.endDate)) {
+        return { ...rest, credit: 100 };
+      }
+      if ((rest.credit ?? 0) > 0 || rest.startDate || rest.endDate) return rest;
+      return null;
+    })
+    .filter((r): r is AssessmentAccessRuleJson => r !== null);
+
   return {
-    result: {},
-    warnings: [],
+    password,
+    remainingRules,
+    notes,
   };
 }
 
-function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
-  result: AccessControlJsonInput;
-  warnings: string[];
-} {
+function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
+  integrations: AccessControlJsonInput['integrations'];
+  remainingRules: AssessmentAccessRuleJson[];
+  notes: string[];
+} | null {
+  const examRules = rules.filter((r) => r.examUuid);
+  if (examRules.length === 0) return null;
+
+  const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
+  const remainingRules = rules.filter((r) => !r.examUuid);
+
+  const notes: string[] = [];
+  if (examRules.some((r) => r.password)) {
+    notes.push(
+      'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',
+    );
+  }
+
   return {
-    result: {},
-    warnings: ['No-op access rule — produces empty accessControl entry'],
+    integrations: { prairieTest: { exams } },
+    remainingRules,
+    notes,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main migration pipeline
+// ---------------------------------------------------------------------------
+
+interface AnalysisResults {
+  schedulingRules: AssessmentAccessRuleJson[];
+  ptExtract: ReturnType<typeof extractPrairieTest>;
+  pwExtract: ReturnType<typeof extractPassword>;
+  dateControl: AccessControlJsonInput['dateControl'];
+  visibilityMigration: VisibilityMigration;
+}
+
+interface Analysis {
+  errors: string[];
+  notes: string[];
+  hasUidRules: boolean;
+  /**
+   * Intermediate state used by `migrateAllowAccess` to assemble the final
+   * `AccessControlJsonInput`. `null` when the analysis failed (errors is
+   * non-empty). Callers that only need diagnostics can ignore this field.
+   */
+  results: AnalysisResults | null;
+}
+
+/**
+ * Runs the diagnostic phase of the migration: normalization, orthogonal-concern
+ * extraction, precondition checks, and credit-timeline construction. Use this
+ * when the caller wants to know whether the migration would succeed (and what
+ * notes/UID-rule warnings to surface) without producing a final
+ * `AccessControlJsonInput`.
+ */
+function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
+  const hasUidRules = rules.some((r) => r.uids);
+  rules = normalizeRules(rules);
+
+  const notes: string[] = [];
+  if (hasUidRules) {
+    notes.push(
+      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+    );
+  }
+
+  let schedulingRules = rules;
+
+  const ptExtract = extractPrairieTest(schedulingRules);
+  if (ptExtract) {
+    schedulingRules = ptExtract.remainingRules;
+    notes.push(...ptExtract.notes);
+  }
+
+  const pwExtract = extractPassword(schedulingRules);
+  if (pwExtract) {
+    schedulingRules = pwExtract.remainingRules;
+    notes.push(...pwExtract.notes);
+  }
+
+  if (hasAccessGaps(schedulingRules)) {
+    return {
+      errors: ['Non-contiguous access windows are not supported.'],
+      notes,
+      hasUidRules,
+      results: null,
+    };
+  }
+
+  if (hasNonMonotonicCredit(schedulingRules)) {
+    return {
+      errors: ['Credit must be non-increasing over time.'],
+      notes,
+      hasUidRules,
+      results: null,
+    };
+  }
+
+  if (hasPracticeBeforeRelease(schedulingRules)) {
+    return {
+      errors: [
+        'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
+      ],
+      notes,
+      hasUidRules,
+      results: null,
+    };
+  }
+
+  const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
+  const hasModeOnly =
+    !hasCreditRules &&
+    schedulingRules.some((r) => r.mode) &&
+    schedulingRules.every(
+      (r) =>
+        (r.credit ?? 0) === 0 &&
+        (r.active ?? true) &&
+        !r.startDate &&
+        !r.endDate &&
+        !r.showClosedAssessment &&
+        !r.showClosedAssessmentScore,
+    );
+  if (hasModeOnly && !ptExtract) {
+    return {
+      errors: ['Mode-only access rules are not supported.'],
+      notes,
+      hasUidRules,
+      results: null,
+    };
+  }
+
+  const { dateControl, errors, notes: builderNotes } = buildCreditTimeline(schedulingRules);
+  notes.push(...builderNotes);
+
+  if (errors.length > 0) {
+    return { errors, notes, hasUidRules, results: null };
+  }
+
+  const questionReviewWindowCount = getQuestionReviewWindows(schedulingRules).length;
+  if (questionReviewWindowCount > 1) {
+    notes.push(
+      `${questionReviewWindowCount} completed-question review windows collapsed into a single visibility window.`,
+    );
+  }
+
+  // No-op detection: when nothing produced a dateControl, password, or
+  // PrairieTest config, the rules collapse to a no-op. Suppress the note if
+  // the rules were intentionally hidden via `active: false`.
+  if (!dateControl && !ptExtract && !pwExtract) {
+    const isHidden = schedulingRules.some((r) => (r.active ?? true) === false);
+    if (!isHidden) {
+      notes.push('An empty accessControl list signifies that no access is granted.');
+    }
+  }
+
+  const visibilityMigration = buildVisibilityMigration(schedulingRules);
+  notes.push(...visibilityMigration.notes);
+
+  return {
+    errors: [],
+    notes,
+    hasUidRules,
+    results: { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration },
   };
 }
 
 export function migrateAllowAccess(
-  archetype: string,
   rules: AssessmentAccessRuleJson[],
-): { result: AccessControlJsonInput; warnings: string[] } {
-  rules = rules.filter((r) => !r.uids);
-  const base = archetype.replace(/\s*\(.*\)$/, '');
-
-  switch (base) {
-    case 'single-deadline':
-    case 'single-deadline-with-viewing':
-    case 'single-deadline-mode-gated':
-    case 'single-reduced-credit':
-    case 'timed-assessment':
-      return migrateSingleDeadline(rules);
-
-    case 'declining-credit':
-      return migrateDecliningCredit(rules);
-
-    case 'prairietest-exam':
-      return migratePrairieTestExam(rules);
-
-    case 'view-only':
-    case 'view-only-mode-gated':
-      return migrateViewOnly(rules);
-
-    case 'multi-deadline':
-      return migrateMultiDeadline(rules);
-
-    case 'password-gated':
-      return migratePasswordGated(rules);
-
-    case 'hidden':
-      return migrateHidden(rules);
-
-    case 'no-op':
-      return migrateNoOp(rules);
-
-    case 'always-open':
-      return { result: {}, warnings: [] };
-
-    default:
-      return { result: {}, warnings: [`Unsupported archetype: ${archetype}`] };
+  fallbackReleaseDate: string,
+): Migration {
+  const analysis = analyzeAllowAccess(rules);
+  if (analysis.results === null) {
+    const { errors, notes, hasUidRules } = analysis;
+    return { accessControl: {}, errors, notes, hasUidRules };
   }
+
+  const { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration } =
+    analysis.results;
+  const { notes, hasUidRules } = analysis;
+  const accessControl: AccessControlJsonInput = {};
+
+  if (dateControl) {
+    accessControl.dateControl = dateControl;
+  } else {
+    // No credit rules produced a dateControl. Check for view-only rules
+    // (active: false with dates) that indicate a release date.
+    const viewOnlyRules = getVisibilityRules(schedulingRules).filter((r) => r.startDate);
+    if (viewOnlyRules.length > 0) {
+      const releaseDate = viewOnlyRules.map((r) => r.startDate!).sort()[0];
+      accessControl.dateControl = { release: { date: releaseDate } };
+    }
+  }
+
+  if (pwExtract) {
+    if (!accessControl.dateControl) accessControl.dateControl = {};
+    accessControl.dateControl.password = pwExtract.password;
+  }
+
+  applyVisibilityMigration(accessControl, visibilityMigration);
+
+  if (ptExtract) {
+    accessControl.integrations = ptExtract.integrations;
+  }
+
+  // Apply fallback release date when the migration produced a dateControl
+  // without a release date (e.g. password-only or always-open rules).
+  if (accessControl.dateControl && !accessControl.dateControl.release) {
+    accessControl.dateControl.release = { date: fallbackReleaseDate };
+  }
+
+  // Run the assembled config through the same validators that sync uses.
+  // We shouldn't be creating invalid configurations, so this acts as a safety check.
+  const schemaResult = AccessControlJsonSchema.safeParse(accessControl);
+  if (!schemaResult.success) {
+    return {
+      accessControl: {},
+      errors: schemaResult.error.issues.map((issue) =>
+        issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
+      ),
+      notes,
+      hasUidRules,
+    };
+  }
+  const { errors: validationErrors } = validateAccessControlRules({
+    rules: [accessControl],
+  });
+  if (validationErrors.length > 0) {
+    return { accessControl: {}, errors: validationErrors, notes, hasUidRules };
+  }
+
+  return { accessControl, errors: [], notes, hasUidRules };
 }
 
-function isMigratable(archetype: string, warnings: string[]): boolean {
-  return archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
-}
+// ---------------------------------------------------------------------------
+// File-level operations
+// ---------------------------------------------------------------------------
 
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
   jsonContent: string,
-): { json: string; warnings: string[] } | null {
+  fallbackReleaseDate: string,
+): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
   if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
 
-  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype =
-    rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
-  const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate = isMigratable(archetype, warnings);
+  const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
-  if (!canMigrate) return null;
+  if (errors.length > 0) return null;
 
-  data.accessControl = [result];
+  data.accessControl = [accessControl];
   delete data.allowAccess;
-  return { json: JSON.stringify(data), warnings };
+  return { json: JSON.stringify(data), errors, notes };
 }
 
 export async function analyzeAssessmentFile(
@@ -497,7 +1059,6 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  // Skip assessments that already use modern accessControl
   if ('accessControl' in data && !('allowAccess' in data)) {
     return null;
   }
@@ -507,23 +1068,16 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const hasUidRules = allowAccess.some((rule) => rule.uids);
-  const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
-
-  const archetype =
-    rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
-
-  const { warnings } = migrateAllowAccess(archetype, rulesForClassification);
-  const canMigrate = isMigratable(archetype, warnings);
+  const { errors, notes, hasUidRules } = analyzeAllowAccess(allowAccess);
 
   return {
     tid,
     title: (data.title as string | undefined) ?? tid,
     type: (data.type as string | undefined) ?? 'unknown',
-    archetype,
-    canMigrate,
     ruleCount: allowAccess.length,
     hasUidRules,
+    errors,
+    notes,
   };
 }
 
@@ -545,14 +1099,19 @@ export async function analyzeCourseInstanceAssessments(
   return {
     assessments,
     hasLegacyRules: assessments.length > 0,
-    allCanMigrate: assessments.every((a) => a.canMigrate),
   };
 }
 
+/**
+ * Errors and notes from `migrateAllowAccess` are intentionally discarded
+ * here. The UI runs `analyzeAccessControl` ahead of time, and the errors produced here
+ * will match what the user already saw.
+ */
 export async function applyMigrationToAssessmentFile(
   filePath: string,
-  strategy: 'migrate' | 'keep' | 'wipe',
-  preserveIncompatible: boolean,
+  strategy: 'migrate' | 'keep' | 'clear',
+  clearIncompatible: boolean,
+  fallbackReleaseDate: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
   const data = JSON.parse(content);
@@ -562,37 +1121,30 @@ export async function applyMigrationToAssessmentFile(
     return;
   }
 
-  // Skip if already using modern format
   if ('accessControl' in data) {
     return;
   }
 
-  if (strategy === 'wipe') {
-    delete data.allowAccess;
-    const formatted = await formatJsonWithPrettier(JSON.stringify(data));
-    await fs.writeFile(filePath, formatted);
-    return;
-  }
-
-  if (strategy === 'keep') {
-    return;
-  }
-
-  // strategy === 'migrate'
-  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
-  const archetype =
-    rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
-  const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate = isMigratable(archetype, warnings);
-
-  if (canMigrate) {
-    data.accessControl = [result];
-    delete data.allowAccess;
-  } else if (!preserveIncompatible) {
-    delete data.allowAccess;
-  } else {
-    // preserveIncompatible: keep allowAccess as-is
-    return;
+  switch (strategy) {
+    case 'keep':
+      return;
+    case 'clear':
+      delete data.allowAccess;
+      break;
+    case 'migrate': {
+      const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
+      if (errors.length === 0) {
+        data.accessControl = [accessControl];
+        delete data.allowAccess;
+      } else if (clearIncompatible) {
+        delete data.allowAccess;
+      } else {
+        return;
+      }
+      break;
+    }
+    default:
+      assertNever(strategy);
   }
 
   const formatted = await formatJsonWithPrettier(JSON.stringify(data));

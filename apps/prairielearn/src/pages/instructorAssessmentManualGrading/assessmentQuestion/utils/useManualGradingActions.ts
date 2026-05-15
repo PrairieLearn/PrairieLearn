@@ -42,6 +42,10 @@ export function useManualGradingActions() {
     trpc.manualGrading.setAiGradingMode.mutationOptions(),
   );
 
+  const stopAiGradingJobMutation = useMutation(
+    trpc.manualGrading.stopAiGradingJob.mutationOptions(),
+  );
+
   return {
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
@@ -49,5 +53,6 @@ export function useManualGradingActions() {
     setAssignedGraderMutation,
     setRequiresManualGradingMutation,
     setAiGradingModeMutation,
+    stopAiGradingJobMutation,
   };
 }

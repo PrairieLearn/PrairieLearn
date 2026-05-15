@@ -3,11 +3,11 @@ import io
 import os
 import sys
 import types
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 
 
 @contextlib.contextmanager
-def _suppress_panel_border() -> Iterator[None]:
+def _suppress_panel_border() -> Generator[None]:
     """Temporarily strip Rich Panel borders so tracebacks render without a box."""
     from rich.console import Console, ConsoleOptions, RenderResult
     from rich.panel import Panel

@@ -238,6 +238,7 @@ const SKIP_ROUTES = [
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
   /\.json$/,
+  '/pl/request_course/check',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -463,6 +464,7 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
+    await features.enable('qti-content-import');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

@@ -1,28 +1,26 @@
 import * as path from 'path';
 
-import { TRPCClientError } from '@trpc/client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAppError } from '../lib/client/errors.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import {
-  type AssessmentSettingsError,
-  type assessmentSettingsRouter,
-} from '../trpc/assessment/assessment-settings.js';
+import { type AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -50,6 +48,42 @@ async function getOrigHash(infoPath: string) {
   return (await getOriginalHash(infoPath)) ?? '';
 }
 
+async function setQuestionsPrivateForCourse(course_id: string) {
+  await execute(sql.update_questions_sharing_private, { course_id });
+}
+
+async function setAssessmentSharingFilesPublic(sharePublicly: boolean) {
+  const fileUpdates = [
+    {
+      relPath: 'questions/test/question/info.json',
+      properties: ['sharePublicly', 'shareSourcePublicly'],
+    },
+    {
+      relPath: 'courseInstances/Fa18/assessments/A1/infoAssessment.json',
+      properties: ['shareSourcePublicly'],
+    },
+  ];
+
+  for (const fileUpdate of fileUpdates) {
+    const absPath = path.join(courseRepo.courseOriginDir, fileUpdate.relPath);
+    const info = await fs.readJSON(absPath);
+    for (const property of fileUpdate.properties) {
+      if (sharePublicly) {
+        info[property] = true;
+      } else {
+        delete info[property];
+      }
+    }
+    await fs.writeJSON(absPath, info, { spaces: 2 });
+  }
+
+  await commitOriginAndSync(
+    courseRepo,
+    sharePublicly ? 'Share test assessment' : 'Unshare test assessment',
+    fileUpdates.map((u) => u.relPath),
+  );
+}
+
 async function createTrpcClient(assessmentId: string) {
   const user = await getConfiguredUser();
   const trpcPath = getAssessmentTrpcUrl({
@@ -71,6 +105,23 @@ async function createTrpcClient(assessmentId: string) {
   });
 }
 
+const defaultMutationFields = {
+  text: '',
+  allow_issue_reporting: true,
+  allow_personal_notes: true,
+  multiple_instance: false,
+  auto_close: true,
+  require_honor_code: true,
+  honor_code: '',
+  max_points: null,
+  max_bonus_points: null,
+  constant_question_value: false,
+  shuffle_questions: false,
+  advance_score_perc: null,
+  allow_real_time_grading: true,
+  grade_rate_minutes: null,
+};
+
 describe('Editing assessment settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
@@ -78,9 +129,15 @@ describe('Editing assessment settings', () => {
     assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW1', 'infoAssessment.json');
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    // The sharing-related tests below rely on the share_source_publicly server-side
+    // validation, which only runs when this feature flag is enabled.
+    await features.enable('question-sharing');
   });
 
-  afterAll(helperServer.after);
+  afterAll(async () => {
+    await features.disable('question-sharing');
+    await helperServer.after();
+  });
 
   test.sequential('access the test assessment info file', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
@@ -95,13 +152,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -125,13 +176,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'nestedPath/HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -156,13 +201,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module2',
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -237,22 +276,15 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: await getOrigHash(assessmentLiveInfoPath),
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'FORBIDDEN',
-        );
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(appError.message, 'Access denied (must be a course editor)');
       }
     });
   });
@@ -269,22 +301,15 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash,
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
-        assert.instanceOf(err, TRPCClientError);
-        assert.equal(
-          (err as TRPCClientError<typeof assessmentSettingsRouter>).data?.code,
-          'BAD_REQUEST',
-        );
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(appError.message, 'infoAssessment.json does not exist');
       }
     } finally {
       await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
@@ -300,13 +325,7 @@ describe('Editing assessment settings', () => {
       number: assessmentInfo.number,
       module: assessmentInfo.module,
       aid: 'HW2',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -338,13 +357,7 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: 'HW1',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: staleOrigHash,
         });
         assert.fail('Expected mutation to throw');
@@ -364,13 +377,7 @@ describe('Editing assessment settings', () => {
       number: '1',
       module: 'Module1',
       aid: 'A1',
-      text: '',
-      allow_issue_reporting: true,
-      allow_personal_notes: true,
-      multiple_instance: false,
-      auto_close: true,
-      require_honor_code: true,
-      honor_code: '',
+      ...defaultMutationFields,
       origHash: await getOrigHash(assessmentLiveInfoPath),
     });
     assert.ok(result.origHash);
@@ -393,21 +400,73 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module1',
           aid: '../A2',
-          text: '',
-          allow_issue_reporting: true,
-          allow_personal_notes: true,
-          multiple_instance: false,
-          auto_close: true,
-          require_honor_code: true,
-          honor_code: '',
+          ...defaultMutationFields,
           origHash: await getOrigHash(assessmentLiveInfoPath),
         });
         assert.fail('Expected mutation to throw');
       } catch (err: unknown) {
         const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
         assert.isNotNull(appError);
-        assert.equal(appError.code, 'INVALID_SHORT_NAME');
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.match(appError.message, /path segments cannot start with a dot/i);
       }
     },
   );
+
+  test.sequential(
+    'cannot share assessment source publicly while it contains non-public questions',
+    async () => {
+      // Force every question on this course to be non-public, so the gate in the mutation
+      // can detect them before reaching the file editor.
+      await setQuestionsPrivateForCourse('1');
+
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      try {
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: assessmentInfo.title,
+          set: assessmentInfo.set,
+          number: assessmentInfo.number,
+          module: assessmentInfo.module ?? 'Default',
+          aid: 'A1',
+          ...defaultMutationFields,
+          share_source_publicly: true,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(
+          appError.message,
+          'Cannot share this assessment publicly because it contains questions that are not publicly shared',
+        );
+      }
+    },
+  );
+
+  test.sequential('ignores assessment source sharing when source is already public', async () => {
+    await setAssessmentSharingFilesPublic(true);
+
+    try {
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'A1',
+        ...defaultMutationFields,
+        share_source_publicly: false,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+      assert.ok(result.origHash);
+      const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
+    } finally {
+      await setAssessmentSharingFilesPublic(false);
+    }
+  });
 });

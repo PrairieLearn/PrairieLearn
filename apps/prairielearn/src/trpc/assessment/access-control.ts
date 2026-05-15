@@ -11,12 +11,12 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editorUtil.js';
-import { features } from '../../lib/features/index.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
   selectAccessControlRules,
+  selectPrairieTestExamMetadataByUuids,
   syncEnrollmentAccessControl,
 } from '../../models/assessment-access-control-rules.js';
 import { lockAssessment } from '../../models/assessment.js';
@@ -33,27 +33,13 @@ import { throwAppError } from '../app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireEnhancedAccessControl,
   t,
 } from './init.js';
 
 export interface AccessControlError {
   SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
-
-const requireEnhancedAccessControl = t.middleware(async (opts) => {
-  const enabled = await features.enabled('enhanced-access-control', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-  });
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Enhanced access control is not enabled for this course.',
-    });
-  }
-  return opts.next();
-});
 
 const students = t.procedure
   .use(requireEnhancedAccessControl)
@@ -106,6 +92,14 @@ const studentLabels = t.procedure
     return labels.map((label) => StaffStudentLabelSchema.parse(label));
   });
 
+const prairieTestExamMetadata = t.procedure
+  .use(requireEnhancedAccessControl)
+  .use(requireCourseInstancePermissionView)
+  .input(z.object({ examUuids: z.array(z.string().uuid()) }))
+  .query(async (opts) => {
+    return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
+  });
+
 function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
 ): EnrollmentAccessControlRuleData {
@@ -113,27 +107,28 @@ function formJsonToEnrollmentRuleData(
   const ac = rule.afterComplete;
   return {
     id: rule.id,
-    listBeforeRelease: rule.listBeforeRelease ?? null,
-    releaseDate: dc?.releaseDate ?? null,
-    dueDateOverridden: dc?.dueDate !== undefined,
-    dueDate: dc?.dueDate ?? null,
+    beforeReleaseListed: rule.beforeRelease?.listed ?? null,
+    releaseDate: dc?.release?.date ?? null,
+    dueOverridden: dc?.due !== undefined,
+    dueDate: dc?.due?.date ?? null,
+    dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
+    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
-    afterLastDeadlineCreditOverridden: dc?.afterLastDeadline?.credit !== undefined,
-    afterLastDeadlineCredit: dc?.afterLastDeadline?.credit ?? null,
+    afterLastDeadlineCredit:
+      dc?.afterLastDeadline?.allowSubmissions === true
+        ? (dc.afterLastDeadline.credit ?? null)
+        : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
     password: dc?.password ?? null,
-    hideQuestions: ac?.hideQuestions ?? null,
-    showQuestionsAgainDateOverridden: ac?.showQuestionsAgainDate !== undefined,
-    showQuestionsAgainDate: ac?.showQuestionsAgainDate ?? null,
-    hideQuestionsAgainDateOverridden: ac?.hideQuestionsAgainDate !== undefined,
-    hideQuestionsAgainDate: ac?.hideQuestionsAgainDate ?? null,
-    hideScore: ac?.hideScore ?? null,
-    showScoreAgainDateOverridden: ac?.showScoreAgainDate !== undefined,
-    showScoreAgainDate: ac?.showScoreAgainDate ?? null,
+    questionsHidden: ac?.questions?.hidden ?? null,
+    questionsVisibleFromDate: ac?.questions?.visibleFromDate ?? null,
+    questionsVisibleUntilDate: ac?.questions?.visibleUntilDate ?? null,
+    scoreHidden: ac?.score?.hidden ?? null,
+    scoreVisibleFromDate: ac?.score?.visibleFromDate ?? null,
     earlyDeadlines: dc?.earlyDeadlines ?? [],
     lateDeadlines: dc?.lateDeadlines ?? [],
   };
@@ -160,7 +155,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits listBeforeRelease: false on the main rule.
+ * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -170,8 +165,8 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.labels = rule.labels;
     }
 
-    if (index === 0 && rule.listBeforeRelease === true) {
-      clean.listBeforeRelease = true;
+    if (index === 0 && rule.beforeRelease?.listed === true) {
+      clean.beforeRelease = { listed: true };
     }
 
     if (isNonEmptyObject(rule.dateControl)) {
@@ -186,7 +181,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.afterComplete = rule.afterComplete;
     }
 
-    return clean as AccessControlJson;
+    return clean;
   });
 }
 
@@ -232,7 +227,7 @@ const saveAllRules = t.procedure
     const assessmentDir = path.join(
       opts.ctx.course.path,
       'courseInstances',
-      opts.ctx.course_instance.short_name!,
+      opts.ctx.course_instance.short_name,
       'assessments',
       opts.ctx.assessment.tid!,
     );
@@ -292,7 +287,7 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
-          // TODO: Add audit logging for enrollment rule changes. Label/main rules
+          // TODO: Add audit logging for enrollment rule changes. Label/default rules
           // are tracked in git; only enrollment rules need separate audit logs.
           for (const enrollmentRule of enrollmentRules) {
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
@@ -316,5 +311,6 @@ export const accessControlRouter = t.router({
   students,
   validateUids,
   studentLabels,
+  prairieTestExamMetadata,
   saveAllRules,
 });

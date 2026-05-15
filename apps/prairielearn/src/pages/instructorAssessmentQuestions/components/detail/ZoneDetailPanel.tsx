@@ -28,6 +28,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 type ToolFormFields = Record<`tool_${EnumAssessmentTool}`, boolean | undefined>;
 
@@ -41,6 +42,8 @@ interface ZoneFormData extends ToolFormFields {
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function ZoneDetailPanel({
@@ -60,7 +63,17 @@ export function ZoneDetailPanel({
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults, assessmentToolDefaults } = state;
+  const {
+    editMode,
+    assessmentType,
+    assessmentDefaults,
+    assessmentToolDefaults,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
+  } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -72,6 +85,8 @@ export function ZoneDetailPanel({
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
+    canView: zone.canView,
+    canSubmit: zone.canSubmit,
     ...(Object.fromEntries(
       EnumAssessmentToolSchema.options.map((tool) => [
         `tool_${tool}` as const,
@@ -105,7 +120,6 @@ export function ZoneDetailPanel({
   // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [zoneQuestionCount, trigger, onFormValidChange]);
@@ -132,6 +146,8 @@ export function ZoneDetailPanel({
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
+        canView: data.canView,
+        canSubmit: data.canSubmit,
         tools: hasToolOverride ? tools : undefined,
       });
     },
@@ -169,6 +185,12 @@ export function ZoneDetailPanel({
   const [overriddenTools, setOverriddenTools] = useState(
     () => new Set(EnumAssessmentToolSchema.options.filter((tool) => zone.tools?.[tool] != null)),
   );
+
+  const watchedCanView = watch('canView');
+  const watchedCanSubmit = watch('canSubmit');
+  const canViewOverridden = watchedCanView != null;
+  const canSubmitOverridden = watchedCanSubmit != null;
+  const hasRoles = groupRoles.length > 0;
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
@@ -348,6 +370,58 @@ export function ZoneDetailPanel({
         </div>
       )}
 
+      {groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view questions in this zone."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={assessmentCanView}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanView ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', assessmentCanView ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to questions in this zone."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={assessmentCanSubmit}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanSubmit ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', assessmentCanSubmit ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
+      )}
+
       <AdvancedFields
         register={register}
         errors={errors}
@@ -356,6 +430,7 @@ export function ZoneDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
         zoneIndex={zoneIndex}
+        assessmentType={assessmentType}
       />
     </div>
   );

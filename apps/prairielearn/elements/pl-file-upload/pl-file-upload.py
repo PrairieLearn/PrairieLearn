@@ -1,8 +1,11 @@
+import base64
 import csv
 import fnmatch
 import hashlib
 import json
+import random
 import re
+import string
 from io import StringIO
 
 import chevron
@@ -352,3 +355,143 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             file_name = file.get("name", "")
             if file_name in include_set:
                 pl.add_submitted_file(data, file_name, file.get("contents", ""))
+
+
+BRACKET_STAR = "__BRACKET_STAR__"
+BRACKET_QUESTION_MARK = "__BRACKET_QUESTION_MARK__"
+
+
+def generate_filename_from_pattern(pattern: str, suffix: str = "") -> str:
+    """Generate a plausible filename from a glob pattern for testing. The suffix is appended to wildcard substitutions, allowing distinct filenames to be generated from the same pattern."""
+
+    def replace_bracket(m: re.Match[str]) -> str:
+        content = m.group(1)
+        if content.startswith("!"):
+            # Negated class: find a character that satisfies the constraint
+            bracket_pattern = "[" + content + "]"
+            for c in string.ascii_letters + string.digits + "_-":
+                if fnmatch.fnmatch(c, bracket_pattern):
+                    return c
+            return "x"
+        char = content[0]
+        if char == "*":
+            return BRACKET_STAR
+        if char == "?":
+            return BRACKET_QUESTION_MARK
+        return char
+
+    wildcard_replacement = f"test_file{suffix}"
+    result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
+    result = result.replace("**", wildcard_replacement)
+    result = result.replace("*", wildcard_replacement)
+    result = result.replace("?", "x")
+    result = result.replace(BRACKET_STAR, "*")
+    result = result.replace(BRACKET_QUESTION_MARK, "?")
+    return result
+
+
+def _generate_unique_filenames(
+    literal_names: list[str], patterns: list[str]
+) -> list[str]:
+    origin: dict[str, str] = {}
+    names: list[str] = []
+
+    def add(name: str, source: str) -> None:
+        if name in origin:
+            raise ValueError(
+                f"Cannot generate distinct filenames for {origin[name]} "
+                f"and {source} (both produce '{name}')."
+            )
+        origin[name] = source
+        names.append(name)
+
+    for n in literal_names:
+        add(n, f"file name '{n}'")
+    pattern_counts: dict[str, int] = {}
+    for p in patterns:
+        idx = pattern_counts.get(p, 0)
+        pattern_counts[p] = idx + 1
+        suffix = f"_{idx}" if idx > 0 else ""
+        add(generate_filename_from_pattern(p, suffix), f"pattern '{p}' (#{idx + 1})")
+    return names
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+
+    raw_file_names = pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
+    raw_opt_file_names = pl.get_string_attrib(
+        element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+    )
+    raw_file_patterns = pl.get_string_attrib(
+        element, "file-patterns", FILE_PATTERNS_DEFAULT
+    )
+    raw_opt_file_patterns = pl.get_string_attrib(
+        element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
+    )
+
+    answer_name = get_answer_name(
+        raw_file_names, raw_opt_file_names, raw_file_patterns, raw_opt_file_patterns
+    )
+    file_names = get_file_names_as_array(raw_file_names)
+    opt_file_names = get_file_names_as_array(raw_opt_file_names)
+    file_patterns = get_file_names_as_array(raw_file_patterns)
+    opt_file_patterns = get_file_names_as_array(raw_opt_file_patterns)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        selected_opt_file_names = random.sample(
+            opt_file_names, random.randint(0, len(opt_file_names))
+        )
+        # Each optional pattern may match 0..N files, and the same pattern can
+        # be repeated. Patterns without wildcards can only generate one unique
+        # filename, so they can match at most once.
+        selected_opt_file_patterns: list[str] = []
+        for p in opt_file_patterns:
+            max_count = 2 if any(c in p for c in "*?") else 1
+            selected_opt_file_patterns.extend([p] * random.randint(0, max_count))
+        all_names = _generate_unique_filenames(
+            file_names + selected_opt_file_names,
+            file_patterns + selected_opt_file_patterns,
+        )
+
+        if not all_names:
+            if opt_file_names:
+                all_names = [random.choice(opt_file_names)]
+            elif opt_file_patterns:
+                all_names = [
+                    generate_filename_from_pattern(random.choice(opt_file_patterns))
+                ]
+            else:
+                return
+
+        files = []
+        for name in all_names:
+            content = base64.b64encode(f"Test {result} for {name}".encode()).decode(
+                "utf-8"
+            )
+            files.append({"name": name, "contents": content})
+
+        data["raw_submitted_answers"][answer_name] = json.dumps(files)
+
+    elif result == "invalid":
+        if file_names:
+            # Submit with a required file missing to test validation
+            # The remaining files are still submitted
+            missing_file = file_names[0]
+            submitted_names = _generate_unique_filenames(file_names[1:], file_patterns)
+            files = []
+            for name in submitted_names:
+                content = base64.b64encode(f"Test invalid for {name}".encode()).decode(
+                    "utf-8"
+                )
+                files.append({"name": name, "contents": content})
+            data["raw_submitted_answers"][answer_name] = json.dumps(files)
+            add_format_error(
+                answer_name,
+                data,
+                f"The following required files were missing: {missing_file}",
+            )
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            add_format_error(answer_name, data, "No submitted answer for file upload.")

@@ -14,7 +14,11 @@ import {
 import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
 
-export interface AdminCourseError {}
+export interface AdminCourseError {
+  Insert: never;
+  Delete: never;
+  UpdateColumn: never;
+}
 
 const insert = t.procedure
   .use(requireAdministrator)
@@ -31,19 +35,21 @@ const insert = t.procedure
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
-      repository: z.string().min(1, 'Repository is required'),
+      repository: z.string().nullable(),
       branch: z.string().min(1, 'Branch is required'),
     }),
   )
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    const repoExists = await checkCourseRepositoryUrlExists(input.repository);
-    if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
+    if (input.repository) {
+      const repoExists = await checkCourseRepositoryUrlExists(input.repository);
+      if (repoExists) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A course with this repository already exists.',
+        });
+      }
     }
 
     const pathExists = await checkCoursePathExists(normalizedPath);
@@ -92,23 +98,23 @@ const deleteCourseProcedure = t.procedure
 const updateColumn = t.procedure
   .use(requireAdministrator)
   .input(
-    z.object({
-      courseId: IdSchema,
-      columnName: z.enum([
-        'short_name',
-        'title',
-        'display_timezone',
-        'path',
-        'repository',
-        'branch',
+    z.object({ courseId: IdSchema }).and(
+      z.discriminatedUnion('columnName', [
+        z.object({
+          columnName: z.enum(['short_name', 'title', 'display_timezone', 'path', 'branch']),
+          value: z.string().min(1, 'Value is required'),
+        }),
+        z.object({
+          columnName: z.literal('repository'),
+          value: z.string(), // Optional
+        }),
       ]),
-      value: z.string().min(1, 'Value is required'),
-    }),
+    ),
   )
   .mutation(async ({ input, ctx }) => {
     let value = input.value;
 
-    if (input.columnName === 'repository') {
+    if (input.columnName === 'repository' && value) {
       const repoExists = await checkCourseRepositoryUrlExists(value, input.courseId);
       if (repoExists) {
         throw new TRPCError({

@@ -20,6 +20,7 @@ import {
   getSharedTopic,
   hasAltPoolChooseExceedsCount,
   hasPointsMismatch,
+  resolveRolePermissionCascade,
   validatePositiveInteger,
 } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -27,6 +28,7 @@ import { useAutoSave } from '../../utils/useAutoSave.js';
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 interface AltPoolFormData {
   numberChoose?: number;
@@ -39,6 +41,8 @@ interface AltPoolFormData {
   gradeRateMinutes?: number;
   forceMaxPoints?: boolean;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function AltPoolDetailPanel({
@@ -63,7 +67,17 @@ export function AltPoolDetailPanel({
   onFormValidChange: (isValid: boolean) => void;
   onDismissBanner: (trackingId: string) => void;
 }) {
-  const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
+  const {
+    editMode,
+    assessmentType,
+    constantQuestionValue,
+    assessmentDefaults,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
+  } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
@@ -91,6 +105,8 @@ export function AltPoolDetailPanel({
         ? (zoneQuestionBlock.forceMaxPoints ?? false)
         : zoneQuestionBlock.forceMaxPoints,
       allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
+      canView: zoneQuestionBlock.canView,
+      canSubmit: zoneQuestionBlock.canSubmit,
     },
     // Prevent autosave from clobbering in-progress typing. Without this,
     // the autosave feedback loop (edit → save → parent state update →
@@ -106,7 +122,6 @@ export function AltPoolDetailPanel({
     // We use the result of trigger() directly because formState.isValid may
     // not update until user interaction with mode: 'onChange'.
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [alternativeCount, trigger, onFormValidChange]);
@@ -152,6 +167,20 @@ export function AltPoolDetailPanel({
     setValue,
     resetAndSave,
   };
+
+  const watchedCanView = watch('canView');
+  const watchedCanSubmit = watch('canSubmit');
+  const canViewOverridden = watchedCanView != null;
+  const canSubmitOverridden = watchedCanSubmit != null;
+  const hasRoles = groupRoles.length > 0;
+  const canViewParent = resolveRolePermissionCascade([
+    { value: zone.canView, source: 'zone' },
+    { value: assessmentCanView, source: 'assessment' },
+  ]);
+  const canSubmitParent = resolveRolePermissionCascade([
+    { value: zone.canSubmit, source: 'zone' },
+    { value: assessmentCanSubmit, source: 'assessment' },
+  ]);
 
   const watchedAutoPoints = watch('autoPoints');
   const autoPointsPlaceholder =
@@ -479,6 +508,58 @@ export function AltPoolDetailPanel({
         </FormField>
       </Wrapper>
 
+      {groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view alternatives in this pool."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watchedCanView ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to alternatives in this pool."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watchedCanSubmit ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
+      )}
+
       <AdvancedFields
         register={register}
         errors={errors}
@@ -486,6 +567,7 @@ export function AltPoolDetailPanel({
         variant="altPool"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
     </div>
   );

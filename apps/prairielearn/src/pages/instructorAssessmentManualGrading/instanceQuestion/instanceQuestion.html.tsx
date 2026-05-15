@@ -17,6 +17,7 @@ import type {
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
+import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -33,6 +34,7 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  lastHumanGraderName,
   selectedInstanceQuestionGroup,
   aiGradingEnabled,
   aiGradingMode,
@@ -43,11 +45,12 @@ export function InstanceQuestion({
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  lastHumanGraderName: string | null;
   selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
@@ -144,7 +147,7 @@ export function InstanceQuestion({
                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                   .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
               >
-                Question ${resLocals.assessment_question.number_in_alternative_group}.
+                Question ${resLocals.instance_question_info.instructor_question_number}.
                 ${resLocals.question.title}
               </a>
             </li>
@@ -232,6 +235,7 @@ export function InstanceQuestion({
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
                 show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
+                gradedByHumanName: lastHumanGraderName,
               })}
             </div>
           </div>
@@ -280,7 +284,7 @@ function ConflictGradingJobModal({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;

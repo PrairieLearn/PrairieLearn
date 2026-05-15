@@ -11,17 +11,21 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
+  type MultiSelectFilterValue,
   OverlayTrigger,
   TanstackTableCard,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useModalState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -58,15 +62,19 @@ import {
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
+import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
-const DEFAULT_GRADING_STATUS_FILTER: GradingStatusValue[] = [];
-const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
-const DEFAULT_GRADED_BY_FILTER: string[] = [];
-const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
-const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
+const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -79,6 +87,7 @@ interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -95,10 +104,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
+  hint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
+  hint?: string;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -106,6 +117,11 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
+      {hint && (
+        <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
+          {hint}
+        </div>
+      )}
     </Dropdown.Item>
   );
 }
@@ -119,6 +135,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
+  aiSubmissionGroupingEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -146,25 +163,23 @@ export function AssessmentQuestionTable({
 
   const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
     'status',
-    parseAsArrayOf(parseAsStringLiteral(GRADING_STATUS_VALUES)).withDefault(
-      DEFAULT_GRADING_STATUS_FILTER,
-    ),
+    parseAsMultiSelectFilter(GRADING_STATUS_VALUES).withDefault(DEFAULT_GRADING_STATUS_FILTER),
   );
   const [assignedGraderFilter, setAssignedGraderFilter] = useQueryState(
     'assigned_grader',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
   );
   const [gradedByFilter, setGradedByFilter] = useQueryState(
     'graded_by',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_GRADED_BY_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_GRADED_BY_FILTER),
   );
   const [submissionGroupFilter, setSubmissionGroupFilter] = useQueryState(
     'submission_group',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
   );
   const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
     'ai_agreement',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
+    parseAsMultiSelectFilter().withDefault(DEFAULT_AI_AGREEMENT_FILTER),
   );
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
@@ -195,10 +210,15 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Controls the AI grading model selection modal: null = hidden, otherwise
-  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
-  const [modelSelectionModalState, setModelSelectionModalState] =
-    useState<AiGradingModelSelectionModalState>(null);
+  // Track completed AI grading job IDs so the "Review AI-graded submissions"
+  // alert survives dismissal of the "AI grading complete" progress alert
+  // (which clears the job from `serverJobProgress.jobsProgress`). The ref
+  // dedupes by job_sequence_id; the boolean drives alert visibility and is
+  // reset on dismissal.
+  const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
+  const [hasUnacknowledgedReview, setHasUnacknowledgedReview] = useState(false);
+
+  const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
@@ -359,6 +379,27 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Show the review alert when a job completes that we haven't already
+  // recorded. The seen set is genuinely history-dependent (it must outlive
+  // the job leaving `jobsProgress`), so this is a legitimate accumulator
+  // rather than derived state.
+  useEffect(() => {
+    let added = false;
+    for (const j of Object.values(serverJobProgress.jobsProgress)) {
+      if (
+        j.num_total > 0 &&
+        j.num_complete >= j.num_total &&
+        j.num_failed === 0 &&
+        !seenCompletedJobIdsRef.current.has(j.job_sequence_id)
+      ) {
+        seenCompletedJobIdsRef.current.add(j.job_sequence_id);
+        added = true;
+      }
+    }
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    if (added) setHasUnacknowledgedReview(true);
+  }, [serverJobProgress.jobsProgress]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -582,6 +623,7 @@ export function AssessmentQuestionTable({
     setRequiresManualGradingMutation,
     setAssignedGraderMutation,
     groupSubmissionMutation,
+    stopAiGradingJobMutation,
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
@@ -608,20 +650,52 @@ export function AssessmentQuestionTable({
         />
       </div>
       {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
+        <>
+          {hasCourseInstancePermissionEdit ? (
+            <ServerJobsProgressInfo
+              itemNames="submissions graded"
+              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+              courseInstanceId={courseInstance.id}
+              statusIcons={{ inProgress: 'bi-stars' }}
+              statusText={{
+                inProgress: 'AI grading in progress',
+                stopping: 'Stopping AI grading…',
+                stopped: 'AI grading stopped',
+                complete: 'AI grading complete',
+                failed: 'AI grading failed',
+              }}
+              stopConfirmation={{
+                title: 'Stop AI grading',
+                body: 'In-progress submissions will finish. The rest will be skipped.',
+                confirmLabel: 'Stop grading',
+                cancelLabel: 'Keep grading',
+              }}
+              stoppable
+              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+              onStopJobSequence={(jobSequenceId) =>
+                stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+              }
+            />
+          ) : (
+            <ServerJobsProgressInfo
+              itemNames="submissions graded"
+              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+              courseInstanceId={courseInstance.id}
+              statusIcons={{ inProgress: 'bi-stars' }}
+              statusText={{
+                inProgress: 'AI grading in progress',
+                stopping: 'Stopping AI grading…',
+                stopped: 'AI grading stopped',
+                complete: 'AI grading complete',
+                failed: 'AI grading failed',
+              }}
+              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+            />
+          )}
+          {hasUnacknowledgedReview && (
+            <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
+          )}
+        </>
       )}
       <QueryErrors<ManualGradingError>
         queries={[
@@ -630,6 +704,7 @@ export function AssessmentQuestionTable({
           groupSubmissionMutation,
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
+          stopAiGradingJobMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
@@ -710,7 +785,7 @@ export function AssessmentQuestionTable({
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'human_graded',
                           numToGrade: aiGradingCounts.humanGraded,
                         })
@@ -719,8 +794,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
+                      hint={
+                        aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
+                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'selected',
                           ids: selectedIds,
                           numToGrade: aiGradingCounts.selected,
@@ -730,8 +810,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
+                      hint={
+                        aiGradingCounts.all === 0
+                          ? 'Receive at least one submission to perform AI grading.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'all',
                           numToGrade: aiGradingCounts.all,
                         })
@@ -743,63 +828,69 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-                {!availableAiGradingProviders.includes('openai') ? (
-                  <OverlayTrigger
-                    tooltip={{
-                      body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
-                      props: { id: 'ai-grouping-no-openai-tooltip' },
-                    }}
-                  >
-                    <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
+                {aiSubmissionGroupingEnabled &&
+                  (!availableAiGradingProviders.includes('openai') ? (
+                    <OverlayTrigger
+                      tooltip={{
+                        body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
+                        props: { id: 'ai-grouping-no-openai-tooltip' },
+                      }}
+                    >
+                      <span style={{ display: 'inline-block' }}>
+                        <Button
+                          variant="light"
+                          size="sm"
+                          style={{ pointerEvents: 'none' }}
+                          disabled
+                        >
+                          <i className="bi bi-stars" aria-hidden="true" />
+                          <span className="d-none d-sm-inline">AI submission grouping</span>
+                        </Button>
+                      </span>
+                    </OverlayTrigger>
+                  ) : (
+                    <Dropdown>
+                      <Dropdown.Toggle variant="light" size="sm">
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </Button>
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Dropdown>
-                    <Dropdown.Toggle variant="light" size="sm">
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span className="d-none d-sm-inline">AI submission grouping</span>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu align="end">
-                      <Dropdown.Item
-                        disabled={selectedIds.length === 0}
-                        onClick={() =>
-                          onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
-                        }
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group selected submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.selected}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group all submissions</span>
-                          <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
-                      >
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <span>Group ungrouped submissions</span>
-                          <span className="badge bg-secondary ms-2">
-                            {aiGroupingCounts.ungrouped}
-                          </span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
-                        Delete all AI groupings
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu align="end">
+                        <Dropdown.Item
+                          disabled={selectedIds.length === 0}
+                          onClick={() =>
+                            onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                          }
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group selected submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.selected}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group all submissions</span>
+                            <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
+                        >
+                          <div className="d-flex justify-content-between align-items-center w-100">
+                            <span>Group ungrouped submissions</span>
+                            <span className="badge bg-secondary ms-2">
+                              {aiGroupingCounts.ungrouped}
+                            </span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
+                          Delete all AI groupings
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  ))}
               </>
             ) : (
               <Dropdown>
@@ -956,16 +1047,38 @@ export function AssessmentQuestionTable({
 
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        modalState={modelSelectionModalState}
+        show={modelSelectionModalState.show}
+        data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
-        creditBalanceMilliDollars={
-          courseInstance.credit_transferable_milli_dollars +
-          courseInstance.credit_non_transferable_milli_dollars
-        }
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
+        totalSubmissionCount={aiGradingCounts.all}
+        onHide={modelSelectionModalState.onHide}
+        onExited={modelSelectionModalState.onExited}
+        onSelectFirstSubmissions={(n) => {
+          const candidateIds = run(() => {
+            if (modelSelectionModalState.data?.type === 'selected') {
+              return modelSelectionModalState.data.ids;
+            }
+            if (modelSelectionModalState.data?.type === 'human_graded') {
+              return instanceQuestionsInfo
+                .filter((row) => row.instance_question.last_human_grader != null)
+                .map((row) => row.instance_question.id);
+            }
+            return instanceQuestionsInfo.map((row) => row.instance_question.id);
+          });
+          const ids = candidateIds.slice(0, n);
+          const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
+          setRowSelection(nextSelection);
+          modelSelectionModalState.showWithData({
+            type: 'selected',
+            ids,
+            numToGrade: ids.length,
+          });
+        }}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
@@ -974,7 +1087,6 @@ export function AssessmentQuestionTable({
           setLastSelectedModel(modelId);
           setRowSelection({});
         }}
-        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}
