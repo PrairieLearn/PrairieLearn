@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Alert, Button } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -317,16 +317,16 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           addQuestionUrl || showAiGenerateQuestionButton ? (
             <>
               {addQuestionUrl && (
-                <Button variant="light" size="sm" href={addQuestionUrl}>
+                <a className="btn btn-light btn-sm" href={addQuestionUrl}>
                   <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                   Add question
-                </Button>
+                </a>
               )}
               {showAiGenerateQuestionButton && (
-                <Button variant="light" size="sm" href={aiGenerateUrl}>
+                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
                   Generate with AI
-                </Button>
+                </a>
               )}
             </>
           ) : undefined
@@ -360,16 +360,16 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                 {(addQuestionUrl || showAiGenerateQuestionButton) && (
                   <div className="d-flex gap-2">
                     {addQuestionUrl && (
-                      <Button variant="primary" href={addQuestionUrl}>
+                      <a className="btn btn-primary" href={addQuestionUrl}>
                         <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                         Add question
-                      </Button>
+                      </a>
                     )}
                     {showAiGenerateQuestionButton && (
-                      <Button variant="outline-primary" href={aiGenerateUrl}>
+                      <a className="btn btn-outline-primary" href={aiGenerateUrl}>
                         <i className="bi bi-stars me-2" aria-hidden="true" />
                         Generate with AI
-                      </Button>
+                      </a>
                     )}
                   </div>
                 )}
