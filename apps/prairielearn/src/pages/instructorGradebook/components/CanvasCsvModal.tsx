@@ -190,10 +190,7 @@ function CanvasCsvModalContent({
         // zones). Fall back to the instance-level max_points from the
         // first student who has a score for this assessment.
 
-        const scoreWithMax = studentRows.find(
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          (r) => r.scores[a.assessment_id]?.max_points != null,
-        );
+        const scoreWithMax = studentRows.find((r) => r.scores[a.assessment_id]?.max_points != null);
 
         return canvasPointsPossibleValue(
           canvasFormat,
@@ -216,7 +213,6 @@ function CanvasCsvModalContent({
           canvas?.section ?? null,
           ...selectedAssessments.map((a) => {
             const scoreData = row.scores[a.assessment_id];
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!scoreData) return null;
 
             switch (scoreFormat) {
