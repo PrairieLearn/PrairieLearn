@@ -1,5 +1,5 @@
 FROM node:24-bookworm
-ARG CACHEBUST=2026-04-15-14-34-07
+ARG CACHEBUST=2026-05-15-14-49-21
 
 RUN apt-get update \
     && apt-get upgrade -y \
