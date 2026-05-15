@@ -6,7 +6,8 @@ import {
 } from '@reteps/tree-sitter-htmlmustache/linter';
 import type ace from 'ace-builds';
 
-import { formats, validators } from '../../../src/ee/lib/element-schemas/index.js';
+import { formats } from '../../../src/ee/lib/element-schemas/htmlmustache-plugin-utils.js';
+import { validators } from '../../../src/ee/lib/element-schemas/pl-multiple-choice.validator.js';
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';

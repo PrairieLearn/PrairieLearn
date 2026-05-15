@@ -74,8 +74,12 @@ function validateAnswerScoreRange(element: TagElement, context: ValidatorContext
   if (typeof score !== 'string') return;
 
   const parsedScore = Number(score);
-  if (parsedScore < 0 || parsedScore > 1) {
-    context.reportAttribute(element, 'score', 'Score must be in the range [0.0, 1.0].');
+  if (Number.isNaN(parsedScore) || parsedScore < 0 || parsedScore > 1) {
+    context.reportAttribute(
+      element,
+      'score',
+      'Score must be a numeric value in the range [0.0, 1.0].',
+    );
   }
 }
 

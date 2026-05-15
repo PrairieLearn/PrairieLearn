@@ -130,7 +130,7 @@ function assertInt(tag: string, key: string, val: string, errors: string[]) {
 function assertFloat(tag: string, key: string, val: string, errors: string[]) {
   if (!(/^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
-      `${tag}: value for attribute ${key} must be an floating-point number, but value provided is "${val}"`,
+      `${tag}: value for attribute ${key} must be a floating-point number, but value provided is "${val}"`,
     );
   }
 }

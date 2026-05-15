@@ -104,6 +104,16 @@ describe('pl-multiple-choice schema', () => {
     assert.deepEqual(messages, []);
   });
 
+  it('rejects non-numeric scores', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer correct="true" score="abc">A</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('numeric value')));
+  });
+
   it('requires dropdown display for size and placeholder', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" size="5" placeholder="Pick one">

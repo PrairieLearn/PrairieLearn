@@ -1,11 +1,9 @@
 import type { CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { formats } from './htmlmustache-plugin-utils.js';
 import {
   plMultipleChoiceAnswerJsonSchema,
   plMultipleChoiceJsonSchema,
 } from './pl-multiple-choice.js';
-import { validators } from './pl-multiple-choice.validator.js';
 
 const elementSchemas = {
   'pl-multiple-choice': plMultipleChoiceJsonSchema(),
@@ -39,5 +37,3 @@ export const elementCustomTags: CustomTag[] = [
     ],
   },
 ];
-
-export { formats, validators };
