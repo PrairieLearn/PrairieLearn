@@ -266,7 +266,7 @@ describe('generatePrompt', () => {
         ...baseArgs,
         grader_guidelines: brokenTemplate,
       }),
-    ).rejects.toThrow(/Invalid grader guidelines/);
+    ).rejects.toThrow(/Could not parse grader guidelines/);
   });
 
   it('omits grader_guidelines messages when grader_guidelines is null', async () => {

@@ -629,7 +629,7 @@ export async function aiGrade({
           // `displayNumber` is the 1-indexed position of the rubric item,
           // matching the numbering shown to the instructor in the rubric editor.
           logger.error(`Rubric item ${displayNumber} ${fieldName} mustache error: ${error}`);
-          throw new Error(`Invalid rubric item ${displayNumber} ${fieldName}`);
+          throw new Error(`Could not parse rubric item ${displayNumber} ${fieldName}`);
         }
         return rendered;
       };
