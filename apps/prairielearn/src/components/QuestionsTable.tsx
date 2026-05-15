@@ -12,8 +12,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
-import { useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { useMemo, useState } from 'react';
+import { Alert, Button } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -36,9 +36,7 @@ import {
   createQuestionsTableFilters,
 } from './questionsTableColumns.js';
 
-export type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
-
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
   addMeta({ itemRank });
   return itemRank.passed;
@@ -152,35 +150,37 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const hasLegacyQuestions = questions.some((q) => q.display_type !== 'v3');
 
-  const defaultColumnVisibilityRef = useRef<Record<string, boolean>>({});
-  defaultColumnVisibilityRef.current = run(() => {
-    const visibility: Record<string, boolean> = {};
-    for (const id of allColumnIds) {
-      if (HIDDEN_BY_DEFAULT.has(id)) {
-        visibility[id] = false;
-      } else if (id === 'display_type') {
-        visibility[id] = hasLegacyQuestions;
-      } else if (id.startsWith('ci_')) {
-        const ciId = id.replace(/^ci_/, '');
-        visibility[id] = currentCourseInstanceId === ciId;
-      } else {
-        visibility[id] = true;
-      }
-    }
-    return visibility;
-  });
+  const defaultColumnVisibility = useMemo(
+    () =>
+      run(() => {
+        const visibility: Record<string, boolean> = {};
+        for (const id of allColumnIds) {
+          if (HIDDEN_BY_DEFAULT.has(id)) {
+            visibility[id] = false;
+          } else if (id === 'display_type') {
+            visibility[id] = hasLegacyQuestions;
+          } else if (id.startsWith('ci_')) {
+            const ciId = id.replace(/^ci_/, '');
+            visibility[id] = currentCourseInstanceId === ciId;
+          } else {
+            visibility[id] = true;
+          }
+        }
+        return visibility;
+      }),
+    [allColumnIds, hasLegacyQuestions, currentCourseInstanceId],
+  );
+  const defaultColumnVisibilityRef = useMemo(
+    () => ({ current: defaultColumnVisibility }),
+    [defaultColumnVisibility],
+  );
 
   const columnVisibilityParser = useMemo(
     () =>
       parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
-        defaultColumnVisibilityRef.current,
+        defaultColumnVisibility,
       ),
-    // `hasLegacyQuestions` and `currentCourseInstanceId` drive the default
-    // visibility captured by `.withDefault(...)`. The lint rule can't see
-    // them inside the ref read, so list them explicitly to re-create the
-    // parser when those defaults change.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
-    [allColumnIds, hasLegacyQuestions, currentCourseInstanceId],
+    [allColumnIds, defaultColumnVisibility, defaultColumnVisibilityRef],
   );
 
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
@@ -203,19 +203,19 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   }, [filterValues, courseInstances]);
 
   const columnFilterSetters = useMemo<
-    Record<string, ((_columnId: string, value: string[]) => void) | undefined>
+    Record<string, ((_columnId: string, value: string[] | null) => void) | undefined>
   >(
     () => ({
       ...Object.fromEntries(
         Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
           columnId,
-          (_: string, value: string[]) => void setFilterValues({ [urlKey]: value }),
+          (_: string, value: string[] | null) => void setFilterValues({ [urlKey]: value }),
         ]),
       ),
       ...Object.fromEntries(
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          (_: string, value: string[]) => void setFilterValues({ [`ci_${ci.id}`]: value }),
+          (_: string, value: string[] | null) => void setFilterValues({ [`ci_${ci.id}`]: value }),
         ]),
       ),
     }),
@@ -252,7 +252,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
-      columnVisibility: defaultColumnVisibilityRef.current,
+      columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: handleColumnFiltersChange,
@@ -311,15 +311,15 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         headerButtons={
           addQuestionUrl ? (
             <>
-              <a className="btn btn-light btn-sm" href={addQuestionUrl}>
-                <i className="fa fa-plus me-2" aria-hidden="true" />
+              <Button variant="light" size="sm" href={addQuestionUrl}>
+                <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                 Add question
-              </a>
+              </Button>
               {showAiGenerateQuestionButton && (
-                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
+                <Button variant="light" size="sm" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
                   Generate with AI
-                </a>
+                </Button>
               )}
             </>
           ) : undefined
@@ -352,15 +352,15 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                 </div>
                 {addQuestionUrl && (
                   <div className="d-flex gap-2">
-                    <a className="btn btn-primary" href={addQuestionUrl}>
-                      <i className="fa fa-plus me-2" aria-hidden="true" />
+                    <Button variant="primary" href={addQuestionUrl}>
+                      <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                       Add question
-                    </a>
+                    </Button>
                     {showAiGenerateQuestionButton && (
-                      <a className="btn btn-outline-primary" href={aiGenerateUrl}>
+                      <Button variant="outline-primary" href={aiGenerateUrl}>
                         <i className="bi bi-stars me-2" aria-hidden="true" />
                         Generate with AI
-                      </a>
+                      </Button>
                     )}
                   </div>
                 )}

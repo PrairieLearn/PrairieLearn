@@ -3,7 +3,8 @@ import { useState } from 'react';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import { QuestionsTable, type SafeQuestionsPageData } from '../../components/QuestionsTable.js';
+import { QuestionsTable } from '../../components/QuestionsTable.js';
+import type { SafeQuestionsPageData } from '../../components/QuestionsTable.shared.js';
 import type { PublicCourseInstance } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';

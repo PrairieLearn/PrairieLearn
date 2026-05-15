@@ -20,6 +20,11 @@ import { TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
 const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+const NONE_FILTER_VALUE = '(None)';
+
+function imageFilterValue(value: string | null | undefined): string {
+  return value == null || value.trim() === '' ? NONE_FILTER_VALUE : value;
+}
 
 export function createQuestionsTableColumns({
   courseInstances,
@@ -73,8 +78,7 @@ export function createQuestionsTableColumns({
                 count={question.open_issue_count}
                 className="ms-1 flex-shrink-0"
                 issueQid={question.qid}
-                courseId={courseId}
-                courseInstanceId={courseInstanceId}
+                {...(courseInstanceId === undefined ? { courseId } : { courseInstanceId })}
               />
             )}
           </span>
@@ -217,9 +221,7 @@ export function createQuestionsTableColumns({
       },
       filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const value = row.getValue<SafeQuestionsPageData['external_grading_image']>(columnId);
-        return applyMultiSelectFilter(filter, (values) =>
-          value == null ? values.includes('(None)') : values.includes(value),
-        );
+        return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
     }),
@@ -233,9 +235,7 @@ export function createQuestionsTableColumns({
       },
       filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const value = row.getValue<SafeQuestionsPageData['workspace_image']>(columnId);
-        return applyMultiSelectFilter(filter, (values) =>
-          value == null ? values.includes('(None)') : values.includes(value),
-        );
+        return applyMultiSelectFilter(filter, (values) => values.includes(imageFilterValue(value)));
       },
       size: 200,
     }),
@@ -334,19 +334,12 @@ export function createQuestionsTableFilters({
 
   const allGradingMethods = [...new Set(questions.map((q) => q.grading_method))].sort();
 
-  const isNonBlankString = (value: string | null | undefined): value is string =>
-    value != null && value.trim() !== '';
-
   const allExternalGradingImages = [
-    '(None)',
-    ...Array.from(
-      new Set(questions.map((q) => q.external_grading_image).filter(isNonBlankString)),
-    ).sort(),
+    ...Array.from(new Set(questions.map((q) => imageFilterValue(q.external_grading_image)))).sort(),
   ];
 
   const allWorkspaceImages = [
-    '(None)',
-    ...Array.from(new Set(questions.map((q) => q.workspace_image).filter(isNonBlankString))).sort(),
+    ...Array.from(new Set(questions.map((q) => imageFilterValue(q.workspace_image)))).sort(),
   ];
 
   const allSharingSets = run(() => {
@@ -403,7 +396,7 @@ export function createQuestionsTableFilters({
   courseInstances.forEach((ci) => {
     const assessments = assessmentsByCourseInstance.get(ci.id) ?? new Set();
     const assessmentLabels = [
-      '(None)',
+      NONE_FILTER_VALUE,
       ...Array.from(assessments).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
     ];
 
