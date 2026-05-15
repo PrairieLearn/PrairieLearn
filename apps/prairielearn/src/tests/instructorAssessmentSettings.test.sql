@@ -9,3 +9,11 @@ FROM
   JOIN assessment_modules AS am ON a.assessment_module_id = am.id
 WHERE
   a.id = $id;
+
+-- BLOCK update_questions_sharing_private
+UPDATE questions
+SET
+  share_publicly = FALSE,
+  share_source_publicly = FALSE
+WHERE
+  course_id = $course_id;
