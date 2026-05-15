@@ -127,22 +127,13 @@ export function RubricSettings({
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
-  const [rubricActionNotification, setRubricActionNotification] = useState<
-    'saved' | 'discarded' | null
-  >(null);
-  // Latch the most recent non-null value so the message stays put while the
-  // Alert fades out. Without this, the ternary in render reads `null` after
-  // dismissal and the text flashes to the "other" branch mid-fade.
-  const lastNotificationRef = useRef<'saved' | 'discarded'>('saved');
-  if (rubricActionNotification !== null) {
-    lastNotificationRef.current = rubricActionNotification;
-  }
+  const [showSavedNotification, setShowSavedNotification] = useState(false);
 
   useEffect(() => {
-    if (!rubricActionNotification) return;
-    const t = setTimeout(() => setRubricActionNotification(null), 3000);
+    if (!showSavedNotification) return;
+    const t = setTimeout(() => setShowSavedNotification(false), 3000);
     return () => clearTimeout(t);
-  }, [rubricActionNotification]);
+  }, [showSavedNotification]);
 
   // Also define default for rubric-related variables
   const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -574,7 +565,7 @@ export function RubricSettings({
         setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
         onCancel();
         if (use_rubric) {
-          setRubricActionNotification('saved');
+          setShowSavedNotification(true);
         }
       } else {
         window.location.replace(res.url);
@@ -888,14 +879,14 @@ export function RubricSettings({
             </Alert>
           ))}
           <Alert
-            show={rubricActionNotification !== null}
+            show={showSavedNotification}
             variant="success"
             role="status"
             aria-live="polite"
             dismissible
-            onClose={() => setRubricActionNotification(null)}
+            onClose={() => setShowSavedNotification(false)}
           >
-            {lastNotificationRef.current === 'saved' ? 'Rubric saved' : 'Changes discarded'}
+            Rubric saved
           </Alert>
           <div className="mb-3 gap-1 d-flex">
             {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
@@ -1086,10 +1077,7 @@ export function RubricSettings({
                 type="button"
                 className="btn btn-secondary me-2"
                 disabled={!isDirty || isSubmitting}
-                onClick={() => {
-                  onCancel();
-                  setRubricActionNotification('discarded');
-                }}
+                onClick={onCancel}
               >
                 Discard changes
               </button>
