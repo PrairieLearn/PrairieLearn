@@ -16,6 +16,24 @@ WHERE
   AND qid = $qid
   AND deleted_at IS NULL;
 
+-- BLOCK update_question
+UPDATE questions
+SET
+  deleted_at = CASE
+    WHEN $update_deleted_at::boolean THEN $deleted_at::timestamptz
+    ELSE deleted_at
+  END,
+  share_publicly = CASE
+    WHEN $update_share_publicly::boolean THEN $share_publicly
+    ELSE share_publicly
+  END,
+  share_source_publicly = CASE
+    WHEN $update_share_source_publicly::boolean THEN $share_source_publicly
+    ELSE share_source_publicly
+  END
+WHERE
+  id = $question_id;
+
 -- BLOCK select_question_by_uuid
 SELECT
   *

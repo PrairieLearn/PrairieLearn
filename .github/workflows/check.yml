@@ -107,6 +107,7 @@ jobs:
           key: >-
             lint-${{ runner.os }}-${{ hashFiles(
               'yarn.lock',
+              'Makefile',
               'eslint.config.mjs',
               'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
@@ -126,7 +127,7 @@ jobs:
         run: make lint-links
 
       - name: Check dependency structure
-        run: make check-dependencies
+        run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
       - name: Check that all packages exist on npm

@@ -32,8 +32,6 @@ $(() => {
       })
       .modal('show');
   }
-
-  addInstanceQuestionGroupSelectionDropdownListeners();
 });
 
 window.mathjaxTypeset = mathjaxTypeset;
@@ -134,6 +132,7 @@ window.resetInstructorGradingPanel = function () {
   );
 
   computePointsFromRubric();
+  addInstanceQuestionGroupSelectionDropdownListeners();
 };
 
 /**

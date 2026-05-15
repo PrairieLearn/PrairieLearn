@@ -81,6 +81,8 @@ export default [
           enforceBeforeSelfClose: true,
         },
       ],
+      // Use our PrairieLearn-specific variant instead.
+      '@html-eslint/no-duplicate-id': 'off',
       '@html-eslint/no-heading-inside-button': 'off', // not important
       '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
       '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
