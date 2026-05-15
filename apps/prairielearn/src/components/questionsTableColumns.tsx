@@ -140,7 +140,7 @@ export function createQuestionsTableColumns({
     }),
 
     columnHelper.accessor('tags', {
-      id: 'tags',
+      id: 'tag',
       header: 'Tags',
       cell: (info) => (
         <div className="d-flex flex-wrap gap-1">
@@ -422,7 +422,7 @@ export function createQuestionsTableFilters({
     topic: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allTopics} />
     ),
-    tags: ({ header }) => (
+    tag: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allTags} />
     ),
     display_type: ({ header }) => (

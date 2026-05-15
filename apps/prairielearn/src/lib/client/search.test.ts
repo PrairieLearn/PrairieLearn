@@ -33,4 +33,9 @@ describe('rankSearchText', () => {
     expect(rankSearchText('prairieDrawFigure', 'adding num').passed).toBe(false);
     expect(rankSearchText('internalGrade/addingNumbers2', 'adding num').passed).toBe(true);
   });
+
+  it('matches qid substrings without loose character sequence matching', () => {
+    expect(rankSearchText('externalGrade/alpine', 'xternalGrade/alpine').passed).toBe(true);
+    expect(rankSearchText('internalGrade/addingNumbers2', 'eg/a').passed).toBe(false);
+  });
 });

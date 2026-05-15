@@ -30,7 +30,10 @@ import {
 
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
 import { rankSearchText } from '../lib/client/search.js';
-import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
+import {
+  QUESTION_TABLE_FILTER_URL_KEYS,
+  getAiQuestionGenerationDraftsUrl,
+} from '../lib/client/url.js';
 
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
 import {
@@ -53,15 +56,6 @@ const HIDDEN_BY_DEFAULT = new Set([
   'workspace_image',
 ]);
 
-const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
-  topic: 'topic',
-  tags: 'tags',
-  sharing_sets: 'sharing',
-  display_type: 'version',
-  grading_method: 'grading',
-  external_grading_image: 'extImage',
-  workspace_image: 'wsImage',
-};
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 function displayQid(row: SafeQuestionsPageData, qidPrefix?: string): string {
@@ -111,7 +105,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   const filterParsers = useMemo(
     () =>
       Object.fromEntries([
-        ...Object.values(FILTER_COLUMN_URL_KEYS).map((urlKey) => [
+        ...Object.values(QUESTION_TABLE_FILTER_URL_KEYS).map((urlKey) => [
           urlKey,
           parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
         ]),
@@ -194,7 +188,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
-    for (const [columnId, urlKey] of Object.entries(FILTER_COLUMN_URL_KEYS)) {
+    for (const [columnId, urlKey] of Object.entries(QUESTION_TABLE_FILTER_URL_KEYS)) {
       const filterValue = filterValues[urlKey] ?? EMPTY_FILTER;
       if (filterValue.values.length > 0) {
         filters.push({ id: columnId, value: filterValue });
@@ -214,7 +208,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   >(
     () => ({
       ...Object.fromEntries(
-        Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
+        Object.entries(QUESTION_TABLE_FILTER_URL_KEYS).map(([columnId, urlKey]) => [
           columnId,
           (_: string, value: MultiSelectFilterValue | null) =>
             void setFilterValues({ [urlKey]: value }),
@@ -234,6 +228,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   const handleColumnFiltersChange = useMemo(
     () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
     [columnFilters, columnFilterSetters],
+  );
+  const handleClearColumnFilters = useMemo(
+    () => () => handleColumnFiltersChange([]),
+    [handleColumnFiltersChange],
   );
 
   const filters = useMemo(
@@ -396,6 +394,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             </TanstackTableEmptyState>
           ),
         }}
+        onClearColumnFilters={handleClearColumnFilters}
       />
     </>
   );

@@ -26,14 +26,14 @@ function normalizeQid(value: unknown): string {
 
 export function rankSearchText(value: unknown, query: string) {
   const text = String(value ?? '');
-  const originalRank = rankItem(text, query, { threshold: rankings.WORD_STARTS_WITH });
+  const originalRank = rankItem(text, query, { threshold: rankings.CONTAINS });
   const normalizedText = normalizeQid(text);
   const normalizedQuery = normalizeQid(query);
 
   if (!normalizedText || normalizedText === text) return originalRank;
 
   const normalizedRank = rankItem(normalizedText, normalizedQuery, {
-    threshold: rankings.WORD_STARTS_WITH,
+    threshold: rankings.CONTAINS,
   });
   return normalizedRank.rank > originalRank.rank ? normalizedRank : originalRank;
 }

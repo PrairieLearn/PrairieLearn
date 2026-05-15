@@ -1,3 +1,5 @@
+import { parseAsMultiSelectFilter } from '@prairielearn/ui';
+
 import { encodeSearchString } from '../uri-util.shared.js';
 
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
@@ -233,6 +235,49 @@ export function getCourseInstanceBaseUrl(courseInstanceId: string): string {
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
+
+type CourseAdminUrlParts =
+  | { courseId: string; courseInstanceId?: string }
+  | { courseId?: string; courseInstanceId: string };
+
+export const QUESTION_TABLE_FILTER_URL_KEYS = {
+  topic: 'topic',
+  tag: 'tag',
+  sharing_sets: 'sharing',
+  display_type: 'version',
+  grading_method: 'grading',
+  external_grading_image: 'extImage',
+  workspace_image: 'wsImage',
+} as const;
+
+interface CourseAdminQuestionsFilter {
+  type: 'topic' | 'tag' | 'external_grading_image' | 'workspace_image';
+  value: string;
+}
+
+const multiSelectFilterParser = parseAsMultiSelectFilter();
+
+function getCourseAdminUrl({ courseInstanceId, courseId }: CourseAdminUrlParts): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor/course_admin`;
+  }
+  return `/pl/course/${courseId}/course_admin`;
+}
+
+export function getCourseAdminQuestionsUrl(
+  parts: CourseAdminUrlParts & { filter?: CourseAdminQuestionsFilter },
+): string {
+  const baseUrl = `${getCourseAdminUrl(parts)}/questions`;
+  if (!parts.filter) return baseUrl;
+
+  const searchParams = new URLSearchParams();
+  searchParams.set(
+    QUESTION_TABLE_FILTER_URL_KEYS[parts.filter.type],
+    multiSelectFilterParser.serialize({ values: [parts.filter.value], mode: 'include' }),
+  );
+
+  return `${baseUrl}?${searchParams.toString()}`;
+}
 
 export function getQuestionUrl({
   courseInstanceId,
