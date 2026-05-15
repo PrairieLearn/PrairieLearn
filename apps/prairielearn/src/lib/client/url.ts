@@ -153,6 +153,22 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+export function getAiGradingSettingsUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/ai_grading`;
+}
+
+export function getManualGradingInstanceQuestionRubricPanelsUrl({
+  courseInstanceId,
+  assessmentId,
+  instanceQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  instanceQuestionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${instanceQuestionId}/grading_rubric_panels`;
+}
+
 export function getAdministratorJobSequenceUrl(jobSequenceId: string): string {
   return `/pl/administrator/jobSequence/${jobSequenceId}`;
 }
