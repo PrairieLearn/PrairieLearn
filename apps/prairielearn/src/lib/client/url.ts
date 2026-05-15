@@ -29,6 +29,12 @@ export function getAssessmentStudentsUrl(
   return `${getAssessmentUrl(parts)}/instances`;
 }
 
+export function getAssessmentSettingsUrl(
+  parts: { assessmentId: string } & AssessmentUrlParts,
+): string {
+  return `${getAssessmentUrl(parts)}/settings`;
+}
+
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }
@@ -188,6 +194,17 @@ export function getQuestionUrl({
 
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
+}
+
+export function getQuestionSettingsUrl({
+  questionId,
+  courseInstanceId,
+  courseId,
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  return `${urlPrefix}/question/${questionId}/settings`;
 }
 
 // tRPC scope URLs
