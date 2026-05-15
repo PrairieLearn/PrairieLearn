@@ -8,8 +8,7 @@ import {
 
 import { htmlMustacheConfig } from '../../lib/htmlMustacheConfig.js';
 
-import { formats } from './element-schemas/htmlmustache-plugin-utils.js';
-import { validators } from './element-schemas/pl-multiple-choice.validator.js';
+import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 
 const require = createRequire(import.meta.url);
 
