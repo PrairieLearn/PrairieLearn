@@ -240,9 +240,9 @@
     "brotli": 394365
   },
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
-    "raw": 444132,
-    "gzip": 138745,
-    "brotli": 121251
+    "raw": 444229,
+    "gzip": 138783,
+    "brotli": 121268
   },
   "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
     "raw": 298349,
@@ -420,8 +420,8 @@
     "brotli": 329297
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1334383,
-    "gzip": 396300,
-    "brotli": 325760
+    "raw": 1334718,
+    "gzip": 396417,
+    "brotli": 325778
   }
 }
