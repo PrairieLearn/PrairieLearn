@@ -1,5 +1,5 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
-import { type QueryFunction, useQuery } from '@tanstack/react-query';
+import { type QueryFunctionContext, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -76,7 +76,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   qidPrefix?: string;
   questionsQueryOptions: {
     queryKey: TQueryKey;
-    queryFn?: QueryFunction<SafeQuestionsPageData[], TQueryKey>;
+    queryFn?: (context: QueryFunctionContext<TQueryKey>) => Promise<SafeQuestionsPageData[]>;
   };
 }
 
@@ -103,8 +103,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const courseInstanceIds = useMemo(() => courseInstances.map((ci) => ci.id), [courseInstances]);
-
   const filterParsers = useMemo(
     () =>
       Object.fromEntries([
@@ -112,12 +110,12 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           urlKey,
           parseAsArrayOf(parseAsString).withDefault([]),
         ]),
-        ...courseInstanceIds.map((id) => [
-          `ci_${id}`,
+        ...courseInstances.map((ci) => [
+          `ci_${ci.id}`,
           parseAsArrayOf(parseAsString).withDefault([]),
         ]),
       ]),
-    [courseInstanceIds],
+    [courseInstances],
   );
 
   const [filterValues, setFilterValues] = useQueryStates(filterParsers);
@@ -132,7 +130,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     ...questionsQueryOptions,
     // Provide a no-op queryFn if none was given (e.g. public questions page
     // where data is embedded in the initial HTML and never refetched).
-    queryFn: questionsQueryOptions.queryFn ?? (() => initialQuestions),
+    queryFn: questionsQueryOptions.queryFn ?? (() => Promise.resolve(initialQuestions)),
     staleTime: Infinity,
     initialData: initialQuestions,
   });
@@ -195,14 +193,14 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         filters.push({ id: columnId, value: values });
       }
     }
-    for (const id of courseInstanceIds) {
-      const values = filterValues[`ci_${id}`] ?? [];
+    for (const ci of courseInstances) {
+      const values = filterValues[`ci_${ci.id}`] ?? [];
       if (values.length > 0) {
-        filters.push({ id: `ci_${id}`, value: values });
+        filters.push({ id: `ci_${ci.id}`, value: values });
       }
     }
     return filters;
-  }, [filterValues, courseInstanceIds]);
+  }, [filterValues, courseInstances]);
 
   const columnFilterSetters = useMemo<
     Record<string, ((_columnId: string, value: string[]) => void) | undefined>
@@ -215,13 +213,13 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         ]),
       ),
       ...Object.fromEntries(
-        courseInstanceIds.map((id) => [
-          `ci_${id}`,
-          (_: string, value: string[]) => void setFilterValues({ [`ci_${id}`]: value }),
+        courseInstances.map((ci) => [
+          `ci_${ci.id}`,
+          (_: string, value: string[]) => void setFilterValues({ [`ci_${ci.id}`]: value }),
         ]),
       ),
     }),
-    [courseInstanceIds, setFilterValues],
+    [courseInstances, setFilterValues],
   );
 
   const handleColumnFiltersChange = useMemo(
