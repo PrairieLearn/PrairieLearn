@@ -266,7 +266,9 @@ describe('generatePrompt', () => {
         ...baseArgs,
         grader_guidelines: brokenTemplate,
       }),
-    ).rejects.toThrow(/Grader guidelines template error.*Unclosed tag/);
+    ).rejects.toThrow(
+      /Grader guidelines had an error.*Unclosed tag.*Correct the grader guidelines/,
+    );
   });
 
   it('omits grader_guidelines messages when grader_guidelines is null', async () => {

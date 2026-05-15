@@ -118,7 +118,9 @@ export async function generatePrompt({
     if (error) {
       // Treat as a per-submission failure for the same reason as rubric-item
       // template errors: the rubric the AI would see is degraded.
-      throw new Error(`Grader guidelines template error: ${error}`);
+      throw new Error(
+        `Grader guidelines had an error: ${error}. Correct the grader guidelines to perform grading.`,
+      );
     }
     return [
       {

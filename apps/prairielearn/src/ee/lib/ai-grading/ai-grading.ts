@@ -628,7 +628,9 @@ export async function aiGrade({
           // job_failure_detail field. `displayNumber` is the 1-indexed
           // position of the rubric item, matching the numbering shown to the
           // instructor in the rubric editor.
-          throw new Error(`Rubric item ${displayNumber} ${fieldName} template error: ${error}`);
+          throw new Error(
+            `Rubric item ${displayNumber} ${fieldName} had an error: ${error}. Correct the rubric item to perform grading.`,
+          );
         }
         return rendered;
       };
