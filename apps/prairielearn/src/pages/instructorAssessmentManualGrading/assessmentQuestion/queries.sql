@@ -68,7 +68,7 @@ SELECT
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
-  to_jsonb(u.*) AS "user",
+  to_jsonb(u.*) AS user,
   COALESCE(tm.members, '[]'::jsonb) AS group_members,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,

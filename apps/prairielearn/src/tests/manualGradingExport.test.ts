@@ -124,7 +124,7 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
       course_instance_id: '1',
       tid: 'hw5-templateGroupWork',
     });
-    const aq = await selectAssessmentQuestion(hw5.id, 'manualGrade/codeUpload');
+    const aq = await selectAssessmentQuestion(hw5.id, 'demo/demoNewton-page1');
 
     const members = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
 
