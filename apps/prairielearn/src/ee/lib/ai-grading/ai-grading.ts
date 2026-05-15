@@ -701,17 +701,26 @@ export async function aiGrade({
         // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
         // item is identified by its 1-indexed position in the prompt; using numbers
         // instead of descriptions avoids JSON-escaping issues with quotes/backslashes
-        // in user-authored rubric text.
-        const rubricItemShape: Record<string, z.ZodBoolean> = {};
-        for (const [index, item] of rubric_items.entries()) {
-          const number = index + 1;
-          rubricItemShape[String(number)] = z
-            .boolean()
-            .describe(
-              `True if rubric item number ${number} applies to the student's response. Rubric item number ${number}: ${item.description}`,
-            );
-        }
-        const RubricGradingItemsSchema = z.object(rubricItemShape);
+        // in user-authored rubric text. The schema is strict so any extra keys
+        // emitted by the model surface as a per-submission failure instead of being
+        // silently stripped.
+        const RubricGradingItemsSchema = z
+          .object(
+            Object.fromEntries(
+              rubric_items.map((item, index) => {
+                const number = index + 1;
+                return [
+                  String(number),
+                  z
+                    .boolean()
+                    .describe(
+                      `True if rubric item number ${number} applies to the student's response. Rubric item number ${number}: ${item.description}`,
+                    ),
+                ];
+              }),
+            ),
+          )
+          .strict();
 
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),

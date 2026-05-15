@@ -13,10 +13,10 @@ import mustache from 'mustache';
  */
 export function safeMustacheRender(
   template: string,
-  view: Record<string, unknown>,
+  params: Record<string, unknown>,
 ): { rendered: string; error?: string } {
   try {
-    return { rendered: mustache.render(template, view) };
+    return { rendered: mustache.render(template, params) };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { rendered: template, error: message };
