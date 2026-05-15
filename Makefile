@@ -97,9 +97,11 @@ test-prairielearn: start-support
 test-e2e: start-support
 	@yarn workspace @prairielearn/prairielearn run test:e2e
 
-check-dependencies:
-	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+fix-dependencies:
+	@yarn knip  -c .knip.ts --fix --fix-type exports --fix-type types --fix-type dependencies
+lint-dependencies:
 	@yarn knip -c .knip.ts
+	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
@@ -123,16 +125,17 @@ lint-js:
 # Separate target since the caches don't respect updates to plugins.
 # Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
 # pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
+# Keep the Prettier cache locations split too: each Prettier run reconciles all entries in its cache, even entries outside the current glob.
 lint-js-cached:
 	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
-	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
+	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/apps-prairielearn-tsx
 	@yarn eslint --cache --cache-strategy content \
 		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
 		"!apps/prairielearn/**/*.{ts,tsx}" \
-		--check --cache --cache-strategy content
+		--check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/non-apps-prairielearn-tsx
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
@@ -226,4 +229,4 @@ dangerous-drop-all-dbs:
 		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
 	done
 
-ci: lint typecheck check-dependencies test
+ci: lint typecheck lint-dependencies test

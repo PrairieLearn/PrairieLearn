@@ -20,10 +20,12 @@ export function DefaultDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
   displayTimezone,
+  isExam,
 }: {
   title?: string;
   description?: string;
   displayTimezone: string;
+  isExam: boolean;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
@@ -84,7 +86,7 @@ export function DefaultDateControlForm({
           {showLateFields && (
             <>
               <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} isExam={isExam} />
             </>
           )}
           <Row className="gy-3">
@@ -110,11 +112,13 @@ export function OverrideDateControlForm({
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
   displayTimezone,
+  isExam,
 }: {
   index: number;
   title?: string;
   description?: string;
   displayTimezone: string;
+  isExam: boolean;
 }) {
   return (
     <div>
@@ -129,7 +133,11 @@ export function OverrideDateControlForm({
         <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
         <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
-        <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
+        <OverrideAfterLastDeadlineField
+          index={index}
+          displayTimezone={displayTimezone}
+          isExam={isExam}
+        />
         <Row className="gy-3">
           <Col md={6}>
             <OverrideDurationField index={index} />

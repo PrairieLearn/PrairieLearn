@@ -550,7 +550,7 @@ function CreditPoolSection({
       )}
       {!canEdit && !isLoading && !isCreditPoolEmpty && (
         <p className="text-muted small mb-3">
-          You must be a course owner to purchase AI grading credits.
+          You must be a course owner to purchase or redeem AI grading credits.
         </p>
       )}
       <CreditPoolDashboard

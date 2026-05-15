@@ -103,7 +103,7 @@ export function CreditPoolDashboard({
           <p className="text-muted mb-3">
             {canEdit
               ? 'Buy credits to start grading submissions with AI.'
-              : 'You must be a course owner to purchase AI grading credits.'}
+              : 'You must be a course owner to purchase or redeem AI grading credits.'}
           </p>
           <div className="d-flex flex-column align-items-center gap-2">
             {onRedeemFreeCreditClick && (
