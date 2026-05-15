@@ -9,8 +9,14 @@ export interface BodyEmitHandler {
   readonly bodyType: string;
 
   /**
-   * Optionally transform the prompt HTML before it is wrapped in <pl-question-panel>.
-   * Used by types that inline their interactive elements directly into the prompt text
+   * When true, the prompt HTML contains inline input elements (e.g. fill-in-blanks,
+   * multiple-dropdowns) and must NOT be wrapped in `<pl-question-panel>`.
+   */
+  readonly inlineInputs?: boolean;
+
+  /**
+   * Optionally transform the prompt HTML before rendering.
+   * Used by types that substitute placeholders in the prompt text
    * (fill-in-blanks, multiple-dropdowns, calculated).
    */
   transformPrompt?(promptHtml: string, body: IRQuestionBody): string;

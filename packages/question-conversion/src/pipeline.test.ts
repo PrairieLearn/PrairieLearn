@@ -64,7 +64,7 @@ describe('convert (integration)', () => {
       const q = result.questions[0];
       assert.equal(
         q.questionHtml,
-        '<pl-question-panel>\n<p>The capital of Colombia is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input> and Estonia is <pl-string-input answers-name="capital2" correct-answer="tallinn" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n</pl-question-panel>\n',
+        '<p>The capital of Colombia is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input> and Estonia is <pl-string-input answers-name="capital2" correct-answer="tallinn" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
       );
       assert.isUndefined(q.serverPy);
     });

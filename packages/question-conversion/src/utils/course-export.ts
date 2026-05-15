@@ -77,7 +77,8 @@ export interface QtiFileEntry {
 /**
  * Find QTI assessment XML files by parsing the resource list in `imsmanifest.xml`.
  *
- * Canvas QTI resources have type imsqti_xmlv1p2/imscc_xmlv1pN/assessment.
+ * Canvas QTI resources have type `imsqti_xmlv1p2` (quiz exports) or
+ * `imsqti_xmlv1p2/imscc_xmlv1pN/assessment` (course exports).
  * Each assessment resource has a paired `associatedcontent` dependency that
  * lists both `assessment_meta.xml` and a `non_cc_assessments/<id>.xml.qti`
  * file. The non-CC QTI contains the full question content (including Canvas-
