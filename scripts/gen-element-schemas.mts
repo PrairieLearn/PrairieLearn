@@ -22,6 +22,13 @@ generatedFiles[
   )
 ] = serialized.schemas['pl-multiple-choice'];
 
+generatedFiles[
+  path.resolve(
+    import.meta.dirname,
+    '../apps/prairielearn/elements/pl-multiple-choice/pl-answer.schema.json',
+  )
+] = serialized.childSchemas['pl-multiple-choice']['pl-answer'];
+
 async function stringify(filePath: string, value: unknown): Promise<string> {
   const config = await prettier.resolveConfig(filePath);
   return await prettier.format(`${JSON.stringify(value, null, 2)}\n`, {

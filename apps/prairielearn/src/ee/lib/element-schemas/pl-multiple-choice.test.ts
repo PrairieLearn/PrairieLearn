@@ -46,7 +46,9 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(messages.some((message) => message.includes('bogus')));
-    assert.isTrue(messages.some((message) => message.includes('only allows <pl-answer>')));
+    assert.isTrue(
+      messages.some((message) => message.includes('only allows these child elements: <pl-answer>')),
+    );
   });
 
   it('rejects invalid attribute values', async () => {
