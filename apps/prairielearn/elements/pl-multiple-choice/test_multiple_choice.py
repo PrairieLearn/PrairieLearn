@@ -159,7 +159,7 @@ def test_prepare_allows_python_float_score() -> None:
 
 
 def test_prepare_rejects_score_outside_range() -> None:
-    with pytest.raises(ValueError, match="Score must be in the range"):
+    with pytest.raises(ValueError, match="must be in the range"):
         pl_multiple_choice.prepare(
             mc_html(
                 answers='<pl-answer correct="true" score="1.5">A</pl-answer><pl-answer>B</pl-answer>',
@@ -172,8 +172,8 @@ def test_prepare_rejects_score_outside_range() -> None:
 @pytest.mark.parametrize(
     ("attr", "match"),
     [
-        ('size="5"', "if using size"),
-        ('placeholder="Pick one"', "if using placeholder"),
+        ('size="5"', "should only be set"),
+        ('placeholder="Pick one"', "should only be set"),
     ],
     ids=["size", "placeholder"],
 )

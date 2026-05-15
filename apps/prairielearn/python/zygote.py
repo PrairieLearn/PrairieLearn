@@ -380,7 +380,7 @@ def worker_loop() -> None:
 
             mod = mod_cache.get(file_path)
             if mod is None:
-                mod = {}
+                mod = {"__file__": file_path}
 
                 with open(file_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the

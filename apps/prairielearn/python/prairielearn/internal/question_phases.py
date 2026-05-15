@@ -128,7 +128,7 @@ def process(
 
             mod = mod_cache.get(element_controller_path)
             if mod is None:
-                mod = {}
+                mod = {"__file__": str(element_controller_path)}
 
                 with open(element_controller_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
