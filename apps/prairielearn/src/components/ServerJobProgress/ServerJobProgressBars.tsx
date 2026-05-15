@@ -314,7 +314,6 @@ function ServerJobProgressInfo(
         </div>
         {status === 'failed' && jobFailureDetail && (
           <div className="small text-body-secondary mt-2">
-            <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
             <strong>Error:</strong> {jobFailureDetail}
           </div>
         )}

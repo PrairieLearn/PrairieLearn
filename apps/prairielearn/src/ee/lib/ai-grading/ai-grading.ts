@@ -616,7 +616,7 @@ export async function aiGrade({
       const renderRubricField = (
         template: string | null,
         fieldName: string,
-        rubric_item_id: string,
+        displayNumber: number,
       ): string | null => {
         if (!template) return template;
         const { rendered, error } = safeMustacheRender(template, mustacheParams);
@@ -625,23 +625,26 @@ export async function aiGrade({
           // the AI would see is degraded, so we don't trust any grade derived
           // from it. The outer catch in async.mapLimit prefixes this message
           // with the instance-question id and surfaces it via the banner's
-          // job_failure_detail field.
-          throw new Error(`Rubric item ${rubric_item_id} ${fieldName} template error: ${error}`);
+          // job_failure_detail field. `displayNumber` is the 1-indexed
+          // position of the rubric item, matching the numbering shown to the
+          // instructor in the rubric editor.
+          throw new Error(`Rubric item ${displayNumber} ${fieldName} template error: ${error}`);
         }
         return rendered;
       };
-      for (const rubric_item of rubric_items) {
+      for (const [index, rubric_item] of rubric_items.entries()) {
+        const displayNumber = index + 1;
         rubric_item.description =
-          renderRubricField(rubric_item.description, 'description', rubric_item.id) ?? '';
+          renderRubricField(rubric_item.description, 'description', displayNumber) ?? '';
         rubric_item.explanation = renderRubricField(
           rubric_item.explanation,
           'explanation',
-          rubric_item.id,
+          displayNumber,
         );
         rubric_item.grader_note = renderRubricField(
           rubric_item.grader_note,
           'grader_note',
-          rubric_item.id,
+          displayNumber,
         );
       }
 
