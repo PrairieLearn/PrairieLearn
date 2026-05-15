@@ -20,6 +20,10 @@ import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../.
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
+import {
+  InstanceQuestionAiGrade,
+  type InstanceQuestionAiGradeProps,
+} from './components/InstanceQuestionAiGrade.js';
 import { GradingPanel } from './gradingPanel.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
@@ -44,6 +48,7 @@ export function InstanceQuestion({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
+  instanceQuestionAiGradeProps,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   conflict_grading_job: GradingJobData | null;
@@ -65,6 +70,7 @@ export function InstanceQuestion({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
+  instanceQuestionAiGradeProps: InstanceQuestionAiGradeProps | null;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -201,6 +207,31 @@ export function InstanceQuestion({
           />,
         )}
       </div>
+
+      ${instanceQuestionAiGradeProps
+        ? hydrateHtml(
+            <InstanceQuestionAiGrade
+              courseInstanceId={instanceQuestionAiGradeProps.courseInstanceId}
+              assessmentId={instanceQuestionAiGradeProps.assessmentId}
+              assessmentQuestionId={instanceQuestionAiGradeProps.assessmentQuestionId}
+              instanceQuestionId={instanceQuestionAiGradeProps.instanceQuestionId}
+              trpcCsrfToken={instanceQuestionAiGradeProps.trpcCsrfToken}
+              isDevMode={instanceQuestionAiGradeProps.isDevMode}
+              hasRubric={instanceQuestionAiGradeProps.hasRubric}
+              useCustomApiKeys={instanceQuestionAiGradeProps.useCustomApiKeys}
+              aiGradingSettingsUrl={instanceQuestionAiGradeProps.aiGradingSettingsUrl}
+              availableAiGradingProviders={instanceQuestionAiGradeProps.availableAiGradingProviders}
+              aiGradingRelativeCosts={instanceQuestionAiGradeProps.aiGradingRelativeCosts}
+              aiGradingLastSelectedModel={instanceQuestionAiGradeProps.aiGradingLastSelectedModel}
+              initialOngoingJobSequenceTokens={
+                instanceQuestionAiGradeProps.initialOngoingJobSequenceTokens
+              }
+              hasCourseInstancePermissionEdit={
+                instanceQuestionAiGradeProps.hasCourseInstancePermissionEdit
+              }
+            />,
+          )
+        : ''}
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,
@@ -230,6 +261,7 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
+                aiGradingMode,
                 selectedInstanceQuestionGroup,
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
                 instanceQuestionGroups,

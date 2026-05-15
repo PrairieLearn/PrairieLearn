@@ -30,7 +30,7 @@ import {
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
-import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
@@ -101,6 +101,10 @@ interface AssessmentQuestionTableProps {
   aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
+  onRubricSettingsSaved: (data: {
+    rubric_data: RubricData | null;
+    aiGradingStats: AiGradingGeneralStats | null;
+  }) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -151,6 +155,7 @@ export function AssessmentQuestionTable({
   aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
+  onRubricSettingsSaved,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -651,51 +656,20 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          onSaved={onRubricSettingsSaved}
         />
       </div>
       {aiGradingMode && (
         <>
-          {hasCourseInstancePermissionEdit ? (
-            <ServerJobsProgressInfo
-              itemNames="submissions graded"
-              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-              courseInstanceId={courseInstance.id}
-              statusIcons={{ inProgress: 'bi-stars' }}
-              statusText={{
-                inProgress: 'AI grading in progress',
-                stopping: 'Stopping AI grading…',
-                stopped: 'AI grading stopped',
-                complete: 'AI grading complete',
-                failed: 'AI grading failed',
-              }}
-              stopConfirmation={{
-                title: 'Stop AI grading',
-                body: 'In-progress submissions will finish. The rest will be skipped.',
-                confirmLabel: 'Stop grading',
-                cancelLabel: 'Keep grading',
-              }}
-              stoppable
-              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-              onStopJobSequence={(jobSequenceId) =>
-                stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
-              }
-            />
-          ) : (
-            <ServerJobsProgressInfo
-              itemNames="submissions graded"
-              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-              courseInstanceId={courseInstance.id}
-              statusIcons={{ inProgress: 'bi-stars' }}
-              statusText={{
-                inProgress: 'AI grading in progress',
-                stopping: 'Stopping AI grading…',
-                stopped: 'AI grading stopped',
-                complete: 'AI grading complete',
-                failed: 'AI grading failed',
-              }}
-              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-            />
-          )}
+          <AiGradingProgressInfo
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+            onStopJobSequence={(jobSequenceId) =>
+              stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+            }
+          />
           {hasUnacknowledgedReview && (
             <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
           )}

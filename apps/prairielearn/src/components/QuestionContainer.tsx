@@ -116,18 +116,21 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
-        ? AIGradingExplanation({
-            explanation: aiGradingInfo.explanation,
-            hasImage: aiGradingInfo.hasImage,
-            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
-          })
-        : ''}
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
-        ? AIGradingPrompt({
-            prompt: aiGradingInfo.prompt,
-          })
+      ${['instructor', 'manual_grading'].includes(questionContext)
+        ? html`
+            <div class="js-ai-grading-explanation-slot">
+              ${aiGradingInfo
+                ? AIGradingExplanation({
+                    explanation: aiGradingInfo.explanation,
+                    hasImage: aiGradingInfo.hasImage,
+                    rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+                  })
+                : ''}
+            </div>
+            <div class="js-ai-grading-prompt-slot">
+              ${aiGradingInfo?.prompt ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }) : ''}
+            </div>
+          `
         : ''}
       ${submissions.length > 0
         ? html`
@@ -176,7 +179,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt({ prompt }: { prompt: string }) {
+export function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -205,7 +208,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({
+export function AIGradingExplanation({
   explanation,
   hasImage,
   rotationCorrectionDegrees,
