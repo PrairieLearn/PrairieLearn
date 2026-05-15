@@ -11,12 +11,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
+  type MultiSelectFilterValue,
   TanstackTableCard,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
@@ -24,6 +25,7 @@ import {
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsSortingState,
 } from '@prairielearn/ui';
 
@@ -60,6 +62,7 @@ const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
   external_grading_image: 'extImage',
   workspace_image: 'wsImage',
 };
+const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
 interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
   questions: SafeQuestionsPageData[];
@@ -106,11 +109,11 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       Object.fromEntries([
         ...Object.values(FILTER_COLUMN_URL_KEYS).map((urlKey) => [
           urlKey,
-          parseAsArrayOf(parseAsString).withDefault([]),
+          parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
         ]),
         ...courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          parseAsArrayOf(parseAsString).withDefault([]),
+          parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
         ]),
       ]),
     [courseInstances],
@@ -188,34 +191,36 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
     for (const [columnId, urlKey] of Object.entries(FILTER_COLUMN_URL_KEYS)) {
-      const values = filterValues[urlKey] ?? [];
-      if (values.length > 0) {
-        filters.push({ id: columnId, value: values });
+      const filterValue = filterValues[urlKey] ?? EMPTY_FILTER;
+      if (filterValue.values.length > 0) {
+        filters.push({ id: columnId, value: filterValue });
       }
     }
     for (const ci of courseInstances) {
-      const values = filterValues[`ci_${ci.id}`] ?? [];
-      if (values.length > 0) {
-        filters.push({ id: `ci_${ci.id}`, value: values });
+      const filterValue = filterValues[`ci_${ci.id}`] ?? EMPTY_FILTER;
+      if (filterValue.values.length > 0) {
+        filters.push({ id: `ci_${ci.id}`, value: filterValue });
       }
     }
     return filters;
   }, [filterValues, courseInstances]);
 
   const columnFilterSetters = useMemo<
-    Record<string, ((_columnId: string, value: string[] | null) => void) | undefined>
+    Record<string, ((_columnId: string, value: MultiSelectFilterValue | null) => void) | undefined>
   >(
     () => ({
       ...Object.fromEntries(
         Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
           columnId,
-          (_: string, value: string[] | null) => void setFilterValues({ [urlKey]: value }),
+          (_: string, value: MultiSelectFilterValue | null) =>
+            void setFilterValues({ [urlKey]: value }),
         ]),
       ),
       ...Object.fromEntries(
         courseInstances.map((ci) => [
           `ci_${ci.id}`,
-          (_: string, value: string[] | null) => void setFilterValues({ [`ci_${ci.id}`]: value }),
+          (_: string, value: MultiSelectFilterValue | null) =>
+            void setFilterValues({ [`ci_${ci.id}`]: value }),
         ]),
       ),
     }),
@@ -309,12 +314,14 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           ],
         }}
         headerButtons={
-          addQuestionUrl ? (
+          addQuestionUrl || showAiGenerateQuestionButton ? (
             <>
-              <Button variant="light" size="sm" href={addQuestionUrl}>
-                <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                Add question
-              </Button>
+              {addQuestionUrl && (
+                <Button variant="light" size="sm" href={addQuestionUrl}>
+                  <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+                  Add question
+                </Button>
+              )}
               {showAiGenerateQuestionButton && (
                 <Button variant="light" size="sm" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
@@ -350,12 +357,14 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                     .
                   </p>
                 </div>
-                {addQuestionUrl && (
+                {(addQuestionUrl || showAiGenerateQuestionButton) && (
                   <div className="d-flex gap-2">
-                    <Button variant="primary" href={addQuestionUrl}>
-                      <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                      Add question
-                    </Button>
+                    {addQuestionUrl && (
+                      <Button variant="primary" href={addQuestionUrl}>
+                        <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+                        Add question
+                      </Button>
+                    )}
                     {showAiGenerateQuestionButton && (
                       <Button variant="outline-primary" href={aiGenerateUrl}>
                         <i className="bi bi-stars me-2" aria-hidden="true" />
