@@ -292,11 +292,6 @@ function encodeFilePath(filePath: string) {
   return filePath.split('/').map(encodeURIComponent).join('/');
 }
 
-function getEditorUrlWithSelectedFile(editorUrl: string, filePath: string) {
-  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
-  return `${editorUrl}?${params.toString()}`;
-}
-
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -311,6 +306,9 @@ function AllQuestionFiles({
   urlPrefix,
   editorUrl,
   csrfToken,
+  onSelectFile,
+  onClearSelectedFile,
+  onSelectedFileSaved,
 }: {
   allQuestionFiles: QuestionFileEntry[];
   selectedFile: SelectedQuestionFile | null;
@@ -319,6 +317,9 @@ function AllQuestionFiles({
   urlPrefix: string;
   editorUrl: string;
   csrfToken: string;
+  onSelectFile: (filePath: string) => void;
+  onClearSelectedFile: () => void;
+  onSelectedFileSaved: () => Promise<unknown>;
 }) {
   if (!qid) return null;
 
@@ -331,6 +332,8 @@ function AllQuestionFiles({
         selectedFile={selectedFile}
         csrfToken={csrfToken}
         editorUrl={editorUrl}
+        onShowAllFiles={onClearSelectedFile}
+        onSaved={onSelectedFileSaved}
       />
     );
   }
@@ -369,18 +372,20 @@ function AllQuestionFiles({
                   <td className="text-end text-muted">{formatFileSize(file.size)}</td>
                   <td>
                     <div className="d-flex gap-2 justify-content-end">
-                      <a
+                      <button
+                        type="button"
                         className="btn btn-xs btn-secondary text-nowrap"
-                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
+                        onClick={() => onSelectFile(file.path)}
                       >
                         View
-                      </a>
-                      <a
+                      </button>
+                      <button
+                        type="button"
                         className="btn btn-xs btn-secondary text-nowrap"
-                        href={getEditorUrlWithSelectedFile(editorUrl, file.path)}
+                        onClick={() => onSelectFile(file.path)}
                       >
                         Edit
-                      </a>
+                      </button>
                       <a
                         className="btn btn-xs btn-secondary text-nowrap"
                         href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(
@@ -421,6 +426,9 @@ export function QuestionAndFilePreview({
   filesError,
   onRetryFiles,
   onSelectTab,
+  onSelectFile,
+  onClearSelectedFile,
+  onSelectedFileSaved,
 }: {
   questionFiles: Record<string, string>;
   allQuestionFiles: QuestionFileEntry[];
@@ -441,6 +449,9 @@ export function QuestionAndFilePreview({
   filesError?: Error | null;
   onRetryFiles?: () => void;
   onSelectTab: (tab: 'files') => void;
+  onSelectFile: (filePath: string) => void;
+  onClearSelectedFile: () => void;
+  onSelectedFileSaved: () => Promise<unknown>;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
@@ -524,6 +535,9 @@ export function QuestionAndFilePreview({
           urlPrefix={urlPrefix}
           editorUrl={editorUrl}
           csrfToken={csrfToken}
+          onSelectFile={onSelectFile}
+          onClearSelectedFile={onClearSelectedFile}
+          onSelectedFileSaved={onSelectedFileSaved}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="rich-text-editor" className="h-100">

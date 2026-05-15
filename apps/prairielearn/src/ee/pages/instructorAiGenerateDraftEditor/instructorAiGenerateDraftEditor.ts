@@ -198,8 +198,13 @@ async function saveDraftQuestionFile({
   });
 
   if (result.status === 'error') {
-    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+    return {
+      status: 'error' as const,
+      editErrorUrl: urlPrefix + '/edit_error/' + result.job_sequence_id,
+    };
   }
+
+  return { status: 'ok' as const };
 }
 
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
@@ -524,7 +529,7 @@ router.post(
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
     } else if (req.body.__action === 'submit_file_revision') {
       const filePath = normalizeQuestionFilePath(req.body.filePath);
-      await saveDraftQuestionFile({
+      const result = await saveDraftQuestionFile({
         course: res.locals.course,
         question: res.locals.question,
         user: res.locals.user,
@@ -534,6 +539,21 @@ router.post(
         filePath,
         contents: b64DecodeUnicode(req.body.contents),
       });
+
+      if (req.accepts(['html', 'json']) === 'json') {
+        if (result.status === 'error') {
+          res.status(409).json(result);
+          return;
+        }
+
+        res.json({ status: 'ok' });
+        return;
+      }
+
+      if (result.status === 'error') {
+        res.redirect(result.editErrorUrl);
+        return;
+      }
 
       res.redirect(
         getEditorUrlWithSelectedFile({

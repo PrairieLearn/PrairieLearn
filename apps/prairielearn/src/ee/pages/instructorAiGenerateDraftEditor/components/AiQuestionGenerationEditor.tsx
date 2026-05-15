@@ -1,5 +1,5 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Nav, Tab } from 'react-bootstrap';
 
@@ -86,6 +86,7 @@ function AiQuestionGenerationEditorInner({
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
+  const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
 
   const handleTitleAndQidSaved = useCallback(
     (update: { qid: string | null; title: string | null }) => {
@@ -100,8 +101,8 @@ function AiQuestionGenerationEditorInner({
     error: filesError,
     refetch: refetchFiles,
   } = useQuery({
-    queryKey: ['question-files', urlPrefix, question.id, selectedFile?.path ?? null],
-    queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFile?.path ?? null),
+    queryKey: ['question-files', urlPrefix, question.id, selectedFilePath],
+    queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFilePath),
     staleTime: Infinity,
     initialData: {
       files: initialQuestionFiles,
@@ -128,6 +129,19 @@ function AiQuestionGenerationEditorInner({
     },
     [setActiveTab],
   );
+
+  const handleSelectFile = useCallback(
+    async (filePath: string) => {
+      await setSelectedFilePath(filePath);
+      await setActiveTab('all-files');
+    },
+    [setActiveTab, setSelectedFilePath],
+  );
+
+  const handleClearSelectedFile = useCallback(async () => {
+    await setSelectedFilePath(null);
+    await setActiveTab('all-files');
+  }, [setActiveTab, setSelectedFilePath]);
 
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
@@ -213,6 +227,11 @@ function AiQuestionGenerationEditorInner({
             onHasUnsavedChanges={setHasUnsavedChanges}
             onRetryFiles={() => refetchFiles()}
             onSelectTab={(tab) => void setActiveTab(tab)}
+            onSelectFile={(filePath) => void handleSelectFile(filePath)}
+            onClearSelectedFile={() => void handleClearSelectedFile()}
+            onSelectedFileSaved={async () => {
+              await refetchFiles();
+            }}
           />
         </div>
         <FinalizeModal
