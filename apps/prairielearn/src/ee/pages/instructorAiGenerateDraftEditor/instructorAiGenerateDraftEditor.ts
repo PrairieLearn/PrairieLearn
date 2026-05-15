@@ -28,7 +28,7 @@ import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { getUrl } from '../../../lib/url.js';
@@ -60,6 +60,17 @@ const sql = loadSqlEquiv(import.meta.url);
 interface QuestionFileEntry {
   path: string;
   size: number;
+}
+
+type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
+type InstructorQuestionRenderLocals = InstructorQuestionLocals & ResLocalsQuestionRender;
+
+function getEditorUrl(resLocals: InstructorQuestionLocals) {
+  return `${resLocals.urlPrefix}/ai_generate_editor/${resLocals.question.id}`;
+}
+
+function getVariantId(queryValue: unknown) {
+  return queryValue == null || queryValue === '' ? null : IdSchema.parse(queryValue);
 }
 
 async function listQuestionFiles({
@@ -94,6 +105,85 @@ async function listQuestionFiles({
   await walk(questionPath);
 
   return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function getQuestionFilesData(resLocals: InstructorQuestionLocals, selectedFile: unknown) {
+  const courseFilesClient = getCourseFilesClient();
+  const [{ files }, allFiles, selectedQuestionFile] = await Promise.all([
+    courseFilesClient.getQuestionFiles.query({
+      course_id: resLocals.course.id,
+      question_id: resLocals.question.id,
+    }),
+    listQuestionFiles({
+      course: resLocals.course,
+      question: resLocals.question,
+    }),
+    readSelectedQuestionFile({
+      course: resLocals.course,
+      question: resLocals.question,
+      filePath: getSelectedQuestionFilePath(selectedFile),
+    }),
+  ]);
+
+  return { files, allFiles, selectedFile: selectedQuestionFile };
+}
+
+async function getValidatedInitialMessages(question: Question) {
+  const messages = await selectAiQuestionGenerationMessages(question);
+
+  const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
+    // Messages without parts will fail validation by `validateUIMessages()`.
+    // We'll inject an empty text part in that case.
+    //
+    // This is not expected to happen in most cases, but there's a possibility
+    // that it could in an error scenario.
+    const parts = run(() => {
+      if (message.parts.length === 0) {
+        return [{ type: 'text', text: '' }];
+      }
+      return message.parts;
+    });
+
+    return {
+      id: message.id,
+      role: message.role,
+      parts,
+      metadata: {
+        job_sequence_id: message.job_sequence_id,
+        status: message.status,
+        include_in_context: message.include_in_context,
+      },
+    };
+  });
+
+  // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
+  //
+  // TODO: we're currently lying to the compiler here. We should be passing schemas
+  // for our metadata and tools.
+  return initialMessages.length > 0
+    ? await validateUIMessages<QuestionGenerationUIMessage>({
+        messages: initialMessages,
+      })
+    : [];
+}
+
+async function renderQuestionPreview(
+  resLocals: InstructorQuestionRenderLocals,
+  variantId: string | null,
+) {
+  await getAndRenderVariant(variantId, null, resLocals, {
+    urlOverrides: {
+      newVariantUrl: getEditorUrl(resLocals),
+    },
+  });
+
+  return {
+    questionContainerHtml: QuestionContainer({
+      resLocals,
+      questionContext: 'instructor',
+    }).toString(),
+    extraHeadersHtml: resLocals.extraHeadersHtml,
+  };
 }
 
 async function saveRevisedQuestion({
@@ -262,89 +352,29 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const messages = await selectAiQuestionGenerationMessages(res.locals.question);
+    const editorUrl = getEditorUrl(res.locals);
+    const [richTextEditorEnabled, messages, questionFilesData] = await Promise.all([
+      features.enabledFromLocals('rich-text-editor', res.locals),
+      getValidatedInitialMessages(res.locals.question),
+      getQuestionFilesData(res.locals, req.query.file),
+    ]);
 
-    const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
-      // Messages without parts will fail validation by `validateUIMessages()`.
-      // We'll inject an empty text part in that case.
-      //
-      // This is not expected to happen in most cases, but there's a possibility
-      // that it could in an error scenario.
-      const parts = run(() => {
-        if (message.parts.length === 0) {
-          return [{ type: 'text', text: '' }];
-        }
-        return message.parts;
-      });
-
-      return {
-        id: message.id,
-        role: message.role,
-        parts,
-        metadata: {
-          job_sequence_id: message.job_sequence_id,
-          status: message.status,
-          include_in_context: message.include_in_context,
-        },
-      };
-    });
-
-    // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
-    //
-    // TODO: we're currently lying to the compiler here. We should be passing schemas
-    // for our metadata and tools.
-    const validatedInitialMessages =
-      initialMessages.length > 0
-        ? await validateUIMessages<QuestionGenerationUIMessage>({
-            messages: initialMessages,
-          })
-        : [];
-
-    const courseFilesClient = getCourseFilesClient();
-    const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
-      course_id: res.locals.course.id,
-      question_id: res.locals.question.id,
-    });
-    const allQuestionFiles = await listQuestionFiles({
-      course: res.locals.course,
-      question: res.locals.question,
-    });
-
-    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-
-    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
-    const editorUrl = `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`;
-    const selectedFile = await readSelectedQuestionFile({
-      course: res.locals.course,
-      question: res.locals.question,
-      filePath: getSelectedQuestionFilePath(req.query.file),
-    });
-
-    // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
-      urlOverrides: {
-        // By default, this would be the URL to the instructor question preview page.
-        // We need to redirect to this same page instead.
-        newVariantUrl: editorUrl,
-      },
-    });
+    const { questionContainerHtml } = await renderQuestionPreview(
+      res.locals,
+      getVariantId(req.query.variant_id),
+    );
     await logPageView('instructorQuestionPreview', req, res);
-
-    const questionContainerHtml = QuestionContainer({
-      resLocals: res.locals,
-      questionContext: 'instructor',
-    });
 
     res.send(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
         question: res.locals.question,
-        messages: validatedInitialMessages,
-        questionFiles,
-        allQuestionFiles,
-        selectedFile,
+        messages,
+        questionFiles: questionFilesData.files,
+        allQuestionFiles: questionFilesData.allFiles,
+        selectedFile: questionFilesData.selectedFile,
         richTextEditorEnabled,
-        questionContainerHtml: questionContainerHtml.toString(),
+        questionContainerHtml,
         editorUrl,
         search: getUrl(req).search,
       }),
@@ -575,28 +605,10 @@ router.post(
 router.get(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    // This endpoint is JSON-only; the client patches the preview without a full page reload.
-    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-
-    // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
-      urlOverrides: {
-        // By default, this would be the URL to the instructor question preview page.
-        // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-      },
-    });
+    const preview = await renderQuestionPreview(res.locals, getVariantId(req.query.variant_id));
     await logPageView('instructorQuestionPreview', req, res);
 
-    const questionContainerHtml = QuestionContainer({
-      resLocals: res.locals,
-      questionContext: 'instructor',
-    });
-
-    res.json({
-      questionContainerHtml: questionContainerHtml.toString(),
-      extraHeadersHtml: res.locals.extraHeadersHtml,
-    });
+    res.json(preview);
   }),
 );
 
@@ -604,24 +616,8 @@ router.post(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      // This endpoint is JSON-only; the client patches the preview without a full page reload.
       const variantId = await processSubmission(req, res);
-
-      await getAndRenderVariant(variantId, null, res.locals, {
-        urlOverrides: {
-          newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-        },
-      });
-
-      const questionContainerHtml = QuestionContainer({
-        resLocals: res.locals,
-        questionContext: 'instructor',
-      });
-
-      res.json({
-        questionContainerHtml: questionContainerHtml.toString(),
-        extraHeadersHtml: res.locals.extraHeadersHtml,
-      });
+      res.json(await renderQuestionPreview(res.locals, variantId));
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
@@ -631,22 +627,7 @@ router.post(
 router.get(
   '/files',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    const courseFilesClient = getCourseFilesClient();
-    const { files } = await courseFilesClient.getQuestionFiles.query({
-      course_id: res.locals.course.id,
-      question_id: res.locals.question.id,
-    });
-    const allFiles = await listQuestionFiles({
-      course: res.locals.course,
-      question: res.locals.question,
-    });
-    const selectedFile = await readSelectedQuestionFile({
-      course: res.locals.course,
-      question: res.locals.question,
-      filePath: getSelectedQuestionFilePath(req.query.file),
-    });
-
-    res.json({ files, allFiles, selectedFile });
+    res.json(await getQuestionFilesData(res.locals, req.query.file));
   }),
 );
 
