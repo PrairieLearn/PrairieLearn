@@ -7,9 +7,34 @@ import {
 
 import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
 
+const PL_MULTIPLE_CHOICE_BOOLEAN_ATTRIBUTES = [
+  'hide-letter-keys',
+  'fixed-order',
+  'inline',
+  'hide-score-badge',
+  'allow-blank',
+  'builtin-grading',
+  'all-of-the-above',
+  'none-of-the-above',
+] as const;
+
 function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
   const value = element.getLiteralAttribute(attribute);
   return value !== undefined && isFalseValue(value);
+}
+
+function rejectValuelessAttribute(
+  element: TagElement,
+  context: ValidatorContext,
+  attribute: string,
+) {
+  if (element.getAttribute(attribute) === true) {
+    context.reportAttribute(
+      element,
+      attribute,
+      `Attribute "${attribute}" must have an explicit value.`,
+    );
+  }
 }
 
 function requireDropdownDisplay(element: TagElement, context: ValidatorContext, attribute: string) {
@@ -59,6 +84,15 @@ function validateAnswerScoreRange(element: TagElement, context: ValidatorContext
 }
 
 export const validators: TagValidator[] = defineTagValidators('pl-multiple-choice', {
+  'pl/multiple-choice-explicit-boolean-values'(element, context) {
+    for (const attribute of PL_MULTIPLE_CHOICE_BOOLEAN_ATTRIBUTES) {
+      rejectValuelessAttribute(element, context, attribute);
+    }
+    for (const child of element.childrenWithTag('pl-answer')) {
+      rejectValuelessAttribute(child, context, 'correct');
+    }
+  },
+
   'pl/multiple-choice-requires-answer'(element, context) {
     if (
       !element.hasAttribute('external-json') &&

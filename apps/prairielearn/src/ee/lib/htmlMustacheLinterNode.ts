@@ -8,12 +8,22 @@ import {
 
 import { htmlMustacheConfig } from '../../lib/htmlMustacheConfig.js';
 
-import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
+import { formats } from './element-schemas/htmlmustache-plugin-utils.js';
+import { validators as plMultipleChoiceValidators } from './element-schemas/pl-multiple-choice.validator.js';
+import {
+  blockGroupValidators as plOrderBlocksBlockGroupValidators,
+  validators as plOrderBlocksValidators,
+} from './element-schemas/pl-order-blocks.validator.js';
 
 const require = createRequire(import.meta.url);
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
 const RUNTIME_WASM_FILENAME = 'web-tree-sitter.wasm';
+const validators = [
+  ...plMultipleChoiceValidators,
+  ...plOrderBlocksValidators,
+  ...plOrderBlocksBlockGroupValidators,
+];
 
 let linterPromise: Promise<Linter> | null = null;
 

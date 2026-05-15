@@ -62,7 +62,6 @@ SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
 SCHEMA_PATH = pathlib.Path(__file__).with_suffix(".schema.json")
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).with_name("pl-answer.schema.json")
 
 
 def categorize_options(
@@ -76,7 +75,6 @@ def categorize_options(
     # First, check internal HTML for answer choices
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
-            pl.validate_element(child, ANSWER_SCHEMA_PATH)
             pl.check_attribs(
                 child,
                 required_attribs=[],

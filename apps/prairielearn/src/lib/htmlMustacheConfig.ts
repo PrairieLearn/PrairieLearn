@@ -2,12 +2,7 @@ import type { Config, CustomTag } from '@reteps/tree-sitter-htmlmustache/linter'
 
 import { elementCustomTags } from '../ee/lib/element-schemas/index.js';
 
-type HtmlMustacheConfig = Config & {
-  customTagDefaults?: {
-    allowBooleanAttributes?: boolean;
-  };
-};
-
+// This should be kept in sync with `.htmlmustache.jsonc`
 const drawingObjectTags: CustomTag[] = [
   { name: 'pl-3pointrod' },
   { name: 'pl-4pointrod' },
@@ -55,12 +50,8 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
-// This should be kept in sync with `.htmlmustache.jsonc`
-export const htmlMustacheConfig: HtmlMustacheConfig = {
+export const htmlMustacheConfig: Config = {
   printWidth: 100,
-  customTagDefaults: {
-    allowBooleanAttributes: false,
-  },
   noBreakDelimiters: [
     { start: '$', end: '$' },
     { start: '$$', end: '$$' },
