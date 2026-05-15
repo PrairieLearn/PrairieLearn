@@ -16,14 +16,16 @@ function swapSlot(selector: string, html: string): HTMLElement | null {
   return slot;
 }
 
-type ReloadGradingPanelResult = { ok: true } | { ok: false; message: string };
-
 /**
  * Refreshes the grading panel, AI explanation/prompt slots, and submission
  * panel in place after AI grading completes. Done imperatively (innerHTML
  * swaps + `window.resetInstructorGradingPanel`) because the grading panel is
  * server-rendered HTML; a declarative React version would require porting the
  * entire panel (and its many imperative `js-*` handlers) to React.
+ *
+ * Returns `true` on success, `false` on any failure. The UI only surfaces a
+ * generic "failed to refresh" alert, so the specific error isn't threaded back
+ * — it's logged to the console for debugging.
  */
 export async function reloadGradingPanel({
   courseInstanceId,
@@ -33,7 +35,7 @@ export async function reloadGradingPanel({
   courseInstanceId: string;
   assessmentId: string;
   instanceQuestionId: string;
-}): Promise<ReloadGradingPanelResult> {
+}): Promise<boolean> {
   const url = getManualGradingInstanceQuestionRubricPanelsUrl({
     courseInstanceId,
     assessmentId,
@@ -43,32 +45,23 @@ export async function reloadGradingPanel({
   try {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
-      let serverMessage: string | null = null;
-      try {
-        const json = await res.json();
-        if (typeof json?.err === 'string') serverMessage = json.err;
-      } catch {
-        // Response body wasn't JSON; fall back to the status code.
-      }
-      const message = serverMessage
-        ? `${serverMessage} (HTTP ${res.status})`
-        : `Server returned HTTP ${res.status}.`;
-      console.error(`Failed to refresh grading panel: ${message}`);
-      return { ok: false, message };
+      console.error(`Failed to refresh grading panel: HTTP ${res.status}`);
+      return false;
     }
     data = await res.json();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
     console.error('Failed to refresh grading panel:', err);
-    return { ok: false, message };
+    return false;
   }
   if (!data?.gradingPanel) {
-    return { ok: false, message: 'Server response was missing the grading panel.' };
+    console.error('Failed to refresh grading panel: response missing gradingPanel');
+    return false;
   }
 
   const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
   if (!gradingPanel) {
-    return { ok: false, message: 'Could not find the grading panel on this page.' };
+    console.error('Failed to refresh grading panel: .js-main-grading-panel not found');
+    return false;
   }
 
   // The CSRF token returned by /grading_rubric_panels is issued for that URL,
@@ -111,5 +104,5 @@ export async function reloadGradingPanel({
 
   window.resetInstructorGradingPanel();
   await window.mathjaxTypeset(typesetTargets);
-  return { ok: true };
+  return true;
 }

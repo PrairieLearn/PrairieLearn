@@ -87,11 +87,9 @@ function InstanceQuestionAiGradeInner({
     if (!expectReloadRef.current) return;
     expectReloadRef.current = false;
     if (submissionStatus === JobItemStatus.complete) {
-      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then(
-        (result) => {
-          if (!result.ok) setShowReloadError(true);
-        },
-      );
+      void reloadGradingPanel({ courseInstanceId, assessmentId, instanceQuestionId }).then((ok) => {
+        if (!ok) setShowReloadError(true);
+      });
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 

@@ -3,6 +3,7 @@ import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
+import { run } from '@prairielearn/run';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -190,16 +191,17 @@ export function RubricSettings({
   }, [rubricItems.length, totalPositive, totalNegative, maxPoints, minPoints]);
 
   const defaultRubricItems = defaultRubricItemsRef.current;
-  const isDirty =
-    replaceAutoPoints !== defaultReplaceAutoPointsRef.current ||
-    startingPoints !== defaultStartingPointsRef.current ||
-    (minPoints ?? 0) !== defaultMinPointsRef.current ||
-    (maxExtraPoints ?? 0) !== defaultMaxExtraPointsRef.current ||
-    graderGuidelines !== defaultGraderGuidelinesRef.current ||
-    rubricItems.length !== defaultRubricItems.length ||
-    rubricItems.some(
+  const isDirty = run(() => {
+    if (replaceAutoPoints !== defaultReplaceAutoPointsRef.current) return true;
+    if (startingPoints !== defaultStartingPointsRef.current) return true;
+    if ((minPoints ?? 0) !== defaultMinPointsRef.current) return true;
+    if ((maxExtraPoints ?? 0) !== defaultMaxExtraPointsRef.current) return true;
+    if (graderGuidelines !== defaultGraderGuidelinesRef.current) return true;
+    if (rubricItems.length !== defaultRubricItems.length) return true;
+    return rubricItems.some(
       (it, i) => !rubricItemEquals(it.rubric_item, defaultRubricItems[i].rubric_item),
     );
+  });
 
   // Handlers
   const addRubricItemRow = () => {
@@ -470,22 +472,15 @@ export function RubricSettings({
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        let err: string | undefined;
+        let data: { err: any };
         try {
-          const data: unknown = await res.json();
-          if (
-            data !== null &&
-            typeof data === 'object' &&
-            'err' in data &&
-            typeof data.err === 'string'
-          ) {
-            err = data.err;
-          }
+          data = (await res.json()) ?? {};
         } catch {
-          // Response body was not JSON; fall through to statusText.
+          data = { err: `Error: ${res.statusText}` };
         }
-        setSettingsError(err ?? `Error: ${res.statusText}`);
-        return;
+        if (data.err) {
+          return setSettingsError(data.err);
+        }
       }
       // Need to handle response separated for assessment question and instance question pages
       const contentType = res.headers.get('content-type') || '';
