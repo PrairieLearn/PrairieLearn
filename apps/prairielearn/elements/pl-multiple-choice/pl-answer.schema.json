@@ -3,24 +3,15 @@
   "type": "object",
   "properties": {
     "correct": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "format": "pl-boolean",
+      "type": "string"
     },
     "feedback": {
       "type": "string"
     },
     "score": {
-      "errorMessage": "Score must be in the range [0.0, 1.0].",
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
+      "format": "pl-float",
+      "type": "string"
     }
   },
   "additionalProperties": false

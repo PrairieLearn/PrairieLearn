@@ -1,6 +1,6 @@
 import * as z from 'zod/v4';
 
-import { plBoolean, plInteger, toDraft06JsonSchema } from './element-schema-helpers.js';
+import { plBoolean, plFloat, plInteger, toDraft06JsonSchema } from './element-schema-helpers.js';
 
 const aotaNotaAttribute = () =>
   z.union([plBoolean(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
@@ -9,12 +9,7 @@ const plMultipleChoiceAnswerAttributesSchema = z
   .object({
     correct: plBoolean().optional(),
     feedback: z.string().optional(),
-    score: z
-      .number()
-      .min(0)
-      .max(1)
-      .meta({ errorMessage: 'Score must be in the range [0.0, 1.0].' })
-      .optional(),
+    score: plFloat().optional(),
   })
   .strict();
 

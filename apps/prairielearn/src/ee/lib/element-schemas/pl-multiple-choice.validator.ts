@@ -5,55 +5,36 @@ import {
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
-const booleanValueSet = new Set([
-  'true',
-  't',
-  '1',
-  'True',
-  'T',
-  'TRUE',
-  'yes',
-  'y',
-  'Yes',
-  'Y',
-  'YES',
-  'false',
-  'f',
-  '0',
-  'False',
-  'F',
-  'FALSE',
-  'no',
-  'n',
-  'No',
-  'N',
-  'NO',
-]);
-const booleanFalseValueSet = new Set([
-  'false',
-  'f',
-  '0',
-  'False',
-  'F',
-  'FALSE',
-  'no',
-  'n',
-  'No',
-  'N',
-  'NO',
-]);
+import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
 
-function isBooleanValue(value: string | true): boolean {
-  return value === true || booleanValueSet.has(value);
-}
-
-function isFalseValue(value: string | true): boolean {
-  return typeof value === 'string' && booleanFalseValueSet.has(value);
-}
+const PL_MULTIPLE_CHOICE_BOOLEAN_ATTRIBUTES = [
+  'hide-letter-keys',
+  'fixed-order',
+  'inline',
+  'hide-score-badge',
+  'allow-blank',
+  'builtin-grading',
+  'all-of-the-above',
+  'none-of-the-above',
+] as const;
 
 function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
   const value = element.getLiteralAttribute(attribute);
   return value !== undefined && isFalseValue(value);
+}
+
+function rejectValuelessAttribute(
+  element: TagElement,
+  context: ValidatorContext,
+  attribute: string,
+) {
+  if (element.getAttribute(attribute) === true) {
+    context.reportAttribute(
+      element,
+      attribute,
+      `Attribute "${attribute}" must have an explicit value.`,
+    );
+  }
 }
 
 function requireDropdownDisplay(element: TagElement, context: ValidatorContext, attribute: string) {
@@ -88,7 +69,26 @@ function requireEnabledAotaNota(
   }
 }
 
+function validateAnswerScoreRange(element: TagElement, context: ValidatorContext) {
+  const score = element.getLiteralAttribute('score');
+  if (typeof score !== 'string') return;
+
+  const parsedScore = Number(score);
+  if (parsedScore < 0 || parsedScore > 1) {
+    context.reportAttribute(element, 'score', 'Score must be in the range [0.0, 1.0].');
+  }
+}
+
 export const validators: TagValidator[] = defineTagValidators('pl-multiple-choice', {
+  'pl/multiple-choice-explicit-boolean-values'(element, context) {
+    for (const attribute of PL_MULTIPLE_CHOICE_BOOLEAN_ATTRIBUTES) {
+      rejectValuelessAttribute(element, context, attribute);
+    }
+    for (const child of element.childrenWithTag('pl-answer')) {
+      rejectValuelessAttribute(child, context, 'correct');
+    }
+  },
+
   'pl/multiple-choice-requires-answer'(element, context) {
     if (
       !element.hasAttribute('external-json') &&
@@ -178,6 +178,12 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
           '"feedback" on pl-answer should not be set when builtin-grading is false.',
         );
       }
+    }
+  },
+
+  'pl/multiple-choice-answer-score-range'(element, context) {
+    for (const child of element.childrenWithTag('pl-answer')) {
+      validateAnswerScoreRange(child, context);
     }
   },
 

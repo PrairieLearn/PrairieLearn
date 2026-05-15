@@ -1,11 +1,15 @@
 import * as z from 'zod/v4';
 
 export function plBoolean() {
-  return z.union([z.boolean(), z.string().meta({ format: 'pl-boolean' })]);
+  return z.string().meta({ format: 'pl-boolean' });
 }
 
 export function plInteger() {
   return z.string().meta({ format: 'pl-integer' });
+}
+
+export function plFloat() {
+  return z.string().meta({ format: 'pl-float' });
 }
 
 export function toDraft06JsonSchema(zodSchema: z.ZodType): Record<string, unknown> {

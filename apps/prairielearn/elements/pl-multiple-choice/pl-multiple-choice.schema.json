@@ -22,74 +22,32 @@
       "enum": ["block", "inline", "dropdown"]
     },
     "hide-letter-keys": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "format": "pl-boolean",
+      "type": "string"
     },
     "fixed-order": {
+      "format": "pl-boolean",
       "deprecated": true,
       "description": "Use the \"order\" attribute instead.",
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "type": "string"
     },
     "inline": {
+      "format": "pl-boolean",
       "deprecated": true,
       "description": "Use the \"display\" attribute instead.",
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "type": "string"
     },
     "hide-score-badge": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "format": "pl-boolean",
+      "type": "string"
     },
     "allow-blank": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "format": "pl-boolean",
+      "type": "string"
     },
     "builtin-grading": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "format": "pl-boolean",
-          "type": "string"
-        }
-      ]
+      "format": "pl-boolean",
+      "type": "string"
     },
     "size": {
       "format": "pl-integer",
@@ -117,15 +75,8 @@
     "all-of-the-above": {
       "anyOf": [
         {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
+          "format": "pl-boolean",
+          "type": "string"
         },
         {
           "type": "string",
@@ -136,15 +87,8 @@
     "none-of-the-above": {
       "anyOf": [
         {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "format": "pl-boolean",
-              "type": "string"
-            }
-          ]
+          "format": "pl-boolean",
+          "type": "string"
         },
         {
           "type": "string",
