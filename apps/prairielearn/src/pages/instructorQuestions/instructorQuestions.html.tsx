@@ -6,9 +6,8 @@ import { NuqsAdapter } from '@prairielearn/ui';
 import { QuestionsTable, type SafeQuestionsPageData } from '../../components/QuestionsTable.js';
 import type { PublicCourseInstance } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-
-import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
-import { TRPCProvider, useTRPC } from './trpc-context.js';
+import { createCourseTrpcClient } from '../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
 interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
@@ -20,13 +19,14 @@ interface InstructorQuestionsTableProps {
   showSharingSets: boolean;
   urlPrefix: string;
   qidPrefix?: string;
+  csrfToken: string;
   search: string;
   isDevMode: boolean;
 }
 
 type InstructorQuestionsTableInnerProps = Omit<
   InstructorQuestionsTableProps,
-  'search' | 'isDevMode'
+  'search' | 'isDevMode' | 'csrfToken'
 >;
 
 function InstructorQuestionsTableInner({
@@ -52,7 +52,7 @@ function InstructorQuestionsTableInner({
       showSharingSets={showSharingSets}
       urlPrefix={urlPrefix}
       qidPrefix={qidPrefix}
-      questionsQueryOptions={trpc.questions.queryOptions()}
+      questionsQueryOptions={trpc.questions.list.queryOptions()}
       addQuestionUrl={
         showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
       }
@@ -63,16 +63,18 @@ function InstructorQuestionsTableInner({
 export function InstructorQuestionsTable({
   search,
   isDevMode,
+  csrfToken,
+  courseId,
   ...innerProps
 }: InstructorQuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createInstructorQuestionsTrpcClient());
+  const [trpcClient] = useState(() => createCourseTrpcClient({ csrfToken, courseId }));
 
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <InstructorQuestionsTableInner {...innerProps} />
+          <InstructorQuestionsTableInner courseId={courseId} {...innerProps} />
         </TRPCProvider>
       </QueryClientProviderDebug>
     </NuqsAdapter>

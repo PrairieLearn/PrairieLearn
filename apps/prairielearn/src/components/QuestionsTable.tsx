@@ -177,7 +177,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
         defaultColumnVisibilityRef.current,
       ),
-    [allColumnIds],
+    [allColumnIds, hasLegacyQuestions, currentCourseInstanceId],
   );
 
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
@@ -289,7 +289,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           filenameBase: 'questions',
           hasSelection: false,
           mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
-            { name: 'QID', value: row.qid },
+            {
+              name: 'QID',
+              value: qidPrefix && row.share_publicly ? `${qidPrefix}${row.qid}` : row.qid,
+            },
             { name: 'Title', value: row.title },
             { name: 'Topic', value: row.topic.name },
             { name: 'Tags', value: row.tags?.map((t) => t.name).join(', ') ?? null },

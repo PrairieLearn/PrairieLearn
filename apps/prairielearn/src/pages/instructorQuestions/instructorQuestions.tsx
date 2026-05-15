@@ -1,6 +1,5 @@
 import * as url from 'node:url';
 
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import z from 'zod';
@@ -18,7 +17,6 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getSearchParams, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -26,7 +24,6 @@ import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { InstructorQuestionsTable } from './instructorQuestions.html.js';
-import { createContext, instructorQuestionsRouter } from './trpc.js';
 
 const router = Router();
 
@@ -112,6 +109,7 @@ router.get(
               showAiGenerateQuestionButton={showAiGenerateQuestionButton}
               showSharingSets={res.locals.question_sharing_enabled}
               urlPrefix={res.locals.urlPrefix}
+              csrfToken={res.locals.__csrf_token}
               search={search}
               isDevMode={config.devMode}
             />
@@ -176,15 +174,6 @@ router.get(
         search: searchParams.toString(),
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: instructorQuestionsRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 

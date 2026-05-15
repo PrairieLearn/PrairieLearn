@@ -1,14 +1,15 @@
-import { createTRPCClient, httpLink } from '@trpc/client';
 import fetch from 'node-fetch';
-import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getCourseTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type Question, QuestionSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import type { InstructorQuestionsRouter } from '../pages/instructorQuestions/trpc.js';
+import { selectUserByUid } from '../models/user.js';
+import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import {
   testElementClientFiles,
@@ -24,6 +25,8 @@ const baseUrl = siteUrl + '/pl';
 const courseInstanceBaseUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
 const questionsUrlCourse = baseUrl + '/course/1/course_admin/questions';
+
+const COURSE_ID = '1';
 
 const addNumbers = {
   id: '',
@@ -70,18 +73,19 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
 
   let questionData: { id: string; qid: string; title: string }[];
 
-  async function loadQuestionDataFromTrpc(url: string) {
-    const trpcClient = createTRPCClient<InstructorQuestionsRouter>({
-      links: [
-        httpLink({
-          url: `${url}/trpc`,
-          headers: { 'X-TRPC': 'true' },
-          transformer: superjson,
-        }),
-      ],
+  async function loadQuestionDataFromTrpc() {
+    const authnUserId = (await selectUserByUid('dev@example.com')).id;
+    const csrfToken = generatePrefixCsrfToken(
+      { url: getCourseTrpcUrl(COURSE_ID), authn_user_id: authnUserId },
+      config.secretKey,
+    );
+    const trpcClient = createCourseTrpcClient({
+      csrfToken,
+      courseId: COURSE_ID,
+      urlBase: siteUrl,
     });
 
-    const questions = await trpcClient.questions.query();
+    const questions = await trpcClient.questions.list.query();
     return questions.map(({ id, qid, title }) => ({ id, qid, title }));
   }
 
@@ -109,7 +113,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
     });
     it('should fetch question data from tRPC endpoint', async () => {
-      questionData = await loadQuestionDataFromTrpc(questionsUrlCourse);
+      questionData = await loadQuestionDataFromTrpc();
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -130,7 +134,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
     });
     it('should fetch question data from tRPC endpoint', async () => {
-      questionData = await loadQuestionDataFromTrpc(questionsUrl);
+      questionData = await loadQuestionDataFromTrpc();
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
