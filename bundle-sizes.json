@@ -262,7 +262,7 @@
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
     "raw": 2085079,
     "gzip": 666707,
-    "brotli": 556525
+    "brotli": 556527
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
     "raw": 259623,
@@ -415,8 +415,8 @@
     "brotli": 329240
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1330797,
-    "gzip": 394114,
-    "brotli": 323644
+    "raw": 1332182,
+    "gzip": 394539,
+    "brotli": 323975
   }
 }
