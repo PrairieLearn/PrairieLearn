@@ -97,6 +97,10 @@ interface AssessmentQuestionTableProps {
   aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
+  onRubricSettingsSaved: (data: {
+    rubric_data: RubricData | null;
+    aiGradingStats: AiGradingGeneralStats | null;
+  }) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -147,6 +151,7 @@ export function AssessmentQuestionTable({
   aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
+  onRubricSettingsSaved,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -647,6 +652,7 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          onSaved={onRubricSettingsSaved}
         />
       </div>
       {aiGradingMode && (

@@ -60,6 +60,7 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
+  onSaved,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -67,6 +68,10 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
+  onSaved?: (data: {
+    rubric_data: RubricData | null;
+    aiGradingStats: AiGradingGeneralStats | null;
+  }) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -526,8 +531,7 @@ export function RubricSettings({
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
-    } else {
-      window.location.replace(res.url);
+      onSaved?.({ rubric_data: rubricData, aiGradingStats: data.aiGradingStats ?? null });
     }
   };
 
