@@ -1,7 +1,5 @@
 import assert from 'assert';
 
-import mustache from 'mustache';
-
 import { html } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
@@ -9,6 +7,7 @@ import { run } from '@prairielearn/run';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
@@ -111,9 +110,16 @@ export function GradingPanel({
     params: resLocals.submission.params ?? {},
     submitted_answers: resLocals.submission.submitted_answer,
   };
-  const graderGuidelinesRendered = graderGuidelines
-    ? markdownToHtml(mustache.render(graderGuidelines, mustacheParams), { inline: true })
-    : null;
+  const graderGuidelinesRendered = run(() => {
+    if (!graderGuidelines) return null;
+    const { rendered, error } = safeMustacheRender(graderGuidelines, mustacheParams);
+    const renderedHtml = markdownToHtml(rendered, { inline: true });
+    if (!error) return renderedHtml;
+    return (
+      renderedHtml +
+      html` <span class="text-danger small">(template error: ${error})</span>`.toString()
+    );
+  });
 
   return html`
     <form
