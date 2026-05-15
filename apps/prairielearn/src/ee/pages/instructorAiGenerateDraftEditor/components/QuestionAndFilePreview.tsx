@@ -29,14 +29,16 @@ interface QuestionFileEntry {
   size: number;
 }
 
+function assertOkResponse(response: Response) {
+  if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+}
+
 function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string) {
-  // Find and replace the existing .question-container
   const oldQuestionContainer = wrapper.querySelector('.question-container');
   if (!oldQuestionContainer) {
     throw new Error('No existing .question-container found');
   }
 
-  // Create a new container from the HTML response
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlResponse, 'text/html');
   const container = doc.querySelector<HTMLElement>('.question-container');
@@ -45,7 +47,6 @@ function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string)
     throw new Error('No .question-container found in response');
   }
 
-  // Replace the old container with the new one
   oldQuestionContainer.replaceWith(container);
 
   executeScripts(container);
@@ -57,11 +58,10 @@ function copyAttributes(source: Element, target: Element) {
   });
 }
 
-function getVariantAssetKey(value: string) {
+function getCssAttributeSelectorValue(value: string) {
   if (typeof CSS !== 'undefined' && 'escape' in CSS) {
     return CSS.escape(value);
   }
-  // Fallback: escape characters that are special in CSS attribute selectors
   return value.replaceAll(/["\\[\]]/g, '\\$&');
 }
 
@@ -80,7 +80,7 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!href || node.getAttribute('rel') !== 'stylesheet') return;
 
       const existing = document.head.querySelector<HTMLLinkElement>(
-        `link[rel="stylesheet"][href="${getVariantAssetKey(href)}"]`,
+        `link[rel="stylesheet"][href="${getCssAttributeSelectorValue(href)}"]`,
       );
 
       if (existing) {
@@ -127,7 +127,7 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!src) return;
 
       const existing = document.head.querySelector<HTMLScriptElement>(
-        `script[src="${getVariantAssetKey(src)}"]`,
+        `script[src="${getCssAttributeSelectorValue(src)}"]`,
       );
       if (existing) {
         existing.setAttribute('data-pl-question-asset', 'true');
@@ -154,6 +154,25 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
   }
 }
 
+async function updateQuestionPreview(wrapper: HTMLDivElement, variantResponse: VariantResponse) {
+  await syncQuestionAssets(variantResponse.extraHeadersHtml);
+  replaceQuestionContainer(wrapper, variantResponse.questionContainerHtml);
+}
+
+function formDataToJson(
+  formData: FormData,
+): Partial<Record<string, FormDataEntryValue | FormDataEntryValue[]>> {
+  const jsonData: Partial<Record<string, FormDataEntryValue | FormDataEntryValue[]>> = {};
+
+  for (const [key, value] of formData.entries()) {
+    const existing = jsonData[key];
+    jsonData[key] =
+      existing == null ? value : Array.isArray(existing) ? [...existing, value] : [existing, value];
+  }
+
+  return jsonData;
+}
+
 function useQuestionHtml({
   variantUrl,
   variantCsrfToken,
@@ -162,6 +181,18 @@ function useQuestionHtml({
   variantCsrfToken: string;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const refreshPreview = useCallback(
+    async (init?: RequestInit) => {
+      const response = await fetch(variantUrl, init);
+      assertOkResponse(response);
+      const variantResponse = (await response.json()) as VariantResponse;
+      if (wrapperRef.current) {
+        await updateQuestionPreview(wrapperRef.current, variantResponse);
+      }
+    },
+    [variantUrl],
+  );
 
   const handleSubmit = useCallback(
     (e: Event) => {
@@ -185,41 +216,20 @@ function useQuestionHtml({
         formData.append(submitter.name, submitter.value);
       }
 
-      // TODO: explain this. Needed because a different URL is in use.
       formData.set('__csrf_token', variantCsrfToken);
 
       // TODO: It's kind of wasteful to render the entire page, including fetching all
       // past AI chat messages, just to get the updated question HTML. We should consider
       // building a special dedicated route for this.
 
-      // Convert FormData to JSON, handling multiple values with the same name as arrays
-      const jsonData: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};
-      for (const [key, value] of formData.entries()) {
-        if (key in jsonData) {
-          // If key already exists, convert to array or append to array
-          const existing = jsonData[key];
-          jsonData[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
-        } else {
-          jsonData[key] = value;
-        }
-      }
-
-      fetch(variantUrl, {
+      refreshPreview({
         method: form.method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(jsonData),
+        body: JSON.stringify(formDataToJson(formData)),
       })
-        .then(async (res) => {
-          if (!res.ok) throw new Error(`Server returned status ${res.status}`);
-          if (!wrapperRef.current) return;
-
-          const { questionContainerHtml, extraHeadersHtml } = (await res.json()) as VariantResponse;
-          // Inject question-specific assets before executing inline scripts in the new container.
-          await syncQuestionAssets(extraHeadersHtml);
-          replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
-
+        .then(() => {
           // TODO: we should update the URL with the new variant ID.
         })
         .catch((err) => {
@@ -227,25 +237,15 @@ function useQuestionHtml({
           // TODO: error handling, prompt the user to refresh the page?
         });
     },
-    [variantUrl, variantCsrfToken],
+    [refreshPreview, variantCsrfToken],
   );
 
   const newVariant = useCallback(() => {
-    fetch(variantUrl)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Server returned status ${res.status}`);
-        if (!wrapperRef.current) return;
-
-        const { questionContainerHtml, extraHeadersHtml } = (await res.json()) as VariantResponse;
-        // Inject question-specific assets before executing inline scripts in the new container.
-        await syncQuestionAssets(extraHeadersHtml);
-        replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
-      })
-      .catch((err) => {
-        // TODO: better error handling?
-        console.error('Error loading new variant', err);
-      });
-  }, [variantUrl]);
+    void refreshPreview().catch((err) => {
+      // TODO: better error handling?
+      console.error('Error loading new variant', err);
+    });
+  }, [refreshPreview]);
 
   const handleNewVariantButtonClick = useCallback(
     (e: Event) => {
@@ -257,6 +257,7 @@ function useQuestionHtml({
     [newVariant],
   );
 
+  // Attach delegated handlers to question markup rendered outside React.
   useEffect(() => {
     if (!wrapperRef.current) return;
 
@@ -268,7 +269,7 @@ function useQuestionHtml({
       wrapper.removeEventListener('submit', handleSubmit, true);
       wrapper.removeEventListener('click', handleNewVariantButtonClick, true);
     };
-  }, [wrapperRef, handleSubmit, handleNewVariantButtonClick]);
+  }, [handleSubmit, handleNewVariantButtonClick]);
 
   return { wrapperRef, newVariant };
 }
@@ -296,6 +297,10 @@ function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileName(filePath: string) {
+  return filePath.split('/').at(-1) ?? filePath;
 }
 
 function AllQuestionFiles({
@@ -377,20 +382,11 @@ function AllQuestionFiles({
                         className="btn btn-xs btn-secondary text-nowrap"
                         onClick={() => onSelectFile(file.path)}
                       >
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-secondary text-nowrap"
-                        onClick={() => onSelectFile(file.path)}
-                      >
                         Edit
                       </button>
                       <a
                         className="btn btn-xs btn-secondary text-nowrap"
-                        href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(
-                          file.path.split('/').at(-1) ?? file.path,
-                        )}`}
+                        href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(getFileName(file.path))}`}
                       >
                         Download
                       </a>

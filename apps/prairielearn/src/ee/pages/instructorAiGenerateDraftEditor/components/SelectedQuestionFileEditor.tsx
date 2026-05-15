@@ -4,12 +4,68 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
+const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
+
 function getEditErrorUrl(value: unknown) {
   if (typeof value !== 'object' || value == null) return null;
   if (!('editErrorUrl' in value)) return null;
 
   const { editErrorUrl } = value;
   return typeof editErrorUrl === 'string' ? editErrorUrl : null;
+}
+
+function getSaveStatus({
+  hasChanges,
+  isSaving,
+  saveError,
+}: {
+  hasChanges: boolean;
+  isSaving: boolean;
+  saveError: string | null;
+}) {
+  if (saveError) return saveError;
+  if (isSaving) return 'Saving...';
+  if (hasChanges) return 'Unsaved changes.';
+  return 'Saved.';
+}
+
+async function saveSelectedQuestionFile({
+  editorUrl,
+  csrfToken,
+  selectedFile,
+  contents,
+}: {
+  editorUrl: string;
+  csrfToken: string;
+  selectedFile: SelectedQuestionFile;
+  contents: string;
+}) {
+  const response = await fetch(editorUrl, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      __action: 'submit_file_revision',
+      __csrf_token: csrfToken,
+      filePath: selectedFile.path,
+      contents: b64EncodeUnicode(contents),
+    }),
+  });
+
+  const data: unknown = await response.json();
+  const editErrorUrl = getEditErrorUrl(data);
+  if (editErrorUrl) {
+    window.location.href = editErrorUrl;
+    return false;
+  }
+
+  if (!response.ok) {
+    throw new Error(SAVE_ERROR_MESSAGE);
+  }
+
+  return true;
 }
 
 export function SelectedQuestionFileEditor({
@@ -26,12 +82,12 @@ export function SelectedQuestionFileEditor({
   onSaved: () => Promise<unknown>;
 }) {
   const editorContainerRef = useRef<HTMLDivElement>(null);
-  const editorInstanceRef = useRef<ace.Ace.Editor | null>(null);
   const savedContents = b64DecodeUnicode(selectedFile.contents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasChanges = contents !== savedContents;
+  const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,42 +96,22 @@ export function SelectedQuestionFileEditor({
     setIsSaving(true);
     setSaveError(null);
 
-    const body = new URLSearchParams({
-      __action: 'submit_file_revision',
-      __csrf_token: csrfToken,
-      filePath: selectedFile.path,
-      contents: b64EncodeUnicode(contents),
-    });
-
     try {
-      const response = await fetch(editorUrl, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body,
+      const saved = await saveSelectedQuestionFile({
+        editorUrl,
+        csrfToken,
+        selectedFile,
+        contents,
       });
-
-      const data: unknown = await response.json();
-      const editErrorUrl = getEditErrorUrl(data);
-      if (editErrorUrl) {
-        window.location.href = editErrorUrl;
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to save edits.');
-      }
-
-      await onSaved();
+      if (saved) await onSaved();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save edits.');
+      setSaveError(err instanceof Error ? err.message : SAVE_ERROR_MESSAGE);
     } finally {
       setIsSaving(false);
     }
   }
 
+  // Create Ace after React has mounted the container div.
   useEffect(() => {
     if (!editorContainerRef.current) return;
 
@@ -96,11 +132,9 @@ export function SelectedQuestionFileEditor({
     editor.gotoLine(1, 0, false);
     editor.getSession().getUndoManager().reset();
     editor.getSession().on('change', () => setContents(editor.getValue()));
-    editorInstanceRef.current = editor;
 
     return () => {
       editor.destroy();
-      editorInstanceRef.current = null;
     };
   }, [savedContents, selectedFile.aceMode]);
 
@@ -109,9 +143,7 @@ export function SelectedQuestionFileEditor({
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
           <div className="font-monospace text-truncate">{selectedFile.path}</div>
-          <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
-            {saveError ?? (isSaving ? 'Saving...' : hasChanges ? 'Unsaved changes.' : 'Saved.')}
-          </div>
+          <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>{saveStatus}</div>
         </div>
         <div className="d-flex align-items-center gap-2">
           <button
