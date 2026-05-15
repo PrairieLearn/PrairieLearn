@@ -9,7 +9,6 @@ import {
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
-import mustache from 'mustache';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -25,6 +24,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -47,6 +47,7 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
@@ -107,22 +108,29 @@ export async function generatePrompt({
     ? 'system'
     : 'user';
 
-  const graderGuidelinesMessages = grader_guidelines
-    ? ([
-        {
-          role: systemRoleAfterUserMessage,
-          content: 'The instructor has provided the following grader guidelines:',
-        },
-        {
-          role: 'user',
-          content: mustache.render(grader_guidelines, {
-            submitted_answers: submitted_answer,
-            correct_answers: true_answer,
-            params,
-          }),
-        },
-      ] satisfies ModelMessage[])
-    : [];
+  const graderGuidelinesMessages = run((): ModelMessage[] => {
+    if (!grader_guidelines) return [];
+    const { rendered, error } = safeMustacheRender(grader_guidelines, {
+      submitted_answers: submitted_answer,
+      correct_answers: true_answer,
+      params,
+    });
+    if (error) {
+      // Treat as a per-submission failure for the same reason as rubric-item
+      // template errors: the rubric the AI would see is degraded.
+      throw new Error('Could not parse grader guidelines');
+    }
+    return [
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'The instructor has provided the following grader guidelines:',
+      },
+      {
+        role: 'user',
+        content: rendered,
+      },
+    ];
+  });
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -132,9 +140,10 @@ export async function generatePrompt({
         content: formatPrompt([
           [
             "You are an instructor for a course, and you are grading a student's response to a question.",
-            'You are provided several rubric items with a description, explanation, and grader note.',
-            "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
-            'If no rubric items apply, do not select any.',
+            'You are provided several numbered rubric items with a description, explanation, and grader note.',
+            "You must grade the student's response by using the rubric and returning, for each rubric item, whether that rubric item applies to the student's response.",
+            'The keys of the `rubric_items` object are the rubric item numbers shown below (e.g. `"1"`, `"2"`, ...).',
+            'If no rubric items apply, set every value to false.',
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
@@ -148,8 +157,12 @@ export async function generatePrompt({
       {
         role: 'user',
         content: rubric_items
-          .map((item) => {
-            const itemParts: string[] = [`description: ${item.description}`];
+          .map((item, index) => {
+            const number = index + 1;
+            const itemParts: string[] = [
+              `Rubric item number ${number}:`,
+              `description: ${item.description}`,
+            ];
             if (item.explanation) {
               itemParts.push(`explanation: ${item.explanation}`);
             }
@@ -431,29 +444,25 @@ export function parseAiRubricItems({
     rubric_item_id: string;
   }[];
   appliedRubricDescription: Set<string>;
+  unrecognizedKeys: string[];
 } {
-  // Compute the set of selected rubric descriptions.
+  const appliedRubricItems: { rubric_item_id: string }[] = [];
   const appliedRubricDescription = new Set<string>();
-  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
-    if (selected) {
-      appliedRubricDescription.add(description);
-    }
-  });
+  const unrecognizedKeys: string[] = [];
 
-  // Build a lookup table for rubric items by description.
-  const rubricItemsByDescription: Record<string, RubricItem> = {};
-  for (const item of rubric_items) {
-    rubricItemsByDescription[item.description] = item;
+  for (const [key, selected] of Object.entries(ai_rubric_items)) {
+    const number = Number(key);
+    if (!Number.isInteger(number) || number < 1 || number > rubric_items.length) {
+      unrecognizedKeys.push(key);
+      continue;
+    }
+    if (!selected) continue;
+    const item = rubric_items[number - 1];
+    appliedRubricItems.push({ rubric_item_id: item.id });
+    appliedRubricDescription.add(item.description);
   }
 
-  // It's possible that the rubric could have changed since we last
-  // fetched it. We'll optimistically apply all the rubric items
-  // that were selected. If an item was deleted, we'll allow the
-  // grading to fail; the user can then try again.
-  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
-    rubric_item_id: rubricItemsByDescription[description].id,
-  }));
-  return { appliedRubricItems, appliedRubricDescription };
+  return { appliedRubricItems, appliedRubricDescription, unrecognizedKeys };
 }
 
 export async function selectInstanceQuestionsForAssessmentQuestion({
@@ -504,8 +513,8 @@ export async function insertAiGradingJob({
     {
       grading_job_id,
       job_sequence_id,
-      prompt: JSON.stringify(prompt),
-      completion: response,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(response),
       rotation_correction_degrees: null,
       model: model_id,
       prompt_tokens: response.usage.inputTokens ?? 0,
@@ -590,8 +599,8 @@ export async function insertAiGradingJobWithRotationCorrection({
     {
       grading_job_id,
       job_sequence_id,
-      prompt: JSON.stringify(prompt),
-      completion: gradingResponseWithRotationCorrection,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(gradingResponseWithRotationCorrection),
       rotation_correction_degrees: rotationCorrectionDegrees,
       model: model_id,
       prompt_tokens,
@@ -843,6 +852,8 @@ async function correctImageOrientation({
     model,
     schema: RotationCorrectionOutputSchema,
     messages: prompt,
+    // System messages in `messages` are hard-coded authored strings; safe to allow.
+    allowSystemInMessages: true,
   });
 
   const index = Number.parseInt(response.object.upright_image) - 1;
@@ -918,48 +929,6 @@ export async function correctImagesOrientation({
     rotatedSubmittedAnswer,
     rotationCorrections,
   };
-}
-/**
- * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
- *
- * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
- * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
- *
- * If a rubric item key contains escaped backslashes, Google Gemini generates
- * unescaped backslashes in the JSON response, leading to a JSON parsing error.
- *
- * Example: Rubric item key \\mathbb{x} gets generated as \mathbb{x}, which is invalid JSON since
- * it contains an unescaped backslash.
- *
- * This function escapes all backslashes of rubric item keys in the JSON response.
- *
- * @param rawResponseText - The raw AI grading response returned from the Gemini model.
- * - The response must be a JSON string containing a "rubric_items" key.
- * - The "rubric_items" key must be the last key in the JSON object.
- *
- * @returns The corrected JSON as a string, or null if it could not be corrected.
- */
-export function correctGeminiMalformedRubricGradingJson(rawResponseText: string): string | null {
-  const RUBRIC_ITEMS_KEY = '"rubric_items":';
-
-  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
-  if (startRubric === -1) return null;
-
-  // The rubric items object starts right after the "rubric_items": key.
-  const rubricItemsRaw = rawResponseText.slice(startRubric + RUBRIC_ITEMS_KEY.length).trim();
-
-  // Gemini sometimes returns unescaped backslashes in the rubric item keys.
-  // We need to escape them properly.
-  // This only changes the keys of rubricItemsRaw since its values are all booleans.
-  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
-
-  // All characters before the rubric items, including the "rubric_items": key.
-  const charactersBeforeRubricItemsObject = rawResponseText.slice(
-    0,
-    startRubric + RUBRIC_ITEMS_KEY.length,
-  );
-
-  return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
 }
 
 const AiGradingJobDataForSubmissionSchema = z.object({
