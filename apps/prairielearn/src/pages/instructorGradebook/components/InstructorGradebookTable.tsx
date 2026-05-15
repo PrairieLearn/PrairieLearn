@@ -369,7 +369,6 @@ function GradebookTable({
             columnHelper.accessor(
               (row) => {
                 const data = row.scores[assessment.assessment_id];
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 return data ? data.score_perc : null;
               },
               {
@@ -395,7 +394,6 @@ function GradebookTable({
                   const row = info.row.original;
                   const assessmentData = row.scores[assessment.assessment_id];
 
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                   if (score == null || !assessmentData?.assessment_instance_id) {
                     return '—';
                   }
@@ -593,23 +591,37 @@ function GradebookTable({
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
               {
                 name: 'Labels',
-                value:
-                  row.student_label_ids.length > 0
-                    ? row.student_label_ids
-                        .map((id) => studentLabelsById.get(id)?.name)
-                        .filter((name): name is string => name != null)
-                    : null,
+                value: row.student_label_ids
+                  .map((id) => studentLabelsById.get(id)?.name)
+                  .filter((name): name is string => name != null),
               },
             ];
             for (const assessment of courseAssessments) {
               data.push({
                 name: assessment.label,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 value: row.scores[assessment.assessment_id]?.score_perc ?? null,
               });
             }
             return data;
           },
+          mapRowToJsonData: (row: GradebookRow) => ({
+            uid: row.uid,
+            name: row.user_name,
+            uin: row.uin,
+            role: row.role,
+            enrollment_status: row.enrollment?.status ?? null,
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
+            assessments: courseAssessments.map((assessment) => ({
+              assessment_id: assessment.assessment_id,
+              short_name: assessment.tid,
+              label: assessment.label,
+              assessment_set_heading: assessment.assessment_set_heading,
+
+              score_perc: row.scores[assessment.assessment_id]?.score_perc ?? null,
+            })),
+          }),
           pluralLabel: "users' grades",
           singularLabel: "user's grades",
           hasSelection: false,

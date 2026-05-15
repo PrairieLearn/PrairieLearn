@@ -544,6 +544,53 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | nul
   return parts.join(', ');
 }
 
+function HiddenAfterCompletionVisibility({
+  visibleFromDate,
+  visibleUntilDate,
+  displayTimezone,
+}: {
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
+  displayTimezone: string;
+}) {
+  if (visibleFromDate && visibleUntilDate) {
+    return (
+      <>
+        Hidden after completion; visible from{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleFromDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />{' '}
+        until{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleUntilDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      </>
+    );
+  }
+
+  if (visibleFromDate) {
+    return (
+      <>
+        Hidden after completion; visible starting{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleFromDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      </>
+    );
+  }
+
+  return 'Hidden after completion';
+}
+
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
@@ -659,56 +706,21 @@ function generateOverrideFieldItems(
       formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
     if (qv.hidden) {
-      if (qv.visibleFromDate && qv.visibleUntilDate) {
-        items.push({
-          label: 'Question visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-              , hidden again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: qvError,
-        });
-      } else if (qv.visibleFromDate) {
-        items.push({
-          label: 'Question visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: qvError,
-        });
-      } else {
-        items.push({
-          label: 'Question visibility',
-          value: 'Questions hidden after completion',
-          error: qvError,
-        });
-      }
+      items.push({
+        label: 'Question visibility',
+        value: (
+          <HiddenAfterCompletionVisibility
+            visibleFromDate={qv.visibleFromDate}
+            visibleUntilDate={qv.visibleUntilDate}
+            displayTimezone={displayTimezone}
+          />
+        ),
+        error: qvError,
+      });
     } else {
       items.push({
         label: 'Question visibility',
-        value: 'Questions visible after completion',
+        value: 'Visible after completion',
         error: qvError,
       });
     }
@@ -719,33 +731,20 @@ function generateOverrideFieldItems(
     const svError =
       formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
     if (sv.hidden) {
-      if (sv.visibleFromDate) {
-        items.push({
-          label: 'Score visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: svError,
-        });
-      } else {
-        items.push({
-          label: 'Score visibility',
-          value: 'Score hidden after completion',
-          error: svError,
-        });
-      }
+      items.push({
+        label: 'Score visibility',
+        value: (
+          <HiddenAfterCompletionVisibility
+            visibleFromDate={sv.visibleFromDate}
+            displayTimezone={displayTimezone}
+          />
+        ),
+        error: svError,
+      });
     } else {
       items.push({
         label: 'Score visibility',
-        value: 'Score visible after completion',
+        value: 'Visible after completion',
         error: svError,
       });
     }

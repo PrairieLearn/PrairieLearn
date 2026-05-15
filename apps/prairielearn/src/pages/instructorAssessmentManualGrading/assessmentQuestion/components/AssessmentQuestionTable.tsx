@@ -30,7 +30,7 @@ import {
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
-import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
@@ -65,6 +65,10 @@ import { QueryErrors } from './QueryErrors.js';
 import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
+function userToExportFields(user: StaffUser | null) {
+  return user ? { name: user.name, uid: user.uid, uin: user.uin, email: user.email } : null;
+}
+
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
 const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
@@ -97,6 +101,10 @@ interface AssessmentQuestionTableProps {
   aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
+  onRubricSettingsSaved: (data: {
+    rubric_data: RubricData | null;
+    aiGradingStats: AiGradingGeneralStats | null;
+  }) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -147,6 +155,7 @@ export function AssessmentQuestionTable({
   aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
+  onRubricSettingsSaved,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -647,51 +656,20 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          onSaved={onRubricSettingsSaved}
         />
       </div>
       {aiGradingMode && (
         <>
-          {hasCourseInstancePermissionEdit ? (
-            <ServerJobsProgressInfo
-              itemNames="submissions graded"
-              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-              courseInstanceId={courseInstance.id}
-              statusIcons={{ inProgress: 'bi-stars' }}
-              statusText={{
-                inProgress: 'AI grading in progress',
-                stopping: 'Stopping AI grading…',
-                stopped: 'AI grading stopped',
-                complete: 'AI grading complete',
-                failed: 'AI grading failed',
-              }}
-              stopConfirmation={{
-                title: 'Stop AI grading',
-                body: 'In-progress submissions will finish. The rest will be skipped.',
-                confirmLabel: 'Stop grading',
-                cancelLabel: 'Keep grading',
-              }}
-              stoppable
-              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-              onStopJobSequence={(jobSequenceId) =>
-                stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
-              }
-            />
-          ) : (
-            <ServerJobsProgressInfo
-              itemNames="submissions graded"
-              jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-              courseInstanceId={courseInstance.id}
-              statusIcons={{ inProgress: 'bi-stars' }}
-              statusText={{
-                inProgress: 'AI grading in progress',
-                stopping: 'Stopping AI grading…',
-                stopped: 'AI grading stopped',
-                complete: 'AI grading complete',
-                failed: 'AI grading failed',
-              }}
-              onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-            />
-          )}
+          <AiGradingProgressInfo
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+            onStopJobSequence={(jobSequenceId) =>
+              stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+            }
+          />
           {hasUnacknowledgedReview && (
             <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
           )}
@@ -994,11 +972,20 @@ export function AssessmentQuestionTable({
               value: row.user_or_group_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
+            ...(assessment.team_work
+              ? []
+              : [
+                  { name: 'UIN', value: row.user?.uin ?? '' },
+                  { name: 'Email', value: row.user?.email ?? '' },
+                ]),
             {
               name: 'Grading Status',
               value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',
             },
-            { name: 'Assigned Grader', value: row.assigned_grader_name || '' },
+            { name: 'Assigned Grader Name', value: row.assigned_grader?.name ?? '' },
+            { name: 'Assigned Grader UID', value: row.assigned_grader?.uid ?? '' },
+            { name: 'Assigned Grader UIN', value: row.assigned_grader?.uin ?? '' },
+            { name: 'Assigned Grader Email', value: row.assigned_grader?.email ?? '' },
             {
               name: 'Auto Points',
               value:
@@ -1025,9 +1012,31 @@ export function AssessmentQuestionTable({
                   ? row.instance_question.score_perc.toString()
                   : '',
             },
-            { name: 'Graded By', value: row.last_grader_name || '' },
+            { name: 'Last Grader Name', value: row.last_grader?.name ?? '' },
+            { name: 'Last Grader UID', value: row.last_grader?.uid ?? '' },
+            { name: 'Last Grader UIN', value: row.last_grader?.uin ?? '' },
+            { name: 'Last Grader Email', value: row.last_grader?.email ?? '' },
             { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
           ],
+          mapRowToJsonData: (row) => ({
+            instance_question_id: row.instance_question.id,
+            ...(assessment.team_work
+              ? {
+                  group: {
+                    name: row.user_or_group_name ?? null,
+                    members: row.group_members.map((m) => userToExportFields(m)),
+                  },
+                }
+              : { user: userToExportFields(row.user) }),
+            requires_manual_grading: row.instance_question.requires_manual_grading,
+            assigned_grader: userToExportFields(row.assigned_grader),
+            auto_points: row.instance_question.auto_points ?? null,
+            manual_points: row.instance_question.manual_points ?? null,
+            points: row.instance_question.points ?? null,
+            score_perc: row.instance_question.score_perc ?? null,
+            last_grader: userToExportFields(row.last_grader),
+            modified_at: row.instance_question.modified_at.toISOString(),
+          }),
           hasSelection: true,
         }}
       />
