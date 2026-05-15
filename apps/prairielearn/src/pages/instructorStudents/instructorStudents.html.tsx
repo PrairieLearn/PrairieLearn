@@ -265,6 +265,11 @@ function StudentsCard({
     initialData: initialStudentLabels,
   });
 
+  const studentLabelsById = useMemo(
+    () => new Map(studentLabels.map((l) => [l.id, l])),
+    [studentLabels],
+  );
+
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
@@ -722,6 +727,16 @@ function StudentsCard({
               },
             ];
           },
+          mapRowToJsonData: (row) => ({
+            uid: row.user?.uid ?? row.enrollment.pending_uid,
+            name: row.user?.name ?? null,
+            email: row.user?.email ?? null,
+            enrollment_status: row.enrollment.status,
+            first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
+          }),
           hasSelection: false,
         }}
         headerButtons={

@@ -1,4 +1,4 @@
-import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Form } from 'react-bootstrap';
 import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
@@ -143,8 +143,8 @@ function QuestionVisibilityInput({
   const visibleUntilDateInvalid = visibleUntilDateEmpty || !!visibleUntilDateError;
 
   return (
-    <Form.Group>
-      <div className="mb-2">
+    <Form.Group className="d-flex flex-column gap-3">
+      <div>
         <RichSelect
           items={QUESTION_VISIBILITY_ITEMS}
           value={hideQuestionsMode}
@@ -158,79 +158,75 @@ function QuestionVisibilityInput({
         )}
       </div>
       {hideQuestionsMode === 'hide_questions_between_dates' && (
-        <div className="mt-2">
-          <Row className="mb-2 gy-3">
-            <Col md={6}>
-              <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
-                Show questions on
-              </Form.Label>
-              <Form.Control
-                id={`${idPrefix}-show-questions-between-start`}
-                type="datetime-local"
-                step={1}
-                value={value.visibleFromDate ?? ''}
-                isInvalid={visibleFromDateInvalid}
-                aria-invalid={visibleFromDateInvalid}
-                aria-errormessage={
-                  visibleFromDateInvalid
-                    ? `${idPrefix}-show-questions-between-start-error`
-                    : undefined
-                }
-                onChange={({ currentTarget }) =>
-                  onChange({
-                    hidden: true,
-                    visibleFromDate: currentTarget.value,
-                    visibleUntilDate: value.visibleUntilDate,
-                  })
-                }
-              />
-              {visibleFromDateInvalid && (
-                <Form.Control.Feedback
-                  type="invalid"
-                  id={`${idPrefix}-show-questions-between-start-error`}
-                >
-                  {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
-                </Form.Control.Feedback>
-              )}
-            </Col>
-            <Col md={6}>
-              <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
-                Hide questions again on
-              </Form.Label>
-              <Form.Control
-                id={`${idPrefix}-hide-questions-between-end`}
-                type="datetime-local"
-                step={1}
-                value={value.visibleUntilDate ?? ''}
-                isInvalid={visibleUntilDateInvalid}
-                aria-invalid={visibleUntilDateInvalid}
-                aria-errormessage={
-                  visibleUntilDateInvalid
-                    ? `${idPrefix}-hide-questions-between-end-error`
-                    : undefined
-                }
-                onChange={({ currentTarget }) =>
-                  onChange({
-                    hidden: true,
-                    visibleFromDate: value.visibleFromDate,
-                    visibleUntilDate: currentTarget.value,
-                  })
-                }
-              />
-              {visibleUntilDateInvalid && (
-                <Form.Control.Feedback
-                  type="invalid"
-                  id={`${idPrefix}-hide-questions-between-end-error`}
-                >
-                  {visibleUntilDateEmpty ? DATE_REQUIRED_MESSAGE : visibleUntilDateError}
-                </Form.Control.Feedback>
-              )}
-            </Col>
-          </Row>
+        <div className="d-flex flex-column gap-3">
+          <div>
+            <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
+              Show questions on
+            </Form.Label>
+            <Form.Control
+              id={`${idPrefix}-show-questions-between-start`}
+              type="datetime-local"
+              step={1}
+              value={value.visibleFromDate ?? ''}
+              isInvalid={visibleFromDateInvalid}
+              aria-invalid={visibleFromDateInvalid}
+              aria-errormessage={
+                visibleFromDateInvalid
+                  ? `${idPrefix}-show-questions-between-start-error`
+                  : undefined
+              }
+              onChange={({ currentTarget }) =>
+                onChange({
+                  hidden: true,
+                  visibleFromDate: currentTarget.value,
+                  visibleUntilDate: value.visibleUntilDate,
+                })
+              }
+            />
+            {visibleFromDateInvalid && (
+              <Form.Control.Feedback
+                type="invalid"
+                id={`${idPrefix}-show-questions-between-start-error`}
+              >
+                {visibleFromDateEmpty ? DATE_REQUIRED_MESSAGE : visibleFromDateError}
+              </Form.Control.Feedback>
+            )}
+          </div>
+          <div>
+            <Form.Label htmlFor={`${idPrefix}-hide-questions-between-end`}>
+              Hide questions again on
+            </Form.Label>
+            <Form.Control
+              id={`${idPrefix}-hide-questions-between-end`}
+              type="datetime-local"
+              step={1}
+              value={value.visibleUntilDate ?? ''}
+              isInvalid={visibleUntilDateInvalid}
+              aria-invalid={visibleUntilDateInvalid}
+              aria-errormessage={
+                visibleUntilDateInvalid ? `${idPrefix}-hide-questions-between-end-error` : undefined
+              }
+              onChange={({ currentTarget }) =>
+                onChange({
+                  hidden: true,
+                  visibleFromDate: value.visibleFromDate,
+                  visibleUntilDate: currentTarget.value,
+                })
+              }
+            />
+            {visibleUntilDateInvalid && (
+              <Form.Control.Feedback
+                type="invalid"
+                id={`${idPrefix}-hide-questions-between-end-error`}
+              >
+                {visibleUntilDateEmpty ? DATE_REQUIRED_MESSAGE : visibleUntilDateError}
+              </Form.Control.Feedback>
+            )}
+          </div>
         </div>
       )}
       {hideQuestionsMode === 'hide_questions_until_date' && (
-        <div className="mt-2">
+        <div>
           <Form.Control
             id={`${idPrefix}-show-questions-date`}
             type="datetime-local"
@@ -254,13 +250,13 @@ function QuestionVisibilityInput({
         </div>
       )}
       {hasPrairieTest && hideQuestionsMode === 'show_questions' && (
-        <Alert variant="warning" className="mt-2 mb-0">
+        <Alert variant="warning" className="mb-0">
           Showing questions after completion is not recommended when PrairieTest exams are
           connected. Students may be able to view exam content when their assessment is closed.
         </Alert>
       )}
       {!hasPrairieTest && hasCompletionMechanism && hideQuestionsMode !== 'show_questions' && (
-        <Alert variant="info" className="mt-2 mb-0">
+        <Alert variant="info" className="mb-0">
           If this is not an exam, consider setting question visibility to "Show questions after
           completion" so students can review their work.
         </Alert>
@@ -313,8 +309,8 @@ function ScoreVisibilityInput({
   const visibleFromDateInvalid = visibleFromDateEmpty || !!visibleFromDateError;
 
   return (
-    <Form.Group>
-      <div className="mb-2">
+    <Form.Group className="d-flex flex-column gap-3">
+      <div>
         <RichSelect
           items={SCORE_VISIBILITY_ITEMS}
           value={hideScoreMode}
@@ -328,7 +324,7 @@ function ScoreVisibilityInput({
         )}
       </div>
       {hideScoreMode === 'hide_score_until_date' && (
-        <div className="mt-2">
+        <div>
           <Form.Control
             id={`${idPrefix}-show-score-date`}
             type="datetime-local"
@@ -404,7 +400,7 @@ function AfterCompleteCard({
           What students can see once they can no longer answer questions on the assessment.
         </div>
       </div>
-      <Row className="gy-3">{children}</Row>
+      <div className="d-flex flex-column gap-3">{children}</div>
     </div>
   );
 }
@@ -466,7 +462,7 @@ export function DefaultAfterCompleteForm({
 
   return (
     <AfterCompleteCard title={title}>
-      <Col md={6}>
+      <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
         </Form.Label>
@@ -480,8 +476,8 @@ export function DefaultAfterCompleteForm({
           displayTimezone={displayTimezone}
           onChange={qvField.onChange}
         />
-      </Col>
-      <Col md={6}>
+      </div>
+      <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
           Score visibility
         </Form.Label>
@@ -492,7 +488,7 @@ export function DefaultAfterCompleteForm({
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
         />
-      </Col>
+      </div>
     </AfterCompleteCard>
   );
 }
@@ -561,7 +557,7 @@ export function OverrideAfterCompleteForm({
 
   return (
     <AfterCompleteCard title={title}>
-      <Col md={6}>
+      <div>
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
@@ -581,8 +577,8 @@ export function OverrideAfterCompleteForm({
             onChange={qvField.onChange}
           />
         </FieldWrapper>
-      </Col>
-      <Col md={6}>
+      </div>
+      <div>
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
@@ -603,7 +599,7 @@ export function OverrideAfterCompleteForm({
             onChange={svField.onChange}
           />
         </FieldWrapper>
-      </Col>
+      </div>
     </AfterCompleteCard>
   );
 }
