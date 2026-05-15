@@ -187,12 +187,15 @@ Costs vary course-to-course depending on rubric length, submission length, and m
 
 _Benchmarks below were run using PrairieLearn-managed keys and include the 20% infrastructure fee._
 
-**Free-response question -- text grading (200 submissions):**
+**Numerical methods question -- text grading (139 submissions):**
 
-_[Description pending — add details once data is available.]_
+This was a Numerical methods problem with typed responses and a rubric.
 
-- _[$xx.xx — add benchmark]_
-- _[$xx.xx — add benchmark]_
+| Model          | Cost / submission | Time / submission |
+| -------------- | ----------------- | ----------------- |
+| GPT-5.4 mini   | $0.0020           | 0.1s              |
+| GPT-5.4        | $0.0058           | 0.2s              |
+| Gemini 3.1 Pro | $0.0126           | 0.6s              |
 
 **Dynamics problem -- image grading (~241 submissions):**
 
