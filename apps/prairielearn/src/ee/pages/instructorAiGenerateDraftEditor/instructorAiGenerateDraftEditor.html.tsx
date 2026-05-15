@@ -25,7 +25,7 @@ export function InstructorAiGenerateDraftEditor({
   question,
   messages,
   questionFiles,
-  allQuestionFiles,
+  allQuestionFilesHtml,
   selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
@@ -36,7 +36,7 @@ export function InstructorAiGenerateDraftEditor({
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  allQuestionFiles: { path: string; size: number }[];
+  allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
@@ -78,6 +78,7 @@ export function InstructorAiGenerateDraftEditor({
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />`,
       compiledScriptTag('question.ts'),
+      compiledScriptTag('instructorFileBrowserClient.ts'),
       compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
       html`<script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>`,
       unsafeHtml(resLocals.extraHeadersHtml),
@@ -95,7 +96,7 @@ export function InstructorAiGenerateDraftEditor({
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
-          allQuestionFiles={allQuestionFiles}
+          allQuestionFilesHtml={allQuestionFilesHtml}
           selectedFile={selectedFile}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}

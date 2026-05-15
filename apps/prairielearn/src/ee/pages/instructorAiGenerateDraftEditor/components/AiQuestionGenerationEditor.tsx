@@ -27,7 +27,7 @@ type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
 
 interface QuestionFilesData {
   files: Record<string, string>;
-  allFiles: { path: string; size: number }[];
+  allFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
 }
 
@@ -50,7 +50,7 @@ interface AiQuestionGenerationEditorProps {
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  allQuestionFiles: { path: string; size: number }[];
+  allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
@@ -68,7 +68,7 @@ function AiQuestionGenerationEditorInner({
   question,
   initialMessages,
   questionFiles: initialQuestionFiles,
-  allQuestionFiles,
+  allQuestionFilesHtml,
   selectedFile,
   richTextEditorEnabled,
   urlPrefix,
@@ -88,14 +88,6 @@ function AiQuestionGenerationEditorInner({
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
   const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
 
-  const handleTitleAndQidSaved = useCallback(
-    (update: { qid: string | null; title: string | null }) => {
-      setCurrentQid(update.qid);
-      setCurrentTitle(update.title);
-    },
-    [],
-  );
-
   const {
     data: questionFilesData,
     error: filesError,
@@ -106,14 +98,27 @@ function AiQuestionGenerationEditorInner({
     staleTime: Infinity,
     initialData: {
       files: initialQuestionFiles,
-      allFiles: allQuestionFiles,
+      allFilesHtml: allQuestionFilesHtml,
       selectedFile,
     },
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
-  const { files: questionFiles, allFiles, selectedFile: currentSelectedFile } = questionFilesData;
+  const {
+    files: questionFiles,
+    allFilesHtml,
+    selectedFile: currentSelectedFile,
+  } = questionFilesData;
+
+  const handleTitleAndQidSaved = useCallback(
+    (update: { qid: string | null; title: string | null }) => {
+      setCurrentQid(update.qid);
+      setCurrentTitle(update.title);
+      void refetchFiles();
+    },
+    [refetchFiles],
+  );
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
     parseAsStringLiteral(AI_DRAFT_EDITOR_TABS).withDefault(
@@ -209,7 +214,7 @@ function AiQuestionGenerationEditorInner({
         <div className="app-preview">
           <QuestionAndFilePreview
             questionFiles={questionFiles}
-            allQuestionFiles={allFiles}
+            allQuestionFilesHtml={allFilesHtml}
             selectedFile={currentSelectedFile}
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
