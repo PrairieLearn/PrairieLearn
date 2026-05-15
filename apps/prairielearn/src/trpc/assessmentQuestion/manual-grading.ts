@@ -56,6 +56,7 @@ export interface ManualGradingError {
   AiGradeInstanceQuestions: never;
   SetAssignedGrader: never;
   SetRequiresManualGrading: never;
+  RedeemFreeCredit: never;
 }
 
 const requireAiGradingFeature = t.middleware(async (opts) => {

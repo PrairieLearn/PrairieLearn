@@ -14,8 +14,10 @@ import {
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
+import { type AppError, AppErrorAlert, getAppError } from '../../../../lib/client/errors.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/manual-grading.js';
 
 type AiGradingAvailabilityState =
   | { kind: 'loading' }
@@ -218,14 +220,14 @@ function NoCreditsAlertContent({
   freeCreditRedemptionsRemaining,
   aiGradingSettingsUrl,
   isRedeeming,
-  redeemErrorMessage,
+  redeemError,
   onRedeem,
   onDismissError,
 }: {
   freeCreditRedemptionsRemaining: number;
   aiGradingSettingsUrl: string;
   isRedeeming: boolean;
-  redeemErrorMessage: string | undefined;
+  redeemError: AppError<ManualGradingError['RedeemFreeCredit']> | null;
   onRedeem: () => void;
   onDismissError: () => void;
 }) {
@@ -258,11 +260,14 @@ function NoCreditsAlertContent({
           {canRedeem ? 'Purchase more' : 'Purchase credits'}
         </Button>
       </div>
-      {redeemErrorMessage && (
-        <Alert variant="danger" className="mt-2 mb-0 py-2" dismissible onClose={onDismissError}>
-          {redeemErrorMessage}
-        </Alert>
-      )}
+      <AppErrorAlert
+        error={redeemError}
+        className="mt-2 mb-0 py-2"
+        render={{
+          UNKNOWN: ({ message }) => message,
+        }}
+        onDismiss={onDismissError}
+      />
     </>
   );
 }
@@ -376,7 +381,7 @@ function AiGradingAvailabilityAlert({
   aiGradingSettingsUrl,
   onRetryAvailability,
   isRedeeming,
-  redeemErrorMessage,
+  redeemError,
   onRedeem,
   onDismissRedeemError,
 }: {
@@ -384,7 +389,7 @@ function AiGradingAvailabilityAlert({
   aiGradingSettingsUrl: string;
   onRetryAvailability: () => void;
   isRedeeming: boolean;
-  redeemErrorMessage: string | undefined;
+  redeemError: AppError<ManualGradingError['RedeemFreeCredit']> | null;
   onRedeem: () => void;
   onDismissRedeemError: () => void;
 }) {
@@ -477,7 +482,7 @@ function AiGradingAvailabilityAlert({
               freeCreditRedemptionsRemaining={state.freeCreditRedemptionsRemaining}
               aiGradingSettingsUrl={aiGradingSettingsUrl}
               isRedeeming={isRedeeming}
-              redeemErrorMessage={redeemErrorMessage}
+              redeemError={redeemError}
               onRedeem={onRedeem}
               onDismissError={onDismissRedeemError}
             />
@@ -537,7 +542,7 @@ export function AiGradingModelSelectionModal({
     reset: resetRedeem,
     isPending: isRedeeming,
     isSuccess: isRedeemSuccess,
-    error: redeemError,
+    error: rawRedeemError,
   } = useMutation({
     ...trpc.manualGrading.redeemFreeCredit.mutationOptions(),
     onSuccess: () => {
@@ -546,6 +551,7 @@ export function AiGradingModelSelectionModal({
       });
     },
   });
+  const redeemError = getAppError<ManualGradingError['RedeemFreeCredit']>(rawRedeemError);
   const {
     data: aiGradingAvailabilityInfo,
     isFetching: isAvailabilityFetching,
@@ -672,7 +678,7 @@ export function AiGradingModelSelectionModal({
             state={aiGradingAvailabilityState}
             aiGradingSettingsUrl={aiGradingSettingsUrl}
             isRedeeming={isRedeeming}
-            redeemErrorMessage={redeemError?.message}
+            redeemError={redeemError}
             onRetryAvailability={() => {
               void refetchAvailabilityInfo();
             }}
