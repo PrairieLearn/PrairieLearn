@@ -47,6 +47,7 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'jquery',
   'mathlive',
   'highlight.js',
+  'web-tree-sitter',
 ];
 
 /**
