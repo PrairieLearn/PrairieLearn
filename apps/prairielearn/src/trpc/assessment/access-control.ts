@@ -114,6 +114,7 @@ function formJsonToEnrollmentRuleData(
     dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
+    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
     afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
     afterLastDeadlineCredit:
       dc?.afterLastDeadline?.allowSubmissions === true
@@ -180,7 +181,7 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
       clean.afterComplete = rule.afterComplete;
     }
 
-    return clean as AccessControlJson;
+    return clean;
   });
 }
 

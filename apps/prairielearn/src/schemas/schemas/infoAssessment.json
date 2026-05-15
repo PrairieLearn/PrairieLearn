@@ -109,6 +109,10 @@
       "description": "Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.",
       "type": "string"
     },
+    "showQuestionTitles": {
+      "description": "Whether to show question titles in the student view.",
+      "type": "boolean"
+    },
     "groupWork": {
       "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
@@ -183,11 +187,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "description": "Whether groups are enabled for this assessment.",
-          "type": "boolean",
-          "default": true
-        },
         "minMembers": {
           "description": "Minimum number of students in a group.",
           "type": "number"
@@ -213,17 +212,17 @@
             "canCreateGroup": {
               "description": "Whether students can create groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canJoinGroup": {
               "description": "Whether students can join groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canLeaveGroup": {
               "description": "Whether students can leave groups.",
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "canNameGroup": {
               "description": "Whether students can choose a group name when creating a group.",
@@ -348,7 +347,7 @@
           "minimum": 0
         },
         "password": {
-          "description": "Password to begin the assessment (only for Exams).",
+          "description": "Password to begin the assessment. Typically used for proctored exams.",
           "type": "string"
         },
         "showClosedAssessment": {
@@ -827,19 +826,27 @@
               ]
             },
             "afterLastDeadline": {
-              "description": "Controls for assessment behavior after last deadline",
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["allowSubmissions"],
-              "properties": {
-                "allowSubmissions": {
-                  "type": "boolean"
+              "description": "Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["allowSubmissions"],
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean"
+                    },
+                    "credit": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 99
+                    }
+                  }
                 },
-                "credit": {
-                  "type": "number",
-                  "minimum": 0
+                {
+                  "type": "null"
                 }
-              }
+              ]
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",
@@ -973,8 +980,8 @@
           "$ref": "#/definitions/DatetimeLocalStringSchema"
         },
         "credit": {
-          "description": "Amount of credit as a percent to allow",
-          "type": "number",
+          "description": "Integer credit percentage to allow",
+          "type": "integer",
           "minimum": 0,
           "maximum": 200
         }

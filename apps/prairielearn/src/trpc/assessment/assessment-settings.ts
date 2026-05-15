@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
@@ -18,8 +19,9 @@ import {
   MultiEditor,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { selectAssessmentByUuid } from '../../models/assessment.js';
+import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -29,9 +31,7 @@ import { throwAppError } from '../app-errors.js';
 import { requireCoursePermissionEdit, t } from './init.js';
 
 export interface AssessmentSettingsError {
-  UpdateAssessment:
-    | { code: 'INVALID_SHORT_NAME' }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  UpdateAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
@@ -73,6 +73,7 @@ const updateAssessment = t.procedure
       ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
+      share_source_publicly: z.boolean().optional(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -96,8 +97,8 @@ const updateAssessment = t.procedure
 
     const shortNameValidation = validateShortName(input.aid, assessment.tid ?? undefined);
     if (!shortNameValidation.valid) {
-      throwAppError<AssessmentSettingsError['UpdateAssessment']>({
-        code: 'INVALID_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: shortNameValidation.lowercaseMessage,
       });
     }
@@ -218,6 +219,24 @@ const updateAssessment = t.procedure
       input.grade_rate_minutes ?? undefined,
       (v: number | null | undefined) => v == null || v === 0,
     );
+    if (locals.question_sharing_enabled) {
+      if (input.share_source_publicly && !assessment.share_source_publicly) {
+        try {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof HttpStatusError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
+        }
+      }
+      assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
+        assessmentInfo.shareSourcePublicly,
+        // If source is already public, preserve that setting regardless of the submitted value.
+        assessment.share_source_publicly || (input.share_source_publicly ?? false),
+        false,
+      );
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
@@ -282,33 +301,69 @@ const updateAssessment = t.procedure
     return { origHash: newHash };
   });
 
-const copyAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
-  const { course_instance, locals } = ctx;
+const copyAssessment = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(
+    z.object({
+      aid: z.string().trim().min(1, 'Short name is required'),
+      title: z.string().trim().min(1, 'Long name is required'),
+      number: z.string().trim(),
+      set: z.string(),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const { course_instance, locals } = ctx;
 
-  const editor = new AssessmentCopyEditor({ locals });
-  const serverJob = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    throwAppError<AssessmentSettingsError['CopyAssessment']>({
-      code: 'SYNC_JOB_FAILED',
-      message: 'Failed to copy assessment',
-      jobSequenceId: serverJob.jobSequenceId,
+    const { aid, title, number, set } = input;
+
+    const shortNameValidation = validateShortName(aid);
+    if (!shortNameValidation.valid) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: shortNameValidation.lowercaseMessage,
+      });
+    }
+
+    const existingAssessments = await selectAssessments({
+      course_instance_id: course_instance.id,
     });
-  }
+    if (existingAssessments.some((a) => a.tid === aid)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `An assessment with the short name "${aid}" already exists.`,
+      });
+    }
 
-  const copiedAssessment = await selectAssessmentByUuid({
-    uuid: editor.uuid,
-    course_instance_id: course_instance.id,
+    const editor = new AssessmentCopyEditor({
+      locals,
+      tid_new: aid,
+      title_new: title,
+      number_new: number,
+      set_new: set,
+    });
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<AssessmentSettingsError['CopyAssessment']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to copy assessment',
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+
+    const copiedAssessment = await selectAssessmentByUuid({
+      uuid: editor.uuid,
+      course_instance_id: course_instance.id,
+    });
+
+    flash(
+      'success',
+      'Assessment copied successfully. You are now viewing your copy of the assessment.',
+    );
+
+    return { assessmentId: copiedAssessment.id };
   });
-
-  flash(
-    'success',
-    'Assessment copied successfully. You are now viewing your copy of the assessment.',
-  );
-
-  return { assessmentId: copiedAssessment.id };
-});
 
 const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
   const { locals } = ctx;

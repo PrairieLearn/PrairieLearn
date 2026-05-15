@@ -28,7 +28,8 @@ const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMod
   {
     value: 'show_score_only',
     label: 'Show score only',
-    description: 'Students see their score but not the questions while the reservation is active',
+    description:
+      'Students see their score but not the questions after finishing while the reservation is still active',
   },
   {
     value: 'hide_questions_and_score',
@@ -68,6 +69,9 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
   });
 
   const mode = getAfterCompleteVisibilityMode(questionsHiddenField.value, scoreHiddenField.value);
+  const selectedDescription = AFTER_COMPLETE_VISIBILITY_ITEMS.find(
+    (item) => item.value === mode,
+  )?.description;
 
   const handleModeChange = (newMode: AfterCompleteVisibilityMode) => {
     questionsHiddenField.onChange(newMode !== 'show_questions_and_score');
@@ -77,7 +81,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
   return (
     <div className="mt-3">
       <Form.Label className="fw-bold" htmlFor={`defaultRule-exam-after-complete-${index}`}>
-        After completion (during reservation)
+        After completion
       </Form.Label>
       <RichSelect
         items={AFTER_COMPLETE_VISIBILITY_ITEMS}
@@ -88,6 +92,9 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
         disabled={readOnly}
         onChange={handleModeChange}
       />
+      {!readOnly && selectedDescription && (
+        <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+      )}
       {readOnly && (
         <Form.Text className="text-muted d-block">
           Questions and scores are always shown during read-only reservations.

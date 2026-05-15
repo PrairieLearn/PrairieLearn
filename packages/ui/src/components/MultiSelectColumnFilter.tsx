@@ -1,19 +1,30 @@
-import type { Column } from '@tanstack/table-core';
+import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
+export type MultiSelectFilterMode = 'include' | 'exclude';
+
+export interface MultiSelectFilterValue<TValue extends string = string> {
+  values: TValue[];
+  mode: MultiSelectFilterMode;
+}
+
+const EMPTY_INCLUDE: MultiSelectFilterValue = { values: [], mode: 'include' };
+
 function defaultRenderValueLabel({ value }: { value: string }) {
-  return <span>{value}</span>;
+  return <span className="text-nowrap">{value}</span>;
 }
 
 /**
- * A component that allows the user to filter a column containing arrays of values.
- * Uses AND logic: rows must contain ALL selected values to match.
+ * A column filter that lets the user pick a set of values to include or
+ * exclude. Renders as a dropdown with a checklist of values plus an
+ * "Include" / "Exclude" toggle.
  *
- * The filter options (`allColumnValues`) are strings (or string subtypes like
- * enums). The column's `filterFn` is responsible for mapping these string
- * values to the actual column data.
+ * The filter value is `{ values, mode }`, where `mode` is `'include'` or
+ * `'exclude'`. The column's `filterFn` decides how to apply the values to its
+ * row data; the mode is forwarded along verbatim so multi-valued columns can
+ * apply the correct semantics in each direction.
  *
  * @param params
  * @param params.column - The TanStack Table column object
@@ -26,7 +37,7 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   renderValueLabel = defaultRenderValueLabel,
 }: {
   column: Column<TData, unknown>;
-  allColumnValues: TValue[];
+  allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;
 }) {
   const columnId = column.id;
@@ -35,24 +46,26 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
     column.columnDef.meta?.label ??
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
-  const columnValuesFilter = column.getFilterValue() as TValue[] | undefined;
+  const filterValue =
+    (column.getFilterValue() as MultiSelectFilterValue<TValue> | undefined) ??
+    (EMPTY_INCLUDE as MultiSelectFilterValue<TValue>);
+  const { values, mode } = filterValue;
+  const selected = new Set(values);
+  const hasActiveFilter = values.length > 0;
 
-  const selected = useMemo(() => {
-    return new Set(columnValuesFilter);
-  }, [columnValuesFilter]);
-
-  const toggleSelected = (value: TValue) => {
-    const set = new Set(selected);
-    if (set.has(value)) {
-      set.delete(value);
-    } else {
-      set.add(value);
-    }
-    const newValue = Array.from(set);
-    column.setFilterValue(newValue);
+  const apply = (newMode: MultiSelectFilterMode, newSelected: Set<TValue>) => {
+    column.setFilterValue({ values: Array.from(newSelected), mode: newMode });
   };
 
-  const hasActiveFilter = selected.size > 0;
+  const toggleValue = (value: TValue) => {
+    const next = new Set(selected);
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    apply(mode, next);
+  };
 
   return (
     <Dropdown align="end">
@@ -69,16 +82,52 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
         />
       </Dropdown.Toggle>
       <Dropdown.Menu className="p-0">
-        <div className="p-3 pb-0" style={{ minWidth: '250px' }}>
+        <div className="p-3 pb-0">
           <div className="d-flex align-items-center justify-content-between mb-2">
-            <div className="fw-semibold">{label}</div>
+            <div className="fw-semibold text-nowrap">{label}</div>
             <button
               type="button"
-              className="btn btn-link btn-sm text-decoration-none p-0"
-              onClick={() => column.setFilterValue([])}
+              className={clsx('btn btn-link btn-sm text-decoration-none', {
+                // Hide the clear button when the filter is at its default state.
+                // Use `visibility` instead of conditional rendering to avoid layout shift.
+                invisible: !hasActiveFilter && mode === 'include',
+              })}
+              onClick={() => apply('include', new Set<TValue>())}
             >
               Clear
             </button>
+          </div>
+
+          <div className="btn-group btn-group-sm w-100 mb-2">
+            <input
+              type="radio"
+              className="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-include`}
+              checked={mode === 'include'}
+              onChange={() => apply('include', selected)}
+            />
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-include`}>
+              <span className="text-nowrap">
+                {mode === 'include' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
+                Include
+              </span>
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-exclude`}
+              checked={mode === 'exclude'}
+              onChange={() => apply('exclude', selected)}
+            />
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-exclude`}>
+              <span className="text-nowrap">
+                {mode === 'exclude' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
+                Exclude
+              </span>
+            </label>
           </div>
         </div>
 
@@ -102,7 +151,7 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
                     type="checkbox"
                     checked={isSelected}
                     id={`${columnId}-${value}`}
-                    onChange={() => toggleSelected(value)}
+                    onChange={() => toggleValue(value)}
                   />
                   <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
@@ -118,4 +167,18 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
       </Dropdown.Menu>
     </Dropdown>
   );
+}
+
+/**
+ * Helper for column `filterFn`s using `MultiSelectFilterValue`. Given a row
+ * and a function that returns whether the row matches the include semantics
+ * for the column, returns the appropriate result depending on the filter mode.
+ */
+export function applyMultiSelectFilter<TValue extends string>(
+  filter: MultiSelectFilterValue<TValue> | undefined,
+  matches: (values: TValue[]) => boolean,
+): boolean {
+  if (!filter || filter.values.length === 0) return true;
+  const matched = matches(filter.values);
+  return filter.mode === 'include' ? matched : !matched;
 }

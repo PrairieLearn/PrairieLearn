@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 6.0.3
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 6.0.2
 
 ### Patch Changes

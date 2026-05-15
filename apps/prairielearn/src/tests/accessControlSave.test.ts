@@ -35,7 +35,7 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
       },
     },
     overrides,
-  ) as AccessControlJsonInput;
+  );
 }
 
 describe('Access control save via tRPC', () => {

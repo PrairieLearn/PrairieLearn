@@ -16,6 +16,7 @@ import { validateAccessControlRules } from '../lib/assessment-access-control/val
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
@@ -25,7 +26,6 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
-  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -579,10 +579,7 @@ async function loadCourseInfo({
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const result = deduplicateByName<Entry>(
-      (info![fieldName] ?? []) as Entry[],
-      defaults as Entry[] | undefined,
-    );
+    const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
       const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
@@ -1121,37 +1118,6 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-/**
- * Converts legacy group properties to the new groups format for unified handling.
- */
-export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
-  const canAssignRoles = assessment.groupRoles
-    .filter((role) => role.canAssignRoles)
-    .map((role) => role.name);
-
-  return {
-    enabled: assessment.groupWork,
-    minMembers: assessment.groupMinSize,
-    maxMembers: assessment.groupMaxSize,
-    roles: assessment.groupRoles.map((role) => ({
-      name: role.name,
-      minMembers: role.minimum,
-      maxMembers: role.maximum,
-    })),
-    studentPermissions: {
-      canCreateGroup: assessment.studentGroupCreate,
-      canJoinGroup: assessment.studentGroupJoin,
-      canLeaveGroup: assessment.studentGroupLeave,
-      canNameGroup: assessment.studentGroupChooseName,
-    },
-    rolePermissions: {
-      canAssignRoles,
-      canView: assessment.canView,
-      canSubmit: assessment.canSubmit,
-    },
-  };
-}
-
 function validateAssessment({
   assessment,
   rawAssessment,
@@ -1489,12 +1455,14 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to groups format for unified validation
+  // Convert legacy group properties to groups format for unified validation.
   const isLegacyGroups = assessment.groups == null;
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
 
   // Validate groups if we have roles defined
-  if (groups.roles.length > 0) {
+  if (groups != null && groups.roles.length > 0) {
     const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);

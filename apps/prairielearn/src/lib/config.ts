@@ -461,11 +461,11 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Used to sign JWTs that PrairieLearn provides to PrairieTest for authentication.
-   * PrairieTest should be configured with the same value for
-   * `prairieLearnAuthSecret`.
+   * Shared secret used to sign and verify auth JWTs exchanged between
+   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
+   * configured with the same value under the same key.
    */
-  prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in

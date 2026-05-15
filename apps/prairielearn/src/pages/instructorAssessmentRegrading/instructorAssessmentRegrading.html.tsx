@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { JobStatusHtml } from '../../components/JobStatus.js';
@@ -10,7 +11,6 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
-  start_date_formatted: z.string(),
   user_uid: UserSchema.shape.uid,
 });
 type RegradingJobSequence = z.infer<typeof RegradingJobSequenceSchema>;
@@ -92,7 +92,12 @@ export function InstructorAssessmentRegrading({
                     return html`
                       <tr>
                         <td>${jobSequence.job_sequence.number}</td>
-                        <td>${jobSequence.start_date_formatted}</td>
+                        <td>
+                          ${formatDate(
+                            jobSequence.job_sequence.start_date!,
+                            resLocals.course_instance.display_timezone,
+                          )}
+                        </td>
                         <td>${jobSequence.job_sequence.description}</td>
                         <td>${jobSequence.user_uid}</td>
                         <td>${JobStatusHtml({ status: jobSequence.job_sequence.status })}</td>

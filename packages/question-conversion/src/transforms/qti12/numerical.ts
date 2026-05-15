@@ -110,7 +110,7 @@ export const numericalHandler: TransformHandler<QTI12ParsedItem> = {
         body: { type: 'numeric', answer: { correctValue } },
         gradingMethod: 'Manual',
         warnings: [
-          `Numerical question "${item.ident}" has a one-sided range (only ${hasLower ? 'vargte' : 'varlte'}); pl-number-input cannot express an inequality, so the question is emitted Manual-graded with ${correctValue} as a placeholder. Review and grade by hand, or convert to a custom server.py.`,
+          `One-sided range (only ${hasLower ? 'vargte' : 'varlte'}); pl-number-input cannot express an inequality, so the question is emitted Manual-graded with ${correctValue} as a placeholder. Review and grade by hand, or convert to a custom server.py.`,
         ],
       };
     }

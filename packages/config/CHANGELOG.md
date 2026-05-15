@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 4.2.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 4.2.0
 
 ### Minor Changes

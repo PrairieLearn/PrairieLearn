@@ -8,6 +8,7 @@ type FIBBody = Extract<IRQuestionBody, { type: 'fill-in-blanks' }>;
 
 export const fillInBlanksHandler: BodyEmitHandler = {
   bodyType: 'fill-in-blanks',
+  inlineInputs: true,
 
   transformPrompt(promptHtml, body) {
     const fib = body as FIBBody;
@@ -19,7 +20,7 @@ export const fillInBlanksHandler: BodyEmitHandler = {
     return result;
   },
 
-  // Inputs are inlined in the prompt via transformPrompt; nothing goes below pl-question-panel.
+  // Inputs are inlined in the prompt via transformPrompt; no separate body HTML needed.
   renderHtml() {
     return '';
   },

@@ -2,7 +2,12 @@ import { type Row, type Table, createColumnHelper } from '@tanstack/react-table'
 import { useEffect, useRef } from 'react';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
+import {
+  type MultiSelectFilterValue,
+  OverlayTrigger,
+  applyMultiSelectFilter,
+  numericColumnFilterFn,
+} from '@prairielearn/ui';
 
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
@@ -213,18 +218,15 @@ export function createColumns({
           </span>
         );
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         // We have to do this cast because columnId is a string.
         // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
         const current =
           row.getValue<InstanceQuestionRow['instance_question']['instance_question_group_name']>(
             columnId,
           );
-        if (!current) {
-          return filterValues.includes('No Group');
-        }
-        return filterValues.includes(current);
+        const groupName = current ?? 'No Group';
+        return applyMultiSelectFilter(filter, (values) => values.includes(groupName));
       },
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
@@ -262,11 +264,10 @@ export function createColumns({
           />
         );
       },
-      filterFn: ({ getValue }, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: ({ getValue }, columnId, filter: MultiSelectFilterValue) => {
         const requiresGrading = getValue(columnId);
         const status = requiresGrading ? 'Requires grading' : 'Graded';
-        return filterValues.includes(status);
+        return applyMultiSelectFilter(filter, (values) => values.includes(status));
       },
       meta: {
         autoSize: true,
@@ -277,11 +278,10 @@ export function createColumns({
       id: 'assigned_grader_name',
       header: 'Assigned grader',
       cell: (info) => info.getValue() || 'Unassigned',
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
-        if (!current) return filterValues.includes('Unassigned');
-        return filterValues.includes(current);
+        const grader = current ?? 'Unassigned';
+        return applyMultiSelectFilter(filter, (values) => values.includes(grader));
       },
       meta: {
         autoSize: true,
@@ -373,19 +373,19 @@ export function createColumns({
           return info.getValue();
         }
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
         const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
         const rowData = row.original;
-
-        if (rowData.instance_question.ai_grading_status !== 'None') {
-          const aiGraderName = generateAiGraderName(rowData.instance_question.ai_grading_status);
-          if (filterValues.includes(aiGraderName)) return true;
-        }
-
-        if (!current) return filterValues.includes('Unassigned');
-
-        return filterValues.includes(current);
+        const aiGraderName =
+          rowData.instance_question.ai_grading_status !== 'None'
+            ? generateAiGraderName(rowData.instance_question.ai_grading_status)
+            : null;
+        const grader = current ?? 'Unassigned';
+        return applyMultiSelectFilter(
+          filter,
+          (values) =>
+            values.includes(grader) || (aiGraderName != null && values.includes(aiGraderName)),
+        );
       },
       sortingFn: (rowA, rowB) => {
         const aAiGradingStatus = rowA.original.instance_question.ai_grading_status;
@@ -481,14 +481,14 @@ export function createColumns({
           </div>
         );
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+        if (filter.values.length === 0) return true;
         const rubricDiff = row.original.instance_question.rubric_difference;
-        if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
-
-        return filterValues.every((description) =>
-          rubricDiff.some((item) => item.description === description),
-        );
+        const matches =
+          !!rubricDiff &&
+          Array.isArray(rubricDiff) &&
+          filter.values.every((d) => rubricDiff.some((item) => item.description === d));
+        return filter.mode === 'include' ? matches : !matches;
       },
       sortingFn: (rowA, rowB) => {
         const aDiff = run(() => {

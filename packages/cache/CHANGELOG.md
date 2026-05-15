@@ -1,5 +1,11 @@
 # @prairielearn/cache
 
+## 2.1.10
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 2.1.9
 
 ### Patch Changes

@@ -1,11 +1,3 @@
--- BLOCK select_assessment_instance
-SELECT
-  ai.*
-FROM
-  assessment_instances AS ai
-WHERE
-  ai.id = $assessment_instance_id;
-
 -- BLOCK select_instance_questions
 SELECT
   to_jsonb(iq.*) AS instance_question,

@@ -60,7 +60,11 @@ function filtersMatchPreset(current: ColumnFiltersState, preset: ColumnFiltersSt
  * The selected state is derived from the table's current column filters.
  * If no preset matches, a "Custom" option is shown as selected.
  *
- * Currently, this component expects that the filters states are arrays.
+ * When a preset is applied, columns referenced by other presets but absent from
+ * the chosen one are removed from `columnFilters` (TanStack's "no filter"
+ * representation). Consumers that mirror filter state elsewhere (e.g., into URL
+ * params) should treat a column missing from `onColumnFiltersChange`'s argument
+ * as "reset to default".
  */
 export function PresetFilterDropdown<OptionName extends string, TData>({
   table,
@@ -97,23 +101,10 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
   const handleOptionClick = (optionName: OptionName) => {
     const presetFilters = options[optionName];
 
-    // Get current filters, removing any that are in our relevant columns
     const currentFilters = table.getState().columnFilters;
     const preservedFilters = currentFilters.filter((f) => !relevantColumnIds.has(f.id));
 
-    // For columns not in the preset, explicitly set empty filter to clear them
-    // This ensures the table's onColumnFiltersChange handler can sync the cleared state
-    const clearedFilters = Array.from(relevantColumnIds)
-      .filter((colId) => !presetFilters.some((f) => f.id === colId))
-      .map((colId) => ({
-        id: colId,
-        // TODO: This expects that we are only clearing filters whose state is an array.
-        value: [],
-      }));
-
-    // Combine preserved filters with the new preset filters and cleared filters
-    const newFilters = [...preservedFilters, ...presetFilters, ...clearedFilters];
-    table.setColumnFilters(newFilters);
+    table.setColumnFilters([...preservedFilters, ...presetFilters]);
 
     onSelect?.(optionName);
   };

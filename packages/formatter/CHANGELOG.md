@@ -1,5 +1,17 @@
 # @prairielearn/formatter
 
+## 2.4.0
+
+### Minor Changes
+
+- 9b7efcf: Allow formatDateISO to receive a null date
+
+## 2.3.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 2.3.0
 
 ### Minor Changes

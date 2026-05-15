@@ -1,5 +1,15 @@
 # @prairielearn/eslint-plugin
 
+## 4.2.0
+
+### Minor Changes
+
+- f83d484: Add `require-trpc-permission-middleware` rule that flags any `t.procedure` chain missing a permission middleware (`requireCoursePermission*`, `requireCourseInstancePermission*`, or `requireAdministrator`). The rule is wired up automatically for files under `**/src/trpc/**/*.ts`.
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 4.1.0
 
 ### Minor Changes

@@ -51,7 +51,7 @@ describe('Instructor group controls', () => {
 
   test.sequential('can create a new group', async () => {
     const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
-      group_name: 'TestGroup',
+      groupName: 'TestGroup',
       uids: users
         .slice(0, 2)
         .map((u) => u.uid)
@@ -65,7 +65,7 @@ describe('Instructor group controls', () => {
   test.sequential('cannot create a group with a user already in another group', async () => {
     await expect(
       trpcClient.assessmentGroups.addGroup.mutate({
-        group_name: 'TestGroup2',
+        groupName: 'TestGroup2',
         uids: users
           .slice(0, 2)
           .map((u) => u.uid)
@@ -76,7 +76,7 @@ describe('Instructor group controls', () => {
 
   test.sequential('can create a second group', async () => {
     const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
-      group_name: 'TestGroup2',
+      groupName: 'TestGroup2',
       uids: users
         .slice(2, 4)
         .map((u) => u.uid)
@@ -89,7 +89,7 @@ describe('Instructor group controls', () => {
 
   test.sequential('can create a group with an instructor', async () => {
     const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
-      group_name: 'TestGroupWithInstructor',
+      groupName: 'TestGroupWithInstructor',
       uids: 'dev@example.com',
     });
     assert.equal(group.name, 'TestGroupWithInstructor');
@@ -99,7 +99,7 @@ describe('Instructor group controls', () => {
   test.sequential('can add a user to an existing group', async () => {
     assert.isDefined(group1RowId);
     const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
-      group_id: group1RowId,
+      groupId: group1RowId,
       uids: [users[0].uid, users[1].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 0);
@@ -109,7 +109,7 @@ describe('Instructor group controls', () => {
   test.sequential('cannot add a user to a group if they are already in another group', async () => {
     assert.isDefined(group2RowId);
     const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
-      group_id: group2RowId,
+      groupId: group2RowId,
       uids: [users[2].uid, users[3].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 1);

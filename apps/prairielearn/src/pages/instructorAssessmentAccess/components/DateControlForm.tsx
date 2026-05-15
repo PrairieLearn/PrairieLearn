@@ -1,4 +1,4 @@
-import { Col, Form, Row } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -20,14 +20,12 @@ export function DefaultDateControlForm({
   title = 'Date control',
   description = 'Control access and credit to your assessment based on a schedule',
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
+  isExam,
 }: {
   title?: string;
   description?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
+  isExam: boolean;
 }) {
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
@@ -84,25 +82,21 @@ export function DefaultDateControlForm({
         <div className="d-flex flex-column gap-3">
           <DefaultReleaseDateField displayTimezone={displayTimezone} />
           <DefaultDeadlineArrayField type="early" displayTimezone={displayTimezone} />
-          <DefaultDueDateField
-            displayTimezone={displayTimezone}
-            assessmentId={assessmentId}
-            courseInstanceId={courseInstanceId}
-          />
+          <DefaultDueDateField displayTimezone={displayTimezone} />
           {showLateFields && (
             <>
               <DefaultDeadlineArrayField type="late" displayTimezone={displayTimezone} />
-              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} />
+              <DefaultAfterLastDeadlineField displayTimezone={displayTimezone} isExam={isExam} />
             </>
           )}
-          <Row className="gy-3">
-            <Col md={6}>
+          <div className="d-flex flex-column gap-3">
+            <div>
               <DefaultDurationField />
-            </Col>
-            <Col md={6}>
+            </div>
+            <div>
               <DefaultPasswordField />
-            </Col>
-          </Row>
+            </div>
+          </div>
         </div>
       ) : (
         <p className="text-body-secondary mt-2 mb-0">
@@ -118,15 +112,13 @@ export function OverrideDateControlForm({
   title = 'Date control',
   description = 'Override date settings from the defaults by clicking "Override" on individual fields',
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
+  isExam,
 }: {
   index: number;
   title?: string;
   description?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
+  isExam: boolean;
 }) {
   return (
     <div>
@@ -139,22 +131,21 @@ export function OverrideDateControlForm({
       <div className="d-flex flex-column gap-3">
         <OverrideReleaseDateField index={index} displayTimezone={displayTimezone} />
         <OverrideDeadlineArrayField index={index} type="early" displayTimezone={displayTimezone} />
-        <OverrideDueDateField
+        <OverrideDueDateField index={index} displayTimezone={displayTimezone} />
+        <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
+        <OverrideAfterLastDeadlineField
           index={index}
           displayTimezone={displayTimezone}
-          assessmentId={assessmentId}
-          courseInstanceId={courseInstanceId}
+          isExam={isExam}
         />
-        <OverrideDeadlineArrayField index={index} type="late" displayTimezone={displayTimezone} />
-        <OverrideAfterLastDeadlineField index={index} displayTimezone={displayTimezone} />
-        <Row className="gy-3">
-          <Col md={6}>
+        <div className="d-flex flex-column gap-3">
+          <div>
             <OverrideDurationField index={index} />
-          </Col>
-          <Col md={6}>
+          </div>
+          <div>
             <OverridePasswordField index={index} />
-          </Col>
-        </Row>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -23,6 +23,12 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
+export function getAssessmentStudentsUrl(
+  parts: { assessmentId: string } & AssessmentUrlParts,
+): string {
+  return `${getAssessmentUrl(parts)}/instances`;
+}
+
 export function getAssessmentSettingsUrl(
   parts: { assessmentId: string } & AssessmentUrlParts,
 ): string {
@@ -31,6 +37,18 @@ export function getAssessmentSettingsUrl(
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
+}
+
+export function getAssessmentDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -135,6 +153,22 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+export function getAiGradingSettingsUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/ai_grading`;
+}
+
+export function getManualGradingInstanceQuestionRubricPanelsUrl({
+  courseInstanceId,
+  assessmentId,
+  instanceQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  instanceQuestionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${instanceQuestionId}/grading_rubric_panels`;
+}
+
 export function getAdministratorJobSequenceUrl(jobSequenceId: string): string {
   return `/pl/administrator/jobSequence/${jobSequenceId}`;
 }
@@ -176,6 +210,17 @@ export function getQuestionUrl({
 
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
+}
+
+export function getQuestionSettingsUrl({
+  questionId,
+  courseInstanceId,
+  courseId,
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  return `${urlPrefix}/question/${questionId}/settings`;
 }
 
 // tRPC scope URLs

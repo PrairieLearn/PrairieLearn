@@ -1,5 +1,22 @@
 # @prairielearn/ui
 
+## 3.4.1
+
+### Patch Changes
+
+- 9ec69b0: Vertically center the icon and label in the `StickySaveBar` save button.
+
+## 3.4.0
+
+### Minor Changes
+
+- 647a35a: Add an `alert` slot to `StickySaveBar` that renders save feedback inside the sticky region, and a `fullWidth` prop that lets the actions row span the full width of full-width pages.
+- 6fd6eab: Replace `StickyActionBar` with new `StickySaveBar` component.
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 3.3.0
 
 ### Minor Changes

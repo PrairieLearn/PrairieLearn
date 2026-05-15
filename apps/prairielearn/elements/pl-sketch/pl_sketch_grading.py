@@ -93,7 +93,7 @@ def match(
     x, y = grader["x"], grader["y"]
     feedback_value = ("x = " + str(x)) if x is not None else ("y = " + str(y))
     tolerance = grader["tolerance"]
-    feedback = grader["feedback"] or f"Missing expected element at {feedback_value}."
+    feedback = grader["feedback"] or f"Missing expected drawing at {feedback_value}."
     tools_to_check = get_tools_to_check(grader, submission)
 
     gf_tools = [
@@ -169,7 +169,7 @@ def match_fun(
     tool_dict: dict[str, SketchTool],
 ) -> tuple[float, int, list[str]]:
     tolerance = grader["tolerance"]
-    feedback = grader["feedback"] or "Element does not match expected function."
+    feedback = grader["feedback"] or "Drawing does not match expected function."
     tools_to_check = get_tools_to_check(
         grader, submission, not_allowed=["vertical-line", "polygon"]
     )
@@ -228,7 +228,7 @@ def count(
     tool_dict: dict[str, SketchTool],
 ) -> tuple[float, int, list[str]]:
     tolerance = grader["tolerance"]
-    feedback = grader["feedback"] or "Incorrect number of elements used."
+    feedback = grader["feedback"] or "Incorrect number of drawings used."
     tools_to_check = get_tools_to_check(grader, submission)
 
     if grader["xrange"] is None or grader["count"] is None:
@@ -585,7 +585,7 @@ def undefined_in(
 ) -> tuple[float, int, list[str]]:
     feedback = (
         grader["feedback"]
-        or "Elements found in range(s) where they were supposed to be undefined."
+        or "Drawings found in range(s) where they were supposed to be undefined."
     )
     tools_to_check = get_tools_to_check(
         grader,
@@ -645,7 +645,7 @@ def check_ltgt(
     g_l = "greater" if greater else "less"
     feedback = (
         grader["feedback"]
-        or f"An element is not {g_l} than the expected function or y-value in the expected range(s)."
+        or f"A drawing is not {g_l} than the expected function or y-value in the expected range(s)."
     )
     tools_to_check = get_tools_to_check(
         grader,

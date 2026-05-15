@@ -72,7 +72,7 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
-export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
+export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
@@ -129,16 +129,6 @@ const SprocCheckAssessmentAccessSchema = z.object({
 // Result of users_get_displayed_role sproc
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
-
-// Result of team_info sproc
-export const SprocTeamInfoSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  uid_list: z.array(z.string()),
-  user_name_list: z.array(z.string()),
-  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
-});
-export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
@@ -237,6 +227,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -455,6 +446,7 @@ export const AssessmentSchema = z.object({
   score_stat_number: z.number(),
   score_stat_std: z.number(),
   share_source_publicly: z.boolean(),
+  show_question_titles: z.boolean(),
   shuffle_questions: z.boolean().nullable(),
   statistics_last_updated_at: DateFromISOString,
   stats_last_updated: DateFromISOString.nullable(),
@@ -721,6 +713,7 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseSchema = z.object({
+  ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
@@ -1233,6 +1226,7 @@ export const JobSequenceSchema = z.object({
   number: z.number(),
   start_date: DateFromISOString.nullable(),
   status: EnumJobStatusSchema.nullable(),
+  stop_requested_by_authn_user_id: IdSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });

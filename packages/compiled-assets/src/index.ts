@@ -55,6 +55,17 @@ let relativeSourcePaths: string[] | null = null;
  */
 const NODE_ONLY_EXTERNALS = ['fs/promises', 'module'];
 
+async function serveEsbuildContext(context: esbuild.BuildContext): Promise<esbuild.ServeResult> {
+  // This must stay in sync with the Host header workaround in `handler()`.
+  // esbuild 0.25+ validates proxied requests against the server's listening host.
+  return context.serve({
+    host: '0.0.0.0',
+    // Use an OS-assigned port to avoid esbuild's default port 8000, which
+    // conflicts with mkdocs when running `make dev-docs`.
+    port: 0,
+  });
+}
+
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
   options = {
     ...DEFAULT_OPTIONS,
@@ -96,7 +107,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       },
       external: NODE_ONLY_EXTERNALS,
     });
-    esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
+    esbuildServer = await serveEsbuildContext(esbuildContext);
 
     const splitSourceGlob = path.join(
       options.sourceDirectory,
@@ -127,7 +138,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       },
       external: NODE_ONLY_EXTERNALS,
     });
-    splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
+    splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);
   }
 }
 

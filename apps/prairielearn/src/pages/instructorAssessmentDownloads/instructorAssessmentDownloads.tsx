@@ -488,10 +488,7 @@ async function sendInstancesCsv(
       ...row,
       assessment_label,
       username: row.uid?.split('@')[0] ?? null,
-      date_formatted:
-        row.date == null
-          ? null
-          : formatDateISO(row.date, res.locals.course_instance.display_timezone),
+      date_formatted: formatDateISO(row.date, res.locals.course_instance.display_timezone),
       time_remaining: row.open
         ? row.date_limit == null
           ? 'Open'
@@ -620,7 +617,7 @@ router.get(
           ...row,
           assessment_label: assessmentName,
           date_formatted: formatDateISO(
-            row.instance_question_created_at!,
+            row.instance_question_created_at,
             res.locals.course_instance.display_timezone,
           ),
           duration_seconds: row.duration == null ? null : row.duration / SECOND_IN_MILLISECONDS,
@@ -732,20 +729,17 @@ router.get(
           assessment_label: assessmentName,
           qid: qidWithSharingName(res.locals, row),
           submission_date_formatted: formatDateISO(
-            row.submission_date!,
+            row.submission_date,
             res.locals.course_instance.display_timezone,
           ),
-          grading_requested_at_formatted:
-            row.grading_requested_at == null
-              ? null
-              : formatDateISO(
-                  row.grading_requested_at,
-                  res.locals.course_instance.display_timezone,
-                ),
-          graded_at_formatted:
-            row.graded_at == null
-              ? null
-              : formatDateISO(row.graded_at, res.locals.course_instance.display_timezone),
+          grading_requested_at_formatted: formatDateISO(
+            row.grading_requested_at,
+            res.locals.course_instance.display_timezone,
+          ),
+          graded_at_formatted: formatDateISO(
+            row.graded_at,
+            res.locals.course_instance.display_timezone,
+          ),
           correct_str: row.correct == null ? null : row.correct ? 'TRUE' : 'FALSE',
           rubric_grading:
             row.manual_rubric_grading_id == null || row.rubric_grading == null

@@ -95,7 +95,7 @@ export function CopyCourseInstanceModal({
   const accessControlStrategy = useWatch({ control, name: 'access_control_strategy' });
 
   const analysisAppError = analysisQuery.isError
-    ? getAppError<InstanceAdminSettingsError>(analysisQuery.error)
+    ? getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(analysisQuery.error)
     : null;
 
   const copyMutation = useMutation({
