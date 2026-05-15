@@ -1,9 +1,9 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'path';
 
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';

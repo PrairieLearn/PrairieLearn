@@ -32,6 +32,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
@@ -297,7 +298,18 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        res.redirect(req.originalUrl);
+        const updatedAssessmentQuestion = await selectAssessmentQuestionById(
+          res.locals.assessment_question.id,
+        );
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: updatedAssessmentQuestion,
+        });
+        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+        const aiGradingStats =
+          aiGradingEnabled && updatedAssessmentQuestion.ai_grading_mode
+            ? await calculateAiGradingStats(updatedAssessmentQuestion)
+            : null;
+        res.json({ rubric_data, aiGradingStats });
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }

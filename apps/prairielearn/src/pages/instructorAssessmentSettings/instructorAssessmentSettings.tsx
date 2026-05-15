@@ -23,6 +23,7 @@ import { getOriginalHash } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
@@ -96,6 +97,12 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const questionSharingEnabled = res.locals.question_sharing_enabled;
+    const nonPublicQuestionsInAssessment =
+      !questionSharingEnabled || assessment.share_source_publicly
+        ? []
+        : await selectNonPublicQuestionsInAssessment({ assessment_id: assessment.id });
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({
@@ -140,6 +147,8 @@ router.get(
               isDevMode={config.devMode}
               assessmentTools={assessmentTools}
               zonePointsRange={zonePointsRange}
+              nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
+              questionSharingEnabled={questionSharingEnabled}
             />
           </Hydrate>
         ),

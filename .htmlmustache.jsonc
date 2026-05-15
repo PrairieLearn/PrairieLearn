@@ -1,4 +1,4 @@
-// This config should be kept in sync with `apps/prairielearn/assets/scripts/lib/htmlMustacheConfig.ts`
+// This config should be kept in sync with `apps/prairielearn/src/lib/htmlMustacheConfig.ts`
 {
   "include": [
     "apps/prairielearn/elements/**/*.mustache",
