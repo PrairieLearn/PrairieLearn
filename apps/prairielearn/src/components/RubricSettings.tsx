@@ -470,13 +470,21 @@ export function RubricSettings({
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        let data: { err: any };
+        let err: string | undefined;
         try {
-          data = (await res.json()) ?? {};
+          const data: unknown = await res.json();
+          if (
+            data !== null &&
+            typeof data === 'object' &&
+            'err' in data &&
+            typeof data.err === 'string'
+          ) {
+            err = data.err;
+          }
         } catch {
-          data = { err: `Error: ${res.statusText}` };
+          // Response body was not JSON; fall through to statusText.
         }
-        setSettingsError(data.err || `Error: ${res.statusText}`);
+        setSettingsError(err ?? `Error: ${res.statusText}`);
         return;
       }
       // Need to handle response separated for assessment question and instance question pages
