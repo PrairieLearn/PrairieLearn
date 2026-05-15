@@ -2,9 +2,18 @@ import type { Config } from '@reteps/tree-sitter-htmlmustache/linter';
 
 import { elementCustomTags } from '../ee/lib/element-schemas/index.js';
 
+type HtmlMustacheConfig = Config & {
+  customTagDefaults?: {
+    allowBooleanAttributes?: boolean;
+  };
+};
+
 // This should be kept in sync with `.htmlmustache.jsonc`
-export const htmlMustacheConfig: Config = {
+export const htmlMustacheConfig: HtmlMustacheConfig = {
   printWidth: 100,
+  customTagDefaults: {
+    allowBooleanAttributes: false,
+  },
   noBreakDelimiters: [
     { start: '$', end: '$' },
     { start: '$$', end: '$$' },
@@ -266,8 +275,6 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-matrix-input' },
     { name: 'pl-checkbox' },
     ...elementCustomTags,
-    { name: 'pl-order-blocks' },
-    { name: 'pl-block-group' },
     { name: 'pl-answer' },
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },

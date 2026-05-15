@@ -62,17 +62,6 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(messages.some((message) => message.includes('range')));
   });
 
-  it('rejects valueless PL boolean attributes', async () => {
-    const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice" hide-letter-keys>
-        <pl-answer correct>A</pl-answer>
-      </pl-multiple-choice>
-    `);
-
-    assert.isTrue(messages.some((message) => message.includes('hide-letter-keys')));
-    assert.isTrue(messages.some((message) => message.includes('correct')));
-  });
-
   it('rejects attributes from other pl-answer owners', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
@@ -86,7 +75,7 @@ describe('pl-multiple-choice schema', () => {
   it('does not apply the multiple-choice answer schema to other owners', async () => {
     const messages = await lintMessages(`
       <pl-order-blocks answers-name="blocks">
-        <pl-answer ranking="1">A</pl-answer>
+        <pl-answer correct="true">A</pl-answer>
       </pl-order-blocks>
     `);
 

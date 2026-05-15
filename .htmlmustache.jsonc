@@ -12,6 +12,9 @@
     "testCourse/questions/addVectors/question.html"
   ],
   "printWidth": 100,
+  "customTagDefaults": {
+    "allowBooleanAttributes": false
+  },
   "pluginModule": "./apps/prairielearn/src/ee/lib/element-schemas/htmlmustache-plugin.ts",
   "noBreakDelimiters": [
     { "start": "$", "end": "$" },
