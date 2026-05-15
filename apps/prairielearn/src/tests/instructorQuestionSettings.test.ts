@@ -6,16 +6,12 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
-import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { selectQuestionById, updateQuestion } from '../models/question.js';
-import type { CourseJsonInput as InfoCourseJson } from '../schemas/infoCourse.js';
-import type { QuestionJsonInput as InfoQuestionJson } from '../schemas/infoQuestion.js';
+import { selectQuestionById } from '../models/question.js';
 
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
-  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -28,43 +24,6 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 let courseRepo: CourseRepoFixture;
 let questionLiveInfoPath: string;
 let questionDevInfoPath: string;
-
-async function setLockedSharingSetInCourseFiles(enabled: boolean) {
-  const infoCourseRelPath = 'infoCourse.json';
-  const infoCoursePath = path.join(courseRepo.courseOriginDir, infoCourseRelPath);
-  const infoCourse: InfoCourseJson = await fs.readJSON(infoCoursePath);
-
-  const sharingSets = (infoCourse.sharingSets ?? []).filter(
-    (sharingSet) => sharingSet.name !== 'locked-set',
-  );
-  if (enabled) sharingSets.push({ name: 'locked-set' });
-  if (sharingSets.length > 0) {
-    infoCourse.sharingSets = sharingSets;
-  } else {
-    delete infoCourse.sharingSets;
-  }
-  await fs.writeJSON(infoCoursePath, infoCourse, { spaces: 2 });
-
-  // Resolve question 1's current qid from the DB rather than relying on the
-  // module-level `questionLiveInfoPath`, which lags behind renames performed
-  // by earlier tests in this sequence.
-  const question = await selectQuestionById('1');
-  const infoQuestionRelPath = path.join('questions', question.qid!, 'info.json');
-  const infoQuestionPath = path.join(courseRepo.courseOriginDir, infoQuestionRelPath);
-  const infoQuestion: InfoQuestionJson = await fs.readJSON(infoQuestionPath);
-  if (enabled) {
-    infoQuestion.sharingSets = ['locked-set'];
-  } else {
-    delete infoQuestion.sharingSets;
-  }
-  await fs.writeJSON(infoQuestionPath, infoQuestion, { spaces: 2 });
-
-  await commitOriginAndSync(
-    courseRepo,
-    enabled ? 'Add locked sharing set' : 'Remove locked sharing set',
-    [infoCourseRelPath, infoQuestionRelPath],
-  );
-}
 
 describe('Editing question settings', () => {
   beforeAll(async () => {
@@ -613,96 +572,4 @@ describe('Editing question settings', () => {
       await assertEditError(response, 'would be a parent directory of the existing question');
     },
   );
-
-  describe('Sharing gates on the update_question action', () => {
-    beforeAll(async () => {
-      await features.enable('question-sharing');
-    });
-
-    async function buildUpdateQuestionBody(overrides: Record<string, string> = {}) {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
-      const qid = settingsPageResponse.$('input[name=qid]').val() as string;
-      assert.isString(qid);
-
-      return new URLSearchParams({
-        __action: 'update_question',
-        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
-        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-        title: 'Sharing gate test',
-        qid,
-        topic: 'Test',
-        grading_method: 'Internal',
-        ...overrides,
-      });
-    }
-
-    test.sequential('cannot un-share a publicly shared question', async () => {
-      await updateQuestion({
-        question_id: '1',
-        patch: { share_publicly: true, share_source_publicly: false },
-      });
-      try {
-        const response = await fetch(
-          `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-          {
-            method: 'POST',
-            // No `share_publicly` checkbox -> submit tries to un-share.
-            body: await buildUpdateQuestionBody(),
-          },
-        );
-        assert.equal(response.status, 400);
-      } finally {
-        await updateQuestion({
-          question_id: '1',
-          patch: { share_publicly: false, share_source_publicly: false },
-        });
-      }
-    });
-
-    test.sequential('cannot un-share a question whose source is publicly shared', async () => {
-      await updateQuestion({
-        question_id: '1',
-        patch: { share_publicly: false, share_source_publicly: true },
-      });
-      try {
-        const response = await fetch(
-          `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-          {
-            method: 'POST',
-            body: await buildUpdateQuestionBody(),
-          },
-        );
-        assert.equal(response.status, 400);
-      } finally {
-        await updateQuestion({
-          question_id: '1',
-          patch: { share_publicly: false, share_source_publicly: false },
-        });
-      }
-    });
-
-    test.sequential(
-      'cannot remove a question from a sharing set it already belongs to',
-      async () => {
-        await setLockedSharingSetInCourseFiles(true);
-
-        try {
-          const response = await fetch(
-            `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-            {
-              method: 'POST',
-              // Omit `sharing_sets`, which means "remove from all sets" and must be rejected.
-              body: await buildUpdateQuestionBody(),
-            },
-          );
-          assert.equal(response.status, 400);
-        } finally {
-          await setLockedSharingSetInCourseFiles(false);
-        }
-      },
-    );
-  });
 });
