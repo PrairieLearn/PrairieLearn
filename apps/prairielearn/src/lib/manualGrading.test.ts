@@ -57,24 +57,33 @@ describe('renderRubricItemFields', () => {
   });
 
   it('escapes HTML in error messages to prevent injection', () => {
+    // Mustache embeds section names verbatim in its error messages, so a
+    // section name containing dangerous HTML lets us actually exercise the
+    // error-span escaping path (rather than relying on `<` chars from the
+    // raw template that may be sanitized separately by markdown).
     const item = makeRenderedItem({
-      // A malformed template whose error message would *not* normally contain
-      // dangerous characters — we instead verify that the error span uses
-      // safe HTML interpolation by checking that special chars in the
-      // rendered output stay escaped.
-      description: '{{#open}}<script>alert(1)</script>',
+      description: '{{#<img src=x onerror=alert(1)>}}body',
     });
     renderRubricItemFields(item, {});
 
-    // The script tag should be present in the *rendered template* (because
-    // markdown rendering may preserve it), but the *error message* part
-    // must not introduce any unescaped HTML attributes beyond our own span.
-    expect(item.description_rendered).toContain('template error');
-    // Mustache errors don't naturally include angle brackets, so the only
-    // `<` characters in the output should be from our span tag and the
-    // user's raw template content.
-    const errorSpanIndex = item.description_rendered!.indexOf('(template error:');
-    expect(errorSpanIndex).toBeGreaterThan(-1);
+    const rendered = item.description_rendered!;
+    expect(rendered).toContain('(template error:');
+
+    // Locate the error-span region and assert about its content only — the
+    // raw-template portion before it may be rendered as HTML by markdown.
+    const errorSpanStart = rendered.indexOf('(template error:');
+    expect(errorSpanStart).toBeGreaterThan(-1);
+    const errorSpanRegion = rendered.slice(errorSpanStart);
+
+    // The escaped form must be present...
+    expect(errorSpanRegion).toContain('&lt;img');
+    expect(errorSpanRegion).toContain('&gt;');
+    // ...and the raw, executable form must not appear in the error span.
+    // (`onerror=alert(1)` as plain text is harmless once `<` and `>` are
+    // escaped — what matters is that the opening/closing tag chars never
+    // make it through.)
+    expect(errorSpanRegion).not.toContain('<img');
+    expect(errorSpanRegion).not.toContain('alert(1)>');
   });
 
   it('sets rendered fields to empty string when the source field is falsy', () => {
