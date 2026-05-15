@@ -17,6 +17,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
+import { AI_GRADING_MODAL_OPEN_EVENT } from './instanceQuestion.shared.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
 
 interface SubmissionOrGradingJob {
@@ -34,6 +35,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  aiGradingMode = false,
   showInstanceQuestionGroup = false,
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
@@ -51,6 +53,13 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  /**
+   * Controls whether the "AI grade" button renders. Must match the hydrated
+   * InstanceQuestionAiGrade component's gating — both should depend on the
+   * `ai-grading` feature flag AND the assessment question's `ai_grading_mode`
+   * — so the button never appears without its event handler.
+   */
+  aiGradingMode?: boolean;
   showInstanceQuestionGroup?: boolean;
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
@@ -446,6 +455,18 @@ ${submission.feedback?.manual}</textarea
                   >
                     Grade
                   </button>
+                  ${context === 'main' && aiGradingMode
+                    ? html`
+                        <button
+                          id="ai-grade-button"
+                          type="button"
+                          class="btn btn-primary ms-1"
+                          onclick="document.dispatchEvent(new CustomEvent('${AI_GRADING_MODAL_OPEN_EVENT}'))"
+                        >
+                          <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
+                        </button>
+                      `
+                    : ''}
                 `
               : ''}
             <div class="btn-group">
