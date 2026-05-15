@@ -24,11 +24,6 @@ interface VariantResponse {
   extraHeadersHtml: string;
 }
 
-interface QuestionFileEntry {
-  path: string;
-  size: number;
-}
-
 function assertOkResponse(response: Response) {
   if (!response.ok) throw new Error(`Server returned status ${response.status}`);
 }
@@ -293,18 +288,8 @@ function encodeFilePath(filePath: string) {
   return filePath.split('/').map(encodeURIComponent).join('/');
 }
 
-function formatFileSize(size: number) {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getFileName(filePath: string) {
-  return filePath.split('/').at(-1) ?? filePath;
-}
-
 function AllQuestionFiles({
-  allQuestionFiles,
+  allQuestionFilesHtml,
   selectedFile,
   qid,
   questionId,
@@ -315,7 +300,7 @@ function AllQuestionFiles({
   onClearSelectedFile,
   onSelectedFileSaved,
 }: {
-  allQuestionFiles: QuestionFileEntry[];
+  allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   qid: string | null;
   questionId: string;
@@ -326,6 +311,31 @@ function AllQuestionFiles({
   onClearSelectedFile: () => void;
   onSelectedFileSaved: () => Promise<unknown>;
 }) {
+  const fileListingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fileListing = fileListingRef.current;
+    if (!fileListing) return;
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const link = target.closest<HTMLAnchorElement>('a[data-selected-file-path]');
+      const filePath = link?.dataset.selectedFilePath;
+      if (!filePath) return;
+
+      event.preventDefault();
+      onSelectFile(filePath);
+    };
+
+    fileListing.addEventListener('click', handleClick);
+
+    return () => {
+      fileListing.removeEventListener('click', handleClick);
+    };
+  }, [onSelectFile]);
+
   if (!qid) return null;
 
   const rootPath = `questions/${qid}`;
@@ -353,58 +363,18 @@ function AllQuestionFiles({
           Open standalone file browser
         </a>
       </div>
-      <div className="table-responsive">
-        <table className="table table-sm table-hover align-middle mb-0" aria-label="Question files">
-          <thead>
-            <tr>
-              <th scope="col">File</th>
-              <th scope="col" className="text-end">
-                Size
-              </th>
-              <th scope="col" className="text-end">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {allQuestionFiles.map((file) => {
-              const pathFromCourseRoot = `${rootPath}/${file.path}`;
-              const encodedPath = encodeFilePath(pathFromCourseRoot);
-
-              return (
-                <tr key={file.path}>
-                  <td className="font-monospace">{file.path}</td>
-                  <td className="text-end text-muted">{formatFileSize(file.size)}</td>
-                  <td>
-                    <div className="d-flex gap-2 justify-content-end">
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-secondary text-nowrap"
-                        onClick={() => onSelectFile(file.path)}
-                      >
-                        Edit
-                      </button>
-                      <a
-                        className="btn btn-xs btn-secondary text-nowrap"
-                        href={`${urlPrefix}/question/${questionId}/file_download/${encodedPath}?attachment=${encodeURIComponent(getFileName(file.path))}`}
-                      >
-                        Download
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <div
+        ref={fileListingRef}
+        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+        dangerouslySetInnerHTML={{ __html: allQuestionFilesHtml }}
+      />
     </div>
   );
 }
 
 export function QuestionAndFilePreview({
   questionFiles,
-  allQuestionFiles,
+  allQuestionFilesHtml,
   selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
@@ -427,7 +397,7 @@ export function QuestionAndFilePreview({
   onSelectedFileSaved,
 }: {
   questionFiles: Record<string, string>;
-  allQuestionFiles: QuestionFileEntry[];
+  allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
@@ -524,7 +494,7 @@ export function QuestionAndFilePreview({
       </Tab.Pane>
       <Tab.Pane eventKey="all-files" className="h-100">
         <AllQuestionFiles
-          allQuestionFiles={allQuestionFiles}
+          allQuestionFilesHtml={allQuestionFilesHtml}
           selectedFile={selectedFile}
           qid={qid}
           questionId={questionId}

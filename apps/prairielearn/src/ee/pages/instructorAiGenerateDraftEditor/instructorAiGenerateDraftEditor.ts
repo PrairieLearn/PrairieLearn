@@ -3,7 +3,6 @@ import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { Router } from 'express';
-import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -11,6 +10,7 @@ import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres'
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { createDirectoryBrowserHtml } from '../../../components/FileBrowser.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -24,6 +24,7 @@ import {
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
+import { getPaths } from '../../../lib/instructorFiles.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
@@ -57,11 +58,6 @@ import {
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-interface QuestionFileEntry {
-  path: string;
-  size: number;
-}
-
 type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
 type InstructorQuestionRenderLocals = InstructorQuestionLocals & ResLocalsQuestionRender;
 
@@ -73,51 +69,61 @@ function getVariantId(queryValue: unknown) {
   return queryValue == null || queryValue === '' ? null : IdSchema.parse(queryValue);
 }
 
-async function listQuestionFiles({
-  course,
-  question,
+function encodeCourseFilePath(filePath: string) {
+  return filePath.split('/').map(encodeURIComponent).join('/');
+}
+
+async function renderAllQuestionFilesHtml({
+  resLocals,
+  editorUrl,
 }: {
-  course: Course;
-  question: Question;
-}): Promise<QuestionFileEntry[]> {
-  if (!question.qid) return [];
+  resLocals: InstructorQuestionLocals;
+  editorUrl: string;
+}) {
+  if (!resLocals.question.qid) return '';
 
-  const questionPath = path.join(course.path, 'questions', question.qid);
-  const entries: QuestionFileEntry[] = [];
+  const questionRootPath = `questions/${resLocals.question.qid}`;
+  const paths = getPaths(undefined, {
+    ...resLocals,
+    navPage: 'question',
+  });
+  const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
+  const successfulActionRedirectUrl = `${editorUrl}?tab=all-files`;
 
-  async function walk(directoryPath: string) {
-    const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
-
-    for (const dirent of dirents) {
-      const filePath = path.join(directoryPath, dirent.name);
-      if (dirent.isDirectory()) {
-        await walk(filePath);
-      } else if (dirent.isFile()) {
-        const stat = await fs.stat(filePath);
-        entries.push({
-          path: path.relative(questionPath, filePath).split(path.sep).join('/'),
-          size: stat.size,
-        });
-      }
-    }
-  }
-
-  await walk(questionPath);
-
-  return entries.sort((a, b) => a.path.localeCompare(b.path));
+  return (
+    await createDirectoryBrowserHtml({
+      paths,
+      isReadOnly: false,
+      csrfToken: resLocals.__csrf_token,
+      options: {
+        fileViewBaseUrl,
+        formAction: `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`,
+        successfulActionRedirectUrl,
+        editFileUrl: (file) =>
+          getEditorUrlWithSelectedFile({
+            editorUrl,
+            filePath: path.posix.relative(questionRootPath, file.path.split(path.sep).join('/')),
+          }),
+        editFileAttributes: (file) => ({
+          'data-selected-file-path': path.posix.relative(
+            questionRootPath,
+            file.path.split(path.sep).join('/'),
+          ),
+        }),
+      },
+    })
+  ).toString();
 }
 
 async function getQuestionFilesData(resLocals: InstructorQuestionLocals, selectedFile: unknown) {
   const courseFilesClient = getCourseFilesClient();
-  const [{ files }, allFiles, selectedQuestionFile] = await Promise.all([
+  const editorUrl = getEditorUrl(resLocals);
+  const [{ files }, allFilesHtml, selectedQuestionFile] = await Promise.all([
     courseFilesClient.getQuestionFiles.query({
       course_id: resLocals.course.id,
       question_id: resLocals.question.id,
     }),
-    listQuestionFiles({
-      course: resLocals.course,
-      question: resLocals.question,
-    }),
+    renderAllQuestionFilesHtml({ resLocals, editorUrl }),
     readSelectedQuestionFile({
       course: resLocals.course,
       question: resLocals.question,
@@ -125,7 +131,7 @@ async function getQuestionFilesData(resLocals: InstructorQuestionLocals, selecte
     }),
   ]);
 
-  return { files, allFiles, selectedFile: selectedQuestionFile };
+  return { files, allFilesHtml, selectedFile: selectedQuestionFile };
 }
 
 async function getValidatedInitialMessages(question: Question) {
@@ -371,7 +377,7 @@ router.get(
         question: res.locals.question,
         messages,
         questionFiles: questionFilesData.files,
-        allQuestionFiles: questionFilesData.allFiles,
+        allQuestionFilesHtml: questionFilesData.allFilesHtml,
         selectedFile: questionFilesData.selectedFile,
         richTextEditorEnabled,
         questionContainerHtml,

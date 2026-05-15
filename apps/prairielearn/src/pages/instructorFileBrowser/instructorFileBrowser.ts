@@ -16,6 +16,20 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 const router = Router();
 
+function getSuccessfulActionRedirectUrl({
+  redirectUrl,
+  urlPrefix,
+}: {
+  redirectUrl: unknown;
+  urlPrefix: string;
+}) {
+  if (typeof redirectUrl !== 'string' || redirectUrl.trim() === '') return null;
+  if (!redirectUrl.startsWith(`${urlPrefix}/`)) {
+    throw new error.HttpStatusError(400, 'Invalid redirect URL');
+  }
+  return redirectUrl;
+}
+
 router.get(
   '/*',
   createAuthzMiddleware({
@@ -74,6 +88,10 @@ router.post(
       }
 
       const paths = getPaths(req.params[0], res.locals);
+      const successfulActionRedirectUrl = getSuccessfulActionRedirectUrl({
+        redirectUrl: req.body.redirect_url,
+        urlPrefix: res.locals.urlPrefix,
+      });
       const container = {
         rootPath: paths.rootPath,
         invalidRootPaths: paths.invalidRootPaths,
@@ -102,7 +120,7 @@ router.post(
           res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
           return;
         }
-        res.redirect(req.originalUrl);
+        res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
       } else if (req.body.__action === 'rename_file') {
         let oldPath: string;
         try {
@@ -135,7 +153,7 @@ router.post(
 
         if (oldPath === newPath) {
           // The new file name is the same as old file name; do nothing.
-          res.redirect(req.originalUrl);
+          res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
           return;
         }
 
@@ -152,7 +170,9 @@ router.post(
           res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
           return;
         }
-        if (req.body.was_viewing_file) {
+        if (successfulActionRedirectUrl != null) {
+          res.redirect(successfulActionRedirectUrl);
+        } else if (req.body.was_viewing_file) {
           res.redirect(
             `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
               path.relative(res.locals.course.path, newPath),
@@ -194,7 +214,7 @@ router.post(
           res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
           return;
         }
-        res.redirect(req.originalUrl);
+        res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
       } else {
         throw new Error(`unknown __action: ${req.body.__action}`);
       }
