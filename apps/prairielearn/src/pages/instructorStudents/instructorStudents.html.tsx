@@ -83,6 +83,8 @@ const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentSta
 };
 const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 
+const HIDDEN_BY_DEFAULT = new Set(['user_uin', 'user_email']);
+
 const columnHelper = createColumnHelper<StudentRow>();
 
 async function copyToClipboard(text: string) {
@@ -545,12 +547,16 @@ function StudentsCard({
     [timezone, courseInstance.id, createCheckboxProps, studentLabels],
   );
 
-  const allColumnIds = columns
-    .map((col) => col.id)
-    .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hiddenByDefault = new Set(['user_uin', 'user_email']);
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
+  const allColumnIds = useMemo(
+    () =>
+      columns
+        .map((col) => col.id)
+        .filter((id): id is string => typeof id === 'string' && id !== 'select'),
+    [columns],
+  );
+  const defaultColumnVisibility = useMemo(
+    () => Object.fromEntries(allColumnIds.map((id) => [id, !HIDDEN_BY_DEFAULT.has(id)])),
+    [allColumnIds],
   );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',

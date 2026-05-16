@@ -50,7 +50,7 @@ const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addM
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
 const HIDDEN_BY_DEFAULT = new Set([
-  'sharing_sets',
+  'display_type',
   'grading_method',
   'external_grading_image',
   'workspace_image',
@@ -109,6 +109,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         urlKey,
         parser: parseAsMultiSelectFilter(),
         defaultValue: EMPTY_FILTER,
+        enabled: columnId === 'sharing_sets' ? showSharingSets : true,
       };
     }
     for (const ci of courseInstances) {
@@ -118,7 +119,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       };
     }
     return registry;
-  }, [courseInstances]);
+  }, [courseInstances, showSharingSets]);
 
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
@@ -153,8 +154,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
-  const hasLegacyQuestions = questions.some((q) => q.display_type !== 'v3');
-
   const defaultColumnVisibility = useMemo(
     () =>
       run(() => {
@@ -162,8 +161,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         for (const id of allColumnIds) {
           if (HIDDEN_BY_DEFAULT.has(id)) {
             visibility[id] = false;
-          } else if (id === 'display_type') {
-            visibility[id] = hasLegacyQuestions;
           } else if (id.startsWith('ci_')) {
             const ciId = id.replace(/^ci_/, '');
             visibility[id] = currentCourseInstanceId === ciId;
@@ -173,19 +170,12 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         }
         return visibility;
       }),
-    [allColumnIds, hasLegacyQuestions, currentCourseInstanceId],
+    [allColumnIds, currentCourseInstanceId],
   );
-  const defaultColumnVisibilityRef = useMemo(
-    () => ({ current: defaultColumnVisibility }),
-    [defaultColumnVisibility],
-  );
-
   const columnVisibilityParser = useMemo(
     () =>
-      parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
-        defaultColumnVisibility,
-      ),
-    [allColumnIds, defaultColumnVisibility, defaultColumnVisibilityRef],
+      parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+    [allColumnIds, defaultColumnVisibility],
   );
 
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);

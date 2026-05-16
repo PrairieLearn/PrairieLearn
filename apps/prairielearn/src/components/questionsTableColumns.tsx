@@ -15,7 +15,7 @@ import { CopyButton } from './CopyButton.js';
 import { IssueBadge } from './IssueBadge.js';
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
-import { TagBadgeList } from './TagBadge.js';
+import { TagBadge, TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
 const columnHelper = createColumnHelper<SafeQuestionsPageData>();
@@ -116,7 +116,7 @@ export function createQuestionsTableColumns({
       header: 'Title',
       cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
       size: 300,
-      maxSize: 600,
+      maxSize: 500,
       meta: {
         autoSize: true,
         autoSizeSample: (questions) => autoSizeSampleByMeasure(questions, (q) => q.title.length),
@@ -287,7 +287,7 @@ export function createQuestionsTableColumns({
                 {
                   id: `ci_${ci.id}`,
                   // TODO: Make non-nullable once we update the database schema
-                  header: ci.short_name,
+                  header: () => <code>{ci.short_name}</code>,
                   meta: {
                     label: ci.short_name,
                     autoSize: true,
@@ -353,8 +353,8 @@ export function createQuestionsTableColumns({
                       );
                     });
                   },
-                  size: 500,
-                  maxSize: 800,
+                  size: 300,
+                  maxSize: 500,
                 },
               ),
             ),
@@ -371,13 +371,19 @@ export function createQuestionsTableFilters({
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
 }) {
-  const allTopics = [...new Set(questions.map((q) => q.topic.name))].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const topicsByName = new Map<string, SafeQuestionsPageData['topic']>();
+  questions.forEach((q) => {
+    if (!topicsByName.has(q.topic.name)) topicsByName.set(q.topic.name, q.topic);
+  });
+  const allTopics = [...topicsByName.keys()].sort((a, b) => a.localeCompare(b));
 
-  const allTags = [...new Set(questions.flatMap((q) => q.tags?.map((t) => t.name) ?? []))].sort(
-    (a, b) => a.localeCompare(b),
-  );
+  const tagsByName = new Map<string, NonNullable<SafeQuestionsPageData['tags']>[number]>();
+  questions.forEach((q) => {
+    q.tags?.forEach((t) => {
+      if (!tagsByName.has(t.name)) tagsByName.set(t.name, t);
+    });
+  });
+  const allTags = [...tagsByName.keys()].sort((a, b) => a.localeCompare(b));
 
   const allVersions = [...new Set(questions.map((q) => q.display_type))].sort();
 
@@ -402,14 +408,18 @@ export function createQuestionsTableFilters({
   });
 
   const assessmentsByCourseInstance = run(() => {
-    const map = new Map<string, Set<string>>();
+    const map = new Map<string, Map<string, { color: string }>>();
     for (const q of questions) {
       for (const a of q.assessments ?? []) {
         const ciId = a.assessment.course_instance_id;
         if (!map.has(ciId)) {
-          map.set(ciId, new Set());
+          map.set(ciId, new Map());
         }
-        map.get(ciId)?.add(assessmentLabel(a.assessment, a.assessment_set));
+        const label = assessmentLabel(a.assessment, a.assessment_set);
+        const byLabel = map.get(ciId);
+        if (byLabel && !byLabel.has(label)) {
+          byLabel.set(label, { color: a.assessment_set.color });
+        }
       }
     }
     return map;
@@ -420,10 +430,28 @@ export function createQuestionsTableFilters({
     (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
   > = {
     topic: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allTopics} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allTopics}
+        renderValueLabel={({ value }) => {
+          const topic = topicsByName.get(value);
+          return topic ? (
+            <TopicBadge topic={topic} />
+          ) : (
+            <span className="text-nowrap">{value}</span>
+          );
+        }}
+      />
     ),
     tag: ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={allTags} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={allTags}
+        renderValueLabel={({ value }) => {
+          const tag = tagsByName.get(value);
+          return tag ? <TagBadge tag={tag} /> : <span className="text-nowrap">{value}</span>;
+        }}
+      />
     ),
     display_type: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allVersions} />
@@ -443,14 +471,28 @@ export function createQuestionsTableFilters({
   };
 
   courseInstances.forEach((ci) => {
-    const assessments = assessmentsByCourseInstance.get(ci.id) ?? new Set();
+    const assessments =
+      assessmentsByCourseInstance.get(ci.id) ?? new Map<string, { color: string }>();
     const assessmentLabels = [
       NONE_FILTER_VALUE,
-      ...Array.from(assessments).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+      ...Array.from(assessments.keys()).sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true }),
+      ),
     ];
 
     filterMap[`ci_${ci.id}`] = ({ header }) => (
-      <MultiSelectColumnFilter column={header.column} allColumnValues={assessmentLabels} />
+      <MultiSelectColumnFilter
+        column={header.column}
+        allColumnValues={assessmentLabels}
+        renderValueLabel={({ value }) => {
+          const info = assessments.get(value);
+          return info ? (
+            <span className={`badge color-${info.color}`}>{value}</span>
+          ) : (
+            <span className="text-nowrap">{value}</span>
+          );
+        }}
+      />
     );
   });
 

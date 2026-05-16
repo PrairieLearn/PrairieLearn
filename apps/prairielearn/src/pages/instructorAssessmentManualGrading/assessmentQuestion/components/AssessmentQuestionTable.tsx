@@ -234,7 +234,9 @@ export function AssessmentQuestionTable({
     useColumnFilters(filterRegistry);
 
   // Mirrors the `rubric_grading_item_ids` registry entry above. Both subscribers
-  // share the `rubric_items` URL param via nuqs, so reset still clears it.
+  // share the `rubric_items` URL param via nuqs, so reset clears it whenever
+  // the rubric filter is enabled. When disabled, the URL value is preserved
+  // (see `ColumnFilterEntry.enabled` in `use-column-filters.ts`).
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
     parseAsArrayOf(parseAsString).withDefault([]),
@@ -392,31 +394,34 @@ export function AssessmentQuestionTable({
     ],
   );
 
-  const allColumnIds = columns.map((col) => col.id!);
+  const allColumnIds = useMemo(
+    () => columns.map((col) => col.id).filter((id): id is string => typeof id === 'string'),
+    [columns],
+  );
   const defaultColumnVisibility = useMemo(() => {
     return Object.fromEntries(
-      columns.map((col) => {
+      columns.flatMap((col) => {
+        if (typeof col.id !== 'string') return [];
         if (col.id === 'select') {
-          return [col.id, true];
+          return [[col.id, true]];
         }
         // If you can't show/hide the column, the default state is hidden.
         if (col.enableHiding === false) {
-          return [col.id, false];
+          return [[col.id, false]];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-
-        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
-          return [col.id, !aiGradingMode];
+        if (['assigned_grader_name', 'score_perc'].includes(col.id)) {
+          return [[col.id, !aiGradingMode]];
         }
-        if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
-          return [col.id, aiGradingMode];
+        if (['instance_question_group_name', 'rubric_difference'].includes(col.id)) {
+          return [[col.id, aiGradingMode]];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
-          return [col.id, false];
+        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id)) {
+          return [[col.id, false]];
         }
 
-        return [col.id, true];
+        return [[col.id, true]];
       }),
     );
   }, [columns, aiGradingMode]);
