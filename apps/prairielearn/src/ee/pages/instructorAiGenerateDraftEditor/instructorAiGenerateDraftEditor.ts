@@ -51,10 +51,7 @@ import {
   isDraftQuestionInfoFile,
   saveDraftQuestionFile,
 } from './draftFileEditor.js';
-import {
-  getEditorUrlWithSelectedFile,
-  normalizeQuestionFilePath,
-} from './selectedQuestionFile.js';
+import { getEditorUrlWithSelectedFile, normalizeQuestionFilePath } from './selectedQuestionFile.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);

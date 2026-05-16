@@ -9,7 +9,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
+import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
@@ -56,6 +56,13 @@ export function InstructorAiGenerateDraftEditor({
     url: variantUrl,
     authnUserId: resLocals.authn_user.id,
   });
+  const trpcCsrfToken = generatePrefixCsrfToken(
+    {
+      url: getCourseTrpcUrl(resLocals.course.id),
+      authn_user_id: resLocals.authn_user.id,
+    },
+    config.secretKey,
+  );
 
   return PageLayout({
     resLocals,
@@ -93,6 +100,8 @@ export function InstructorAiGenerateDraftEditor({
       <Hydrate className="app-content-container">
         <AiQuestionGenerationEditor
           chatCsrfToken={chatCsrfToken}
+          trpcCsrfToken={trpcCsrfToken}
+          courseId={resLocals.course.id}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
