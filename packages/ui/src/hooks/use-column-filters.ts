@@ -41,9 +41,7 @@ export function buildColumnFiltersResult(
   // Enabled filters missing from `overrides` are set to `null`, which nuqs
   // treats as "remove from URL" so the parser's default is read next time.
   const buildPatch = (overrides: Map<string, unknown>): Record<string, unknown> =>
-    Object.fromEntries(
-      enabledIds.map((id) => [id, overrides.has(id) ? overrides.get(id) : null]),
-    );
+    Object.fromEntries(enabledIds.map((id) => [id, overrides.has(id) ? overrides.get(id) : null]));
 
   return {
     columnFilters,
