@@ -403,7 +403,7 @@ export function QuestionAndFilePreview({
   codeEditorsRef?: Ref<CodeEditorsHandle>;
   isGenerating: boolean;
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
-  filesError?: Error | null;
+  filesError?: { message: string } | null;
   onRetryFiles?: () => void;
   onSelectTab: (tab: 'files') => void;
   onSelectFile: (filePath: string) => void;

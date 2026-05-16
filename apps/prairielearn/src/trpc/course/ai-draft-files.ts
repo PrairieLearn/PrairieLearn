@@ -1,16 +1,18 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import {
+  DRAFT_INFO_JSON_DISABLED_REASON,
+  getQuestionFilesData,
+  isDraftQuestionInfoFile,
+  saveDraftQuestionFile,
+} from '../../ee/pages/instructorAiGenerateDraftEditor/draftFileEditor.js';
+import { normalizeQuestionFilePath } from '../../ee/pages/instructorAiGenerateDraftEditor/selectedQuestionFile.js';
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalQuestionById } from '../../models/question.js';
-import {
-  getQuestionFilesData,
-  saveDraftQuestionFile,
-} from '../../ee/pages/instructorAiGenerateDraftEditor/draftFileEditor.js';
-import { normalizeQuestionFilePath } from '../../ee/pages/instructorAiGenerateDraftEditor/selectedQuestionFile.js';
 
 import { requireCoursePermissionEdit, requireNotExampleCourse, t } from './init.js';
 
@@ -92,15 +94,22 @@ export const aiDraftFilesRouter = t.router({
       courseId: ctx.course.id,
       questionId: input.questionId,
     });
+    const filePath = normalizeQuestionFilePath(input.filePath);
+    if (isDraftQuestionInfoFile(filePath)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: DRAFT_INFO_JSON_DISABLED_REASON,
+      });
+    }
 
     return saveDraftQuestionFile({
-      course: ctx.course,
+      course: ctx.locals.course,
       question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
       authz_data: ctx.authz_data,
       urlPrefix: input.urlPrefix,
-      filePath: normalizeQuestionFilePath(input.filePath),
+      filePath,
       contents: b64DecodeUnicode(input.contents),
     });
   }),

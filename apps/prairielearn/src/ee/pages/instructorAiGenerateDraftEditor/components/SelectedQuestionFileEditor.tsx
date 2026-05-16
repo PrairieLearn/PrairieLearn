@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
@@ -44,12 +44,6 @@ export function SelectedQuestionFileEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasChanges = contents !== savedContents;
   const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError });
-
-  // Refetched file data replaces the editor's saved baseline after a save or file selection.
-  useEffect(() => {
-    setContents(savedContents);
-    setSaveError(null);
-  }, [savedContents]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
