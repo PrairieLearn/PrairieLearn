@@ -1,26 +1,12 @@
+import { useMutation } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
-
-function getEditErrorUrl(value: unknown) {
-  if (typeof value !== 'object' || value == null) return null;
-  if (!('editErrorUrl' in value)) return null;
-
-  const { editErrorUrl } = value;
-  return typeof editErrorUrl === 'string' ? editErrorUrl : null;
-}
-
-function getErrorMessage(value: unknown) {
-  if (typeof value !== 'object' || value == null) return null;
-  if (!('message' in value)) return null;
-
-  const { message } = value;
-  return typeof message === 'string' ? message : null;
-}
 
 function getSaveStatus({
   hasChanges,
@@ -37,58 +23,21 @@ function getSaveStatus({
   return 'Saved.';
 }
 
-async function saveSelectedQuestionFile({
-  editorUrl,
-  csrfToken,
-  selectedFile,
-  contents,
-}: {
-  editorUrl: string;
-  csrfToken: string;
-  selectedFile: SelectedQuestionFile;
-  contents: string;
-}) {
-  const response = await fetch(editorUrl, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      __action: 'submit_file_revision',
-      __csrf_token: csrfToken,
-      filePath: selectedFile.path,
-      contents: b64EncodeUnicode(contents),
-    }),
-  });
-
-  const data: unknown = await response.json();
-  const editErrorUrl = getEditErrorUrl(data);
-  if (editErrorUrl) {
-    window.location.href = editErrorUrl;
-    return false;
-  }
-
-  if (!response.ok) {
-    throw new Error(getErrorMessage(data) ?? SAVE_ERROR_MESSAGE);
-  }
-
-  return true;
-}
-
 export function SelectedQuestionFileEditor({
   selectedFile,
-  csrfToken,
-  editorUrl,
+  questionId,
+  urlPrefix,
   onShowAllFiles,
   onSaved,
 }: {
   selectedFile: SelectedQuestionFile;
-  csrfToken: string;
-  editorUrl: string;
+  questionId: string;
+  urlPrefix: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
 }) {
+  const trpc = useTRPC();
+  const saveMutation = useMutation(trpc.aiDraftFiles.save.mutationOptions());
   const savedContents = b64DecodeUnicode(selectedFile.contents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
@@ -110,13 +59,17 @@ export function SelectedQuestionFileEditor({
     setSaveError(null);
 
     try {
-      const saved = await saveSelectedQuestionFile({
-        editorUrl,
-        csrfToken,
-        selectedFile,
-        contents,
+      const result = await saveMutation.mutateAsync({
+        questionId,
+        urlPrefix,
+        filePath: selectedFile.path,
+        contents: b64EncodeUnicode(contents),
       });
-      if (saved) await onSaved();
+      if (result.status === 'error') {
+        window.location.href = result.editErrorUrl;
+        return;
+      }
+      await onSaved();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : SAVE_ERROR_MESSAGE);
     } finally {
@@ -139,11 +92,7 @@ export function SelectedQuestionFileEditor({
           >
             All files
           </button>
-          <form method="post" className="mb-0" onSubmit={handleSubmit}>
-            <input type="hidden" name="__action" value="submit_file_revision" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <input type="hidden" name="filePath" value={selectedFile.path} />
-            <input type="hidden" name="contents" value={b64EncodeUnicode(contents)} />
+          <form className="mb-0" onSubmit={handleSubmit}>
             <button
               type="submit"
               className="btn btn-sm btn-primary"

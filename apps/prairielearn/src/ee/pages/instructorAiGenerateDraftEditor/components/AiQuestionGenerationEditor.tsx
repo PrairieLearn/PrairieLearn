@@ -9,6 +9,8 @@ import { NuqsAdapter } from '@prairielearn/ui';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
@@ -31,27 +33,10 @@ interface QuestionFilesData {
   selectedFile: SelectedQuestionFile | null;
 }
 
-async function fetchQuestionFiles(
-  urlPrefix: string,
-  questionId: string,
-  selectedFilePath: string | null,
-  selectedDirectory: string | null,
-): Promise<QuestionFilesData> {
-  const params = new URLSearchParams();
-  if (selectedFilePath != null) params.set('file', selectedFilePath);
-  if (selectedDirectory != null) params.set('dir', selectedDirectory);
-  const queryString = params.toString();
-  const query = queryString === '' ? '' : `?${queryString}`;
-  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files${query}`, {
-    headers: { Accept: 'application/json' },
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error);
-  return data;
-}
-
 interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
+  trpcCsrfToken: string;
+  courseId: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -85,6 +70,7 @@ function AiQuestionGenerationEditorInner({
   editorUrl,
   search,
 }: AiQuestionGenerationEditorProps) {
+  const trpc = useTRPC();
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -117,13 +103,22 @@ function AiQuestionGenerationEditorInner({
     error: filesError,
     refetch: refetchFiles,
   } = useQuery({
-    queryKey: ['question-files', urlPrefix, question.id, selectedFilePath, selectedDirectory],
-    queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFilePath, selectedDirectory),
-    staleTime: Infinity,
-    initialData: selectedFilesMatchInitialQuery ? initialQuestionFilesData : undefined,
-    placeholderData: (previousData) => previousData ?? initialQuestionFilesData,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    ...trpc.aiDraftFiles.list.queryOptions(
+      {
+        questionId: question.id,
+        urlPrefix,
+        editorUrl,
+        selectedFilePath,
+        selectedDirectory,
+      },
+      {
+        staleTime: Infinity,
+        initialData: selectedFilesMatchInitialQuery ? initialQuestionFilesData : undefined,
+        placeholderData: (previousData) => previousData ?? initialQuestionFilesData,
+        retry: 2,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+      },
+    ),
   });
 
   const {
@@ -249,8 +244,9 @@ function AiQuestionGenerationEditorInner({
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
             csrfToken={csrfToken}
-            editorUrl={editorUrl}
+            questionId={question.id}
             qid={currentQid}
+            urlPrefix={urlPrefix}
             variantUrl={variantUrl}
             variantCsrfToken={variantCsrfToken}
             newVariantRef={newVariantRef}
@@ -298,12 +294,17 @@ function AiQuestionGenerationEditorInner({
 
 export function AiQuestionGenerationEditor(props: AiQuestionGenerationEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: props.trpcCsrfToken, courseId: props.courseId }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient}>
-      <NuqsAdapter search={props.search}>
-        <AiQuestionGenerationEditorInner {...props} />
-      </NuqsAdapter>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <NuqsAdapter search={props.search}>
+          <AiQuestionGenerationEditorInner {...props} />
+        </NuqsAdapter>
+      </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }
