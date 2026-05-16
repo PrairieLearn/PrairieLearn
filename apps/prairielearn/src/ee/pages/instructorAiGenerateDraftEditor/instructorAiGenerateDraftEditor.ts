@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
-import { Router } from 'express';
+import { type Response, Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -202,6 +202,26 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
+async function* readWebStream(stream: ReadableStream<string>) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const result = await reader.read();
+      if (result.done) return;
+      yield result.value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
+  Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+  Readable.from(readWebStream(stream)).pipe(res);
+}
+
 router.use(
   typedAsyncHandler<'instructor-question'>(async (req, res, next) => {
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
@@ -273,7 +293,6 @@ router.get(
         selectedFile: questionFilesData.selectedFile,
         richTextEditorEnabled,
         questionContainerHtml,
-        editorUrl,
         search: getUrl(req).search,
       }),
     );
@@ -307,10 +326,7 @@ router.get(
       return;
     }
 
-    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-    Readable.fromWeb(stream as any).pipe(res);
+    pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -357,10 +373,7 @@ router.post(
       return;
     }
 
-    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-    Readable.fromWeb(stream as any).pipe(res);
+    pipeUiMessageStream(stream, res);
   }),
 );
 

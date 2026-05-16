@@ -1,5 +1,5 @@
 import ace from 'ace-builds';
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { type Ref, useEffect, useImperativeHandle, useRef } from 'react';
 
 export interface AceFileEditorHandle {
   readonly editor: ace.Ace.Editor | null;
@@ -8,31 +8,27 @@ export interface AceFileEditorHandle {
   setReadOnly: (readOnly: boolean) => void;
 }
 
-export const AceFileEditor = forwardRef<
-  AceFileEditorHandle,
-  {
-    value: string;
-    mode?: string;
-    readOnly?: boolean;
-    className?: string;
-    focusOnMount?: boolean;
-    options?: Partial<ace.Ace.EditorOptions>;
-    onChange?: (value: string) => void;
-    onReady?: (editor: ace.Ace.Editor) => void;
-  }
->(function AceFileEditor(
-  {
-    value,
-    mode = 'ace/mode/text',
-    readOnly = false,
-    className,
-    focusOnMount = false,
-    options,
-    onChange,
-    onReady,
-  },
+export function AceFileEditor({
+  value,
+  mode = 'ace/mode/text',
+  readOnly = false,
+  className,
+  focusOnMount = false,
+  options,
+  onChange,
+  onReady,
   ref,
-) {
+}: {
+  value: string;
+  mode?: string;
+  readOnly?: boolean;
+  className?: string;
+  focusOnMount?: boolean;
+  options?: Partial<ace.Ace.EditorOptions>;
+  onChange?: (value: string) => void;
+  onReady?: (editor: ace.Ace.Editor) => void;
+  ref?: Ref<AceFileEditorHandle>;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ace.Ace.Editor | null>(null);
   const valueRef = useRef(value);
@@ -119,6 +115,4 @@ export const AceFileEditor = forwardRef<
   }, [value]);
 
   return <div ref={containerRef} className={className} />;
-});
-
-AceFileEditor.displayName = 'AceFileEditor';
+}

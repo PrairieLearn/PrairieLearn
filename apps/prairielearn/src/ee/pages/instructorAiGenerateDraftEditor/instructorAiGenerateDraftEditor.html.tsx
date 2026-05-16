@@ -29,7 +29,6 @@ export function InstructorAiGenerateDraftEditor({
   selectedFile,
   richTextEditorEnabled,
   questionContainerHtml,
-  editorUrl,
   search,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
@@ -40,7 +39,6 @@ export function InstructorAiGenerateDraftEditor({
   selectedFile: SelectedQuestionFile | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
-  editorUrl: string;
   search: string;
 }) {
   const chatCsrfToken = generatePrefixCsrfToken(
@@ -114,7 +112,6 @@ export function InstructorAiGenerateDraftEditor({
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
-          editorUrl={editorUrl}
           search={search}
         />
       </Hydrate>

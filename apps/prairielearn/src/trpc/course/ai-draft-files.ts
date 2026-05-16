@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import {
@@ -13,7 +14,6 @@ import {
 } from '../../lib/draft-question-files.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalQuestionById } from '../../models/question.js';
 
 import { requireCoursePermissionEdit, requireNotExampleCourse, t } from './init.js';
@@ -37,18 +37,15 @@ const aiDraftFilesProcedure = t.procedure
   });
 
 const ListInputSchema = z.object({
-  questionId: z.string(),
-  urlPrefix: z.string(),
-  editorUrl: z.string(),
+  questionId: IdSchema,
   selectedFilePath: z.string().nullable(),
   selectedDirectory: z.string().nullable(),
 });
 
 const SaveInputSchema = z.object({
-  questionId: z.string(),
-  urlPrefix: z.string(),
+  questionId: IdSchema,
   filePath: z.string(),
-  contents: z.string(),
+  encodedContents: z.string(),
 });
 
 async function selectDraftQuestionOrThrow({
@@ -94,10 +91,9 @@ export const aiDraftFilesRouter = t.router({
       return await getQuestionFilesData({
         resLocals: {
           ...ctx.locals,
-          urlPrefix: input.urlPrefix,
           question,
-        } as ResLocalsForPage<'instructor-question'>,
-        editorUrl: input.editorUrl,
+        },
+        editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${question.id}`,
         selectedFilePath: getSelectedQuestionFilePath(input.selectedFilePath),
         selectedDirectory: getSelectedQuestionDirectory(input.selectedDirectory),
       });
@@ -118,9 +114,9 @@ export const aiDraftFilesRouter = t.router({
         user: ctx.locals.user,
         authn_user: ctx.locals.authn_user,
         authz_data: ctx.authz_data,
-        urlPrefix: input.urlPrefix,
+        urlPrefix: ctx.locals.urlPrefix,
         filePath: normalizeQuestionFilePath(input.filePath),
-        contents: b64DecodeUnicode(input.contents),
+        contents: b64DecodeUnicode(input.encodedContents),
       });
     } catch (err) {
       throwTrpcError(err);

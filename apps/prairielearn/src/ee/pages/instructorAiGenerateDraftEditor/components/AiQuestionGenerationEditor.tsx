@@ -43,7 +43,6 @@ interface AiQuestionGenerationEditorProps {
   showJobLogsLink: boolean;
   variantUrl: string;
   variantCsrfToken: string;
-  editorUrl: string;
   search: string;
 }
 
@@ -61,7 +60,6 @@ function AiQuestionGenerationEditorInner({
   showJobLogsLink,
   variantUrl,
   variantCsrfToken,
-  editorUrl,
   search,
 }: AiQuestionGenerationEditorProps) {
   const trpc = useTRPC();
@@ -100,8 +98,6 @@ function AiQuestionGenerationEditorInner({
     ...trpc.aiDraftFiles.list.queryOptions(
       {
         questionId: question.id,
-        urlPrefix,
-        editorUrl,
         selectedFilePath,
         selectedDirectory,
       },
@@ -240,7 +236,6 @@ function AiQuestionGenerationEditorInner({
             csrfToken={csrfToken}
             questionId={question.id}
             qid={currentQid}
-            urlPrefix={urlPrefix}
             variantUrl={variantUrl}
             variantCsrfToken={variantCsrfToken}
             newVariantRef={newVariantRef}
