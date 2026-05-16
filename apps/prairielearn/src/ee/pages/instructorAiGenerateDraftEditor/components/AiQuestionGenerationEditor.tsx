@@ -83,6 +83,7 @@ function AiQuestionGenerationEditorInner({
   variantUrl,
   variantCsrfToken,
   editorUrl,
+  search,
 }: AiQuestionGenerationEditorProps) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -93,6 +94,23 @@ function AiQuestionGenerationEditorInner({
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
   const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
   const [selectedDirectory, setSelectedDirectory] = useQueryState('dir', parseAsString);
+  const initialFileQuery = useMemo(() => {
+    const params = new URLSearchParams(search);
+    return {
+      file: params.get('file'),
+      dir: params.get('dir'),
+    };
+  }, [search]);
+  const initialQuestionFilesData = useMemo(
+    () => ({
+      files: initialQuestionFiles,
+      allFilesHtml: allQuestionFilesHtml,
+      selectedFile,
+    }),
+    [allQuestionFilesHtml, initialQuestionFiles, selectedFile],
+  );
+  const selectedFilesMatchInitialQuery =
+    selectedFilePath === initialFileQuery.file && selectedDirectory === initialFileQuery.dir;
 
   const {
     data: questionFilesData,
@@ -102,11 +120,8 @@ function AiQuestionGenerationEditorInner({
     queryKey: ['question-files', urlPrefix, question.id, selectedFilePath, selectedDirectory],
     queryFn: () => fetchQuestionFiles(urlPrefix, question.id, selectedFilePath, selectedDirectory),
     staleTime: Infinity,
-    initialData: {
-      files: initialQuestionFiles,
-      allFilesHtml: allQuestionFilesHtml,
-      selectedFile,
-    },
+    initialData: selectedFilesMatchInitialQuery ? initialQuestionFilesData : undefined,
+    placeholderData: (previousData) => previousData ?? initialQuestionFilesData,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
@@ -115,7 +130,7 @@ function AiQuestionGenerationEditorInner({
     files: questionFiles,
     allFilesHtml,
     selectedFile: currentSelectedFile,
-  } = questionFilesData;
+  } = questionFilesData ?? initialQuestionFilesData;
 
   const handleTitleAndQidSaved = useCallback(
     (update: { qid: string | null; title: string | null }) => {
@@ -235,9 +250,7 @@ function AiQuestionGenerationEditorInner({
             questionContainerHtml={questionContainerHtml}
             csrfToken={csrfToken}
             editorUrl={editorUrl}
-            questionId={question.id}
             qid={currentQid}
-            urlPrefix={urlPrefix}
             variantUrl={variantUrl}
             variantCsrfToken={variantCsrfToken}
             newVariantRef={newVariantRef}

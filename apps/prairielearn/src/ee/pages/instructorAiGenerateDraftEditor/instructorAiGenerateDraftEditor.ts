@@ -1,4 +1,3 @@
-import * as path from 'node:path';
 import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
@@ -10,7 +9,6 @@ import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres'
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { createDirectoryBrowserHtml } from '../../../components/FileBrowser.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -24,7 +22,6 @@ import {
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getPaths } from '../../../lib/instructorFiles.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
@@ -49,12 +46,14 @@ import {
   InstructorAiGenerateDraftEditor,
 } from './instructorAiGenerateDraftEditor.html.js';
 import {
-  getEditorUrlWithSelectedDirectory,
+  DRAFT_INFO_JSON_DISABLED_REASON,
+  getQuestionFilesData,
+  isDraftQuestionInfoFile,
+  saveDraftQuestionFile,
+} from './draftFileEditor.js';
+import {
   getEditorUrlWithSelectedFile,
-  getSelectedQuestionDirectory,
-  getSelectedQuestionFilePath,
   normalizeQuestionFilePath,
-  readSelectedQuestionFile,
 } from './selectedQuestionFile.js';
 
 const router = Router({ mergeParams: true });
@@ -69,104 +68,6 @@ function getEditorUrl(resLocals: InstructorQuestionLocals) {
 
 function getVariantId(queryValue: unknown) {
   return queryValue == null || queryValue === '' ? null : IdSchema.parse(queryValue);
-}
-
-function encodeCourseFilePath(filePath: string) {
-  return filePath.split('/').map(encodeURIComponent).join('/');
-}
-
-async function renderAllQuestionFilesHtml({
-  resLocals,
-  editorUrl,
-  selectedDirectory,
-}: {
-  resLocals: InstructorQuestionLocals;
-  editorUrl: string;
-  selectedDirectory: string | null;
-}) {
-  if (!resLocals.question.qid) return '';
-
-  const questionRootPath = `questions/${resLocals.question.qid}`;
-  const requestedPath =
-    selectedDirectory == null
-      ? questionRootPath
-      : path.posix.join(questionRootPath, selectedDirectory);
-  const paths = getPaths(requestedPath, {
-    ...resLocals,
-    navPage: 'question',
-  });
-  const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
-  const successfulActionRedirectUrl = getEditorUrlWithSelectedDirectory({
-    editorUrl,
-    directory: selectedDirectory,
-  });
-  const getDirectoryRelativeToQuestion = (directoryPath: string) => {
-    const relativePath = path.posix.relative(
-      questionRootPath,
-      directoryPath.split(path.sep).join('/'),
-    );
-    return relativePath === '' ? null : relativePath;
-  };
-
-  return (
-    await createDirectoryBrowserHtml({
-      paths,
-      isReadOnly: false,
-      csrfToken: resLocals.__csrf_token,
-      options: {
-        fileViewBaseUrl,
-        formAction: `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`,
-        successfulActionRedirectUrl,
-        directoryUrl: (directoryPath) =>
-          getEditorUrlWithSelectedDirectory({
-            editorUrl,
-            directory: getDirectoryRelativeToQuestion(directoryPath),
-          }),
-        directoryAttributes: (directoryPath) => ({
-          'data-selected-directory-path': getDirectoryRelativeToQuestion(directoryPath) ?? '',
-        }),
-        editFileUrl: (file) =>
-          getEditorUrlWithSelectedFile({
-            editorUrl,
-            filePath: path.posix.relative(questionRootPath, file.path.split(path.sep).join('/')),
-          }),
-        editFileAttributes: (file) => ({
-          'data-selected-file-path': path.posix.relative(
-            questionRootPath,
-            file.path.split(path.sep).join('/'),
-          ),
-        }),
-      },
-    })
-  ).toString();
-}
-
-async function getQuestionFilesData({
-  resLocals,
-  selectedFile,
-  selectedDirectory,
-}: {
-  resLocals: InstructorQuestionLocals;
-  selectedFile: unknown;
-  selectedDirectory: unknown;
-}) {
-  const courseFilesClient = getCourseFilesClient();
-  const editorUrl = getEditorUrl(resLocals);
-  const directory = getSelectedQuestionDirectory(selectedDirectory);
-  const [{ files }, allFilesHtml, selectedQuestionFile] = await Promise.all([
-    courseFilesClient.getQuestionFiles.query({
-      course_id: resLocals.course.id,
-      question_id: resLocals.question.id,
-    }),
-    renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory: directory }),
-    readSelectedQuestionFile({
-      course: resLocals.course,
-      question: resLocals.question,
-      filePath: getSelectedQuestionFilePath(selectedFile),
-    }),
-  ]);
-
-  return { files, allFilesHtml, selectedFile: selectedQuestionFile };
 }
 
 async function getValidatedInitialMessages(question: Question) {
@@ -294,50 +195,6 @@ async function saveRevisedQuestion({
   });
 }
 
-async function saveDraftQuestionFile({
-  course,
-  question,
-  user,
-  authn_user,
-  authz_data,
-  urlPrefix,
-  filePath,
-  contents,
-}: {
-  course: Course;
-  question: Question;
-  user: User;
-  authn_user: User;
-  authz_data: {
-    has_course_permission_edit: boolean;
-  };
-  urlPrefix: string;
-  filePath: string;
-  contents: string;
-}) {
-  const client = getCourseFilesClient();
-
-  const result = await client.updateQuestionFiles.mutate({
-    course_id: course.id,
-    user_id: user.id,
-    authn_user_id: authn_user.id,
-    question_id: question.id,
-    has_course_permission_edit: authz_data.has_course_permission_edit,
-    files: {
-      [filePath]: b64EncodeUnicode(contents),
-    },
-  });
-
-  if (result.status === 'error') {
-    return {
-      status: 'error' as const,
-      editErrorUrl: urlPrefix + '/edit_error/' + result.job_sequence_id,
-    };
-  }
-
-  return { status: 'ok' as const };
-}
-
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
@@ -399,6 +256,7 @@ router.get(
       getValidatedInitialMessages(res.locals.question),
       getQuestionFilesData({
         resLocals: res.locals,
+        editorUrl,
         selectedFile: req.query.file,
         selectedDirectory: req.query.dir,
       }),
@@ -604,6 +462,15 @@ router.post(
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
     } else if (req.body.__action === 'submit_file_revision') {
       const filePath = normalizeQuestionFilePath(req.body.filePath);
+      if (isDraftQuestionInfoFile(filePath)) {
+        if (req.accepts(['html', 'json']) === 'json') {
+          res.status(400).json({ status: 'error', message: DRAFT_INFO_JSON_DISABLED_REASON });
+          return;
+        }
+
+        throw new error.HttpStatusError(400, DRAFT_INFO_JSON_DISABLED_REASON);
+      }
+
       const result = await saveDraftQuestionFile({
         course: res.locals.course,
         question: res.locals.question,
@@ -675,6 +542,7 @@ router.get(
     res.json(
       await getQuestionFilesData({
         resLocals: res.locals,
+        editorUrl: getEditorUrl(res.locals),
         selectedFile: req.query.file,
         selectedDirectory: req.query.dir,
       }),

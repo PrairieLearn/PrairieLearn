@@ -1,11 +1,6 @@
 import * as path from 'path';
 
-// @ts-expect-error No types for ace-code/src/ext/modelist.js
-import { getModeForPath } from 'ace-code/src/ext/modelist.js';
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import fs from 'fs-extra';
-import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import {
@@ -22,7 +17,8 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
+import { readEditableTextFile } from '../../lib/editableFile.js';
+import { computeFileContentHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -31,11 +27,8 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import {
-  type DraftEdit,
-  type FileEditorData,
-  InstructorFileEditor,
-} from './instructorFileEditor.html.js';
+import { InstructorFileEditor } from './instructorFileEditor.html.js';
+import type { DraftEdit, FileEditorData } from './instructorFileEditor.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -100,26 +93,23 @@ router.get(
       // page through our UI, which already tries to prevent letting users
       // go where they should not.
 
-      const fullPath = paths.workingPath;
       const relPath = paths.workingPathRelativeToCourse;
 
-      const contents = await fs.readFile(fullPath);
-      if (await isBinaryFile(contents)) {
-        throw new Error('Cannot edit binary file');
-      }
-
-      const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
-      const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
-      const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
+      const editableFile = await readEditableTextFile({
+        courseId: res.locals.course.id,
+        coursePath: paths.coursePath,
+        fullPath: paths.workingPath,
+        courseRelativePath: relPath,
+      });
 
       const editorData: FileEditorData = {
-        fileName: path.basename(relPath),
-        normalizedFileName: path.normalize(relPath),
-        aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
-        diskContents: encodedContents,
-        diskHash: getHash(encodedContents),
-        fileMetadata,
-        lintHtmlMustache,
+        fileName: editableFile.fileName,
+        normalizedFileName: editableFile.normalizedFileName,
+        aceMode: editableFile.aceMode,
+        diskContents: editableFile.contents,
+        diskHash: editableFile.contentHash,
+        fileMetadata: editableFile.fileMetadata,
+        lintHtmlMustache: editableFile.lintHtmlMustache,
       };
 
       const draftEdit = await readDraftEdit({
@@ -239,10 +229,6 @@ router.post(
   }),
 );
 
-function getHash(contents: string) {
-  return sha256(contents).toString();
-}
-
 async function readDraftEdit({
   user_id,
   course_id,
@@ -282,8 +268,9 @@ async function readDraftEdit({
   let hash: string | undefined;
   if (fileEdit.file_id != null) {
     const result = await getFile(fileEdit.file_id);
-    contents = b64EncodeUnicode(result.contents.toString('utf8'));
-    hash = getHash(contents);
+    const stringContents = result.contents.toString('utf8');
+    contents = b64EncodeUnicode(stringContents);
+    hash = computeFileContentHash(stringContents);
 
     await deleteFile(fileEdit.file_id, authn_user_id);
   }
