@@ -1,6 +1,5 @@
 import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type FilterFn,
@@ -10,22 +9,23 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
+  type ColumnFilterEntry,
   type MultiSelectFilterValue,
   TanstackTableCard,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
-  createColumnFiltersChangeHandler,
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
+  useColumnFilters,
 } from '@prairielearn/ui';
 
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
@@ -102,22 +102,26 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const filterParsers = useMemo(
-    () =>
-      Object.fromEntries([
-        ...Object.values(QUESTION_TABLE_FILTER_URL_KEYS).map((urlKey) => [
-          urlKey,
-          parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
-        ]),
-        ...courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
-        ]),
-      ]),
-    [courseInstances],
-  );
+  const filterRegistry = useMemo(() => {
+    const registry: Record<string, ColumnFilterEntry<MultiSelectFilterValue>> = {};
+    for (const [columnId, urlKey] of Object.entries(QUESTION_TABLE_FILTER_URL_KEYS)) {
+      registry[columnId] = {
+        urlKey,
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: EMPTY_FILTER,
+      };
+    }
+    for (const ci of courseInstances) {
+      registry[`ci_${ci.id}`] = {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: EMPTY_FILTER,
+      };
+    }
+    return registry;
+  }, [courseInstances]);
 
-  const [filterValues, setFilterValues] = useQueryStates(filterParsers);
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -186,54 +190,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const filters: ColumnFiltersState = [];
-    for (const [columnId, urlKey] of Object.entries(QUESTION_TABLE_FILTER_URL_KEYS)) {
-      const filterValue = filterValues[urlKey] ?? EMPTY_FILTER;
-      if (filterValue.values.length > 0) {
-        filters.push({ id: columnId, value: filterValue });
-      }
-    }
-    for (const ci of courseInstances) {
-      const filterValue = filterValues[`ci_${ci.id}`] ?? EMPTY_FILTER;
-      if (filterValue.values.length > 0) {
-        filters.push({ id: `ci_${ci.id}`, value: filterValue });
-      }
-    }
-    return filters;
-  }, [filterValues, courseInstances]);
-
-  const columnFilterSetters = useMemo<
-    Record<string, ((_columnId: string, value: MultiSelectFilterValue | null) => void) | undefined>
-  >(
-    () => ({
-      ...Object.fromEntries(
-        Object.entries(QUESTION_TABLE_FILTER_URL_KEYS).map(([columnId, urlKey]) => [
-          columnId,
-          (_: string, value: MultiSelectFilterValue | null) =>
-            void setFilterValues({ [urlKey]: value }),
-        ]),
-      ),
-      ...Object.fromEntries(
-        courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          (_: string, value: MultiSelectFilterValue | null) =>
-            void setFilterValues({ [`ci_${ci.id}`]: value }),
-        ]),
-      ),
-    }),
-    [courseInstances, setFilterValues],
-  );
-
-  const handleColumnFiltersChange = useMemo(
-    () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
-    [columnFilters, columnFilterSetters],
-  );
-  const handleClearColumnFilters = useMemo(
-    () => () => handleColumnFiltersChange([]),
-    [handleColumnFiltersChange],
-  );
-
   const filters = useMemo(
     () =>
       createQuestionsTableFilters({
@@ -262,7 +218,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -394,7 +350,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             </TanstackTableEmptyState>
           ),
         }}
-        onClearColumnFilters={handleClearColumnFilters}
+        onResetColumnFilters={onResetColumnFilters}
       />
     </>
   );
