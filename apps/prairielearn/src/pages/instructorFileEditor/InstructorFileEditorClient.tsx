@@ -1,4 +1,4 @@
-import ace from 'ace-builds';
+import type ace from 'ace-builds';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -18,12 +18,12 @@ import { FileType } from '../../lib/editorUtil.shared.js';
 
 import type { FileEditorData } from './instructorFileEditor.types.js';
 
-type BootstrapComponent = {
+interface BootstrapComponent {
   show: () => void;
   hide: () => void;
-};
+}
 
-type BootstrapApi = {
+interface BootstrapApi {
   Collapse: {
     getOrCreateInstance: (target: Element | string) => BootstrapComponent;
   };
@@ -36,7 +36,7 @@ type BootstrapApi = {
       options?: { delay?: number },
     ) => Pick<BootstrapComponent, 'show'>;
   };
-};
+}
 
 function getBootstrap() {
   return (window as typeof window & { bootstrap: BootstrapApi }).bootstrap;
@@ -411,7 +411,6 @@ export function InstructorFileEditorClient({
               value={contents}
               mode={editorData.aceMode}
               readOnly={readOnly}
-              focusOnMount
               className="editor"
               options={{
                 autoScrollEditorIntoView: true,
@@ -419,6 +418,7 @@ export function InstructorFileEditorClient({
                 minLines: 10,
                 wrap: true,
               }}
+              focusOnMount
               onChange={setContents}
               onReady={handleEditorReady}
             />
@@ -493,7 +493,6 @@ export function InstructorFileEditorClient({
               <AceFileEditor
                 value={diskContents}
                 mode={editorData.aceMode}
-                readOnly
                 className="editor"
                 options={{
                   autoScrollEditorIntoView: true,
@@ -501,6 +500,7 @@ export function InstructorFileEditorClient({
                   minLines: 10,
                   wrap: true,
                 }}
+                readOnly
               />
             </div>
           </div>

@@ -12,13 +12,13 @@ import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
+import type { SelectedQuestionFile } from '../../../lib/draft-question-files.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationEditor } from './components/AiQuestionGenerationEditor.js';
-import type { SelectedQuestionFile } from './selectedQuestionFile.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,

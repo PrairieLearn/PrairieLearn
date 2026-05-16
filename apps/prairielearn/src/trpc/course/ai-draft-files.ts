@@ -1,14 +1,16 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import {
-  DRAFT_INFO_JSON_DISABLED_REASON,
-  getQuestionFilesData,
-  isDraftQuestionInfoFile,
-  saveDraftQuestionFile,
-} from '../../ee/pages/instructorAiGenerateDraftEditor/draftFileEditor.js';
-import { normalizeQuestionFilePath } from '../../ee/pages/instructorAiGenerateDraftEditor/selectedQuestionFile.js';
+import * as error from '@prairielearn/error';
+
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
+import {
+  getQuestionFilesData,
+  getSelectedQuestionDirectory,
+  getSelectedQuestionFilePath,
+  normalizeQuestionFilePath,
+  saveDraftQuestionFile,
+} from '../../lib/draft-question-files.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -71,6 +73,16 @@ async function selectDraftQuestionOrThrow({
   return question;
 }
 
+function throwTrpcError(err: unknown): never {
+  if (err instanceof error.HttpStatusError) {
+    throw new TRPCError({
+      code: err.status === 404 ? 'NOT_FOUND' : err.status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST',
+      message: err.message,
+    });
+  }
+  throw err;
+}
+
 export const aiDraftFilesRouter = t.router({
   list: aiDraftFilesProcedure.input(ListInputSchema).query(async ({ ctx, input }) => {
     const question = await selectDraftQuestionOrThrow({
@@ -78,39 +90,40 @@ export const aiDraftFilesRouter = t.router({
       questionId: input.questionId,
     });
 
-    return getQuestionFilesData({
-      resLocals: {
-        ...ctx.locals,
-        urlPrefix: input.urlPrefix,
-        question,
-      } as ResLocalsForPage<'instructor-question'>,
-      editorUrl: input.editorUrl,
-      selectedFile: input.selectedFilePath,
-      selectedDirectory: input.selectedDirectory,
-    });
+    try {
+      return await getQuestionFilesData({
+        resLocals: {
+          ...ctx.locals,
+          urlPrefix: input.urlPrefix,
+          question,
+        } as ResLocalsForPage<'instructor-question'>,
+        editorUrl: input.editorUrl,
+        selectedFilePath: getSelectedQuestionFilePath(input.selectedFilePath),
+        selectedDirectory: getSelectedQuestionDirectory(input.selectedDirectory),
+      });
+    } catch (err) {
+      throwTrpcError(err);
+    }
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
     const question = await selectDraftQuestionOrThrow({
       courseId: ctx.course.id,
       questionId: input.questionId,
     });
-    const filePath = normalizeQuestionFilePath(input.filePath);
-    if (isDraftQuestionInfoFile(filePath)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: DRAFT_INFO_JSON_DISABLED_REASON,
-      });
-    }
 
-    return saveDraftQuestionFile({
-      course: ctx.locals.course,
-      question,
-      user: ctx.locals.user,
-      authn_user: ctx.locals.authn_user,
-      authz_data: ctx.authz_data,
-      urlPrefix: input.urlPrefix,
-      filePath,
-      contents: b64DecodeUnicode(input.contents),
-    });
+    try {
+      return await saveDraftQuestionFile({
+        course: ctx.locals.course,
+        question,
+        user: ctx.locals.user,
+        authn_user: ctx.locals.authn_user,
+        authz_data: ctx.authz_data,
+        urlPrefix: input.urlPrefix,
+        filePath: normalizeQuestionFilePath(input.filePath),
+        contents: b64DecodeUnicode(input.contents),
+      });
+    } catch (err) {
+      throwTrpcError(err);
+    }
   }),
 });

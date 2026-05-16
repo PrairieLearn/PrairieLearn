@@ -20,6 +20,11 @@ import {
   type Question,
   type User,
 } from '../../../lib/db-types.js';
+import {
+  getQuestionFilesData,
+  getSelectedQuestionDirectory,
+  getSelectedQuestionFilePath,
+} from '../../../lib/draft-question-files.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
@@ -41,7 +46,6 @@ import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-gene
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';
 
-import { getQuestionFilesData } from './draftFileEditor.js';
 import {
   DraftNotFound,
   InstructorAiGenerateDraftEditor,
@@ -248,8 +252,8 @@ router.get(
       getQuestionFilesData({
         resLocals: res.locals,
         editorUrl,
-        selectedFile: req.query.file,
-        selectedDirectory: req.query.dir,
+        selectedFilePath: getSelectedQuestionFilePath(req.query.file),
+        selectedDirectory: getSelectedQuestionDirectory(req.query.dir),
       }),
     ]);
 
