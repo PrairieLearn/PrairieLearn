@@ -2,12 +2,16 @@ import * as path from 'node:path';
 
 import * as error from '@prairielearn/error';
 
+import type { Question } from './db-types.js';
+import { assertCanModifyDraftQuestionFilePath } from './draft-question-files.js';
 import { type Editor, FileDeleteEditor, FileRenameEditor, FileUploadEditor } from './editors.js';
 import type { InstructorFilePaths } from './instructorFiles.js';
 import type { ResLocalsForPage } from './res-locals.js';
 import type { ServerJobExecutor } from './server-jobs.js';
 
-type CourseFileActionLocals = Pick<ResLocalsForPage<'course'>, 'authz_data' | 'course' | 'user'>;
+type CourseFileActionLocals = Pick<ResLocalsForPage<'course'>, 'authz_data' | 'course' | 'user'> & {
+  question?: Pick<Question, 'draft' | 'qid'> | null;
+};
 
 type CourseFileActionResult =
   | { status: 'success'; jobSequenceId: string }
@@ -79,6 +83,11 @@ export async function deleteCourseFile({
   } catch {
     throw new Error(`Invalid file path: ${filePath}`);
   }
+  assertCanModifyDraftQuestionFilePath({
+    course: locals.course,
+    question: locals.question,
+    fullPath: deletePath,
+  });
 
   return executeEditorAction(
     new FileDeleteEditor({
@@ -108,6 +117,11 @@ export async function renameCourseFile({
   } catch {
     throw new Error(`Invalid old file path: ${workingPath} / ${oldFileName}`);
   }
+  assertCanModifyDraftQuestionFilePath({
+    course: locals.course,
+    question: locals.question,
+    fullPath: oldPath,
+  });
   if (!newFileName) {
     throw new Error(`Invalid new file name (was falsy): ${newFileName}`);
   }
@@ -125,6 +139,11 @@ export async function renameCourseFile({
   } catch {
     throw new Error(`Invalid new file path: ${workingPath} / ${newFileName}`);
   }
+  assertCanModifyDraftQuestionFilePath({
+    course: locals.course,
+    question: locals.question,
+    fullPath: newPath,
+  });
 
   if (oldPath === newPath) {
     return {
@@ -171,6 +190,11 @@ export async function uploadCourseFile({
       throw new Error(`Invalid file path: ${destinationDirectory} / ${file.originalname}`);
     }
   }
+  assertCanModifyDraftQuestionFilePath({
+    course: locals.course,
+    question: locals.question,
+    fullPath: resolvedFilePath,
+  });
 
   return executeEditorAction(
     new FileUploadEditor({

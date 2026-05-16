@@ -41,6 +41,30 @@ function isDraftQuestionInfoFile(filePath: string) {
   return path.posix.normalize(filePath) === 'info.json';
 }
 
+export function assertCanModifyDraftQuestionFilePath({
+  course,
+  question,
+  fullPath,
+}: {
+  course: Pick<Course, 'path'>;
+  question: Pick<Question, 'draft' | 'qid'> | null | undefined;
+  fullPath: string;
+}) {
+  if (!question?.draft || !question.qid) return;
+
+  const questionPath = path.resolve(course.path, 'questions', question.qid);
+  const resolvedFullPath = path.resolve(fullPath);
+  if (!resolvedFullPath.startsWith(`${questionPath}${path.sep}`)) return;
+
+  const questionRelativePath = path
+    .relative(questionPath, resolvedFullPath)
+    .split(path.sep)
+    .join('/');
+  if (isDraftQuestionInfoFile(questionRelativePath)) {
+    throw new error.HttpStatusError(400, DRAFT_INFO_JSON_DISABLED_REASON);
+  }
+}
+
 export function getSelectedQuestionFilePath(queryValue: unknown): string | null {
   if (queryValue == null) return null;
   if (Array.isArray(queryValue)) {

@@ -3,6 +3,7 @@ import { assert, describe, it } from 'vitest';
 import * as error from '@prairielearn/error';
 
 import {
+  assertCanModifyDraftQuestionFilePath,
   getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
   getSelectedQuestionDirectory,
@@ -85,6 +86,39 @@ describe('selected question file helpers', () => {
           directory: null,
         }),
         '/pl/course/1/ai_generate_editor/2?tab=all-files',
+      );
+    });
+  });
+
+  describe('assertCanModifyDraftQuestionFilePath', () => {
+    const course = { path: '/course' };
+
+    it('rejects direct modifications to draft question info.json', () => {
+      assert.throws(
+        () =>
+          assertCanModifyDraftQuestionFilePath({
+            course,
+            question: { draft: true, qid: 'draft-question' },
+            fullPath: '/course/questions/draft-question/info.json',
+          }),
+        error.HttpStatusError,
+      );
+    });
+
+    it('allows non-metadata files and finalized question metadata', () => {
+      assert.doesNotThrow(() =>
+        assertCanModifyDraftQuestionFilePath({
+          course,
+          question: { draft: true, qid: 'draft-question' },
+          fullPath: '/course/questions/draft-question/question.html',
+        }),
+      );
+      assert.doesNotThrow(() =>
+        assertCanModifyDraftQuestionFilePath({
+          course,
+          question: { draft: false, qid: 'final-question' },
+          fullPath: '/course/questions/final-question/info.json',
+        }),
       );
     });
   });

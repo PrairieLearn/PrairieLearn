@@ -300,6 +300,7 @@ function AllQuestionFiles({
   selectedFile,
   qid,
   questionId,
+  isGenerating,
   onSelectFile,
   onSelectDirectory,
   onClearSelectedFile,
@@ -311,6 +312,7 @@ function AllQuestionFiles({
   selectedFile: SelectedQuestionFile | null;
   qid: string | null;
   questionId: string;
+  isGenerating: boolean;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
@@ -363,6 +365,7 @@ function AllQuestionFiles({
         key={`${selectedFile.path}:${selectedFile.encodedContents}`}
         selectedFile={selectedFile}
         questionId={questionId}
+        isGenerating={isGenerating}
         editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
@@ -517,6 +520,7 @@ export function QuestionAndFilePreview({
           selectedFile={selectedFile}
           qid={qid}
           questionId={questionId}
+          isGenerating={isGenerating}
           editorRef={selectedFileEditorRef}
           onSelectFile={onSelectFile}
           onSelectDirectory={onSelectDirectory}
