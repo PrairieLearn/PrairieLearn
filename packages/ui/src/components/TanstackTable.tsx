@@ -624,11 +624,11 @@ export function TanstackTableCard<RowDataModel>({
             <OverlayTrigger overlay={<Tooltip>Clear filters</Tooltip>}>
               <button
                 type="button"
-                className="btn btn-sm btn-ghost text-muted"
+                className="btn btn-link btn-sm text-muted p-0"
                 aria-label="Clear filters"
                 onClick={onResetColumnFilters}
               >
-                <i className="bi bi-funnel-x" aria-hidden="true" />
+                <i className="bi bi-x-circle" aria-hidden="true" />
               </button>
             </OverlayTrigger>
           )}
