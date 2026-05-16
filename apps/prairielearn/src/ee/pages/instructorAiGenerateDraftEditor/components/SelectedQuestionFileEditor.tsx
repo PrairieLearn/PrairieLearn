@@ -18,13 +18,16 @@ function getSaveStatus({
   hasChanges,
   isSaving,
   saveError,
+  isGenerating,
 }: {
   hasChanges: boolean;
   isSaving: boolean;
   saveError: string | null;
+  isGenerating: boolean;
 }) {
   if (saveError) return saveError;
   if (isSaving) return 'Saving...';
+  if (isGenerating) return 'Read-only while generation is in progress.';
   if (hasChanges) return 'Unsaved changes.';
   return 'Saved.';
 }
@@ -32,6 +35,7 @@ function getSaveStatus({
 export function SelectedQuestionFileEditor({
   selectedFile,
   questionId,
+  isGenerating,
   onShowAllFiles,
   onSaved,
   onHasChangesChange,
@@ -39,6 +43,7 @@ export function SelectedQuestionFileEditor({
 }: {
   selectedFile: SelectedQuestionFile;
   questionId: string;
+  isGenerating: boolean;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
   onHasChangesChange?: (hasChanges: boolean) => void;
@@ -51,7 +56,7 @@ export function SelectedQuestionFileEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasChanges = contents !== savedContents;
-  const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError });
+  const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError, isGenerating });
 
   useEffect(() => {
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
@@ -67,7 +72,7 @@ export function SelectedQuestionFileEditor({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!hasChanges || isSaving) return;
+    if (!hasChanges || isSaving || isGenerating) return;
 
     setIsSaving(true);
     setSaveError(null);
@@ -109,7 +114,7 @@ export function SelectedQuestionFileEditor({
             <button
               type="submit"
               className="btn btn-sm btn-primary"
-              disabled={!hasChanges || isSaving}
+              disabled={!hasChanges || isSaving || isGenerating}
             >
               {isSaving ? 'Saving...' : 'Save edits'}
             </button>
@@ -119,6 +124,7 @@ export function SelectedQuestionFileEditor({
       <AceFileEditor
         value={contents}
         mode={selectedFile.aceMode}
+        readOnly={isGenerating}
         className="selected-file-editor-ace flex-grow-1"
         onChange={setContents}
         onReady={(editor) => editor.getSession().setTabSize(2)}
