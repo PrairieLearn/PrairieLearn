@@ -12,25 +12,32 @@ import { getCourseFilesClient } from './course-files-api.js';
 import type { Course, Question, User } from './db-types.js';
 import { readEditableTextFile } from './editableFile.js';
 import { getPaths } from './instructorFiles.js';
-import type { ResLocalsForPage } from './res-locals.js';
 
 export interface SelectedQuestionFile {
   path: string;
-  contents: string;
+  encodedContents: string;
   aceMode: string;
 }
 
 const DRAFT_INFO_JSON_DISABLED_REASON =
   'Draft question metadata is managed by the draft editor. Only finalized questions can edit info.json directly.';
 
-type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
+interface DraftQuestionFilesLocals {
+  __csrf_token: string;
+  authz_data: {
+    has_course_permission_edit: boolean;
+  };
+  course: Course;
+  question: Question;
+  urlPrefix: string;
+}
 type QuestionPathType = 'file' | 'directory';
 
 function encodeCourseFilePath(filePath: string) {
   return filePath.split('/').map(encodeURIComponent).join('/');
 }
 
-export function isDraftQuestionInfoFile(filePath: string) {
+function isDraftQuestionInfoFile(filePath: string) {
   return path.posix.normalize(filePath) === 'info.json';
 }
 
@@ -125,7 +132,7 @@ async function readSelectedQuestionFile({
 
   return {
     path: filePath,
-    contents: editableFile.contents,
+    encodedContents: editableFile.contents,
     aceMode: editableFile.aceMode,
   };
 }
@@ -158,7 +165,7 @@ async function renderAllQuestionFilesHtml({
   editorUrl,
   selectedDirectory,
 }: {
-  resLocals: InstructorQuestionLocals;
+  resLocals: DraftQuestionFilesLocals;
   editorUrl: string;
   selectedDirectory: string | null;
 }) {
@@ -238,7 +245,7 @@ export async function getQuestionFilesData({
   selectedFilePath,
   selectedDirectory,
 }: {
-  resLocals: InstructorQuestionLocals;
+  resLocals: DraftQuestionFilesLocals;
   editorUrl: string;
   selectedFilePath: string | null;
   selectedDirectory: string | null;

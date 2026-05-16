@@ -13,7 +13,7 @@ import {
 } from './editorUtil.js';
 import type { FileMetadata } from './editorUtil.shared.js';
 
-export interface EditableTextFile {
+interface EditableTextFile {
   fileName: string;
   normalizedFileName: string;
   contents: string;

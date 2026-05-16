@@ -3,7 +3,9 @@ import { type FormEvent, type Ref, useEffect, useImperativeHandle, useState } fr
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import { getAppError } from '../../../../lib/client/errors.js';
 import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 import { useTRPC } from '../../../../trpc/course/context.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
@@ -30,7 +32,6 @@ function getSaveStatus({
 export function SelectedQuestionFileEditor({
   selectedFile,
   questionId,
-  urlPrefix,
   onShowAllFiles,
   onSaved,
   onHasChangesChange,
@@ -38,7 +39,6 @@ export function SelectedQuestionFileEditor({
 }: {
   selectedFile: SelectedQuestionFile;
   questionId: string;
-  urlPrefix: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
   onHasChangesChange?: (hasChanges: boolean) => void;
@@ -46,7 +46,7 @@ export function SelectedQuestionFileEditor({
 }) {
   const trpc = useTRPC();
   const saveMutation = useMutation(trpc.aiDraftFiles.save.mutationOptions());
-  const savedContents = b64DecodeUnicode(selectedFile.contents);
+  const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -75,9 +75,8 @@ export function SelectedQuestionFileEditor({
     try {
       const result = await saveMutation.mutateAsync({
         questionId,
-        urlPrefix,
         filePath: selectedFile.path,
-        contents: b64EncodeUnicode(contents),
+        encodedContents: b64EncodeUnicode(contents),
       });
       if (result.status === 'error') {
         window.location.href = result.editErrorUrl;
@@ -85,7 +84,7 @@ export function SelectedQuestionFileEditor({
       }
       await onSaved();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : SAVE_ERROR_MESSAGE);
+      setSaveError(getAppError<AiDraftFilesError['Save']>(err)?.message ?? SAVE_ERROR_MESSAGE);
     } finally {
       setIsSaving(false);
     }

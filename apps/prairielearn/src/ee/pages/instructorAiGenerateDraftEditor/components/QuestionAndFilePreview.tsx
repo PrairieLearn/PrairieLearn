@@ -300,7 +300,6 @@ function AllQuestionFiles({
   selectedFile,
   qid,
   questionId,
-  urlPrefix,
   onSelectFile,
   onSelectDirectory,
   onClearSelectedFile,
@@ -312,7 +311,6 @@ function AllQuestionFiles({
   selectedFile: SelectedQuestionFile | null;
   qid: string | null;
   questionId: string;
-  urlPrefix: string;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
@@ -362,10 +360,9 @@ function AllQuestionFiles({
   if (selectedFile != null) {
     return (
       <SelectedQuestionFileEditor
-        key={`${selectedFile.path}:${selectedFile.contents}`}
+        key={`${selectedFile.path}:${selectedFile.encodedContents}`}
         selectedFile={selectedFile}
         questionId={questionId}
-        urlPrefix={urlPrefix}
         editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
@@ -394,7 +391,6 @@ export function QuestionAndFilePreview({
   csrfToken,
   questionId,
   qid,
-  urlPrefix,
   variantUrl,
   variantCsrfToken,
   newVariantRef,
@@ -417,7 +413,6 @@ export function QuestionAndFilePreview({
   csrfToken: string;
   questionId: string;
   qid: string | null;
-  urlPrefix: string;
   variantUrl: string;
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
@@ -522,7 +517,6 @@ export function QuestionAndFilePreview({
           selectedFile={selectedFile}
           qid={qid}
           questionId={questionId}
-          urlPrefix={urlPrefix}
           editorRef={selectedFileEditorRef}
           onSelectFile={onSelectFile}
           onSelectDirectory={onSelectDirectory}
