@@ -27,12 +27,6 @@ const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor
 
 type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
 
-interface QuestionFilesData {
-  files: Record<string, string>;
-  allFilesHtml: string;
-  selectedFile: SelectedQuestionFile | null;
-}
-
 interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   trpcCsrfToken: string;

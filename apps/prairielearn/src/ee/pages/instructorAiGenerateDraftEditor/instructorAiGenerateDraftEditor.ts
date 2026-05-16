@@ -41,17 +41,11 @@ import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-gene
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';
 
+import { getQuestionFilesData } from './draftFileEditor.js';
 import {
   DraftNotFound,
   InstructorAiGenerateDraftEditor,
 } from './instructorAiGenerateDraftEditor.html.js';
-import {
-  DRAFT_INFO_JSON_DISABLED_REASON,
-  getQuestionFilesData,
-  isDraftQuestionInfoFile,
-  saveDraftQuestionFile,
-} from './draftFileEditor.js';
-import { getEditorUrlWithSelectedFile, normalizeQuestionFilePath } from './selectedQuestionFile.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -457,49 +451,6 @@ router.post(
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
-    } else if (req.body.__action === 'submit_file_revision') {
-      const filePath = normalizeQuestionFilePath(req.body.filePath);
-      if (isDraftQuestionInfoFile(filePath)) {
-        if (req.accepts(['html', 'json']) === 'json') {
-          res.status(400).json({ status: 'error', message: DRAFT_INFO_JSON_DISABLED_REASON });
-          return;
-        }
-
-        throw new error.HttpStatusError(400, DRAFT_INFO_JSON_DISABLED_REASON);
-      }
-
-      const result = await saveDraftQuestionFile({
-        course: res.locals.course,
-        question: res.locals.question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        urlPrefix: res.locals.urlPrefix,
-        filePath,
-        contents: b64DecodeUnicode(req.body.contents),
-      });
-
-      if (req.accepts(['html', 'json']) === 'json') {
-        if (result.status === 'error') {
-          res.status(409).json(result);
-          return;
-        }
-
-        res.json({ status: 'ok' });
-        return;
-      }
-
-      if (result.status === 'error') {
-        res.redirect(result.editErrorUrl);
-        return;
-      }
-
-      res.redirect(
-        getEditorUrlWithSelectedFile({
-          editorUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-          filePath,
-        }),
-      );
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
@@ -530,20 +481,6 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
-  }),
-);
-
-router.get(
-  '/files',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    res.json(
-      await getQuestionFilesData({
-        resLocals: res.locals,
-        editorUrl: getEditorUrl(res.locals),
-        selectedFile: req.query.file,
-        selectedDirectory: req.query.dir,
-      }),
-    );
   }),
 );
 

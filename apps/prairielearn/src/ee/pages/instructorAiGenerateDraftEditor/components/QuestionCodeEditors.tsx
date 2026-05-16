@@ -23,7 +23,7 @@ export function QuestionCodeEditors({
   csrfToken: string;
   isGenerating: boolean;
   onHasChangesChange?: (hasChanges: boolean) => void;
-  filesError?: Error | null;
+  filesError?: { message: string } | null;
   onRetryFiles?: () => void;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
