@@ -293,7 +293,7 @@ export function TreeQuestionRow({
           {questionData && (
             <IssueBadge
               count={questionData.open_issue_count}
-              urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+              courseInstanceId={courseInstanceId}
               issueQid={questionData.question.qid}
               className="ms-1"
               onClick={(e) => e.stopPropagation()}

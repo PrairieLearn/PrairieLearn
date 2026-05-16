@@ -1,10 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
-  type Updater,
   type VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -18,6 +16,7 @@ import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
+  type NumericColumnFilterValue,
   OverlayTrigger,
   TanstackTableCard,
   parseAsColumnPinningState,
@@ -25,6 +24,7 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useColumnFilters,
   useModalState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
@@ -50,7 +50,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
-import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
+import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
@@ -79,6 +79,7 @@ const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mod
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
 interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -170,46 +171,75 @@ export function AssessmentQuestionTable({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
-    'status',
-    parseAsMultiSelectFilter(GRADING_STATUS_VALUES).withDefault(DEFAULT_GRADING_STATUS_FILTER),
+  const filterRegistry = useMemo(
+    () => ({
+      requires_manual_grading: {
+        urlKey: 'status',
+        parser: parseAsMultiSelectFilter(GRADING_STATUS_VALUES),
+        defaultValue: DEFAULT_GRADING_STATUS_FILTER,
+      },
+      assigned_grader_name: {
+        urlKey: 'assigned_grader',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_ASSIGNED_GRADER_FILTER,
+      },
+      last_grader_name: {
+        urlKey: 'graded_by',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_GRADED_BY_FILTER,
+      },
+      instance_question_group_name: {
+        urlKey: 'submission_group',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_SUBMISSION_GROUP_FILTER,
+        enabled: aiGradingMode && instanceQuestionGroups.length > 0,
+      },
+      rubric_difference: {
+        urlKey: 'ai_agreement',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_AGREEMENT_FILTER,
+        enabled: aiGradingMode,
+      },
+      rubric_grading_item_ids: {
+        urlKey: 'rubric_items',
+        parser: parseAsArrayOf(parseAsString),
+        defaultValue: [] as string[],
+        enabled: !!rubricData && rubricData.rubric_items.length > 0,
+      },
+      manual_points: {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      },
+      auto_points: {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+        enabled: !!assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0,
+      },
+      points: {
+        urlKey: 'total_points',
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      },
+      score_perc: {
+        urlKey: 'score',
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+        enabled: !aiGradingMode,
+      },
+    }),
+    [aiGradingMode, instanceQuestionGroups.length, assessmentQuestion.max_auto_points, rubricData],
   );
-  const [assignedGraderFilter, setAssignedGraderFilter] = useQueryState(
-    'assigned_grader',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
-  );
-  const [gradedByFilter, setGradedByFilter] = useQueryState(
-    'graded_by',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_GRADED_BY_FILTER),
-  );
-  const [submissionGroupFilter, setSubmissionGroupFilter] = useQueryState(
-    'submission_group',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
-  );
-  const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
-    'ai_agreement',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_AI_AGREEMENT_FILTER),
-  );
+
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
+
+  // Mirrors the `rubric_grading_item_ids` registry entry above. Both subscribers
+  // share the `rubric_items` URL param via nuqs, so reset clears it whenever
+  // the rubric filter is enabled. When disabled, the URL value is preserved
+  // (see `ColumnFilterEntry.enabled` in `use-column-filters.ts`).
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
     parseAsArrayOf(parseAsString).withDefault([]),
-  );
-
-  const [manualPointsFilter, setManualPointsFilter] = useQueryState(
-    'manual_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [autoPointsFilter, setAutoPointsFilter] = useQueryState(
-    'auto_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [totalPointsFilter, setTotalPointsFilter] = useQueryState(
-    'total_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [scoreFilter, setScoreFilter] = useQueryState(
-    'score',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
 
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
@@ -288,94 +318,6 @@ export function AssessmentQuestionTable({
     return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
   }, [instanceQuestionsInfo]);
 
-  const columnFilters = useMemo(() => {
-    const filters: { id: ColumnId; value: any }[] = [
-      { id: 'requires_manual_grading', value: gradingStatusFilter },
-      { id: 'assigned_grader_name', value: assignedGraderFilter },
-      { id: 'last_grader_name', value: gradedByFilter },
-      { id: 'manual_points', value: manualPointsFilter },
-      { id: 'points', value: totalPointsFilter },
-    ];
-
-    // Only add filters for columns that exist
-    if (aiGradingMode && instanceQuestionGroups.length > 0) {
-      filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
-    }
-    if (aiGradingMode) {
-      filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
-    }
-    // Filter by rubric items if any are selected
-    if (rubricData && rubricData.rubric_items.length > 0 && rubricItemsFilter.length > 0) {
-      filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
-    }
-    if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
-      filters.push({ id: 'auto_points', value: autoPointsFilter });
-    }
-    if (!aiGradingMode) {
-      filters.push({ id: 'score_perc', value: scoreFilter });
-    }
-
-    return filters;
-  }, [
-    gradingStatusFilter,
-    assignedGraderFilter,
-    gradedByFilter,
-    submissionGroupFilter,
-    aiAgreementFilter,
-    rubricItemsFilter,
-    manualPointsFilter,
-    autoPointsFilter,
-    totalPointsFilter,
-    scoreFilter,
-    aiGradingMode,
-    instanceQuestionGroups.length,
-    assessmentQuestion.max_auto_points,
-    rubricData,
-  ]);
-
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
-    return {
-      requires_manual_grading: setGradingStatusFilter,
-      assigned_grader_name: setAssignedGraderFilter,
-      last_grader_name: setGradedByFilter,
-      instance_question_group_name: setSubmissionGroupFilter,
-      rubric_difference: setAiAgreementFilter,
-      manual_points: setManualPointsFilter,
-      auto_points: setAutoPointsFilter,
-      points: setTotalPointsFilter,
-      score_perc: setScoreFilter,
-      rubric_grading_item_ids: setRubricItemsFilter,
-      ai_grading_status: undefined,
-      uid: undefined,
-      user_or_group_name: undefined,
-      select: undefined,
-      index: undefined,
-    };
-  }, [
-    setGradingStatusFilter,
-    setAssignedGraderFilter,
-    setGradedByFilter,
-    setSubmissionGroupFilter,
-    setAiAgreementFilter,
-    setManualPointsFilter,
-    setTotalPointsFilter,
-    setScoreFilter,
-    setRubricItemsFilter,
-    setAutoPointsFilter,
-  ]);
-
-  // Sync TanStack column filter changes back to URL
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
-      }
-    },
-    [columnFilters, columnFilterSetters],
-  );
-
   const serverJobProgress = useServerJobProgress({
     enabled: aiGradingMode,
     initialOngoingJobSequenceTokens,
@@ -452,31 +394,34 @@ export function AssessmentQuestionTable({
     ],
   );
 
-  const allColumnIds = columns.map((col) => col.id!);
+  const allColumnIds = useMemo(
+    () => columns.map((col) => col.id).filter((id): id is string => typeof id === 'string'),
+    [columns],
+  );
   const defaultColumnVisibility = useMemo(() => {
     return Object.fromEntries(
-      columns.map((col) => {
+      columns.flatMap((col) => {
+        if (typeof col.id !== 'string') return [];
         if (col.id === 'select') {
-          return [col.id, true];
+          return [[col.id, true]];
         }
         // If you can't show/hide the column, the default state is hidden.
         if (col.enableHiding === false) {
-          return [col.id, false];
+          return [[col.id, false]];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-
-        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
-          return [col.id, !aiGradingMode];
+        if (['assigned_grader_name', 'score_perc'].includes(col.id)) {
+          return [[col.id, !aiGradingMode]];
         }
-        if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
-          return [col.id, aiGradingMode];
+        if (['instance_question_group_name', 'rubric_difference'].includes(col.id)) {
+          return [[col.id, aiGradingMode]];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
-          return [col.id, false];
+        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id)) {
+          return [[col.id, false]];
         }
 
-        return [col.id, true];
+        return [[col.id, true]];
       }),
     );
   }, [columns, aiGradingMode]);
@@ -534,7 +479,7 @@ export function AssessmentQuestionTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -1039,6 +984,7 @@ export function AssessmentQuestionTable({
           }),
           hasSelection: true,
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
 
       <AiGradingModelSelectionModal
