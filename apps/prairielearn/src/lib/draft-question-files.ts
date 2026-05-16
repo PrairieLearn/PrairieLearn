@@ -1,26 +1,30 @@
+import type { Stats } from 'node:fs';
 import * as path from 'node:path';
+
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 
-import { createDirectoryBrowserHtml } from '../../../components/FileBrowser.js';
-import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import type { Course, Question, User } from '../../../lib/db-types.js';
-import { getPaths } from '../../../lib/instructorFiles.js';
-import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { createDirectoryBrowserHtml } from '../components/FileBrowser.js';
 
-import {
-  getEditorUrlWithSelectedDirectory,
-  getEditorUrlWithSelectedFile,
-  getSelectedQuestionDirectory,
-  getSelectedQuestionFilePath,
-  readSelectedQuestionFile,
-} from './selectedQuestionFile.js';
+import { b64EncodeUnicode } from './base64-util.js';
+import { getCourseFilesClient } from './course-files-api.js';
+import type { Course, Question, User } from './db-types.js';
+import { readEditableTextFile } from './editableFile.js';
+import { getPaths } from './instructorFiles.js';
+import type { ResLocalsForPage } from './res-locals.js';
 
-export const DRAFT_INFO_JSON_DISABLED_REASON =
+export interface SelectedQuestionFile {
+  path: string;
+  contents: string;
+  aceMode: string;
+}
+
+const DRAFT_INFO_JSON_DISABLED_REASON =
   'Draft question metadata is managed by the draft editor. Only finalized questions can edit info.json directly.';
 
 type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
+type QuestionPathType = 'file' | 'directory';
 
 function encodeCourseFilePath(filePath: string) {
   return filePath.split('/').map(encodeURIComponent).join('/');
@@ -28,6 +32,125 @@ function encodeCourseFilePath(filePath: string) {
 
 export function isDraftQuestionInfoFile(filePath: string) {
   return path.posix.normalize(filePath) === 'info.json';
+}
+
+export function getSelectedQuestionFilePath(queryValue: unknown): string | null {
+  if (queryValue == null) return null;
+  if (Array.isArray(queryValue)) {
+    throw new error.HttpStatusError(400, 'Invalid selected file path');
+  }
+  if (typeof queryValue !== 'string') {
+    throw new error.HttpStatusError(400, 'Invalid selected file path');
+  }
+  return getQuestionRelativePath(queryValue, 'file');
+}
+
+export function getSelectedQuestionDirectory(queryValue: unknown): string | null {
+  if (queryValue == null) return null;
+  if (Array.isArray(queryValue)) {
+    throw new error.HttpStatusError(400, 'Invalid selected directory');
+  }
+  if (typeof queryValue !== 'string') {
+    throw new error.HttpStatusError(400, 'Invalid selected directory');
+  }
+
+  const trimmedPath = queryValue.trim();
+  if (trimmedPath === '' || trimmedPath === '.') return null;
+
+  return getQuestionRelativePath(trimmedPath, 'directory');
+}
+
+function getQuestionRelativePath(filePath: string, pathType: QuestionPathType): string {
+  const trimmedPath = filePath.trim();
+  if (trimmedPath === '' || trimmedPath.includes('\0') || trimmedPath.includes('\\')) {
+    throw new error.HttpStatusError(400, `Invalid selected ${pathType} path`);
+  }
+
+  const normalizedPath = path.posix.normalize(trimmedPath);
+  if (
+    normalizedPath === '.' ||
+    normalizedPath === '..' ||
+    normalizedPath.startsWith('../') ||
+    path.posix.isAbsolute(normalizedPath)
+  ) {
+    throw new error.HttpStatusError(400, `Invalid selected ${pathType} path`);
+  }
+
+  return normalizedPath;
+}
+
+export function normalizeQuestionFilePath(filePath: string): string {
+  return getQuestionRelativePath(filePath, 'file');
+}
+
+async function readSelectedQuestionFile({
+  course,
+  question,
+  filePath,
+}: {
+  course: Course;
+  question: Question;
+  filePath: string | null;
+}): Promise<SelectedQuestionFile | null> {
+  if (filePath == null) return null;
+  if (!question.qid) {
+    throw new error.HttpStatusError(400, 'Question does not have a QID');
+  }
+
+  const questionPath = path.resolve(course.path, 'questions', question.qid);
+  const fullPath = path.resolve(questionPath, filePath);
+  if (!fullPath.startsWith(`${questionPath}${path.sep}`)) {
+    throw new error.HttpStatusError(400, 'Invalid selected file path');
+  }
+
+  let stat: Stats;
+  try {
+    stat = await fs.stat(fullPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new error.HttpStatusError(404, 'Selected file not found');
+    }
+    throw err;
+  }
+  if (!stat.isFile()) {
+    throw new error.HttpStatusError(400, 'Selected path is not a file');
+  }
+
+  const editableFile = await readEditableTextFile({
+    courseId: course.id,
+    coursePath: course.path,
+    fullPath,
+    courseRelativePath: path.posix.join('questions', question.qid, filePath),
+  });
+
+  return {
+    path: filePath,
+    contents: editableFile.contents,
+    aceMode: editableFile.aceMode,
+  };
+}
+
+export function getEditorUrlWithSelectedFile({
+  editorUrl,
+  filePath,
+}: {
+  editorUrl: string;
+  filePath: string;
+}) {
+  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
+  return `${editorUrl}?${params.toString()}`;
+}
+
+export function getEditorUrlWithSelectedDirectory({
+  editorUrl,
+  directory,
+}: {
+  editorUrl: string;
+  directory: string | null;
+}) {
+  const params = new URLSearchParams({ tab: 'all-files' });
+  if (directory != null) params.set('dir', directory);
+  return `${editorUrl}?${params.toString()}`;
 }
 
 async function renderAllQuestionFilesHtml({
@@ -51,6 +174,7 @@ async function renderAllQuestionFilesHtml({
     navPage: 'question',
   });
   const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
+  const formAction = `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`;
   const successfulActionRedirectUrl = getEditorUrlWithSelectedDirectory({
     editorUrl,
     directory: selectedDirectory,
@@ -79,7 +203,7 @@ async function renderAllQuestionFilesHtml({
       csrfToken: resLocals.__csrf_token,
       options: {
         fileViewBaseUrl,
-        formAction: `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`,
+        formAction,
         successfulActionRedirectUrl,
         directoryUrl: (directoryPath) =>
           getEditorUrlWithSelectedDirectory({
@@ -111,23 +235,21 @@ async function renderAllQuestionFilesHtml({
 export async function getQuestionFilesData({
   resLocals,
   editorUrl,
-  selectedFile,
+  selectedFilePath,
   selectedDirectory,
 }: {
   resLocals: InstructorQuestionLocals;
   editorUrl: string;
-  selectedFile: unknown;
-  selectedDirectory: unknown;
+  selectedFilePath: string | null;
+  selectedDirectory: string | null;
 }) {
   const courseFilesClient = getCourseFilesClient();
-  const directory = getSelectedQuestionDirectory(selectedDirectory);
-  const selectedFilePath = getSelectedQuestionFilePath(selectedFile);
   const [{ files }, allFilesHtml, selectedQuestionFile] = await Promise.all([
     courseFilesClient.getQuestionFiles.query({
       course_id: resLocals.course.id,
       question_id: resLocals.question.id,
     }),
-    renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory: directory }),
+    renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory }),
     readSelectedQuestionFile({
       course: resLocals.course,
       question: resLocals.question,

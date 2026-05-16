@@ -1,12 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type Ref, useEffect, useImperativeHandle, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
 import { useTRPC } from '../../../../trpc/course/context.js';
-import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
+
+export interface SelectedQuestionFileEditorHandle {
+  discardChanges: () => void;
+}
 
 function getSaveStatus({
   hasChanges,
@@ -29,12 +33,16 @@ export function SelectedQuestionFileEditor({
   urlPrefix,
   onShowAllFiles,
   onSaved,
+  onHasChangesChange,
+  editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
   questionId: string;
   urlPrefix: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
+  onHasChangesChange?: (hasChanges: boolean) => void;
+  editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
   const saveMutation = useMutation(trpc.aiDraftFiles.save.mutationOptions());
@@ -44,6 +52,18 @@ export function SelectedQuestionFileEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasChanges = contents !== savedContents;
   const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+    onHasChangesChange?.(hasChanges);
+  }, [hasChanges, onHasChangesChange]);
+
+  useImperativeHandle(editorRef, () => ({
+    discardChanges: () => {
+      setContents(savedContents);
+      setSaveError(null);
+    },
+  }));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -9,10 +9,10 @@ import { NuqsAdapter } from '@prairielearn/ui';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
 import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
-import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';

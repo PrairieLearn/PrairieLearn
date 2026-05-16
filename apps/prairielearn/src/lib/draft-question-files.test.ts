@@ -8,7 +8,7 @@ import {
   getSelectedQuestionDirectory,
   getSelectedQuestionFilePath,
   normalizeQuestionFilePath,
-} from './selectedQuestionFile.js';
+} from './draft-question-files.js';
 
 describe('selected question file helpers', () => {
   describe('normalizeQuestionFilePath', () => {

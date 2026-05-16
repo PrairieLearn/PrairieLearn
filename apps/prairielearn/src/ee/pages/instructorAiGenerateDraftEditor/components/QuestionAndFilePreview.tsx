@@ -1,15 +1,26 @@
-import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  type Ref,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
+import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
 import RichTextEditor from '../RichTextEditor/index.js';
-import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
-import { SelectedQuestionFileEditor } from './SelectedQuestionFileEditor.js';
+import {
+  SelectedQuestionFileEditor,
+  type SelectedQuestionFileEditorHandle,
+} from './SelectedQuestionFileEditor.js';
 
 export interface NewVariantHandle {
   newVariant: () => void;
@@ -294,6 +305,8 @@ function AllQuestionFiles({
   onSelectDirectory,
   onClearSelectedFile,
   onSelectedFileSaved,
+  onHasChangesChange,
+  editorRef,
 }: {
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
@@ -304,8 +317,14 @@ function AllQuestionFiles({
   onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
   onSelectedFileSaved: () => Promise<unknown>;
+  onHasChangesChange: (hasChanges: boolean) => void;
+  editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const fileListingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedFile == null) onHasChangesChange(false);
+  }, [onHasChangesChange, selectedFile]);
 
   useEffect(() => {
     const fileListing = fileListingRef.current;
@@ -347,8 +366,10 @@ function AllQuestionFiles({
         selectedFile={selectedFile}
         questionId={questionId}
         urlPrefix={urlPrefix}
+        editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
+        onHasChangesChange={onHasChangesChange}
       />
     );
   }
@@ -413,14 +434,25 @@ export function QuestionAndFilePreview({
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
+  const selectedFileEditorRef = useRef<SelectedQuestionFileEditorHandle>(null);
+  const [codeEditorsHaveChanges, setCodeEditorsHaveChanges] = useState(false);
+  const [selectedFileHasChanges, setSelectedFileHasChanges] = useState(false);
 
   // Allow the caller to request a new variant.
   useImperativeHandle(newVariantRef, () => ({ newVariant }));
 
   // Allow the caller to discard code editor changes.
   useImperativeHandle(codeEditorsRef, () => ({
-    discardChanges: () => internalCodeEditorsRef.current?.discardChanges(),
+    discardChanges: () => {
+      internalCodeEditorsRef.current?.discardChanges();
+      selectedFileEditorRef.current?.discardChanges();
+    },
   }));
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+    onHasUnsavedChanges?.(codeEditorsHaveChanges || selectedFileHasChanges);
+  }, [codeEditorsHaveChanges, onHasUnsavedChanges, selectedFileHasChanges]);
 
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
@@ -480,7 +512,7 @@ export function QuestionAndFilePreview({
           isGenerating={isGenerating}
           filesError={filesError}
           editorRef={internalCodeEditorsRef}
-          onHasChangesChange={onHasUnsavedChanges}
+          onHasChangesChange={setCodeEditorsHaveChanges}
           onRetryFiles={onRetryFiles}
         />
       </Tab.Pane>
@@ -491,10 +523,12 @@ export function QuestionAndFilePreview({
           qid={qid}
           questionId={questionId}
           urlPrefix={urlPrefix}
+          editorRef={selectedFileEditorRef}
           onSelectFile={onSelectFile}
           onSelectDirectory={onSelectDirectory}
           onClearSelectedFile={onClearSelectedFile}
           onSelectedFileSaved={onSelectedFileSaved}
+          onHasChangesChange={setSelectedFileHasChanges}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="rich-text-editor" className="h-100">

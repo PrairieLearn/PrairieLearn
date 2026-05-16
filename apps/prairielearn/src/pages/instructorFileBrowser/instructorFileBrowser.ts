@@ -1,14 +1,20 @@
 import * as path from 'node:path';
 
 import { Router } from 'express';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 
 import { createFileBrowser } from '../../components/FileBrowser.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import type { NavPage } from '../../components/Navbar.types.js';
+import {
+  deleteCourseFile,
+  getSuccessfulActionRedirectUrl,
+  renameCourseFile,
+  uploadCourseFile,
+} from '../../lib/course-file-actions.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -16,19 +22,39 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 const router = Router();
 
-function getSuccessfulActionRedirectUrl({
-  redirectUrl,
-  urlPrefix,
-}: {
-  redirectUrl: unknown;
-  urlPrefix: string;
-}) {
-  if (typeof redirectUrl !== 'string' || redirectUrl.trim() === '') return null;
-  if (!redirectUrl.startsWith(`${urlPrefix}/`)) {
-    throw new error.HttpStatusError(400, 'Invalid redirect URL');
-  }
-  return redirectUrl;
-}
+const FileActionSchema = z.object({
+  __action: z.string(),
+});
+
+const RedirectUrlSchema = z.object({
+  redirect_url: z.string().optional(),
+});
+
+const DeleteFileActionSchema = RedirectUrlSchema.extend({
+  __action: z.literal('delete_file'),
+  file_path: z.string(),
+});
+
+const RenameFileActionSchema = RedirectUrlSchema.extend({
+  __action: z.literal('rename_file'),
+  working_path: z.string(),
+  old_file_name: z.string(),
+  new_file_name: z.string().min(1),
+  was_viewing_file: z.string().optional(),
+});
+
+const UploadFileActionSchema = z.union([
+  RedirectUrlSchema.extend({
+    __action: z.literal('upload_file'),
+    file_path: z.string().min(1),
+    working_path: z.string().optional(),
+  }),
+  RedirectUrlSchema.extend({
+    __action: z.literal('upload_file'),
+    file_path: z.undefined().optional(),
+    working_path: z.string().min(1),
+  }),
+]);
 
 router.get(
   '/*',
@@ -88,135 +114,88 @@ router.post(
       }
 
       const paths = getPaths(req.params[0], res.locals);
-      const successfulActionRedirectUrl = getSuccessfulActionRedirectUrl({
-        redirectUrl: req.body.redirect_url,
-        urlPrefix: res.locals.urlPrefix,
-      });
-      const container = {
-        rootPath: paths.rootPath,
-        invalidRootPaths: paths.invalidRootPaths,
-      };
+      const actionBody = FileActionSchema.parse(req.body);
 
       // NOTE: All actions are meant to do things to *files* and not to directories
       // (or anything else). However, nowhere do we check that it is actually being
       // applied to a file and not to a directory.
 
-      if (req.body.__action === 'delete_file') {
-        let deletePath: string;
-        try {
-          deletePath = path.join(res.locals.course.path, req.body.file_path);
-        } catch {
-          throw new Error(`Invalid file path: ${req.body.file_path}`);
-        }
-        const editor = new FileDeleteEditor({
-          locals: res.locals,
-          container,
-          deletePath,
+      if (actionBody.__action === 'delete_file') {
+        const body = DeleteFileActionSchema.parse(req.body);
+        const successfulActionRedirectUrl = getSuccessfulActionRedirectUrl({
+          redirectUrl: body.redirect_url,
+          urlPrefix: res.locals.urlPrefix,
         });
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        const result = await deleteCourseFile({
+          locals: res.locals,
+          paths,
+          filePath: body.file_path,
+        });
+        if (result.status === 'error') {
+          res.redirect(res.locals.urlPrefix + '/edit_error/' + result.jobSequenceId);
           return;
         }
         res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
-      } else if (req.body.__action === 'rename_file') {
-        let oldPath: string;
-        try {
-          oldPath = path.join(req.body.working_path, req.body.old_file_name);
-        } catch {
-          throw new Error(
-            `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
-          );
-        }
-        if (!req.body.new_file_name) {
-          throw new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`);
-        }
-        if (
-          !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
-            req.body.new_file_name,
-          )
-        ) {
-          throw new Error(
-            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
-          );
-        }
-        let newPath: string;
-        try {
-          newPath = path.join(req.body.working_path, req.body.new_file_name);
-        } catch {
-          throw new Error(
-            `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
-          );
-        }
-
-        if (oldPath === newPath) {
-          // The new file name is the same as old file name; do nothing.
+      } else if (actionBody.__action === 'rename_file') {
+        const body = RenameFileActionSchema.parse(req.body);
+        const successfulActionRedirectUrl = getSuccessfulActionRedirectUrl({
+          redirectUrl: body.redirect_url,
+          urlPrefix: res.locals.urlPrefix,
+        });
+        const result = await renameCourseFile({
+          locals: res.locals,
+          paths,
+          workingPath: body.working_path,
+          oldFileName: body.old_file_name,
+          newFileName: body.new_file_name,
+        });
+        if (result.status === 'unchanged') {
           res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
           return;
         }
-
-        const editor = new FileRenameEditor({
-          locals: res.locals,
-          container,
-          oldPath,
-          newPath,
-        });
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+        if (result.status === 'error') {
+          res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
           return;
         }
         if (successfulActionRedirectUrl != null) {
           res.redirect(successfulActionRedirectUrl);
-        } else if (req.body.was_viewing_file) {
+        } else if (body.was_viewing_file) {
           res.redirect(
             `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-              path.relative(res.locals.course.path, newPath),
+              path.relative(res.locals.course.path, result.newPath),
             )}`,
           );
         } else {
           res.redirect(req.originalUrl);
         }
-      } else if (req.body.__action === 'upload_file') {
-        if (!req.file) throw new Error('No file uploaded');
-
-        let filePath: string;
-        if (req.body.file_path) {
-          try {
-            filePath = path.join(res.locals.course.path, req.body.file_path);
-          } catch {
-            throw new Error(`Invalid file path: ${req.body.file_path}`);
-          }
-        } else {
-          try {
-            filePath = path.join(req.body.working_path, req.file.originalname);
-          } catch {
-            throw new Error(
-              `Invalid file path: ${req.body.working_path} / ${req.file.originalname}`,
-            );
-          }
-        }
-        const editor = new FileUploadEditor({
-          locals: res.locals,
-          container,
-          filePath,
-          fileContents: req.file.buffer,
+      } else if (actionBody.__action === 'upload_file') {
+        const body = UploadFileActionSchema.parse(req.body);
+        const successfulActionRedirectUrl = getSuccessfulActionRedirectUrl({
+          redirectUrl: body.redirect_url,
+          urlPrefix: res.locals.urlPrefix,
         });
-
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+        if (!req.file) throw new Error('No file uploaded');
+        const result =
+          body.file_path != null
+            ? await uploadCourseFile({
+                locals: res.locals,
+                paths,
+                file: req.file,
+                destinationFilePath: body.file_path,
+              })
+            : await uploadCourseFile({
+                locals: res.locals,
+                paths,
+                file: req.file,
+                destinationDirectory: body.working_path,
+              });
+        if (result.status === 'error') {
+          res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
           return;
         }
         res.redirect(successfulActionRedirectUrl ?? req.originalUrl);
       } else {
-        throw new Error(`unknown __action: ${req.body.__action}`);
+        throw new Error(`unknown __action: ${actionBody.__action}`);
       }
     },
   ),
