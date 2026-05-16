@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.0.6
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 5.0.5
 
 ### Patch Changes
