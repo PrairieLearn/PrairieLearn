@@ -1,15 +1,12 @@
 import type { Stats } from 'node:fs';
 import * as path from 'node:path';
 
-// @ts-expect-error No types for ace-code/src/ext/modelist.js
-import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import fs from 'fs-extra';
-import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
 
-import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import type { Course, Question } from '../../../lib/db-types.js';
+import { readEditableTextFile } from '../../../lib/editableFile.js';
 
 export interface SelectedQuestionFile {
   path: string;
@@ -99,15 +96,17 @@ export async function readSelectedQuestionFile({
     throw new error.HttpStatusError(400, 'Selected path is not a file');
   }
 
-  const contents = await fs.readFile(fullPath);
-  if (await isBinaryFile(contents)) {
-    throw new error.HttpStatusError(400, 'Cannot edit binary file');
-  }
+  const editableFile = await readEditableTextFile({
+    courseId: course.id,
+    coursePath: course.path,
+    fullPath,
+    courseRelativePath: path.posix.join('questions', question.qid, filePath),
+  });
 
   return {
     path: filePath,
-    contents: b64EncodeUnicode(contents.toString('utf8')),
-    aceMode: getModeForPath(filePath).mode,
+    contents: editableFile.contents,
+    aceMode: editableFile.aceMode,
   };
 }
 

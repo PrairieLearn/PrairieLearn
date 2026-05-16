@@ -1,6 +1,6 @@
-import ace from 'ace-builds';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
+import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import type { SelectedQuestionFile } from '../selectedQuestionFile.js';
 
@@ -12,6 +12,14 @@ function getEditErrorUrl(value: unknown) {
 
   const { editErrorUrl } = value;
   return typeof editErrorUrl === 'string' ? editErrorUrl : null;
+}
+
+function getErrorMessage(value: unknown) {
+  if (typeof value !== 'object' || value == null) return null;
+  if (!('message' in value)) return null;
+
+  const { message } = value;
+  return typeof message === 'string' ? message : null;
 }
 
 function getSaveStatus({
@@ -62,7 +70,7 @@ async function saveSelectedQuestionFile({
   }
 
   if (!response.ok) {
-    throw new Error(SAVE_ERROR_MESSAGE);
+    throw new Error(getErrorMessage(data) ?? SAVE_ERROR_MESSAGE);
   }
 
   return true;
@@ -81,13 +89,18 @@ export function SelectedQuestionFileEditor({
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
 }) {
-  const editorContainerRef = useRef<HTMLDivElement>(null);
   const savedContents = b64DecodeUnicode(selectedFile.contents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasChanges = contents !== savedContents;
   const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError });
+
+  // Refetched file data replaces the editor's saved baseline after a save or file selection.
+  useEffect(() => {
+    setContents(savedContents);
+    setSaveError(null);
+  }, [savedContents]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,37 +123,6 @@ export function SelectedQuestionFileEditor({
       setIsSaving(false);
     }
   }
-
-  // Create Ace after React has mounted the container div.
-  useEffect(() => {
-    if (!editorContainerRef.current) return;
-
-    const aceBasePath = document.querySelector<HTMLMetaElement>(
-      'meta[name="ace-base-path"]',
-    )?.content;
-    if (aceBasePath) {
-      ace.config.set('basePath', aceBasePath);
-    }
-
-    const editor = ace.edit(editorContainerRef.current, {
-      mode: selectedFile.aceMode,
-      enableKeyboardAccessibility: true,
-      theme: 'ace/theme/chrome',
-    });
-    const session = editor.getSession();
-    session.setTabSize(2);
-    session.setValue(savedContents);
-    editor.gotoLine(1, 0, false);
-    session.getUndoManager().reset();
-    const handleChange = () => setContents(editor.getValue());
-    session.on('change', handleChange);
-
-    return () => {
-      session.off('change', handleChange);
-      editor.destroy();
-      editor.container.remove();
-    };
-  }, [savedContents, selectedFile.aceMode]);
 
   return (
     <div className="selected-file-editor h-100 d-flex flex-column">
@@ -172,7 +154,13 @@ export function SelectedQuestionFileEditor({
           </form>
         </div>
       </div>
-      <div ref={editorContainerRef} className="selected-file-editor-ace flex-grow-1" />
+      <AceFileEditor
+        value={contents}
+        mode={selectedFile.aceMode}
+        className="selected-file-editor-ace flex-grow-1"
+        onChange={setContents}
+        onReady={(editor) => editor.getSession().setTabSize(2)}
+      />
     </div>
   );
 }

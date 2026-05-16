@@ -284,16 +284,10 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
   return <div ref={ref} suppressHydrationWarning />;
 }
 
-function encodeFilePath(filePath: string) {
-  return filePath.split('/').map(encodeURIComponent).join('/');
-}
-
 function AllQuestionFiles({
   allQuestionFilesHtml,
   selectedFile,
   qid,
-  questionId,
-  urlPrefix,
   editorUrl,
   csrfToken,
   onSelectFile,
@@ -304,8 +298,6 @@ function AllQuestionFiles({
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   qid: string | null;
-  questionId: string;
-  urlPrefix: string;
   editorUrl: string;
   csrfToken: string;
   onSelectFile: (filePath: string) => void;
@@ -348,8 +340,6 @@ function AllQuestionFiles({
 
   if (!qid) return null;
 
-  const rootPath = `questions/${qid}`;
-
   if (selectedFile != null) {
     return (
       <SelectedQuestionFileEditor
@@ -365,14 +355,6 @@ function AllQuestionFiles({
 
   return (
     <div className="p-3">
-      <div className="d-flex justify-content-end mb-2">
-        <a
-          className="btn btn-sm btn-outline-secondary"
-          href={`${urlPrefix}/question/${questionId}/file_view/${encodeFilePath(rootPath)}`}
-        >
-          Open standalone file browser
-        </a>
-      </div>
       <div
         ref={fileListingRef}
         // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
@@ -390,9 +372,7 @@ export function QuestionAndFilePreview({
   questionContainerHtml,
   csrfToken,
   editorUrl,
-  questionId,
   qid,
-  urlPrefix,
   variantUrl,
   variantCsrfToken,
   newVariantRef,
@@ -414,9 +394,7 @@ export function QuestionAndFilePreview({
   questionContainerHtml: string;
   csrfToken: string;
   editorUrl: string;
-  questionId: string;
   qid: string | null;
-  urlPrefix: string;
   variantUrl: string;
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
@@ -509,8 +487,6 @@ export function QuestionAndFilePreview({
           allQuestionFilesHtml={allQuestionFilesHtml}
           selectedFile={selectedFile}
           qid={qid}
-          questionId={questionId}
-          urlPrefix={urlPrefix}
           editorUrl={editorUrl}
           csrfToken={csrfToken}
           onSelectFile={onSelectFile}

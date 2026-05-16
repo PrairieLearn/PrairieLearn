@@ -78,12 +78,16 @@ interface DirectoryListings {
 
 interface DirectoryBrowserOptions {
   fileViewBaseUrl?: string;
+  fileViewUrl?: (file: DirectoryEntryFile) => string;
+  fileViewAttributes?: (file: DirectoryEntryFile) => Record<string, string>;
+  fileViewDisabledReason?: (file: DirectoryEntryFile) => string | null;
   formAction?: string;
   successfulActionRedirectUrl?: string;
   directoryUrl?: (directoryPath: string) => string;
   directoryAttributes?: (directoryPath: string) => Record<string, string>;
   editFileUrl?: (file: DirectoryEntryFile) => string;
   editFileAttributes?: (file: DirectoryEntryFile) => Record<string, string>;
+  editFileDisabledReason?: (file: DirectoryEntryFile) => string | null;
 }
 
 type FileUploadInfo = {
@@ -658,6 +662,9 @@ function DirectoryBrowserTable({
             const editFileUrl =
               options?.editFileUrl?.(f) ?? `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
             const editFileAttributes = options?.editFileAttributes?.(f) ?? {};
+            const fileViewDisabledReason = options?.fileViewDisabledReason?.(f) ?? null;
+            const editFileDisabledReason = options?.editFileDisabledReason?.(f) ?? null;
+            const canEdit = f.canEdit && editFileDisabledReason == null;
 
             return (
               <tr key={`file-${f.path}`}>
@@ -669,18 +676,27 @@ function DirectoryBrowserTable({
                     ) : f.sync_warnings ? (
                       <SyncProblemButton type="warning" output={f.sync_warnings} />
                     ) : null}
-                    {f.canView ? (
+                    {f.canView && fileViewDisabledReason == null ? (
                       <a
-                        href={getFileViewUrl({
-                          paths,
-                          fileViewBaseUrl: options?.fileViewBaseUrl,
-                          filePath: f.path,
-                        })}
+                        href={
+                          options?.fileViewUrl?.(f) ??
+                          getFileViewUrl({
+                            paths,
+                            fileViewBaseUrl: options?.fileViewBaseUrl,
+                            filePath: f.path,
+                          })
+                        }
+                        {...options?.fileViewAttributes?.(f)}
                       >
                         {f.name}
                       </a>
                     ) : (
-                      <span>{f.name}</span>
+                      <span
+                        className={fileViewDisabledReason ? 'text-muted' : undefined}
+                        title={fileViewDisabledReason ?? undefined}
+                      >
+                        {f.name}
+                      </span>
                     )}
                   </div>
                 </td>
@@ -688,14 +704,27 @@ function DirectoryBrowserTable({
                   <div className="d-flex gap-2">
                     {isReadOnly ? null : (
                       <>
-                        <a
-                          className={`btn btn-xs btn-secondary text-nowrap ${f.canEdit ? '' : 'disabled'}`}
-                          href={editFileUrl}
-                          {...editFileAttributes}
-                        >
-                          <i className="fa fa-edit" />
-                          <span>Edit</span>
-                        </a>
+                        {canEdit ? (
+                          <a
+                            className="btn btn-xs btn-secondary text-nowrap"
+                            href={editFileUrl}
+                            {...editFileAttributes}
+                          >
+                            <i className="fa fa-edit" />
+                            <span>Edit</span>
+                          </a>
+                        ) : (
+                          <span title={editFileDisabledReason ?? undefined}>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-secondary text-nowrap"
+                              disabled
+                            >
+                              <i className="fa fa-edit" />
+                              <span>Edit</span>
+                            </button>
+                          </span>
+                        )}
                         <button
                           type="button"
                           id={`instructorFileUploadForm-${f.id}`}
