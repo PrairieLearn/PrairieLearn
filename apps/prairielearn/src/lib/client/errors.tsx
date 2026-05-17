@@ -60,6 +60,19 @@ type AppErrorRenderers<E extends { code: string }> = {
 };
 
 /**
+ * Standard renderer for the `SYNC_JOB_FAILED` app error: shows the message
+ * followed by a link to the job logs. Use as the `SYNC_JOB_FAILED` entry in
+ * an {@link AppErrorAlert} or {@link renderAppError} renderer map.
+ */
+export function syncJobFailedRenderer(urlPrefix: string) {
+  return ({ message, jobSequenceId }: { message: string; jobSequenceId: string }) => (
+    <>
+      {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+    </>
+  );
+}
+
+/**
  * Renders an {@link AppError} via an exhaustive per-variant renderer map.
  * Use this when you need a `ReactNode` to pass into another component
  * (e.g. `StickySaveBar`'s `alert.message`). For rendering directly inside a

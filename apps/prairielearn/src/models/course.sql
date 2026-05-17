@@ -6,6 +6,15 @@ FROM
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_id_for_update
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id
+FOR UPDATE;
+
 -- BLOCK select_course_by_short_name
 SELECT
   c.*
@@ -259,6 +268,15 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_sharing_token
+SELECT
+  *
+FROM
+  courses
+WHERE
+  sharing_token = $sharing_token
+  AND deleted_at IS NULL;
+
 -- BLOCK update_course_column_short_name
 UPDATE courses
 SET
@@ -336,3 +354,27 @@ FROM
   courses
 WHERE
   sharing_name = ANY ($sharing_names::text[]);
+
+-- BLOCK select_shared_question_exists
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      (
+        q.share_publicly
+        OR q.share_source_publicly
+      )
+      AND course_id = $course_id
+    UNION
+    SELECT
+      1
+    FROM
+      sharing_sets AS ss
+      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
+      JOIN questions AS q ON q.id = ssq.question_id
+    WHERE
+      ss.course_id = $course_id
+  );

@@ -33,11 +33,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
     "@types/node": "^24.12.2",
-    "@types/uuid": "^11.0.0",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",
-    "source-map-support": "^0.5.21",
-    "tsx": "^4.21.0",
     "vitest": "^4.1.5"
   }
 }

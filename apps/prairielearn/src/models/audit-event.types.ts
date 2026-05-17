@@ -40,7 +40,7 @@ export type SupportedTableActionCombination =
     }
   | {
       tableName: 'courses';
-      actionDetail?: null;
+      actionDetail?: 'ai_grading_free_credit_redemption' | null;
     }
   | {
       tableName: 'users';

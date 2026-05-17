@@ -1,5 +1,14 @@
 # @prairielearn/eslint-config
 
+## 3.0.1
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- Updated dependencies [9717de9]
+- Updated dependencies [3927197]
+  - @prairielearn/eslint-plugin@4.3.0
+
 ## 3.0.0
 
 ### Major Changes

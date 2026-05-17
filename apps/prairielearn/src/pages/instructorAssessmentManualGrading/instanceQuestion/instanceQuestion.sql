@@ -103,38 +103,6 @@ ORDER BY
   s.date DESC,
   s.id DESC;
 
--- BLOCK select_ai_grading_job_data_for_submission
-SELECT
-  gj.id,
-  gj.manual_rubric_grading_id,
-  agj.prompt,
-  agj.completion,
-  agj.rotation_correction_degrees
-FROM
-  grading_jobs AS gj
-  LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
-WHERE
-  submission_id = $submission_id
-  AND grading_method = 'AI'
-  AND gj.deleted_at IS NULL
-ORDER BY
-  gj.date DESC
-LIMIT
-  1;
-
--- BLOCK select_exists_manual_grading_job_for_submission
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      grading_jobs AS gj
-    WHERE
-      gj.submission_id = $submission_id
-      AND gj.grading_method = 'Manual'
-      AND gj.deleted_at IS NULL
-  );
-
 -- BLOCK select_last_manual_grader_for_instance_question
 SELECT
   COALESCE(u.name, u.uid) AS grader_name

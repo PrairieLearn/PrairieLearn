@@ -26,7 +26,7 @@ const router = Router();
 
 router.get(
   '/',
-  typedAsyncHandler<'course'>(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -55,6 +55,8 @@ router.get(
               allowEdit={allowEdit}
               origHash={origHash}
               csrfToken={pageContext.__csrf_token}
+              courseId={pageContext.course.id}
+              courseInstanceId={res.locals.course_instance?.id}
             />
           </Hydrate>
         ),

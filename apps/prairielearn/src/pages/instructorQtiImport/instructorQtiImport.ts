@@ -1,4 +1,4 @@
-import { stat as fsStat, readFile } from 'node:fs/promises';
+import { stat as fsStat, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -24,6 +24,7 @@ import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
@@ -109,8 +110,24 @@ router.post(
         throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
       }
 
-      // Find QTI assessment files from the manifest.
-      const entries = await findQtiFilesFromManifest(tempDir);
+      // Find QTI assessment files from the manifest. If the archive has a
+      // wrapper directory (e.g. "course-export/imsmanifest.xml" instead of
+      // "imsmanifest.xml" at root), descend into it. macOS zip tools add a
+      // __MACOSX/ sibling with resource forks, so filter those out first.
+      let contentDir = tempDir;
+      let entries = await findQtiFilesFromManifest(contentDir);
+      if (entries.length === 0) {
+        const children = (await readdir(tempDir)).filter(
+          (name) => !name.startsWith('.') && name !== '__MACOSX',
+        );
+        if (children.length === 1) {
+          const child = path.join(tempDir, children[0]);
+          if ((await fsStat(child)).isDirectory()) {
+            contentDir = child;
+            entries = await findQtiFilesFromManifest(contentDir);
+          }
+        }
+      }
       if (entries.length === 0) {
         throw new HttpStatusError(
           400,
@@ -121,7 +138,7 @@ router.post(
       // Try to read rubrics from course_settings/rubrics.xml (not present in quiz-only exports).
       const rubricsXml = await run(async () => {
         try {
-          return await readFile(path.join(tempDir, 'course_settings', 'rubrics.xml'), 'utf-8');
+          return await readFile(path.join(contentDir, 'course_settings', 'rubrics.xml'), 'utf-8');
         } catch {
           return undefined;
         }
@@ -295,13 +312,20 @@ async function serializeConversionResult(
       // The converter emits local directory names (e.g. "q1"), but on disk
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
+      const questionId = `${questionPrefix}/${q.directoryName}`;
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
-          questionId: `${questionPrefix}/${q.directoryName}`,
+          questionId,
           message: `Missing asset file(s): ${missingFiles.join(', ')}`,
           level: 'warn',
         });
+      }
+      const seenMessages = new Set<string>();
+      for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (seenMessages.has(d.message)) continue;
+        seenMessages.add(d.message);
+        extraWarnings.push({ questionId, message: d.message, level: 'warn' });
       }
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,

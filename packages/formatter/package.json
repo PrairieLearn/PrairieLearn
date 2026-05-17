@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/formatter",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",
-    "tsx": "^4.21.0",
     "vitest": "^4.1.5"
   }
 }

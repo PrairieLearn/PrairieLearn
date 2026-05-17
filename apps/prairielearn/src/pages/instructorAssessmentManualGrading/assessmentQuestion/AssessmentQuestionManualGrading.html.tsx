@@ -75,10 +75,10 @@ function AssessmentQuestionManualGradingInner({
   aiGradingEnabled,
   aiSubmissionGroupingEnabled,
   initialAiGradingMode,
-  rubricData,
+  rubricData: initialRubricData,
   instanceQuestionGroups,
   courseStaff,
-  aiGradingStats,
+  aiGradingStats: initialAiGradingStats,
   initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
@@ -93,6 +93,8 @@ function AssessmentQuestionManualGradingInner({
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+  const [rubricData, setRubricData] = useState(initialRubricData);
+  const [aiGradingStats, setAiGradingStats] = useState(initialAiGradingStats);
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -184,6 +186,13 @@ function AssessmentQuestionManualGradingInner({
         aiGradingRelativeCosts={aiGradingRelativeCosts}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
+        onRubricSettingsSaved={({ rubric_data, aiGradingStats: newAiGradingStats }) => {
+          setRubricData(rubric_data);
+          setAiGradingStats(newAiGradingStats);
+          void queryClient.invalidateQueries({
+            queryKey: trpc.manualGrading.instances.queryKey(),
+          });
+        }}
       />
 
       <GroupInfoModal

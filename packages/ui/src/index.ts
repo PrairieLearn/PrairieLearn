@@ -36,6 +36,7 @@ export {
   parseAsMultiSelectFilter,
 } from './components/nuqs.js';
 export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
+export { useColumnFilters, type ColumnFilterEntry } from './hooks/use-column-filters.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
 export {
@@ -43,6 +44,8 @@ export {
   type StickySaveBarAlert,
   type StickySaveBarProps,
 } from './components/StickySaveBar.js';
+
+export { extractLeafColumnIds } from './components/tanstack-table-utils.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
 export { useResizeHandle } from './hooks/use-resize-handle.js';

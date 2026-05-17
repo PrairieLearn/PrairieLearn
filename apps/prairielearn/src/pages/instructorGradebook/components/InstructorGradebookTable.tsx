@@ -1,11 +1,9 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
   type SortingState,
-  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -13,11 +11,12 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
+  type ColumnFilterEntry,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
   type NumericColumnFilterValue,
@@ -27,12 +26,14 @@ import {
   TanstackTableCard,
   type TanstackTableCsvCell,
   applyMultiSelectFilter,
+  extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useColumnFilters,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -70,31 +71,9 @@ const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
   values: ['joined'],
   mode: 'include',
 };
+const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
 const columnHelper = createColumnHelper<GradebookRow>();
-
-function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
-  const leafIds: string[] = [];
-  for (const col of columns) {
-    if (col.columns && Array.isArray(col.columns) && col.columns.length > 0) {
-      // This is a group column, recurse into its children
-      leafIds.push(...extractLeafColumnIds(col.columns as typeof columns));
-    } else if (col.id) {
-      // This is a leaf column
-      leafIds.push(col.id);
-    }
-  }
-  return leafIds;
-}
-
-type ColumnId =
-  | 'uid'
-  | 'user_name'
-  | 'uin'
-  | 'role'
-  | 'enrollment_status'
-  | 'student_labels'
-  | `a${number}`;
 
 interface GradebookTableProps {
   csrfToken: string;
@@ -125,103 +104,40 @@ function GradebookTable({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
-  const [roleFilter, setRoleFilter] = useQueryState(
-    'role',
-    parseAsMultiSelectFilter(ROLE_VALUES).withDefault(DEFAULT_ROLE_FILTER),
-  );
-  const [statusFilter, setStatusFilter] = useQueryState(
-    'status',
-    parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_STATUS_FILTER),
-  );
-  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
-    'student_labels',
-    parseAsMultiSelectFilter().withDefault(EMPTY_FILTER),
-  );
-
   const assessmentIds = useMemo(() => {
     return courseAssessments.map((assessment) => assessment.assessment_id);
   }, [courseAssessments]);
 
-  const defaultAssessmentFilterValues = useMemo(() => {
-    return Object.fromEntries(
-      assessmentIds.map((id) => [
-        `a${id}`,
-        parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-      ]),
-    );
+  const filterRegistry = useMemo(() => {
+    const registry: Record<
+      string,
+      ColumnFilterEntry<MultiSelectFilterValue<any>> | ColumnFilterEntry<NumericColumnFilterValue>
+    > = {
+      role: {
+        parser: parseAsMultiSelectFilter(ROLE_VALUES),
+        defaultValue: DEFAULT_ROLE_FILTER,
+      },
+      enrollment_status: {
+        urlKey: 'status',
+        parser: parseAsMultiSelectFilter(STATUS_VALUES),
+        defaultValue: DEFAULT_STATUS_FILTER,
+      },
+      student_labels: {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: EMPTY_FILTER,
+      },
+    };
+    for (const id of assessmentIds) {
+      registry[`a${id}`] = {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      };
+    }
+    return registry;
   }, [assessmentIds]);
 
-  const [assessmentFilterValues, setAssessmentFilterValues] = useQueryStates(
-    defaultAssessmentFilterValues,
-  );
-
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
-    return {
-      uid: undefined,
-      user_name: undefined,
-      uin: undefined,
-      role: (_columnId: string, value: MultiSelectFilterValue<RoleValue>) => setRoleFilter(value),
-      enrollment_status: (_columnId: string, value: MultiSelectFilterValue<EnumEnrollmentStatus>) =>
-        setStatusFilter(value),
-      student_labels: (_columnId: string, value: MultiSelectFilterValue) =>
-        setStudentLabelsFilter(value),
-      ...Object.fromEntries(
-        assessmentIds.map((assessmentId) => [
-          `a${assessmentId}`,
-          (columnId: string, value: NumericColumnFilterValue) =>
-            setAssessmentFilterValues((prev) => {
-              const newValues: Record<string, NumericColumnFilterValue> = {
-                ...prev,
-                [columnId]: value,
-              };
-              return newValues;
-            }),
-        ]),
-      ),
-    };
-  }, [
-    assessmentIds,
-    setAssessmentFilterValues,
-    setRoleFilter,
-    setStatusFilter,
-    setStudentLabelsFilter,
-  ]);
-
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    // Always include the multi-select filters so `PresetFilterDropdown` can
-    // match presets that pin them to empty (e.g., "All students & staff").
-    // `applyMultiSelectFilter` treats empty values as a no-op.
-    const filters: ColumnFiltersState = [
-      { id: 'enrollment_status', value: statusFilter },
-      { id: 'role', value: roleFilter },
-      { id: 'student_labels', value: studentLabelsFilter },
-    ];
-
-    Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
-      filters.push({ id: columnId, value: filterValue });
-    });
-
-    return filters;
-  }, [statusFilter, roleFilter, studentLabelsFilter, assessmentFilterValues]);
-
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      const present = new Set(newFilters.map((f) => f.id));
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.id, filter.value);
-      }
-      // A column missing from the new filters means it has no active filter.
-      // Pass `null` to nuqs setters to reset the URL state to its default.
-      for (const id of Object.keys(columnFilterSetters) as ColumnId[]) {
-        if (!present.has(id)) {
-          columnFilterSetters[id]?.(id, null);
-        }
-      }
-    },
-    [columnFilters, columnFilterSetters],
-  );
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -369,7 +285,6 @@ function GradebookTable({
             columnHelper.accessor(
               (row) => {
                 const data = row.scores[assessment.assessment_id];
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 return data ? data.score_perc : null;
               },
               {
@@ -395,7 +310,6 @@ function GradebookTable({
                   const row = info.row.original;
                   const assessmentData = row.scores[assessment.assessment_id];
 
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                   if (score == null || !assessmentData?.assessment_instance_id) {
                     return '—';
                   }
@@ -530,7 +444,7 @@ function GradebookTable({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     getCoreRowModel: getCoreRowModel(),
@@ -593,23 +507,37 @@ function GradebookTable({
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
               {
                 name: 'Labels',
-                value:
-                  row.student_label_ids.length > 0
-                    ? row.student_label_ids
-                        .map((id) => studentLabelsById.get(id)?.name)
-                        .filter((name): name is string => name != null)
-                    : null,
+                value: row.student_label_ids
+                  .map((id) => studentLabelsById.get(id)?.name)
+                  .filter((name): name is string => name != null),
               },
             ];
             for (const assessment of courseAssessments) {
               data.push({
                 name: assessment.label,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 value: row.scores[assessment.assessment_id]?.score_perc ?? null,
               });
             }
             return data;
           },
+          mapRowToJsonData: (row: GradebookRow) => ({
+            uid: row.uid,
+            name: row.user_name,
+            uin: row.uin,
+            role: row.role,
+            enrollment_status: row.enrollment?.status ?? null,
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
+            assessments: courseAssessments.map((assessment) => ({
+              assessment_id: assessment.assessment_id,
+              short_name: assessment.tid,
+              label: assessment.label,
+              assessment_set_heading: assessment.assessment_set_heading,
+
+              score_perc: row.scores[assessment.assessment_id]?.score_perc ?? null,
+            })),
+          }),
           pluralLabel: "users' grades",
           singularLabel: "user's grades",
           hasSelection: false,
@@ -645,6 +573,7 @@ function GradebookTable({
           filters,
           scrollRef: tableRef,
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
       <CanvasCsvModal
         show={canvasCsvTarget != null}

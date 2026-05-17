@@ -8,10 +8,11 @@ import { useForm } from 'react-hook-form';
 import { StickySaveBar } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharing } from '../../components/LinkSharing.js';
+import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
@@ -21,24 +22,7 @@ import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
-export function InstructorInstanceAdminSettings({
-  csrfToken,
-  trpcCsrfToken,
-  canEdit,
-  course,
-  courseInstance,
-  institution,
-  names,
-  availableTimezones,
-  origHash,
-  instanceGHLink,
-  studentLink,
-  publicLink,
-  selfEnrollLink,
-  isDevMode,
-  isAdministrator,
-  enhancedAccessControlEnabled,
-}: {
+interface InstructorInstanceAdminSettingsProps {
   csrfToken: string;
   trpcCsrfToken: string;
   canEdit: boolean;
@@ -54,18 +38,55 @@ export function InstructorInstanceAdminSettings({
   selfEnrollLink: string;
   isDevMode: boolean;
   isAdministrator: boolean;
+  nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
+  questionSharingEnabled: boolean;
   enhancedAccessControlEnabled: boolean;
-}) {
+}
+
+export function InstructorInstanceAdminSettings({
+  trpcCsrfToken,
+  isDevMode,
+  courseInstance,
+  ...rest
+}: InstructorInstanceAdminSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
-
-  const [showCopyModal, setShowCopyModal] = useState(false);
-
   const [trpcClient] = useState(() =>
     createCourseInstanceTrpcClient({
       csrfToken: trpcCsrfToken,
       courseInstanceId: courseInstance.id,
     }),
   );
+
+  return (
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorInstanceAdminSettingsInner courseInstance={courseInstance} {...rest} />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';
+
+function InstructorInstanceAdminSettingsInner({
+  csrfToken,
+  canEdit,
+  course,
+  courseInstance,
+  institution,
+  names,
+  availableTimezones,
+  origHash,
+  instanceGHLink,
+  studentLink,
+  publicLink,
+  selfEnrollLink,
+  isAdministrator,
+  nonPublicAssessmentsInCourseInstance,
+  questionSharingEnabled,
+  enhancedAccessControlEnabled,
+}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+  const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = new Set(names.map((name) => name.short_name));
 
@@ -87,6 +108,7 @@ export function InstructorInstanceAdminSettings({
           .toPlainDateTime()
           .toString()
       : '',
+    share_source_publicly: courseInstance.share_source_publicly,
   };
 
   const {
@@ -101,18 +123,16 @@ export function InstructorInstanceAdminSettings({
   });
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <CopyCourseInstanceModal
-          show={showCopyModal}
-          csrfToken={csrfToken}
-          courseShortName={course.short_name}
-          courseInstance={courseInstance}
-          isAdministrator={isAdministrator}
-          enhancedAccessControlEnabled={enhancedAccessControlEnabled}
-          onHide={() => setShowCopyModal(false)}
-        />
-      </TRPCProvider>
+    <>
+      <CopyCourseInstanceModal
+        show={showCopyModal}
+        csrfToken={csrfToken}
+        courseShortName={course.short_name}
+        courseInstance={courseInstance}
+        isAdministrator={isAdministrator}
+        enhancedAccessControlEnabled={enhancedAccessControlEnabled}
+        onHide={() => setShowCopyModal(false)}
+      />
       <form
         method="POST"
         name="edit-course-instance-settings-form"
@@ -144,6 +164,7 @@ export function InstructorInstanceAdminSettings({
                   {...(errors.ciid ? { 'aria-errormessage': 'ciid-error' } : {})}
                   disabled={!canEdit}
                   defaultValue={defaultValues.ciid}
+                  required
                   {...register('ciid', {
                     required: 'Short name is required',
                     validate: {
@@ -263,22 +284,25 @@ export function InstructorInstanceAdminSettings({
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-body">
-              <h2 className="h5 card-title mb-3">Sharing</h2>
-              {courseInstance.share_source_publicly ? (
-                <PublicLinkSharing
-                  publicLink={publicLink}
-                  sharingMessage="This course instance's source is publicly shared."
-                  publicLinkMessage="The link that other instructors can use to view this course instance."
-                />
-              ) : (
-                <p className="form-text text-muted mb-0">
-                  This course instance is not being shared.
-                </p>
-              )}
-            </div>
-          </div>
+          {questionSharingEnabled && (
+            <ShareSourcePubliclyCard
+              alreadyShared={courseInstance.share_source_publicly}
+              canEdit={canEdit}
+              registerProps={register('share_source_publicly')}
+              defaultChecked={defaultValues.share_source_publicly}
+              blockingChildren={nonPublicAssessmentsInCourseInstance.map((a) => ({
+                id: a.id,
+                href: getAssessmentSettingsUrl({
+                  assessmentId: a.id,
+                  courseInstanceId: courseInstance.id,
+                }),
+                label: a.tid,
+              }))}
+              publicLink={publicLink}
+              entityNoun="course instance"
+              childNoun="assessments"
+            />
+          )}
 
           {(instanceGHLink || canEdit) && (
             <div className="card">
@@ -346,8 +370,6 @@ export function InstructorInstanceAdminSettings({
 
         {canEdit && <StickySaveBar visible={isDirty} isSaving={false} onCancel={() => reset()} />}
       </form>
-    </QueryClientProviderDebug>
+    </>
   );
 }
-
-InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';
