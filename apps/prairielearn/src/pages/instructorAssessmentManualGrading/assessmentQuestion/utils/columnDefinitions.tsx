@@ -63,23 +63,6 @@ interface CreateColumnsParams {
   displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
 
-export type ColumnId =
-  | 'select'
-  | 'ai_grading_status'
-  | 'index'
-  | 'instance_question_group_name'
-  | 'user_or_group_name'
-  | 'uid'
-  | 'requires_manual_grading'
-  | 'assigned_grader_name'
-  | 'auto_points'
-  | 'manual_points'
-  | 'points'
-  | 'score_perc'
-  | 'last_grader_name'
-  | 'rubric_difference'
-  | 'rubric_grading_item_ids';
-
 export function createColumns({
   aiGradingMode,
   instanceQuestionGroups,

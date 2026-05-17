@@ -1,3 +1,7 @@
+import { parseAsMultiSelectFilter } from '@prairielearn/ui';
+
+import { encodeSearchString } from '../uri-util.shared.js';
+
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
@@ -21,6 +25,13 @@ export function getAssessmentUrl({
   }
 
   return `${urlPrefix}/assessment/${assessmentId}`;
+}
+
+export function getAssessmentQuestionEditorUrl(
+  parts: { assessmentId: string; qid: string } & AssessmentUrlParts,
+): string {
+  const encodedQid = encodeURIComponent(parts.qid).replaceAll('%2F', '/');
+  return `${getAssessmentUrl(parts)}/questions?selected=q:${encodedQid}`;
 }
 
 export function getAssessmentStudentsUrl(
@@ -149,6 +160,45 @@ export function getCourseInstanceSettingsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/settings`;
 }
 
+export function getQuestionPreviewUrl({
+  courseId,
+  courseInstanceId,
+  questionId,
+  isPublic = false,
+}: {
+  courseId: string;
+  courseInstanceId?: string;
+  questionId: string;
+  isPublic?: boolean;
+}): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor/question/${questionId}/preview`;
+  }
+  if (isPublic) {
+    return `/pl/public/course/${courseId}/question/${questionId}/preview`;
+  }
+  return `/pl/course/${courseId}/question/${questionId}/preview`;
+}
+
+export function getCourseIssuesUrl({
+  qid,
+  assessment,
+  courseId,
+  courseInstanceId,
+}: {
+  qid?: string | null;
+  assessment?: string | null;
+} & (
+  | { courseInstanceId: string; courseId?: undefined }
+  | { courseInstanceId?: undefined; courseId: string }
+)): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  const query = encodeSearchString({ is: 'open', qid, assessment });
+  return `${urlPrefix}/course_admin/issues?q=${query}`;
+}
+
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
@@ -185,6 +235,49 @@ export function getCourseInstanceBaseUrl(courseInstanceId: string): string {
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
+
+type CourseAdminUrlParts =
+  | { courseId: string; courseInstanceId?: string }
+  | { courseId?: string; courseInstanceId: string };
+
+export const QUESTION_TABLE_FILTER_URL_KEYS = {
+  topic: 'topic',
+  tag: 'tag',
+  sharing_sets: 'sharing',
+  display_type: 'version',
+  grading_method: 'grading',
+  external_grading_image: 'extImage',
+  workspace_image: 'wsImage',
+} as const;
+
+interface CourseAdminQuestionsFilter {
+  type: 'topic' | 'tag' | 'external_grading_image' | 'workspace_image';
+  value: string;
+}
+
+const multiSelectFilterParser = parseAsMultiSelectFilter();
+
+function getCourseAdminUrl({ courseInstanceId, courseId }: CourseAdminUrlParts): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor/course_admin`;
+  }
+  return `/pl/course/${courseId}/course_admin`;
+}
+
+export function getCourseAdminQuestionsUrl(
+  parts: CourseAdminUrlParts & { filter?: CourseAdminQuestionsFilter },
+): string {
+  const baseUrl = `${getCourseAdminUrl(parts)}/questions`;
+  if (!parts.filter) return baseUrl;
+
+  const searchParams = new URLSearchParams();
+  searchParams.set(
+    QUESTION_TABLE_FILTER_URL_KEYS[parts.filter.type],
+    multiSelectFilterParser.serialize({ values: [parts.filter.value], mode: 'include' }),
+  );
+
+  return `${baseUrl}?${searchParams.toString()}`;
+}
 
 export function getQuestionUrl({
   courseInstanceId,
