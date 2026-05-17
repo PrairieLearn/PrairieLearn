@@ -138,6 +138,8 @@ function AiQuestionGenerationEditorInner({
       currentSelectedFile == null && currentSelectedFilePreview == null ? 'preview' : 'all-files',
     ),
   );
+  const activeTabKey =
+    activeTab === 'rich-text-editor' && !richTextEditorEnabled ? 'preview' : activeTab;
 
   const handleSelectTab = useCallback(
     (tab: string | null) => {
@@ -176,7 +178,7 @@ function AiQuestionGenerationEditorInner({
   );
 
   return (
-    <Tab.Container activeKey={activeTab} onSelect={handleSelectTab}>
+    <Tab.Container activeKey={activeTabKey} onSelect={handleSelectTab}>
       <div className="app-content">
         <AiQuestionGenerationChat
           chatCsrfToken={chatCsrfToken}
