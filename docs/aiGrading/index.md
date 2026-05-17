@@ -4,21 +4,15 @@
 
 AI grading uses large language models to grade manual questions in PrairieLearn. It applies your rubric to submissions, produces scores, and generates explanations instructors can review, adjust, or override.
 
-![AI grading in progress on a question.](ai-grading-in-progress.png)
-
 ## Use cases
 
-AI grading works on any manually graded question.
-
-**Supported elements:**
+AI grading works on manually graded questions that use these elements:
 
 - [`pl-image-capture`](../elements/pl-image-capture.md)
 - [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md)
-- [`pl-file-upload`](../elements/pl-file-upload.md)
-- [`pl-file-editor`](../elements/pl-file-editor.md)
 - [`pl-string-input`](../elements/pl-string-input.md)
 
-**Common use cases:**
+Common use cases include:
 
 - Essay and free-response questions
 - Mathematical proofs and derivations
@@ -46,22 +40,21 @@ Before you can use AI grading, you'll need:
 
    ![Manual grading page for an assessment question.](manual-grading-page.png)
 
-2. **Open the "AI grading" dropdown.**
+2. **Open the "AI grading" dropdown.** Select an option.
 
    ![Manual grading page with the AI grading dropdown open.](ai-grading-open.png){ style="width: 50%" }
 
 3. **Select a model.** Use PrairieLearn's recommended model for your question type.
 
-   ![AI grading model selection.](model-selection.png)
-
-4. **Grade submissions.** We recommend testing on a small batch (5–10 submissions), reviewing the output, and refining your rubric before running on the full set.
+4. **Grade submissions.** Test on a small batch (5 submissions), review the output, and refine your rubric before running on the full set.
 
 ## Best practices
 
 - **Use PrairieLearn's recommended model.** Model choice can significantly impact grading accuracy, particularly for image submissions. The recommended model is updated as provider capabilities change.
-- **Use rubrics over point-based grading.** Rubrics give the model clear, discrete criteria, which significantly improves consistency.
+- **Use rubrics over point-based grading.** Rubrics give the model clear, discrete criteria, which significantly improves accuracy and consistency.
 - **Write well-specified rubric items.** Each item should describe exactly what earns or loses credit. Ambiguous items produce ambiguous grades.
 - **Use grader guidelines.** This field is for instructions the model should follow but that shouldn't appear in the student-facing rubric — e.g., "accept equivalent algebraic forms" or "do not penalize minor notation differences."
+- **Test with a small batch first.** Running on 5–10 submissions surfaces rubric problems early, before you spend credits and time on the full set.
 - **Iterate.** If you see systematic errors in the first batch, refine the rubric rather than overriding grades one by one.
 
 ## Reviewing AI grading
@@ -82,7 +75,7 @@ For each submission, AI grading produces:
 
       ![Human-graded rubric with differences from the AI grade highlighted.](ai-human-grading-difference.png)
 
-- **Explanation** — The model's grading decision reasoning.
+- **Explanation** — The reasoning of the model's grading decisions.
 
   When the submission contains an image, the model's transcription of the image content is included.
 
@@ -96,9 +89,9 @@ For each submission, AI grading produces:
 
       ![AI transcription of a student's image submission, shown beneath the explanation.](ai-grading-transcription.png)
 
-- **AI agreement indicator** — When a submission has also been human-graded, the manual grading table displays an "AI agreement" column flagging which rubric items the AI and human agreed or disagreed on.
+- **AI agreement indicator** — A per-item view of where the AI and human grader agreed or disagreed.
 
-  The agreement column also appears on individual rubric items in the rubric editor, making it easy to spot items where the AI consistently disagrees with human graders.
+  Once both an AI and a human have graded a submission, an "AI agreement" column appears in the manual grading table and rubric editor, flagging the rubric items they agreed or disagreed on.
 
   ??? example "Agreement indicator example"
 
@@ -141,34 +134,20 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
-**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not embedded in the submission itself or in the question or correct answer.
+**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer.
 
 ## Billing
 
 AI grading requires either PrairieLearn-managed credits or a custom API key. Billing is configured per course instance.
 
-=== "PrairieLearn-managed credits"
+### Billing modes
 
-    Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
+- **PrairieLearn-managed credits** — Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
+- **Custom API key** — Bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
 
-    Purchased credits persist until you explicitly remove them, so you can switch to a custom API key at any time without losing them.
+You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys. 
 
-=== "Custom API key"
-
-    Bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee. API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
-
-    Saved keys persist until you explicitly remove them, so you can switch to PrairieLearn-managed credits at any time without re-entering them.
-
-### Credit types
-
-=== "PrairieLearn-managed credits"
-
-    - **Transferable credits** can be moved between course instances.
-    - **Non-transferable credits** are locked to the instance they were added to.
-
-=== "Custom API key"
-
-    Credit types only apply to PrairieLearn-managed credits.
+API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
 ### Billing configuration
 
@@ -176,38 +155,29 @@ AI grading requires either PrairieLearn-managed credits or a custom API key. Bil
 
     1. Go to **Instance settings → AI grading** in your course instance.
 
-       ![Billing page before any credits or keys have been added.](ai-grading-settings-empty.png)
+    2. Click **Purchase credits** and complete checkout.
 
-    2. Purchase credits through PrairieLearn.
+    There are two types of credit:
 
-       ![Purchase credits dialog.](purchase-credits.png)
+    - **Transferable credit** — Can be moved between course instances.
+    - **Nontransferable credit** — Locked to the instance it was added to.
+
+    The billing page displays usage in two ways:
+
+    - **Daily spending chart** — Credit usage broken down by day, so you can spot grading spikes or unexpected spend.
+    - **Transaction history** — A running log of past credit purchases and deductions.
+
+    ![Billing page showing the daily spending chart and transaction history.](transaction-history.png)
 
 === "Custom API key"
 
     1. Go to **Instance settings → AI grading** in your course instance.
 
-       ![Billing page before any credits or keys have been added.](ai-grading-settings-empty.png)
+    2. Check **Use custom API keys**.
 
-    2. Add a custom API key.
+    3. Click **Add key** and provide one.
 
-       ![Add API key dialog.](add-api-key.png)
-
-       ![Billing page after custom API keys have been added.](added-keys.png)
-
-### Usage history and transactions
-
-=== "PrairieLearn-managed credits"
-
-    The billing page surfaces two views for tracking AI grading spend over time:
-
-    - **Daily spending chart** — Credit usage broken down by day, so you can spot grading spikes or unexpected spend.
-    - **Transaction history** — A running log of past credit purchases and deductions.
-
-    ![Daily spending chart and transaction history.](transaction-history.png)
-
-=== "Custom API key"
-
-    Custom API key usage is not tracked by PrairieLearn — refer to your provider's dashboard to monitor spend.
+    ![Custom API key billing configuration.](ai-grading-byok.png)
 
 ## Accuracy
 
