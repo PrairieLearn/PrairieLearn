@@ -168,6 +168,17 @@ Both views only track PrairieLearn-managed credit spending. Custom API key usage
 
 ![Daily spending chart and transaction history.](transaction-history.png)
 
+## Accuracy
+
+AI grading has been piloted at the University of Illinois Urbana-Champaign since Fall 2025, across multiple STEM courses and thousands of student submissions.
+
+Across a range of open-ended questions and frontier models, rubric-item accuracy exceeded 99% when paired with clear student work and a well-aligned rubric. Instructors and TAs reported that AI grading was as accurate as human graders for their needs and saved enormous amounts of grading effort.
+
+For more detail, see our published research:
+
+- **Text grading** — Zhao, C., Fowler, M., Gertner, Y., Poulsen, S., West, M., & Silva, M. (2026). [AI-Supported Grading and Rubric Refinement for Free Response Questions](https://dl.acm.org/doi/10.1145/3770762.3772545). In _Proceedings of the 57th ACM Technical Symposium on Computer Science Education_ (SIGCSE TS 2026).
+- **Image grading** — Levine, J., Aenlle, M., Zilles, C., West, M., & Silva, M. (forthcoming). Automated grading of handwritten mathematics using vision-capable LLMs. In _Proceedings of the 27th International Conference on Artificial Intelligence in Education_ (AIED 2026). Springer.
+
 ## Cost and runtime
 
 ### Factors affecting cost and runtime
