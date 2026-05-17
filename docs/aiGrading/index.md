@@ -67,7 +67,7 @@ For each submission, AI grading produces:
 
   ??? example "Graded rubric example"
 
-      The AI's selected rubric items appear in the grading panel on the right side of the submission.
+      The AI's selected rubric items appear in the grading panel on the right side of the instance question page.
 
       ![AI-generated grading shown as selected rubric items with point values.](ai-generated-grading.png)
 
