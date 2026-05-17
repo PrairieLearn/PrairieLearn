@@ -77,7 +77,7 @@ For each submission, AI grading produces:
 
       ![Human-graded rubric with differences from the AI grade highlighted.](ai-human-grading-difference.png)
 
-- **Explanation** — The reasoning of the model's grading decisions.
+- **Explanation** — The reasoning behind the model's grading decisions.
 
   When the submission contains an image, the model's transcription of the image content is included.
 
