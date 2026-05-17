@@ -59,6 +59,8 @@ theme:
     - content.tooltips
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
+    # https://squidfunk.github.io/mkdocs-material/reference/content-tabs/#linked-content-tabs
+    - content.tabs.link
 plugins:
   - exclude:
       glob:
