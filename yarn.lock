@@ -5754,7 +5754,6 @@ __metadata:
     "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     pg: "npm:^8.20.0"
-    tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
     vitest: "npm:^4.0.18"
