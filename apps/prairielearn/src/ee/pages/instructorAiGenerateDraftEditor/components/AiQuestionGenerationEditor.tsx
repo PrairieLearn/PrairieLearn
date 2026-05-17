@@ -9,7 +9,10 @@ import { NuqsAdapter } from '@prairielearn/ui';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
-import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
+import type {
+  SelectedQuestionFile,
+  SelectedQuestionFilePreview,
+} from '../../../../lib/draft-question-files.js';
 import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
@@ -36,6 +39,7 @@ interface AiQuestionGenerationEditorProps {
   questionFiles: Record<string, string>;
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
+  selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
   csrfToken: string;
@@ -53,6 +57,7 @@ function AiQuestionGenerationEditorInner({
   questionFiles: initialQuestionFiles,
   allQuestionFilesHtml,
   selectedFile,
+  selectedFilePreview,
   richTextEditorEnabled,
   urlPrefix,
   csrfToken,
@@ -84,8 +89,9 @@ function AiQuestionGenerationEditorInner({
       files: initialQuestionFiles,
       allFilesHtml: allQuestionFilesHtml,
       selectedFile,
+      selectedFilePreview,
     }),
-    [allQuestionFilesHtml, initialQuestionFiles, selectedFile],
+    [allQuestionFilesHtml, initialQuestionFiles, selectedFile, selectedFilePreview],
   );
   const selectedFilesMatchInitialQuery =
     selectedFilePath === initialFileQuery.file && selectedDirectory === initialFileQuery.dir;
@@ -115,6 +121,7 @@ function AiQuestionGenerationEditorInner({
     files: questionFiles,
     allFilesHtml,
     selectedFile: currentSelectedFile,
+    selectedFilePreview: currentSelectedFilePreview,
   } = questionFilesData ?? initialQuestionFilesData;
 
   const handleTitleAndQidSaved = useCallback(
@@ -128,7 +135,7 @@ function AiQuestionGenerationEditorInner({
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
     parseAsStringLiteral(AI_DRAFT_EDITOR_TABS).withDefault(
-      currentSelectedFile == null ? 'preview' : 'all-files',
+      currentSelectedFile == null && currentSelectedFilePreview == null ? 'preview' : 'all-files',
     ),
   );
 
@@ -231,6 +238,7 @@ function AiQuestionGenerationEditorInner({
             questionFiles={questionFiles}
             allQuestionFilesHtml={allFilesHtml}
             selectedFile={currentSelectedFile}
+            selectedFilePreview={currentSelectedFilePreview}
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
             csrfToken={csrfToken}

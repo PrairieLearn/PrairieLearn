@@ -13,7 +13,10 @@ import { executeScripts } from '@prairielearn/browser-utils';
 
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
-import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
+import type {
+  SelectedQuestionFile,
+  SelectedQuestionFilePreview,
+} from '../../../../lib/draft-question-files.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
@@ -298,6 +301,7 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
 function AllQuestionFiles({
   allQuestionFilesHtml,
   selectedFile,
+  selectedFilePreview,
   qid,
   questionId,
   isGenerating,
@@ -310,6 +314,7 @@ function AllQuestionFiles({
 }: {
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
+  selectedFilePreview: SelectedQuestionFilePreview | null;
   qid: string | null;
   questionId: string;
   isGenerating: boolean;
@@ -374,6 +379,15 @@ function AllQuestionFiles({
     );
   }
 
+  if (selectedFilePreview != null) {
+    return (
+      <SelectedQuestionFilePreviewPanel
+        selectedFilePreview={selectedFilePreview}
+        onShowAllFiles={onClearSelectedFile}
+      />
+    );
+  }
+
   return (
     <div className="p-3">
       <div
@@ -385,10 +399,50 @@ function AllQuestionFiles({
   );
 }
 
+function SelectedQuestionFilePreviewPanel({
+  selectedFilePreview,
+  onShowAllFiles,
+}: {
+  selectedFilePreview: SelectedQuestionFilePreview;
+  onShowAllFiles: () => void;
+}) {
+  return (
+    <div className="selected-file-editor h-100 d-flex flex-column">
+      <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
+        <div className="min-width-0">
+          <div className="font-monospace text-truncate">{selectedFilePreview.path}</div>
+          <div className="small text-muted">Preview</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={onShowAllFiles}
+          >
+            All files
+          </button>
+          <a className="btn btn-sm btn-outline-secondary" href={selectedFilePreview.fileViewUrl}>
+            Open full view
+          </a>
+          <a className="btn btn-sm btn-outline-secondary" href={selectedFilePreview.downloadUrl}>
+            Download
+          </a>
+        </div>
+      </div>
+      <div
+        className="flex-grow-1 overflow-auto p-3"
+        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+        dangerouslySetInnerHTML={{ __html: selectedFilePreview.html }}
+      />
+    </div>
+  );
+}
+
 export function QuestionAndFilePreview({
   questionFiles,
   allQuestionFilesHtml,
   selectedFile,
+  selectedFilePreview,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
@@ -411,6 +465,7 @@ export function QuestionAndFilePreview({
   questionFiles: Record<string, string>;
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
+  selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
@@ -518,6 +573,7 @@ export function QuestionAndFilePreview({
         <AllQuestionFiles
           allQuestionFilesHtml={allQuestionFilesHtml}
           selectedFile={selectedFile}
+          selectedFilePreview={selectedFilePreview}
           qid={qid}
           questionId={questionId}
           isGenerating={isGenerating}

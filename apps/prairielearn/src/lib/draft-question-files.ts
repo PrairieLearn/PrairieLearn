@@ -2,10 +2,11 @@ import type { Stats } from 'node:fs';
 import * as path from 'node:path';
 
 import fs from 'fs-extra';
+import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
 
-import { createDirectoryBrowserHtml } from '../components/FileBrowser.js';
+import { createDirectoryBrowserHtml, createFilePreviewHtml } from '../components/FileBrowser.js';
 
 import { b64EncodeUnicode } from './base64-util.js';
 import { getCourseFilesClient } from './course-files-api.js';
@@ -17,6 +18,13 @@ export interface SelectedQuestionFile {
   path: string;
   encodedContents: string;
   aceMode: string;
+}
+
+export interface SelectedQuestionFilePreview {
+  path: string;
+  html: string;
+  fileViewUrl: string;
+  downloadUrl: string;
 }
 
 const DRAFT_INFO_JSON_DISABLED_REASON =
@@ -115,15 +123,18 @@ export function normalizeQuestionFilePath(filePath: string): string {
 }
 
 async function readSelectedQuestionFile({
-  course,
-  question,
+  resLocals,
   filePath,
 }: {
-  course: Course;
-  question: Question;
+  resLocals: DraftQuestionFilesLocals;
   filePath: string | null;
-}): Promise<SelectedQuestionFile | null> {
-  if (filePath == null) return null;
+}): Promise<{
+  selectedFile: SelectedQuestionFile | null;
+  selectedFilePreview: SelectedQuestionFilePreview | null;
+}> {
+  if (filePath == null) return { selectedFile: null, selectedFilePreview: null };
+
+  const { course, question } = resLocals;
   if (!question.qid) {
     throw new error.HttpStatusError(400, 'Question does not have a QID');
   }
@@ -146,6 +157,25 @@ async function readSelectedQuestionFile({
   if (!stat.isFile()) {
     throw new error.HttpStatusError(400, 'Selected path is not a file');
   }
+  if (await isBinaryFile(fullPath)) {
+    const paths = getPaths(path.posix.join('questions', question.qid, filePath), {
+      ...resLocals,
+      navPage: 'question',
+    });
+    const encodedPath = encodeCourseFilePath(paths.workingPathRelativeToCourse);
+
+    return {
+      selectedFile: null,
+      selectedFilePreview: {
+        path: filePath,
+        html: (await createFilePreviewHtml({ paths })).toString(),
+        fileViewUrl: `${paths.urlPrefix}/file_view/${encodedPath}`,
+        downloadUrl: `${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+          path.basename(filePath),
+        )}`,
+      },
+    };
+  }
 
   const editableFile = await readEditableTextFile({
     courseId: course.id,
@@ -155,9 +185,12 @@ async function readSelectedQuestionFile({
   });
 
   return {
-    path: filePath,
-    encodedContents: editableFile.contents,
-    aceMode: editableFile.aceMode,
+    selectedFile: {
+      path: filePath,
+      encodedContents: editableFile.contents,
+      aceMode: editableFile.aceMode,
+    },
+    selectedFilePreview: null,
   };
 }
 
@@ -282,8 +315,7 @@ export async function getQuestionFilesData({
     }),
     renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory }),
     readSelectedQuestionFile({
-      course: resLocals.course,
-      question: resLocals.question,
+      resLocals,
       filePath:
         selectedFilePath == null || isDraftQuestionInfoFile(selectedFilePath)
           ? null
@@ -291,7 +323,7 @@ export async function getQuestionFilesData({
     }),
   ]);
 
-  return { files, allFilesHtml, selectedFile: selectedQuestionFile };
+  return { files, allFilesHtml, ...selectedQuestionFile };
 }
 
 export async function saveDraftQuestionFile({

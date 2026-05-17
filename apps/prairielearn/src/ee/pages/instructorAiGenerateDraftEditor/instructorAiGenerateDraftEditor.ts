@@ -291,6 +291,7 @@ router.get(
         questionFiles: questionFilesData.files,
         allQuestionFilesHtml: questionFilesData.allFilesHtml,
         selectedFile: questionFilesData.selectedFile,
+        selectedFilePreview: questionFilesData.selectedFilePreview,
         richTextEditorEnabled,
         questionContainerHtml,
         search: getUrl(req).search,
