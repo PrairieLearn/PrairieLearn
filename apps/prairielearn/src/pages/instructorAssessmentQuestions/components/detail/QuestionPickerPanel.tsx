@@ -1,4 +1,3 @@
-import { rankItem } from '@tanstack/match-sorter-utils';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -7,6 +6,7 @@ import { run } from '@prairielearn/run';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 import { type AppError, getAppError, renderAppError } from '../../../../lib/client/errors.js';
+import { rankSearchText } from '../../../../lib/client/search.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type {
   AssessmentQuestionsError,
@@ -124,8 +124,8 @@ export function QuestionPickerPanel({
 
       const matchesSearch =
         !searchLower ||
-        rankItem(q.qid, searchLower).passed ||
-        rankItem(q.title, searchLower).passed;
+        rankSearchText(q.qid, searchLower).passed ||
+        rankSearchText(q.title, searchLower).passed;
 
       const matchesTopic = selectedTopics.size === 0 || selectedTopics.has(String(q.topic.id));
 
