@@ -40,13 +40,15 @@ Before you can use AI grading, you'll need:
 
    ![Manual grading page for an assessment question.](manual-grading-page.png)
 
-2. **Open the "AI grading" dropdown.** Select an option.
+2. **Turn "AI grading mode" on.**
+
+3. **Open the "AI grading" dropdown.** Select an option.
 
    ![Manual grading page with the AI grading dropdown open.](ai-grading-open.png){ style="width: 50%" }
 
-3. **Select a model.** Use PrairieLearn's recommended model for your question type.
+4. **Select a model.** Use PrairieLearn's recommended model for your question type.
 
-4. **Grade submissions.** Test on a small batch (5 submissions), review the output, and refine your rubric before running on the full set.
+5. **Grade submissions.** Test on a small batch (5 submissions), review the output, and refine your rubric before running on the full set.
 
 ## Best practices
 
@@ -145,7 +147,7 @@ AI grading requires either PrairieLearn-managed credits or a custom API key. Bil
 - **PrairieLearn-managed credits** — Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
 - **Custom API key** — Bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
 
-You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys. 
+You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys.
 
 API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
