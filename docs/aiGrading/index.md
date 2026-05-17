@@ -72,7 +72,7 @@ For each submission, AI grading produces:
 
   ![AI-generated grading shown as selected rubric items with point values.](ai-generated-grading.png)
 
-  Manually changing the rubric items overrides the AI grading. The difference is shown:
+  Manually changing the rubric items overrides the AI grading. The left column of checkboxes shows the AI's selections and the right column shows the human grader's selections, so disagreements are visible at a glance:
   ![Human-graded rubric with differences from the AI grade highlighted.](ai-human-grading-difference.png)
 
 - **Explanation** — The model's grading decision reasoning.
@@ -187,7 +187,7 @@ Costs vary course-to-course depending on rubric length, submission length, and m
 
 _Benchmarks below were run using PrairieLearn-managed keys and include the 20% infrastructure fee._
 
-**Numerical methods problem -- text grading (139 submissions):**
+**Numerical methods problem — text grading (139 submissions):**
 
 This was a Numerical Methods question with typed, paragraph-length submissions, no randomization, and a rubric.
 
@@ -197,7 +197,7 @@ This was a Numerical Methods question with typed, paragraph-length submissions, 
 | GPT-5.4        | $0.0058           | 0.2s              |
 | Gemini 3.1 Pro | $0.0126           | 0.6s              |
 
-**Dynamics problem -- image grading (242 submissions):**
+**Dynamics problem — image grading (242 submissions):**
 
 This was an Intro Dynamics problem that had image submissions, randomization, and a rubric.
 
