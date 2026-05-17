@@ -302,6 +302,14 @@ export async function createDirectoryBrowserHtml({
   );
 }
 
+export async function createFilePreviewHtml({
+  paths,
+}: {
+  paths: InstructorFilePaths;
+}): Promise<HtmlSafeString> {
+  return FileContentPreview({ paths, fileInfo: await browseFile({ paths }) });
+}
+
 function FileBrowser({
   resLocals,
   paths,
