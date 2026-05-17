@@ -138,6 +138,8 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
               // This is needed to prevent the last item's background from covering
               // the dropdown's border radius.
               '--bs-list-group-bg': 'transparent',
+              maxHeight: 'min(500px, 50vh)',
+              overflowY: 'auto',
             } as React.CSSProperties
           }
         >
