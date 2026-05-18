@@ -36,6 +36,13 @@ export const RubricFileSchema = z.object({
   replace_auto_points: z.boolean().default(false),
   starting_points: z.number().default(0),
   grader_guidelines: z.string().default(''),
+  /**
+   * Total points the question is worth. Becomes the assessment question's
+   * `points` in the scaffolded `infoAssessment.json`, which in turn drives
+   * the AQ's `max_points` / `max_manual_points` after sync. Required so the
+   * eval AQ matches the rubric.
+   */
+  max_points: z.number().positive(),
   rubric_items: z.array(RubricItemSchema).min(1),
 });
 export type RubricFile = z.infer<typeof RubricFileSchema>;

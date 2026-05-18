@@ -167,7 +167,7 @@ export async function scaffoldCourse({
         zones: [
           {
             title: 'Eval',
-            questions: [{ id: loaded.entry.id, points: 1 }],
+            questions: [{ id: loaded.entry.id, points: loaded.rubric.max_points }],
           },
         ],
       },
