@@ -8,19 +8,17 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
 import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
-  FileModifyEditor,
   MultiEditor,
+  prepareJsonFileEditor,
+  saveJsonFile,
 } from '../../lib/editors.js';
-import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
@@ -43,6 +41,16 @@ export interface AssessmentSettingsError {
   CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   ChangeAssessmentType: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
+
+export function settingsScope(json: AssessmentJsonInput) {
+  const {
+    accessControl: _accessControl,
+    allowAccess: _allowAccess,
+    groups: _groups,
+    ...rest
+  } = json;
+  return rest;
 }
 
 const ChangeableAssessmentTypeSchema = EnumAssessmentTypeSchema.extract(['Exam', 'Homework']);
@@ -305,22 +313,6 @@ const updateAssessment = t.procedure
   .mutation(async ({ input, ctx }) => {
     const { course, course_instance, assessment, locals } = ctx;
 
-    const infoAssessmentPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-      'infoAssessment.json',
-    );
-
-    if (!(await fs.pathExists(infoAssessmentPath))) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'infoAssessment.json does not exist',
-      });
-    }
-
     const shortNameValidation = validateShortName(input.aid, assessment.tid ?? undefined);
     if (!shortNameValidation.valid) {
       throw new TRPCError({
@@ -329,142 +321,20 @@ const updateAssessment = t.procedure
       });
     }
 
-    const rootPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-
-    const assessmentInfo: AssessmentJsonInput = JSON.parse(
-      await fs.readFile(infoAssessmentPath, 'utf8'),
-    );
-
-    assessmentInfo.title = input.title;
-    assessmentInfo.set = input.set;
-    assessmentInfo.number = input.number;
-    if (assessmentInfo.module != null || input.module !== 'Default') {
-      assessmentInfo.module = input.module;
-    }
-    const normalizedText = input.text?.replaceAll('\r\n', '\n');
-    assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
-    assessmentInfo.allowIssueReporting = propertyValueWithDefault(
-      assessmentInfo.allowIssueReporting,
-      input.allow_issue_reporting,
-      true,
-    );
-    assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
-      assessmentInfo.allowPersonalNotes,
-      input.allow_personal_notes,
-      true,
-    );
-
-    assessmentInfo.tools = assessmentInfo.tools ?? {};
-    for (const tool of EnumAssessmentToolSchema.options) {
-      const enabled = input.tools?.[tool] ?? false;
-      // Only update the tool if it was already defined in the assessmentInfo
-      // or if it's being enabled. This prevents accidentally adding new tools
-      // to the assessmentInfo when editing an existing assessment that doesn't
-      // have those tools configured.
-      if (tool in assessmentInfo.tools || enabled) {
-        assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
-      }
-    }
-    // If no tools are configured, delete the tools property to avoid storing an empty object.
-    if (Object.keys(assessmentInfo.tools).length === 0) {
-      delete assessmentInfo.tools;
-    }
-
-    if (assessment.type === 'Exam') {
-      assessmentInfo.multipleInstance = propertyValueWithDefault(
-        assessmentInfo.multipleInstance,
-        input.multiple_instance,
-        false,
-      );
-      assessmentInfo.autoClose = propertyValueWithDefault(
-        assessmentInfo.autoClose,
-        input.auto_close,
-        true,
-      );
-      assessmentInfo.requireHonorCode = propertyValueWithDefault(
-        assessmentInfo.requireHonorCode,
-        input.require_honor_code,
-        true,
-      );
-      assessmentInfo.honorCode = propertyValueWithDefault(
-        assessmentInfo.honorCode,
-        input.honor_code?.replaceAll('\r\n', '\n').trim(),
-        '',
-      );
-    }
-
-    // Scoring
-    assessmentInfo.maxPoints = propertyValueWithDefault(
-      assessmentInfo.maxPoints,
-      input.max_points ?? undefined,
-      undefined,
-    );
-    assessmentInfo.maxBonusPoints = propertyValueWithDefault(
-      assessmentInfo.maxBonusPoints,
-      input.max_bonus_points ?? undefined,
-      (v: number | null | undefined) => v == null || v === 0,
-    );
-    if (assessment.type === 'Homework') {
-      assessmentInfo.constantQuestionValue = propertyValueWithDefault(
-        assessmentInfo.constantQuestionValue,
-        input.constant_question_value,
-        false,
-      );
-    }
-
-    // Question behaviour
-    assessmentInfo.shuffleQuestions = propertyValueWithDefault(
-      assessmentInfo.shuffleQuestions,
-      input.shuffle_questions,
-      assessment.type === 'Exam',
-    );
-    if (assessment.type === 'Exam') {
-      assessmentInfo.advanceScorePerc = propertyValueWithDefault(
-        assessmentInfo.advanceScorePerc,
-        input.advance_score_perc ?? undefined,
-        undefined,
-      );
-    }
-
-    // Grading
-    if (assessment.type === 'Exam') {
-      assessmentInfo.allowRealTimeGrading = propertyValueWithDefault(
-        assessmentInfo.allowRealTimeGrading,
-        input.allow_real_time_grading,
-        true,
-      );
-    }
-    assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
-      assessmentInfo.gradeRateMinutes,
-      input.grade_rate_minutes ?? undefined,
-      (v: number | null | undefined) => v == null || v === 0,
-    );
-    if (locals.question_sharing_enabled) {
-      if (input.share_source_publicly && !assessment.share_source_publicly) {
-        try {
-          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
-        } catch (err) {
-          if (err instanceof HttpStatusError) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
-          }
-          throw err;
+    if (
+      locals.question_sharing_enabled &&
+      input.share_source_publicly &&
+      !assessment.share_source_publicly
+    ) {
+      try {
+        await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+      } catch (err) {
+        if (err instanceof HttpStatusError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
         }
+        throw err;
       }
-      assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
-        assessmentInfo.shareSourcePublicly,
-        // If source is already public, preserve that setting regardless of the submitted value.
-        assessment.share_source_publicly || (input.share_source_publicly ?? false),
-        false,
-      );
     }
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
     const tid_new = run(() => {
       try {
@@ -477,24 +347,153 @@ const updateAssessment = t.procedure
       }
     });
 
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name,
+      'assessments',
+      assessment.tid!,
+    );
+    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      jsonPath: infoAssessmentPath,
+      conflictCheck: { origHash: input.origHash, scope: settingsScope },
+      applyChanges: (assessmentInfo) => {
+        assessmentInfo.title = input.title;
+        assessmentInfo.set = input.set;
+        assessmentInfo.number = input.number;
+        if (assessmentInfo.module != null || input.module !== 'Default') {
+          assessmentInfo.module = input.module;
+        }
+        const normalizedText = input.text?.replaceAll('\r\n', '\n');
+        assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
+        assessmentInfo.allowIssueReporting = propertyValueWithDefault(
+          assessmentInfo.allowIssueReporting,
+          input.allow_issue_reporting,
+          true,
+        );
+        assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
+          assessmentInfo.allowPersonalNotes,
+          input.allow_personal_notes,
+          true,
+        );
+
+        assessmentInfo.tools = assessmentInfo.tools ?? {};
+        for (const tool of EnumAssessmentToolSchema.options) {
+          const enabled = input.tools?.[tool] ?? false;
+          // Only update the tool if it was already defined in the assessmentInfo
+          // or if it's being enabled. This prevents accidentally adding new tools
+          // to the assessmentInfo when editing an existing assessment that doesn't
+          // have those tools configured.
+          if (tool in assessmentInfo.tools || enabled) {
+            assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
+          }
+        }
+        // If no tools are configured, delete the tools property to avoid storing an empty object.
+        if (Object.keys(assessmentInfo.tools).length === 0) {
+          delete assessmentInfo.tools;
+        }
+
+        if (assessment.type === 'Exam') {
+          assessmentInfo.multipleInstance = propertyValueWithDefault(
+            assessmentInfo.multipleInstance,
+            input.multiple_instance,
+            false,
+          );
+          assessmentInfo.autoClose = propertyValueWithDefault(
+            assessmentInfo.autoClose,
+            input.auto_close,
+            true,
+          );
+          assessmentInfo.requireHonorCode = propertyValueWithDefault(
+            assessmentInfo.requireHonorCode,
+            input.require_honor_code,
+            true,
+          );
+          assessmentInfo.honorCode = propertyValueWithDefault(
+            assessmentInfo.honorCode,
+            input.honor_code?.replaceAll('\r\n', '\n').trim(),
+            '',
+          );
+        }
+
+        assessmentInfo.maxPoints = propertyValueWithDefault(
+          assessmentInfo.maxPoints,
+          input.max_points ?? undefined,
+          undefined,
+        );
+        assessmentInfo.maxBonusPoints = propertyValueWithDefault(
+          assessmentInfo.maxBonusPoints,
+          input.max_bonus_points ?? undefined,
+          (v: number | null | undefined) => v == null || v === 0,
+        );
+        if (assessment.type === 'Homework') {
+          assessmentInfo.constantQuestionValue = propertyValueWithDefault(
+            assessmentInfo.constantQuestionValue,
+            input.constant_question_value,
+            false,
+          );
+        }
+
+        assessmentInfo.shuffleQuestions = propertyValueWithDefault(
+          assessmentInfo.shuffleQuestions,
+          input.shuffle_questions,
+          assessment.type === 'Exam',
+        );
+        if (assessment.type === 'Exam') {
+          assessmentInfo.advanceScorePerc = propertyValueWithDefault(
+            assessmentInfo.advanceScorePerc,
+            input.advance_score_perc ?? undefined,
+            undefined,
+          );
+        }
+
+        if (assessment.type === 'Exam') {
+          assessmentInfo.allowRealTimeGrading = propertyValueWithDefault(
+            assessmentInfo.allowRealTimeGrading,
+            input.allow_real_time_grading,
+            true,
+          );
+        }
+        assessmentInfo.gradeRateMinutes = propertyValueWithDefault(
+          assessmentInfo.gradeRateMinutes,
+          input.grade_rate_minutes ?? undefined,
+          (v: number | null | undefined) => v == null || v === 0,
+        );
+        if (locals.question_sharing_enabled) {
+          assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
+            assessmentInfo.shareSourcePublicly,
+            // If source is already public, preserve that setting regardless of the submitted value.
+            assessment.share_source_publicly || (input.share_source_publicly ?? false),
+            false,
+          );
+        }
+
+        return assessmentInfo;
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+
+    if (!prepared.success) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The assessment settings have been modified since you loaded this page. Please refresh and try again.',
+      });
+    }
+
     const editor = new MultiEditor(
       {
         locals,
         description: `${course_instance.short_name}: Update assessment ${assessment.tid}`,
       },
-      [
-        new FileModifyEditor({
-          locals,
-          container: {
-            rootPath,
-            invalidRootPaths: [],
-          },
-          filePath: infoAssessmentPath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: input.origHash,
-        }),
-        new AssessmentRenameEditor({ locals, tid_new }),
-      ],
+      [prepared.editor, new AssessmentRenameEditor({ locals, tid_new })],
     );
 
     const serverJob = await editor.prepareServerJob();
@@ -508,23 +507,7 @@ const updateAssessment = t.procedure
       });
     }
 
-    const newInfoAssessmentPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      tid_new,
-      'infoAssessment.json',
-    );
-    const newHash = await getOriginalHash(newInfoAssessmentPath);
-    if (newHash === null) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to read hash of updated infoAssessment.json',
-      });
-    }
-
-    return { origHash: newHash };
+    return { origHash: prepared.newHash };
   });
 
 const copyAssessment = t.procedure
@@ -647,7 +630,7 @@ const changeAssessmentType = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.intersection(z.object({ origHash: z.string() }), ChangeTypeDefaultsSchema))
   .mutation(async ({ input, ctx }) => {
-    const { course, course_instance, assessment, locals } = ctx;
+    const { course, course_instance, assessment } = ctx;
     const currentType = assessment.type;
     if (currentType !== 'Exam' && currentType !== 'Homework') {
       throw new TRPCError({
@@ -670,114 +653,100 @@ const changeAssessmentType = t.procedure
       });
     }
 
-    const infoAssessmentPath = infoAssessmentPathFor(
-      course,
-      course_instance.short_name,
-      assessment.tid!,
-    );
-    const rootPath = path.join(
+    const assessmentDir = path.join(
       course.path,
       'courseInstances',
       course_instance.short_name,
       'assessments',
       assessment.tid!,
     );
+    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
-    const info: AssessmentJsonInput = await readInfoAssessment(infoAssessmentPath);
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      jsonPath: infoAssessmentPath,
+      conflictCheck: { origHash: input.origHash, scope: settingsScope },
+      applyChanges: (info) => {
+        info.type = input.newType;
 
-    info.type = input.newType;
+        if (input.newType === 'Homework') {
+          delete info.multipleInstance;
+          delete info.autoClose;
+          delete info.requireHonorCode;
+          delete info.honorCode;
+          delete info.advanceScorePerc;
+          delete info.allowRealTimeGrading;
 
-    if (input.newType === 'Homework') {
-      delete info.multipleInstance;
-      delete info.autoClose;
-      delete info.requireHonorCode;
-      delete info.honorCode;
-      delete info.advanceScorePerc;
-      delete info.allowRealTimeGrading;
+          for (const { block, location } of iterateAssessmentBlocks(info)) {
+            if (block.allowRealTimeGrading === false) delete block.allowRealTimeGrading;
+            if (location.kind === 'zone') continue;
+            if (Array.isArray(block.points)) block.points = block.points[0];
+            if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
+          }
 
-      for (const { block, location } of iterateAssessmentBlocks(info)) {
-        if (block.allowRealTimeGrading === false) delete block.allowRealTimeGrading;
-        if (location.kind === 'zone') continue;
-        if (Array.isArray(block.points)) block.points = block.points[0];
-        if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
-      }
+          info.constantQuestionValue = propertyValueWithDefault(
+            info.constantQuestionValue,
+            input.defaults.constantQuestionValue,
+            false,
+          );
+        } else {
+          delete info.constantQuestionValue;
 
-      info.constantQuestionValue = propertyValueWithDefault(
-        info.constantQuestionValue,
-        input.defaults.constantQuestionValue,
-        false,
-      );
-    } else {
-      delete info.constantQuestionValue;
+          for (const { block, location } of iterateAssessmentBlocks(info)) {
+            if (location.kind === 'zone') continue;
+            delete block.maxPoints;
+            delete block.maxAutoPoints;
+          }
 
-      for (const { block, location } of iterateAssessmentBlocks(info)) {
-        if (location.kind === 'zone') continue;
-        delete block.maxPoints;
-        delete block.maxAutoPoints;
-      }
+          info.multipleInstance = propertyValueWithDefault(
+            info.multipleInstance,
+            input.defaults.multipleInstance,
+            false,
+          );
+          info.autoClose = propertyValueWithDefault(info.autoClose, input.defaults.autoClose, true);
+          info.requireHonorCode = propertyValueWithDefault(
+            info.requireHonorCode,
+            input.defaults.requireHonorCode,
+            true,
+          );
+          info.honorCode = propertyValueWithDefault(
+            info.honorCode,
+            input.defaults.honorCode.trim() === '' ? undefined : input.defaults.honorCode.trim(),
+            '',
+          );
+          info.advanceScorePerc = propertyValueWithDefault(
+            info.advanceScorePerc,
+            input.defaults.advanceScorePerc ?? undefined,
+            undefined,
+          );
+          info.allowRealTimeGrading = propertyValueWithDefault(
+            info.allowRealTimeGrading,
+            input.defaults.allowRealTimeGrading,
+            true,
+          );
+        }
 
-      info.multipleInstance = propertyValueWithDefault(
-        info.multipleInstance,
-        input.defaults.multipleInstance,
-        false,
-      );
-      info.autoClose = propertyValueWithDefault(info.autoClose, input.defaults.autoClose, true);
-      info.requireHonorCode = propertyValueWithDefault(
-        info.requireHonorCode,
-        input.defaults.requireHonorCode,
-        true,
-      );
-      info.honorCode = propertyValueWithDefault(
-        info.honorCode,
-        input.defaults.honorCode.trim() === '' ? undefined : input.defaults.honorCode.trim(),
-        '',
-      );
-      info.advanceScorePerc = propertyValueWithDefault(
-        info.advanceScorePerc,
-        input.defaults.advanceScorePerc ?? undefined,
-        undefined,
-      );
-      info.allowRealTimeGrading = propertyValueWithDefault(
-        info.allowRealTimeGrading,
-        input.defaults.allowRealTimeGrading,
-        true,
-      );
-    }
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(info));
-
-    const editor = new MultiEditor(
-      {
-        locals,
-        description: `${course_instance.short_name}: Change assessment ${assessment.tid} type to ${input.newType}`,
+        return info;
       },
-      [
-        new FileModifyEditor({
-          locals,
-          container: { rootPath, invalidRootPaths: [] },
-          filePath: infoAssessmentPath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: input.origHash,
-        }),
-      ],
-    );
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
 
-    const serverJob = await editor.prepareServerJob();
-    try {
-      await editor.executeWithServerJob(serverJob);
-    } catch {
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The assessment settings have been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
       throwAppError<AssessmentSettingsError['ChangeAssessmentType']>({
         code: 'SYNC_JOB_FAILED',
         message: 'Failed to change assessment type',
-        jobSequenceId: serverJob.jobSequenceId,
-      });
-    }
-
-    const newHash = await getOriginalHash(infoAssessmentPath);
-    if (newHash === null) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to read hash of updated infoAssessment.json',
+        jobSequenceId: saveResult.jobSequenceId,
       });
     }
 
@@ -787,7 +756,7 @@ const changeAssessmentType = t.procedure
     ]);
 
     return {
-      origHash: newHash,
+      origHash: saveResult.newHash,
       newType: input.newType,
       assessment: StaffAssessmentSchema.parse(refreshedAssessment),
       zonePointsRange,
