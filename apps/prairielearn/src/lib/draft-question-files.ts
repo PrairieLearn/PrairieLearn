@@ -6,7 +6,8 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
 
-import { createDirectoryBrowserHtml, createFilePreviewHtml } from '../components/FileBrowser.js';
+import { createDraftQuestionFileBrowserHtml } from '../components/DraftQuestionFileBrowser.js';
+import { createFilePreviewHtml } from '../components/FileBrowser.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { b64EncodeUnicode } from './base64-util.js';
@@ -198,29 +199,6 @@ async function readSelectedQuestionFile({
   };
 }
 
-export function getEditorUrlWithSelectedFile({
-  editorUrl,
-  filePath,
-}: {
-  editorUrl: string;
-  filePath: string;
-}) {
-  const params = new URLSearchParams({ file: filePath, tab: 'all-files' });
-  return `${editorUrl}?${params.toString()}`;
-}
-
-export function getEditorUrlWithSelectedDirectory({
-  editorUrl,
-  directory,
-}: {
-  editorUrl: string;
-  directory: string | null;
-}) {
-  const params = new URLSearchParams({ tab: 'all-files' });
-  if (directory != null) params.set('dir', directory);
-  return `${editorUrl}?${params.toString()}`;
-}
-
 async function renderAllQuestionFilesHtml({
   resLocals,
   editorUrl,
@@ -245,20 +223,18 @@ async function renderAllQuestionFilesHtml({
   const fileActionUrl = `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`;
 
   return (
-    await createDirectoryBrowserHtml({
+    await createDraftQuestionFileBrowserHtml({
       paths,
       isReadOnly: false,
       csrfToken: generateCsrfToken({
         url: fileActionUrl,
         authnUserId: resLocals.authn_user.id,
       }),
-      mode: {
-        editorUrl,
-        fileActionUrl,
-        questionRootPath,
-        selectedDirectory,
-        disabledInfoJsonReason: DRAFT_INFO_JSON_DISABLED_REASON,
-      },
+      editorUrl,
+      fileActionUrl,
+      questionRootPath,
+      selectedDirectory,
+      disabledInfoJsonReason: DRAFT_INFO_JSON_DISABLED_REASON,
     })
   ).toString();
 }

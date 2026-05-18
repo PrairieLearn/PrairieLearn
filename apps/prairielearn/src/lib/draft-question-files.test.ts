@@ -3,9 +3,11 @@ import { assert, describe, it } from 'vitest';
 import * as error from '@prairielearn/error';
 
 import {
-  assertCanModifyDraftQuestionFilePath,
   getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
+} from './draft-question-file-url.js';
+import {
+  assertCanModifyDraftQuestionFilePath,
   getSelectedQuestionDirectory,
   getSelectedQuestionFilePath,
   normalizeQuestionFilePath,
