@@ -3,7 +3,10 @@ import path from 'node:path';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
-const QID_REGEX = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
+// PrairieLearn QIDs and assessment TIDs can include nested directory
+// segments (e.g. `09-Linsys/LinearSystem-Photomath-ErrorVersusResidual`),
+// so allow `/` and `.` in addition to the QID-style slug characters.
+const QID_REGEX = /^[A-Za-z0-9_][A-Za-z0-9_./-]*$/;
 
 export const EvalEntrySchema = z.object({
   id: z
