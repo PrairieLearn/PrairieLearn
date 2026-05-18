@@ -3,6 +3,7 @@ import path from 'node:path';
 import { config } from '../../../lib/config.js';
 import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
 
 import { cloneEvalRepo } from './clone-eval-repo.js';
 import { loadManifest } from './manifest.js';
@@ -10,6 +11,7 @@ import { resolveAssessmentQuestion } from './resolve-target.js';
 import { applyRubric } from './rubric.js';
 import { runGrading } from './run-grading.js';
 import { scaffoldCourse } from './scaffold-course.js';
+import { seedAiGradingCredits } from './seed-credits.js';
 import { importSubmissions } from './submissions.js';
 
 /**
@@ -64,6 +66,16 @@ export async function runAiGradingEval({
 
     const scaffold = await scaffoldCourse({ manifest, evals, evalsDir, user, job });
     job.info(`Synthetic course inserted: id=${scaffold.course.id} path=${scaffold.coursePath}`);
+
+    const courseInstance = await selectCourseInstanceByShortName({
+      course: scaffold.course,
+      shortName: scaffold.courseInstanceShortName,
+    });
+    await seedAiGradingCredits({
+      course_instance_id: courseInstance.id,
+      user_id: user.id,
+      job,
+    });
 
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
