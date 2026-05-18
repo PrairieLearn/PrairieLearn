@@ -164,6 +164,7 @@ export async function scaffoldCourse({
         set: 'Homework',
         number: String(idx + 1),
         allowAccess: [{ mode: 'Public' }],
+        ...(loaded.entry.group_work ? { groupWork: true } : {}),
         zones: [
           {
             title: 'Eval',

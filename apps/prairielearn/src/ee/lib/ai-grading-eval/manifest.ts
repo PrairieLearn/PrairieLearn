@@ -17,6 +17,13 @@ export const EvalEntrySchema = z.object({
    * in turn determines `max_points` / `max_manual_points` after sync.
    */
   max_points: z.number().positive(),
+  /**
+   * Set to `true` when the eval's `submissions.csv` is PrairieLearn's
+   * group-work export (`Group name` / `Usernames` columns instead of
+   * `UID`). The scaffolded assessment is then marked `groupWork: true` so
+   * `uploadSubmissions()` accepts the CSV.
+   */
+  group_work: z.boolean().default(false),
 });
 export type EvalEntry = z.infer<typeof EvalEntrySchema>;
 
