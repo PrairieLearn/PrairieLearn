@@ -1,6 +1,6 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -27,7 +27,10 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
-import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
+import type {
+  AssessmentSettingsError,
+  TypeChangeLocation,
+} from '../../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
@@ -376,27 +379,19 @@ function CopyAssessmentModal({
   );
 }
 
-function formatTypeChangeLocation(location: {
-  zoneIndex?: number;
-  zoneTitle?: string | null;
-  questionIndex?: number;
-  qid?: string | null;
-  alternativeIndex?: number;
-  alternativeQid?: string | null;
-}): string {
-  if (location.zoneIndex == null) return 'Assessment';
+function formatTypeChangeLocation(location: TypeChangeLocation): string {
+  if (location.kind === 'assessment') return 'Assessment';
   const zoneLabel = location.zoneTitle
     ? `Zone ${location.zoneIndex + 1} (${location.zoneTitle})`
     : `Zone ${location.zoneIndex + 1}`;
-  if (location.questionIndex == null) return zoneLabel;
+  if (location.kind === 'zone') return zoneLabel;
   const questionLabel = location.qid
     ? `${zoneLabel}, question ${location.qid}`
     : `${zoneLabel}, question ${location.questionIndex + 1}`;
-  if (location.alternativeIndex == null) return questionLabel;
-  const altLabel = location.alternativeQid
+  if (location.kind === 'question') return questionLabel;
+  return location.alternativeQid
     ? `${questionLabel}, alternative ${location.alternativeQid}`
     : `${questionLabel}, alternative ${location.alternativeIndex + 1}`;
-  return altLabel;
 }
 
 const BLOCKER_FIELD_LABELS: Record<string, string> = {
@@ -467,16 +462,6 @@ function ChangeTypeModal({
     defaultValues: HOMEWORK_DEFAULTS,
   });
 
-  // Reset both default-value forms when the target type changes (the modal is
-  // long-lived because it's mounted alongside the page; the user may close and
-  // reopen it for the opposite direction).
-  useEffect(() => {
-    examDefaultsForm.reset(EXAM_DEFAULTS);
-    homeworkDefaultsForm.reset(HOMEWORK_DEFAULTS);
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
-    setDefaultsOpen(false);
-  }, [newType, examDefaultsForm, homeworkDefaultsForm]);
-
   const analysisQuery = useQuery(
     trpc.assessmentSettings.analyzeTypeChange.queryOptions(
       { newType: newType ?? currentType },
@@ -539,8 +524,6 @@ function ChangeTypeModal({
     }
   };
 
-  const exam = 'Exam';
-  const homework = 'Homework';
   const requireHonorCode = examDefaultsForm.watch('require_honor_code');
   const advanceScorePercError = examDefaultsForm.formState.errors.advance_score_perc;
 
@@ -557,7 +540,7 @@ function ChangeTypeModal({
 
         <Alert variant="info" className="small mb-3">
           <strong>What changes:</strong>
-          {newType === homework ? (
+          {newType === 'Homework' ? (
             <ul className="mb-0 mt-1 ps-3">
               <li>
                 Each question generates new variants on each attempt, accumulating points across
@@ -570,7 +553,7 @@ function ChangeTypeModal({
               </li>
               <li>Question ordering defaults to fixed order; honor code is off by default.</li>
             </ul>
-          ) : newType === exam ? (
+          ) : newType === 'Exam' ? (
             <ul className="mb-0 mt-1 ps-3">
               <li>
                 Each student gets a single variant per question, retried in place with declining
@@ -653,7 +636,7 @@ function ChangeTypeModal({
             </button>
             {defaultsOpen && (
               <div id="change-type-defaults" className="px-3 pb-3 border-top pt-3">
-                {newType === exam ? (
+                {newType === 'Exam' ? (
                   <>
                     <div className="form-check mb-3">
                       <input

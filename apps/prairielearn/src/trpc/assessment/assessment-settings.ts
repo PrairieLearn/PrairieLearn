@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -37,18 +38,30 @@ export interface AssessmentSettingsError {
   ChangeAssessmentType: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-const AssessmentTypeSchema = z.enum(['Exam', 'Homework']);
+const ChangeableAssessmentTypeSchema = EnumAssessmentTypeSchema.extract(['Exam', 'Homework']);
+type ChangeableAssessmentType = z.infer<typeof ChangeableAssessmentTypeSchema>;
 
-export interface TypeChangeLocation {
-  zoneIndex?: number;
-  zoneTitle?: string | null;
-  questionIndex?: number;
-  qid?: string | null;
-  alternativeIndex?: number;
-  alternativeQid?: string | null;
-}
+export type TypeChangeLocation =
+  | { kind: 'assessment' }
+  | { kind: 'zone'; zoneIndex: number; zoneTitle: string | null }
+  | {
+      kind: 'question';
+      zoneIndex: number;
+      zoneTitle: string | null;
+      questionIndex: number;
+      qid: string | null;
+    }
+  | {
+      kind: 'alternative';
+      zoneIndex: number;
+      zoneTitle: string | null;
+      questionIndex: number;
+      qid: string | null;
+      alternativeIndex: number;
+      alternativeQid: string | null;
+    };
 
-export type TypeChangeBlockerField =
+type TypeChangeBlockerField =
   | 'multipleInstance'
   | 'requireHonorCode'
   | 'honorCode'
@@ -57,75 +70,71 @@ export type TypeChangeBlockerField =
   | 'maxPoints'
   | 'maxAutoPoints';
 
-export interface TypeChangeBlocker {
+interface TypeChangeBlocker {
   field: TypeChangeBlockerField;
   location: TypeChangeLocation;
   currentValue: string;
 }
 
-export interface PointsListCollapse {
+interface PointsListCollapse {
   field: 'points' | 'autoPoints';
   location: TypeChangeLocation;
   currentValue: number[];
   newValue: number;
 }
 
-export interface AnalyzeTypeChangeResult {
-  currentType: 'Exam' | 'Homework';
-  newType: 'Exam' | 'Homework';
+interface AnalyzeTypeChangeResult {
+  currentType: ChangeableAssessmentType;
+  newType: ChangeableAssessmentType;
   blockers: TypeChangeBlocker[];
   pointsListCollapses: PointsListCollapse[];
 }
 
-function blockLocationForQuestion(
-  zoneIndex: number,
-  zoneTitle: string | null | undefined,
-  questionIndex: number,
-  qid: string | null | undefined,
-): TypeChangeLocation {
-  return { zoneIndex, zoneTitle: zoneTitle ?? null, questionIndex, qid: qid ?? null };
-}
-
-function blockLocationForAlternative(
-  zoneIndex: number,
-  zoneTitle: string | null | undefined,
-  questionIndex: number,
-  qid: string | null | undefined,
-  alternativeIndex: number,
-  alternativeQid: string | null | undefined,
-): TypeChangeLocation {
-  return {
-    zoneIndex,
-    zoneTitle: zoneTitle ?? null,
-    questionIndex,
-    qid: qid ?? null,
-    alternativeIndex,
-    alternativeQid: alternativeQid ?? null,
+// Widened structural block type lets a single loop iterate zones, questions,
+// and alternatives uniformly. Zones don't carry the points fields; treating
+// them as optional-undefined avoids per-callsite narrowing on `location.kind`.
+interface AssessmentBlockEntry {
+  block: {
+    allowRealTimeGrading?: boolean;
+    points?: number | number[];
+    autoPoints?: number | number[];
+    maxPoints?: number;
+    maxAutoPoints?: number;
   };
+  location: TypeChangeLocation;
 }
 
-function collectPointsListCollapses(
-  block: { points?: number | number[]; autoPoints?: number | number[] },
-  location: TypeChangeLocation,
-): PointsListCollapse[] {
-  const collapses: PointsListCollapse[] = [];
-  if (Array.isArray(block.points) && block.points.length > 1) {
-    collapses.push({
-      field: 'points',
-      location,
-      currentValue: block.points,
-      newValue: block.points[0],
-    });
+function* iterateAssessmentBlocks(info: AssessmentJsonInput): Generator<AssessmentBlockEntry> {
+  const zones = info.zones ?? [];
+  for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
+    const zone = zones[zoneIndex];
+    const zoneTitle = zone.title ?? null;
+    yield { block: zone, location: { kind: 'zone', zoneIndex, zoneTitle } };
+    for (let questionIndex = 0; questionIndex < zone.questions.length; questionIndex++) {
+      const question = zone.questions[questionIndex];
+      const qid = question.id ?? null;
+      yield {
+        block: question,
+        location: { kind: 'question', zoneIndex, zoneTitle, questionIndex, qid },
+      };
+      const alts = question.alternatives ?? [];
+      for (let alternativeIndex = 0; alternativeIndex < alts.length; alternativeIndex++) {
+        const alt = alts[alternativeIndex];
+        yield {
+          block: alt,
+          location: {
+            kind: 'alternative',
+            zoneIndex,
+            zoneTitle,
+            questionIndex,
+            qid,
+            alternativeIndex,
+            alternativeQid: alt.id,
+          },
+        };
+      }
+    }
   }
-  if (Array.isArray(block.autoPoints) && block.autoPoints.length > 1) {
-    collapses.push({
-      field: 'autoPoints',
-      location,
-      currentValue: block.autoPoints,
-      newValue: block.autoPoints[0],
-    });
-  }
-  return collapses;
 }
 
 function analyzeForHomework(info: AssessmentJsonInput): {
@@ -134,75 +143,55 @@ function analyzeForHomework(info: AssessmentJsonInput): {
 } {
   const blockers: TypeChangeBlocker[] = [];
   const pointsListCollapses: PointsListCollapse[] = [];
+  const assessmentLocation: TypeChangeLocation = { kind: 'assessment' };
 
   if (info.multipleInstance) {
     blockers.push({
       field: 'multipleInstance',
-      location: {},
+      location: assessmentLocation,
       currentValue: 'true',
     });
   }
   if (info.requireHonorCode) {
     blockers.push({
       field: 'requireHonorCode',
-      location: {},
+      location: assessmentLocation,
       currentValue: 'true',
     });
   }
   if (info.honorCode != null && info.honorCode !== '') {
-    blockers.push({
-      field: 'honorCode',
-      location: {},
-      currentValue: 'set',
-    });
+    blockers.push({ field: 'honorCode', location: assessmentLocation, currentValue: 'set' });
   }
   if (info.allowRealTimeGrading === false) {
     blockers.push({
       field: 'allowRealTimeGrading',
-      location: {},
+      location: assessmentLocation,
       currentValue: 'false',
     });
   }
 
-  (info.zones ?? []).forEach((zone, zoneIndex) => {
-    if (zone.allowRealTimeGrading === false) {
-      blockers.push({
-        field: 'allowRealTimeGrading',
-        location: { zoneIndex, zoneTitle: zone.title ?? null },
-        currentValue: 'false',
+  for (const { block, location } of iterateAssessmentBlocks(info)) {
+    if (block.allowRealTimeGrading === false) {
+      blockers.push({ field: 'allowRealTimeGrading', location, currentValue: 'false' });
+    }
+    if (location.kind === 'zone') continue;
+    if (Array.isArray(block.points) && block.points.length > 1) {
+      pointsListCollapses.push({
+        field: 'points',
+        location,
+        currentValue: block.points,
+        newValue: block.points[0],
       });
     }
-    zone.questions.forEach((question, questionIndex) => {
-      const qid = question.id ?? null;
-      const questionLocation = blockLocationForQuestion(zoneIndex, zone.title, questionIndex, qid);
-      if (question.allowRealTimeGrading === false) {
-        blockers.push({
-          field: 'allowRealTimeGrading',
-          location: questionLocation,
-          currentValue: 'false',
-        });
-      }
-      pointsListCollapses.push(...collectPointsListCollapses(question, questionLocation));
-      (question.alternatives ?? []).forEach((alt, alternativeIndex) => {
-        const alternativeLocation = blockLocationForAlternative(
-          zoneIndex,
-          zone.title,
-          questionIndex,
-          qid,
-          alternativeIndex,
-          alt.id,
-        );
-        if (alt.allowRealTimeGrading === false) {
-          blockers.push({
-            field: 'allowRealTimeGrading',
-            location: alternativeLocation,
-            currentValue: 'false',
-          });
-        }
-        pointsListCollapses.push(...collectPointsListCollapses(alt, alternativeLocation));
+    if (Array.isArray(block.autoPoints) && block.autoPoints.length > 1) {
+      pointsListCollapses.push({
+        field: 'autoPoints',
+        location,
+        currentValue: block.autoPoints,
+        newValue: block.autoPoints[0],
       });
-    });
-  });
+    }
+  }
 
   return { blockers, pointsListCollapses };
 }
@@ -215,67 +204,40 @@ function analyzeForExam(info: AssessmentJsonInput): {
   if (info.constantQuestionValue) {
     blockers.push({
       field: 'constantQuestionValue',
-      location: {},
+      location: { kind: 'assessment' },
       currentValue: 'true',
     });
   }
 
-  (info.zones ?? []).forEach((zone, zoneIndex) => {
-    zone.questions.forEach((question, questionIndex) => {
-      const qid = question.id ?? null;
-      const questionLocation = blockLocationForQuestion(zoneIndex, zone.title, questionIndex, qid);
-      if (question.maxPoints != null) {
-        blockers.push({
-          field: 'maxPoints',
-          location: questionLocation,
-          currentValue: String(question.maxPoints),
-        });
-      }
-      if (question.maxAutoPoints != null) {
-        blockers.push({
-          field: 'maxAutoPoints',
-          location: questionLocation,
-          currentValue: String(question.maxAutoPoints),
-        });
-      }
-      (question.alternatives ?? []).forEach((alt, alternativeIndex) => {
-        const alternativeLocation = blockLocationForAlternative(
-          zoneIndex,
-          zone.title,
-          questionIndex,
-          qid,
-          alternativeIndex,
-          alt.id,
-        );
-        if (alt.maxPoints != null) {
-          blockers.push({
-            field: 'maxPoints',
-            location: alternativeLocation,
-            currentValue: String(alt.maxPoints),
-          });
-        }
-        if (alt.maxAutoPoints != null) {
-          blockers.push({
-            field: 'maxAutoPoints',
-            location: alternativeLocation,
-            currentValue: String(alt.maxAutoPoints),
-          });
-        }
+  for (const { block, location } of iterateAssessmentBlocks(info)) {
+    if (location.kind === 'zone') continue;
+    if (block.maxPoints != null) {
+      blockers.push({ field: 'maxPoints', location, currentValue: String(block.maxPoints) });
+    }
+    if (block.maxAutoPoints != null) {
+      blockers.push({
+        field: 'maxAutoPoints',
+        location,
+        currentValue: String(block.maxAutoPoints),
       });
-    });
-  });
+    }
+  }
 
   return { blockers, pointsListCollapses: [] };
 }
 
 async function readInfoAssessment(infoAssessmentPath: string): Promise<AssessmentJsonInput> {
-  if (!(await fs.pathExists(infoAssessmentPath))) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'infoAssessment.json does not exist',
-    });
+  try {
+    return JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'infoAssessment.json does not exist',
+      });
+    }
+    throw err;
   }
-  return JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
 }
 
 function infoAssessmentPathFor(
@@ -624,7 +586,7 @@ const copyAssessment = t.procedure
 
 const analyzeTypeChange = t.procedure
   .use(requireCoursePermissionEdit)
-  .input(z.object({ newType: AssessmentTypeSchema }))
+  .input(z.object({ newType: ChangeableAssessmentTypeSchema }))
   .query(async ({ input, ctx }): Promise<AnalyzeTypeChangeResult> => {
     const { course, course_instance, assessment } = ctx;
     const currentType = assessment.type;
@@ -674,9 +636,6 @@ const ChangeTypeDefaultsSchema = z.union([
   z.object({ newType: z.literal('Homework'), defaults: ChangeTypeHomeworkDefaultsSchema }),
 ]);
 
-export type ChangeTypeExamDefaults = z.infer<typeof ChangeTypeExamDefaultsSchema>;
-export type ChangeTypeHomeworkDefaults = z.infer<typeof ChangeTypeHomeworkDefaultsSchema>;
-
 const changeAssessmentType = t.procedure
   .use(requireCoursePermissionEdit)
   .input(z.intersection(z.object({ origHash: z.string() }), ChangeTypeDefaultsSchema))
@@ -721,19 +680,12 @@ const changeAssessmentType = t.procedure
       delete info.advanceScorePerc;
       delete info.allowRealTimeGrading;
 
-      (info.zones ?? []).forEach((zone) => {
-        if (zone.allowRealTimeGrading === false) delete zone.allowRealTimeGrading;
-        zone.questions.forEach((question) => {
-          if (question.allowRealTimeGrading === false) delete question.allowRealTimeGrading;
-          if (Array.isArray(question.points)) question.points = question.points[0];
-          if (Array.isArray(question.autoPoints)) question.autoPoints = question.autoPoints[0];
-          (question.alternatives ?? []).forEach((alt) => {
-            if (alt.allowRealTimeGrading === false) delete alt.allowRealTimeGrading;
-            if (Array.isArray(alt.points)) alt.points = alt.points[0];
-            if (Array.isArray(alt.autoPoints)) alt.autoPoints = alt.autoPoints[0];
-          });
-        });
-      });
+      for (const { block, location } of iterateAssessmentBlocks(info)) {
+        if (block.allowRealTimeGrading === false) delete block.allowRealTimeGrading;
+        if (location.kind === 'zone') continue;
+        if (Array.isArray(block.points)) block.points = block.points[0];
+        if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
+      }
 
       info.constantQuestionValue = propertyValueWithDefault(
         info.constantQuestionValue,
@@ -743,16 +695,11 @@ const changeAssessmentType = t.procedure
     } else {
       delete info.constantQuestionValue;
 
-      (info.zones ?? []).forEach((zone) => {
-        zone.questions.forEach((question) => {
-          delete question.maxPoints;
-          delete question.maxAutoPoints;
-          (question.alternatives ?? []).forEach((alt) => {
-            delete alt.maxPoints;
-            delete alt.maxAutoPoints;
-          });
-        });
-      });
+      for (const { block, location } of iterateAssessmentBlocks(info)) {
+        if (location.kind === 'zone') continue;
+        delete block.maxPoints;
+        delete block.maxAutoPoints;
+      }
 
       info.multipleInstance = propertyValueWithDefault(
         info.multipleInstance,
