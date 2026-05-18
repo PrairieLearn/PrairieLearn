@@ -7,6 +7,7 @@ import { isBinaryFile } from 'isbinaryfile';
 import * as error from '@prairielearn/error';
 
 import { createDirectoryBrowserHtml, createFilePreviewHtml } from '../components/FileBrowser.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { b64EncodeUnicode } from './base64-util.js';
 import { getCourseFilesClient } from './course-files-api.js';
@@ -18,6 +19,7 @@ export interface SelectedQuestionFile {
   path: string;
   encodedContents: string;
   aceMode: string;
+  lintHtmlMustache: boolean;
 }
 
 export interface SelectedQuestionFilePreview {
@@ -32,6 +34,7 @@ const DRAFT_INFO_JSON_DISABLED_REASON =
 
 interface DraftQuestionFilesLocals {
   __csrf_token: string;
+  authn_user: User;
   authz_data: {
     has_course_permission_edit: boolean;
   };
@@ -189,6 +192,7 @@ async function readSelectedQuestionFile({
       path: filePath,
       encodedContents: editableFile.contents,
       aceMode: editableFile.aceMode,
+      lintHtmlMustache: editableFile.lintHtmlMustache,
     },
     selectedFilePreview: null,
   };
@@ -238,59 +242,22 @@ async function renderAllQuestionFilesHtml({
     navPage: 'question',
   });
   const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
-  const formAction = `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`;
-  const successfulActionRedirectUrl = getEditorUrlWithSelectedDirectory({
-    editorUrl,
-    directory: selectedDirectory,
-  });
-  const getDirectoryRelativeToQuestion = (directoryPath: string) => {
-    const relativePath = path.posix.relative(
-      questionRootPath,
-      directoryPath.split(path.sep).join('/'),
-    );
-    return relativePath === '' ? null : relativePath;
-  };
-  const getFileRelativeToQuestion = (filePath: string) =>
-    path.posix.relative(questionRootPath, filePath.split(path.sep).join('/'));
-  const getSelectedFileAttributes = (filePath: string) => ({
-    'data-selected-file-path': getFileRelativeToQuestion(filePath),
-  });
-  const getDraftInfoJsonDisabledReason = (filePath: string) =>
-    isDraftQuestionInfoFile(getFileRelativeToQuestion(filePath))
-      ? DRAFT_INFO_JSON_DISABLED_REASON
-      : null;
+  const fileActionUrl = `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`;
 
   return (
     await createDirectoryBrowserHtml({
       paths,
       isReadOnly: false,
-      csrfToken: resLocals.__csrf_token,
-      options: {
-        fileViewBaseUrl,
-        formAction,
-        successfulActionRedirectUrl,
-        directoryUrl: (directoryPath) =>
-          getEditorUrlWithSelectedDirectory({
-            editorUrl,
-            directory: getDirectoryRelativeToQuestion(directoryPath),
-          }),
-        directoryAttributes: (directoryPath) => ({
-          'data-selected-directory-path': getDirectoryRelativeToQuestion(directoryPath) ?? '',
-        }),
-        fileViewUrl: (file) =>
-          getEditorUrlWithSelectedFile({
-            editorUrl,
-            filePath: getFileRelativeToQuestion(file.path),
-          }),
-        fileViewAttributes: (file) => getSelectedFileAttributes(file.path),
-        fileViewDisabledReason: (file) => getDraftInfoJsonDisabledReason(file.path),
-        editFileUrl: (file) =>
-          getEditorUrlWithSelectedFile({
-            editorUrl,
-            filePath: getFileRelativeToQuestion(file.path),
-          }),
-        editFileAttributes: (file) => getSelectedFileAttributes(file.path),
-        editFileDisabledReason: (file) => getDraftInfoJsonDisabledReason(file.path),
+      csrfToken: generateCsrfToken({
+        url: fileActionUrl,
+        authnUserId: resLocals.authn_user.id,
+      }),
+      mode: {
+        editorUrl,
+        fileActionUrl,
+        questionRootPath,
+        selectedDirectory,
+        disabledInfoJsonReason: DRAFT_INFO_JSON_DISABLED_REASON,
       },
     })
   ).toString();

@@ -97,7 +97,18 @@ export function InstructorAiGenerateDraftEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
+        <meta
+          name="htmlmustache-runtime-wasm"
+          content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+        />
+        <meta
+          name="htmlmustache-grammar-wasm"
+          content="${nodeModulesAssetPath(
+            '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+          )}"
+        />
       `,
+      compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts'),
     ],
     content: (
       <Hydrate className="app-content-container">
