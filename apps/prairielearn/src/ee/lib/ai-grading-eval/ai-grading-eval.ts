@@ -12,6 +12,7 @@ import { applyRubric } from './rubric.js';
 import { runGrading } from './run-grading.js';
 import { scaffoldCourse } from './scaffold-course.js';
 import { seedAiGradingCredits } from './seed-credits.js';
+import { type EvalRunResult, reportRunStats } from './stats.js';
 import { importSubmissions } from './submissions.js';
 
 /**
@@ -77,6 +78,8 @@ export async function runAiGradingEval({
       job,
     });
 
+    const evalResults: EvalRunResult[] = [];
+
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
         course: scaffold.course,
@@ -101,7 +104,7 @@ export async function runAiGradingEval({
         job,
       });
 
-      await runGrading({
+      const aiGradingJobSequenceId = await runGrading({
         course: scaffold.course,
         course_instance: target.course_instance,
         question: target.question,
@@ -110,11 +113,19 @@ export async function runAiGradingEval({
         user,
         job,
       });
+
+      evalResults.push({
+        evalId: loaded.entry.id,
+        target,
+        aiGradingJobSequenceId,
+        maxPoints: loaded.entry.max_points,
+      });
     }
 
-    job.info(
-      'Steps 1-6 complete (clone, load manifest, scaffold course, apply rubrics, upload submissions, AI grade).',
-    );
+    await reportRunStats({ results: evalResults, job });
+
+    job.info('');
+    job.info('All steps complete.');
   });
 
   return serverJob.jobSequenceId;
