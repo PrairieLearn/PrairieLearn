@@ -89,6 +89,25 @@ router.post(
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'run_ai_grading_eval') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      if (!config.aiGradingEvalRepository) {
+        throw new error.HttpStatusError(
+          400,
+          'aiGradingEvalRepository is not configured. Set it in config.json.',
+        );
+      }
+
+      const { runAiGradingEval } = await import('../../ee/lib/ai-grading-eval/ai-grading-eval.js');
+      const jobSequenceId = await runAiGradingEval({
+        repository: config.aiGradingEvalRepository,
+        branch: config.aiGradingEvalBranch,
+        commit: config.aiGradingEvalCommit,
+        user: res.locals.authn_user,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'sync_news_feed') {
       const { fetchAndCacheNewsItems } = await import('../../lib/news-feed.js');
       await fetchAndCacheNewsItems();

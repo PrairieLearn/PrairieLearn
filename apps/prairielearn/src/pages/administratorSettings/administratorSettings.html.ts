@@ -215,6 +215,54 @@ export function AdministratorSettings({
             </div>
           `
         : ''}
+      ${config.devMode
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                <h2>AI grading evals</h2>
+              </div>
+              <div class="card-body">
+                <p>
+                  Clones the eval repo configured by <code>aiGradingEvalRepository</code>, scaffolds
+                  a synthetic course from its contents, uploads rubrics and submissions, and runs AI
+                  grading so the output can be reviewed in the existing AI grading UI. Dev mode
+                  only.
+                </p>
+                ${config.aiGradingEvalRepository
+                  ? html`
+                      <dl class="row mb-3">
+                        <dt class="col-sm-3">Repository</dt>
+                        <dd class="col-sm-9"><code>${config.aiGradingEvalRepository}</code></dd>
+                        <dt class="col-sm-3">Branch</dt>
+                        <dd class="col-sm-9">
+                          <code>${config.aiGradingEvalBranch ?? '(default)'}</code>
+                        </dd>
+                        <dt class="col-sm-3">Commit</dt>
+                        <dd class="col-sm-9">
+                          <code>${config.aiGradingEvalCommit ?? '(branch HEAD)'}</code>
+                        </dd>
+                      </dl>
+                      <form method="POST">
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <button class="btn btn-primary" name="__action" value="run_ai_grading_eval">
+                          Run AI grading eval
+                        </button>
+                      </form>
+                    `
+                  : html`
+                      <p class="text-muted mb-0">
+                        Set <code>aiGradingEvalRepository</code> in <code>config.json</code> to
+                        enable this action.
+                      </p>
+                    `}
+              </div>
+            </div>
+          `
+        : ''}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
