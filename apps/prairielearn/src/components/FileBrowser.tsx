@@ -559,11 +559,7 @@ function DirectoryBrowserTable({
                     ) : f.sync_warnings ? (
                       <SyncProblemButton type="warning" output={f.sync_warnings} />
                     ) : null}
-                    {f.canView ? (
-                      <a href={fileUrl}>{f.name}</a>
-                    ) : (
-                      <span>{f.name}</span>
-                    )}
+                    {f.canView ? <a href={fileUrl}>{f.name}</a> : <span>{f.name}</span>}
                   </div>
                 </td>
                 <td className="align-middle">
@@ -571,10 +567,7 @@ function DirectoryBrowserTable({
                     {isReadOnly ? null : (
                       <>
                         {f.canEdit ? (
-                          <a
-                            className="btn btn-xs btn-secondary text-nowrap"
-                            href={editFileUrl}
-                          >
+                          <a className="btn btn-xs btn-secondary text-nowrap" href={editFileUrl}>
                             <i className="fa fa-edit" />
                             <span>Edit</span>
                           </a>
@@ -672,11 +665,7 @@ function DirectoryBrowserTable({
               <tr key={`dir-${d.path}`}>
                 <td colSpan={2}>
                   <i className="fa fa-folder" />{' '}
-                  {d.canView ? (
-                    <a href={directoryUrl}>{d.name}</a>
-                  ) : (
-                    <span>{d.name}</span>
-                  )}
+                  {d.canView ? <a href={directoryUrl}>{d.name}</a> : <span>{d.name}</span>}
                 </td>
               </tr>
             );
