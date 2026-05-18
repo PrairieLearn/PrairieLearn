@@ -89,11 +89,10 @@ export async function cloneEvalRepo({
   }
 
   if (branch) {
-    const target = `origin/${branch}`;
-    job.info(`Checking out ${target}`);
-    await job.exec('git', ['reset', '--hard', target], { cwd: repoPath, env: gitEnv });
+    job.info(`Checking out origin/${branch}`);
+    await job.exec('git', ['reset', '--hard', `origin/${branch}`], { cwd: repoPath, env: gitEnv });
   } else {
-    job.info('No branch specified; using default branch HEAD as cloned');
+    job.info("No branch specified; using the repository's default branch");
   }
 
   return repoPath;

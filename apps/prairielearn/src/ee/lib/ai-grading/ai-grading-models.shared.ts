@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 
 const BASELINE_INPUT_TOKENS = 1_000;
@@ -97,6 +99,10 @@ export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
 
 export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
   (model) => model.modelId,
+);
+
+export const AiGradingModelIdSchema = z.enum(
+  AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]],
 );
 
 export const AI_GRADING_MODEL_PROVIDERS = {

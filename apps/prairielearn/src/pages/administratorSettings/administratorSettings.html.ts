@@ -1,3 +1,5 @@
+import { groupBy } from 'es-toolkit';
+
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
@@ -10,19 +12,6 @@ import { config } from '../../lib/config.js';
 import { type NewsItem } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-type AiGradingProvider = (typeof AI_GRADING_MODELS)[number]['provider'];
-type AiGradingModelEntry = (typeof AI_GRADING_MODELS)[number];
-
-function groupModelsByProvider(): [AiGradingProvider, AiGradingModelEntry[]][] {
-  const map = new Map<AiGradingProvider, AiGradingModelEntry[]>();
-  for (const m of AI_GRADING_MODELS) {
-    const list = map.get(m.provider);
-    if (list) list.push(m);
-    else map.set(m.provider, [m]);
-  }
-  return [...map.entries()];
-}
 
 export function AdministratorSettings({
   resLocals,
@@ -263,11 +252,13 @@ export function AdministratorSettings({
                             Each selected model grades every eval. Stats are reported per model so
                             results can be compared side-by-side.
                           </p>
-                          ${groupModelsByProvider().map(
+                          ${Object.entries(groupBy(AI_GRADING_MODELS, (m) => m.provider)).map(
                             ([provider, models]) => html`
                               <div class="mb-2">
                                 <div class="text-muted small text-uppercase">
-                                  ${AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+                                  ${AI_GRADING_PROVIDER_DISPLAY_NAMES[
+                                    provider as keyof typeof AI_GRADING_PROVIDER_DISPLAY_NAMES
+                                  ]}
                                 </div>
                                 ${models.map(
                                   (m) => html`

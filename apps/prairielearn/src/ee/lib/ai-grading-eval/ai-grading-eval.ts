@@ -4,6 +4,7 @@ import { config } from '../../../lib/config.js';
 import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 import { deleteAiGradingJobs } from '../ai-grading/ai-grading-util.js';
 
@@ -14,12 +15,7 @@ import { applyRubric } from './rubric.js';
 import { runGrading } from './run-grading.js';
 import { scaffoldCourse } from './scaffold-course.js';
 import { seedAiGradingCredits } from './seed-credits.js';
-import {
-  type EvalModelRun,
-  type EvalRunResult,
-  reportRunStats,
-  snapshotModelRunStats,
-} from './stats.js';
+import { type ModelRunSummary, reportRunStats, snapshotModelRunStats } from './stats.js';
 import { importSubmissions } from './submissions.js';
 
 /**
@@ -29,22 +25,18 @@ import { importSubmissions } from './submissions.js';
  * (which wipes assessment instances on the synthetic course), and writes
  * `ai_grading_jobs` rows.
  *
- * Per eval, runs AI grading once per requested model. Each model's stats
- * are snapshotted before the AQ's AI grading jobs are wiped, so the next
- * model starts from a clean slate (otherwise IQs the next model fails to
- * grade would inherit the prior model's "latest" job and skew its stats).
+ * Per eval, runs AI grading once per requested model, snapshotting stats
+ * between runs.
  */
 export async function runAiGradingEval({
   repository,
   branch,
-  commit,
   models,
   creditMilliDollars,
   user,
 }: {
   repository: string;
   branch?: string | null;
-  commit?: string | null;
   models: AiGradingModelId[];
   creditMilliDollars: number;
   user: User;
@@ -66,7 +58,6 @@ export async function runAiGradingEval({
   serverJob.executeInBackground(async (job) => {
     job.info(`Repository: ${repository}`);
     if (branch) job.info(`Branch: ${branch}`);
-    if (commit) job.info(`Commit: ${commit}`);
     job.info(`Models (${models.length}): ${models.join(', ')}`);
     job.info(`Seed credit: $${(creditMilliDollars / 1000).toFixed(2)}`);
 
@@ -93,8 +84,7 @@ export async function runAiGradingEval({
       job,
     });
 
-    const evalResults: EvalRunResult[] = [];
-    const summaries = [];
+    const summaries: ModelRunSummary[] = [];
 
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
@@ -120,7 +110,8 @@ export async function runAiGradingEval({
         job,
       });
 
-      const runs: EvalModelRun[] = [];
+      const { rubric_items } = await selectCompleteRubric(target.assessment_question.id);
+
       for (const model of models) {
         const aiGradingJobSequenceId = await runGrading({
           course: scaffold.course,
@@ -132,35 +123,27 @@ export async function runAiGradingEval({
           model_id: model,
           job,
         });
-        runs.push({ model, aiGradingJobSequenceId });
         summaries.push(
           await snapshotModelRunStats({
             evalId: loaded.entry.id,
             model,
             target,
+            rubricItems: rubric_items,
             aiGradingJobSequenceId,
             job,
           }),
         );
-        // Wipe AI grading jobs for this AQ so the next model starts from a
-        // clean slate. Otherwise, IQs that the next model fails to grade
-        // would inherit this model's grading as their "latest" job and
-        // skew the next model's classification stats.
+        // Wipe so the next model starts from a clean slate — otherwise IQs
+        // the next model fails to grade would inherit this model's grading
+        // as their "latest" job and skew its classification stats.
         await deleteAiGradingJobs({
           assessment_question_ids: [target.assessment_question.id],
           authn_user_id: user.id,
         });
       }
-
-      evalResults.push({
-        evalId: loaded.entry.id,
-        target,
-        maxPoints: loaded.entry.max_points,
-        runs,
-      });
     }
 
-    reportRunStats({ results: evalResults, summaries, job });
+    reportRunStats({ summaries, job });
 
     job.info('');
     job.info('All steps complete.');

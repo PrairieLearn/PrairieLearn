@@ -1,10 +1,11 @@
+import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { type RubricItem } from '../../../lib/db-types.js';
 import { type ServerJob } from '../../../lib/server-jobs.js';
-import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
@@ -31,19 +32,7 @@ const TimingStatsSchema = z.object({
 });
 type TimingStats = z.infer<typeof TimingStatsSchema>;
 
-export interface EvalModelRun {
-  model: AiGradingModelId;
-  aiGradingJobSequenceId: string;
-}
-
-export interface EvalRunResult {
-  evalId: string;
-  target: ResolvedTarget;
-  maxPoints: number;
-  runs: EvalModelRun[];
-}
-
-interface ModelRunSummary {
+export interface ModelRunSummary {
   evalId: string;
   model: AiGradingModelId;
   costJobs: number;
@@ -219,21 +208,22 @@ export async function snapshotModelRunStats({
   evalId,
   model,
   target,
+  rubricItems,
   aiGradingJobSequenceId,
   job,
 }: {
   evalId: string;
   model: AiGradingModelId;
   target: ResolvedTarget;
+  rubricItems: RubricItem[];
   aiGradingJobSequenceId: string;
   job: ServerJob;
 }): Promise<ModelRunSummary> {
-  const [cost, timing, general, perf, rubric] = await Promise.all([
+  const [cost, timing, general, perf] = await Promise.all([
     collectCostStats(aiGradingJobSequenceId),
     collectTimingStats(aiGradingJobSequenceId),
     calculateAiGradingStats(target.assessment_question),
     generateAssessmentAiGradingStats(target.assessment),
-    selectCompleteRubric(target.assessment_question.id),
   ]);
 
   const total = perf.total;
@@ -260,10 +250,8 @@ export async function snapshotModelRunStats({
   job.info("  Rubric-item agreement (AI matched the human's decision on each item)");
   const denom = general.submission_rubric_count;
   const descWidth =
-    rubric.rubric_items.length > 0
-      ? Math.max(...rubric.rubric_items.map((i) => i.description.length))
-      : 0;
-  for (const item of rubric.rubric_items) {
+    rubricItems.length > 0 ? Math.max(...rubricItems.map((i) => i.description.length)) : 0;
+  for (const item of rubricItems) {
     const disagree = general.rubric_stats[item.id] ?? 0;
     const agree = denom - disagree;
     const pct = denom === 0 ? '(n/a)' : `${Math.round((agree / denom) * 100)}% agree`;
@@ -316,30 +304,16 @@ function mean(vals: (number | null)[]): number | null {
 }
 
 function aggregateByModel(summaries: ModelRunSummary[]) {
-  const byModel = new Map<AiGradingModelId, ModelRunSummary[]>();
-  for (const s of summaries) {
-    const existing = byModel.get(s.model);
-    if (existing) {
-      existing.push(s);
-    } else {
-      byModel.set(s.model, [s]);
-    }
-  }
-  return [...byModel.entries()].map(([model, runs]) => {
-    const submissions = runs.reduce((a, r) => a + r.costJobs, 0);
-    const totalCost = runs.reduce((a, r) => a + r.totalCostDollars, 0);
-    const totalDuration = runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0);
-    return {
-      model,
-      submissions,
-      totalCost,
-      totalDuration,
-      accuracy: mean(runs.map((r) => r.accuracy)),
-      precision: mean(runs.map((r) => r.precision)),
-      recall: mean(runs.map((r) => r.recall)),
-      f1: mean(runs.map((r) => r.f1)),
-    };
-  });
+  return Object.entries(groupBy(summaries, (s) => s.model)).map(([model, runs]) => ({
+    model: model as AiGradingModelId,
+    submissions: runs.reduce((a, r) => a + r.costJobs, 0),
+    totalCost: runs.reduce((a, r) => a + r.totalCostDollars, 0),
+    totalDuration: runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0),
+    accuracy: mean(runs.map((r) => r.accuracy)),
+    precision: mean(runs.map((r) => r.precision)),
+    recall: mean(runs.map((r) => r.recall)),
+    f1: mean(runs.map((r) => r.f1)),
+  }));
 }
 
 /**
@@ -402,11 +376,9 @@ function renderRunWideModelTable(aggregated: ReturnType<typeof aggregateByModel>
  * completed; this is the final roll-up.
  */
 export function reportRunStats({
-  results,
   summaries,
   job,
 }: {
-  results: EvalRunResult[];
   summaries: ModelRunSummary[];
   job: ServerJob;
 }): void {
@@ -415,24 +387,23 @@ export function reportRunStats({
     return;
   }
 
+  const byEval = groupBy(summaries, (s) => s.evalId);
+
   job.info('');
   job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
-  for (const result of results) {
-    const evalSummaries = summaries.filter((s) => s.evalId === result.evalId);
-    if (evalSummaries.length === 0) continue;
+  for (const [evalId, evalSummaries] of Object.entries(byEval)) {
     job.info('');
-    job.info(`  ${result.evalId}`);
+    job.info(`  ${evalId}`);
     for (const line of renderPerEvalModelTable(evalSummaries)) {
       job.info(line);
     }
   }
 
   const aggregated = aggregateByModel(summaries);
-  const distinctEvals = new Set(summaries.map((s) => s.evalId)).size;
 
   job.info('');
   job.info(`═══ Run-wide totals ${'═'.repeat(60)}`);
-  job.info(`  Evals    ${distinctEvals}`);
+  job.info(`  Evals    ${Object.keys(byEval).length}`);
   job.info(`  Models   ${aggregated.length}`);
   job.info('');
   for (const line of renderRunWideModelTable(aggregated)) {
