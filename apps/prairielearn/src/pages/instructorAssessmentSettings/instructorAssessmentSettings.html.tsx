@@ -188,6 +188,7 @@ export function InstructorAssessmentSettings({
   const [assessment, setAssessment] = useState(initialAssessment);
   const [zonePointsRange, setZonePointsRange] = useState(initialZonePointsRange);
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
+  const [typeChangeMessage, setTypeChangeMessage] = useState<string | null>(null);
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
@@ -212,6 +213,8 @@ export function InstructorAssessmentSettings({
           setZonePointsRange={setZonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
           questionSharingEnabled={questionSharingEnabled}
+          typeChangeMessage={typeChangeMessage}
+          setTypeChangeMessage={setTypeChangeMessage}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -880,10 +883,14 @@ function InstructorAssessmentSettingsInner({
   setZonePointsRange,
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
+  typeChangeMessage,
+  setTypeChangeMessage,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;
+  typeChangeMessage: string | null;
+  setTypeChangeMessage: (message: string | null) => void;
 }) {
   const trpc = useTRPC();
   const copyModalState = useModalState<true>();
@@ -1041,6 +1048,7 @@ function InstructorAssessmentSettingsInner({
             setAssessment(result.assessment);
             setZonePointsRange(result.zonePointsRange);
             setCurrentOrigHash(result.origHash);
+            setTypeChangeMessage(`Assessment type changed to ${result.assessment.type}.`);
             typeChangeModalState.onHide();
           }}
         />
@@ -1092,6 +1100,11 @@ function InstructorAssessmentSettingsInner({
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
         <div className="container d-flex flex-column gap-3 py-3">
+          {typeChangeMessage && (
+            <Alert variant="success" dismissible onClose={() => setTypeChangeMessage(null)}>
+              {typeChangeMessage}
+            </Alert>
+          )}
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">General</h2>
