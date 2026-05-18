@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { type Response, Router } from 'express';
@@ -202,24 +203,15 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
-async function* readWebStream(stream: ReadableStream<string>) {
-  const reader = stream.getReader();
-  try {
-    while (true) {
-      const result = await reader.read();
-      if (result.done) return;
-      yield result.value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
 function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
   Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
-  Readable.from(readWebStream(stream)).pipe(res);
+  // `Readable.fromWeb` accepts node:stream/web's `ReadableStream`, but the `ai`
+  // package returns the global (lib.dom) `ReadableStream`. They are runtime-
+  // compatible (Node implements WHATWG streams) but TypeScript treats them as
+  // nominally distinct classes, so a cast is required.
+  Readable.fromWeb(stream as unknown as NodeReadableStream<string>).pipe(res);
 }
 
 router.use(

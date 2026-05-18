@@ -6,12 +6,43 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.
 import { getAppError } from '../../../../lib/client/errors.js';
 import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
 import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
-import { useTRPC } from '../../../../trpc/course/context.js';
+
+import { useTRPC } from './aiDraftFilesTrpc.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
 
 export interface SelectedQuestionFileEditorHandle {
   discardChanges: () => void;
+}
+
+export function SelectedQuestionFileBreadcrumb({
+  filePath,
+  allFilesHref,
+  onShowAllFiles,
+}: {
+  filePath: string;
+  allFilesHref: string;
+  onShowAllFiles: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Selected file breadcrumb"
+      className="d-flex align-items-baseline min-width-0 font-monospace"
+    >
+      <a
+        href={allFilesHref}
+        className="flex-shrink-0"
+        onClick={(event) => {
+          event.preventDefault();
+          onShowAllFiles();
+        }}
+      >
+        All files
+      </a>
+      <span className="mx-1 text-muted">/</span>
+      <span className="text-truncate">{filePath}</span>
+    </nav>
+  );
 }
 
 function getSaveStatus({
@@ -36,6 +67,7 @@ export function SelectedQuestionFileEditor({
   selectedFile,
   questionId,
   isGenerating,
+  allFilesHref,
   onShowAllFiles,
   onSaved,
   onHasChangesChange,
@@ -44,6 +76,7 @@ export function SelectedQuestionFileEditor({
   selectedFile: SelectedQuestionFile;
   questionId: string;
   isGenerating: boolean;
+  allFilesHref: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
   onHasChangesChange?: (hasChanges: boolean) => void;
@@ -99,17 +132,14 @@ export function SelectedQuestionFileEditor({
     <div className="selected-file-editor h-100 d-flex flex-column">
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <div className="font-monospace text-truncate">{selectedFile.path}</div>
+          <SelectedQuestionFileBreadcrumb
+            filePath={selectedFile.path}
+            allFilesHref={allFilesHref}
+            onShowAllFiles={onShowAllFiles}
+          />
           <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>{saveStatus}</div>
         </div>
         <div className="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={onShowAllFiles}
-          >
-            All files
-          </button>
           <form className="mb-0" onSubmit={handleSubmit}>
             <button
               type="submit"

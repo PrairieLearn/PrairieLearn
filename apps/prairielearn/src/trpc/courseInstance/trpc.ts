@@ -2,12 +2,14 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
 import { handleTrpcError } from '../../lib/trpc.js';
 
+import { aiDraftFilesRouter } from './ai-draft-files.js';
 import { createContext, t } from './init.js';
 import { instanceAdminSettingsRouter } from './instance-admin-settings.js';
 import { qtiImportRouter } from './qti-import.js';
 import { studentLabelsRouter } from './student-labels.js';
 
 const courseInstanceRouter = t.router({
+  aiDraftFiles: aiDraftFilesRouter,
   qtiImport: qtiImportRouter,
   instanceAdminSettings: instanceAdminSettingsRouter,
   studentLabels: studentLabelsRouter,

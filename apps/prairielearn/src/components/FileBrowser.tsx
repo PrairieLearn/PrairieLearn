@@ -29,7 +29,7 @@ import { encodePath } from '../lib/uri-util.js';
 import { PageLayout } from './PageLayout.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 
-interface FileInfo {
+export interface FileInfo {
   id: number;
   name: string;
   path: string;
@@ -47,18 +47,18 @@ interface FileInfo {
   contents?: string | null;
 }
 
-interface DirectoryEntry {
+export interface DirectoryEntry {
   id: string | number;
   name: string;
   path: string;
   canView: boolean;
 }
 
-interface DirectoryEntryDirectory extends DirectoryEntry {
+export interface DirectoryEntryDirectory extends DirectoryEntry {
   isFile: false;
 }
 
-interface DirectoryEntryFile extends DirectoryEntry {
+export interface DirectoryEntryFile extends DirectoryEntry {
   isFile: true;
   dir: string;
   canEdit: boolean;
@@ -71,17 +71,9 @@ interface DirectoryEntryFile extends DirectoryEntry {
   uuid: string | null;
 }
 
-interface DirectoryListings {
+export interface DirectoryListings {
   dirs: DirectoryEntryDirectory[];
   files: DirectoryEntryFile[];
-}
-
-interface DraftQuestionDirectoryBrowserMode {
-  editorUrl: string;
-  fileActionUrl: string;
-  questionRootPath: string;
-  selectedDirectory: string | null;
-  disabledInfoJsonReason: string;
 }
 
 type FileUploadInfo = {
@@ -110,7 +102,7 @@ interface FileRenameInfo {
   dir: string;
 }
 
-async function browseDirectory({
+export async function browseDirectory({
   paths,
 }: {
   paths: InstructorFilePaths;
@@ -170,7 +162,7 @@ async function browseDirectory({
   };
 }
 
-async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
+export async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {
@@ -272,28 +264,6 @@ export async function createFileBrowser({
       `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
     );
   }
-}
-
-export async function createDirectoryBrowserHtml({
-  paths,
-  isReadOnly,
-  csrfToken,
-  mode,
-}: {
-  paths: InstructorFilePaths;
-  isReadOnly: boolean;
-  csrfToken: string;
-  mode?: DraftQuestionDirectoryBrowserMode;
-}): Promise<HtmlSafeString> {
-  return renderHtml(
-    <DirectoryBrowser
-      paths={paths}
-      directoryListings={await browseDirectory({ paths })}
-      isReadOnly={isReadOnly}
-      csrfToken={csrfToken}
-      mode={mode}
-    />,
-  );
 }
 
 export async function createFilePreviewHtml({
@@ -494,22 +464,10 @@ function FileBrowserActions({
 function DirectoryBrowserActions({
   paths,
   csrfToken,
-  mode,
 }: {
   paths: InstructorFilePaths;
   csrfToken: string;
-  mode?: DraftQuestionDirectoryBrowserMode;
 }) {
-  const formAction = mode?.fileActionUrl;
-  const redirectUrl =
-    mode == null
-      ? undefined
-      : `${mode.editorUrl}?${new URLSearchParams(
-          mode.selectedDirectory == null
-            ? { tab: 'all-files' }
-            : { tab: 'all-files', dir: mode.selectedDirectory },
-        ).toString()}`;
-
   return (
     <div className="d-flex flex-wrap gap-2">
       {paths.specialDirs.map((d) => (
@@ -526,8 +484,6 @@ function DirectoryBrowserActions({
           data-bs-content={FileUploadForm({
             file: { id: `New${d.label}`, info: d.info, working_path: d.path },
             csrfToken,
-            action: formAction,
-            redirectUrl,
           }).toString()}
         >
           <i className="fa fa-plus" />
@@ -546,83 +502,12 @@ function DirectoryBrowserActions({
         data-bs-content={FileUploadForm({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
-          action: formAction,
-          redirectUrl,
         }).toString()}
       >
         <i className="fa fa-plus" />
         <span>Add new file</span>
       </button>
     </div>
-  );
-}
-
-function DirectoryBrowser({
-  paths,
-  directoryListings,
-  isReadOnly,
-  csrfToken,
-  mode,
-}: {
-  paths: InstructorFilePaths;
-  directoryListings: DirectoryListings;
-  isReadOnly: boolean;
-  csrfToken: string;
-  mode?: DraftQuestionDirectoryBrowserMode;
-}) {
-  return (
-    <>
-      {mode != null ? (
-        <nav aria-label="File browser breadcrumb" className="mb-2">
-          <ol className="breadcrumb mb-0">
-            {paths.branch
-              .filter((dir) => dir.canView)
-              .map((dir, index, dirs) => {
-                const selectedDirectory = run(() => {
-                  const relativePath = path.posix.relative(
-                    mode.questionRootPath,
-                    dir.path.split(path.sep).join('/'),
-                  );
-                  return relativePath === '' ? null : relativePath;
-                });
-                const directoryUrl = `${mode.editorUrl}?${new URLSearchParams(
-                  selectedDirectory == null
-                    ? { tab: 'all-files' }
-                    : { tab: 'all-files', dir: selectedDirectory },
-                ).toString()}`;
-
-                return (
-                  <li
-                    key={dir.path}
-                    className={`breadcrumb-item ${index === dirs.length - 1 ? 'active' : ''}`}
-                    aria-current={index === dirs.length - 1 ? 'page' : undefined}
-                  >
-                    {index === dirs.length - 1 ? (
-                      dir.name
-                    ) : (
-                      <a href={directoryUrl} data-selected-directory-path={selectedDirectory ?? ''}>
-                        {dir.name}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-          </ol>
-        </nav>
-      ) : null}
-      {paths.hasEditPermission && !isReadOnly ? (
-        <div className="d-flex justify-content-end mb-2">
-          <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} mode={mode} />
-        </div>
-      ) : null}
-      <DirectoryBrowserTable
-        paths={paths}
-        directoryListings={directoryListings}
-        isReadOnly={isReadOnly}
-        csrfToken={csrfToken}
-        mode={mode}
-      />
-    </>
   );
 }
 
@@ -644,24 +529,12 @@ function DirectoryBrowserTable({
   directoryListings,
   isReadOnly,
   csrfToken,
-  mode,
 }: {
   paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
   isReadOnly: boolean;
   csrfToken: string;
-  mode?: DraftQuestionDirectoryBrowserMode;
 }) {
-  const formAction = mode?.fileActionUrl;
-  const redirectUrl =
-    mode == null
-      ? undefined
-      : `${mode.editorUrl}?${new URLSearchParams(
-          mode.selectedDirectory == null
-            ? { tab: 'all-files' }
-            : { tab: 'all-files', dir: mode.selectedDirectory },
-        ).toString()}`;
-
   return (
     <div className="table-responsive">
       <table className="table table-sm table-hover" aria-label="Directories and files">
@@ -673,27 +546,8 @@ function DirectoryBrowserTable({
         </thead>
         <tbody>
           {directoryListings.files.map((f) => {
-            const selectedFilePath =
-              mode == null
-                ? null
-                : path.posix.relative(mode.questionRootPath, f.path.split(path.sep).join('/'));
-            const fileDisabledReason =
-              mode != null && path.posix.normalize(selectedFilePath ?? '') === 'info.json'
-                ? mode.disabledInfoJsonReason
-                : null;
-            const fileUrl =
-              mode != null
-                ? `${mode.editorUrl}?${new URLSearchParams({
-                    file: selectedFilePath ?? '',
-                    tab: 'all-files',
-                  }).toString()}`
-                : getDefaultFileViewUrl({ paths, filePath: f.path });
-            const editFileUrl =
-              mode != null ? fileUrl : `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
-            const canEdit = f.canEdit && fileDisabledReason == null;
-            const canUpload = f.canUpload && fileDisabledReason == null;
-            const canRename = f.canRename && fileDisabledReason == null;
-            const canDelete = f.canDelete && fileDisabledReason == null;
+            const fileUrl = getDefaultFileViewUrl({ paths, filePath: f.path });
+            const editFileUrl = `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
 
             return (
               <tr key={`file-${f.path}`}>
@@ -705,35 +559,27 @@ function DirectoryBrowserTable({
                     ) : f.sync_warnings ? (
                       <SyncProblemButton type="warning" output={f.sync_warnings} />
                     ) : null}
-                    {f.canView && fileDisabledReason == null ? (
-                      <a href={fileUrl} data-selected-file-path={selectedFilePath ?? undefined}>
-                        {f.name}
-                      </a>
+                    {f.canView ? (
+                      <a href={fileUrl}>{f.name}</a>
                     ) : (
-                      <span
-                        className={fileDisabledReason ? 'text-muted' : undefined}
-                        title={fileDisabledReason ?? undefined}
-                      >
-                        {f.name}
-                      </span>
+                      <span>{f.name}</span>
                     )}
                   </div>
                 </td>
                 <td className="align-middle">
-                  <div className="d-flex gap-2">
+                  <div className="d-flex gap-2 file-browser-row-actions">
                     {isReadOnly ? null : (
                       <>
-                        {canEdit ? (
+                        {f.canEdit ? (
                           <a
                             className="btn btn-xs btn-secondary text-nowrap"
                             href={editFileUrl}
-                            data-selected-file-path={selectedFilePath ?? undefined}
                           >
                             <i className="fa fa-edit" />
                             <span>Edit</span>
                           </a>
                         ) : (
-                          <span title={fileDisabledReason ?? undefined}>
+                          <span>
                             <button
                               type="button"
                               className="btn btn-xs btn-secondary text-nowrap"
@@ -756,10 +602,8 @@ function DirectoryBrowserTable({
                           data-bs-content={FileUploadForm({
                             file: f,
                             csrfToken,
-                            action: formAction,
-                            redirectUrl,
                           }).toString()}
-                          disabled={!canUpload}
+                          disabled={!f.canUpload}
                         >
                           <i className="fa fa-arrow-up" />
                           <span>Upload</span>
@@ -789,11 +633,9 @@ function DirectoryBrowserTable({
                             file: f,
                             csrfToken,
                             isViewingFile: false,
-                            action: formAction,
-                            redirectUrl,
                           }).toString()}
                           data-testid="rename-file-button"
-                          disabled={!canRename}
+                          disabled={!f.canRename}
                         >
                           <i className="fa fa-i-cursor" />
                           <span>Rename</span>
@@ -809,11 +651,9 @@ function DirectoryBrowserTable({
                           data-bs-content={FileDeleteForm({
                             file: f,
                             csrfToken,
-                            action: formAction,
-                            redirectUrl,
                           }).toString()}
                           data-testid="delete-file-button"
-                          disabled={!canDelete}
+                          disabled={!f.canDelete}
                         >
                           <i className="far fa-trash-alt" />
                           <span>Delete</span>
@@ -826,36 +666,14 @@ function DirectoryBrowserTable({
             );
           })}
           {directoryListings.dirs.map((d) => {
-            const selectedDirectory =
-              mode == null
-                ? null
-                : run(() => {
-                    const relativePath = path.posix.relative(
-                      mode.questionRootPath,
-                      d.path.split(path.sep).join('/'),
-                    );
-                    return relativePath === '' ? null : relativePath;
-                  });
-            const directoryUrl =
-              mode == null
-                ? getDefaultFileViewUrl({ paths, filePath: d.path })
-                : `${mode.editorUrl}?${new URLSearchParams(
-                    selectedDirectory == null
-                      ? { tab: 'all-files' }
-                      : { tab: 'all-files', dir: selectedDirectory },
-                  ).toString()}`;
+            const directoryUrl = getDefaultFileViewUrl({ paths, filePath: d.path });
 
             return (
               <tr key={`dir-${d.path}`}>
                 <td colSpan={2}>
                   <i className="fa fa-folder" />{' '}
                   {d.canView ? (
-                    <a
-                      href={directoryUrl}
-                      data-selected-directory-path={selectedDirectory ?? undefined}
-                    >
-                      {d.name}
-                    </a>
+                    <a href={directoryUrl}>{d.name}</a>
                   ) : (
                     <span>{d.name}</span>
                   )}
@@ -869,7 +687,7 @@ function DirectoryBrowserTable({
   );
 }
 
-function FileContentPreview({
+export function FileContentPreview({
   paths,
   fileInfo,
 }: {
@@ -903,7 +721,7 @@ function FileContentPreview({
   return html`<div class="alert alert-warning" role="alert">No preview available.</div>`;
 }
 
-function FileUploadForm({
+export function FileUploadForm({
   file,
   csrfToken,
   action,
@@ -957,7 +775,7 @@ function FileUploadForm({
   `;
 }
 
-function FileDeleteForm({
+export function FileDeleteForm({
   file,
   csrfToken,
   action,
@@ -987,7 +805,7 @@ function FileDeleteForm({
   `;
 }
 
-function FileRenameForm({
+export function FileRenameForm({
   file,
   csrfToken,
   isViewingFile,

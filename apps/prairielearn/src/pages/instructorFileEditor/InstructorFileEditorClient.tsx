@@ -100,6 +100,47 @@ function UuidChangeModalContent({
   );
 }
 
+/**
+ * Keeps a legacy server-rendered Bootstrap collapse-toggle button's label and
+ * aria-expanded in sync with the collapse's state. The button label lives on a
+ * child element when `labelId` is provided, otherwise on the button itself.
+ */
+function useCollapseLabelSync({
+  collapseId,
+  buttonId,
+  labelId,
+  showLabel,
+  hideLabel,
+}: {
+  collapseId: string;
+  buttonId: string;
+  labelId?: string;
+  showLabel: string;
+  hideLabel: string;
+}) {
+  useEffect(() => {
+    const collapse = document.getElementById(collapseId);
+    const button = document.getElementById(buttonId);
+    const labelTarget = labelId ? document.getElementById(labelId) : button;
+    if (!collapse || !button || !labelTarget) return;
+
+    const handleHide = () => {
+      labelTarget.textContent = showLabel;
+      button.ariaExpanded = 'false';
+    };
+    const handleShow = () => {
+      labelTarget.textContent = hideLabel;
+      button.ariaExpanded = 'true';
+    };
+    collapse.addEventListener('hide.bs.collapse', handleHide);
+    collapse.addEventListener('show.bs.collapse', handleShow);
+    return () => {
+      collapse.removeEventListener('hide.bs.collapse', handleHide);
+      collapse.removeEventListener('show.bs.collapse', handleShow);
+    };
+  }, [collapseId, buttonId, labelId, showLabel, hideLabel]);
+}
+
 function getCursorOffsetFromCursorPosition(position: ace.Ace.Point, lines: string[]): number {
   const cursorOffset = lines.slice(0, position.row).reduce((acc, line) => acc + line.length + 1, 0);
   return cursorOffset + position.column;
@@ -221,19 +262,6 @@ export function InstructorFileEditorClient({
     }
   }, []);
 
-  const updateHiddenInput = useCallback((nextContents: string) => {
-    const inputContentsElement = document.querySelector<HTMLInputElement>(
-      'input[name=file_edit_contents]',
-    );
-    if (inputContentsElement) {
-      inputContentsElement.value = b64EncodeUnicode(nextContents);
-    }
-  }, []);
-
-  useEffect(() => {
-    updateHiddenInput(contents);
-  }, [contents, updateHiddenInput]);
-
   // External page controls are still server-rendered, so this effect wires them to React state.
   useEffect(() => {
     const saveElement = document.querySelector<HTMLButtonElement>('#file-editor-save-button');
@@ -279,50 +307,19 @@ export function InstructorFileEditorClient({
   }, []);
 
   // These controls live outside the hydrated component in the legacy page shell.
-  useEffect(() => {
-    const showDetail = document.getElementById('job-sequence-results');
-    const showDetailButton = document.getElementById('job-sequence-results-button');
-    if (showDetail && showDetailButton) {
-      const handleHide = () => {
-        showDetailButton.textContent = 'Show detail';
-        showDetailButton.ariaExpanded = 'false';
-      };
-      const handleShow = () => {
-        showDetailButton.textContent = 'Hide detail';
-        showDetailButton.ariaExpanded = 'true';
-      };
-      showDetail.addEventListener('hide.bs.collapse', handleHide);
-      showDetail.addEventListener('show.bs.collapse', handleShow);
-
-      return () => {
-        showDetail.removeEventListener('hide.bs.collapse', handleHide);
-        showDetail.removeEventListener('show.bs.collapse', handleShow);
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    const helpBox = document.getElementById('help');
-    const helpButton = document.getElementById('help-button');
-    const helpButtonLabel = document.getElementById('help-button-label');
-    if (helpBox && helpButton && helpButtonLabel) {
-      const handleHide = () => {
-        helpButtonLabel.textContent = 'Show help';
-        helpButton.ariaExpanded = 'false';
-      };
-      const handleShow = () => {
-        helpButtonLabel.textContent = 'Hide help';
-        helpButton.ariaExpanded = 'true';
-      };
-      helpBox.addEventListener('hide.bs.collapse', handleHide);
-      helpBox.addEventListener('show.bs.collapse', handleShow);
-
-      return () => {
-        helpBox.removeEventListener('hide.bs.collapse', handleHide);
-        helpBox.removeEventListener('show.bs.collapse', handleShow);
-      };
-    }
-  }, []);
+  useCollapseLabelSync({
+    collapseId: 'job-sequence-results',
+    buttonId: 'job-sequence-results-button',
+    showLabel: 'Show detail',
+    hideLabel: 'Hide detail',
+  });
+  useCollapseLabelSync({
+    collapseId: 'help',
+    buttonId: 'help-button',
+    labelId: 'help-button-label',
+    showLabel: 'Show help',
+    hideLabel: 'Hide help',
+  });
 
   useEffect(() => {
     if (editorData.aceMode !== 'ace/mode/json') return;
@@ -371,14 +368,21 @@ export function InstructorFileEditorClient({
 
   const discardDraft = () => window.location.reload();
 
-  const confirmSave = async (event: ReactMouseEvent<HTMLButtonElement>) => {
+  const confirmSave = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const restoredContents = getContentsWithRestoredUuid(contents, editorData);
     const modalElement = document.getElementById('save-confirmation-modal');
     if (modalElement) getBootstrap().Modal.getOrCreateInstance(modalElement).hide();
     bypassNextSaveCheckRef.current = true;
     setContents(restoredContents);
-    updateHiddenInput(restoredContents);
+    // The legacy save flow submits the surrounding server-rendered form via the
+    // legacy button-click below. We synchronously write the restored contents
+    // into the hidden input so the submission reflects the latest value — the
+    // pending setContents above won't commit before the click fires.
+    const inputElement = document.querySelector<HTMLInputElement>(
+      'input[name=file_edit_contents]',
+    );
+    if (inputElement) inputElement.value = b64EncodeUnicode(restoredContents);
     document.querySelector<HTMLButtonElement>('#file-editor-save-button')?.click();
   };
 
