@@ -890,6 +890,7 @@ function testUploadFile(params: {
       }
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      locals.form_action_url = getFormActionUrl($, params.url);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -913,7 +914,7 @@ function testUploadFile(params: {
     });
   });
 
-  describe(`POST to ${params.url} with action upload_file`, function () {
+  describe(`POST to the form action from ${params.url} with action upload_file`, function () {
     it('should load successfully', async () => {
       const formData = new FormData();
       formData.append('__action', 'upload_file');
@@ -928,7 +929,7 @@ function testUploadFile(params: {
         assert.fail('found neither file_path nor working_path');
       }
 
-      const res = await fetch(params.url, { method: 'POST', body: formData });
+      const res = await fetch(locals.form_action_url, { method: 'POST', body: formData });
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
     });
@@ -972,6 +973,7 @@ function testRenameFile(params: {
       elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      locals.form_action_url = getFormActionUrl($, params.url);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -992,9 +994,9 @@ function testRenameFile(params: {
     });
   });
 
-  describe(`POST to ${params.url} with action rename_file`, function () {
+  describe(`POST to the form action from ${params.url} with action rename_file`, function () {
     it('should load successfully', async () => {
-      const res = await fetch(params.url, {
+      const res = await fetch(locals.form_action_url, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'rename_file',
@@ -1024,6 +1026,7 @@ function testDeleteFile(params: { url: string; path: string }) {
       elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      locals.form_action_url = getFormActionUrl($, params.url);
       // __csrf_token
       elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -1039,9 +1042,9 @@ function testDeleteFile(params: { url: string; path: string }) {
     });
   });
 
-  describe(`POST to ${params.url} with action delete_file`, function () {
+  describe(`POST to the form action from ${params.url} with action delete_file`, function () {
     it('should load successfully', async () => {
-      const res = await fetch(params.url, {
+      const res = await fetch(locals.form_action_url, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'delete_file',
@@ -1054,4 +1057,11 @@ function testDeleteFile(params: { url: string; path: string }) {
   });
 
   pullAndVerifyFileNotInDev(params.path);
+}
+
+function getFormActionUrl($: cheerio.CheerioAPI, fallbackUrl: string) {
+  const form = $('form');
+  assert.lengthOf(form, 1);
+  const action = form.attr('action');
+  return action == null ? fallbackUrl : new URL(action, fallbackUrl).toString();
 }

@@ -127,7 +127,16 @@ export function SelectedQuestionFileEditor({
         readOnly={isGenerating}
         className="selected-file-editor-ace flex-grow-1"
         onChange={setContents}
-        onReady={(editor) => editor.getSession().setTabSize(2)}
+        onReady={(editor) => {
+          editor.getSession().setTabSize(2);
+          if (selectedFile.lintHtmlMustache) {
+            document.dispatchEvent(
+              new CustomEvent('pl:html-mustache-linter-attach', {
+                detail: { editor },
+              }),
+            );
+          }
+        }}
       />
     </div>
   );

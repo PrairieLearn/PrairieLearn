@@ -76,18 +76,12 @@ interface DirectoryListings {
   files: DirectoryEntryFile[];
 }
 
-interface DirectoryBrowserOptions {
-  fileViewBaseUrl?: string;
-  fileViewUrl?: (file: DirectoryEntryFile) => string;
-  fileViewAttributes?: (file: DirectoryEntryFile) => Record<string, string>;
-  fileViewDisabledReason?: (file: DirectoryEntryFile) => string | null;
-  formAction?: string;
-  successfulActionRedirectUrl?: string;
-  directoryUrl?: (directoryPath: string) => string;
-  directoryAttributes?: (directoryPath: string) => Record<string, string>;
-  editFileUrl?: (file: DirectoryEntryFile) => string;
-  editFileAttributes?: (file: DirectoryEntryFile) => Record<string, string>;
-  editFileDisabledReason?: (file: DirectoryEntryFile) => string | null;
+interface DraftQuestionDirectoryBrowserMode {
+  editorUrl: string;
+  fileActionUrl: string;
+  questionRootPath: string;
+  selectedDirectory: string | null;
+  disabledInfoJsonReason: string;
 }
 
 type FileUploadInfo = {
@@ -284,12 +278,12 @@ export async function createDirectoryBrowserHtml({
   paths,
   isReadOnly,
   csrfToken,
-  options,
+  mode,
 }: {
   paths: InstructorFilePaths;
   isReadOnly: boolean;
   csrfToken: string;
-  options?: DirectoryBrowserOptions;
+  mode?: DraftQuestionDirectoryBrowserMode;
 }): Promise<HtmlSafeString> {
   return renderHtml(
     <DirectoryBrowser
@@ -297,7 +291,7 @@ export async function createDirectoryBrowserHtml({
       directoryListings={await browseDirectory({ paths })}
       isReadOnly={isReadOnly}
       csrfToken={csrfToken}
-      options={options}
+      mode={mode}
     />,
   );
 }
@@ -500,13 +494,21 @@ function FileBrowserActions({
 function DirectoryBrowserActions({
   paths,
   csrfToken,
-  options,
+  mode,
 }: {
   paths: InstructorFilePaths;
   csrfToken: string;
-  options?: DirectoryBrowserOptions;
+  mode?: DraftQuestionDirectoryBrowserMode;
 }) {
-  const formAction = getFormAction({ paths, options });
+  const formAction = mode?.fileActionUrl;
+  const redirectUrl =
+    mode == null
+      ? undefined
+      : `${mode.editorUrl}?${new URLSearchParams(
+          mode.selectedDirectory == null
+            ? { tab: 'all-files' }
+            : { tab: 'all-files', dir: mode.selectedDirectory },
+        ).toString()}`;
 
   return (
     <div className="d-flex flex-wrap gap-2">
@@ -525,7 +527,7 @@ function DirectoryBrowserActions({
             file: { id: `New${d.label}`, info: d.info, working_path: d.path },
             csrfToken,
             action: formAction,
-            redirectUrl: options?.successfulActionRedirectUrl,
+            redirectUrl,
           }).toString()}
         >
           <i className="fa fa-plus" />
@@ -545,7 +547,7 @@ function DirectoryBrowserActions({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
           action: formAction,
-          redirectUrl: options?.successfulActionRedirectUrl,
+          redirectUrl,
         }).toString()}
       >
         <i className="fa fa-plus" />
@@ -560,45 +562,57 @@ function DirectoryBrowser({
   directoryListings,
   isReadOnly,
   csrfToken,
-  options,
+  mode,
 }: {
   paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
   isReadOnly: boolean;
   csrfToken: string;
-  options?: DirectoryBrowserOptions;
+  mode?: DraftQuestionDirectoryBrowserMode;
 }) {
   return (
     <>
-      {options?.directoryUrl ? (
+      {mode != null ? (
         <nav aria-label="File browser breadcrumb" className="mb-2">
           <ol className="breadcrumb mb-0">
             {paths.branch
               .filter((dir) => dir.canView)
-              .map((dir, index, dirs) => (
-                <li
-                  key={dir.path}
-                  className={`breadcrumb-item ${index === dirs.length - 1 ? 'active' : ''}`}
-                  aria-current={index === dirs.length - 1 ? 'page' : undefined}
-                >
-                  {index === dirs.length - 1 ? (
-                    dir.name
-                  ) : (
-                    <a
-                      href={options.directoryUrl?.(dir.path)}
-                      {...options.directoryAttributes?.(dir.path)}
-                    >
-                      {dir.name}
-                    </a>
-                  )}
-                </li>
-              ))}
+              .map((dir, index, dirs) => {
+                const selectedDirectory = run(() => {
+                  const relativePath = path.posix.relative(
+                    mode.questionRootPath,
+                    dir.path.split(path.sep).join('/'),
+                  );
+                  return relativePath === '' ? null : relativePath;
+                });
+                const directoryUrl = `${mode.editorUrl}?${new URLSearchParams(
+                  selectedDirectory == null
+                    ? { tab: 'all-files' }
+                    : { tab: 'all-files', dir: selectedDirectory },
+                ).toString()}`;
+
+                return (
+                  <li
+                    key={dir.path}
+                    className={`breadcrumb-item ${index === dirs.length - 1 ? 'active' : ''}`}
+                    aria-current={index === dirs.length - 1 ? 'page' : undefined}
+                  >
+                    {index === dirs.length - 1 ? (
+                      dir.name
+                    ) : (
+                      <a href={directoryUrl} data-selected-directory-path={selectedDirectory ?? ''}>
+                        {dir.name}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
           </ol>
         </nav>
       ) : null}
       {paths.hasEditPermission && !isReadOnly ? (
         <div className="d-flex justify-content-end mb-2">
-          <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} options={options} />
+          <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} mode={mode} />
         </div>
       ) : null}
       <DirectoryBrowserTable
@@ -606,39 +620,23 @@ function DirectoryBrowser({
         directoryListings={directoryListings}
         isReadOnly={isReadOnly}
         csrfToken={csrfToken}
-        options={options}
+        mode={mode}
       />
     </>
   );
 }
 
-function getFileViewUrl({
+function getDefaultFileViewUrl({
   paths,
-  fileViewBaseUrl,
   filePath,
 }: {
   paths: InstructorFilePaths;
-  fileViewBaseUrl: string | undefined;
   filePath: string;
 }) {
-  return `${fileViewBaseUrl ?? `${paths.urlPrefix}/file_view`}/${encodePath(filePath)}`;
-}
-
-function getFormAction({
-  paths,
-  options,
-}: {
-  paths: InstructorFilePaths;
-  options?: DirectoryBrowserOptions;
-}) {
-  return (
-    options?.formAction ??
-    getFileViewUrl({
-      paths,
-      fileViewBaseUrl: options?.fileViewBaseUrl,
-      filePath: paths.workingPathRelativeToCourse,
-    })
-  );
+  const encodedPath = encodePath(filePath);
+  return encodedPath === ''
+    ? `${paths.urlPrefix}/file_view`
+    : `${paths.urlPrefix}/file_view/${encodedPath}`;
 }
 
 function DirectoryBrowserTable({
@@ -646,15 +644,23 @@ function DirectoryBrowserTable({
   directoryListings,
   isReadOnly,
   csrfToken,
-  options,
+  mode,
 }: {
   paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
   isReadOnly: boolean;
   csrfToken: string;
-  options?: DirectoryBrowserOptions;
+  mode?: DraftQuestionDirectoryBrowserMode;
 }) {
-  const formAction = getFormAction({ paths, options });
+  const formAction = mode?.fileActionUrl;
+  const redirectUrl =
+    mode == null
+      ? undefined
+      : `${mode.editorUrl}?${new URLSearchParams(
+          mode.selectedDirectory == null
+            ? { tab: 'all-files' }
+            : { tab: 'all-files', dir: mode.selectedDirectory },
+        ).toString()}`;
 
   return (
     <div className="table-responsive">
@@ -667,12 +673,24 @@ function DirectoryBrowserTable({
         </thead>
         <tbody>
           {directoryListings.files.map((f) => {
+            const selectedFilePath =
+              mode == null
+                ? null
+                : path.posix.relative(mode.questionRootPath, f.path.split(path.sep).join('/'));
+            const fileDisabledReason =
+              mode != null && path.posix.normalize(selectedFilePath ?? '') === 'info.json'
+                ? mode.disabledInfoJsonReason
+                : null;
+            const fileUrl =
+              mode != null
+                ? `${mode.editorUrl}?${new URLSearchParams({
+                    file: selectedFilePath ?? '',
+                    tab: 'all-files',
+                  }).toString()}`
+                : getDefaultFileViewUrl({ paths, filePath: f.path });
             const editFileUrl =
-              options?.editFileUrl?.(f) ?? `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
-            const editFileAttributes = options?.editFileAttributes?.(f) ?? {};
-            const fileViewDisabledReason = options?.fileViewDisabledReason?.(f) ?? null;
-            const editFileDisabledReason = options?.editFileDisabledReason?.(f) ?? null;
-            const canEdit = f.canEdit && editFileDisabledReason == null;
+              mode != null ? fileUrl : `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
+            const canEdit = f.canEdit && fileDisabledReason == null;
 
             return (
               <tr key={`file-${f.path}`}>
@@ -684,24 +702,14 @@ function DirectoryBrowserTable({
                     ) : f.sync_warnings ? (
                       <SyncProblemButton type="warning" output={f.sync_warnings} />
                     ) : null}
-                    {f.canView && fileViewDisabledReason == null ? (
-                      <a
-                        href={
-                          options?.fileViewUrl?.(f) ??
-                          getFileViewUrl({
-                            paths,
-                            fileViewBaseUrl: options?.fileViewBaseUrl,
-                            filePath: f.path,
-                          })
-                        }
-                        {...options?.fileViewAttributes?.(f)}
-                      >
+                    {f.canView && fileDisabledReason == null ? (
+                      <a href={fileUrl} data-selected-file-path={selectedFilePath ?? undefined}>
                         {f.name}
                       </a>
                     ) : (
                       <span
-                        className={fileViewDisabledReason ? 'text-muted' : undefined}
-                        title={fileViewDisabledReason ?? undefined}
+                        className={fileDisabledReason ? 'text-muted' : undefined}
+                        title={fileDisabledReason ?? undefined}
                       >
                         {f.name}
                       </span>
@@ -716,13 +724,13 @@ function DirectoryBrowserTable({
                           <a
                             className="btn btn-xs btn-secondary text-nowrap"
                             href={editFileUrl}
-                            {...editFileAttributes}
+                            data-selected-file-path={selectedFilePath ?? undefined}
                           >
                             <i className="fa fa-edit" />
                             <span>Edit</span>
                           </a>
                         ) : (
-                          <span title={editFileDisabledReason ?? undefined}>
+                          <span title={fileDisabledReason ?? undefined}>
                             <button
                               type="button"
                               className="btn btn-xs btn-secondary text-nowrap"
@@ -746,7 +754,7 @@ function DirectoryBrowserTable({
                             file: f,
                             csrfToken,
                             action: formAction,
-                            redirectUrl: options?.successfulActionRedirectUrl,
+                            redirectUrl,
                           }).toString()}
                           disabled={!f.canUpload}
                         >
@@ -779,7 +787,7 @@ function DirectoryBrowserTable({
                             csrfToken,
                             isViewingFile: false,
                             action: formAction,
-                            redirectUrl: options?.successfulActionRedirectUrl,
+                            redirectUrl,
                           }).toString()}
                           data-testid="rename-file-button"
                           disabled={!f.canRename}
@@ -799,7 +807,7 @@ function DirectoryBrowserTable({
                             file: f,
                             csrfToken,
                             action: formAction,
-                            redirectUrl: options?.successfulActionRedirectUrl,
+                            redirectUrl,
                           }).toString()}
                           data-testid="delete-file-button"
                           disabled={!f.canDelete}
@@ -814,30 +822,44 @@ function DirectoryBrowserTable({
               </tr>
             );
           })}
-          {directoryListings.dirs.map((d) => (
-            <tr key={`dir-${d.path}`}>
-              <td colSpan={2}>
-                <i className="fa fa-folder" />{' '}
-                {d.canView ? (
-                  <a
-                    href={
-                      options?.directoryUrl?.(d.path) ??
-                      getFileViewUrl({
-                        paths,
-                        fileViewBaseUrl: options?.fileViewBaseUrl,
-                        filePath: d.path,
-                      })
-                    }
-                    {...options?.directoryAttributes?.(d.path)}
-                  >
-                    {d.name}
-                  </a>
-                ) : (
-                  <span>{d.name}</span>
-                )}
-              </td>
-            </tr>
-          ))}
+          {directoryListings.dirs.map((d) => {
+            const selectedDirectory =
+              mode == null
+                ? null
+                : run(() => {
+                    const relativePath = path.posix.relative(
+                      mode.questionRootPath,
+                      d.path.split(path.sep).join('/'),
+                    );
+                    return relativePath === '' ? null : relativePath;
+                  });
+            const directoryUrl =
+              mode == null
+                ? getDefaultFileViewUrl({ paths, filePath: d.path })
+                : `${mode.editorUrl}?${new URLSearchParams(
+                    selectedDirectory == null
+                      ? { tab: 'all-files' }
+                      : { tab: 'all-files', dir: selectedDirectory },
+                  ).toString()}`;
+
+            return (
+              <tr key={`dir-${d.path}`}>
+                <td colSpan={2}>
+                  <i className="fa fa-folder" />{' '}
+                  {d.canView ? (
+                    <a
+                      href={directoryUrl}
+                      data-selected-directory-path={selectedDirectory ?? undefined}
+                    >
+                      {d.name}
+                    </a>
+                  ) : (
+                    <span>{d.name}</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
