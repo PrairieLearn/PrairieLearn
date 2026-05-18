@@ -162,7 +162,7 @@ export function InstructorAssessmentSettings({
   urlPrefix,
   canEdit,
   origHash,
-  assessment,
+  assessment: initialAssessment,
   assessmentSet,
   assessmentGHLink,
   tids,
@@ -173,7 +173,7 @@ export function InstructorAssessmentSettings({
   courseInstance,
   isDevMode,
   assessmentTools,
-  zonePointsRange,
+  zonePointsRange: initialZonePointsRange,
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
 }: InstructorAssessmentSettingsProps) {
@@ -182,18 +182,24 @@ export function InstructorAssessmentSettings({
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
       courseInstanceId: courseInstance.id,
-      assessmentId: assessment.id,
+      assessmentId: initialAssessment.id,
     }),
   );
+  const [assessment, setAssessment] = useState(initialAssessment);
+  const [zonePointsRange, setZonePointsRange] = useState(initialZonePointsRange);
+  const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentSettingsInner
+          key={assessment.type}
           urlPrefix={urlPrefix}
           canEdit={canEdit}
-          origHash={origHash}
+          origHash={currentOrigHash}
+          setCurrentOrigHash={setCurrentOrigHash}
           assessment={assessment}
+          setAssessment={setAssessment}
           assessmentSet={assessmentSet}
           assessmentGHLink={assessmentGHLink}
           tids={tids}
@@ -203,6 +209,7 @@ export function InstructorAssessmentSettings({
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
           zonePointsRange={zonePointsRange}
+          setZonePointsRange={setZonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
           questionSharingEnabled={questionSharingEnabled}
         />
@@ -447,7 +454,11 @@ function ChangeTypeModal({
   onHide: () => void;
   onExited: () => void;
   urlPrefix: string;
-  onSuccess: () => void;
+  onSuccess: (result: {
+    origHash: string;
+    assessment: StaffAssessment;
+    zonePointsRange: { min: number; max: number };
+  }) => void;
 }) {
   const trpc = useTRPC();
   const [acknowledged, setAcknowledged] = useState(false);
@@ -854,7 +865,9 @@ function InstructorAssessmentSettingsInner({
   urlPrefix,
   canEdit,
   origHash,
+  setCurrentOrigHash,
   assessment,
+  setAssessment,
   assessmentSet,
   assessmentGHLink,
   tids,
@@ -864,11 +877,15 @@ function InstructorAssessmentSettingsInner({
   assessmentModules,
   assessmentTools,
   zonePointsRange,
+  setZonePointsRange,
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
+  setCurrentOrigHash: (hash: string) => void;
+  setAssessment: (assessment: StaffAssessment) => void;
+  setZonePointsRange: (range: { min: number; max: number }) => void;
+}) {
   const trpc = useTRPC();
-  const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
   const copyModalState = useModalState<true>();
   const deleteModalState = useModalState<true>();
   const typeChangeModalState = useModalState<'Exam' | 'Homework'>();
@@ -965,7 +982,7 @@ function InstructorAssessmentSettingsInner({
         max_bonus_points: toNullableNumber(data.max_bonus_points),
         advance_score_perc: toNullableNumber(data.advance_score_perc),
         grade_rate_minutes: toNullableNumber(data.grade_rate_minutes),
-        origHash: currentOrigHash,
+        origHash,
       },
       {
         onSuccess: (result) => {
@@ -1013,15 +1030,18 @@ function InstructorAssessmentSettingsInner({
           show={typeChangeModalState.show}
           newType={typeChangeModalState.data}
           currentType={currentType}
-          origHash={currentOrigHash}
+          origHash={origHash}
           urlPrefix={urlPrefix}
           onHide={() => {
             setDisplayType(currentType);
             typeChangeModalState.onHide();
           }}
           onExited={typeChangeModalState.onExited}
-          onSuccess={() => {
-            window.location.reload();
+          onSuccess={(result) => {
+            setAssessment(result.assessment);
+            setZonePointsRange(result.zonePointsRange);
+            setCurrentOrigHash(result.origHash);
+            typeChangeModalState.onHide();
           }}
         />
       )}

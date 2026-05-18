@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
 import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -22,7 +23,12 @@ import {
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
+import {
+  selectAssessmentById,
+  selectAssessmentByUuid,
+  selectAssessmentZonePointsRange,
+  selectAssessments,
+} from '../../models/assessment.js';
 import {
   type AssessmentJsonInput,
   EnumAssessmentToolSchema,
@@ -766,7 +772,17 @@ const changeAssessmentType = t.procedure
       });
     }
 
-    return { origHash: newHash, newType: input.newType };
+    const [refreshedAssessment, zonePointsRange] = await Promise.all([
+      selectAssessmentById(assessment.id),
+      selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+    ]);
+
+    return {
+      origHash: newHash,
+      newType: input.newType,
+      assessment: StaffAssessmentSchema.parse(refreshedAssessment),
+      zonePointsRange,
+    };
   });
 
 const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
