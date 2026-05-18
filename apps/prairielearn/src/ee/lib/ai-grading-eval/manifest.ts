@@ -11,6 +11,12 @@ export const EvalEntrySchema = z.object({
     .min(1)
     .regex(QID_REGEX, 'eval id must be a valid QID-style slug (letters, digits, _, -)'),
   directory: z.string().min(1),
+  /**
+   * Total points the scaffolded assessment question is worth. Drives the
+   * `points` field of the AQ in the synthetic `infoAssessment.json`, which
+   * in turn determines `max_points` / `max_manual_points` after sync.
+   */
+  max_points: z.number().positive(),
 });
 export type EvalEntry = z.infer<typeof EvalEntrySchema>;
 
@@ -30,21 +36,19 @@ export const RubricItemSchema = z.object({
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
-export const RubricFileSchema = z.object({
-  max_extra_points: z.number().default(0),
-  min_points: z.number().default(0),
-  replace_auto_points: z.boolean().default(false),
-  starting_points: z.number().default(0),
-  grader_guidelines: z.string().default(''),
-  /**
-   * Total points the question is worth. Becomes the assessment question's
-   * `points` in the scaffolded `infoAssessment.json`, which in turn drives
-   * the AQ's `max_points` / `max_manual_points` after sync. Required so the
-   * eval AQ matches the rubric.
-   */
-  max_points: z.number().positive(),
-  rubric_items: z.array(RubricItemSchema).min(1),
-});
+export const RubricFileSchema = z
+  .object({
+    max_extra_points: z.number().default(0),
+    min_points: z.number().default(0),
+    replace_auto_points: z.boolean().default(false),
+    starting_points: z.number().default(0),
+    grader_guidelines: z.string().default(''),
+    rubric_items: z.array(RubricItemSchema).min(1),
+  })
+  // Allow `max_points` / `max_manual_points` / `max_auto_points` from PL's
+  // rubric-settings export to pass through unread — the AQ point total is
+  // configured via the eval entry's `max_points` field, not the rubric file.
+  .passthrough();
 export type RubricFile = z.infer<typeof RubricFileSchema>;
 
 /**
