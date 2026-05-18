@@ -82,6 +82,7 @@ export async function runAiGradingEval({
       );
 
       await importSubmissions({
+        course: scaffold.course,
         assessment: target.assessment,
         submissionsCsvPath: path.join(loaded.absoluteDir, 'submissions.csv'),
         user,
