@@ -1,20 +1,25 @@
+import path from 'node:path';
+
 import { config } from '../../../lib/config.js';
 import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+
 
 import { cloneEvalRepo } from './clone-eval-repo.js';
 import { loadManifest } from './manifest.js';
 import { resolveAssessmentQuestion } from './resolve-target.js';
 import { applyRubric } from './rubric.js';
 import { scaffoldCourse } from './scaffold-course.js';
+import { importSubmissions } from './submissions.js';
 
 /**
  * Entry point for the AI grading eval harness.
  *
  * Current scope: workflow steps 1 (clone the eval repo), 2 (load the
- * manifest), 3 (scaffold a synthetic course and sync it to the DB), and 4
- * (upsert each eval's rubric onto its AQ). Subsequent steps (upload
- * submissions, run AI grading, aggregate stats) will be added incrementally.
+ * manifest), 3 (scaffold a synthetic course and sync it to the DB), 4
+ * (upsert each eval's rubric onto its AQ), and 5 (upload each eval's
+ * submissions CSV with its `Rubric Grading` ground truth). Subsequent
+ * steps (run AI grading, aggregate stats) will be added incrementally.
  *
  * Dev-mode only: the harness creates real `courses` rows, will eventually
  * call `uploadSubmissions()` (which wipes assessment instances), and writes
@@ -74,9 +79,18 @@ export async function runAiGradingEval({
       job.info(
         `Applied rubric for ${loaded.entry.id}: assessment_question_id=${target.assessment_question.id}`,
       );
+
+      await importSubmissions({
+        assessment: target.assessment,
+        submissionsCsvPath: path.join(loaded.absoluteDir, 'submissions.csv'),
+        user,
+        job,
+      });
     }
 
-    job.info('Steps 1-4 complete (clone, load manifest, scaffold course, apply rubrics).');
+    job.info(
+      'Steps 1-5 complete (clone, load manifest, scaffold course, apply rubrics, upload submissions).',
+    );
   });
 
   return serverJob.jobSequenceId;
