@@ -28,12 +28,6 @@ const serverUuid = crypto.randomUUID();
 // How often the recovery loop checks for abandoned workflow runs.
 const DEFAULT_RECOVERY_INTERVAL_MS = 60_000;
 
-// Cap on how many stale runs a single server processes in parallel per
-// recovery tick. Each recovered run holds a soft lock and runs its step
-// loop concurrently with the others, so this bounds the workflow load
-// any one server imposes on itself during recovery.
-const MAX_CONCURRENT_RECOVERY = 10;
-
 let recoveryInterval: NodeJS.Timeout | null = null;
 let recoveryInProgress = false;
 
@@ -501,23 +495,22 @@ async function recoverStaleRuns(): Promise<void> {
     registeredWorkflows.has(run.type),
   );
 
-  // Bound parallelism so a backlog of stale runs can't pin every CPU on a
-  // single server. Locks (`acquire_lock` filters to free / stale-heartbeat
-  // rows) prevent two servers from picking up the same run.
-  for (let i = 0; i < candidates.length; i += MAX_CONCURRENT_RECOVERY) {
-    const batch = candidates.slice(i, i + MAX_CONCURRENT_RECOVERY);
-    await Promise.all(
-      batch.map(async (run) => {
-        const definition = registeredWorkflows.get(run.type);
-        if (!definition) return;
-        logger.info(`Recovering workflow run ${run.id} (type: ${run.type})`);
-        try {
-          await executeWorkflow(run.id, definition);
-        } catch (err) {
-          logger.error(`Failed to recover workflow ${run.id}`, err);
-          Sentry.captureException(err);
-        }
-      }),
-    );
+  for (const run of candidates) {
+    const definition = registeredWorkflows.get(run.type);
+    if (!definition) continue;
+    logger.info(`Recovering workflow run ${run.id} (type: ${run.type})`);
+    try {
+      // acquire_lock query, called in executeWorkflow, ensures that only
+      // one server can execute the workflow.
+      // - If a server attempts to acquire the lock while another server
+      //   holds it, executeWorkflow ends immediately.
+      // - acquire_lock ensures that the locking server sent a heartbeat
+      //   2 minutes ago. This prevents dead servers from holding the lock.
+      //   Servers running workflows send heartbeats to the DB every 30 seconds.
+      await executeWorkflow(run.id, definition);
+    } catch (err) {
+      logger.error(`Failed to recover workflow ${run.id}`, err);
+      Sentry.captureException(err);
+    }
   }
 }
