@@ -5,6 +5,7 @@ import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
+import { deleteAiGradingJobs } from '../ai-grading/ai-grading-util.js';
 
 import { cloneEvalRepo } from './clone-eval-repo.js';
 import { loadManifest } from './manifest.js';
@@ -28,9 +29,10 @@ import { importSubmissions } from './submissions.js';
  * (which wipes assessment instances on the synthetic course), and writes
  * `ai_grading_jobs` rows.
  *
- * Per eval, runs AI grading once per requested model. Because `aiGrade`
- * overwrites the latest grading job on each instance question, per-model
- * stats are snapshotted immediately after each grading run.
+ * Per eval, runs AI grading once per requested model. Each model's stats
+ * are snapshotted before the AQ's AI grading jobs are wiped, so the next
+ * model starts from a clean slate (otherwise IQs the next model fails to
+ * grade would inherit the prior model's "latest" job and skew its stats).
  */
 export async function runAiGradingEval({
   repository,
@@ -140,6 +142,14 @@ export async function runAiGradingEval({
             job,
           }),
         );
+        // Wipe AI grading jobs for this AQ so the next model starts from a
+        // clean slate. Otherwise, IQs that the next model fails to grade
+        // would inherit this model's grading as their "latest" job and
+        // skew the next model's classification stats.
+        await deleteAiGradingJobs({
+          assessment_question_ids: [target.assessment_question.id],
+          authn_user_id: user.id,
+        });
       }
 
       evalResults.push({
