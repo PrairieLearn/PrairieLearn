@@ -113,9 +113,8 @@ export async function runGrading({
   );
 
   if (status !== 'Success') {
-    job.error(`AI grading job sequence ${aiGradingJobSequenceId} ended with status ${status}`);
-  } else {
-    job.info('AI grading complete.');
+    job.fail(`AI grading job sequence ${aiGradingJobSequenceId} ended with status ${status}`);
   }
+  job.info('AI grading complete.');
   return aiGradingJobSequenceId;
 }
