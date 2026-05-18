@@ -958,13 +958,6 @@ function InstructorAssessmentSettingsInner({
   );
 
   const saveAlert = run<StickySaveBarAlert | null>(() => {
-    if (saveMutation.isSuccess) {
-      return {
-        variant: 'success',
-        message: 'Assessment updated successfully.',
-        onDismiss: () => saveMutation.reset(),
-      };
-    }
     if (appError) {
       return {
         variant: 'danger',
@@ -972,6 +965,20 @@ function InstructorAssessmentSettingsInner({
           SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
           UNKNOWN: ({ message }) => message,
         }),
+        onDismiss: () => saveMutation.reset(),
+      };
+    }
+    if (typeChangeMessage) {
+      return {
+        variant: 'success',
+        message: typeChangeMessage,
+        onDismiss: () => setTypeChangeMessage(null),
+      };
+    }
+    if (saveMutation.isSuccess) {
+      return {
+        variant: 'success',
+        message: 'Assessment updated successfully.',
         onDismiss: () => saveMutation.reset(),
       };
     }
@@ -1100,11 +1107,6 @@ function InstructorAssessmentSettingsInner({
 
       <form name="edit-assessment-settings-form" onSubmit={handleSubmit(onFormSubmit)}>
         <div className="container d-flex flex-column gap-3 py-3">
-          {typeChangeMessage && (
-            <Alert variant="success" dismissible onClose={() => setTypeChangeMessage(null)}>
-              {typeChangeMessage}
-            </Alert>
-          )}
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">General</h2>
