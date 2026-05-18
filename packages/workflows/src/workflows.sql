@@ -112,28 +112,26 @@ WHERE
 RETURNING
   *;
 
--- BLOCK select_stale_runs
+-- BLOCK select_next_recoverable_run
+-- Returns the oldest recoverable run (status = 'running', either unlocked or
+-- with a stale heartbeat) whose type is registered on this server. Returns
+-- one row at a time; the caller loops until it either successfully recovers
+-- a run or runs out of candidates. See `recoverStaleRuns` for the rationale.
 SELECT
   *
 FROM
   workflow_runs
 WHERE
   status = 'running'
-  AND locked_by IS NOT NULL
-  AND heartbeat_at < now() - interval '2 minutes'
+  AND (
+    locked_by IS NULL
+    OR heartbeat_at < now() - interval '2 minutes'
+  )
+  AND type = ANY ($registered_types::text[])
 ORDER BY
-  created_at ASC;
-
--- BLOCK select_unlocked_running_runs
-SELECT
-  *
-FROM
-  workflow_runs
-WHERE
-  status = 'running'
-  AND locked_by IS NULL
-ORDER BY
-  created_at ASC;
+  created_at ASC
+LIMIT
+  1;
 
 -- BLOCK append_output
 UPDATE workflow_runs

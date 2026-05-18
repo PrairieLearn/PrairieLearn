@@ -275,10 +275,16 @@ export async function appendWorkflowOutput(runId: string, text: string): Promise
   await pool.execute(sql.append_output, { id: runId, text });
 }
 
+/**
+ * Acquires the soft lock on `runId` and runs the step loop until the run
+ * pauses, completes, or errors. Returns `true` if this server actually ran
+ * the step loop, or `false` if another server already held the lock (in
+ * which case the call is a no-op).
+ */
 async function executeWorkflow<TState extends Record<string, unknown>>(
   runId: string,
   definition: WorkflowDefinition<TState>,
-): Promise<void> {
+): Promise<boolean> {
   // Acquire lock
   const lockRowCount = await pool.execute(sql.acquire_lock, {
     id: runId,
@@ -287,7 +293,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
 
   if (lockRowCount === 0) {
     logger.info(`Could not acquire lock for workflow ${runId}, skipping`);
-    return;
+    return false;
   }
 
   const abortController = new AbortController();
@@ -378,6 +384,8 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
       Sentry.captureException(err);
     });
   }
+
+  return true;
 }
 
 async function persistStep<TState extends Record<string, unknown>>(
@@ -478,39 +486,41 @@ export async function stopRecoveryLoop(): Promise<void> {
 }
 
 async function recoverStaleRuns(): Promise<void> {
-  // Find runs with stale heartbeats (locked but heartbeat > 2 minutes ago)
-  // and runs that are 'running' but have no lock (e.g. server crashed before
-  // it ever wrote a heartbeat). Both queries order by `created_at ASC` so
-  // older runs are recovered first if more runs are stale than this server
-  // can process in a single tick.
-  const [staleRuns, unlockedRuns] = await Promise.all([
-    pool.queryRows(sql.select_stale_runs, {}, WorkflowRunSchema),
-    pool.queryRows(sql.select_unlocked_running_runs, {}, WorkflowRunSchema),
-  ]);
+  const registeredTypes = Array.from(registeredWorkflows.keys());
+  if (registeredTypes.length === 0) return;
 
-  // Filter out runs whose type isn't registered on this server. During rolling
-  // deploys, a server running old code may not have a newly-added workflow
-  // type yet; silently skip so a server with the updated code handles it.
-  const candidates = [...staleRuns, ...unlockedRuns].filter((run) =>
-    registeredWorkflows.has(run.type),
-  );
+  // Pull candidates one at a time until we successfully start a recovery or
+  // run out of stale runs. We can't tell which runs other servers are about
+  // to claim, so fetching a batch would mean iterating over rows that are
+  // potentially claimed by the time we get to them. Pulling one at a time
+  // keeps our view fresh and maximizes the chance the run is actually
+  // stale and unclaimed.
+  //
+  // It's safe to keep looping because executeWorkflow calls acquire_lock
+  // internally. If another server beat us to this run, acquire_lock fails
+  // and executeWorkflow returns without doing work — so we just move on to
+  // the next candidate. In the extreme (and unlikely) case where other
+  // servers keep claiming runs before we can, the loop exits naturally when
+  // no recoverable runs remain.
+  while (true) {
+    const candidate = await pool.queryOptionalRow(
+      sql.select_next_recoverable_run,
+      { registered_types: registeredTypes },
+      WorkflowRunSchema,
+    );
+    if (!candidate) return;
 
-  for (const run of candidates) {
-    const definition = registeredWorkflows.get(run.type);
+    const definition = registeredWorkflows.get(candidate.type);
     if (!definition) continue;
-    logger.info(`Recovering workflow run ${run.id} (type: ${run.type})`);
+
+    logger.info(`Recovering workflow run ${candidate.id} (type: ${candidate.type})`);
     try {
-      // acquire_lock query, called in executeWorkflow, ensures that only
-      // one server can execute the workflow.
-      // - If a server attempts to acquire the lock while another server
-      //   holds it, executeWorkflow ends immediately.
-      // - acquire_lock ensures that the locking server sent a heartbeat
-      //   2 minutes ago. This prevents dead servers from holding the lock.
-      //   Servers running workflows send heartbeats to the DB every 30 seconds.
-      await executeWorkflow(run.id, definition);
+      const ran = await executeWorkflow(candidate.id, definition);
+      if (ran) return;
     } catch (err) {
-      logger.error(`Failed to recover workflow ${run.id}`, err);
+      logger.error(`Failed to recover workflow ${candidate.id}`, err);
       Sentry.captureException(err);
+      return;
     }
   }
 }
