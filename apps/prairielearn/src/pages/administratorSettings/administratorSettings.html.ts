@@ -242,7 +242,7 @@ export function AdministratorSettings({
                           <code>${config.aiGradingEvalCommit ?? '(branch HEAD)'}</code>
                         </dd>
                       </dl>
-                      <form method="POST">
+                      <form method="POST" class="d-inline">
                         <input
                           type="hidden"
                           name="__csrf_token"
@@ -254,11 +254,22 @@ export function AdministratorSettings({
                       </form>
                     `
                   : html`
-                      <p class="text-muted mb-0">
+                      <p class="text-muted">
                         Set <code>aiGradingEvalRepository</code> in <code>config.json</code> to
-                        enable this action.
+                        enable the run action.
                       </p>
                     `}
+                <form method="POST" class="d-inline ms-2">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button
+                    class="btn btn-outline-danger"
+                    name="__action"
+                    value="delete_ai_grading_eval_courses"
+                    onclick="return confirm('Soft-delete every AI grading eval course (short_name ai-grading-evals-*) and remove their on-disk directories?');"
+                  >
+                    Delete all eval courses
+                  </button>
+                </form>
               </div>
             </div>
           `

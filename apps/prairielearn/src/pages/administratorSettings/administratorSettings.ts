@@ -89,6 +89,14 @@ router.post(
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'delete_ai_grading_eval_courses') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      const { deleteAllAiGradingEvalCourses } =
+        await import('../../ee/lib/ai-grading-eval/delete-eval-courses.js');
+      const jobSequenceId = await deleteAllAiGradingEvalCourses(res.locals.authn_user);
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'run_ai_grading_eval') {
       if (!config.devMode) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
