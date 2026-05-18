@@ -24,7 +24,7 @@ import type {
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getQuestionSettingsUrl } from '../../lib/client/url.js';
+import { getAssessmentStudentsUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type {
@@ -155,6 +155,7 @@ interface InstructorAssessmentSettingsProps {
   zonePointsRange: { min: number; max: number };
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
   questionSharingEnabled: boolean;
+  hasInstances: boolean;
 }
 
 export function InstructorAssessmentSettings({
@@ -176,6 +177,7 @@ export function InstructorAssessmentSettings({
   zonePointsRange: initialZonePointsRange,
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
+  hasInstances,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -213,6 +215,7 @@ export function InstructorAssessmentSettings({
           setZonePointsRange={setZonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
           questionSharingEnabled={questionSharingEnabled}
+          hasInstances={hasInstances}
           typeChangeMessage={typeChangeMessage}
           setTypeChangeMessage={setTypeChangeMessage}
         />
@@ -883,6 +886,7 @@ function InstructorAssessmentSettingsInner({
   setZonePointsRange,
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
+  hasInstances,
   typeChangeMessage,
   setTypeChangeMessage,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
@@ -1167,7 +1171,7 @@ function InstructorAssessmentSettingsInner({
                     <Form.Select
                       id="type"
                       aria-describedby="type-help"
-                      disabled={!canEdit || isDirty}
+                      disabled={!canEdit || isDirty || hasInstances}
                       value={displayType ?? currentType}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -1188,9 +1192,25 @@ function InstructorAssessmentSettingsInner({
                       Homework or Exam
                     </a>
                     .{' '}
-                    {isDirty
-                      ? 'Save or discard your other changes before switching the type.'
-                      : 'Changing the type may modify or remove existing configuration.'}
+                    {hasInstances ? (
+                      <>
+                        The type can't be changed while assessment instances exist. Delete all
+                        instances on the{' '}
+                        <a
+                          href={getAssessmentStudentsUrl({
+                            courseInstanceId: assessment.course_instance_id,
+                            assessmentId: assessment.id,
+                          })}
+                        >
+                          Students tab
+                        </a>{' '}
+                        to allow changes.
+                      </>
+                    ) : isDirty ? (
+                      'Save or discard your other changes before switching the type.'
+                    ) : (
+                      'Changing the type may modify or remove existing configuration.'
+                    )}
                   </small>
                 </div>
               </div>

@@ -26,6 +26,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import {
@@ -79,9 +80,10 @@ router.get(
 
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
-    const [toolDefaultRows, zonePointsRange] = await Promise.all([
+    const [toolDefaultRows, zonePointsRange, hasInstances] = await Promise.all([
       selectAssessmentToolDefaults({ assessment_id: assessment.id }),
       selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+      selectAssessmentHasInstances(assessment.id),
     ]);
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
@@ -149,6 +151,7 @@ router.get(
               zonePointsRange={zonePointsRange}
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
               questionSharingEnabled={questionSharingEnabled}
+              hasInstances={hasInstances}
             />
           </Hydrate>
         ),

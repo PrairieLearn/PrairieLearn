@@ -23,6 +23,7 @@ import {
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
   selectAssessmentById,
   selectAssessmentByUuid,
@@ -658,6 +659,14 @@ const changeAssessmentType = t.procedure
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'New type matches the current type.',
+      });
+    }
+
+    if (await selectAssessmentHasInstances(assessment.id)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'The assessment type cannot be changed because student instances already exist for this assessment.',
       });
     }
 
