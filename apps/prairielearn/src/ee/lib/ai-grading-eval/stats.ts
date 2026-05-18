@@ -59,10 +59,6 @@ function formatDuration(seconds: number | null): string {
   return `${minutes}m${remainder.toFixed(0)}s`;
 }
 
-function safeDivide(numerator: number, denominator: number): number {
-  return denominator === 0 ? 0 : numerator / denominator;
-}
-
 async function collectCostStats(aiGradingJobSequenceId: string): Promise<CostStats> {
   const row = await queryOptionalRow(
     sql.ai_grading_cost_stats,
@@ -206,7 +202,9 @@ export async function reportRunStats({
     summaries.push(await reportEvalStats(result, job));
   }
 
-  const totals = summaries.reduce(
+  // Cost / runtime / tokens are summed because they're additive resources,
+  // not classification metrics that need balancing.
+  const resourceTotals = summaries.reduce(
     (acc, s) => {
       acc.costJobs += s.costJobs;
       acc.totalCostDollars += s.totalCostDollars;
@@ -214,13 +212,6 @@ export async function reportRunStats({
       acc.totalCompletionTokens += s.totalCompletionTokens;
       acc.durationSeconds += s.durationSeconds ?? 0;
       acc.submissionsScored += s.submissionsScored;
-      acc.weightedErrorNumerator +=
-        s.meanPointError != null ? s.meanPointError * s.submissionsScored : 0;
-      acc.weightedErrorDenominator += s.meanPointError != null ? s.submissionsScored : 0;
-      acc.tp += s.truePositives;
-      acc.tn += s.trueNegatives;
-      acc.fp += s.falsePositives;
-      acc.fn += s.falseNegatives;
       return acc;
     },
     {
@@ -230,52 +221,67 @@ export async function reportRunStats({
       totalCompletionTokens: 0,
       durationSeconds: 0,
       submissionsScored: 0,
-      weightedErrorNumerator: 0,
-      weightedErrorDenominator: 0,
-      tp: 0,
-      tn: 0,
-      fp: 0,
-      fn: 0,
     },
   );
 
-  const aggAccuracy = safeDivide(
-    totals.tp + totals.tn,
-    totals.tp + totals.tn + totals.fp + totals.fn,
-  );
-  const aggPrecision = safeDivide(totals.tp, totals.tp + totals.fp);
-  const aggRecall = safeDivide(totals.tp, totals.tp + totals.fn);
-  const aggF1 = safeDivide(2 * aggPrecision * aggRecall, aggPrecision + aggRecall);
-  const weightedMeanError =
-    totals.weightedErrorDenominator > 0
-      ? totals.weightedErrorNumerator / totals.weightedErrorDenominator
-      : null;
+  // Macro-average classification metrics across evals: compute each metric
+  // per eval, then take the unweighted mean. This keeps a large, well-graded
+  // eval from masking a smaller poorly-graded one — flagged explicitly by
+  // the user in feedback. Per-eval denominators of zero are skipped (no
+  // signal to average).
+  const perEvalMetrics = summaries.map((s) => {
+    const total = s.truePositives + s.trueNegatives + s.falsePositives + s.falseNegatives;
+    const precDenom = s.truePositives + s.falsePositives;
+    const recDenom = s.truePositives + s.falseNegatives;
+    const precision = precDenom > 0 ? s.truePositives / precDenom : null;
+    const recall = recDenom > 0 ? s.truePositives / recDenom : null;
+    const accuracy = total > 0 ? (s.truePositives + s.trueNegatives) / total : null;
+    const f1 =
+      precision != null && recall != null && precision + recall > 0
+        ? (2 * precision * recall) / (precision + recall)
+        : null;
+    return { evalId: s.evalId, accuracy, precision, recall, f1, meanPointError: s.meanPointError };
+  });
+
+  function macroMean(values: (number | null)[]): number | null {
+    const finite = values.filter((v): v is number => v != null);
+    if (finite.length === 0) return null;
+    return finite.reduce((a, b) => a + b, 0) / finite.length;
+  }
+
+  const macroAccuracy = macroMean(perEvalMetrics.map((m) => m.accuracy));
+  const macroPrecision = macroMean(perEvalMetrics.map((m) => m.precision));
+  const macroRecall = macroMean(perEvalMetrics.map((m) => m.recall));
+  const macroF1 = macroMean(perEvalMetrics.map((m) => m.f1));
+  const macroMeanError = macroMean(perEvalMetrics.map((m) => m.meanPointError));
+
+  function fmtPct(v: number | null): string {
+    return v != null ? `${(v * 100).toFixed(2)}%` : '(n/a)';
+  }
 
   job.info('');
   job.info('===== Run-wide totals =====');
   job.info(`Evals: ${summaries.length}`);
-  job.info(`Submissions graded: ${totals.costJobs}`);
+  job.info(`Submissions graded: ${resourceTotals.costJobs}`);
   job.info(
-    `Total duration (sum of AI-grading job durations): ${formatDuration(totals.durationSeconds)}`,
+    `Total duration (sum of AI-grading job durations): ${formatDuration(resourceTotals.durationSeconds)}`,
   );
-  job.info(`Total cost: $${totals.totalCostDollars.toFixed(4)}`);
-  if (totals.costJobs > 0) {
-    job.info(`Cost / submission: $${(totals.totalCostDollars / totals.costJobs).toFixed(6)}`);
+  job.info(`Total cost: $${resourceTotals.totalCostDollars.toFixed(4)}`);
+  if (resourceTotals.costJobs > 0) {
+    job.info(
+      `Cost / submission: $${(resourceTotals.totalCostDollars / resourceTotals.costJobs).toFixed(6)}`,
+    );
   }
   job.info(
-    `Tokens: ${totals.totalPromptTokens.toLocaleString()} prompt / ` +
-      `${totals.totalCompletionTokens.toLocaleString()} completion`,
+    `Tokens: ${resourceTotals.totalPromptTokens.toLocaleString()} prompt / ` +
+      `${resourceTotals.totalCompletionTokens.toLocaleString()} completion`,
   );
+  job.info('-- Macro-averaged classification metrics (mean across evals) --');
   job.info(
-    `Weighted mean absolute point error: ${weightedMeanError != null ? weightedMeanError.toFixed(3) : '(n/a)'}`,
+    `Mean absolute point error: ${macroMeanError != null ? macroMeanError.toFixed(3) : '(n/a)'}`,
   );
-  job.info('-- Aggregate rubric-item confusion matrix --');
-  job.info(`  True positives:  ${totals.tp}`);
-  job.info(`  True negatives:  ${totals.tn}`);
-  job.info(`  False positives: ${totals.fp}`);
-  job.info(`  False negatives: ${totals.fn}`);
-  job.info(`  Accuracy:  ${(aggAccuracy * 100).toFixed(2)}%`);
-  job.info(`  Precision: ${(aggPrecision * 100).toFixed(2)}%`);
-  job.info(`  Recall:    ${(aggRecall * 100).toFixed(2)}%`);
-  job.info(`  F1 score:  ${(aggF1 * 100).toFixed(2)}%`);
+  job.info(`  Accuracy:  ${fmtPct(macroAccuracy)}`);
+  job.info(`  Precision: ${fmtPct(macroPrecision)}`);
+  job.info(`  Recall:    ${fmtPct(macroRecall)}`);
+  job.info(`  F1 score:  ${fmtPct(macroF1)}`);
 }
