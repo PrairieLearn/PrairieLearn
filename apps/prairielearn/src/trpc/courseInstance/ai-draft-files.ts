@@ -2,14 +2,23 @@ import { TRPCError } from '@trpc/server';
 
 import { features } from '../../lib/features/index.js';
 import {
-  type AiDraftFilesError,
   ListInputSchema,
   SaveInputSchema,
   listDraftQuestionFiles,
   saveDraftQuestion,
 } from '../ai-draft-files.js';
 
-import { requireCoursePermissionEdit, requireNotExampleCourse, t } from './init.js';
+import { requireCoursePermissionEdit, t } from './init.js';
+
+const requireNotExampleCourse = t.middleware(async (opts) => {
+  if (opts.ctx.course.example_course) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied. Cannot make changes to example course.',
+    });
+  }
+  return opts.next();
+});
 
 const aiDraftFilesProcedure = t.procedure
   .use(requireCoursePermissionEdit)
@@ -41,10 +50,3 @@ export const aiDraftFilesRouter = t.router({
     });
   }),
 });
-
-const _aiDraftFilesTrpcRouter = t.router({
-  aiDraftFiles: aiDraftFilesRouter,
-});
-
-export type AiDraftFilesTrpcRouter = typeof _aiDraftFilesTrpcRouter;
-export type { AiDraftFilesError };

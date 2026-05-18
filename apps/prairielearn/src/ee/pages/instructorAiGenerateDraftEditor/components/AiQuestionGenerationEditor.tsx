@@ -13,8 +13,6 @@ import type {
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
 } from '../../../../lib/draft-question-files.js';
-import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
-import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -25,6 +23,7 @@ import {
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import { TRPCProvider, createAiDraftFilesTrpcClient, useTRPC } from './aiDraftFilesTrpc.js';
 
 const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor'] as const;
 
@@ -33,7 +32,7 @@ type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
 interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   trpcCsrfToken: string;
-  courseId: string;
+  trpcUrl: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -134,12 +133,26 @@ function AiQuestionGenerationEditorInner({
   );
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
-    parseAsStringLiteral(AI_DRAFT_EDITOR_TABS).withDefault(
-      currentSelectedFile == null && currentSelectedFilePreview == null ? 'preview' : 'all-files',
-    ),
+    parseAsStringLiteral(AI_DRAFT_EDITOR_TABS)
+      .withDefault(
+        currentSelectedFile == null && currentSelectedFilePreview == null ? 'preview' : 'all-files',
+      )
+      .withOptions({ clearOnDefault: false }),
   );
   const activeTabKey =
     activeTab === 'rich-text-editor' && !richTextEditorEnabled ? 'preview' : activeTab;
+  const allFilesHref = useMemo(() => {
+    const params = new URLSearchParams(search);
+    params.delete('file');
+    params.set('tab', 'all-files');
+    if (selectedDirectory == null) {
+      params.delete('dir');
+    } else {
+      params.set('dir', selectedDirectory);
+    }
+
+    return `?${params.toString()}`;
+  }, [search, selectedDirectory]);
 
   const handleSelectTab = useCallback(
     (tab: string | null) => {
@@ -153,21 +166,21 @@ function AiQuestionGenerationEditorInner({
   const handleSelectFile = useCallback(
     async (filePath: string) => {
       await setSelectedFilePath(filePath);
-      await setActiveTab('all-files');
+      await setActiveTab('all-files', { clearOnDefault: false });
     },
     [setActiveTab, setSelectedFilePath],
   );
 
   const handleClearSelectedFile = useCallback(async () => {
+    await setActiveTab('all-files', { clearOnDefault: false });
     await setSelectedFilePath(null);
-    await setActiveTab('all-files');
   }, [setActiveTab, setSelectedFilePath]);
 
   const handleSelectDirectory = useCallback(
     async (directory: string | null) => {
       await setSelectedFilePath(null);
       await setSelectedDirectory(directory);
-      await setActiveTab('all-files');
+      await setActiveTab('all-files', { clearOnDefault: false });
     },
     [setActiveTab, setSelectedDirectory, setSelectedFilePath],
   );
@@ -241,6 +254,7 @@ function AiQuestionGenerationEditorInner({
             allQuestionFilesHtml={allFilesHtml}
             selectedFile={currentSelectedFile}
             selectedFilePreview={currentSelectedFilePreview}
+            allFilesHref={allFilesHref}
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
             csrfToken={csrfToken}
@@ -294,7 +308,7 @@ function AiQuestionGenerationEditorInner({
 export function AiQuestionGenerationEditor(props: AiQuestionGenerationEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
-    createCourseTrpcClient({ csrfToken: props.trpcCsrfToken, courseId: props.courseId }),
+    createAiDraftFilesTrpcClient({ csrfToken: props.trpcCsrfToken, trpcUrl: props.trpcUrl }),
   );
 
   return (

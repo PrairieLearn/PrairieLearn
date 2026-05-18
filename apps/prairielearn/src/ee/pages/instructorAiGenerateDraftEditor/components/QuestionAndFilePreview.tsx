@@ -21,6 +21,7 @@ import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
 import {
+  SelectedQuestionFileBreadcrumb,
   SelectedQuestionFileEditor,
   type SelectedQuestionFileEditorHandle,
 } from './SelectedQuestionFileEditor.js';
@@ -302,6 +303,7 @@ function AllQuestionFiles({
   allQuestionFilesHtml,
   selectedFile,
   selectedFilePreview,
+  allFilesHref,
   qid,
   questionId,
   isGenerating,
@@ -315,6 +317,7 @@ function AllQuestionFiles({
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
+  allFilesHref: string;
   qid: string | null;
   questionId: string;
   isGenerating: boolean;
@@ -371,6 +374,7 @@ function AllQuestionFiles({
         selectedFile={selectedFile}
         questionId={questionId}
         isGenerating={isGenerating}
+        allFilesHref={allFilesHref}
         editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
@@ -383,6 +387,7 @@ function AllQuestionFiles({
     return (
       <SelectedQuestionFilePreviewPanel
         selectedFilePreview={selectedFilePreview}
+        allFilesHref={allFilesHref}
         onShowAllFiles={onClearSelectedFile}
       />
     );
@@ -401,26 +406,25 @@ function AllQuestionFiles({
 
 function SelectedQuestionFilePreviewPanel({
   selectedFilePreview,
+  allFilesHref,
   onShowAllFiles,
 }: {
   selectedFilePreview: SelectedQuestionFilePreview;
+  allFilesHref: string;
   onShowAllFiles: () => void;
 }) {
   return (
     <div className="selected-file-editor h-100 d-flex flex-column">
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <div className="font-monospace text-truncate">{selectedFilePreview.path}</div>
+          <SelectedQuestionFileBreadcrumb
+            filePath={selectedFilePreview.path}
+            allFilesHref={allFilesHref}
+            onShowAllFiles={onShowAllFiles}
+          />
           <div className="small text-muted">Preview</div>
         </div>
         <div className="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={onShowAllFiles}
-          >
-            All files
-          </button>
           <a className="btn btn-sm btn-outline-secondary" href={selectedFilePreview.fileViewUrl}>
             Open full view
           </a>
@@ -443,6 +447,7 @@ export function QuestionAndFilePreview({
   allQuestionFilesHtml,
   selectedFile,
   selectedFilePreview,
+  allFilesHref,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
@@ -466,6 +471,7 @@ export function QuestionAndFilePreview({
   allQuestionFilesHtml: string;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
+  allFilesHref: string;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
@@ -574,6 +580,7 @@ export function QuestionAndFilePreview({
           allQuestionFilesHtml={allQuestionFilesHtml}
           selectedFile={selectedFile}
           selectedFilePreview={selectedFilePreview}
+          allFilesHref={allFilesHref}
           qid={qid}
           questionId={questionId}
           isGenerating={isGenerating}
