@@ -41,12 +41,10 @@ export function sanitizeRepoSlug(repository: string): string {
 export async function cloneEvalRepo({
   repository,
   branch,
-  commit,
   job,
 }: {
   repository: string;
   branch?: string | null;
-  commit?: string | null;
   job: ServerJob;
 }): Promise<string> {
   const slug = sanitizeRepoSlug(repository);
@@ -90,12 +88,12 @@ export async function cloneEvalRepo({
     await job.exec('git', ['clean', '-fdx'], gitOptions);
   }
 
-  const target = commit ?? (branch ? `origin/${branch}` : null);
-  if (target) {
+  if (branch) {
+    const target = `origin/${branch}`;
     job.info(`Checking out ${target}`);
     await job.exec('git', ['reset', '--hard', target], { cwd: repoPath, env: gitEnv });
   } else {
-    job.info('No branch or commit specified; using default branch HEAD as cloned');
+    job.info('No branch specified; using default branch HEAD as cloned');
   }
 
   return repoPath;

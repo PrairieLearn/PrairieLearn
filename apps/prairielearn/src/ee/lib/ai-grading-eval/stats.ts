@@ -5,6 +5,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { type ServerJob } from '../../../lib/server-jobs.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
+import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
   generateAssessmentAiGradingStats,
@@ -30,21 +31,30 @@ const TimingStatsSchema = z.object({
 });
 type TimingStats = z.infer<typeof TimingStatsSchema>;
 
+export interface EvalModelRun {
+  model: AiGradingModelId;
+  aiGradingJobSequenceId: string;
+}
+
 export interface EvalRunResult {
   evalId: string;
   target: ResolvedTarget;
-  aiGradingJobSequenceId: string;
   maxPoints: number;
+  runs: EvalModelRun[];
 }
 
-interface EvalStatsSummary {
+interface ModelRunSummary {
   evalId: string;
-  model: string | null;
+  model: AiGradingModelId;
   costJobs: number;
   totalCostDollars: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
   durationSeconds: number | null;
+  accuracy: number | null;
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
   truePositives: number;
   trueNegatives: number;
   falsePositives: number;
@@ -192,13 +202,32 @@ function renderClassificationMetrics({
   ].join('\n');
 }
 
-/**
- * Per-eval stats block. Mirrors the run-wide block's grammar so the two read
- * as one template.
- */
-async function reportEvalStats(result: EvalRunResult, job: ServerJob): Promise<EvalStatsSummary> {
-  const { evalId, target, aiGradingJobSequenceId } = result;
+function renderTable(headers: string[], rows: string[][], widths: number[]): string[] {
+  const headerLine = headers.map((h, i) => h.padEnd(widths[i])).join('');
+  const dividerLine = widths.map((w) => '─'.repeat(Math.max(1, w - 1))).join(' ');
+  const dataLines = rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i])).join(''));
+  return ['  ' + headerLine, '  ' + dividerLine, ...dataLines.map((l) => '  ' + l)];
+}
 
+/**
+ * Snapshots stats for a single (eval × model) run. Must be called *before*
+ * the next model overwrites the AI grading on each instance question, since
+ * `calculateAiGradingStats` / `generateAssessmentAiGradingStats` read the
+ * latest grading job per IQ.
+ */
+export async function snapshotModelRunStats({
+  evalId,
+  model,
+  target,
+  aiGradingJobSequenceId,
+  job,
+}: {
+  evalId: string;
+  model: AiGradingModelId;
+  target: ResolvedTarget;
+  aiGradingJobSequenceId: string;
+  job: ServerJob;
+}): Promise<ModelRunSummary> {
   const [cost, timing, general, perf, rubric] = await Promise.all([
     collectCostStats(aiGradingJobSequenceId),
     collectTimingStats(aiGradingJobSequenceId),
@@ -212,9 +241,9 @@ async function reportEvalStats(result: EvalRunResult, job: ServerJob): Promise<E
   const durationSeconds = timing?.duration_seconds ?? null;
 
   job.info('');
-  job.info(`─── ${evalId} ${'─'.repeat(Math.max(4, 70 - evalId.length))}`);
+  const header = `${evalId} / ${model}`;
+  job.info(`─── ${header} ${'─'.repeat(Math.max(4, 70 - header.length))}`);
   job.info(`  Question     ${aqDeepLink(target)}`);
-  job.info(`  Model        ${cost.dominant_model ?? '(unknown)'}`);
   job.info(`  Submissions  ${submissions}`);
   job.info('');
   job.info(
@@ -264,12 +293,16 @@ async function reportEvalStats(result: EvalRunResult, job: ServerJob): Promise<E
 
   return {
     evalId,
-    model: cost.dominant_model,
+    model,
     costJobs: cost.job_count,
     totalCostDollars: cost.total_cost,
     totalPromptTokens: cost.total_prompt_tokens,
     totalCompletionTokens: cost.total_completion_tokens,
     durationSeconds,
+    accuracy: total.accuracy,
+    precision: total.precision,
+    recall: total.recall,
+    f1: total.f1score,
     truePositives: total.truePositives,
     trueNegatives: total.trueNegatives,
     falsePositives: total.falsePositives,
@@ -277,100 +310,132 @@ async function reportEvalStats(result: EvalRunResult, job: ServerJob): Promise<E
   };
 }
 
-/**
- * Compute per-eval classification metrics, then take an unweighted mean
- * across evals (macro-average). A large well-graded eval can't hide a
- * smaller poorly-graded one. Evals with zero denominators in a given metric
- * are skipped for that metric, not zero-substituted.
- */
-function macroMetrics(summaries: EvalStatsSummary[]) {
-  const per = summaries.map((s) => {
-    const total = s.truePositives + s.trueNegatives + s.falsePositives + s.falseNegatives;
-    const precDenom = s.truePositives + s.falsePositives;
-    const recDenom = s.truePositives + s.falseNegatives;
-    const precision = precDenom > 0 ? s.truePositives / precDenom : null;
-    const recall = recDenom > 0 ? s.truePositives / recDenom : null;
-    const accuracy = total > 0 ? (s.truePositives + s.trueNegatives) / total : null;
-    const f1 =
-      precision != null && recall != null && precision + recall > 0
-        ? (2 * precision * recall) / (precision + recall)
-        : null;
-    return { accuracy, precision, recall, f1 };
+function mean(vals: (number | null)[]): number | null {
+  const finite = vals.filter((v): v is number => v != null);
+  return finite.length === 0 ? null : finite.reduce((a, b) => a + b, 0) / finite.length;
+}
+
+function aggregateByModel(summaries: ModelRunSummary[]) {
+  const byModel = new Map<AiGradingModelId, ModelRunSummary[]>();
+  for (const s of summaries) {
+    const existing = byModel.get(s.model);
+    if (existing) {
+      existing.push(s);
+    } else {
+      byModel.set(s.model, [s]);
+    }
+  }
+  return [...byModel.entries()].map(([model, runs]) => {
+    const submissions = runs.reduce((a, r) => a + r.costJobs, 0);
+    const totalCost = runs.reduce((a, r) => a + r.totalCostDollars, 0);
+    const totalDuration = runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0);
+    return {
+      model,
+      submissions,
+      totalCost,
+      totalDuration,
+      accuracy: mean(runs.map((r) => r.accuracy)),
+      precision: mean(runs.map((r) => r.precision)),
+      recall: mean(runs.map((r) => r.recall)),
+      f1: mean(runs.map((r) => r.f1)),
+    };
   });
-  const mean = (vals: (number | null)[]) => {
-    const finite = vals.filter((v): v is number => v != null);
-    return finite.length === 0 ? null : finite.reduce((a, b) => a + b, 0) / finite.length;
-  };
-  return {
-    accuracy: mean(per.map((m) => m.accuracy)),
-    precision: mean(per.map((m) => m.precision)),
-    recall: mean(per.map((m) => m.recall)),
-    f1: mean(per.map((m) => m.f1)),
-  };
 }
 
 /**
- * Emit per-eval stats followed by run-wide totals. Called once at the end of
- * the orchestrator after every eval has been graded.
+ * Per-eval table comparing each model's classification + resource numbers.
  */
-export async function reportRunStats({
+function renderPerEvalModelTable(summaries: ModelRunSummary[]): string[] {
+  const headers = ['Model', 'Acc', 'Prec', 'Rec', 'F1', 'Cost', '/sub'];
+  const widths = [26, 9, 9, 9, 9, 11, 9];
+  const rows = summaries.map((s) => {
+    const perSubCost = s.costJobs > 0 ? s.totalCostDollars / s.costJobs : 0;
+    return [
+      s.model,
+      formatPercent(s.accuracy, 1),
+      s.precision != null ? s.precision.toFixed(2) : '(n/a)',
+      s.recall != null ? s.recall.toFixed(2) : '(n/a)',
+      s.f1 != null ? s.f1.toFixed(2) : '(n/a)',
+      formatCurrency(s.totalCostDollars),
+      formatCurrency(perSubCost),
+    ];
+  });
+  return renderTable(headers, rows, widths);
+}
+
+/**
+ * Run-wide table: one row per model, macro-averaged across all evals.
+ */
+function renderRunWideModelTable(aggregated: ReturnType<typeof aggregateByModel>): string[] {
+  const headers = [
+    'Model',
+    'Acc',
+    'Prec',
+    'Rec',
+    'F1',
+    'Total cost',
+    'Cost/sub',
+    'Total time',
+    'Time/sub',
+  ];
+  const widths = [26, 9, 9, 9, 9, 12, 11, 12, 10];
+  const rows = aggregated.map((a) => {
+    const perSubCost = a.submissions > 0 ? a.totalCost / a.submissions : 0;
+    return [
+      a.model,
+      formatPercent(a.accuracy, 1),
+      a.precision != null ? a.precision.toFixed(2) : '(n/a)',
+      a.recall != null ? a.recall.toFixed(2) : '(n/a)',
+      a.f1 != null ? a.f1.toFixed(2) : '(n/a)',
+      formatCurrency(a.totalCost),
+      formatCurrency(perSubCost),
+      formatDuration(a.totalDuration),
+      formatPerSubmissionDuration(a.totalDuration, a.submissions),
+    ];
+  });
+  return renderTable(headers, rows, widths);
+}
+
+/**
+ * Emit cross-model comparison tables. Per-(eval×model) detail blocks have
+ * already been streamed via `snapshotModelRunStats` as each grading run
+ * completed; this is the final roll-up.
+ */
+export function reportRunStats({
   results,
+  summaries,
   job,
 }: {
   results: EvalRunResult[];
+  summaries: ModelRunSummary[];
   job: ServerJob;
-}): Promise<void> {
-  if (results.length === 0) {
-    job.info('No evals were graded — skipping stats.');
+}): void {
+  if (summaries.length === 0) {
+    job.info('No (eval × model) runs were graded — skipping stats.');
     return;
   }
 
-  const summaries: EvalStatsSummary[] = [];
+  job.info('');
+  job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
   for (const result of results) {
-    summaries.push(await reportEvalStats(result, job));
+    const evalSummaries = summaries.filter((s) => s.evalId === result.evalId);
+    if (evalSummaries.length === 0) continue;
+    job.info('');
+    job.info(`  ${result.evalId}`);
+    for (const line of renderPerEvalModelTable(evalSummaries)) {
+      job.info(line);
+    }
   }
 
-  const resourceTotals = summaries.reduce(
-    (acc, s) => {
-      acc.costJobs += s.costJobs;
-      acc.totalCostDollars += s.totalCostDollars;
-      acc.totalPromptTokens += s.totalPromptTokens;
-      acc.totalCompletionTokens += s.totalCompletionTokens;
-      acc.durationSeconds += s.durationSeconds ?? 0;
-      return acc;
-    },
-    {
-      costJobs: 0,
-      totalCostDollars: 0,
-      totalPromptTokens: 0,
-      totalCompletionTokens: 0,
-      durationSeconds: 0,
-    },
-  );
-
-  const distinctModels = [
-    ...new Set(summaries.map((s) => s.model).filter((m): m is string => m != null)),
-  ];
-  const modelsLine = distinctModels.length === 0 ? '(unknown)' : distinctModels.join(', ');
-
-  const macro = macroMetrics(summaries);
+  const aggregated = aggregateByModel(summaries);
+  const distinctEvals = new Set(summaries.map((s) => s.evalId)).size;
 
   job.info('');
   job.info(`═══ Run-wide totals ${'═'.repeat(60)}`);
-  job.info(`  Evals        ${summaries.length}`);
-  job.info(`  Models       ${modelsLine}`);
-  job.info(`  Submissions  ${resourceTotals.costJobs}`);
+  job.info(`  Evals    ${distinctEvals}`);
+  job.info(`  Models   ${aggregated.length}`);
   job.info('');
-  job.info(
-    renderResourceBlock({
-      durationSeconds: resourceTotals.durationSeconds,
-      totalCost: resourceTotals.totalCostDollars,
-      totalPromptTokens: resourceTotals.totalPromptTokens,
-      totalCompletionTokens: resourceTotals.totalCompletionTokens,
-      submissions: resourceTotals.costJobs,
-    }),
-  );
-  job.info('');
-  job.info('  Classification metrics (averaged across evals)');
-  job.info(renderClassificationMetrics(macro));
+  for (const line of renderRunWideModelTable(aggregated)) {
+    job.info(line);
+  }
 }

@@ -5,6 +5,10 @@ import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
@@ -108,11 +112,35 @@ router.post(
         );
       }
 
+      const rawModels = req.body.models;
+      const modelList: string[] = Array.isArray(rawModels)
+        ? rawModels
+        : typeof rawModels === 'string' && rawModels.length > 0
+          ? [rawModels]
+          : [];
+      const models: AiGradingModelId[] = [];
+      for (const m of modelList) {
+        if (!(AI_GRADING_MODEL_IDS as readonly string[]).includes(m)) {
+          throw new error.HttpStatusError(400, `Unknown AI grading model: ${m}`);
+        }
+        models.push(m as AiGradingModelId);
+      }
+      if (models.length === 0) {
+        throw new error.HttpStatusError(400, 'Select at least one AI grading model.');
+      }
+
+      const creditDollars = Number(req.body.credit_dollars);
+      if (!Number.isFinite(creditDollars) || creditDollars < 0) {
+        throw new error.HttpStatusError(400, 'credit_dollars must be a non-negative number.');
+      }
+      const creditMilliDollars = Math.round(creditDollars * 1000);
+
       const { runAiGradingEval } = await import('../../ee/lib/ai-grading-eval/ai-grading-eval.js');
       const jobSequenceId = await runAiGradingEval({
         repository: config.aiGradingEvalRepository,
         branch: config.aiGradingEvalBranch,
-        commit: config.aiGradingEvalCommit,
+        models,
+        creditMilliDollars,
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);

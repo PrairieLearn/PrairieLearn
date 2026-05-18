@@ -2,14 +2,6 @@ import { type ServerJob } from '../../../lib/server-jobs.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 
 /**
- * Default amount of non-transferable AI grading credit to seed onto the
- * synthetic eval course instance. $20 = 20_000 milli-dollars, comfortably
- * more than the marginal cost of grading a few hundred submissions with the
- * default model.
- */
-const SEED_CREDIT_MILLI_DOLLARS = 20_000;
-
-/**
  * Tops up the synthetic course instance's AI grading credit pool so
  * `aiGrade` doesn't bail out on the `total_milli_dollars <= 0` precondition.
  * Without this, AI grading silently grades zero submissions because the
@@ -20,15 +12,17 @@ const SEED_CREDIT_MILLI_DOLLARS = 20_000;
 export async function seedAiGradingCredits({
   course_instance_id,
   user_id,
+  milli_dollars,
   job,
 }: {
   course_instance_id: string;
   user_id: string;
+  milli_dollars: number;
   job: ServerJob;
 }): Promise<void> {
   await adjustCreditPool({
     course_instance_id,
-    delta_milli_dollars: SEED_CREDIT_MILLI_DOLLARS,
+    delta_milli_dollars: milli_dollars,
     credit_type: 'non_transferable',
     user_id,
     reason: 'AI grading eval initial seed',

@@ -2,10 +2,27 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  AI_GRADING_MODELS,
+  AI_GRADING_PROVIDER_DISPLAY_NAMES,
+} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { config } from '../../lib/config.js';
 import { type NewsItem } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+type AiGradingProvider = (typeof AI_GRADING_MODELS)[number]['provider'];
+type AiGradingModelEntry = (typeof AI_GRADING_MODELS)[number];
+
+function groupModelsByProvider(): [AiGradingProvider, AiGradingModelEntry[]][] {
+  const map = new Map<AiGradingProvider, AiGradingModelEntry[]>();
+  for (const m of AI_GRADING_MODELS) {
+    const list = map.get(m.provider);
+    if (list) list.push(m);
+    else map.set(m.provider, [m]);
+  }
+  return [...map.entries()];
+}
 
 export function AdministratorSettings({
   resLocals,
@@ -223,31 +240,78 @@ export function AdministratorSettings({
               </div>
               <div class="card-body">
                 <p>
-                  Clones the eval repo configured by <code>aiGradingEvalRepository</code>, scaffolds
-                  a synthetic course from its contents, uploads rubrics and submissions, and runs AI
-                  grading so the output can be reviewed in the existing AI grading UI. Dev mode
-                  only.
+                  Sets up assessment questions in a temporary synthetic course and runs AI grading
+                  against them, then aggregates effectiveness, speed, and cost statistics so the
+                  results can be reviewed in the existing AI grading UI. Dev mode only.
                 </p>
+                <p>Configure in <code>config.json</code>:</p>
+                <ul>
+                  <li><code>aiGradingEvalRepository</code></li>
+                  <li><code>aiGradingEvalBranch</code></li>
+                </ul>
                 ${config.aiGradingEvalRepository
                   ? html`
-                      <dl class="row mb-3">
-                        <dt class="col-sm-3">Repository</dt>
-                        <dd class="col-sm-9"><code>${config.aiGradingEvalRepository}</code></dd>
-                        <dt class="col-sm-3">Branch</dt>
-                        <dd class="col-sm-9">
-                          <code>${config.aiGradingEvalBranch ?? '(default)'}</code>
-                        </dd>
-                        <dt class="col-sm-3">Commit</dt>
-                        <dd class="col-sm-9">
-                          <code>${config.aiGradingEvalCommit ?? '(branch HEAD)'}</code>
-                        </dd>
-                      </dl>
-                      <form method="POST" class="d-inline">
+                      <form method="POST" class="mb-3">
                         <input
                           type="hidden"
                           name="__csrf_token"
                           value="${resLocals.__csrf_token}"
                         />
+                        <fieldset class="mb-3">
+                          <legend class="h6">Models</legend>
+                          <p class="form-text mt-0 mb-2">
+                            Each selected model grades every eval. Stats are reported per model so
+                            results can be compared side-by-side.
+                          </p>
+                          ${groupModelsByProvider().map(
+                            ([provider, models]) => html`
+                              <div class="mb-2">
+                                <div class="text-muted small text-uppercase">
+                                  ${AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+                                </div>
+                                ${models.map(
+                                  (m) => html`
+                                    <div class="form-check">
+                                      <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="models"
+                                        value="${m.modelId}"
+                                        id="ai-grading-eval-model-${m.modelId}"
+                                        ${m.recommended ? 'checked' : ''}
+                                      />
+                                      <label
+                                        class="form-check-label"
+                                        for="ai-grading-eval-model-${m.modelId}"
+                                      >
+                                        ${m.name}
+                                        <span class="text-muted small">— ${m.sublabel}</span>
+                                      </label>
+                                    </div>
+                                  `,
+                                )}
+                              </div>
+                            `,
+                          )}
+                        </fieldset>
+                        <div class="mb-3" style="max-width: 16rem;">
+                          <label for="ai-grading-eval-credits" class="form-label">
+                            Seed credit ($)
+                          </label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            id="ai-grading-eval-credits"
+                            name="credit_dollars"
+                            value="20"
+                            min="0"
+                            step="1"
+                            required
+                          />
+                          <div class="form-text">
+                            Non-transferable credit added to the synthetic course instance.
+                          </div>
+                        </div>
                         <button class="btn btn-primary" name="__action" value="run_ai_grading_eval">
                           Run AI grading eval
                         </button>
@@ -259,13 +323,13 @@ export function AdministratorSettings({
                         enable the run action.
                       </p>
                     `}
-                <form method="POST" class="d-inline ms-2">
+                <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
                     class="btn btn-outline-danger"
                     name="__action"
                     value="delete_ai_grading_eval_courses"
-                    onclick="return confirm('Soft-delete every AI grading eval course (short_name ai-grading-evals-*) and remove their on-disk directories?');"
+                    onclick="return confirm('Delete every AI grading eval course?');"
                   >
                     Delete all eval courses
                   </button>

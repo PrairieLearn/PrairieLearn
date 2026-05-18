@@ -4,6 +4,7 @@ import { config } from '../../../lib/config.js';
 import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
+import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 
 import { cloneEvalRepo } from './clone-eval-repo.js';
 import { loadManifest } from './manifest.js';
@@ -12,36 +13,45 @@ import { applyRubric } from './rubric.js';
 import { runGrading } from './run-grading.js';
 import { scaffoldCourse } from './scaffold-course.js';
 import { seedAiGradingCredits } from './seed-credits.js';
-import { type EvalRunResult, reportRunStats } from './stats.js';
+import {
+  type EvalModelRun,
+  type EvalRunResult,
+  reportRunStats,
+  snapshotModelRunStats,
+} from './stats.js';
 import { importSubmissions } from './submissions.js';
 
 /**
  * Entry point for the AI grading eval harness.
  *
- * Current scope: workflow steps 1 (clone the eval repo), 2 (load the
- * manifest), 3 (scaffold a synthetic course and sync it to the DB), 4
- * (upsert each eval's rubric onto its AQ), 5 (upload each eval's
- * submissions CSV with its `Rubric Grading` ground truth), and 6 (run AI
- * grading in `human_graded` mode against the imported ground truth).
- * Step 7 (aggregate stats roll-up) will be added next.
- *
- * Dev-mode only: the harness creates real `courses` rows, will eventually
- * call `uploadSubmissions()` (which wipes assessment instances), and writes
+ * Dev-mode only: creates real `courses` rows, calls `uploadSubmissions()`
+ * (which wipes assessment instances on the synthetic course), and writes
  * `ai_grading_jobs` rows.
+ *
+ * Per eval, runs AI grading once per requested model. Because `aiGrade`
+ * overwrites the latest grading job on each instance question, per-model
+ * stats are snapshotted immediately after each grading run.
  */
 export async function runAiGradingEval({
   repository,
   branch,
   commit,
+  models,
+  creditMilliDollars,
   user,
 }: {
   repository: string;
   branch?: string | null;
   commit?: string | null;
+  models: AiGradingModelId[];
+  creditMilliDollars: number;
   user: User;
 }): Promise<string> {
   if (!config.devMode) {
     throw new Error('AI grading evals are only available in dev mode');
+  }
+  if (models.length === 0) {
+    throw new Error('At least one model is required to run AI grading evals');
   }
 
   const serverJob = await createServerJob({
@@ -55,8 +65,10 @@ export async function runAiGradingEval({
     job.info(`Repository: ${repository}`);
     if (branch) job.info(`Branch: ${branch}`);
     if (commit) job.info(`Commit: ${commit}`);
+    job.info(`Models (${models.length}): ${models.join(', ')}`);
+    job.info(`Seed credit: $${(creditMilliDollars / 1000).toFixed(2)}`);
 
-    const evalsDir = await cloneEvalRepo({ repository, branch, commit, job });
+    const evalsDir = await cloneEvalRepo({ repository, branch, job });
     job.info(`Eval repo ready at ${evalsDir}`);
 
     const { manifest, evals } = await loadManifest(evalsDir);
@@ -75,10 +87,12 @@ export async function runAiGradingEval({
     await seedAiGradingCredits({
       course_instance_id: courseInstance.id,
       user_id: user.id,
+      milli_dollars: creditMilliDollars,
       job,
     });
 
     const evalResults: EvalRunResult[] = [];
+    const summaries = [];
 
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
@@ -104,25 +118,39 @@ export async function runAiGradingEval({
         job,
       });
 
-      const aiGradingJobSequenceId = await runGrading({
-        course: scaffold.course,
-        course_instance: target.course_instance,
-        question: target.question,
-        assessment: target.assessment,
-        assessment_question: target.assessment_question,
-        user,
-        job,
-      });
+      const runs: EvalModelRun[] = [];
+      for (const model of models) {
+        const aiGradingJobSequenceId = await runGrading({
+          course: scaffold.course,
+          course_instance: target.course_instance,
+          question: target.question,
+          assessment: target.assessment,
+          assessment_question: target.assessment_question,
+          user,
+          model_id: model,
+          job,
+        });
+        runs.push({ model, aiGradingJobSequenceId });
+        summaries.push(
+          await snapshotModelRunStats({
+            evalId: loaded.entry.id,
+            model,
+            target,
+            aiGradingJobSequenceId,
+            job,
+          }),
+        );
+      }
 
       evalResults.push({
         evalId: loaded.entry.id,
         target,
-        aiGradingJobSequenceId,
         maxPoints: loaded.entry.max_points,
+        runs,
       });
     }
 
-    await reportRunStats({ results: evalResults, job });
+    reportRunStats({ results: evalResults, summaries, job });
 
     job.info('');
     job.info('All steps complete.');

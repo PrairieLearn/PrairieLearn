@@ -614,8 +614,6 @@ export const ConfigSchema = z.object({
   aiGradingEvalRepository: z.string().nullable().default(null),
   /** Optional branch to check out from `aiGradingEvalRepository`. */
   aiGradingEvalBranch: z.string().nullable().default(null),
-  /** Optional commit SHA to pin from `aiGradingEvalRepository`. */
-  aiGradingEvalCommit: z.string().nullable().default(null),
   /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.
