@@ -28,14 +28,6 @@ const serverUuid = crypto.randomUUID();
 // How often the recovery loop checks for abandoned workflow runs.
 const DEFAULT_RECOVERY_INTERVAL_MS = 60_000;
 
-// Cap on how many `'continue'` steps a single executeWorkflow call may take
-// before yielding back to the recovery loop. This prevents a single
-// long-running workflow on one server from monopolizing the loop and
-// starving other workflows that are waiting for crash recovery to pick
-// them up. After yielding, the lock is released and the next recovery
-// tick (or another server) will resume the run from its persisted state.
-const MAX_STEPS_PER_EXECUTION = 100;
-
 // Cap on how many stale runs a single server processes in parallel per
 // recovery tick. Each recovered run holds a soft lock and runs its step
 // loop concurrently with the others, so this bounds the workflow load
@@ -329,8 +321,7 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
   // and persisted to the DB; unexpected errors (e.g. persistStep failure)
   // propagate to the caller and the crash-recovery loop picks up the run.
   try {
-    let stepsTaken = 0;
-    while (stepsTaken < MAX_STEPS_PER_EXECUTION) {
+    while (true) {
       // Read current run state from DB
       const currentRun = await getWorkflowRun<TState>(runId);
 
@@ -372,8 +363,6 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
         status: dbStatus,
         error_message: stepResult.error_message,
       });
-
-      stepsTaken += 1;
 
       if (!updated || stepResult.status !== 'continue') {
         break;

@@ -324,40 +324,6 @@ describe('@prairielearn/workflows', () => {
     });
   });
 
-  describe('forward progress', () => {
-    it('yields and releases the lock after the per-execution step budget', async () => {
-      const type = uniqueType('step_budget');
-      registerWorkflow<{ step: number }>({
-        type,
-        async takeStep({
-          run,
-        }: WorkflowStepContext<{ step: number }>): Promise<StepResult<{ step: number }>> {
-          return { state: { step: run.state.step + 1 }, status: 'continue' };
-        },
-      });
-
-      const run = await startWorkflow(type, { initialState: { step: 0 } });
-
-      // The engine caps an execution at MAX_STEPS_PER_EXECUTION (100) and
-      // yields back. The run should still be 'running' (more work to do)
-      // but the lock should be released so another server / the recovery
-      // loop can pick it up.
-      const deadline = Date.now() + 30_000;
-      while (Date.now() < deadline) {
-        const current = await getWorkflowRun<{ step: number }>(run.id);
-        if (
-          current.status === 'running' &&
-          current.locked_by === null &&
-          current.state.step >= 100
-        ) {
-          return;
-        }
-        await sleep(50);
-      }
-      throw new Error('Workflow never yielded back to the recovery loop');
-    });
-  });
-
   describe('crash recovery', () => {
     it('resumes a run with a stale lock left by a crashed worker', async () => {
       const type = uniqueType('crash_recovery');
