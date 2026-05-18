@@ -321,6 +321,13 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
   // and persisted to the DB; unexpected errors (e.g. persistStep failure)
   // propagate to the caller and the crash-recovery loop picks up the run.
   try {
+    // TODO: prevent job starvation. This loop runs a single workflow as
+    // far as it can, so when more runs are stuck than the fleet can serve
+    // (e.g. 10 grading jobs of 1000 submissions on 4 servers), the extras
+    // queue indefinitely behind whatever each server picked up first.
+    // The fix is more sophisticated scheduling — at minimum, letting one
+    // server execute multiple runs at once, which also matters for AI
+    // grading where each run spends most of its time awaiting inference.
     while (true) {
       // Read current run state from DB
       const currentRun = await getWorkflowRun<TState>(runId);
