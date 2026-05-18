@@ -34,6 +34,263 @@ export interface AssessmentSettingsError {
   UpdateAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  ChangeAssessmentType: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
+
+const AssessmentTypeSchema = z.enum(['Exam', 'Homework']);
+
+export interface TypeChangeLocation {
+  zoneIndex?: number;
+  zoneTitle?: string | null;
+  questionIndex?: number;
+  qid?: string | null;
+  alternativeIndex?: number;
+  alternativeQid?: string | null;
+}
+
+export type TypeChangeBlockerField =
+  | 'multipleInstance'
+  | 'requireHonorCode'
+  | 'honorCode'
+  | 'allowRealTimeGrading'
+  | 'constantQuestionValue'
+  | 'maxPoints'
+  | 'maxAutoPoints';
+
+export interface TypeChangeBlocker {
+  field: TypeChangeBlockerField;
+  location: TypeChangeLocation;
+  currentValue: string;
+}
+
+export interface PointsListCollapse {
+  field: 'points' | 'autoPoints';
+  location: TypeChangeLocation;
+  currentValue: number[];
+  newValue: number;
+}
+
+export interface AnalyzeTypeChangeResult {
+  currentType: 'Exam' | 'Homework';
+  newType: 'Exam' | 'Homework';
+  blockers: TypeChangeBlocker[];
+  pointsListCollapses: PointsListCollapse[];
+}
+
+function blockLocationForQuestion(
+  zoneIndex: number,
+  zoneTitle: string | null | undefined,
+  questionIndex: number,
+  qid: string | null | undefined,
+): TypeChangeLocation {
+  return { zoneIndex, zoneTitle: zoneTitle ?? null, questionIndex, qid: qid ?? null };
+}
+
+function blockLocationForAlternative(
+  zoneIndex: number,
+  zoneTitle: string | null | undefined,
+  questionIndex: number,
+  qid: string | null | undefined,
+  alternativeIndex: number,
+  alternativeQid: string | null | undefined,
+): TypeChangeLocation {
+  return {
+    zoneIndex,
+    zoneTitle: zoneTitle ?? null,
+    questionIndex,
+    qid: qid ?? null,
+    alternativeIndex,
+    alternativeQid: alternativeQid ?? null,
+  };
+}
+
+function collectPointsListCollapses(
+  block: { points?: number | number[]; autoPoints?: number | number[] },
+  location: TypeChangeLocation,
+): PointsListCollapse[] {
+  const collapses: PointsListCollapse[] = [];
+  if (Array.isArray(block.points) && block.points.length > 1) {
+    collapses.push({
+      field: 'points',
+      location,
+      currentValue: block.points,
+      newValue: block.points[0],
+    });
+  }
+  if (Array.isArray(block.autoPoints) && block.autoPoints.length > 1) {
+    collapses.push({
+      field: 'autoPoints',
+      location,
+      currentValue: block.autoPoints,
+      newValue: block.autoPoints[0],
+    });
+  }
+  return collapses;
+}
+
+function analyzeForHomework(info: AssessmentJsonInput): {
+  blockers: TypeChangeBlocker[];
+  pointsListCollapses: PointsListCollapse[];
+} {
+  const blockers: TypeChangeBlocker[] = [];
+  const pointsListCollapses: PointsListCollapse[] = [];
+
+  if (info.multipleInstance) {
+    blockers.push({
+      field: 'multipleInstance',
+      location: {},
+      currentValue: 'true',
+    });
+  }
+  if (info.requireHonorCode) {
+    blockers.push({
+      field: 'requireHonorCode',
+      location: {},
+      currentValue: 'true',
+    });
+  }
+  if (info.honorCode != null && info.honorCode !== '') {
+    blockers.push({
+      field: 'honorCode',
+      location: {},
+      currentValue: 'set',
+    });
+  }
+  if (info.allowRealTimeGrading === false) {
+    blockers.push({
+      field: 'allowRealTimeGrading',
+      location: {},
+      currentValue: 'false',
+    });
+  }
+
+  (info.zones ?? []).forEach((zone, zoneIndex) => {
+    if (zone.allowRealTimeGrading === false) {
+      blockers.push({
+        field: 'allowRealTimeGrading',
+        location: { zoneIndex, zoneTitle: zone.title ?? null },
+        currentValue: 'false',
+      });
+    }
+    zone.questions.forEach((question, questionIndex) => {
+      const qid = question.id ?? null;
+      const questionLocation = blockLocationForQuestion(zoneIndex, zone.title, questionIndex, qid);
+      if (question.allowRealTimeGrading === false) {
+        blockers.push({
+          field: 'allowRealTimeGrading',
+          location: questionLocation,
+          currentValue: 'false',
+        });
+      }
+      pointsListCollapses.push(...collectPointsListCollapses(question, questionLocation));
+      (question.alternatives ?? []).forEach((alt, alternativeIndex) => {
+        const alternativeLocation = blockLocationForAlternative(
+          zoneIndex,
+          zone.title,
+          questionIndex,
+          qid,
+          alternativeIndex,
+          alt.id,
+        );
+        if (alt.allowRealTimeGrading === false) {
+          blockers.push({
+            field: 'allowRealTimeGrading',
+            location: alternativeLocation,
+            currentValue: 'false',
+          });
+        }
+        pointsListCollapses.push(...collectPointsListCollapses(alt, alternativeLocation));
+      });
+    });
+  });
+
+  return { blockers, pointsListCollapses };
+}
+
+function analyzeForExam(info: AssessmentJsonInput): {
+  blockers: TypeChangeBlocker[];
+  pointsListCollapses: PointsListCollapse[];
+} {
+  const blockers: TypeChangeBlocker[] = [];
+  if (info.constantQuestionValue) {
+    blockers.push({
+      field: 'constantQuestionValue',
+      location: {},
+      currentValue: 'true',
+    });
+  }
+
+  (info.zones ?? []).forEach((zone, zoneIndex) => {
+    zone.questions.forEach((question, questionIndex) => {
+      const qid = question.id ?? null;
+      const questionLocation = blockLocationForQuestion(zoneIndex, zone.title, questionIndex, qid);
+      if (question.maxPoints != null) {
+        blockers.push({
+          field: 'maxPoints',
+          location: questionLocation,
+          currentValue: String(question.maxPoints),
+        });
+      }
+      if (question.maxAutoPoints != null) {
+        blockers.push({
+          field: 'maxAutoPoints',
+          location: questionLocation,
+          currentValue: String(question.maxAutoPoints),
+        });
+      }
+      (question.alternatives ?? []).forEach((alt, alternativeIndex) => {
+        const alternativeLocation = blockLocationForAlternative(
+          zoneIndex,
+          zone.title,
+          questionIndex,
+          qid,
+          alternativeIndex,
+          alt.id,
+        );
+        if (alt.maxPoints != null) {
+          blockers.push({
+            field: 'maxPoints',
+            location: alternativeLocation,
+            currentValue: String(alt.maxPoints),
+          });
+        }
+        if (alt.maxAutoPoints != null) {
+          blockers.push({
+            field: 'maxAutoPoints',
+            location: alternativeLocation,
+            currentValue: String(alt.maxAutoPoints),
+          });
+        }
+      });
+    });
+  });
+
+  return { blockers, pointsListCollapses: [] };
+}
+
+async function readInfoAssessment(infoAssessmentPath: string): Promise<AssessmentJsonInput> {
+  if (!(await fs.pathExists(infoAssessmentPath))) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'infoAssessment.json does not exist',
+    });
+  }
+  return JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
+}
+
+function infoAssessmentPathFor(
+  course: { path: string },
+  courseInstanceShortName: string,
+  tid: string,
+) {
+  return path.join(
+    course.path,
+    'courseInstances',
+    courseInstanceShortName,
+    'assessments',
+    tid,
+    'infoAssessment.json',
+  );
 }
 
 const updateAssessment = t.procedure
@@ -365,6 +622,206 @@ const copyAssessment = t.procedure
     return { assessmentId: copiedAssessment.id };
   });
 
+const analyzeTypeChange = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.object({ newType: AssessmentTypeSchema }))
+  .query(async ({ input, ctx }): Promise<AnalyzeTypeChangeResult> => {
+    const { course, course_instance, assessment } = ctx;
+    const currentType = assessment.type;
+    if (currentType !== 'Exam' && currentType !== 'Homework') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Assessment type "${currentType}" cannot be changed.`,
+      });
+    }
+
+    if (input.newType === currentType) {
+      return {
+        currentType,
+        newType: input.newType,
+        blockers: [],
+        pointsListCollapses: [],
+      };
+    }
+
+    const info = await readInfoAssessment(
+      infoAssessmentPathFor(course, course_instance.short_name, assessment.tid!),
+    );
+
+    const { blockers, pointsListCollapses } =
+      input.newType === 'Homework' ? analyzeForHomework(info) : analyzeForExam(info);
+    return { currentType, newType: input.newType, blockers, pointsListCollapses };
+  });
+
+const ChangeTypeExamDefaultsSchema = z.object({
+  multipleInstance: z.boolean(),
+  autoClose: z.boolean(),
+  requireHonorCode: z.boolean(),
+  honorCode: z.string(),
+  advanceScorePerc: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
+    z.number().nullable(),
+  ),
+  allowRealTimeGrading: z.boolean(),
+});
+
+const ChangeTypeHomeworkDefaultsSchema = z.object({
+  constantQuestionValue: z.boolean(),
+});
+
+const ChangeTypeDefaultsSchema = z.union([
+  z.object({ newType: z.literal('Exam'), defaults: ChangeTypeExamDefaultsSchema }),
+  z.object({ newType: z.literal('Homework'), defaults: ChangeTypeHomeworkDefaultsSchema }),
+]);
+
+export type ChangeTypeExamDefaults = z.infer<typeof ChangeTypeExamDefaultsSchema>;
+export type ChangeTypeHomeworkDefaults = z.infer<typeof ChangeTypeHomeworkDefaultsSchema>;
+
+const changeAssessmentType = t.procedure
+  .use(requireCoursePermissionEdit)
+  .input(z.intersection(z.object({ origHash: z.string() }), ChangeTypeDefaultsSchema))
+  .mutation(async ({ input, ctx }) => {
+    const { course, course_instance, assessment, locals } = ctx;
+    const currentType = assessment.type;
+    if (currentType !== 'Exam' && currentType !== 'Homework') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Assessment type "${currentType}" cannot be changed.`,
+      });
+    }
+    if (input.newType === currentType) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'New type matches the current type.',
+      });
+    }
+
+    const infoAssessmentPath = infoAssessmentPathFor(
+      course,
+      course_instance.short_name,
+      assessment.tid!,
+    );
+    const rootPath = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name,
+      'assessments',
+      assessment.tid!,
+    );
+
+    const info: AssessmentJsonInput = await readInfoAssessment(infoAssessmentPath);
+
+    info.type = input.newType;
+
+    if (input.newType === 'Homework') {
+      delete info.multipleInstance;
+      delete info.autoClose;
+      delete info.requireHonorCode;
+      delete info.honorCode;
+      delete info.advanceScorePerc;
+      delete info.allowRealTimeGrading;
+
+      (info.zones ?? []).forEach((zone) => {
+        if (zone.allowRealTimeGrading === false) delete zone.allowRealTimeGrading;
+        zone.questions.forEach((question) => {
+          if (question.allowRealTimeGrading === false) delete question.allowRealTimeGrading;
+          if (Array.isArray(question.points)) question.points = question.points[0];
+          if (Array.isArray(question.autoPoints)) question.autoPoints = question.autoPoints[0];
+          (question.alternatives ?? []).forEach((alt) => {
+            if (alt.allowRealTimeGrading === false) delete alt.allowRealTimeGrading;
+            if (Array.isArray(alt.points)) alt.points = alt.points[0];
+            if (Array.isArray(alt.autoPoints)) alt.autoPoints = alt.autoPoints[0];
+          });
+        });
+      });
+
+      info.constantQuestionValue = propertyValueWithDefault(
+        info.constantQuestionValue,
+        input.defaults.constantQuestionValue,
+        false,
+      );
+    } else {
+      delete info.constantQuestionValue;
+
+      (info.zones ?? []).forEach((zone) => {
+        zone.questions.forEach((question) => {
+          delete question.maxPoints;
+          delete question.maxAutoPoints;
+          (question.alternatives ?? []).forEach((alt) => {
+            delete alt.maxPoints;
+            delete alt.maxAutoPoints;
+          });
+        });
+      });
+
+      info.multipleInstance = propertyValueWithDefault(
+        info.multipleInstance,
+        input.defaults.multipleInstance,
+        false,
+      );
+      info.autoClose = propertyValueWithDefault(info.autoClose, input.defaults.autoClose, true);
+      info.requireHonorCode = propertyValueWithDefault(
+        info.requireHonorCode,
+        input.defaults.requireHonorCode,
+        true,
+      );
+      info.honorCode = propertyValueWithDefault(
+        info.honorCode,
+        input.defaults.honorCode.trim() === '' ? undefined : input.defaults.honorCode.trim(),
+        '',
+      );
+      info.advanceScorePerc = propertyValueWithDefault(
+        info.advanceScorePerc,
+        input.defaults.advanceScorePerc ?? undefined,
+        undefined,
+      );
+      info.allowRealTimeGrading = propertyValueWithDefault(
+        info.allowRealTimeGrading,
+        input.defaults.allowRealTimeGrading,
+        true,
+      );
+    }
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(info));
+
+    const editor = new MultiEditor(
+      {
+        locals,
+        description: `${course_instance.short_name}: Change assessment ${assessment.tid} type to ${input.newType}`,
+      },
+      [
+        new FileModifyEditor({
+          locals,
+          container: { rootPath, invalidRootPaths: [] },
+          filePath: infoAssessmentPath,
+          editContents: b64EncodeUnicode(formattedJson),
+          origHash: input.origHash,
+        }),
+      ],
+    );
+
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<AssessmentSettingsError['ChangeAssessmentType']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to change assessment type',
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+
+    const newHash = await getOriginalHash(infoAssessmentPath);
+    if (newHash === null) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to read hash of updated infoAssessment.json',
+      });
+    }
+
+    return { origHash: newHash, newType: input.newType };
+  });
+
 const deleteAssessment = t.procedure.use(requireCoursePermissionEdit).mutation(async ({ ctx }) => {
   const { locals } = ctx;
 
@@ -387,4 +844,6 @@ export const assessmentSettingsRouter = t.router({
   updateAssessment,
   copyAssessment,
   deleteAssessment,
+  analyzeTypeChange,
+  changeAssessmentType,
 });
