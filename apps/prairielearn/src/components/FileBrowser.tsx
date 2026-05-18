@@ -691,6 +691,9 @@ function DirectoryBrowserTable({
             const editFileUrl =
               mode != null ? fileUrl : `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
             const canEdit = f.canEdit && fileDisabledReason == null;
+            const canUpload = f.canUpload && fileDisabledReason == null;
+            const canRename = f.canRename && fileDisabledReason == null;
+            const canDelete = f.canDelete && fileDisabledReason == null;
 
             return (
               <tr key={`file-${f.path}`}>
@@ -756,7 +759,7 @@ function DirectoryBrowserTable({
                             action: formAction,
                             redirectUrl,
                           }).toString()}
-                          disabled={!f.canUpload}
+                          disabled={!canUpload}
                         >
                           <i className="fa fa-arrow-up" />
                           <span>Upload</span>
@@ -790,7 +793,7 @@ function DirectoryBrowserTable({
                             redirectUrl,
                           }).toString()}
                           data-testid="rename-file-button"
-                          disabled={!f.canRename}
+                          disabled={!canRename}
                         >
                           <i className="fa fa-i-cursor" />
                           <span>Rename</span>
@@ -810,7 +813,7 @@ function DirectoryBrowserTable({
                             redirectUrl,
                           }).toString()}
                           data-testid="delete-file-button"
-                          disabled={!f.canDelete}
+                          disabled={!canDelete}
                         >
                           <i className="far fa-trash-alt" />
                           <span>Delete</span>
