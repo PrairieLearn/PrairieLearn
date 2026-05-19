@@ -112,7 +112,7 @@ WHERE
 RETURNING
   *;
 
--- BLOCK select_next_recoverable_run
+-- BLOCK select_recoverable_run
 -- Returns the oldest recoverable run (status = 'running', either unlocked or
 -- with a stale heartbeat) whose type is registered on this server. Returns
 -- one row at a time; the caller loops until it either successfully recovers

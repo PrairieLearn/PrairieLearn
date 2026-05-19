@@ -504,20 +504,27 @@ async function recoverStaleRuns(): Promise<void> {
   // no recoverable runs remain.
   while (true) {
     const candidate = await pool.queryOptionalRow(
-      sql.select_next_recoverable_run,
+      sql.select_recoverable_run,
       { registered_types: registeredTypes },
       WorkflowRunSchema,
     );
     if (!candidate) return;
 
-    const definition = registeredWorkflows.get(candidate.type);
-    if (!definition) continue;
+    // SAFETY: the SELECT filters by `registered_types`, which was built
+    // from `registeredWorkflows.keys()` at the top of this function, and
+    // workflow registration is append-only, so the definition is always
+    // present.
+    const definition = registeredWorkflows.get(candidate.type)!;
 
     logger.info(`Recovering workflow run ${candidate.id} (type: ${candidate.type})`);
     try {
       const ran = await executeWorkflow(candidate.id, definition);
       if (ran) return;
     } catch (err) {
+      // Back off until the next recovery tick rather than retrying the
+      // same run in a hot loop. If the failure is persistent, repeated
+      // ticks will keep reporting it; if transient, the next tick picks
+      // it up.
       logger.error(`Failed to recover workflow ${candidate.id}`, err);
       Sentry.captureException(err);
       return;
