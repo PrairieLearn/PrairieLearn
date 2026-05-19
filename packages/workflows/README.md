@@ -93,21 +93,20 @@ registerWorkflow<RubricAssistantState>({
 
 ### Starting a workflow
 
+Pass the state type as a type parameter so `initialState` is checked against your workflow's state shape at compile time. Without it, `initialState` falls back to `Record<string, unknown>` and typos won't be caught.
+
 ```ts
 import { startWorkflow } from '@prairielearn/workflows';
 
-const run = await startWorkflow('rubric_assistant', {
+const run = await startWorkflow<RubricAssistantState>('rubric_assistant', {
   initialState: { step: 'rubric_check' },
   context: { assessment_question_id: '42', course_id: '1' },
 });
-// If you want compile-time checking of initialState shape:
-// const run = await startWorkflow<RubricAssistantState>('rubric_assistant', {
-//   initialState: { step: 'rubric_check' },
-//   context: { assessment_question_id: '42', course_id: '1' },
-// });
 // run.id is the workflow run ID
 // run.status is 'running' — the step loop continues in the background
 ```
+
+The type parameter and the registered `type` string aren't linked — the API can't infer the state shape from `'rubric_assistant'` alone, so passing the wrong state type with the right string compiles. Make sure the type parameter matches what was registered.
 
 The `context` field stores domain-specific identifiers as string key/value pairs alongside the run for querying. The engine never inspects it. You can add your own indexes on `context` fields via standard migrations.
 
