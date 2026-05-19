@@ -67,7 +67,7 @@ export const AI_GRADING_MODELS = [
     provider: 'google',
     modelId: 'gemini-3.5-flash-preview',
     name: 'Gemini 3.5 Flash',
-    sublabel: 'Higher quality image grading',
+    sublabel: 'Balance of speed and quality for images',
     recommended: false,
   },
   {
