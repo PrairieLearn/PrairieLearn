@@ -10,6 +10,33 @@
       // as they are re-rendered upon loading.
       node.innerText = `$${node.dataset.value}$`;
     }
+
+    // Quill doesn't support th, so we replace the tags to avoid confusion.
+    // https://github.com/slab/quill/issues/4023
+    // https://github.com/slab/quill/pull/4614
+    if (data.tagName.toLowerCase() === 'th') {
+      const newNode = document.createElement('td');
+      // Copy attributes from th to td
+      for (const attr of node.attributes) {
+        newNode.setAttribute(attr.name, attr.value);
+      }
+      // Apply typical TH formatting (center align and bold) to the TD element,
+      // since this replacement loses that visual representation.
+      newNode.classList.add('ql-align-center');
+      const strong = document.createElement('strong');
+      strong.innerHTML = node.innerHTML;
+      newNode.append(strong);
+      node.replaceWith(newNode);
+    }
+
+    // Quill also occasionally breaks down tables if there is a thead, so we
+    // remove the thead but keep its content.
+    if (data.tagName.toLowerCase() === 'thead') {
+      const innerHTML = node.innerHTML;
+      const table = node.parentElement;
+      node.remove();
+      table.innerHTML = innerHTML + table.innerHTML;
+    }
   });
 
   // Words are split on ASCII whitespace. This must match the Python logic in
