@@ -233,11 +233,11 @@ export function AdministratorSettings({
                   against them, then aggregates effectiveness, speed, and cost statistics so the
                   results can be reviewed in the existing AI grading UI. Dev mode only.
                 </p>
-                <p class="text-warning">
+                <div class="alert alert-warning" role="alert">
                   <strong>Do not run concurrently:</strong> runs against the same eval repository
                   share a single local checkout and synthetic course, so overlapping runs will
                   produce mixed or stale results.
-                </p>
+                </div>
                 <p>Configure in <code>config.json</code>:</p>
                 <ul>
                   <li><code>aiGradingEvalRepository</code></li>

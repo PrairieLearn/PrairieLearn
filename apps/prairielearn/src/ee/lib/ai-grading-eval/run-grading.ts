@@ -114,7 +114,8 @@ export async function runGrading({
 
   if (status !== 'Success') {
     job.fail(`AI grading job sequence ${aiGradingJobSequenceId} ended with status ${status}`);
+  } else {
+    job.info('AI grading complete.');
   }
-  job.info('AI grading complete.');
   return aiGradingJobSequenceId;
 }
