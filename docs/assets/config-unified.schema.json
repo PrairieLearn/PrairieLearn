@@ -472,7 +472,7 @@
     },
     "workflowsActive": {
       "type": "boolean",
-      "default": true
+      "default": false
     },
     "cronActive": {
       "type": "boolean",

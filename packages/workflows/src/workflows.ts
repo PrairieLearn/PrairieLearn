@@ -277,21 +277,23 @@ export async function appendWorkflowOutput(runId: string, text: string): Promise
 
 /**
  * Acquires the soft lock on `runId` and runs the step loop until the run
- * pauses, completes, or errors. Returns `true` if this server actually ran
- * the step loop, or `false` if another server already held the lock (in
- * which case the call is a no-op).
+ * pauses, completes, or errors. Returns `true` if this server acquired the
+ * lock and ran the step loop, or `false` if `acquire_lock` matched zero rows
+ * — meaning another server already held a fresh lock, or the run had
+ * already transitioned out of `'running'` (canceled/completed/error)
+ * between our `SELECT` and our `UPDATE`. In either false case the call is
+ * a no-op and the caller should move on.
  */
 async function executeWorkflow<TState extends Record<string, unknown>>(
   runId: string,
   definition: WorkflowDefinition<TState>,
 ): Promise<boolean> {
-  // Acquire lock
-  const lockRowCount = await pool.execute(sql.acquire_lock, {
+  const acquireRowCount = await pool.execute(sql.acquire_lock, {
     id: runId,
     locked_by: serverUuid,
   });
 
-  if (lockRowCount === 0) {
+  if (acquireRowCount === 0) {
     logger.info(`Could not acquire lock for workflow ${runId}, skipping`);
     return false;
   }
@@ -326,8 +328,9 @@ async function executeWorkflow<TState extends Record<string, unknown>>(
     // (e.g. 10 grading jobs of 1000 submissions on 4 servers), the extras
     // queue indefinitely behind whatever each server picked up first.
     // The fix is more sophisticated scheduling — at minimum, letting one
-    // server execute multiple runs at once, which also matters for AI
-    // grading where each run spends most of its time awaiting inference.
+    // server execute multiple runs at once, which particularly matters
+    // for AI grading where each run spends most of its time awaiting
+    // inference.
     while (true) {
       // Read current run state from DB
       const currentRun = await getWorkflowRun<TState>(runId);
@@ -529,8 +532,12 @@ async function recoverStaleRuns(): Promise<void> {
 
     logger.info(`Recovering workflow run ${candidate.id} (type: ${candidate.type})`);
     try {
-      const ran = await executeWorkflow(candidate.id, definition);
-      if (ran) return;
+      // `executeWorkflow` returns false when we lost the race for the lock
+      // — either another server claimed this candidate first, or the run
+      // transitioned out of 'running' between our SELECT and our UPDATE.
+      // In either case, fall through and try the next candidate.
+      const acquired = await executeWorkflow(candidate.id, definition);
+      if (acquired) return;
     } catch (err) {
       // Back off until the next recovery tick rather than retrying the
       // same run in a hot loop. If the failure is persistent, repeated

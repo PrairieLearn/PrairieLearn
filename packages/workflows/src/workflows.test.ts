@@ -3,7 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
-import { PostgresPool, makePostgresTestUtils } from '@prairielearn/postgres';
+import { PostgresPool, loadSqlEquiv, makePostgresTestUtils } from '@prairielearn/postgres';
 
 import {
   cancelWorkflow,
@@ -32,6 +32,8 @@ function uniqueType(base: string): string {
 // A separate pool for directly manipulating the DB in tests (e.g. simulating crashes).
 const testPool = new PostgresPool();
 
+const sql = loadSqlEquiv(import.meta.url);
+
 describe('@prairielearn/workflows', () => {
   beforeAll(async () => {
     const pgConfig = await postgresTestUtils.createDatabase();
@@ -42,34 +44,10 @@ describe('@prairielearn/workflows', () => {
       throw err;
     });
     // Create the table manually since migrations don't run in package tests.
-    await testPool.execute(
-      `CREATE TABLE IF NOT EXISTS workflow_runs (
-        id bigserial PRIMARY KEY,
-        type text NOT NULL,
-        status text NOT NULL DEFAULT 'running' CHECK (
-          status IN ('running', 'waiting', 'completed', 'error', 'canceled')
-        ),
-        state jsonb NOT NULL DEFAULT '{}'::jsonb,
-        locked_by text,
-        locked_at timestamptz,
-        heartbeat_at timestamptz,
-        context jsonb NOT NULL DEFAULT '{}'::jsonb,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now(),
-        completed_at timestamptz,
-        error_message text,
-        output text NOT NULL DEFAULT ''
-      )`,
-    );
-    await testPool.execute(
-      'CREATE INDEX IF NOT EXISTS workflow_runs_type_status_idx ON workflow_runs (type, status)',
-    );
-    await testPool.execute(
-      "CREATE INDEX IF NOT EXISTS workflow_runs_status_running_idx ON workflow_runs (status, heartbeat_at) WHERE status = 'running'",
-    );
-    await testPool.execute(
-      'CREATE INDEX IF NOT EXISTS workflow_runs_context_idx ON workflow_runs USING gin (context)',
-    );
+    await testPool.execute(sql.create_workflow_runs_table);
+    await testPool.execute(sql.create_type_status_index);
+    await testPool.execute(sql.create_status_running_index);
+    await testPool.execute(sql.create_context_index);
   });
 
   afterAll(async () => {
@@ -339,13 +317,8 @@ describe('@prairielearn/workflows', () => {
         },
       });
 
-      // Manually insert a run that looks like it was mid-execution when
-      // a worker crashed: status is 'running', it has a lock, but the
-      // heartbeat is 5 minutes stale.
       const row = await testPool.queryRow(
-        `INSERT INTO workflow_runs (type, status, state, locked_by, locked_at, heartbeat_at)
-         VALUES ($type, 'running', $state::jsonb, 'dead-worker', now() - interval '10 minutes', now() - interval '5 minutes')
-         RETURNING id`,
+        sql.insert_run_with_stale_lock,
         { type, state: JSON.stringify({ step: 1 }) },
         z.object({ id: z.coerce.string() }),
       );
@@ -373,11 +346,8 @@ describe('@prairielearn/workflows', () => {
         },
       });
 
-      // Insert a run with a fresh heartbeat (another worker is actively running it).
       const row = await testPool.queryRow(
-        `INSERT INTO workflow_runs (type, status, state, locked_by, locked_at, heartbeat_at)
-         VALUES ($type, 'running', $state::jsonb, 'other-worker', now(), now())
-         RETURNING id`,
+        sql.insert_run_with_fresh_lock,
         { type, state: JSON.stringify({ v: 0 }) },
         z.object({ id: z.coerce.string() }),
       );
