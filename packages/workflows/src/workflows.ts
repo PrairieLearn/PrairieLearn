@@ -503,6 +503,17 @@ async function recoverStaleRuns(): Promise<void> {
   // servers keep claiming runs before we can, the loop exits naturally when
   // no recoverable runs remain.
   while (true) {
+    // TODO: Prevent logical errors between registered workflow types and
+    // workflow run tracked workflow types.
+    //
+    // An issue is that a recoverable run is registered by no other server.
+    //
+    // One case is some servers are outdated and don't register a newer workflow
+    // type. It is intended behavior not to handle those runs. This will
+    // also self-resolve as outdated servers redeploy.
+    //
+    // The other is a logical error wherein the registered workflow type
+    // and real one mismatch. This is unhandled. 
     const candidate = await pool.queryOptionalRow(
       sql.select_recoverable_run,
       { registered_types: registeredTypes },
