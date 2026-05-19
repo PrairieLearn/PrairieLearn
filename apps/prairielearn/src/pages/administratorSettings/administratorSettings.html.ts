@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import {
   AI_GRADING_MODELS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
+  DEFAULT_AI_GRADING_MODEL,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { config } from '../../lib/config.js';
 import { type NewsItem } from '../../lib/db-types.js';
@@ -274,7 +275,7 @@ export function AdministratorSettings({
                                         name="models"
                                         value="${m.modelId}"
                                         id="ai-grading-eval-model-${m.modelId}"
-                                        ${m.recommended ? 'checked' : ''}
+                                        ${m.modelId === DEFAULT_AI_GRADING_MODEL ? 'checked' : ''}
                                       />
                                       <label
                                         class="form-check-label"
@@ -308,6 +309,25 @@ export function AdministratorSettings({
                             Non-transferable credit added to the synthetic course instance.
                           </div>
                         </div>
+                        <div class="form-check mb-3">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="generate_annotation_packets"
+                            id="ai-grading-eval-generate-packets"
+                            value="on"
+                            checked
+                          />
+                          <label class="form-check-label" for="ai-grading-eval-generate-packets">
+                            Generate annotation packets for unsure cases
+                          </label>
+                          <div class="form-text">
+                            Writes a self-contained HTML packet per eval into the system temp
+                            directory. Send it to annotators; commit the exported verdict CSVs to
+                            <code>&lt;eval&gt;/verdicts/*.csv</code> in the eval repo and rerun to
+                            fold them in.
+                          </div>
+                        </div>
                         <button class="btn btn-primary" name="__action" value="run_ai_grading_eval">
                           Run AI grading eval
                         </button>
@@ -319,6 +339,38 @@ export function AdministratorSettings({
                         enable the run action.
                       </p>
                     `}
+                ${config.aiGradingEvalRepository
+                  ? html`
+                      <hr />
+                      <h3 class="h6">Upload verdicts CSVs</h3>
+                      <p class="form-text mt-0 mb-2">
+                        Drop one or more exported verdicts CSV files. Each is routed to the right
+                        eval directory by <code>eval_id</code>, deduplicated by content hash, then
+                        committed and pushed upstream automatically.
+                      </p>
+                      <form method="POST" enctype="multipart/form-data" class="mb-3">
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <div class="mb-3">
+                          <input
+                            type="file"
+                            class="form-control"
+                            name="verdicts_files"
+                            accept=".csv,text/csv"
+                            multiple
+                            required
+                          />
+                        </div>
+                        <button class="btn btn-primary" name="__action" value="upload_verdicts_csv">
+                          Upload and commit
+                        </button>
+                      </form>
+                    `
+                  : ''}
+                <hr />
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button

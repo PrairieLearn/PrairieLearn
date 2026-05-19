@@ -12,6 +12,7 @@ import {
   generateAssessmentAiGradingStats,
 } from '../ai-grading/ai-grading-stats.js';
 
+import { type ClassifiedRun } from './classify.js';
 import { type ResolvedTarget } from './resolve-target.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -48,6 +49,10 @@ export interface ModelRunSummary {
   trueNegatives: number;
   falsePositives: number;
   falseNegatives: number;
+  correctCount: number;
+  incorrectCount: number;
+  unsureCount: number;
+  lowerBoundScore: number;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -210,6 +215,7 @@ export async function snapshotModelRunStats({
   target,
   rubricItems,
   aiGradingJobSequenceId,
+  classified,
   job,
 }: {
   evalId: string;
@@ -217,6 +223,7 @@ export async function snapshotModelRunStats({
   target: ResolvedTarget;
   rubricItems: RubricItem[];
   aiGradingJobSequenceId: string;
+  classified: ClassifiedRun;
   job: ServerJob;
 }): Promise<ModelRunSummary> {
   const [cost, timing, general, perf] = await Promise.all([
@@ -260,6 +267,15 @@ export async function snapshotModelRunStats({
   }
 
   job.info('');
+  job.info('  Submission classification (correct = AI selection matches a known-good label)');
+  job.info(
+    `    Correct    ${classified.counts.correct}` +
+      `    Incorrect  ${classified.counts.incorrect}` +
+      `    Unsure     ${classified.counts.unsure}` +
+      `    Lower-bound score  ${formatPercent(classified.lowerBoundScore, 1)}`,
+  );
+
+  job.info('');
   job.info('  Confusion matrix (rubric-item decisions across all submissions)');
   job.info(
     renderConfusionMatrix({
@@ -295,6 +311,10 @@ export async function snapshotModelRunStats({
     trueNegatives: total.trueNegatives,
     falsePositives: total.falsePositives,
     falseNegatives: total.falseNegatives,
+    correctCount: classified.counts.correct,
+    incorrectCount: classified.counts.incorrect,
+    unsureCount: classified.counts.unsure,
+    lowerBoundScore: classified.lowerBoundScore,
   };
 }
 
@@ -304,34 +324,58 @@ function mean(vals: (number | null)[]): number | null {
 }
 
 function aggregateByModel(summaries: ModelRunSummary[]) {
-  return Object.entries(groupBy(summaries, (s) => s.model)).map(([model, runs]) => ({
-    model: model as AiGradingModelId,
-    submissions: runs.reduce((a, r) => a + r.costJobs, 0),
-    totalCost: runs.reduce((a, r) => a + r.totalCostDollars, 0),
-    totalDuration: runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0),
-    accuracy: mean(runs.map((r) => r.accuracy)),
-    precision: mean(runs.map((r) => r.precision)),
-    recall: mean(runs.map((r) => r.recall)),
-    f1: mean(runs.map((r) => r.f1)),
-  }));
+  return Object.entries(groupBy(summaries, (s) => s.model)).map(([model, runs]) => {
+    const correctCount = runs.reduce((a, r) => a + r.correctCount, 0);
+    const incorrectCount = runs.reduce((a, r) => a + r.incorrectCount, 0);
+    const unsureCount = runs.reduce((a, r) => a + r.unsureCount, 0);
+    const classifiedTotal = correctCount + incorrectCount + unsureCount;
+    return {
+      model: model as AiGradingModelId,
+      submissions: runs.reduce((a, r) => a + r.costJobs, 0),
+      totalCost: runs.reduce((a, r) => a + r.totalCostDollars, 0),
+      totalDuration: runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0),
+      accuracy: mean(runs.map((r) => r.accuracy)),
+      precision: mean(runs.map((r) => r.precision)),
+      recall: mean(runs.map((r) => r.recall)),
+      f1: mean(runs.map((r) => r.f1)),
+      correctCount,
+      incorrectCount,
+      unsureCount,
+      lowerBoundScore: classifiedTotal === 0 ? 0 : correctCount / classifiedTotal,
+    };
+  });
 }
 
 /**
  * Per-eval table comparing each model's classification + resource numbers.
  */
 function renderPerEvalModelTable(summaries: ModelRunSummary[]): string[] {
-  const headers = ['Model', 'Acc', 'Prec', 'Rec', 'F1', 'Cost', '/sub'];
-  const widths = [26, 9, 9, 9, 9, 11, 9];
+  const headers = [
+    'Model',
+    'Correct',
+    'Incorrect',
+    'Score',
+    'Acc',
+    'F1',
+    'Cost',
+    'Cost/sub',
+    'Time',
+    'Time/sub',
+  ];
+  const widths = [26, 9, 11, 9, 9, 9, 11, 11, 11, 11];
   const rows = summaries.map((s) => {
     const perSubCost = s.costJobs > 0 ? s.totalCostDollars / s.costJobs : 0;
     return [
       s.model,
+      String(s.correctCount),
+      String(s.incorrectCount + s.unsureCount),
+      formatPercent(s.lowerBoundScore, 1),
       formatPercent(s.accuracy, 1),
-      s.precision != null ? s.precision.toFixed(2) : '(n/a)',
-      s.recall != null ? s.recall.toFixed(2) : '(n/a)',
       s.f1 != null ? s.f1.toFixed(2) : '(n/a)',
       formatCurrency(s.totalCostDollars),
       formatCurrency(perSubCost),
+      formatDuration(s.durationSeconds),
+      formatPerSubmissionDuration(s.durationSeconds, s.costJobs),
     ];
   });
   return renderTable(headers, rows, widths);
@@ -343,23 +387,25 @@ function renderPerEvalModelTable(summaries: ModelRunSummary[]): string[] {
 function renderRunWideModelTable(aggregated: ReturnType<typeof aggregateByModel>): string[] {
   const headers = [
     'Model',
+    'Correct',
+    'Incorrect',
+    'Score',
     'Acc',
-    'Prec',
-    'Rec',
     'F1',
     'Total cost',
     'Cost/sub',
     'Total time',
     'Time/sub',
   ];
-  const widths = [26, 9, 9, 9, 9, 12, 11, 12, 10];
+  const widths = [26, 9, 11, 9, 9, 9, 12, 11, 12, 11];
   const rows = aggregated.map((a) => {
     const perSubCost = a.submissions > 0 ? a.totalCost / a.submissions : 0;
     return [
       a.model,
+      String(a.correctCount),
+      String(a.incorrectCount + a.unsureCount),
+      formatPercent(a.lowerBoundScore, 1),
       formatPercent(a.accuracy, 1),
-      a.precision != null ? a.precision.toFixed(2) : '(n/a)',
-      a.recall != null ? a.recall.toFixed(2) : '(n/a)',
       a.f1 != null ? a.f1.toFixed(2) : '(n/a)',
       formatCurrency(a.totalCost),
       formatCurrency(perSubCost),
@@ -377,9 +423,13 @@ function renderRunWideModelTable(aggregated: ReturnType<typeof aggregateByModel>
  */
 export function reportRunStats({
   summaries,
+  verdictFilesByEval,
+  annotationPacketsByEval,
   job,
 }: {
   summaries: ModelRunSummary[];
+  verdictFilesByEval?: Map<string, Map<string, number>>;
+  annotationPacketsByEval?: Map<string, string>;
   job: ServerJob;
 }): void {
   if (summaries.length === 0) {
@@ -391,11 +441,37 @@ export function reportRunStats({
 
   job.info('');
   job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
+  job.info('  Note: "Score" = % of gradings the LLM matched a known-correct rubric selection.');
+  job.info(
+    '        "Incorrect" includes unsure cases (treated as incorrect for the lower-bound score).',
+  );
   for (const [evalId, evalSummaries] of Object.entries(byEval)) {
     job.info('');
     job.info(`  ${evalId}`);
     for (const line of renderPerEvalModelTable(evalSummaries)) {
       job.info(line);
+    }
+  }
+
+  if (annotationPacketsByEval && annotationPacketsByEval.size > 0) {
+    job.info('');
+    job.info(`═══ Annotation packets ${'═'.repeat(57)}`);
+    for (const [evalId, packetPath] of annotationPacketsByEval) {
+      job.info('');
+      job.info(`  ${evalId}`);
+      job.info(`    ${packetPath}`);
+    }
+  }
+
+  if (verdictFilesByEval && verdictFilesByEval.size > 0) {
+    job.info('');
+    job.info(`═══ Verdicts loaded ${'═'.repeat(60)}`);
+    for (const [evalId, files] of verdictFilesByEval) {
+      job.info('');
+      job.info(`  ${evalId}`);
+      for (const [filename, rowCount] of files) {
+        job.info(`    ${filename}  (${rowCount} row${rowCount === 1 ? '' : 's'})`);
+      }
     }
   }
 

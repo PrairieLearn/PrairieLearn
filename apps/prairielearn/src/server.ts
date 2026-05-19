@@ -316,6 +316,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
     upload.single('file'),
   );
+  app.post('/pl/administrator/settings', upload.array('verdicts_files'));
 
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked

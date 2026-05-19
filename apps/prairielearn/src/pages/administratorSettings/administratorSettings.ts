@@ -132,12 +132,37 @@ router.post(
       }
       const creditMilliDollars = Math.round(creditDollars.data * 1000);
 
+      const generateAnnotationPackets = req.body.generate_annotation_packets === 'on';
+
       const { runAiGradingEval } = await import('../../ee/lib/ai-grading-eval/ai-grading-eval.js');
       const jobSequenceId = await runAiGradingEval({
         repository: config.aiGradingEvalRepository,
         branch: config.aiGradingEvalBranch,
         models: models.data,
         creditMilliDollars,
+        generateAnnotationPackets,
+        user: res.locals.authn_user,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'upload_verdicts_csv') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      if (!config.aiGradingEvalRepository) {
+        throw new error.HttpStatusError(
+          400,
+          'aiGradingEvalRepository is not configured. Set it in config.json.',
+        );
+      }
+      const uploaded = (req.files ?? []) as Express.Multer.File[];
+      if (uploaded.length === 0) {
+        throw new error.HttpStatusError(400, 'Select at least one verdicts CSV file.');
+      }
+      const { uploadVerdictCsvs } = await import('../../ee/lib/ai-grading-eval/upload-verdicts.js');
+      const jobSequenceId = await uploadVerdictCsvs({
+        repository: config.aiGradingEvalRepository,
+        branch: config.aiGradingEvalBranch,
+        files: uploaded.map((f) => ({ originalname: f.originalname, buffer: f.buffer })),
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);

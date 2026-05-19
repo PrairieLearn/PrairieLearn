@@ -1,0 +1,567 @@
+import path from 'node:path';
+
+import * as cheerio from 'cheerio';
+import fs from 'fs-extra';
+import { z } from 'zod';
+
+import { html, unsafeHtml } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import { type Course, InstanceQuestionSchema, type User } from '../../../lib/db-types.js';
+import { buildQuestionUrls } from '../../../lib/question-render.js';
+import { getQuestionCourse } from '../../../lib/question-variant.js';
+import { type ServerJob } from '../../../lib/server-jobs.js';
+import * as questionServers from '../../../question-servers/index.js';
+import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
+import { selectLastVariantAndSubmission } from '../ai-grading/ai-grading-util.js';
+
+import { type ClassifiedCase } from './classify.js';
+import { type LoadedEval, type RubricItem } from './manifest.js';
+import { type ResolvedTarget } from './resolve-target.js';
+import { encodeDescriptions } from './verdicts.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+const InstanceQuestionRowSchema = z.object({
+  instance_question: InstanceQuestionSchema,
+  submission_identifier: z.string(),
+});
+
+interface UnsureCaseInput {
+  case_data: ClassifiedCase;
+  models: AiGradingModelId[];
+}
+
+interface RenderedCase {
+  case_id: string;
+  submission_id: string;
+  submission_identifier: string;
+  ai_descriptions: string[];
+  question_html: string;
+  answer_html: string;
+}
+
+export async function generateAnnotationPacket({
+  loadedEval,
+  unsureCases,
+  target,
+  course,
+  user,
+  packetDir,
+  job,
+}: {
+  loadedEval: LoadedEval;
+  unsureCases: UnsureCaseInput[];
+  target: ResolvedTarget;
+  course: Course;
+  user: User;
+  packetDir: string;
+  job: ServerJob;
+}): Promise<string> {
+  const identifiers = [...new Set(unsureCases.map((c) => c.case_data.submission_identifier))];
+  const rows = await queryRows(
+    sql.select_instance_questions_for_identifiers,
+    {
+      assessment_question_id: target.assessment_question.id,
+      submission_identifiers: identifiers,
+    },
+    InstanceQuestionRowSchema,
+  );
+  const rowByIdentifier = new Map(rows.map((r) => [r.submission_identifier, r]));
+
+  const question_course = await getQuestionCourse(target.question, course);
+  const questionModule = questionServers.getModule(target.question.type);
+  const urlPrefix = `/pl/course_instance/${target.course_instance.id}/instructor`;
+
+  const renderedCases: RenderedCase[] = [];
+  for (const unsure of unsureCases) {
+    const row = rowByIdentifier.get(unsure.case_data.submission_identifier);
+    if (!row) {
+      job.warn(
+        `Annotation packet: could not resolve instance question for ${unsure.case_data.submission_identifier}; skipping.`,
+      );
+      continue;
+    }
+
+    const { variant, submission } = await selectLastVariantAndSubmission(row.instance_question.id);
+
+    const locals = {
+      ...buildQuestionUrls(urlPrefix, variant, target.question, row.instance_question),
+      urlPrefix,
+      showCorrectAnswer: true,
+      allowAnswerEditing: false,
+      questionRenderContext: 'manual_grading' as const,
+    };
+
+    const renderQuestion = await questionModule.render({
+      renderSelection: { question: true, submissions: false, answer: true },
+      variant,
+      question: target.question,
+      submission: null,
+      submissions: [],
+      course: question_course,
+      locals,
+    });
+    if (renderQuestion.courseIssues.length > 0) {
+      logger.error(
+        `Annotation packet render issues for ${unsure.case_data.submission_identifier}: ` +
+          renderQuestion.courseIssues.toString(),
+      );
+    }
+
+    const questionHtml = inlineImageCaptures(
+      renderQuestion.data.questionHtml,
+      submission.submitted_answer,
+    );
+
+    renderedCases.push({
+      case_id: unsure.case_data.case_id,
+      submission_id: submission.id,
+      submission_identifier: unsure.case_data.submission_identifier,
+      ai_descriptions: unsure.case_data.ai_descriptions,
+      question_html: questionHtml,
+      answer_html: renderQuestion.data.answerHtml,
+    });
+  }
+
+  await fs.ensureDir(packetDir);
+  const timestamp = new Date().toISOString().replaceAll(':', '-').replace(/\..*$/, '');
+  const evalSlug = loadedEval.entry.id.replaceAll('/', '__');
+  const packetPath = path.join(packetDir, `${evalSlug}-${timestamp}.html`);
+
+  await fs.writeFile(
+    packetPath,
+    renderPacketHtml({
+      evalId: loadedEval.entry.id,
+      timestamp,
+      user,
+      rubricItems: loadedEval.rubric.rubric_items,
+      cases: renderedCases,
+    }),
+    'utf8',
+  );
+  job.info(`Annotation packet for ${loadedEval.entry.id}: ${packetPath}`);
+  return packetPath;
+}
+
+/**
+ * Walks the rendered HTML for `<pl-image-capture>` placeholder divs and replaces
+ * each with an inline base64 `<img>` tag (so the packet renders offline without
+ * the PL server's authenticated image fetch). Tolerates placeholders without a
+ * `data-file-name` attribute by falling back to the first file in `_files`;
+ * removes the placeholder entirely when no submitted file is available.
+ */
+function inlineImageCaptures(
+  htmlString: string,
+  submitted_answer: Record<string, any> | null,
+): string {
+  if (!htmlString) return '';
+  const $ = cheerio.load(htmlString);
+  const elements = $('[data-image-capture-uuid]');
+  if (elements.length === 0) return htmlString;
+
+  const files: { name: string; contents: string }[] = submitted_answer?._files ?? [];
+  const filesByName = new Map(files.map((f) => [f.name, f.contents]));
+
+  elements.each((_, el) => {
+    const $el = $(el);
+    const explicitName = $el.data('file-name');
+    const options = $el.data('options') as Record<string, string> | undefined;
+    const fileName =
+      (typeof explicitName === 'string' && explicitName.trim()) ||
+      options?.submitted_file_name ||
+      files[0]?.name ||
+      null;
+    const fileData = fileName ? (filesByName.get(fileName) ?? null) : null;
+    if (fileData) {
+      $el.replaceWith(
+        `<img class="img-fluid border rounded mb-2" alt="${escapeAttr(fileName ?? '')}" src="data:image/jpeg;base64,${fileData}" />`,
+      );
+    } else {
+      $el.remove();
+    }
+  });
+
+  return $('body').html() ?? '';
+}
+
+function escapeAttr(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function formatPoints(points: number): string {
+  if (points > 0) return `+${points}`;
+  return String(points);
+}
+
+function renderRubricTable(
+  rubricItems: RubricItem[],
+  aiSelected: Set<string>,
+): ReturnType<typeof html> {
+  if (rubricItems.length === 0) {
+    return html`<p class="text-muted mb-0">(no rubric items)</p>`;
+  }
+  return html`<div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width: 3rem;" class="text-center">AI</th>
+          <th>Description</th>
+          <th style="width: 4rem;">Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rubricItems.map(
+          (item) => html`
+            <tr>
+              <td class="text-center">
+                ${aiSelected.has(item.description)
+                  ? html`<span class="text-success fw-bold">✓</span>`
+                  : ''}
+              </td>
+              <td>${item.description}</td>
+              <td><span class="badge bg-secondary">${formatPoints(item.points)}</span></td>
+            </tr>
+          `,
+        )}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderPacketHtml({
+  evalId,
+  timestamp,
+  user,
+  rubricItems,
+  cases,
+}: {
+  evalId: string;
+  timestamp: string;
+  user: User;
+  rubricItems: RubricItem[];
+  cases: RenderedCase[];
+}): string {
+  const packetMeta = {
+    eval_id: evalId,
+    timestamp,
+    generated_by: user.uid,
+    case_ids: cases.map((c) => c.case_id),
+  };
+
+  const document = html`<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>AI grading verdicts — ${evalId}</title>
+        <script>
+          window.MathJax = {
+            tex: {
+              inlineMath: [
+                ['$', '$'],
+                ['\\(', '\\)'],
+              ],
+            },
+            svg: { linebreaks: { inline: false } },
+            loader: { load: ['input/tex', 'ui/menu', 'output/svg'] },
+          };
+        </script>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        />
+        <style>
+          body {
+            background: #f4f4f6;
+          }
+          .case-card {
+            scroll-margin-top: 4rem;
+            transition: border-color 0.4s ease;
+          }
+          .panel-heading {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6c757d;
+          }
+          .rich-content {
+            font-size: 0.95rem;
+          }
+          .rich-content img {
+            max-width: 100%;
+          }
+          .verdict-card {
+            border: 2px solid var(--bs-primary);
+            background: #fff;
+          }
+          .verdict-card .btn {
+            min-width: 6rem;
+          }
+          .grading-panel {
+            position: sticky;
+            top: 1rem;
+          }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+      </head>
+      <body>
+        <div class="container-fluid py-3" style="max-width: 1400px;">
+          <h1 class="h4 mb-2">${evalId}</h1>
+          <p class="mb-1"><strong>Select whether or not each grading is correct.</strong></p>
+          <p class="mb-1 text-muted">All decisions autosave in your browser.</p>
+          <p class="mb-4 text-muted">
+            When done, click <strong>Export CSV</strong> at the bottom of the page.
+          </p>
+
+          ${cases.map((c, idx) => renderCaseCard(c, idx, cases.length, rubricItems))}
+
+          <div class="text-center py-4">
+            <p class="text-muted mb-3">
+              Reached the end — your decisions are saved in this browser. Export the CSV to send
+              back.
+            </p>
+            <button type="button" id="btn-export-bottom" class="btn btn-primary btn-lg">
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <script id="packet-meta" type="application/json">
+          ${unsafeHtml(JSON.stringify(packetMeta))}
+        </script>
+        <script>
+          ${unsafeHtml(packetJs())};
+        </script>
+      </body>
+    </html>`;
+
+  return document.toString();
+}
+
+function renderCaseCard(
+  c: RenderedCase,
+  idx: number,
+  total: number,
+  rubricItems: RubricItem[],
+): ReturnType<typeof html> {
+  const rubricEncoded = encodeDescriptions(c.ai_descriptions);
+  const aiSelected = new Set(c.ai_descriptions);
+  return html`
+    <div
+      class="card case-card mb-4"
+      id="case-${c.case_id}"
+      data-case-id="${c.case_id}"
+      data-submission-identifier="${c.submission_identifier}"
+      data-rubric-descriptions="${rubricEncoded}"
+    >
+      <div class="card-header d-flex align-items-center gap-2">
+        <span class="badge bg-secondary">${idx + 1}/${total}</span>
+        <code>Submission #${c.submission_id}</code>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-lg-7">
+            <div class="panel-heading mb-1">Question</div>
+            <div class="rich-content border rounded p-2 bg-light">
+              ${unsafeHtml(c.question_html)}
+            </div>
+            ${c.answer_html
+              ? html`
+                  <div class="panel-heading mt-3 mb-1">Solution</div>
+                  <div class="rich-content border rounded p-2 bg-light">
+                    ${unsafeHtml(c.answer_html)}
+                  </div>
+                `
+              : ''}
+          </div>
+          <div class="col-lg-5">
+            <div class="grading-panel">
+              <div class="panel-heading mb-1">Grading</div>
+              ${renderRubricTable(rubricItems, aiSelected)}
+
+              <div class="card verdict-card mt-4">
+                <div class="card-body">
+                  <h6 class="card-title mb-3">Is this grading correct?</h6>
+                  <div class="d-flex flex-wrap gap-2" role="group" aria-label="Verdict">
+                    <button
+                      type="button"
+                      class="btn btn-outline-success verdict-btn"
+                      data-verdict="correct"
+                    >
+                      Correct
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger verdict-btn"
+                      data-verdict="incorrect"
+                    >
+                      Incorrect
+                    </button>
+                  </div>
+                  <textarea
+                    class="form-control mt-3 notes-field"
+                    rows="2"
+                    placeholder="Notes (optional)"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function packetJs(): string {
+  return `
+    (function () {
+      const meta = JSON.parse(document.getElementById('packet-meta').textContent);
+      const storageKey = 'pl-ai-eval-verdicts::' + meta.eval_id + '::' + meta.timestamp;
+      const state = loadState();
+      const VERDICT_COLORS = { correct: 'success', incorrect: 'danger' };
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) return {};
+          return JSON.parse(raw);
+        } catch (e) {
+          return {};
+        }
+      }
+      function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+
+      function setButtonState(btn, isActive) {
+        const color = VERDICT_COLORS[btn.dataset.verdict];
+        if (!color) return;
+        btn.classList.remove('btn-' + color, 'btn-outline-' + color, 'active');
+        btn.classList.add(isActive ? 'btn-' + color : 'btn-outline-' + color);
+        if (isActive) btn.classList.add('active');
+      }
+
+      function applyToUi() {
+        document.querySelectorAll('.case-card').forEach((card) => {
+          const caseId = card.dataset.caseId;
+          const entry = state[caseId];
+          card.querySelectorAll('.verdict-btn').forEach((btn) => {
+            setButtonState(btn, !!entry && btn.dataset.verdict === entry.verdict);
+          });
+          const notes = card.querySelector('.notes-field');
+          if (notes && entry && entry.notes != null) notes.value = entry.notes;
+        });
+      }
+
+      document.querySelectorAll('.verdict-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const card = btn.closest('.case-card');
+          const caseId = card.dataset.caseId;
+          const notes = card.querySelector('.notes-field')?.value ?? '';
+          state[caseId] = {
+            verdict: btn.dataset.verdict,
+            notes,
+            submission_identifier: card.dataset.submissionIdentifier,
+            rubric_descriptions: card.dataset.rubricDescriptions,
+            updated_at: new Date().toISOString(),
+          };
+          saveState();
+          applyToUi();
+        });
+      });
+
+      document.querySelectorAll('.notes-field').forEach((field) => {
+        field.addEventListener('input', () => {
+          const card = field.closest('.case-card');
+          const caseId = card.dataset.caseId;
+          if (!state[caseId]) return;
+          state[caseId].notes = field.value;
+          state[caseId].updated_at = new Date().toISOString();
+          saveState();
+        });
+      });
+
+      function firstUngradedCard() {
+        return [...document.querySelectorAll('.case-card')].find((c) => {
+          const entry = state[c.dataset.caseId];
+          return !entry || (entry.verdict !== 'correct' && entry.verdict !== 'incorrect');
+        });
+      }
+
+      function exportCsv() {
+        const rows = [];
+        rows.push(['eval_id', 'case_id', 'submission_identifier', 'rubric_descriptions', 'verdict', 'annotator', 'timestamp', 'notes']);
+        document.querySelectorAll('.case-card').forEach((card) => {
+          const caseId = card.dataset.caseId;
+          const entry = state[caseId];
+          if (!entry || !entry.verdict) return;
+          rows.push([
+            meta.eval_id,
+            caseId,
+            entry.submission_identifier,
+            entry.rubric_descriptions,
+            entry.verdict,
+            '',
+            entry.updated_at,
+            entry.notes ?? '',
+          ]);
+        });
+        const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = meta.eval_id.replace(/\\//g, '__') + '-verdicts-' + new Date().toISOString().replace(/[:.]/g, '-') + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function onExportClick() {
+        const pending = firstUngradedCard();
+        if (pending) {
+          pending.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          pending.classList.add('border-warning');
+          setTimeout(() => pending.classList.remove('border-warning'), 1500);
+          return;
+        }
+        exportCsv();
+      }
+
+      document.getElementById('btn-export-bottom').addEventListener('click', onExportClick);
+
+      function csvEscape(v) {
+        const s = String(v ?? '');
+        if (/[",\\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }
+
+      // Default every case to "incorrect" so the annotator only flips the ones
+      // they want to mark correct. Existing decisions in localStorage win.
+      let seededDefaults = false;
+      document.querySelectorAll('.case-card').forEach((card) => {
+        const caseId = card.dataset.caseId;
+        if (state[caseId]) return;
+        state[caseId] = {
+          verdict: 'incorrect',
+          notes: '',
+          submission_identifier: card.dataset.submissionIdentifier,
+          rubric_descriptions: card.dataset.rubricDescriptions,
+          updated_at: new Date().toISOString(),
+        };
+        seededDefaults = true;
+      });
+      if (seededDefaults) saveState();
+
+      applyToUi();
+    })();
+  `;
+}

@@ -8,7 +8,9 @@ import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 import { deleteAiGradingJobs } from '../ai-grading/ai-grading-util.js';
 
-import { cloneEvalRepo } from './clone-eval-repo.js';
+import { generateAnnotationPacket } from './annotation-packet.js';
+import { type ClassifiedCase, classifyRun, seedHumanGradingVerdicts } from './classify.js';
+import { EVAL_REPOS_ROOT, cloneEvalRepo, sanitizeRepoSlug } from './clone-eval-repo.js';
 import { loadManifest } from './manifest.js';
 import { resolveAssessmentQuestion } from './resolve-target.js';
 import { applyRubric } from './rubric.js';
@@ -17,6 +19,7 @@ import { scaffoldCourse } from './scaffold-course.js';
 import { seedAiGradingCredits } from './seed-credits.js';
 import { type ModelRunSummary, reportRunStats, snapshotModelRunStats } from './stats.js';
 import { importSubmissions } from './submissions.js';
+import { buildVerdictMap, loadVerdictsFromCsvs } from './verdicts.js';
 
 /**
  * Entry point for the AI grading eval harness.
@@ -33,12 +36,14 @@ export async function runAiGradingEval({
   branch,
   models,
   creditMilliDollars,
+  generateAnnotationPackets,
   user,
 }: {
   repository: string;
   branch?: string | null;
   models: AiGradingModelId[];
   creditMilliDollars: number;
+  generateAnnotationPackets: boolean;
   user: User;
 }): Promise<string> {
   if (!config.devMode) {
@@ -60,6 +65,7 @@ export async function runAiGradingEval({
     if (branch) job.info(`Branch: ${branch}`);
     job.info(`Models (${models.length}): ${models.join(', ')}`);
     job.info(`Seed credit: $${(creditMilliDollars / 1000).toFixed(2)}`);
+    job.info(`Generate annotation packets: ${generateAnnotationPackets ? 'yes' : 'no'}`);
 
     const evalsDir = await cloneEvalRepo({ repository, branch, job });
     job.info(`Eval repo ready at ${evalsDir}`);
@@ -85,6 +91,8 @@ export async function runAiGradingEval({
     });
 
     const summaries: ModelRunSummary[] = [];
+    const verdictFilesByEval = new Map<string, Map<string, number>>();
+    const annotationPacketsByEval = new Map<string, string>();
 
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
@@ -112,6 +120,30 @@ export async function runAiGradingEval({
 
       const { rubric_items } = await selectCompleteRubric(target.assessment_question.id);
 
+      const seedEntries = await seedHumanGradingVerdicts({
+        assessment_question_id: target.assessment_question.id,
+        eval_id: loaded.entry.id,
+      });
+      const csvEntries = await loadVerdictsFromCsvs(loaded, job);
+      const verdictMap = buildVerdictMap([...seedEntries, ...csvEntries]);
+      job.info(
+        `Verdicts for ${loaded.entry.id}: ${seedEntries.length} from submissions.csv, ${csvEntries.length} from verdicts/*.csv`,
+      );
+
+      if (csvEntries.length > 0) {
+        const filenames = new Map<string, number>();
+        for (const e of csvEntries) {
+          const filename = e.source.startsWith('csv:') ? e.source.slice(4) : e.source;
+          filenames.set(filename, (filenames.get(filename) ?? 0) + 1);
+        }
+        verdictFilesByEval.set(loaded.entry.id, filenames);
+      }
+
+      const unsureByCase = new Map<
+        string,
+        { case_data: ClassifiedCase; models: AiGradingModelId[] }
+      >();
+
       for (const model of models) {
         const aiGradingJobSequenceId = await runGrading({
           course: scaffold.course,
@@ -123,6 +155,24 @@ export async function runAiGradingEval({
           model_id: model,
           job,
         });
+
+        const classified = await classifyRun({
+          assessment_question_id: target.assessment_question.id,
+          eval_id: loaded.entry.id,
+          verdictMap,
+          ai_job_sequence_id: aiGradingJobSequenceId,
+        });
+
+        for (const c of classified.cases) {
+          if (c.classification !== 'unsure') continue;
+          const existing = unsureByCase.get(c.case_id);
+          if (existing) {
+            existing.models.push(model);
+          } else {
+            unsureByCase.set(c.case_id, { case_data: c, models: [model] });
+          }
+        }
+
         summaries.push(
           await snapshotModelRunStats({
             evalId: loaded.entry.id,
@@ -130,6 +180,7 @@ export async function runAiGradingEval({
             target,
             rubricItems: rubric_items,
             aiGradingJobSequenceId,
+            classified,
             job,
           }),
         );
@@ -141,9 +192,33 @@ export async function runAiGradingEval({
           authn_user_id: user.id,
         });
       }
+
+      if (generateAnnotationPackets) {
+        const unsureCases = [...unsureByCase.values()];
+        if (unsureCases.length === 0) {
+          job.info(`No unsure cases for ${loaded.entry.id}; skipping annotation packet.`);
+        } else {
+          const packetDir = path.join(
+            EVAL_REPOS_ROOT,
+            '..',
+            'annotation-packets',
+            sanitizeRepoSlug(repository),
+          );
+          const packetPath = await generateAnnotationPacket({
+            loadedEval: loaded,
+            unsureCases,
+            target,
+            course: scaffold.course,
+            user,
+            packetDir,
+            job,
+          });
+          annotationPacketsByEval.set(loaded.entry.id, packetPath);
+        }
+      }
     }
 
-    reportRunStats({ summaries, job });
+    reportRunStats({ summaries, verdictFilesByEval, annotationPacketsByEval, job });
 
     job.info('');
     job.info('All steps complete.');
