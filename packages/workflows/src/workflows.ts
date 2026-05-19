@@ -513,7 +513,7 @@ async function recoverStaleRuns(): Promise<void> {
     // also self-resolve as outdated servers redeploy.
     //
     // The other is a logical error wherein the registered workflow type
-    // and real one mismatch. This is unhandled. 
+    // and real one mismatch. This is unhandled.
     const candidate = await pool.queryOptionalRow(
       sql.select_recoverable_run,
       { registered_types: registeredTypes },
