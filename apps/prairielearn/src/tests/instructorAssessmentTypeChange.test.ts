@@ -78,19 +78,6 @@ async function createTrpcClient() {
   });
 }
 
-const examDefaults = {
-  multipleInstance: false,
-  autoClose: true,
-  requireHonorCode: true,
-  honorCode: '',
-  advanceScorePerc: null as number | null,
-  allowRealTimeGrading: true,
-};
-
-const homeworkDefaults = {
-  constantQuestionValue: false,
-};
-
 const baseUuid = 'c2f20e45-0449-46c6-9418-b65a734870bd';
 const baseQuestion = { id: 'test/question' };
 
@@ -123,7 +110,6 @@ describe('Changing assessment type', () => {
       const result = await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Exam',
         origHash: await getOrigHash(),
-        defaults: examDefaults,
       });
 
       assert.equal(result.assessment.type, 'Exam');
@@ -165,7 +151,6 @@ describe('Changing assessment type', () => {
       await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Exam',
         origHash: await getOrigHash(),
-        defaults: examDefaults,
       });
 
       const info = await readLiveInfo();
@@ -188,70 +173,10 @@ describe('Changing assessment type', () => {
       await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Exam',
         origHash: await getOrigHash(),
-        defaults: examDefaults,
       });
 
       const info = await readLiveInfo();
       assert.notProperty(info.zones?.[0].questions[0], 'maxPoints');
-    });
-
-    test.sequential('applies user-chosen Exam defaults', async () => {
-      await setupAssessmentInfo({
-        uuid: baseUuid,
-        type: 'Homework',
-        title: 'Type-change test',
-        set: 'Homework',
-        number: '1',
-        zones: [{ questions: [{ ...baseQuestion, autoPoints: 10 }] }],
-      });
-
-      const trpcClient = await createTrpcClient();
-      await trpcClient.assessmentSettings.changeAssessmentType.mutate({
-        newType: 'Exam',
-        origHash: await getOrigHash(),
-        defaults: {
-          multipleInstance: true,
-          autoClose: false,
-          requireHonorCode: false,
-          honorCode: 'Custom code',
-          advanceScorePerc: 50,
-          allowRealTimeGrading: false,
-        },
-      });
-
-      const info = await readLiveInfo();
-      assert.equal(info.multipleInstance, true);
-      assert.equal(info.autoClose, false);
-      assert.equal(info.requireHonorCode, false);
-      assert.equal(info.honorCode, 'Custom code');
-      assert.equal(info.advanceScorePerc, 50);
-      assert.equal(info.allowRealTimeGrading, false);
-    });
-
-    test.sequential('omits Exam defaults that match the type default', async () => {
-      await setupAssessmentInfo({
-        uuid: baseUuid,
-        type: 'Homework',
-        title: 'Type-change test',
-        set: 'Homework',
-        number: '1',
-        zones: [{ questions: [{ ...baseQuestion, autoPoints: 10 }] }],
-      });
-
-      const trpcClient = await createTrpcClient();
-      await trpcClient.assessmentSettings.changeAssessmentType.mutate({
-        newType: 'Exam',
-        origHash: await getOrigHash(),
-        defaults: examDefaults,
-      });
-
-      const info = await readLiveInfo();
-      assert.notProperty(info, 'multipleInstance');
-      assert.notProperty(info, 'autoClose');
-      assert.notProperty(info, 'requireHonorCode');
-      assert.notProperty(info, 'honorCode');
-      assert.notProperty(info, 'advanceScorePerc');
-      assert.notProperty(info, 'allowRealTimeGrading');
     });
   });
 
@@ -276,7 +201,6 @@ describe('Changing assessment type', () => {
       const result = await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Homework',
         origHash: await getOrigHash(),
-        defaults: homeworkDefaults,
       });
 
       assert.equal(result.assessment.type, 'Homework');
@@ -322,7 +246,6 @@ describe('Changing assessment type', () => {
       await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Homework',
         origHash: await getOrigHash(),
-        defaults: homeworkDefaults,
       });
 
       const info = await readLiveInfo();
@@ -348,7 +271,6 @@ describe('Changing assessment type', () => {
       await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Homework',
         origHash: await getOrigHash(),
-        defaults: homeworkDefaults,
       });
 
       const info = await readLiveInfo();
@@ -373,32 +295,10 @@ describe('Changing assessment type', () => {
       await trpcClient.assessmentSettings.changeAssessmentType.mutate({
         newType: 'Homework',
         origHash: await getOrigHash(),
-        defaults: homeworkDefaults,
       });
 
       const info = await readLiveInfo();
       assert.equal(info.zones?.[0].questions[0].alternatives?.[0].points, 8);
-    });
-
-    test.sequential('applies user-chosen Homework defaults', async () => {
-      await setupAssessmentInfo({
-        uuid: baseUuid,
-        type: 'Exam',
-        title: 'Type-change test',
-        set: 'Exam',
-        number: '1',
-        zones: [{ questions: [{ ...baseQuestion, autoPoints: 10 }] }],
-      });
-
-      const trpcClient = await createTrpcClient();
-      await trpcClient.assessmentSettings.changeAssessmentType.mutate({
-        newType: 'Homework',
-        origHash: await getOrigHash(),
-        defaults: { constantQuestionValue: true },
-      });
-
-      const info = await readLiveInfo();
-      assert.equal(info.constantQuestionValue, true);
     });
   });
 
@@ -418,7 +318,6 @@ describe('Changing assessment type', () => {
         trpcClient.assessmentSettings.changeAssessmentType.mutate({
           newType: 'Homework',
           origHash: await getOrigHash(),
-          defaults: homeworkDefaults,
         }),
       ).rejects.toThrow(/matches the current type/);
     });
@@ -445,7 +344,6 @@ describe('Changing assessment type', () => {
           trpcClient.assessmentSettings.changeAssessmentType.mutate({
             newType: 'Exam',
             origHash: await getOrigHash(),
-            defaults: examDefaults,
           }),
         ).rejects.toThrow(/student instances already exist/);
       } finally {
@@ -479,14 +377,13 @@ describe('Changing assessment type', () => {
         trpcClient.assessmentSettings.changeAssessmentType.mutate({
           newType: 'Exam',
           origHash: staleOrigHash,
-          defaults: examDefaults,
         }),
       ).rejects.toThrow(/modified since you loaded/);
     });
   });
 
   describe('analyzeTypeChange', () => {
-    test.sequential('reports HW→Exam blockers', async () => {
+    test.sequential('reports HW→Exam blockers and single-attempt promotions', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -500,11 +397,16 @@ describe('Changing assessment type', () => {
       const trpcClient = await createTrpcClient();
       const result = await trpcClient.assessmentSettings.analyzeTypeChange.query({
         newType: 'Exam',
+        origHash: await getOrigHash(),
       });
 
       const fields = result.blockers.map((b) => b.field);
       assert.includeMembers(fields, ['constantQuestionValue', 'maxAutoPoints']);
       assert.lengthOf(result.pointsListCollapses, 0);
+      assert.lengthOf(result.pointsListPromotions, 1);
+      assert.equal(result.pointsListPromotions[0].field, 'autoPoints');
+      assert.equal(result.pointsListPromotions[0].currentValue, 5);
+      assert.deepEqual(result.pointsListPromotions[0].newValue, [5]);
     });
 
     test.sequential('reports Exam→HW blockers and array collapses', async () => {
@@ -515,8 +417,10 @@ describe('Changing assessment type', () => {
         set: 'Exam',
         number: '1',
         multipleInstance: true,
+        autoClose: false,
         requireHonorCode: true,
         honorCode: 'Pledge',
+        advanceScorePerc: 75,
         allowRealTimeGrading: false,
         // The question overrides real-time grading so the array is valid;
         // the analyzer should still flag the assessment-level rtg blocker
@@ -533,22 +437,26 @@ describe('Changing assessment type', () => {
       const trpcClient = await createTrpcClient();
       const result = await trpcClient.assessmentSettings.analyzeTypeChange.query({
         newType: 'Homework',
+        origHash: await getOrigHash(),
       });
 
       const fields = result.blockers.map((b) => b.field);
       assert.includeMembers(fields, [
         'multipleInstance',
+        'autoClose',
         'requireHonorCode',
         'honorCode',
+        'advanceScorePerc',
         'allowRealTimeGrading',
       ]);
       assert.lengthOf(result.pointsListCollapses, 1);
       assert.equal(result.pointsListCollapses[0].field, 'autoPoints');
       assert.deepEqual(result.pointsListCollapses[0].currentValue, [10, 7, 5]);
       assert.equal(result.pointsListCollapses[0].newValue, 10);
+      assert.lengthOf(result.pointsListPromotions, 0);
     });
 
-    test.sequential('returns no blockers for a clean assessment', async () => {
+    test.sequential('reports no blockers and no collapses for a clean HW assessment', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -561,10 +469,13 @@ describe('Changing assessment type', () => {
       const trpcClient = await createTrpcClient();
       const result = await trpcClient.assessmentSettings.analyzeTypeChange.query({
         newType: 'Exam',
+        origHash: await getOrigHash(),
       });
 
       assert.lengthOf(result.blockers, 0);
       assert.lengthOf(result.pointsListCollapses, 0);
+      // Single-value autoPoints always shows up as a promotion when going to Exam.
+      assert.lengthOf(result.pointsListPromotions, 1);
     });
   });
 });

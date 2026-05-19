@@ -78,8 +78,10 @@ export type TypeChangeLocation =
 
 type TypeChangeBlockerField =
   | 'multipleInstance'
+  | 'autoClose'
   | 'requireHonorCode'
   | 'honorCode'
+  | 'advanceScorePerc'
   | 'allowRealTimeGrading'
   | 'constantQuestionValue'
   | 'maxPoints'
@@ -98,11 +100,19 @@ interface PointsListCollapse {
   newValue: number;
 }
 
+interface PointsListPromotion {
+  field: 'points' | 'autoPoints';
+  location: TypeChangeLocation;
+  currentValue: number;
+  newValue: number[];
+}
+
 interface AnalyzeTypeChangeResult {
   currentType: ChangeableAssessmentType;
   newType: ChangeableAssessmentType;
   blockers: TypeChangeBlocker[];
   pointsListCollapses: PointsListCollapse[];
+  pointsListPromotions: PointsListPromotion[];
 }
 
 // Widened structural block type lets a single loop iterate zones, questions,
@@ -155,6 +165,7 @@ function* iterateAssessmentBlocks(info: AssessmentJsonInput): Generator<Assessme
 function analyzeForHomework(info: AssessmentJsonInput): {
   blockers: TypeChangeBlocker[];
   pointsListCollapses: PointsListCollapse[];
+  pointsListPromotions: PointsListPromotion[];
 } {
   const blockers: TypeChangeBlocker[] = [];
   const pointsListCollapses: PointsListCollapse[] = [];
@@ -167,6 +178,13 @@ function analyzeForHomework(info: AssessmentJsonInput): {
       currentValue: 'true',
     });
   }
+  if (info.autoClose === false) {
+    blockers.push({
+      field: 'autoClose',
+      location: assessmentLocation,
+      currentValue: 'false',
+    });
+  }
   if (info.requireHonorCode) {
     blockers.push({
       field: 'requireHonorCode',
@@ -176,6 +194,13 @@ function analyzeForHomework(info: AssessmentJsonInput): {
   }
   if (info.honorCode != null && info.honorCode !== '') {
     blockers.push({ field: 'honorCode', location: assessmentLocation, currentValue: 'set' });
+  }
+  if (info.advanceScorePerc != null) {
+    blockers.push({
+      field: 'advanceScorePerc',
+      location: assessmentLocation,
+      currentValue: String(info.advanceScorePerc),
+    });
   }
   if (info.allowRealTimeGrading === false) {
     blockers.push({
@@ -208,14 +233,16 @@ function analyzeForHomework(info: AssessmentJsonInput): {
     }
   }
 
-  return { blockers, pointsListCollapses };
+  return { blockers, pointsListCollapses, pointsListPromotions: [] };
 }
 
 function analyzeForExam(info: AssessmentJsonInput): {
   blockers: TypeChangeBlocker[];
   pointsListCollapses: PointsListCollapse[];
+  pointsListPromotions: PointsListPromotion[];
 } {
   const blockers: TypeChangeBlocker[] = [];
+  const pointsListPromotions: PointsListPromotion[] = [];
   if (info.constantQuestionValue) {
     blockers.push({
       field: 'constantQuestionValue',
@@ -236,9 +263,25 @@ function analyzeForExam(info: AssessmentJsonInput): {
         currentValue: String(block.maxAutoPoints),
       });
     }
+    if (typeof block.points === 'number') {
+      pointsListPromotions.push({
+        field: 'points',
+        location,
+        currentValue: block.points,
+        newValue: [block.points],
+      });
+    }
+    if (typeof block.autoPoints === 'number') {
+      pointsListPromotions.push({
+        field: 'autoPoints',
+        location,
+        currentValue: block.autoPoints,
+        newValue: [block.autoPoints],
+      });
+    }
   }
 
-  return { blockers, pointsListCollapses: [] };
+  return { blockers, pointsListCollapses: [], pointsListPromotions };
 }
 
 async function readInfoAssessment(infoAssessmentPath: string): Promise<AssessmentJsonInput> {
@@ -576,7 +619,7 @@ const copyAssessment = t.procedure
 
 const analyzeTypeChange = t.procedure
   .use(requireCoursePermissionEdit)
-  .input(z.object({ newType: ChangeableAssessmentTypeSchema }))
+  .input(z.object({ newType: ChangeableAssessmentTypeSchema, origHash: z.string() }))
   .query(async ({ input, ctx }): Promise<AnalyzeTypeChangeResult> => {
     const { course, course_instance, assessment } = ctx;
     const currentType = assessment.type;
@@ -593,6 +636,7 @@ const analyzeTypeChange = t.procedure
         newType: input.newType,
         blockers: [],
         pointsListCollapses: [],
+        pointsListPromotions: [],
       };
     }
 
@@ -600,35 +644,20 @@ const analyzeTypeChange = t.procedure
       infoAssessmentPathFor(course, course_instance.short_name, assessment.tid!),
     );
 
-    const { blockers, pointsListCollapses } =
+    const { blockers, pointsListCollapses, pointsListPromotions } =
       input.newType === 'Homework' ? analyzeForHomework(info) : analyzeForExam(info);
-    return { currentType, newType: input.newType, blockers, pointsListCollapses };
+    return {
+      currentType,
+      newType: input.newType,
+      blockers,
+      pointsListCollapses,
+      pointsListPromotions,
+    };
   });
-
-const ChangeTypeExamDefaultsSchema = z.object({
-  multipleInstance: z.boolean(),
-  autoClose: z.boolean(),
-  requireHonorCode: z.boolean(),
-  honorCode: z.string(),
-  advanceScorePerc: z.preprocess(
-    (v) => (typeof v === 'number' && Number.isNaN(v) ? null : v),
-    z.number().nullable(),
-  ),
-  allowRealTimeGrading: z.boolean(),
-});
-
-const ChangeTypeHomeworkDefaultsSchema = z.object({
-  constantQuestionValue: z.boolean(),
-});
-
-const ChangeTypeDefaultsSchema = z.union([
-  z.object({ newType: z.literal('Exam'), defaults: ChangeTypeExamDefaultsSchema }),
-  z.object({ newType: z.literal('Homework'), defaults: ChangeTypeHomeworkDefaultsSchema }),
-]);
 
 const changeAssessmentType = t.procedure
   .use(requireCoursePermissionEdit)
-  .input(z.intersection(z.object({ origHash: z.string() }), ChangeTypeDefaultsSchema))
+  .input(z.object({ newType: ChangeableAssessmentTypeSchema, origHash: z.string() }))
   .mutation(async ({ input, ctx }) => {
     const { course, course_instance, assessment } = ctx;
     const currentType = assessment.type;
@@ -682,12 +711,6 @@ const changeAssessmentType = t.procedure
             if (Array.isArray(block.points)) block.points = block.points[0];
             if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
           }
-
-          info.constantQuestionValue = propertyValueWithDefault(
-            info.constantQuestionValue,
-            input.defaults.constantQuestionValue,
-            false,
-          );
         } else {
           delete info.constantQuestionValue;
 
@@ -696,33 +719,6 @@ const changeAssessmentType = t.procedure
             delete block.maxPoints;
             delete block.maxAutoPoints;
           }
-
-          info.multipleInstance = propertyValueWithDefault(
-            info.multipleInstance,
-            input.defaults.multipleInstance,
-            false,
-          );
-          info.autoClose = propertyValueWithDefault(info.autoClose, input.defaults.autoClose, true);
-          info.requireHonorCode = propertyValueWithDefault(
-            info.requireHonorCode,
-            input.defaults.requireHonorCode,
-            true,
-          );
-          info.honorCode = propertyValueWithDefault(
-            info.honorCode,
-            input.defaults.honorCode.trim() === '' ? undefined : input.defaults.honorCode.trim(),
-            '',
-          );
-          info.advanceScorePerc = propertyValueWithDefault(
-            info.advanceScorePerc,
-            input.defaults.advanceScorePerc ?? undefined,
-            undefined,
-          );
-          info.allowRealTimeGrading = propertyValueWithDefault(
-            info.allowRealTimeGrading,
-            input.defaults.allowRealTimeGrading,
-            true,
-          );
         }
 
         return info;

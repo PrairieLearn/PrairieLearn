@@ -409,57 +409,37 @@ function formatTypeChangeLocation(location: TypeChangeLocation): string {
 
 const BLOCKER_FIELD_LABELS: Record<string, string> = {
   multipleInstance: 'Multiple instances',
+  autoClose: 'Auto close disabled',
   requireHonorCode: 'Honor code requirement',
   honorCode: 'Custom honor code',
+  advanceScorePerc: 'Advance score threshold',
   allowRealTimeGrading: 'Real-time grading disabled',
   constantQuestionValue: 'Constant question value',
   maxPoints: 'Max points cap',
   maxAutoPoints: 'Max auto points cap',
 };
 
-interface ExamDefaultsFormValues {
-  multiple_instance: boolean;
-  auto_close: boolean;
-  require_honor_code: boolean;
-  honor_code: string;
-  advance_score_perc: string;
-  allow_real_time_grading: boolean;
-}
-
-interface HomeworkDefaultsFormValues {
-  constant_question_value: boolean;
-}
-
-const EXAM_DEFAULTS: ExamDefaultsFormValues = {
-  multiple_instance: false,
-  auto_close: true,
-  require_honor_code: true,
-  honor_code: '',
-  advance_score_perc: '',
-  allow_real_time_grading: true,
-};
-
-const HOMEWORK_DEFAULTS: HomeworkDefaultsFormValues = {
-  constant_question_value: false,
-};
-
 function ChangeTypeModal({
   show,
   newType,
   currentType,
+  hasInstances,
   origHash,
   onHide,
   onExited,
   urlPrefix,
+  studentsTabUrl,
   onSuccess,
 }: {
   show: boolean;
   newType: 'Exam' | 'Homework' | null;
   currentType: 'Exam' | 'Homework';
+  hasInstances: boolean;
   origHash: string;
   onHide: () => void;
   onExited: () => void;
   urlPrefix: string;
+  studentsTabUrl: string;
   onSuccess: (result: {
     origHash: string;
     assessment: StaffAssessment;
@@ -468,21 +448,11 @@ function ChangeTypeModal({
 }) {
   const trpc = useTRPC();
   const [acknowledged, setAcknowledged] = useState(false);
-  const [defaultsOpen, setDefaultsOpen] = useState(false);
-
-  const examDefaultsForm = useForm<ExamDefaultsFormValues>({
-    mode: 'onChange',
-    defaultValues: EXAM_DEFAULTS,
-  });
-  const homeworkDefaultsForm = useForm<HomeworkDefaultsFormValues>({
-    mode: 'onChange',
-    defaultValues: HOMEWORK_DEFAULTS,
-  });
 
   const analysisQuery = useQuery(
     trpc.assessmentSettings.analyzeTypeChange.queryOptions(
-      { newType: newType ?? currentType },
-      { enabled: show && newType != null && newType !== currentType },
+      { newType: newType ?? currentType, origHash },
+      { enabled: show && !hasInstances && newType != null && newType !== currentType },
     ),
   );
 
@@ -496,53 +466,20 @@ function ChangeTypeModal({
 
   const blockers = analysisQuery.data?.blockers ?? [];
   const pointsListCollapses = analysisQuery.data?.pointsListCollapses ?? [];
-  const hasDestructiveChanges = blockers.length > 0 || pointsListCollapses.length > 0;
+  const pointsListPromotions = analysisQuery.data?.pointsListPromotions ?? [];
+  const hasDestructiveChanges =
+    blockers.length > 0 || pointsListCollapses.length > 0 || pointsListPromotions.length > 0;
 
   const handleExited = () => {
     setAcknowledged(false);
-    setDefaultsOpen(false);
-    examDefaultsForm.reset(EXAM_DEFAULTS);
-    homeworkDefaultsForm.reset(HOMEWORK_DEFAULTS);
     changeMutation.reset();
     onExited();
   };
 
-  const toNullableNumber = (v: string) => (v === '' ? null : Number(v));
-
   const handleConfirm = () => {
     if (newType == null) return;
-    if (newType === 'Exam') {
-      const values = examDefaultsForm.getValues();
-      changeMutation.mutate(
-        {
-          newType: 'Exam',
-          origHash,
-          defaults: {
-            multipleInstance: values.multiple_instance,
-            autoClose: values.auto_close,
-            requireHonorCode: values.require_honor_code,
-            honorCode: values.honor_code,
-            advanceScorePerc: toNullableNumber(values.advance_score_perc),
-            allowRealTimeGrading: values.allow_real_time_grading,
-          },
-        },
-        { onSuccess },
-      );
-    } else {
-      const values = homeworkDefaultsForm.getValues();
-      changeMutation.mutate(
-        {
-          newType: 'Homework',
-          origHash,
-          defaults: { constantQuestionValue: values.constant_question_value },
-        },
-        { onSuccess },
-      );
-    }
+    changeMutation.mutate({ newType, origHash }, { onSuccess });
   };
-
-  const requireHonorCode = examDefaultsForm.watch('require_honor_code');
-  const advanceScorePercError = examDefaultsForm.formState.errors.advance_score_perc;
 
   return (
     <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={handleExited}>
@@ -550,318 +487,164 @@ function ChangeTypeModal({
         <Modal.Title>Change assessment type</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p className="mb-3">
-          You are about to change this assessment from <strong>{currentType}</strong> to{' '}
-          <strong>{newType ?? currentType}</strong>.
-        </p>
-
-        <Alert variant="info" className="small mb-3">
-          <strong>What changes:</strong>
-          {newType === 'Homework' ? (
-            <ul className="mb-0 mt-1 ps-3">
-              <li>
-                Each question generates new variants on each attempt, accumulating points across
-                them.
-              </li>
-              <li>Real-time grading is always enabled and cannot be disabled.</li>
-              <li>
-                Multiple instances, time limits, passwords, auto-close, and honor code are not
-                supported.
-              </li>
-              <li>Question ordering defaults to fixed order; honor code is off by default.</li>
-            </ul>
-          ) : newType === 'Exam' ? (
-            <ul className="mb-0 mt-1 ps-3">
-              <li>
-                Each student gets a single variant per question, retried in place with declining
-                points.
-              </li>
-              <li>
-                Multiple instances, time limits, passwords, auto-close, and honor code become
-                available.
-              </li>
-              <li>
-                Real-time grading can be disabled per assessment, zone, question, or alternative.
-              </li>
-              <li>Question ordering defaults to shuffled; honor code is on by default.</li>
-            </ul>
-          ) : null}
-        </Alert>
-
-        {analysisQuery.isLoading && (
-          <div className="text-center py-3">
-            <Spinner animation="border" role="status" size="sm" />
-            <span className="ms-2 text-muted">Analyzing current configuration...</span>
-          </div>
-        )}
-
-        {analysisQuery.isError && (
-          <Alert variant="danger">Failed to analyze current configuration. Try again.</Alert>
-        )}
-
-        {blockers.length > 0 && (
-          <Alert variant="warning" className="mb-3">
-            <strong>The following configuration will be removed:</strong>
-            <ul className="mb-0 mt-2 ps-3 small">
-              {blockers.map((b) => {
-                const locationKey = formatTypeChangeLocation(b.location);
-                return (
-                  <li key={`${b.field}:${locationKey}`}>
-                    <code>{BLOCKER_FIELD_LABELS[b.field] ?? b.field}</code> on {locationKey}
-                  </li>
-                );
-              })}
-            </ul>
+        {hasInstances ? (
+          <Alert variant="warning" className="mb-0">
+            Students have already started this assessment. The type can't be changed while
+            assessment instances exist. Delete all instances on the{' '}
+            <Alert.Link href={studentsTabUrl}>Students tab</Alert.Link> to allow changes.
           </Alert>
-        )}
+        ) : (
+          <>
+            <p className="mb-3">
+              You are about to change this assessment from <strong>{currentType}</strong> to{' '}
+              <strong>{newType ?? currentType}</strong>.
+            </p>
 
-        {pointsListCollapses.length > 0 && (
-          <Alert variant="warning" className="mb-3">
-            <strong>Question points lists will be collapsed:</strong>
-            <ul className="mb-0 mt-2 ps-3 small">
-              {pointsListCollapses.map((r) => {
-                const locationKey = formatTypeChangeLocation(r.location);
-                return (
-                  <li key={`${r.field}:${locationKey}`}>
-                    {locationKey} ({r.field}): <code>[{r.currentValue.join(', ')}]</code> →{' '}
-                    <code>{r.newValue}</code>
+            <Alert variant="info" className="small mb-3">
+              <strong>What changes:</strong>
+              {newType === 'Homework' ? (
+                <ul className="mb-0 mt-1 ps-3">
+                  <li>
+                    Each question generates new variants on each attempt, accumulating points across
+                    them.
                   </li>
-                );
-              })}
-            </ul>
-            <div className="small mt-2 mb-0">
-              Homework questions use a single per-variant value. The remaining attempt values will
-              be lost. You can adjust each question's points after the change.
-            </div>
-          </Alert>
-        )}
+                  <li>Real-time grading is always enabled and cannot be disabled.</li>
+                  <li>
+                    Multiple instances, time limits, passwords, auto-close, and honor code are not
+                    supported.
+                  </li>
+                  <li>Question ordering defaults to fixed order; honor code is off by default.</li>
+                </ul>
+              ) : newType === 'Exam' ? (
+                <ul className="mb-0 mt-1 ps-3">
+                  <li>
+                    Each student gets a single variant per question, retried in place with declining
+                    points.
+                  </li>
+                  <li>
+                    Multiple instances, time limits, passwords, auto-close, and honor code become
+                    available.
+                  </li>
+                  <li>
+                    Real-time grading can be disabled per assessment, zone, question, or
+                    alternative.
+                  </li>
+                  <li>Question ordering defaults to shuffled; honor code is on by default.</li>
+                </ul>
+              ) : null}
+            </Alert>
 
-        {newType != null && newType !== currentType && (
-          <div className="border rounded mb-3">
-            <button
-              type="button"
-              className="btn btn-link w-100 text-start text-decoration-none px-3 py-2 d-flex align-items-center justify-content-between"
-              aria-expanded={defaultsOpen}
-              aria-controls="change-type-defaults"
-              onClick={() => setDefaultsOpen((v) => !v)}
-            >
-              <span>Configure defaults for {newType} (optional)</span>
-              <i
-                className={clsx('bi', defaultsOpen ? 'bi-chevron-up' : 'bi-chevron-down')}
-                aria-hidden="true"
-              />
-            </button>
-            {defaultsOpen && (
-              <div id="change-type-defaults" className="px-3 pb-3 border-top pt-3">
-                {newType === 'Exam' ? (
-                  <>
-                    <div className="form-check mb-3">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="change-type-multiple-instance"
-                        aria-describedby="change-type-multiple-instance-help"
-                        defaultChecked={EXAM_DEFAULTS.multiple_instance}
-                        {...examDefaultsForm.register('multiple_instance')}
-                      />
-                      <label className="form-check-label" htmlFor="change-type-multiple-instance">
-                        Multiple instances
-                      </label>
-                      <div id="change-type-multiple-instance-help" className="small text-muted">
-                        Allow students to create additional instances of the assessment.
-                      </div>
-                    </div>
-                    <div className="form-check mb-3">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="change-type-auto-close"
-                        aria-describedby="change-type-auto-close-help"
-                        defaultChecked={EXAM_DEFAULTS.auto_close}
-                        {...examDefaultsForm.register('auto_close')}
-                      />
-                      <label className="form-check-label" htmlFor="change-type-auto-close">
-                        Auto close
-                      </label>
-                      <div id="change-type-auto-close-help" className="small text-muted">
-                        Automatically close the assessment after 6 hours of inactivity.
-                      </div>
-                    </div>
-                    <div className={clsx('form-check', requireHonorCode && 'mb-3')}>
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="change-type-require-honor-code"
-                        aria-describedby="change-type-require-honor-code-help"
-                        defaultChecked={EXAM_DEFAULTS.require_honor_code}
-                        {...examDefaultsForm.register('require_honor_code')}
-                      />
-                      <label className="form-check-label" htmlFor="change-type-require-honor-code">
-                        Require honor code
-                      </label>
-                      <div id="change-type-require-honor-code-help" className="small text-muted">
-                        Require students to accept an honor code before starting the exam.
-                      </div>
-                    </div>
-                    {requireHonorCode && (
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="change-type-honor-code">
-                          Custom honor code
-                        </label>
-                        <textarea
-                          className="form-control"
-                          id="change-type-honor-code"
-                          aria-describedby="change-type-honor-code-help"
-                          defaultValue={EXAM_DEFAULTS.honor_code}
-                          {...examDefaultsForm.register('honor_code')}
-                        />
-                        <small id="change-type-honor-code-help" className="form-text text-muted">
-                          Custom honor code text shown to students before starting the exam.
-                          Supports Markdown formatting; HTML is not supported. Use{' '}
-                          <code>{'{{user_name}}'}</code> to include the student's name. Leave blank
-                          for the default honor code.
-                        </small>
-                      </div>
-                    )}
-                    <div className="mb-3">
-                      <label className="form-label" htmlFor="change-type-advance-score-perc">
-                        Advance score threshold
-                      </label>
-                      <div className="row">
-                        <div className="col-md-4">
-                          <InputGroup>
-                            <input
-                              type="number"
-                              className={clsx(
-                                'form-control',
-                                advanceScorePercError && 'is-invalid',
-                              )}
-                              id="change-type-advance-score-perc"
-                              aria-describedby="change-type-advance-score-perc-help"
-                              aria-invalid={advanceScorePercError ? 'true' : 'false'}
-                              {...(advanceScorePercError
-                                ? { 'aria-errormessage': 'change-type-advance-score-perc-error' }
-                                : {})}
-                              step="1"
-                              defaultValue={EXAM_DEFAULTS.advance_score_perc}
-                              {...examDefaultsForm.register('advance_score_perc', {
-                                validate: (v) => {
-                                  if (v === '') return true;
-                                  const n = Number(v);
-                                  if (n < 0 || n > 100) return 'Must be between 0 and 100';
-                                  return true;
-                                },
-                              })}
-                            />
-                            <InputGroup.Text>%</InputGroup.Text>
-                          </InputGroup>
-                        </div>
-                      </div>
-                      {advanceScorePercError && (
-                        <div
-                          id="change-type-advance-score-perc-error"
-                          className="invalid-feedback d-block"
-                        >
-                          {advanceScorePercError.message}
-                        </div>
-                      )}
-                      <small
-                        id="change-type-advance-score-perc-help"
-                        className="form-text text-muted"
-                      >
-                        Default minimum autograding score percentage on each question to unlock the
-                        following question. May be overridden for individual questions.
-                      </small>
-                    </div>
-                    <div className="form-check mb-0">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="change-type-allow-real-time-grading"
-                        aria-describedby="change-type-allow-real-time-grading-help"
-                        defaultChecked={EXAM_DEFAULTS.allow_real_time_grading}
-                        {...examDefaultsForm.register('allow_real_time_grading')}
-                      />
-                      <label
-                        className="form-check-label"
-                        htmlFor="change-type-allow-real-time-grading"
-                      >
-                        Allow real-time grading
-                      </label>
-                      <div
-                        id="change-type-allow-real-time-grading-help"
-                        className="small text-muted"
-                      >
-                        Allow students to see grading results while the assessment is being taken.
-                        Enabled by default.
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="form-check mb-0">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="change-type-constant-question-value"
-                      aria-describedby="change-type-constant-question-value-help"
-                      defaultChecked={HOMEWORK_DEFAULTS.constant_question_value}
-                      {...homeworkDefaultsForm.register('constant_question_value')}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor="change-type-constant-question-value"
-                    >
-                      Constant question value
-                    </label>
-                    <div id="change-type-constant-question-value-help" className="small text-muted">
-                      Whether to keep the value of a question constant after a student solves it
-                      correctly.
-                    </div>
-                  </div>
-                )}
+            {analysisQuery.isLoading && (
+              <div className="text-center py-3">
+                <Spinner animation="border" role="status" size="sm" />
+                <span className="ms-2 text-muted">Analyzing current configuration...</span>
               </div>
             )}
-          </div>
-        )}
 
-        <AppErrorAlert
-          error={changeError}
-          render={{
-            SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
-            UNKNOWN: ({ message }) => message,
-          }}
-          onDismiss={() => changeMutation.reset()}
-        />
+            {analysisQuery.isError && (
+              <Alert variant="danger">Failed to analyze current configuration. Try again.</Alert>
+            )}
 
-        {hasDestructiveChanges && (
-          <Form.Check
-            id="change-type-acknowledge"
-            type="checkbox"
-            className="mb-0"
-            label="I understand the above configuration will be lost."
-            checked={acknowledged}
-            onChange={(e) => setAcknowledged(e.target.checked)}
-          />
+            {blockers.length > 0 && (
+              <Alert variant="warning" className="mb-3">
+                <strong>The following configuration will be removed:</strong>
+                <ul className="mb-0 mt-2 ps-3 small">
+                  {blockers.map((b) => {
+                    const locationKey = formatTypeChangeLocation(b.location);
+                    return (
+                      <li key={`${b.field}:${locationKey}`}>
+                        <code>{BLOCKER_FIELD_LABELS[b.field] ?? b.field}</code> on {locationKey}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Alert>
+            )}
+
+            {pointsListCollapses.length > 0 && (
+              <Alert variant="warning" className="mb-3">
+                <strong>Question points lists will be collapsed:</strong>
+                <ul className="mb-0 mt-2 ps-3 small">
+                  {pointsListCollapses.map((r) => {
+                    const locationKey = formatTypeChangeLocation(r.location);
+                    return (
+                      <li key={`${r.field}:${locationKey}`}>
+                        {locationKey} ({r.field}): <code>[{r.currentValue.join(', ')}]</code> →{' '}
+                        <code>{r.newValue}</code>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="small mt-2 mb-0">
+                  Homework questions use a single per-variant value. The remaining attempt values
+                  will be lost. You can adjust each question's points after the change.
+                </div>
+              </Alert>
+            )}
+
+            {pointsListPromotions.length > 0 && (
+              <Alert variant="warning" className="mb-3">
+                <strong>Each question will start as single-attempt:</strong>
+                <ul className="mb-0 mt-2 ps-3 small">
+                  {pointsListPromotions.map((r) => {
+                    const locationKey = formatTypeChangeLocation(r.location);
+                    return (
+                      <li key={`${r.field}:${locationKey}`}>
+                        {locationKey} ({r.field}): <code>{r.currentValue}</code> →{' '}
+                        <code>[{r.newValue.join(', ')}]</code>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="small mt-2 mb-0">
+                  Homework grants the same points on every variant attempt; Exam grants points once,
+                  optionally with a declining retry schedule. After the change, you can edit each
+                  question to add retry values (e.g. <code>[10, 7, 5]</code>).
+                </div>
+              </Alert>
+            )}
+
+            <AppErrorAlert
+              error={changeError}
+              render={{
+                SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                UNKNOWN: ({ message }) => message,
+              }}
+              onDismiss={() => changeMutation.reset()}
+            />
+
+            {hasDestructiveChanges && (
+              <Form.Check
+                id="change-type-acknowledge"
+                type="checkbox"
+                className="mb-0"
+                label="I understand the above configuration will be lost."
+                checked={acknowledged}
+                onChange={(e) => setAcknowledged(e.target.checked)}
+              />
+            )}
+          </>
         )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" disabled={changeMutation.isPending} onClick={onHide}>
-          Cancel
+          {hasInstances ? 'Close' : 'Cancel'}
         </Button>
-        <Button
-          variant="primary"
-          disabled={
-            newType == null ||
-            analysisQuery.isLoading ||
-            analysisQuery.isError ||
-            (hasDestructiveChanges && !acknowledged) ||
-            (newType === 'Exam' && !!advanceScorePercError) ||
-            changeMutation.isPending
-          }
-          onClick={handleConfirm}
-        >
-          {changeMutation.isPending ? 'Changing type...' : `Change to ${newType ?? ''}`}
-        </Button>
+        {!hasInstances && (
+          <Button
+            variant="primary"
+            disabled={
+              newType == null ||
+              analysisQuery.isLoading ||
+              analysisQuery.isError ||
+              (hasDestructiveChanges && !acknowledged) ||
+              changeMutation.isPending
+            }
+            onClick={handleConfirm}
+          >
+            {changeMutation.isPending ? 'Changing type...' : `Change to ${newType ?? ''}`}
+          </Button>
+        )}
       </Modal.Footer>
     </Modal>
   );
@@ -1048,8 +831,13 @@ function InstructorAssessmentSettingsInner({
           show={typeChangeModalState.show}
           newType={typeChangeModalState.data}
           currentType={currentType}
+          hasInstances={hasInstances}
           origHash={origHash}
           urlPrefix={urlPrefix}
+          studentsTabUrl={getAssessmentStudentsUrl({
+            courseInstanceId: assessment.course_instance_id,
+            assessmentId: assessment.id,
+          })}
           onHide={() => {
             setDisplayType(currentType);
             typeChangeModalState.onHide();
@@ -1171,7 +959,7 @@ function InstructorAssessmentSettingsInner({
                     <Form.Select
                       id="type"
                       aria-describedby="type-help"
-                      disabled={!canEdit || isDirty || hasInstances}
+                      disabled={!canEdit || isDirty}
                       value={displayType ?? currentType}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -1192,25 +980,9 @@ function InstructorAssessmentSettingsInner({
                       Homework or Exam
                     </a>
                     .{' '}
-                    {hasInstances ? (
-                      <>
-                        The type can't be changed while assessment instances exist. Delete all
-                        instances on the{' '}
-                        <a
-                          href={getAssessmentStudentsUrl({
-                            courseInstanceId: assessment.course_instance_id,
-                            assessmentId: assessment.id,
-                          })}
-                        >
-                          Students tab
-                        </a>{' '}
-                        to allow changes.
-                      </>
-                    ) : isDirty ? (
-                      'Save or discard your other changes before switching the type.'
-                    ) : (
-                      'Changing the type may modify or remove existing configuration.'
-                    )}
+                    {isDirty
+                      ? 'Save or discard your other changes before switching the type.'
+                      : 'Changing the type may modify or remove existing configuration.'}
                   </small>
                 </div>
               </div>
