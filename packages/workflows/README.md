@@ -91,6 +91,10 @@ registerWorkflow<RubricAssistantState>({
 });
 ```
 
+The engine does not infer your workflow's state type from the registered `type` string, so each call below — `startWorkflow`, `continueWorkflow`, `getWorkflowRun`, `getActiveWorkflowRun` — takes the state type as an explicit type parameter (`<RubricAssistantState>` in these examples).
+
+If not specified, the state falls back to `Record<string, unknown>`, which silently disables compile-time checking of `initialState`, state updates, and `run.state` access.
+
 ### Starting a workflow
 
 ```ts
