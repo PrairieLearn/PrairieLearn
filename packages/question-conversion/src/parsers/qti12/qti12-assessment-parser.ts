@@ -396,9 +396,8 @@ export class QTI12AssessmentParser implements InputParser {
   }
 
   /**
-   * Emit a parse warning for any <sourcebank_ref> elements found in the section.
-   * Canvas quiz exports reference question banks by ID but don't include their content;
-   * those questions cannot be converted without a full course export.
+   * Emit a parse warning for any <sourcebank_ref> elements found in the section,
+   * or for empty question groups that have a selection_number but no items.
    */
   private warnSourcebankRefs(
     section: Record<string, unknown>,
@@ -409,26 +408,59 @@ export class QTI12AssessmentParser implements InputParser {
     for (const sub of subSections) {
       if (sub == null || typeof sub !== 'object') continue;
       const subRec = sub as Record<string, unknown>;
-      const ref = textContent(
-        getNestedValue(subRec, 'selection_ordering', 'selection', 'sourcebank_ref'),
-      );
-      if (ref) {
-        const location = sectionTitle ? `section "${sectionTitle}"` : 'assessment';
+      const subTitle = attr(subRec, 'title') || sectionTitle;
+      this.warnSingleSection(subRec, subTitle, warnings);
+    }
+    // Also check the section itself (when there are no sub-sections).
+    this.warnSingleSection(section, sectionTitle, warnings);
+  }
+
+  private warnSingleSection(
+    section: Record<string, unknown>,
+    sectionTitle: string | undefined,
+    warnings: IRParseWarning[],
+  ): void {
+    const selection = getNestedValue(section, 'selection_ordering', 'selection');
+    if (selection == null || typeof selection !== 'object') return;
+    const selRec = selection as Record<string, unknown>;
+
+    const ref = textContent(selRec['sourcebank_ref']);
+    const isExternal =
+      textContent(getNestedValue(selRec, 'selection_extension', 'sourcebank_is_external')) ===
+      'true';
+    const sourcebankContext = textContent(
+      getNestedValue(selRec, 'selection_extension', 'sourcebank_context'),
+    );
+    const location = sectionTitle ? `section "${sectionTitle}"` : 'the assessment';
+
+    if (ref) {
+      if (isExternal) {
+        const courseHint = sourcebankContext
+          ? ` The bank belongs to Canvas ${sourcebankContext.replace('_', ' ')}; export that course and import it instead.`
+          : '';
         warnings.push({
           questionId: ref,
-          message: `Question bank reference "${ref}" in ${location} cannot be resolved — question bank content is not included in QTI quiz exports. Re-export as a full course export to include question bank items.`,
+          message: `Question bank reference "${ref}" in ${location} points to an external question bank that is not included in the export.${courseHint}`,
+        });
+      } else {
+        warnings.push({
+          questionId: ref,
+          message: `Question bank reference "${ref}" in ${location} cannot be resolved — the bank content was not included in this export. Re-export from Canvas as a full course export (not a quiz export) to include question bank items.`,
         });
       }
+      return;
     }
-    // Also check direct sourcebank_ref in this section
-    const directRef = textContent(
-      getNestedValue(section, 'selection_ordering', 'selection', 'sourcebank_ref'),
-    );
-    if (directRef) {
-      warnings.push({
-        questionId: directRef,
-        message: `Question bank reference "${directRef}" cannot be resolved — question bank content is not included in QTI quiz exports. Re-export as a full course export to include question bank items.`,
-      });
+
+    // No sourcebank_ref — check for empty question groups (selection_number > 0 but no items).
+    const selNum = Number.parseInt(textContent(selRec['selection_number']), 10);
+    if (!Number.isNaN(selNum) && selNum > 0) {
+      const items = this.collectItems(section);
+      if (items.length === 0) {
+        warnings.push({
+          questionId: attr(section, 'ident') ?? 'unknown',
+          message: `${sectionTitle ? `Section "${sectionTitle}"` : 'A section'} expects ${selNum} question(s) but contains no items — the linked question bank was likely not included in the export.`,
+        });
+      }
     }
   }
 
