@@ -10,20 +10,21 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { Fragment, type ReactNode, useId, useMemo } from 'react';
+import { Fragment, useId, useMemo } from 'react';
 import { Badge, Button } from 'react-bootstrap';
 import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
+  AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
   type RuleFormErrors,
+  generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
-  generateRuleSummary,
 } from './RuleSummary.js';
 import type { AccessControlFormData, DefaultRuleData, OverrideData } from './types.js';
 
@@ -82,37 +83,6 @@ function SortableOverrideCard({
   );
 }
 
-function SummaryItemChips({
-  items,
-}: {
-  items: { key: string; icon: string; text: ReactNode; error?: string }[];
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <div>
-      <div className="d-flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span
-            key={item.key}
-            className={`d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 ${
-              item.error ? 'border-danger text-danger border' : 'border'
-            }`}
-            style={{ fontSize: '0.875rem' }}
-          >
-            {item.error ? (
-              <i className="bi bi-exclamation-circle" aria-hidden="true" />
-            ) : (
-              <i className={`bi ${item.icon}`} aria-hidden="true" />
-            )}
-            {item.text}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function DefaultRuleSummaryContent({
   rule,
   formErrors,
@@ -126,34 +96,43 @@ function DefaultRuleSummaryContent({
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
-  const hasPrairieTestExams = rule.prairieTestExams.length > 0;
+  const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
+
+  const hasAnyTable =
+    dateTableRows.length > 0 ||
+    rule.prairieTestExams.length > 0 ||
+    afterCompleteTableRows.length > 0;
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-2">
       <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
 
-      {dateTableRows.length > 0 && (
-        <div className="mb-2">
-          <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
+      {hasAnyTable && (
+        <div className="access-summary-grid-scroll">
+          <div className="access-summary-grid">
+            {dateTableRows.length > 0 && (
+              <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
+            )}
+
+            {rule.prairieTestExams.length > 0 && (
+              <PrairieTestExamsTable
+                exams={rule.prairieTestExams}
+                beforeReleaseListed={rule.beforeReleaseListed}
+                initialMetadata={prairieTestExamMetadata}
+                ptHost={ptHost}
+                formErrors={formErrors}
+              />
+            )}
+
+            {afterCompleteTableRows.length > 0 && (
+              <AfterCompleteTableView rows={afterCompleteTableRows} />
+            )}
+          </div>
         </div>
       )}
 
-      {hasPrairieTestExams && (
-        <div className="mb-2">
-          <PrairieTestExamsTable
-            exams={rule.prairieTestExams}
-            initialMetadata={prairieTestExamMetadata}
-            ptHost={ptHost}
-            formErrors={formErrors}
-          />
-        </div>
-      )}
-
-      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
-
-      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
+      {!hasAnyTable && (
         <div
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}

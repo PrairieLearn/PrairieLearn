@@ -161,6 +161,36 @@ describe('getGlobalDateValidationErrors', () => {
     expect(errors.find((e) => e.path === 'overrides.0.release.date')).toBeUndefined();
   });
 
+  it('flags default late deadline credit at 100%', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        due: { date: '2024-04-10T00:00:00', credit: 110, customCredit: true },
+        lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 100 }],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.lateDeadlines.0.credit',
+      message: 'Credit after the due date must be less than 100%.',
+    });
+  });
+
+  it('flags default after-last-deadline credit at 100%', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        due: { date: '2024-04-10T00:00:00', credit: 110, customCredit: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 100 },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.afterLastDeadline.credit',
+      message: 'Credit after the due date must be less than 100%.',
+    });
+  });
+
   it('maps after-complete mechanism errors to visible override fields', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData(

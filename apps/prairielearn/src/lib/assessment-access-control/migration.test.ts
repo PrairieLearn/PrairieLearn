@@ -392,9 +392,27 @@ describe('migrateAllowAccess', () => {
         accessControl: {
           dateControl: {
             release: { date: '2024-01-01T00:00:00' },
-            due: { date: '2024-03-01T00:00:00' },
+            due: { date: null },
             earlyDeadlines: [{ date: '2024-02-01T00:00:00', credit: 110 }],
-            afterLastDeadline: { allowSubmissions: true, credit: 100 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'bonus closed window followed by full-credit open-ended window becomes early deadline',
+      rules: [
+        { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
+        { credit: 100, startDate: '2024-02-01T00:00:00' },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: null },
+            earlyDeadlines: [{ date: '2024-02-01T00:00:00', credit: 110 }],
           },
         },
         errors: [],
@@ -971,17 +989,22 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'declining-credit with multiple bonus levels errors on unplaceable rule',
+      name: 'declining-credit with multiple bonus levels',
       rules: [
         { credit: 130, startDate: '2024-01-01T00:00:00', endDate: '2024-01-15T00:00:00' },
         { credit: 120, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
         { credit: 50, startDate: '2024-02-01T00:00:00', endDate: '2024-06-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
-        errors: [
-          'Cannot place 120% credit rule as early or late deadline (due date credit is 130%).',
-        ],
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-01-01T00:00:00' },
+            due: { date: '2024-02-01T00:00:00', credit: 120 },
+            earlyDeadlines: [{ date: '2024-01-15T00:00:00', credit: 130 }],
+            lateDeadlines: [{ date: '2024-06-01T00:00:00', credit: 50 }],
+          },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },

@@ -23,6 +23,7 @@ interface AssessmentAccessControlProps {
   csrfToken: string;
   origHash: string | null;
   assessmentId: string;
+  isExam: boolean;
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
@@ -30,8 +31,8 @@ interface AssessmentAccessControlProps {
 
 function AssessmentAccessControlInner({
   courseInstance,
-  assessmentId,
   origHash: initialOrigHash,
+  isExam,
   initialData,
   prairieTestExamMetadata,
   ptHost,
@@ -104,7 +105,7 @@ function AssessmentAccessControlInner({
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
-        assessmentId={assessmentId}
+        isExam={isExam}
         initialData={initialData}
         prairieTestExamMetadata={prairieTestExamMetadata}
         ptHost={ptHost}

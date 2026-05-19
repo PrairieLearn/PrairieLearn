@@ -22,12 +22,10 @@ const beforeReleasePopoverConfig = {
 
 export function DefaultRuleForm({
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
+  isExam,
 }: {
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
+  isExam: boolean;
 }) {
   const { register } = useFormContext<AccessControlFormData>();
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
@@ -53,11 +51,7 @@ export function DefaultRuleForm({
 
   return (
     <div className="d-flex flex-column gap-3">
-      <DefaultDateControlForm
-        displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
-      />
+      <DefaultDateControlForm displayTimezone={displayTimezone} isExam={isExam} />
       <IntegrationsSection />
       <div>
         <div className="d-flex align-items-center section-header mb-3">

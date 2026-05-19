@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
@@ -18,6 +19,7 @@ import {
   MultiEditor,
 } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentByUuid, selectAssessments } from '../../models/assessment.js';
 import {
@@ -29,13 +31,8 @@ import { throwAppError } from '../app-errors.js';
 import { requireCoursePermissionEdit, t } from './init.js';
 
 export interface AssessmentSettingsError {
-  UpdateAssessment:
-    | { code: 'INVALID_SHORT_NAME' }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  CopyAssessment:
-    | { code: 'INVALID_SHORT_NAME' }
-    | { code: 'DUPLICATE_SHORT_NAME' }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  UpdateAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  CopyAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
@@ -76,6 +73,7 @@ const updateAssessment = t.procedure
       ),
       origHash: z.string(),
       tools: z.record(z.string(), z.boolean()).optional(),
+      share_source_publicly: z.boolean().optional(),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -99,8 +97,8 @@ const updateAssessment = t.procedure
 
     const shortNameValidation = validateShortName(input.aid, assessment.tid ?? undefined);
     if (!shortNameValidation.valid) {
-      throwAppError<AssessmentSettingsError['UpdateAssessment']>({
-        code: 'INVALID_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: shortNameValidation.lowercaseMessage,
       });
     }
@@ -221,6 +219,24 @@ const updateAssessment = t.procedure
       input.grade_rate_minutes ?? undefined,
       (v: number | null | undefined) => v == null || v === 0,
     );
+    if (locals.question_sharing_enabled) {
+      if (input.share_source_publicly && !assessment.share_source_publicly) {
+        try {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof HttpStatusError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
+        }
+      }
+      assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
+        assessmentInfo.shareSourcePublicly,
+        // If source is already public, preserve that setting regardless of the submitted value.
+        assessment.share_source_publicly || (input.share_source_publicly ?? false),
+        false,
+      );
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
@@ -302,8 +318,8 @@ const copyAssessment = t.procedure
 
     const shortNameValidation = validateShortName(aid);
     if (!shortNameValidation.valid) {
-      throwAppError<AssessmentSettingsError['CopyAssessment']>({
-        code: 'INVALID_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: shortNameValidation.lowercaseMessage,
       });
     }
@@ -312,8 +328,8 @@ const copyAssessment = t.procedure
       course_instance_id: course_instance.id,
     });
     if (existingAssessments.some((a) => a.tid === aid)) {
-      throwAppError<AssessmentSettingsError['CopyAssessment']>({
-        code: 'DUPLICATE_SHORT_NAME',
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
         message: `An assessment with the short name "${aid}" already exists.`,
       });
     }

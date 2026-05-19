@@ -26,7 +26,7 @@ ALLOWED_PL_TAGS = frozenset((
 ))
 
 # Entries from the data dict to copy
-DATA_ENTRIES_TO_COPY = ("params",)
+DATA_ENTRIES_TO_COPY = ("params", "preferences")
 
 
 def check_tags(element_html: str) -> None:

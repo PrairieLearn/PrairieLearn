@@ -191,6 +191,12 @@ export function prepareZonesForEditor(
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
+    // The JSON schema defaults canView/canSubmit to `[]`, which collapses
+    // "unset" and "explicitly empty" into the same value. Strip empty arrays
+    // back to undefined so the inheritance cascade falls through to the
+    // assessment-level default. This mirrors the save path's behavior.
+    canView: isEmptyArray(zone.canView) ? undefined : zone.canView,
+    canSubmit: isEmptyArray(zone.canSubmit) ? undefined : zone.canSubmit,
     questions: zone.questions.map((question) => {
       // Alt pools have no `id`, so we can't look up a grading method directly.
       // Determine it from the alternatives' grading methods instead.
@@ -210,6 +216,8 @@ export function prepareZonesForEditor(
 
       return {
         ...normalizeQuestionPoints(question, isManualGrading),
+        canView: isEmptyArray(question.canView) ? undefined : question.canView,
+        canSubmit: isEmptyArray(question.canSubmit) ? undefined : question.canSubmit,
         trackingId: createTrackingId(),
         alternatives: question.alternatives?.map((alt) => ({
           ...normalizeQuestionPoints(alt, getGradingMethod(alt.id) === 'Manual'),
@@ -309,8 +317,6 @@ export function createAltPoolWithTrackingId(): AltPoolBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
-    canSubmit: [],
-    canView: [],
   };
 }
 
@@ -364,7 +370,9 @@ function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
 }
 
 /** Helper to check if a value is an empty array (for canSubmit/canView defaults). */
-const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
+function isEmptyArray(v: unknown) {
+  return !v || (Array.isArray(v) && v.length === 0);
+}
 
 /**
  * Prepares a question alternative for JSON output.

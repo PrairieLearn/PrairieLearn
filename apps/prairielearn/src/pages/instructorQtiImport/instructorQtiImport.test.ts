@@ -4,56 +4,7 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { describe, expect, it } from 'vitest';
 
-import { commentOutVideoReferences, serializeClientFiles } from './instructorQtiImport.js';
-
-describe('commentOutVideoReferences', () => {
-  it('comments out a self-closing img tag referencing a video', () => {
-    const html = '<img src="clientFilesQuestion/video.mp4" />';
-    const result = commentOutVideoReferences(html, ['video.mp4']);
-    expect(result).toBe(
-      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<img src="clientFilesQuestion/video.mp4" />\n' +
-        '-->',
-    );
-  });
-
-  it('comments out an open/close tag pair', () => {
-    const html = '<a href="clientFilesQuestion/clip.webm">Watch</a>';
-    const result = commentOutVideoReferences(html, ['clip.webm']);
-    expect(result).toBe(
-      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<a href="clientFilesQuestion/clip.webm">Watch</a>\n' +
-        '-->',
-    );
-  });
-
-  it('does not modify HTML without matching video references', () => {
-    const html = '<img src="clientFilesQuestion/image.png" />';
-    const result = commentOutVideoReferences(html, ['video.mp4']);
-    expect(result).toBe(html);
-  });
-
-  it('handles multiple video files', () => {
-    const html = '<img src="clientFilesQuestion/a.mp4" /><img src="clientFilesQuestion/b.webm" />';
-    const result = commentOutVideoReferences(html, ['a.mp4', 'b.webm']);
-    // Both references should be wrapped in comments
-    const commentCount = (result.match(/<!--/g) ?? []).length;
-    expect(commentCount).toBe(2);
-  });
-
-  it('does not double-comment already commented references', () => {
-    const html = '<!-- <img src="clientFilesQuestion/video.mp4" /> -->';
-    const result = commentOutVideoReferences(html, ['video.mp4']);
-    // Should not nest comments
-    expect(result).toBe(html);
-  });
-
-  it('escapes regex special characters in filenames', () => {
-    const html = '<img src="clientFilesQuestion/file (1).mp4" />';
-    const result = commentOutVideoReferences(html, ['file (1).mp4']);
-    expect(result).toContain('<!--');
-  });
-});
+import { serializeClientFiles } from './instructorQtiImport.js';
 
 describe('serializeClientFiles', () => {
   it('encodes buffer content as base64', async () => {

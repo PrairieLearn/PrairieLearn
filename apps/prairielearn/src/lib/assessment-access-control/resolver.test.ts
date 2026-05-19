@@ -442,6 +442,59 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('password', () => {
+    it.each<ResolveCase>([
+      {
+        name: 'propagated in submittable segment',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: true, password: 'secret' },
+      },
+      {
+        // Once submissions are disallowed, the password would gate review of
+        // already-completed work without protecting anything submittable.
+        name: 'null in view-only afterLastDeadline segment',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { allowSubmissions: false },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: false, password: null },
+      },
+      {
+        name: 'propagated when afterLastDeadline still allows submissions',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { credit: 50, allowSubmissions: true },
+              password: 'secret',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+        expect: { authorized: true, submittable: true, password: 'secret' },
+      },
+    ])('$name', (c) => {
+      expect(runCase(c)).toMatchObject(c.expect);
+    });
+  });
+
   describe('beforeRelease.listed', () => {
     it.each<ResolveCase>([
       {
@@ -1201,9 +1254,7 @@ describe('resolveAccessControl', () => {
           {
             // Top-level afterComplete visibility has unlocked, so the resolver
             // grants a review-only path: authorized=true lets the middleware
-            // serve the page, active=false prevents submissions. Pins the full
-            // result shape so a future refactor can't silently change defaults
-            // (e.g., leaking a credit string or a non-null nextActiveDate).
+            // serve the page, active=false prevents submissions.
             name: 'at home after visible date: review-only',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Public',
@@ -1566,19 +1617,19 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, timeLimitMin: 60 },
       },
       {
-        // 30 minutes until deadline, minus 31 seconds = 1769s / 60 = 29.48 → 29
-        name: 'caps time limit by seconds until next deadline',
+        // 10 minutes until the only deadline, minus 31 seconds = 569s / 60 = 9.48 → 9
+        name: 'caps time limit by seconds until the last submittable deadline',
         rules: [
           makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
-              due: { date: '2025-03-15T12:30:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
               durationMinutes: 60,
             },
           }),
         ],
-        date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: true, submittable: true, timeLimitMin: 29 },
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, timeLimitMin: 9 },
       },
       {
         name: 'returns null in Exam mode',
@@ -1597,6 +1648,21 @@ describe('resolveAccessControl', () => {
         authzMode: 'Exam',
         reservations: [{ examUuid: 'exam-uuid-1', accessEnd: new Date('2025-03-15T14:00:00Z') }],
         expect: { authorized: true, submittable: true, timeLimitMin: null },
+      },
+      {
+        // 30m30s until deadline minus 31 seconds = 1799s / 60 = 29.983 → rounds to 30
+        name: 'rounds capped time limit to nearest minute',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:29:30Z'),
+        expect: { authorized: true, submittable: true, timeLimitMin: 30 },
       },
       {
         // 20 seconds until deadline minus 31 seconds → clamp to 0
@@ -1624,6 +1690,94 @@ describe('resolveAccessControl', () => {
           }),
         ],
         expect: { authorized: true, submittable: true, timeLimitMin: null },
+      },
+      {
+        // Time limit spans submittable access windows: a student starting 10
+        // minutes before the due date keeps the full 60-minute clock, with
+        // 100% credit for the first 10 minutes (until the due date) and 80%
+        // for the remaining 50 minutes (until the late deadline 7 days out).
+        name: 'spans into late window: full duration, 100% credit currently',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
+      },
+      {
+        // Once inside the late window, the cap is the late deadline. With 6+
+        // days of headroom, the full 60-minute duration is available at 80%.
+        name: 'late window: full duration available, capped by late deadline',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-16T12:00:00Z'),
+        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 60 },
+      },
+      {
+        // Approaching the final late deadline, the cap shrinks to the time
+        // remaining in the late window (30 min minus 31s legacy buffer = 29).
+        name: 'caps at late deadline as it approaches',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-22T12:00:00Z', credit: 80 }],
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-22T11:30:00Z'),
+        expect: { authorized: true, submittable: true, credit: 80, timeLimitMin: 29 },
+      },
+      {
+        // afterLastDeadline allowing submissions has no end, so the duration
+        // runs uncapped against the configured 60 min: 10 min at 100% credit
+        // before the due date, then 50 min at 25% credit afterwards.
+        name: 'spans through afterLastDeadline when submissions are allowed',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T11:50:00Z'),
+        expect: { authorized: true, submittable: true, credit: 100, timeLimitMin: 60 },
+      },
+      {
+        // Same rule, started after the due date: full duration available at
+        // the afterLastDeadline credit (25%).
+        name: 'after due in afterLastDeadline: full duration at reduced credit',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-03-15T12:00:00Z' },
+              afterLastDeadline: { credit: 25, allowSubmissions: true },
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-16T00:00:00Z'),
+        expect: { authorized: true, submittable: true, credit: 25, timeLimitMin: 60 },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -2111,6 +2265,158 @@ describe('resolveAccessControl', () => {
       });
       expect(result.authorized).toBe(false);
       expect(result.accessTimeline.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Validation only models self-or-default cascade (validation.ts), so a
+  // student matching multiple student_label overrides can produce a merged
+  // dateControl that the validator never saw — e.g., one override sets a low
+  // late-deadline credit and a second sets a higher afterLastDeadline credit.
+  // buildAccessTimeline floors each post-release segment's credit to its
+  // predecessor as a backstop. Tests pin the full timeline so the post-merge
+  // shape is visible and structural details (dates, current, submittable)
+  // are regression-checked alongside the credit invariant.
+  describe('multi-override stacks produce non-increasing accessTimeline', () => {
+    it('clamps afterLastDeadline credit when one override adds it above another override-supplied late deadline', () => {
+      // Without the cross-segment clamp the timeline would climb 50 → 80 in
+      // the trailing segment.
+      const result = runCase({
+        name: 'late from one override + higher afterLast from another',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }] },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { afterLastDeadline: { allowSubmissions: true, credit: 80 } },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-2'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
+        date: new Date('2025-04-10T00:00:00Z'),
+        expect: { authorized: true, submittable: true },
+      });
+      expect(result.accessTimeline).toEqual([
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+          accessible: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 100,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+          accessible: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 50,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-08T00:00:00Z'),
+          current: false,
+          submittable: true,
+          accessible: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 50,
+          startDate: new Date('2025-04-08T00:00:00Z'),
+          endDate: null,
+          current: true,
+          submittable: true,
+          accessible: true,
+        },
+      ]);
+    });
+
+    it('clamps a higher late-deadline credit when stacked over an override-supplied lower due credit', () => {
+      // The per-deadline cap in buildDeadlines (Math.min against dueCredit)
+      // handles this one — the late deadline's 90 is clipped to 60 before
+      // the cross-segment clamp runs. Pin the timeline so that floor logic
+      // doesn't silently regress.
+      const result = runCase({
+        name: 'low due credit from one override + higher late from another',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-01-01T00:00:00Z' },
+              due: { date: '2025-04-01T00:00:00Z' },
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { due: { date: '2025-04-01T00:00:00Z', credit: 60 } } },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            {
+              dateControl: { lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 90 }] },
+            },
+            { targetType: 'student_label', studentLabelIds: ['label-2'] },
+          ),
+        ],
+        enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1', 'label-2'] },
+        date: new Date('2025-04-05T00:00:00Z'),
+        expect: { authorized: true, submittable: true },
+      });
+      expect(result.accessTimeline).toEqual([
+        {
+          kind: 'beforeRelease',
+          credit: 0,
+          startDate: null,
+          endDate: new Date('2025-01-01T00:00:00Z'),
+          current: false,
+          submittable: false,
+          accessible: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 60,
+          startDate: new Date('2025-01-01T00:00:00Z'),
+          endDate: new Date('2025-04-01T00:00:00Z'),
+          current: false,
+          submittable: true,
+          accessible: true,
+        },
+        {
+          kind: 'deadline',
+          credit: 60,
+          startDate: new Date('2025-04-01T00:00:00Z'),
+          endDate: new Date('2025-04-08T00:00:00Z'),
+          current: true,
+          submittable: true,
+          accessible: true,
+        },
+        {
+          kind: 'afterLastDeadline',
+          credit: 0,
+          startDate: new Date('2025-04-08T00:00:00Z'),
+          endDate: null,
+          current: false,
+          submittable: false,
+          accessible: false,
+        },
+      ]);
     });
   });
 });

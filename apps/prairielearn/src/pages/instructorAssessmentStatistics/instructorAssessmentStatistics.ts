@@ -2,6 +2,11 @@ import { Router } from 'express';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
+import {
+  MINUTE_IN_MILLISECONDS,
+  SECOND_IN_MILLISECONDS,
+  formatDateYMD,
+} from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
@@ -11,7 +16,6 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
   AssessmentScoreHistogramByDateSchema,
-  DurationStatSchema,
   type Filenames,
   InstructorAssessmentStatistics,
   UserScoreSchema,
@@ -47,18 +51,6 @@ router.get(
       AssessmentSchema,
     );
 
-    // get formatted duration statistics
-    //
-    // Note that these statistics only consider the highest-scoring assessment
-    // instance for each user, so the scatter plot of instance durations vs
-    // scores won't include low-scoring instances. It's not clear if we want to
-    // change this.
-    const durationStat = await sqldb.queryRow(
-      sql.select_duration_stats,
-      { assessment_id: res.locals.assessment.id },
-      DurationStatSchema,
-    );
-
     const assessmentScoreHistogramByDate = await sqldb.queryRows(
       sql.assessment_score_histogram_by_date,
       { assessment_id: res.locals.assessment.id },
@@ -75,7 +67,6 @@ router.get(
       InstructorAssessmentStatistics({
         resLocals: res.locals,
         assessment,
-        durationStat,
         assessmentScoreHistogramByDate,
         userScores,
         filenames: getFilenames(res.locals),
@@ -148,13 +139,6 @@ router.get(
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.durationStatsCsvFilename) {
-      // get formatted duration statistics
-      const duration_stat = await sqldb.queryRow(
-        sql.select_duration_stats,
-        { assessment_id: res.locals.assessment.id },
-        DurationStatSchema,
-      );
-
       const csvData = [
         [
           res.locals.course.short_name,
@@ -164,12 +148,14 @@ router.get(
           res.locals.assessment_set.abbreviation + res.locals.assessment.number,
           res.locals.assessment.title,
           res.locals.assessment.tid,
-          duration_stat.mean_minutes,
-          duration_stat.median_minutes,
-          duration_stat.min_minutes,
-          duration_stat.max_minutes,
-          ...duration_stat.thresholds.map((durationMs) => Math.floor(durationMs / 1000)),
-          ...duration_stat.hist,
+          res.locals.assessment.duration_stat_mean / MINUTE_IN_MILLISECONDS,
+          res.locals.assessment.duration_stat_median / MINUTE_IN_MILLISECONDS,
+          res.locals.assessment.duration_stat_min / MINUTE_IN_MILLISECONDS,
+          res.locals.assessment.duration_stat_max / MINUTE_IN_MILLISECONDS,
+          ...res.locals.assessment.duration_stat_thresholds.map((durationMs) =>
+            Math.floor(durationMs / SECOND_IN_MILLISECONDS),
+          ),
+          ...res.locals.assessment.duration_stat_hist,
         ],
       ];
 
@@ -188,8 +174,10 @@ router.get(
           'Median duration (min)',
           'Min duration (min)',
           'Max duration (min)',
-          ...duration_stat.thresholds.map((_, i) => `Hist boundary ${i + 1} (s)`),
-          ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
+          ...res.locals.assessment.duration_stat_thresholds.map(
+            (_, i) => `Hist boundary ${i + 1} (s)`,
+          ),
+          ...res.locals.assessment.duration_stat_hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
@@ -228,7 +216,13 @@ router.get(
       res.attachment(req.params.filename);
       stringify(csvData, {
         header: true,
-        columns: ['Date', ...scoresByDay.map((day) => day.date_formatted)],
+        columns: [
+          'Date',
+          // The date is already extracted from the timestamp in the query and
+          // returned as UTC, so we can safely format it without worrying
+          // about timezones here.
+          ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
+        ],
       }).pipe(res);
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

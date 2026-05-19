@@ -45,13 +45,7 @@ WITH
       AND f.deleted_at IS NULL
   )
 SELECT
-  jsonb_set(
-    to_jsonb(ai),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (ai.date, ci.display_timezone)
-    )
-  ) AS assessment_instance,
+  to_jsonb(ai) AS assessment_instance,
   CASE
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(

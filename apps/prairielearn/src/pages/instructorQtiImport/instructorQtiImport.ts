@@ -1,4 +1,4 @@
-import { stat as fsStat, readFile } from 'node:fs/promises';
+import { stat as fsStat, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -24,6 +24,7 @@ import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
@@ -109,8 +110,24 @@ router.post(
         throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
       }
 
-      // Find QTI assessment files from the manifest.
-      const entries = await findQtiFilesFromManifest(tempDir);
+      // Find QTI assessment files from the manifest. If the archive has a
+      // wrapper directory (e.g. "course-export/imsmanifest.xml" instead of
+      // "imsmanifest.xml" at root), descend into it. macOS zip tools add a
+      // __MACOSX/ sibling with resource forks, so filter those out first.
+      let contentDir = tempDir;
+      let entries = await findQtiFilesFromManifest(contentDir);
+      if (entries.length === 0) {
+        const children = (await readdir(tempDir)).filter(
+          (name) => !name.startsWith('.') && name !== '__MACOSX',
+        );
+        if (children.length === 1) {
+          const child = path.join(tempDir, children[0]);
+          if ((await fsStat(child)).isDirectory()) {
+            contentDir = child;
+            entries = await findQtiFilesFromManifest(contentDir);
+          }
+        }
+      }
       if (entries.length === 0) {
         throw new HttpStatusError(
           400,
@@ -121,7 +138,7 @@ router.post(
       // Try to read rubrics from course_settings/rubrics.xml (not present in quiz-only exports).
       const rubricsXml = await run(async () => {
         try {
-          return await readFile(path.join(tempDir, 'course_settings', 'rubrics.xml'), 'utf-8');
+          return await readFile(path.join(contentDir, 'course_settings', 'rubrics.xml'), 'utf-8');
         } catch {
           return undefined;
         }
@@ -228,6 +245,7 @@ async function convertEntry(
     basePath: entry.assessmentDir,
     assessmentMetaXml,
     rubricsXml,
+    excludeFileExtensions: VIDEO_EXTENSIONS,
   };
 
   // Parse once into IR, derive the title for the question prefix,
@@ -261,7 +279,6 @@ async function convertEntry(
     ...baseOptions,
     tags: ['imported'],
     questionIdPrefix: questionPrefix,
-    excludeFileExtensions: VIDEO_EXTENSIONS,
   });
 
   return {
@@ -295,25 +312,26 @@ async function serializeConversionResult(
       // The converter emits local directory names (e.g. "q1"), but on disk
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
+      const questionId = `${questionPrefix}/${q.directoryName}`;
       const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
-          questionId: `${questionPrefix}/${q.directoryName}`,
+          questionId,
           message: `Missing asset file(s): ${missingFiles.join(', ')}`,
           level: 'warn',
         });
       }
-      // @reteps to handle this differently post-mvp, under the assumption that
-      // rewriting the question HTML should be handled by the import package
-      const questionHtml =
-        q.skippedFiles.length > 0
-          ? commentOutVideoReferences(q.questionHtml, q.skippedFiles)
-          : q.questionHtml;
+      const seenMessages = new Set<string>();
+      for (const d of await lintQuestionHtml(q.questionHtml)) {
+        if (seenMessages.has(d.message)) continue;
+        seenMessages.add(d.message);
+        extraWarnings.push({ questionId, message: d.message, level: 'warn' });
+      }
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
         sourceId: q.sourceId,
         infoJson: q.infoJson,
-        questionHtml,
+        questionHtml: q.questionHtml,
         serverPy: q.serverPy,
         clientFiles: files,
         skippedVideos: q.skippedFiles,
@@ -330,38 +348,6 @@ async function serializeConversionResult(
     questions,
     warnings: [...result.warnings, ...extraWarnings],
   };
-}
-
-/**
- * Comment out any HTML tag that references a skipped video file via
- * `clientFilesQuestion/<filename>`. Matches self-closing tags and
- * open/close pairs regardless of tag name.
- */
-export function commentOutVideoReferences(html: string, skippedVideos: string[]): string {
-  let result = html;
-  for (const videoFile of skippedVideos) {
-    const escaped = videoFile.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const ref = `clientFilesQuestion/${escaped}`;
-    // Match open+close tag pairs (e.g. <a ...>...</a>, <pl-figure ...>...</pl-figure>)
-    // then self-closing or void tags (e.g. <img .../>).
-    const patterns = [
-      new RegExp(`<(\\w[\\w-]*)\\b[^>]*${ref}[^>]*>[\\s\\S]*?</\\1>`, 'gi'),
-      new RegExp(`<\\w[\\w-]*\\b[^>]*${ref}[^>]*/?>`, 'gi'),
-    ];
-    for (const pattern of patterns) {
-      result = result.replace(pattern, (...args) => {
-        const offset = args[args.length - 2] as number;
-        // Skip if this match is already inside an HTML comment.
-        const before = result.slice(0, offset);
-        const lastCommentOpen = before.lastIndexOf('<!--');
-        const lastCommentClose = before.lastIndexOf('-->');
-        if (lastCommentOpen > lastCommentClose) return args[0];
-
-        return `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${args[0]}\n-->`;
-      });
-    }
-  }
-  return result;
 }
 
 const VIDEO_EXTENSIONS = new Set([

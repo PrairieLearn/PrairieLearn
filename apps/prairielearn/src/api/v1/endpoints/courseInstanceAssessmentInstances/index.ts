@@ -14,11 +14,11 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   CourseInstanceSchema,
+  GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  SprocTeamInfoSchema,
   SprocUsersGetDisplayedRoleSchema,
   SubmissionSchema,
   TagSchema,
@@ -66,12 +66,9 @@ export const SubmissionDataSchema = z
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),
     user_role: SprocUsersGetDisplayedRoleSchema,
-
-    // left join team_info sproc
-    group_id: SprocTeamInfoSchema.shape.id.nullable(),
-    group_name: SprocTeamInfoSchema.shape.name.nullable(),
-    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
-
+    group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
+    group_name: GroupSchema.shape.name.nullable(),
+    group_uids: UserSchema.shape.uid.array().nullable(),
     assessment_id: AssessmentSchema.shape.id,
     assessment_name: AssessmentSchema.shape.tid,
     assessment_label: z.string(),

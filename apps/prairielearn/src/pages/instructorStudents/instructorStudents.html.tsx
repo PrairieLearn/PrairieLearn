@@ -1,13 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
   type RowSelectionState,
   type SortingState,
   type Table,
-  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -34,6 +32,7 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
   parseAsSortingState,
+  useColumnFilters,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
@@ -83,6 +82,8 @@ const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentSta
   mode: 'include',
 };
 const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
+const HIDDEN_BY_DEFAULT = new Set(['user_uin', 'user_email']);
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -202,16 +203,6 @@ interface StudentsCardProps {
   origHash: string | null;
 }
 
-type ColumnId =
-  | 'select'
-  | 'user_uid'
-  | 'user_uin'
-  | 'user_name'
-  | 'enrollment_status'
-  | 'user_email'
-  | 'enrollment_first_joined_at'
-  | 'student_labels';
-
 function StudentsCard({
   authzData,
   course,
@@ -234,14 +225,22 @@ function StudentsCard({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
-  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
-    'status',
-    parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_ENROLLMENT_STATUS_FILTER),
+  const filterRegistry = useMemo(
+    () => ({
+      enrollment_status: {
+        urlKey: 'status',
+        parser: parseAsMultiSelectFilter(STATUS_VALUES),
+        defaultValue: DEFAULT_ENROLLMENT_STATUS_FILTER,
+      },
+      student_labels: {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_STUDENT_LABELS_FILTER,
+      },
+    }),
+    [],
   );
-  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
-    'student_labels',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_STUDENT_LABELS_FILTER),
-  );
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
@@ -265,41 +264,9 @@ function StudentsCard({
     initialData: initialStudentLabels,
   });
 
-  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
-    return [
-      {
-        id: 'enrollment_status',
-        value: enrollmentStatusFilter,
-      },
-      {
-        id: 'student_labels',
-        value: studentLabelsFilter,
-      },
-    ];
-  }, [enrollmentStatusFilter, studentLabelsFilter]);
-
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
-    return {
-      select: undefined,
-      user_uid: undefined,
-      user_uin: undefined,
-      user_name: undefined,
-      enrollment_status: setEnrollmentStatusFilter,
-      user_email: undefined,
-      enrollment_first_joined_at: undefined,
-      student_labels: setStudentLabelsFilter,
-    };
-  }, [setEnrollmentStatusFilter, setStudentLabelsFilter]);
-
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
-      }
-    },
-    [columnFilters, columnFilterSetters],
+  const studentLabelsById = useMemo(
+    () => new Map(studentLabels.map((l) => [l.id, l])),
+    [studentLabels],
   );
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -580,12 +547,16 @@ function StudentsCard({
     [timezone, courseInstance.id, createCheckboxProps, studentLabels],
   );
 
-  const allColumnIds = columns
-    .map((col) => col.id)
-    .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hiddenByDefault = new Set(['user_uin', 'user_email']);
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
+  const allColumnIds = useMemo(
+    () =>
+      columns
+        .map((col) => col.id)
+        .filter((id): id is string => typeof id === 'string' && id !== 'select'),
+    [columns],
+  );
+  const defaultColumnVisibility = useMemo(
+    () => Object.fromEntries(allColumnIds.map((id) => [id, !HIDDEN_BY_DEFAULT.has(id)])),
+    [allColumnIds],
   );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -612,7 +583,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -722,6 +693,16 @@ function StudentsCard({
               },
             ];
           },
+          mapRowToJsonData: (row) => ({
+            uid: row.user?.uid ?? row.enrollment.pending_uid,
+            name: row.user?.name ?? null,
+            email: row.user?.email ?? null,
+            enrollment_status: row.enrollment.status,
+            first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
+          }),
           hasSelection: false,
         }}
         headerButtons={
@@ -894,6 +875,7 @@ function StudentsCard({
             </TanstackTableEmptyState>
           ),
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
       <InviteStudentsModal
         show={showInvite}

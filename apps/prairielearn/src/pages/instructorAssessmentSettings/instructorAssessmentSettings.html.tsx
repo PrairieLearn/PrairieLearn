@@ -8,9 +8,15 @@ import { run } from '@prairielearn/run';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { StudentLinkSharing } from '../../components/LinkSharing.js';
+import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { getAppError } from '../../lib/client/errors.js';
+import {
+  AppErrorAlert,
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
@@ -18,6 +24,7 @@ import type {
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type { AssessmentSettingsError } from '../../trpc/assessment/assessment-settings.js';
@@ -123,6 +130,7 @@ interface SettingsFormValues {
   allow_real_time_grading: boolean;
   grade_rate_minutes: string;
   tools?: Record<string, boolean>;
+  share_source_publicly?: boolean;
 }
 
 interface InstructorAssessmentSettingsProps {
@@ -142,6 +150,8 @@ interface InstructorAssessmentSettingsProps {
   isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
+  nonPublicQuestionsInAssessment: { id: string; qid: string }[];
+  questionSharingEnabled: boolean;
 }
 
 export function InstructorAssessmentSettings({
@@ -161,6 +171,8 @@ export function InstructorAssessmentSettings({
   isDevMode,
   assessmentTools,
   zonePointsRange,
+  nonPublicQuestionsInAssessment,
+  questionSharingEnabled,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -188,6 +200,8 @@ export function InstructorAssessmentSettings({
           assessmentModules={assessmentModules}
           assessmentTools={assessmentTools}
           zonePointsRange={zonePointsRange}
+          nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
+          questionSharingEnabled={questionSharingEnabled}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -255,11 +269,14 @@ function CopyAssessmentModal({
       </Modal.Header>
       <form onSubmit={onSubmit}>
         <Modal.Body>
-          {copyError && (
-            <Alert variant="danger" dismissible onClose={() => copyMutation.reset()}>
-              {copyError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={copyError}
+            render={{
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => copyMutation.reset()}
+          />
           <p className="text-muted small mb-3">
             Making a copy of <code>{assessment.tid}</code>.
           </p>
@@ -373,6 +390,8 @@ function InstructorAssessmentSettingsInner({
   assessmentModules,
   assessmentTools,
   zonePointsRange,
+  nonPublicQuestionsInAssessment,
+  questionSharingEnabled,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'>) {
   const trpc = useTRPC();
   const [currentOrigHash, setCurrentOrigHash] = useState(origHash);
@@ -409,6 +428,7 @@ function InstructorAssessmentSettingsInner({
     grade_rate_minutes:
       assessment.json_grade_rate_minutes != null ? String(assessment.json_grade_rate_minutes) : '',
     tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
+    share_source_publicly: assessment.share_source_publicly,
   };
 
   const {
@@ -442,10 +462,13 @@ function InstructorAssessmentSettingsInner({
         onDismiss: () => saveMutation.reset(),
       };
     }
-    if (appError?.message) {
+    if (appError) {
       return {
         variant: 'danger',
-        message: appError.message,
+        message: renderAppError(appError, {
+          SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+          UNKNOWN: ({ message }) => message,
+        }),
         onDismiss: () => saveMutation.reset(),
       };
     }
@@ -458,6 +481,7 @@ function InstructorAssessmentSettingsInner({
     saveMutation.mutate(
       {
         ...data,
+        share_source_publicly: data.share_source_publicly,
         max_points: useCustomMaxPoints ? toNullableNumber(data.max_points) : null,
         max_bonus_points: toNullableNumber(data.max_bonus_points),
         advance_score_perc: toNullableNumber(data.advance_score_perc),
@@ -517,11 +541,14 @@ function InstructorAssessmentSettingsInner({
           <Modal.Title>Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {deleteError && (
-            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-              {deleteError.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={deleteError}
+            render={{
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+              UNKNOWN: ({ message }) => message,
+            }}
+            onDismiss={() => deleteMutation.reset()}
+          />
           <p>
             Are you sure you want to delete the assessment <b>{assessment.tid}</b>?
           </p>
@@ -714,17 +741,6 @@ function InstructorAssessmentSettingsInner({
                 studentLink={studentLink}
                 studentLinkMessage="The link that students will use to access this assessment."
               />
-
-              <p className="form-label">Sharing</p>
-              {assessment.share_source_publicly ? (
-                <PublicLinkSharing
-                  publicLink={publicLink}
-                  sharingMessage="This assessment's source is publicly shared."
-                  publicLinkMessage="The link that other instructors can use to view this assessment."
-                />
-              ) : (
-                <p className="form-text text-muted">This assessment is not being shared.</p>
-              )}
             </div>
           </div>
 
@@ -1141,6 +1157,26 @@ function InstructorAssessmentSettingsInner({
               ))}
             </div>
           </div>
+
+          {questionSharingEnabled && (
+            <ShareSourcePubliclyCard
+              alreadyShared={assessment.share_source_publicly}
+              canEdit={canEdit}
+              registerProps={register('share_source_publicly')}
+              defaultChecked={defaultValues.share_source_publicly}
+              blockingChildren={nonPublicQuestionsInAssessment.map((q) => ({
+                id: q.id,
+                href: getQuestionSettingsUrl({
+                  questionId: q.id,
+                  courseInstanceId: assessment.course_instance_id,
+                }),
+                label: q.qid,
+              }))}
+              publicLink={publicLink}
+              entityNoun="assessment"
+              childNoun="questions"
+            />
+          )}
 
           {(currentGHLink || canEdit) && (
             <div className="card">

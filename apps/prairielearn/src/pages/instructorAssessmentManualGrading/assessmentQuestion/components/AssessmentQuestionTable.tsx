@@ -1,10 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
-  type Updater,
   type VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -15,8 +13,10 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
   type MultiSelectFilterValue,
+  type NumericColumnFilterValue,
   OverlayTrigger,
   TanstackTableCard,
   parseAsColumnPinningState,
@@ -24,11 +24,13 @@ import {
   parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
+  useColumnFilters,
+  useModalState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
-import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { AiGradingProgressInfo } from '../../../../components/ServerJobProgress/AiGradingProgressInfo.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
@@ -48,7 +50,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
-import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
+import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
@@ -60,7 +62,12 @@ import {
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
+import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
+
+function userToExportFields(user: StaffUser | null) {
+  return user ? { name: user.name, uid: user.uid, uin: user.uin, email: user.email } : null;
+}
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
@@ -72,6 +79,7 @@ const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mod
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
 interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -94,6 +102,10 @@ interface AssessmentQuestionTableProps {
   aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
+  onRubricSettingsSaved: (data: {
+    rubric_data: RubricData | null;
+    aiGradingStats: AiGradingGeneralStats | null;
+  }) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -101,10 +113,12 @@ function AiGradingOption({
   text,
   numToGrade,
   onSelect,
+  hint,
 }: {
   text: string;
   numToGrade: number;
   onSelect: () => void;
+  hint?: string;
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onSelect}>
@@ -112,6 +126,11 @@ function AiGradingOption({
         <span>{text}</span>
         <span className="badge bg-secondary ms-2">{numToGrade}</span>
       </div>
+      {hint && (
+        <div className="small text-muted mt-1" style={{ whiteSpace: 'normal' }}>
+          {hint}
+        </div>
+      )}
     </Dropdown.Item>
   );
 }
@@ -137,6 +156,7 @@ export function AssessmentQuestionTable({
   aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
+  onRubricSettingsSaved,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -151,46 +171,75 @@ export function AssessmentQuestionTable({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
-    'status',
-    parseAsMultiSelectFilter(GRADING_STATUS_VALUES).withDefault(DEFAULT_GRADING_STATUS_FILTER),
+  const filterRegistry = useMemo(
+    () => ({
+      requires_manual_grading: {
+        urlKey: 'status',
+        parser: parseAsMultiSelectFilter(GRADING_STATUS_VALUES),
+        defaultValue: DEFAULT_GRADING_STATUS_FILTER,
+      },
+      assigned_grader_name: {
+        urlKey: 'assigned_grader',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_ASSIGNED_GRADER_FILTER,
+      },
+      last_grader_name: {
+        urlKey: 'graded_by',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_GRADED_BY_FILTER,
+      },
+      instance_question_group_name: {
+        urlKey: 'submission_group',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_SUBMISSION_GROUP_FILTER,
+        enabled: aiGradingMode && instanceQuestionGroups.length > 0,
+      },
+      rubric_difference: {
+        urlKey: 'ai_agreement',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_AGREEMENT_FILTER,
+        enabled: aiGradingMode,
+      },
+      rubric_grading_item_ids: {
+        urlKey: 'rubric_items',
+        parser: parseAsArrayOf(parseAsString),
+        defaultValue: [] as string[],
+        enabled: !!rubricData && rubricData.rubric_items.length > 0,
+      },
+      manual_points: {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      },
+      auto_points: {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+        enabled: !!assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0,
+      },
+      points: {
+        urlKey: 'total_points',
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      },
+      score_perc: {
+        urlKey: 'score',
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+        enabled: !aiGradingMode,
+      },
+    }),
+    [aiGradingMode, instanceQuestionGroups.length, assessmentQuestion.max_auto_points, rubricData],
   );
-  const [assignedGraderFilter, setAssignedGraderFilter] = useQueryState(
-    'assigned_grader',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_ASSIGNED_GRADER_FILTER),
-  );
-  const [gradedByFilter, setGradedByFilter] = useQueryState(
-    'graded_by',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_GRADED_BY_FILTER),
-  );
-  const [submissionGroupFilter, setSubmissionGroupFilter] = useQueryState(
-    'submission_group',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
-  );
-  const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
-    'ai_agreement',
-    parseAsMultiSelectFilter().withDefault(DEFAULT_AI_AGREEMENT_FILTER),
-  );
+
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
+
+  // Mirrors the `rubric_grading_item_ids` registry entry above. Both subscribers
+  // share the `rubric_items` URL param via nuqs, so reset clears it whenever
+  // the rubric filter is enabled. When disabled, the URL value is preserved
+  // (see `ColumnFilterEntry.enabled` in `use-column-filters.ts`).
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
     parseAsArrayOf(parseAsString).withDefault([]),
-  );
-
-  const [manualPointsFilter, setManualPointsFilter] = useQueryState(
-    'manual_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [autoPointsFilter, setAutoPointsFilter] = useQueryState(
-    'auto_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [totalPointsFilter, setTotalPointsFilter] = useQueryState(
-    'total_points',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
-  );
-  const [scoreFilter, setScoreFilter] = useQueryState(
-    'score',
-    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
 
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
@@ -200,10 +249,15 @@ export function AssessmentQuestionTable({
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
-  // Controls the AI grading model selection modal: null = hidden, otherwise
-  // holds the grading mode ('all', 'human_graded', or 'selected') and count.
-  const [modelSelectionModalState, setModelSelectionModalState] =
-    useState<AiGradingModelSelectionModalState>(null);
+  // Track completed AI grading job IDs so the "Review AI-graded submissions"
+  // alert survives dismissal of the "AI grading complete" progress alert
+  // (which clears the job from `serverJobProgress.jobsProgress`). The ref
+  // dedupes by job_sequence_id; the boolean drives alert visibility and is
+  // reset on dismissal.
+  const seenCompletedJobIdsRef = useRef<Set<string>>(new Set());
+  const [hasUnacknowledgedReview, setHasUnacknowledgedReview] = useState(false);
+
+  const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
@@ -264,94 +318,6 @@ export function AssessmentQuestionTable({
     return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
   }, [instanceQuestionsInfo]);
 
-  const columnFilters = useMemo(() => {
-    const filters: { id: ColumnId; value: any }[] = [
-      { id: 'requires_manual_grading', value: gradingStatusFilter },
-      { id: 'assigned_grader_name', value: assignedGraderFilter },
-      { id: 'last_grader_name', value: gradedByFilter },
-      { id: 'manual_points', value: manualPointsFilter },
-      { id: 'points', value: totalPointsFilter },
-    ];
-
-    // Only add filters for columns that exist
-    if (aiGradingMode && instanceQuestionGroups.length > 0) {
-      filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
-    }
-    if (aiGradingMode) {
-      filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
-    }
-    // Filter by rubric items if any are selected
-    if (rubricData && rubricData.rubric_items.length > 0 && rubricItemsFilter.length > 0) {
-      filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
-    }
-    if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
-      filters.push({ id: 'auto_points', value: autoPointsFilter });
-    }
-    if (!aiGradingMode) {
-      filters.push({ id: 'score_perc', value: scoreFilter });
-    }
-
-    return filters;
-  }, [
-    gradingStatusFilter,
-    assignedGraderFilter,
-    gradedByFilter,
-    submissionGroupFilter,
-    aiAgreementFilter,
-    rubricItemsFilter,
-    manualPointsFilter,
-    autoPointsFilter,
-    totalPointsFilter,
-    scoreFilter,
-    aiGradingMode,
-    instanceQuestionGroups.length,
-    assessmentQuestion.max_auto_points,
-    rubricData,
-  ]);
-
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
-    return {
-      requires_manual_grading: setGradingStatusFilter,
-      assigned_grader_name: setAssignedGraderFilter,
-      last_grader_name: setGradedByFilter,
-      instance_question_group_name: setSubmissionGroupFilter,
-      rubric_difference: setAiAgreementFilter,
-      manual_points: setManualPointsFilter,
-      auto_points: setAutoPointsFilter,
-      points: setTotalPointsFilter,
-      score_perc: setScoreFilter,
-      rubric_grading_item_ids: setRubricItemsFilter,
-      ai_grading_status: undefined,
-      uid: undefined,
-      user_or_group_name: undefined,
-      select: undefined,
-      index: undefined,
-    };
-  }, [
-    setGradingStatusFilter,
-    setAssignedGraderFilter,
-    setGradedByFilter,
-    setSubmissionGroupFilter,
-    setAiAgreementFilter,
-    setManualPointsFilter,
-    setTotalPointsFilter,
-    setScoreFilter,
-    setRubricItemsFilter,
-    setAutoPointsFilter,
-  ]);
-
-  // Sync TanStack column filter changes back to URL
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
-      }
-    },
-    [columnFilters, columnFilterSetters],
-  );
-
   const serverJobProgress = useServerJobProgress({
     enabled: aiGradingMode,
     initialOngoingJobSequenceTokens,
@@ -364,6 +330,27 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // Show the review alert when a job completes that we haven't already
+  // recorded. The seen set is genuinely history-dependent (it must outlive
+  // the job leaving `jobsProgress`), so this is a legitimate accumulator
+  // rather than derived state.
+  useEffect(() => {
+    let added = false;
+    for (const j of Object.values(serverJobProgress.jobsProgress)) {
+      if (
+        j.num_total > 0 &&
+        j.num_complete >= j.num_total &&
+        j.num_failed === 0 &&
+        !seenCompletedJobIdsRef.current.has(j.job_sequence_id)
+      ) {
+        seenCompletedJobIdsRef.current.add(j.job_sequence_id);
+        added = true;
+      }
+    }
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    if (added) setHasUnacknowledgedReview(true);
+  }, [serverJobProgress.jobsProgress]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -407,31 +394,34 @@ export function AssessmentQuestionTable({
     ],
   );
 
-  const allColumnIds = columns.map((col) => col.id!);
+  const allColumnIds = useMemo(
+    () => columns.map((col) => col.id).filter((id): id is string => typeof id === 'string'),
+    [columns],
+  );
   const defaultColumnVisibility = useMemo(() => {
     return Object.fromEntries(
-      columns.map((col) => {
+      columns.flatMap((col) => {
+        if (typeof col.id !== 'string') return [];
         if (col.id === 'select') {
-          return [col.id, true];
+          return [[col.id, true]];
         }
         // If you can't show/hide the column, the default state is hidden.
         if (col.enableHiding === false) {
-          return [col.id, false];
+          return [[col.id, false]];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-
-        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
-          return [col.id, !aiGradingMode];
+        if (['assigned_grader_name', 'score_perc'].includes(col.id)) {
+          return [[col.id, !aiGradingMode]];
         }
-        if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
-          return [col.id, aiGradingMode];
+        if (['instance_question_group_name', 'rubric_difference'].includes(col.id)) {
+          return [[col.id, aiGradingMode]];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
-          return [col.id, false];
+        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id)) {
+          return [[col.id, false]];
         }
 
-        return [col.id, true];
+        return [[col.id, true]];
       }),
     );
   }, [columns, aiGradingMode]);
@@ -489,7 +479,7 @@ export function AssessmentQuestionTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -587,6 +577,7 @@ export function AssessmentQuestionTable({
     setRequiresManualGradingMutation,
     setAssignedGraderMutation,
     groupSubmissionMutation,
+    stopAiGradingJobMutation,
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
@@ -610,23 +601,24 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          onSaved={onRubricSettingsSaved}
         />
       </div>
       {aiGradingMode && (
-        <ServerJobsProgressInfo
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
-          courseInstanceId={courseInstance.id}
-          statusIcons={{
-            inProgress: 'bi-stars',
-          }}
-          statusText={{
-            inProgress: 'AI grading in progress',
-            complete: 'AI grading complete',
-            failed: 'AI grading failed',
-          }}
-          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
-        />
+        <>
+          <AiGradingProgressInfo
+            jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+            courseInstanceId={courseInstance.id}
+            hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+            onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+            onStopJobSequence={(jobSequenceId) =>
+              stopAiGradingJobMutation.mutate({ job_sequence_id: jobSequenceId })
+            }
+          />
+          {hasUnacknowledgedReview && (
+            <ReviewSubmissionsAlert onDismiss={() => setHasUnacknowledgedReview(false)} />
+          )}
+        </>
       )}
       <QueryErrors<ManualGradingError>
         queries={[
@@ -635,6 +627,7 @@ export function AssessmentQuestionTable({
           groupSubmissionMutation,
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
+          stopAiGradingJobMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
@@ -715,7 +708,7 @@ export function AssessmentQuestionTable({
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'human_graded',
                           numToGrade: aiGradingCounts.humanGraded,
                         })
@@ -724,8 +717,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
+                      hint={
+                        aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
+                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'selected',
                           ids: selectedIds,
                           numToGrade: aiGradingCounts.selected,
@@ -735,8 +733,13 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
+                      hint={
+                        aiGradingCounts.all === 0
+                          ? 'Receive at least one submission to perform AI grading.'
+                          : undefined
+                      }
                       onSelect={() =>
-                        setModelSelectionModalState({
+                        modelSelectionModalState.showWithData({
                           type: 'all',
                           numToGrade: aiGradingCounts.all,
                         })
@@ -914,11 +917,20 @@ export function AssessmentQuestionTable({
               value: row.user_or_group_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
+            ...(assessment.team_work
+              ? []
+              : [
+                  { name: 'UIN', value: row.user?.uin ?? '' },
+                  { name: 'Email', value: row.user?.email ?? '' },
+                ]),
             {
               name: 'Grading Status',
               value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',
             },
-            { name: 'Assigned Grader', value: row.assigned_grader_name || '' },
+            { name: 'Assigned Grader Name', value: row.assigned_grader?.name ?? '' },
+            { name: 'Assigned Grader UID', value: row.assigned_grader?.uid ?? '' },
+            { name: 'Assigned Grader UIN', value: row.assigned_grader?.uin ?? '' },
+            { name: 'Assigned Grader Email', value: row.assigned_grader?.email ?? '' },
             {
               name: 'Auto Points',
               value:
@@ -945,21 +957,70 @@ export function AssessmentQuestionTable({
                   ? row.instance_question.score_perc.toString()
                   : '',
             },
-            { name: 'Graded By', value: row.last_grader_name || '' },
+            { name: 'Last Grader Name', value: row.last_grader?.name ?? '' },
+            { name: 'Last Grader UID', value: row.last_grader?.uid ?? '' },
+            { name: 'Last Grader UIN', value: row.last_grader?.uin ?? '' },
+            { name: 'Last Grader Email', value: row.last_grader?.email ?? '' },
             { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
           ],
+          mapRowToJsonData: (row) => ({
+            instance_question_id: row.instance_question.id,
+            ...(assessment.team_work
+              ? {
+                  group: {
+                    name: row.user_or_group_name ?? null,
+                    members: row.group_members.map((m) => userToExportFields(m)),
+                  },
+                }
+              : { user: userToExportFields(row.user) }),
+            requires_manual_grading: row.instance_question.requires_manual_grading,
+            assigned_grader: userToExportFields(row.assigned_grader),
+            auto_points: row.instance_question.auto_points ?? null,
+            manual_points: row.instance_question.manual_points ?? null,
+            points: row.instance_question.points ?? null,
+            score_perc: row.instance_question.score_perc ?? null,
+            last_grader: userToExportFields(row.last_grader),
+            modified_at: row.instance_question.modified_at.toISOString(),
+          }),
           hasSelection: true,
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
 
       <AiGradingModelSelectionModal
         key={lastSelectedModel ?? 'default'}
-        modalState={modelSelectionModalState}
+        show={modelSelectionModalState.show}
+        data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
+        hasRubric={rubricData != null && rubricData.rubric_items.length > 0}
+        totalSubmissionCount={aiGradingCounts.all}
+        onHide={modelSelectionModalState.onHide}
+        onExited={modelSelectionModalState.onExited}
+        onSelectFirstSubmissions={(n) => {
+          const candidateIds = run(() => {
+            if (modelSelectionModalState.data?.type === 'selected') {
+              return modelSelectionModalState.data.ids;
+            }
+            if (modelSelectionModalState.data?.type === 'human_graded') {
+              return instanceQuestionsInfo
+                .filter((row) => row.instance_question.last_human_grader != null)
+                .map((row) => row.instance_question.id);
+            }
+            return instanceQuestionsInfo.map((row) => row.instance_question.id);
+          });
+          const ids = candidateIds.slice(0, n);
+          const nextSelection = Object.fromEntries(ids.map((id) => [id, true]));
+          setRowSelection(nextSelection);
+          modelSelectionModalState.showWithData({
+            type: 'selected',
+            ids,
+            numToGrade: ids.length,
+          });
+        }}
         onSuccess={(data, modelId) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
@@ -968,7 +1029,6 @@ export function AssessmentQuestionTable({
           setLastSelectedModel(modelId);
           setRowSelection({});
         }}
-        onHide={() => setModelSelectionModalState(null)}
       />
 
       {/* Delete AI Grading Results Modal */}

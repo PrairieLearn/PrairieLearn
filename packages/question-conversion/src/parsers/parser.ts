@@ -28,6 +28,12 @@ export interface ParseOptions {
    * Without this, a rubric reference in the metadata emits a parse warning instead.
    */
   rubricsXml?: string;
+  /**
+   * File extensions (e.g. ".mp4") to exclude from imported assets. Tags in the prompt HTML
+   * that reference excluded files are commented out, and the files are not added to the
+   * question's asset list. Excluded filenames are reported on `IRQuestion.skippedFiles`.
+   */
+  excludeFileExtensions?: Set<string>;
 }
 
 /** Interface for format-specific input parsers. */

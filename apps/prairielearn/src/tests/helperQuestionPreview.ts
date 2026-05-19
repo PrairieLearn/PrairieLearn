@@ -249,14 +249,12 @@ export function testFileDownloads(
         page = await res.text();
         assert.equal(page, 'This data is specific to the question.');
       });
-      it('should contain a new tab link to clientFilesQuestion/name&gt;"weird.txt with properly escaped URL and label', function () {
-        elemList = locals.$(
-          'a[href*="clientFilesQuestion/name%26gt%3B%22weird.txt"][target="_blank"]:not([download])',
-        );
+      it('should contain a new tab link to name&gt;"weird.txt with properly escaped URL and label', function () {
+        elemList = locals.$('a[href*="name%26gt%3B%22weird.txt"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
         assert.equal(elemList.text().trim(), 'name&gt;"weird.txt');
       });
-      it('should download something with the new tab link to clientFilesQuestion/name&gt;"weird.txt', async () => {
+      it('should download something with the new tab link to name&gt;"weird.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
         const res = await fetch(fileUrl);
         assert.equal(res.status, 200);

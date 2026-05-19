@@ -1,12 +1,10 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type Header,
   type RowSelectionState,
   type SortingState,
   type Table,
-  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -14,12 +12,13 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
+  type ColumnFilterEntry,
   IndeterminateCheckbox,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
@@ -30,6 +29,7 @@ import {
   parseAsColumnPinningState,
   parseAsMultiSelectFilter,
   parseAsSortingState,
+  useColumnFilters,
   useColumnVisibilityQueryState,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
@@ -170,7 +170,7 @@ function CoursePermissionCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['UpdateCourseRole']>(mutation.error);
 
   if (!canChangeCourseRole) {
     return (
@@ -290,7 +290,7 @@ function CourseInstanceAccessCell({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['UpdateInstanceRole']>(mutation.error);
 
   return (
     <OverlayTrigger
@@ -412,7 +412,7 @@ function AddUsersModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['InsertByUserUids']>(mutation.error);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -585,7 +585,7 @@ function BulkDeleteModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkDelete']>(mutation.error);
 
   return (
     <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
@@ -661,7 +661,7 @@ function BulkEditAccessModal({
       return invalidateStaffList();
     },
   });
-  const appError = getAppError<CourseStaffError>(mutation.error);
+  const appError = getAppError<CourseStaffError['BulkEditAccess']>(mutation.error);
 
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user.id);
@@ -835,14 +835,30 @@ function StaffTableInner({
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  const [courseRoleFilter, setCourseRoleFilter] = useQueryState(
-    'role',
-    parseAsMultiSelectFilter(COURSE_ROLE_VALUES).withDefault(EMPTY_COURSE_ROLE_FILTER),
-  );
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
+
+  const filterRegistry = useMemo(() => {
+    const registry: Record<string, ColumnFilterEntry<MultiSelectFilterValue<any>>> = {
+      course_role: {
+        urlKey: 'role',
+        parser: parseAsMultiSelectFilter(COURSE_ROLE_VALUES),
+        defaultValue: EMPTY_COURSE_ROLE_FILTER,
+      },
+    };
+    for (const ci of courseInstances) {
+      registry[`ci_${ci.id}`] = {
+        parser: parseAsMultiSelectFilter(INSTANCE_ROLE_VALUES),
+        defaultValue: EMPTY_INSTANCE_ROLE_FILTER,
+      };
+    }
+    return registry;
+  }, [courseInstances]);
+
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
 
   const activeCourseInstanceIds = useMemo(() => {
     const now = new Date();
@@ -872,59 +888,6 @@ function StaffTableInner({
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { createCheckboxProps } = useShiftClickCheckbox<CourseUsersRow>();
-
-  const defaultInstanceFilterValues = useMemo(
-    () =>
-      Object.fromEntries(
-        courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          parseAsMultiSelectFilter(INSTANCE_ROLE_VALUES).withDefault(EMPTY_INSTANCE_ROLE_FILTER),
-        ]),
-      ),
-    [courseInstances],
-  );
-  const [instanceFilterValues, setInstanceFilterValues] = useQueryStates(
-    defaultInstanceFilterValues,
-  );
-
-  const columnFilters = useMemo<ColumnFiltersState>(
-    () => [
-      { id: 'course_role', value: courseRoleFilter },
-      ...courseInstances.map((ci) => ({
-        id: `ci_${ci.id}`,
-        value: instanceFilterValues[`ci_${ci.id}`] ?? EMPTY_INSTANCE_ROLE_FILTER,
-      })),
-    ],
-    [courseRoleFilter, instanceFilterValues, courseInstances],
-  );
-
-  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(
-    () => ({
-      select: undefined,
-      uid: undefined,
-      user_name: undefined,
-      course_role: setCourseRoleFilter,
-      ...Object.fromEntries(
-        courseInstances.map((ci) => [
-          `ci_${ci.id}`,
-          (value: MultiSelectFilterValue<InstanceRole>) =>
-            setInstanceFilterValues((prev) => ({ ...prev, [`ci_${ci.id}`]: value })),
-        ]),
-      ),
-    }),
-    [setCourseRoleFilter, setInstanceFilterValues, courseInstances],
-  );
-
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id]?.(filter.value);
-      }
-    },
-    [columnFilters, columnFilterSetters],
-  );
 
   const columns = useMemo(
     () => [
@@ -1059,7 +1022,7 @@ function StaffTableInner({
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     onColumnPinningChange: setColumnPinning,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
@@ -1214,6 +1177,7 @@ function StaffTableInner({
           headerButtons={headerButtons}
           columnManager={{ buttons: viewPresetDropdown }}
           statusContent={statusContent}
+          onResetColumnFilters={onResetColumnFilters}
         />
       </div>
     </div>

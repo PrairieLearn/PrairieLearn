@@ -39,6 +39,7 @@ router.get(
     }
 
     const {
+      course,
       course_instance: courseInstance,
       authz_data: authzData,
       authn_user,
@@ -123,6 +124,7 @@ router.get(
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}
               initialCheckoutAmountMilliDollars={checkoutAmountMilliDollars}
+              courseLabel={course.short_name}
             />
           </Hydrate>
         ),

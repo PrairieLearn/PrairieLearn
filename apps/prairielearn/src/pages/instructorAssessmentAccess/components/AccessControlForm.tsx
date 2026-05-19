@@ -40,7 +40,7 @@ export function AccessControlForm({
   ptHost,
   onSubmit,
   courseInstance,
-  assessmentId,
+  isExam,
   isSaving = false,
   alert,
 }: {
@@ -49,7 +49,7 @@ export function AccessControlForm({
   ptHost: string;
   onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentId: string;
+  isExam: boolean;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
 }) {
@@ -250,11 +250,7 @@ export function AccessControlForm({
   const rightPanel =
     selectedRule?.type === 'default' ? (
       <div className="px-3 pb-3">
-        <DefaultRuleForm
-          displayTimezone={displayTimezone}
-          assessmentId={assessmentId}
-          courseInstanceId={courseInstance.id}
-        />
+        <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -273,8 +269,7 @@ export function AccessControlForm({
             <OverrideRuleContent
               index={selectedRule.index}
               displayTimezone={displayTimezone}
-              assessmentId={assessmentId}
-              courseInstanceId={courseInstance.id}
+              isExam={isExam}
             />
           </div>
         );
@@ -313,7 +308,7 @@ export function AccessControlForm({
                     {alert.message}
                   </Alert>
                 )}
-                <div className="p-3">
+                <div className="container py-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
@@ -347,7 +342,6 @@ export function AccessControlForm({
                   visible={isDirty}
                   isSaving={isSaving}
                   saveDisabledReason={saveDisabledReason}
-                  fullWidth
                   onCancel={() => reset()}
                 />
               </>
