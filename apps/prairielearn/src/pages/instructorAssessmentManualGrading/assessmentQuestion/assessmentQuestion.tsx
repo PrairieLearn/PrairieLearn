@@ -15,6 +15,7 @@ import {
   continueWorkflow,
   getActiveWorkflowRun,
   getWorkflowRun,
+  resumeWorkflow,
   startWorkflow,
 } from '@prairielearn/workflows';
 
@@ -88,10 +89,9 @@ router.get(
       'ai-submission-grouping',
       res.locals,
     );
-    const aiRubricAgentEnabled = await features.enabledFromLocals(
-      'ai-rubric-grading-agent',
-      res.locals,
-    );
+    const aiRubricAgentEnabled =
+      config.workflowsActive &&
+      (await features.enabledFromLocals('ai-rubric-grading-agent', res.locals));
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -415,6 +415,22 @@ router.post(
     // The second user's chat may be briefly inconsistent — this is acceptable since
     // multi-user simultaneous editing is not the current intended use case.
     if (!isNewWorkflow) {
+      // If the run is stuck in 'running' (server crashed between startWorkflow
+      // and executeWorkflow, leaving the row unlocked), the periodic recovery
+      // loop would eventually pick it up — but the user shouldn't have to wait
+      // a minute. Trigger resumeWorkflow inline; if the lock is stale/missing,
+      // it transitions to 'waiting' on the first step. If another server holds
+      // a fresh lock, acquire_lock no-ops and we fall through to the 409 below.
+      if (workflowRun.status === 'running') {
+        void resumeWorkflow(workflowRun.id).catch(() => {});
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          workflowRun = await getWorkflowRun(workflowRun.id);
+          if (workflowRun.status !== 'running') break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+      }
+
       if (workflowRun.status !== 'waiting') {
         res.status(409).json({
           error: 'The rubric assistant is out of sync. Please reload to continue.',
