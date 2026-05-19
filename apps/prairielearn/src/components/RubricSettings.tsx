@@ -168,6 +168,38 @@ export function RubricSettings({
   const defaultMaxExtraPointsRef = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
   const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
+  // When the rubric is updated externally (e.g. the AI agent modifies items
+  // via the workflow), re-sync the form fields and "default" refs to the new
+  // props. The parent uses a stable `key` (the rubric id), so on edits to an
+  // existing rubric the component is not remounted — without this sync the
+  // form would show stale values. This is React's recommended "adjusting
+  // state during render" pattern; it avoids a useEffect and runs before
+  // commit so the next render already reflects the new data.
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const incomingModifiedAt =
+    rubricData?.rubric.modified_at != null ? String(rubricData.rubric.modified_at) : null;
+  const lastSyncedModifiedAtRef = useRef<string | null>(incomingModifiedAt);
+  if (incomingModifiedAt !== lastSyncedModifiedAtRef.current) {
+    lastSyncedModifiedAtRef.current = incomingModifiedAt;
+
+    defaultRubricItemsRef.current = rubricItemDataMerged;
+    defaultReplaceAutoPointsRef.current =
+      rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+    defaultStartingPointsRef.current = rubricData?.rubric.starting_points ?? 0;
+    defaultMinPointsRef.current = rubricData?.rubric.min_points ?? 0;
+    defaultMaxExtraPointsRef.current = rubricData?.rubric.max_extra_points ?? 0;
+    defaultGraderGuidelinesRef.current = rubricData?.rubric.grader_guidelines ?? '';
+
+    setRubricItems(rubricItemDataMerged);
+    setReplaceAutoPoints(defaultReplaceAutoPointsRef.current);
+    setStartingPoints(defaultStartingPointsRef.current);
+    setMinPoints(defaultMinPointsRef.current);
+    setMaxExtraPoints(defaultMaxExtraPointsRef.current);
+    setGraderGuidelines(defaultGraderGuidelinesRef.current);
+    setWasUsingRubric(Boolean(rubricData?.rubric));
+    setModifiedAt(rubricData?.rubric.modified_at ?? null);
+  }
+
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
