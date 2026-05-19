@@ -81,6 +81,48 @@ type RubricChatMessage = UIMessage<{
 }>;
 
 // ---------------------------------------------------------------------------
+// Polling hook – runs `fn` on an interval while `active` is true.
+// ---------------------------------------------------------------------------
+
+function usePollWhileActive(
+  active: boolean,
+  fn: () => Promise<void>,
+  intervalMs: number,
+  initialDelayMs?: number,
+) {
+  const inFlightRef = useRef(false);
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+
+  useEffect(() => {
+    if (!active) return;
+
+    let canceled = false;
+    const poll = async () => {
+      if (canceled || inFlightRef.current) return;
+      inFlightRef.current = true;
+      try {
+        await fnRef.current();
+      } catch {
+        // Best-effort; keep retrying on next interval tick.
+      }
+      inFlightRef.current = false;
+    };
+
+    const timeoutId =
+      initialDelayMs != null ? window.setTimeout(() => void poll(), initialDelayMs) : undefined;
+    if (initialDelayMs == null) void poll();
+
+    const intervalId = window.setInterval(() => void poll(), intervalMs);
+    return () => {
+      canceled = true;
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [active, intervalMs, initialDelayMs]);
+}
+
+// ---------------------------------------------------------------------------
 // Tool call rendering
 // ---------------------------------------------------------------------------
 
@@ -1015,64 +1057,15 @@ function AssessmentQuestionManualGradingInner({
     setMessages(persistedMessagesToInitialMessages(serverMessages));
   }, [chatCsrfToken, chatMessagesUrl, setMessages]);
 
-  const resumeInFlightRef = useRef(false);
-  useEffect(() => {
-    if (!hasStreamingAssistantMessage || status !== 'ready') return;
-
-    let canceled = false;
-    const tryResumeStream = async () => {
-      if (canceled || resumeInFlightRef.current) return;
-
-      resumeInFlightRef.current = true;
-      try {
-        await resumeStream();
-      } catch {
-        // Best-effort reconnect.
-      }
-      resumeInFlightRef.current = false;
-    };
-
-    void tryResumeStream();
-    const intervalId = window.setInterval(() => {
-      void tryResumeStream();
-    }, 1000);
-
-    return () => {
-      canceled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [hasStreamingAssistantMessage, resumeStream, status]);
-
-  const refreshMessagesInFlightRef = useRef(false);
-  useEffect(() => {
-    if (!hasStreamingAssistantMessage || status !== 'ready') return;
-
-    let canceled = false;
-    const tryRefreshMessages = async () => {
-      if (canceled || refreshMessagesInFlightRef.current) return;
-
-      refreshMessagesInFlightRef.current = true;
-      try {
-        await refreshChatMessages();
-      } catch {
-        // Keep retrying in the interval.
-      }
-      refreshMessagesInFlightRef.current = false;
-    };
-
-    const initialTimeoutId = window.setTimeout(() => {
-      void tryRefreshMessages();
-    }, 1250);
-    const intervalId = window.setInterval(() => {
-      void tryRefreshMessages();
-    }, 2000);
-
-    return () => {
-      canceled = true;
-      window.clearTimeout(initialTimeoutId);
-      window.clearInterval(intervalId);
-    };
-  }, [hasStreamingAssistantMessage, refreshChatMessages, status]);
+  // Poll to reconnect the SSE stream when the client knows a message is still streaming.
+  usePollWhileActive(hasStreamingAssistantMessage && status === 'ready', resumeStream, 1000);
+  // Also periodically refresh persisted messages so the UI converges if the stream can't reconnect.
+  usePollWhileActive(
+    hasStreamingAssistantMessage && status === 'ready',
+    refreshChatMessages,
+    2000,
+    1250,
+  );
 
   // Re-run MathJax typesetting and auto-scroll the chat container when messages change.
   // We scroll the container div (overflow-auto), NOT the viewport.
@@ -1097,10 +1090,16 @@ function AssessmentQuestionManualGradingInner({
     void fetch(`${chatUrl}/clear`, {
       method: 'POST',
       headers: { 'X-CSRF-Token': chatCsrfToken },
-    }).then((response) => {
+    }).then(async (response) => {
       if (response.ok) {
         setMessages([]);
         setHasGeneratedRubric(initialRubricData != null);
+      } else if (response.status === 409) {
+        const data = (await response.json()) as { error?: string };
+        setConflictError(
+          data.error ??
+            'Cannot reset while the rubric assistant is running. Please try again later.',
+        );
       }
     });
   };
@@ -1237,10 +1236,10 @@ function AssessmentQuestionManualGradingInner({
                       mutationMsgIndices.length >= 2
                         ? mutationMsgIndices[mutationMsgIndices.length - 2]
                         : -1;
-                    const messageNumber = targetIndex === -1 ? 0 : targetIndex + 1;
+                    const targetMessageId = targetIndex === -1 ? '0' : messages[targetIndex].id;
                     currentPhaseRef.current = 'edit';
                     void sendMessage({
-                      text: `Revert to the rubric right after message #${messageNumber}`,
+                      text: `Revert to the rubric from message ID ${targetMessageId}`,
                     });
                   }}
                 >
@@ -1275,8 +1274,6 @@ function AssessmentQuestionManualGradingInner({
               </div>
             )}
             {messages.map((message, msgIndex) => {
-              const messageNumber = msgIndex + 1;
-
               if (message.role === 'user') {
                 const textContent = message.parts
                   .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -1285,9 +1282,7 @@ function AssessmentQuestionManualGradingInner({
                   .join('\n\n');
                 if (!textContent) return null;
 
-                const revertMatch = textContent.match(
-                  /Revert to the rubric right after message #(\d+)/,
-                );
+                const revertMatch = textContent.match(/Revert to the rubric from message ID (\d+)/);
 
                 return (
                   <div key={message.id} className="d-flex flex-row-reverse mb-3">
@@ -1312,10 +1307,7 @@ function AssessmentQuestionManualGradingInner({
                               style={{ color: '#0d6efd', fontSize: '0.7rem' }}
                               aria-hidden="true"
                             />
-                            <span>
-                              Rubric from message{' '}
-                              <span className="fw-semibold">#{revertMatch[1]}</span>
-                            </span>
+                            <span>Reverting to a previous rubric state</span>
                           </div>
                         </>
                       ) : (
@@ -1357,7 +1349,7 @@ function AssessmentQuestionManualGradingInner({
                           onConfirm={() => {
                             currentPhaseRef.current = 'edit';
                             void sendMessage({
-                              text: `Revert to the rubric right after message #${messageNumber}`,
+                              text: `Revert to the rubric from message ID ${message.id}`,
                             });
                           }}
                         />

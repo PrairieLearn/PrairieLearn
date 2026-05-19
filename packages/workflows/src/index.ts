@@ -11,6 +11,7 @@ export {
   appendWorkflowOutput,
   startCronLoop,
   stopCronLoop,
+  WorkflowConflictError,
 } from './workflows.js';
 
 export type {

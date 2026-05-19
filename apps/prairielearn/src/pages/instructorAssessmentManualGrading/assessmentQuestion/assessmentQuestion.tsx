@@ -10,9 +10,11 @@ import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
+  WorkflowConflictError,
   cancelWorkflow,
   continueWorkflow,
   getActiveWorkflowRun,
+  getWorkflowRun,
   startWorkflow,
 } from '@prairielearn/workflows';
 
@@ -36,6 +38,7 @@ import {
 import {
   cancelLatestStreamingAiGradingMessage,
   deleteAiGradingMessages,
+  deleteAiGradingMessagesByIds,
   selectAiGradingMessages,
   selectLatestStreamingAiGradingMessage,
 } from '../../../ee/models/ai-grading-message.js';
@@ -346,6 +349,31 @@ router.post(
         phase: 'rubric_setup',
       });
       isNewWorkflow = true;
+
+      // startWorkflow returns with status 'running'. The first takeStep
+      // transitions it to 'waiting_for_input' asynchronously (a single DB
+      // round-trip). Wait for that before calling continueWorkflow.
+      const deadline = Date.now() + 5000;
+      let ready = false;
+      while (Date.now() < deadline) {
+        const freshRun = await getWorkflowRun(workflowRun.id);
+        if (freshRun.status === 'waiting_for_input') {
+          workflowRun = freshRun;
+          ready = true;
+          break;
+        }
+        if (freshRun.status !== 'running') {
+          throw new Error(
+            `Workflow ${workflowRun.id} entered unexpected status: ${freshRun.status}`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      if (!ready) {
+        throw new Error(
+          `Workflow ${workflowRun.id} did not reach 'waiting_for_input' within timeout`,
+        );
+      }
     }
 
     // The rubric assistant is designed for single-user use. We use the workflow's
@@ -355,9 +383,6 @@ router.post(
     // loaded before another user made changes) are rejected before inserting messages.
     // The second user's chat may be briefly inconsistent — this is acceptable since
     // multi-user simultaneous editing is not the current intended use case.
-    //
-    // Skip these checks for newly created workflows — startWorkflow returns the
-    // run with status 'running' before takeStep transitions it to 'waiting_for_input'.
     if (!isNewWorkflow) {
       if (workflowRun.status !== 'waiting_for_input') {
         res.status(409).json({
@@ -386,7 +411,7 @@ router.post(
     }
 
     // Insert messages into DB to get message_id (needed as Redis stream key)
-    const { messageRow } = await prepareAgentMessages({
+    const { messageRow, userMessageId } = await prepareAgentMessages({
       phase,
       userMessage,
       assessmentQuestionId: assessment_question.id,
@@ -414,8 +439,16 @@ router.post(
         version: nextVersion,
       });
     } catch (err) {
-      takeSseStream(messageRow.id);
-      if (err instanceof Error && err.message.includes('waiting_for_input')) {
+      // Clean up the pre-registered SSE stream so the Redis resumable stream
+      // doesn't sit orphaned until TTL expiry.
+      const orphanedStream = takeSseStream(messageRow.id);
+      if (orphanedStream) {
+        orphanedStream.writable.close().catch(() => {});
+      }
+      // Roll back the just-inserted user + assistant messages so they don't
+      // pollute history when the workflow couldn't actually be continued.
+      await deleteAiGradingMessagesByIds(assessment_question.id, [userMessageId, messageRow.id]);
+      if (err instanceof WorkflowConflictError) {
         res.status(409).json({
           error: 'The rubric assistant is out of sync. Please reload to continue.',
         });
@@ -548,6 +581,16 @@ router.post(
       assessment_question_id: assessment_question.id,
     });
     if (activeWorkflow) {
+      // If the workflow is actively running (agent is executing), reject the
+      // clear. Cooperative cancellation means a running step could still mutate
+      // rubric state after we delete messages, leaving an inconsistent state.
+      if (activeWorkflow.status === 'running') {
+        res.status(409).json({
+          error:
+            'Cannot reset while the rubric assistant is running. Please cancel or wait for it to finish first.',
+        });
+        return;
+      }
       await cancelWorkflow(activeWorkflow.id);
     }
 

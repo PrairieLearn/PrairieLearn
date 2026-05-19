@@ -129,70 +129,91 @@ async function runAgentWithStreaming(opts: {
     assessmentQuestionId,
     workflowVersion,
   } = opts;
-  const agentRes = await agent.stream(promptArg);
-  let finalParts: unknown[] = [];
-  const errorState = { hasError: false };
 
-  const uiStream = agentRes.toUIMessageStream({
-    generateMessageId: () => messageId,
-    messageMetadata: ({ part }: { part: { type: string } }) => {
-      if (part.type === 'start') {
-        return {
-          workflow_run_id: workflowRunId,
-          status: 'streaming',
-          phase,
-          workflow_version: workflowVersion,
-        };
-      }
-      if (part.type === 'finish') {
-        return {
-          workflow_run_id: workflowRunId,
-          status: cancellationState.wasCanceled
-            ? 'canceled'
-            : errorState.hasError
-              ? 'errored'
-              : 'completed',
-          phase,
-          rubric_modified: true,
-          workflow_version: workflowVersion,
-        };
-      }
-    },
-    onFinish: async ({ responseMessage }: { responseMessage: { parts: unknown[] } }) => {
-      finalParts = responseMessage.parts;
-    },
-    onError(err: unknown): string {
-      errorState.hasError = true;
-      return String(err);
-    },
-  });
+  try {
+    const agentRes = await agent.stream(promptArg);
+    let finalParts: unknown[] = [];
+    const errorState = { hasError: false };
 
-  await uiStream.pipeTo(sseStream.writable);
+    const uiStream = agentRes.toUIMessageStream({
+      generateMessageId: () => messageId,
+      messageMetadata: ({ part }: { part: { type: string } }) => {
+        if (part.type === 'start') {
+          return {
+            workflow_run_id: workflowRunId,
+            status: 'streaming',
+            phase,
+            workflow_version: workflowVersion,
+          };
+        }
+        if (part.type === 'finish') {
+          return {
+            workflow_run_id: workflowRunId,
+            status: cancellationState.wasCanceled
+              ? 'canceled'
+              : errorState.hasError
+                ? 'errored'
+                : 'completed',
+            phase,
+            rubric_modified: true,
+            workflow_version: workflowVersion,
+          };
+        }
+      },
+      onFinish: async ({ responseMessage }: { responseMessage: { parts: unknown[] } }) => {
+        finalParts = responseMessage.parts;
+      },
+      onError(err: unknown): string {
+        errorState.hasError = true;
+        return String(err);
+      },
+    });
 
-  const totalUsage = await agentRes.totalUsage.then(
-    (usage: { inputTokens?: number; outputTokens?: number }) => usage,
-    () => ({ inputTokens: 0, outputTokens: 0 }),
-  );
+    await uiStream.pipeTo(sseStream.writable);
 
-  const finalStatus = cancellationState.wasCanceled
-    ? 'canceled'
-    : errorState.hasError
-      ? 'errored'
-      : 'completed';
+    const totalUsage = await agentRes.totalUsage.then(
+      (usage: { inputTokens?: number; outputTokens?: number }) => usage,
+      () => ({ inputTokens: 0, outputTokens: 0 }),
+    );
 
-  const rubricSnapshot = await captureRubricSnapshot(assessmentQuestionId);
+    const finalStatus = cancellationState.wasCanceled
+      ? 'canceled'
+      : errorState.hasError
+        ? 'errored'
+        : 'completed';
 
-  await finalizeAssistantMessage({
-    messageId,
-    status: finalStatus,
-    parts: finalParts,
-    modelId,
-    usage: {
-      inputTokens: totalUsage.inputTokens ?? 0,
-      outputTokens: totalUsage.outputTokens ?? 0,
-    },
-    rubricSnapshot,
-  });
+    const rubricSnapshot = await captureRubricSnapshot(assessmentQuestionId);
+
+    await finalizeAssistantMessage({
+      messageId,
+      status: finalStatus,
+      parts: finalParts,
+      modelId,
+      usage: {
+        inputTokens: totalUsage.inputTokens ?? 0,
+        outputTokens: totalUsage.outputTokens ?? 0,
+      },
+      rubricSnapshot,
+    });
+  } catch (err) {
+    // If agent.stream() or pipeTo() throws, the message is stuck in
+    // 'streaming' forever. Finalize it as errored so the UI converges.
+    // Use a generic message for the user-visible parts; full details are
+    // logged by the workflow engine when the re-thrown error is caught.
+    await finalizeAssistantMessage({
+      messageId,
+      status: 'errored',
+      parts: [
+        {
+          type: 'text',
+          text: 'Something went wrong while generating a response. Please try again.',
+        },
+      ],
+      modelId,
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+    throw err;
+  }
 }
 
 async function takeStep(

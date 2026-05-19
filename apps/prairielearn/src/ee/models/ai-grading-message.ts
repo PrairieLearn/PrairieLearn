@@ -26,6 +26,13 @@ export async function deleteAiGradingMessages(assessmentQuestionId: string) {
   });
 }
 
+export async function deleteAiGradingMessagesByIds(assessmentQuestionId: string, ids: string[]) {
+  await execute(sql.delete_ai_grading_messages_by_ids, {
+    assessment_question_id: assessmentQuestionId,
+    ids,
+  });
+}
+
 export async function selectLatestStreamingAiGradingMessage(assessmentQuestionId: string) {
   return await queryOptionalRow(
     sql.select_latest_streaming_ai_grading_message,
@@ -38,6 +45,22 @@ export async function cancelLatestStreamingAiGradingMessage(assessmentQuestionId
   await execute(sql.cancel_latest_streaming_ai_grading_message, {
     assessment_question_id: assessmentQuestionId,
   });
+}
+
+export async function selectAiGradingMessageById(assessmentQuestionId: string, id: string) {
+  return await queryOptionalRow(
+    sql.select_ai_grading_message_by_id,
+    { assessment_question_id: assessmentQuestionId, id },
+    AiGradingMessageSchema,
+  );
+}
+
+export async function selectFirstAiGradingMessage(assessmentQuestionId: string) {
+  return await queryOptionalRow(
+    sql.select_first_ai_grading_message,
+    { assessment_question_id: assessmentQuestionId },
+    AiGradingMessageSchema,
+  );
 }
 
 export async function selectNthCompletedAiGradingMessage(

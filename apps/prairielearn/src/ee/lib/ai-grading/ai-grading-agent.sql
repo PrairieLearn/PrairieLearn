@@ -20,7 +20,9 @@ VALUES
     'user',
     $workflow_run_id,
     $rubric_snapshot::jsonb
-  );
+  )
+RETURNING
+  id;
 
 -- BLOCK insert_initial_assistant_message
 INSERT INTO

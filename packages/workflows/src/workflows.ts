@@ -14,6 +14,21 @@ import {
   type WorkflowRunStatus,
 } from './workflows.types.js';
 
+/**
+ * Thrown when an operation cannot proceed because the workflow run is not in
+ * the expected status (e.g. attempting to continue a run that is not
+ * `'waiting_for_input'`).
+ */
+export class WorkflowConflictError extends Error {
+  constructor(
+    message: string,
+    public readonly runId: string,
+  ) {
+    super(message);
+    this.name = 'WorkflowConflictError';
+  }
+}
+
 const sql = loadSqlEquiv(import.meta.url);
 
 const pool = new PostgresPool();
@@ -204,8 +219,9 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   });
 
   if (result.rowCount === 0) {
-    throw new Error(
+    throw new WorkflowConflictError(
       `Cannot continue workflow ${runId}: not found or not in 'waiting_for_input' status`,
+      runId,
     );
   }
 
