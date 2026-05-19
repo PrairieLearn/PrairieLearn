@@ -93,8 +93,6 @@ registerWorkflow<RubricAssistantState>({
 
 ### Starting a workflow
 
-Pass the state type as a type parameter so `initialState` is checked against your workflow's state shape at compile time. Without it, `initialState` falls back to `Record<string, unknown>` and typos won't be caught.
-
 ```ts
 import { startWorkflow } from '@prairielearn/workflows';
 
@@ -105,8 +103,6 @@ const run = await startWorkflow<RubricAssistantState>('rubric_assistant', {
 // run.id is the workflow run ID
 // run.status is 'running' — the step loop continues in the background
 ```
-
-The type parameter and the registered `type` string aren't linked — the API can't infer the state shape from `'rubric_assistant'` alone, so passing the wrong state type with the right string compiles. Make sure the type parameter matches what was registered.
 
 The `context` field stores domain-specific identifiers as string key/value pairs alongside the run for querying. The engine never inspects it. You can add your own indexes on `context` fields via standard migrations.
 
@@ -119,7 +115,7 @@ import { continueWorkflow } from '@prairielearn/workflows';
 
 // An instructor sends a chat message on the manual grading page;
 // the POST handler resumes the paused workflow with their input.
-await continueWorkflow(run.id, {
+await continueWorkflow<RubricAssistantState>(run.id, {
   step: 'agent_running',
   user_message: 'Add a rubric item for code style',
   message_id: newMessageId,
@@ -135,10 +131,10 @@ await continueWorkflow(run.id, {
 import { getWorkflowRun, getActiveWorkflowRun } from '@prairielearn/workflows';
 
 // Fetch a specific run by ID
-const run = await getWorkflowRun(runId);
+const run = await getWorkflowRun<RubricAssistantState>(runId);
 
 // Find the most recent active run matching type + context
-const active = await getActiveWorkflowRun('rubric_assistant', {
+const active = await getActiveWorkflowRun<RubricAssistantState>('rubric_assistant', {
   assessment_question_id: '42',
 });
 // Returns null if no active run matches
