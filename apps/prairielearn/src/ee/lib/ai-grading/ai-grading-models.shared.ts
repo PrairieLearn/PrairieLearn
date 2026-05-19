@@ -65,6 +65,13 @@ export const AI_GRADING_MODELS = [
   },
   {
     provider: 'google',
+    modelId: 'gemini-3.5-flash-preview',
+    name: 'Gemini 3.5 Flash',
+    sublabel: 'Higher quality image grading',
+    recommended: false,
+  },
+  {
+    provider: 'google',
     modelId: 'gemini-3-flash-preview',
     name: 'Gemini 3 Flash',
     sublabel: 'Fast, accurate image grading',
@@ -102,6 +109,7 @@ export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-5.4-mini-2026-03-17': 'openai',
   'gpt-5.4-2026-03-05': 'openai',
+  'gemini-3.5-flash-preview': 'google',
   'gemini-3-flash-preview': 'google',
   'gemini-3.1-pro-preview': 'google',
   'claude-haiku-4-5': 'anthropic',

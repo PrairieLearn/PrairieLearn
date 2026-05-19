@@ -70,7 +70,7 @@ const SubmissionVariantSchema = z.object({
  * Models supporting system messages after the first user message.
  * As of April 2026,
  * - OpenAI GPT 5.4-mini and GPT 5.4 support this.
- * - Google Gemini 3 Flash Preview and Gemini 3.1 Pro Preview do not support this.
+ * - Google Gemini 3 Flash Preview, Gemini 3.5 Flash Preview, and Gemini 3.1 Pro Preview do not support this.
  * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.6, and Claude Opus 4.7 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
