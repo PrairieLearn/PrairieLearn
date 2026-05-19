@@ -24,18 +24,21 @@
       // since this replacement loses that visual representation.
       newNode.classList.add('ql-align-center');
       const strong = document.createElement('strong');
-      strong.innerHTML = node.innerHTML;
+      while (node.firstChild) {
+        strong.append(node.firstChild);
+      }
       newNode.append(strong);
       node.replaceWith(newNode);
     }
 
     // Quill also occasionally breaks down tables if there is a thead, so we
-    // remove the thead but keep its content.
-    if (data.tagName.toLowerCase() === 'thead') {
-      const innerHTML = node.innerHTML;
-      const table = node.parentElement;
+    // move its content up to the tbody level and remove it. To avoid having
+    // multiple tbody tags, we do the same for tbody nodes.
+    if (data.tagName.toLowerCase() === 'thead' || data.tagName.toLowerCase() === 'tbody') {
+      while (node.firstChild) {
+        node.parentElement.insertBefore(node.firstChild, node.nextSibling);
+      }
       node.remove();
-      table.innerHTML = innerHTML + table.innerHTML;
     }
   });
 
