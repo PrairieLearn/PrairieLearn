@@ -181,13 +181,13 @@ export const ConfigSchema = z.object({
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
   /**
    * Whether this server initializes the `@prairielearn/workflows` engine and
-   * runs its crash-recovery loop. Should be `true` only on servers that
-   * actually need to drive workflow execution (today: the main app servers).
-   * Deployments running chunk consumers or workspace-proxy-only roles should
-   * set this to `false`, since they don't register any workflow types and
-   * spinning up the dedicated connection pool would only waste resources.
+   * runs its crash-recovery loop. Workflows execute question code (e.g. AI
+   * grading renders the question to feed it to the LLM), so they only run
+   * on chunk consumers. `server.ts` throws at boot if this is `true` but
+   * `chunksConsumer` is `false`. Defaults to `false`; chunk-server configs
+   * must opt in explicitly.
    */
-  workflowsActive: z.boolean().default(true),
+  workflowsActive: z.boolean().default(false),
   cronActive: z.boolean().default(true),
   /**
    * A list of cron job names that should be run. If this is set to a non-null
