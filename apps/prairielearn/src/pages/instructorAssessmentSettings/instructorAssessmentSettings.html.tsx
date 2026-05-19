@@ -618,7 +618,7 @@ function ChangeTypeModal({
                 id="change-type-acknowledge"
                 type="checkbox"
                 className="mb-0"
-                label="I understand the above configuration will be lost."
+                label="I understand the changes that will be made and that this can't be undone."
                 checked={acknowledged}
                 onChange={(e) => setAcknowledged(e.target.checked)}
               />

@@ -43,13 +43,15 @@ async function setupAssessmentInfo(content: AssessmentJsonInput) {
   // Commit the new state in the live tree and push to origin so the working
   // tree is clean and the editor's subsequent push succeeds.
   await execa('git', ['add', assessmentRelPath], { cwd: courseRepo.courseLiveDir });
-  try {
+  const stagedDiff = await execa('git', ['diff', '--cached', '--quiet'], {
+    cwd: courseRepo.courseLiveDir,
+    reject: false,
+  });
+  if (stagedDiff.exitCode !== 0) {
     await execa('git', ['commit', '-m', `test setup: ${content.type}`], {
       cwd: courseRepo.courseLiveDir,
     });
     await execa('git', ['push'], { cwd: courseRepo.courseLiveDir });
-  } catch {
-    // No-op when nothing changed.
   }
   const syncResult = await syncCourseData(courseRepo.courseLiveDir);
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
