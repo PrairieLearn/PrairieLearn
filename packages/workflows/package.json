@@ -20,6 +20,8 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
+    "@prairielearn/zod": "workspace:^",
     "pg": "^8.20.0",
     "zod": "^3.25.76"
   },
@@ -28,7 +30,6 @@
     "@types/node": "^24.11.0",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
     "@vitest/coverage-v8": "^4.0.18",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.0.18"

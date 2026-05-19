@@ -95,7 +95,7 @@ export async function makeLoginExecutor({
 
   const key = keystore.get('test');
   assert.ok(key, 'Test keystore must contain a key with kid="test"');
-  const joseKey = await jose.importJWK(key.toJSON(true) as jose.JWK);
+  const joseKey = await jose.importJWK(key.toJSON(true));
   const fakeIdToken = await new jose.SignJWT({
     nonce,
     // The below values are based on data observed by Dave during an actual

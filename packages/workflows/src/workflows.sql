@@ -1,14 +1,8 @@
 -- BLOCK insert_run
 INSERT INTO
-  workflow_runs (type, status, phase, state, context)
+  workflow_runs (type, status, state, context)
 VALUES
-  (
-    $type,
-    $status,
-    $phase,
-    $state::jsonb,
-    $context::jsonb
-  )
+  ($type, $status, $state::jsonb, $context::jsonb)
 RETURNING
   *;
 
@@ -27,7 +21,7 @@ FROM
   workflow_runs
 WHERE
   type = $type
-  AND status IN ('running', 'waiting_for_input')
+  AND status IN ('running', 'waiting')
   AND context @> $context_filter::jsonb
 ORDER BY
   created_at DESC
@@ -75,7 +69,6 @@ UPDATE workflow_runs
 SET
   state = $state::jsonb,
   status = $status,
-  phase = $phase,
   error_message = $error_message,
   updated_at = now(),
   completed_at = CASE
@@ -115,28 +108,30 @@ SET
   updated_at = now()
 WHERE
   id = $id
-  AND status = 'waiting_for_input'
+  AND status = 'waiting'
 RETURNING
   *;
 
--- BLOCK select_stale_runs
+-- BLOCK select_recoverable_run
+-- Returns the oldest recoverable run (status = 'running', either unlocked or
+-- with a stale heartbeat) whose type is registered on this server. Returns
+-- one row at a time; the caller loops until it either successfully recovers
+-- a run or runs out of candidates. See `recoverStaleRuns` for the rationale.
 SELECT
   *
 FROM
   workflow_runs
 WHERE
   status = 'running'
-  AND locked_by IS NOT NULL
-  AND heartbeat_at < now() - interval '2 minutes';
-
--- BLOCK select_unlocked_running_runs
-SELECT
-  *
-FROM
-  workflow_runs
-WHERE
-  status = 'running'
-  AND locked_by IS NULL;
+  AND (
+    locked_by IS NULL
+    OR heartbeat_at < now() - interval '2 minutes'
+  )
+  AND type = ANY ($registered_types::text[])
+ORDER BY
+  created_at ASC
+LIMIT
+  1;
 
 -- BLOCK append_output
 UPDATE workflow_runs

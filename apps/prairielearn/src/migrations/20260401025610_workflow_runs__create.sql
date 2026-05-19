@@ -1,6 +1,6 @@
 CREATE TYPE enum_workflow_run_status AS ENUM(
   'running',
-  'waiting_for_input',
+  'waiting',
   'completed',
   'error',
   'canceled'
@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   id bigserial PRIMARY KEY,
   type text NOT NULL,
   status enum_workflow_run_status NOT NULL DEFAULT 'running',
-  phase text,
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   locked_by text,
   locked_at timestamptz,
@@ -22,6 +21,9 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   error_message text,
   output text NOT NULL DEFAULT '',
   CONSTRAINT workflow_runs_context_type_check CHECK (jsonb_typeof(context) = 'object'),
+  CONSTRAINT workflow_runs_context_value_type_check CHECK (
+    NOT jsonb_path_exists(context, '$.* ? (@.type() != "string")')
+  ),
   CONSTRAINT workflow_runs_state_type_check CHECK (jsonb_typeof(state) = 'object')
 );
 

@@ -1,12 +1,17 @@
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
 
-import { type AppError, getAppError } from '../../../lib/client/errors.js';
+import { run } from '@prairielearn/run';
+import type { StickySaveBarAlert } from '@prairielearn/ui';
+
+import { getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../../models/assessment-access-control-rules.js';
 import type { AccessControlError } from '../../../trpc/assessment/access-control.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
@@ -18,13 +23,19 @@ interface AssessmentAccessControlProps {
   csrfToken: string;
   origHash: string | null;
   assessmentId: string;
+  isExam: boolean;
   initialData: AccessControlJsonWithId[];
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
 }
 
 function AssessmentAccessControlInner({
   courseInstance,
   origHash: initialOrigHash,
+  isExam,
   initialData,
+  prairieTestExamMetadata,
+  ptHost,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
@@ -39,7 +50,7 @@ function AssessmentAccessControlInner({
     }),
   );
 
-  const handleFormSubmit = (data: AccessControlJsonWithId[]) => {
+  const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
@@ -49,7 +60,7 @@ function AssessmentAccessControlInner({
         ruleJson,
       }));
 
-    saveMutation.mutate({
+    await saveMutation.mutateAsync({
       rules: jsonRules,
       enrollmentRules,
       origHash,
@@ -58,57 +69,52 @@ function AssessmentAccessControlInner({
 
   const saveError = getAppError<AccessControlError['SaveAllRules']>(saveMutation.error);
 
-  const alert = saveMutation.isSuccess ? (
-    <Alert variant="success" dismissible onClose={() => saveMutation.reset()}>
-      Access control updated successfully.
-    </Alert>
-  ) : saveError ? (
-    <SaveErrorAlert
-      appError={saveError}
-      courseInstanceId={courseInstance.id}
-      onDismiss={() => saveMutation.reset()}
-    />
-  ) : null;
+  const saveAlert = run<StickySaveBarAlert | null>(() => {
+    if (saveMutation.isSuccess) {
+      return {
+        variant: 'success',
+        message: 'Access control updated successfully.',
+        onDismiss: () => saveMutation.reset(),
+      };
+    }
+    if (saveError?.code === 'SYNC_JOB_FAILED') {
+      return {
+        variant: 'danger',
+        message: (
+          <>
+            {saveError.message}{' '}
+            <a href={getCourseInstanceJobSequenceUrl(courseInstance.id, saveError.jobSequenceId)}>
+              View job logs
+            </a>
+          </>
+        ),
+        onDismiss: () => saveMutation.reset(),
+      };
+    }
+    if (saveError?.code === 'UNKNOWN') {
+      return {
+        variant: 'danger',
+        message: saveError.message,
+        onDismiss: () => saveMutation.reset(),
+      };
+    }
+    return null;
+  });
 
   return (
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
+        isExam={isExam}
         initialData={initialData}
+        prairieTestExamMetadata={prairieTestExamMetadata}
+        ptHost={ptHost}
         isSaving={saveMutation.isPending}
-        alert={alert}
+        alert={saveAlert}
         onSubmit={handleFormSubmit}
       />
     </div>
   );
-}
-
-function SaveErrorAlert({
-  appError,
-  courseInstanceId,
-  onDismiss,
-}: {
-  appError: AppError<AccessControlError['SaveAllRules']>;
-  courseInstanceId: string;
-  onDismiss: () => void;
-}) {
-  switch (appError.code) {
-    case 'SYNC_JOB_FAILED':
-      return (
-        <Alert variant="danger" dismissible onClose={onDismiss}>
-          {appError.message}{' '}
-          <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, appError.jobSequenceId)}>
-            View job logs
-          </a>
-        </Alert>
-      );
-    case 'UNKNOWN':
-      return (
-        <Alert variant="danger" dismissible onClose={onDismiss}>
-          {appError.message}
-        </Alert>
-      );
-  }
 }
 
 export function AssessmentAccessControl(props: AssessmentAccessControlProps) {

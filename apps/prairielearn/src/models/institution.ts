@@ -5,6 +5,13 @@ import { type Institution, InstitutionSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * The short_name of the catch-all institution used for users who are not
+ * associated with a specific institution (e.g., users who sign in with a
+ * non-institutional account).
+ */
+export const DEFAULT_INSTITUTION_SHORT_NAME = 'Default';
+
 export async function selectInstitutionForCourse({
   course_id,
 }: {

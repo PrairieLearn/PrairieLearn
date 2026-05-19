@@ -1,267 +1,349 @@
-import { EncodedData } from '@prairielearn/browser-utils';
-import { type HtmlSafeString, html } from '@prairielearn/html';
+import { type QueryFunction, useQuery } from '@tanstack/react-query';
+import {
+  type ColumnPinningState,
+  type ColumnSizingState,
+  type FilterFn,
+  type SortingState,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useMemo, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
-import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
-import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
-import { type CourseInstance } from '../lib/db-types.js';
-import { idsEqual } from '../lib/id.js';
-import { type QuestionsPageData } from '../models/questions.js';
+import { run } from '@prairielearn/run';
+import {
+  type ColumnFilterEntry,
+  type MultiSelectFilterValue,
+  TanstackTableCard,
+  type TanstackTableCsvCell,
+  TanstackTableEmptyState,
+  extractLeafColumnIds,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
+  parseAsSortingState,
+  useColumnFilters,
+} from '@prairielearn/ui';
 
-import type { QuestionsTableData } from './QuestionsTable.types.js';
+import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
+import { rankSearchText } from '../lib/client/search.js';
+import {
+  QUESTION_TABLE_FILTER_URL_KEYS,
+  getAiQuestionGenerationDraftsUrl,
+} from '../lib/client/url.js';
 
-export function QuestionsTableHead() {
-  // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
+import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
+import {
+  createQuestionsTableColumns,
+  createQuestionsTableFilters,
+} from './questionsTableColumns.js';
 
-  return html`
-    <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-    <script src="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
-      )}"></script>
+const fuzzyFilter: FilterFn<SafeQuestionsPageData> = (row, columnId, value, addMeta) => {
+  const itemRank = rankSearchText(row.getValue(columnId), value);
+  addMeta({ itemRank });
+  return itemRank.passed;
+};
 
-    ${compiledScriptTag('instructorQuestionsClient.ts')}
-    ${compiledScriptTag('bootstrap-table-sticky-header.js')}
-    ${compiledStylesheetTag('questionsTable.css')}
-  `;
+const DEFAULT_SORT: SortingState = [];
+const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
+const HIDDEN_BY_DEFAULT = new Set([
+  'display_type',
+  'grading_method',
+  'external_grading_image',
+  'workspace_image',
+]);
+
+const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
+function displayQid(row: SafeQuestionsPageData, qidPrefix?: string): string {
+  return qidPrefix && row.share_publicly ? `${qidPrefix}${row.qid}` : row.qid;
 }
 
-export function QuestionsTable({
-  questions,
-  showAddQuestionButton = false,
-  showAiGenerateQuestionButton = false,
-  showSharingSets = false,
-  current_course_instance,
-  course_instances = [],
-  qidPrefix,
-  urlPrefix,
-}: {
-  questions: QuestionsPageData[];
-  showAddQuestionButton?: boolean;
-  showAiGenerateQuestionButton?: boolean;
-  showSharingSets?: boolean;
-  current_course_instance?: CourseInstance;
-  course_instances?: CourseInstance[];
-  qidPrefix?: string;
+interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
+  questions: SafeQuestionsPageData[];
+  courseInstances: PublicCourseInstance[];
+  courseId: string;
+  currentCourseInstanceId?: string;
+  addQuestionUrl?: string;
+  showAiGenerateQuestionButton: boolean;
+  showSharingSets: boolean;
   urlPrefix: string;
-}): HtmlSafeString {
-  const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
-  const course_instance_ids = course_instances.map((course_instance) => course_instance.id);
-  return html`
-    ${EncodedData<QuestionsTableData>(
-      {
-        course_instance_ids,
-        showAddQuestionButton,
-        showAiGenerateQuestionButton,
-        qidPrefix,
-        urlPrefix,
-      },
-      'questions-table-data',
-    )}
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <h1>Questions</h1>
-      </div>
+  isPublic?: boolean;
+  qidPrefix?: string;
+  questionsQueryOptions: {
+    queryKey: TQueryKey;
+    queryFn?: QueryFunction<SafeQuestionsPageData[], TQueryKey>;
+  };
+}
 
-      ${questions.length > 0
-        ? html`
-            <table
-              id="questionsTable"
-              aria-label="Questions"
-              data-data="${JSON.stringify(questions)}"
-              data-classes="table table-sm table-hover table-bordered"
-              data-thead-classes="table-light"
-              data-filter-control="true"
-              data-show-columns="true"
-              data-show-columns-toggle-all="true"
-              data-show-button-text="true"
-              data-pagination="true"
-              data-pagination-v-align="both"
-              data-pagination-h-align="left"
-              data-pagination-detail-h-align="right"
-              data-page-list="[10,20,50,100,200,500,unlimited]"
-              data-page-size="50"
-              data-smart-display="false"
-              data-show-extended-pagination="true"
-              data-toolbar=".fixed-table-pagination:nth(0)"
-              data-sticky-header="true"
-            >
-              <thead>
-                <tr>
-                  <th
-                    data-field="qid"
-                    data-sortable="true"
-                    data-class="align-middle sticky-column"
-                    data-formatter="qidFormatter"
-                    data-filter-control="input"
-                    data-filter-custom-search="genericFilterSearch"
-                    data-switchable="true"
-                  >
-                    QID
-                  </th>
-                  <th
-                    data-field="title"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-filter-control="input"
-                    data-switchable="true"
-                  >
-                    Title
-                  </th>
-                  <th
-                    data-field="topic"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-formatter="topicFormatter"
-                    data-sorter="topicSorter"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Topics)"
-                    data-filter-data="func:topicList"
-                    data-filter-custom-search="badgeFilterSearch"
-                    data-switchable="true"
-                  >
-                    Topic
-                  </th>
-                  <th
-                    data-field="tags"
-                    data-sortable="false"
-                    data-class="align-middle text-nowrap"
-                    data-formatter="tagsFormatter"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Tags)"
-                    data-filter-data="func:tagsList"
-                    data-filter-custom-search="badgeFilterSearch"
-                    data-switchable="true"
-                  >
-                    Tags
-                  </th>
-                  ${showSharingSets
-                    ? html` <th
-                        data-field="sharing_sets"
-                        data-sortable="false"
-                        data-class="align-middle text-nowrap"
-                        data-formatter="sharingSetFormatter"
-                        data-filter-control="select"
-                        data-filter-control-placeholder="(All)"
-                        data-filter-data="func:sharingSetsList"
-                        data-filter-custom-search="badgeFilterSearch"
-                        data-switchable="true"
-                        data-visible="false"
-                      >
-                        Sharing
-                      </th>`
-                    : ''}
-                  <th
-                    data-field="display_type"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-formatter="versionFormatter"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Versions)"
-                    data-filter-data="func:versionList"
-                    data-filter-custom-search="badgeFilterSearch"
-                    data-visible="${has_legacy_questions}"
-                    data-switchable="true"
-                  >
-                    Version
-                  </th>
-                  <th
-                    data-field="grading_method"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Methods)"
-                    data-visible="false"
-                    data-switchable="true"
-                  >
-                    Grading Method
-                  </th>
-                  <th
-                    data-field="external_grading_image"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Images)"
-                    data-filter-data="func:externalGradingImageList"
-                    data-visible="false"
-                    data-switchable="true"
-                  >
-                    External Grading Image
-                  </th>
-                  <th
-                    data-field="workspace_image"
-                    data-sortable="true"
-                    data-class="align-middle text-nowrap"
-                    data-filter-control="select"
-                    data-filter-control-placeholder="(All Images)"
-                    data-filter-data="func:workspaceImageList"
-                    data-visible="false"
-                    data-switchable="true"
-                  >
-                    Workspace Image
-                  </th>
-                  ${course_instances.map(
-                    (course_instance) =>
-                      html` <th
-                        data-field="assessments_${course_instance.id}"
-                        data-class="align-middle text-nowrap"
-                        data-formatter="assessments${course_instance.id}Formatter"
-                        data-filter-control="select"
-                        data-filter-control-placeholder="(All Assessments)"
-                        data-filter-data="func:assessments${course_instance.id}List"
-                        data-filter-custom-search="badgeFilterSearch"
-                        data-visible="${current_course_instance &&
-                        idsEqual(current_course_instance.id, course_instance.id)}"
-                        data-switchable="true"
-                      >
-                        ${course_instance.short_name} Assessments
-                      </th>`,
-                  )}
-                </tr>
-              </thead>
-            </table>
-          `
-        : html`
-            <div class="my-4 card-body text-center" style="text-wrap: balance;">
-              <p class="fw-bold">No questions found.</p>
-              <p class="mb-0">
-                A question is a problem or task that tests a student's understanding of a specific
-                concept.
-              </p>
-              <p>
-                Learn more in the
-                <a
-                  href="https://docs.prairielearn.com/question/overview/"
-                  target="_blank"
-                  rel="noreferrer"
-                  >question documentation</a
-                >.
-              </p>
-              ${showAddQuestionButton
-                ? html`
-                    <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
-                      <a
-                        class="btn btn-sm btn-primary"
-                        href="${urlPrefix}/course_admin/questions/create"
-                      >
-                        <i class="fa fa-plus" aria-hidden="true"></i>
+export function QuestionsTable<TQueryKey extends readonly unknown[]>({
+  questions: initialQuestions,
+  courseInstances,
+  courseId,
+  currentCourseInstanceId,
+  addQuestionUrl,
+  showAiGenerateQuestionButton,
+  showSharingSets,
+  urlPrefix,
+  isPublic,
+  qidPrefix,
+  questionsQueryOptions,
+}: QuestionsTableProps<TQueryKey>) {
+  const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
+  const [sorting, setSorting] = useQueryState<SortingState>(
+    'sort',
+    parseAsSortingState.withDefault(DEFAULT_SORT),
+  );
+  const [columnPinning, setColumnPinning] = useQueryState(
+    'frozen',
+    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
+  );
+
+  const filterRegistry = useMemo(() => {
+    const registry: Record<string, ColumnFilterEntry<MultiSelectFilterValue>> = {};
+    for (const [columnId, urlKey] of Object.entries(QUESTION_TABLE_FILTER_URL_KEYS)) {
+      registry[columnId] = {
+        urlKey,
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: EMPTY_FILTER,
+        enabled: columnId === 'sharing_sets' ? showSharingSets : true,
+      };
+    }
+    for (const ci of courseInstances) {
+      registry[`ci_${ci.id}`] = {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: EMPTY_FILTER,
+      };
+    }
+    return registry;
+  }, [courseInstances, showSharingSets]);
+
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
+
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+
+  const {
+    data: questions = initialQuestions,
+    error: questionsError,
+    isError: isQuestionsError,
+  } = useQuery({
+    ...questionsQueryOptions,
+    // Provide a no-op queryFn if none was given (e.g. public questions page
+    // where data is embedded in the initial HTML and never refetched).
+    queryFn: questionsQueryOptions.queryFn ?? (() => Promise.resolve(initialQuestions)),
+    staleTime: Infinity,
+    initialData: initialQuestions,
+  });
+
+  const columns = useMemo(
+    () =>
+      createQuestionsTableColumns({
+        courseInstances,
+        qidPrefix,
+        showSharingSets,
+        courseId,
+        courseInstanceId: currentCourseInstanceId,
+        isPublic,
+      }),
+    [courseInstances, qidPrefix, showSharingSets, courseId, currentCourseInstanceId, isPublic],
+  );
+
+  const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
+
+  const defaultColumnVisibility = useMemo(
+    () =>
+      run(() => {
+        const visibility: Record<string, boolean> = {};
+        for (const id of allColumnIds) {
+          if (HIDDEN_BY_DEFAULT.has(id)) {
+            visibility[id] = false;
+          } else if (id.startsWith('ci_')) {
+            const ciId = id.replace(/^ci_/, '');
+            visibility[id] = currentCourseInstanceId === ciId;
+          } else {
+            visibility[id] = true;
+          }
+        }
+        return visibility;
+      }),
+    [allColumnIds, currentCourseInstanceId],
+  );
+  const columnVisibilityParser = useMemo(
+    () =>
+      parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+    [allColumnIds, defaultColumnVisibility],
+  );
+
+  const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
+
+  const filters = useMemo(
+    () =>
+      createQuestionsTableFilters({
+        questions,
+        courseInstances,
+      }),
+    [questions, courseInstances],
+  );
+
+  const table = useReactTable({
+    data: questions,
+    columns,
+    columnResizeMode: 'onChange',
+    globalFilterFn: fuzzyFilter,
+    getRowId: (row) => row.id,
+    state: {
+      sorting,
+      columnFilters,
+      globalFilter,
+      columnSizing,
+      columnVisibility,
+      columnPinning,
+    },
+    initialState: {
+      columnPinning: DEFAULT_PINNING,
+      columnVisibility: defaultColumnVisibility,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnSizingChange: setColumnSizing,
+    onColumnVisibilityChange: setColumnVisibility,
+    onColumnPinningChange: setColumnPinning,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    defaultColumn: {
+      minSize: 80,
+      size: 150,
+      maxSize: 500,
+      enableSorting: true,
+      enableHiding: true,
+      enablePinning: true,
+    },
+  });
+
+  const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
+
+  return (
+    <>
+      {isQuestionsError && (
+        <Alert variant="danger" className="mb-3">
+          <strong>Error loading questions:</strong> {questionsError.message}
+        </Alert>
+      )}
+      <TanstackTableCard
+        table={table}
+        title="Questions"
+        className={isQuestionsError ? undefined : 'h-100'}
+        singularLabel="question"
+        pluralLabel="questions"
+        downloadButtonOptions={{
+          filenameBase: 'questions',
+          hasSelection: false,
+          mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
+            {
+              name: 'QID',
+              value: displayQid(row, qidPrefix),
+            },
+            { name: 'Title', value: row.title },
+            { name: 'Topic', value: row.topic.name },
+            { name: 'Tags', value: row.tags?.map((t) => t.name).join(', ') ?? null },
+            { name: 'Type', value: row.display_type },
+            { name: 'Grading method', value: row.grading_method },
+            {
+              name: 'External grading image',
+              value: row.external_grading_image,
+            },
+            { name: 'Workspace image', value: row.workspace_image },
+          ],
+          mapRowToJsonData: (row: SafeQuestionsPageData) => ({
+            qid: displayQid(row, qidPrefix),
+            title: row.title,
+            topic: row.topic.name,
+            tags: row.tags?.map((tag) => tag.name) ?? [],
+            type: row.display_type,
+            grading_method: row.grading_method,
+            external_grading_image: row.external_grading_image,
+            workspace_image: row.workspace_image,
+          }),
+        }}
+        headerButtons={
+          addQuestionUrl || showAiGenerateQuestionButton ? (
+            <>
+              {addQuestionUrl && (
+                <a className="btn btn-light btn-sm" href={addQuestionUrl}>
+                  <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+                  Add question
+                </a>
+              )}
+              {showAiGenerateQuestionButton && (
+                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
+                  <i className="bi bi-stars me-2" aria-hidden="true" />
+                  Generate with AI
+                </a>
+              )}
+            </>
+          ) : undefined
+        }
+        globalFilter={{
+          placeholder: 'Search by QID, title...',
+        }}
+        tableOptions={{
+          filters,
+          emptyState: (
+            <TanstackTableEmptyState iconName="bi-file-earmark-code">
+              <div className="d-flex flex-column align-items-center gap-3">
+                <div className="text-center">
+                  <h5 className="mb-2">No questions found</h5>
+                  <p className="text-muted mb-0" style={{ textWrap: 'balance' }}>
+                    A question is a problem or task that tests a student's understanding of a
+                    specific concept.
+                  </p>
+                  <p className="text-muted">
+                    Learn more in the{' '}
+                    <a
+                      href="https://docs.prairielearn.com/question/overview/"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      question documentation
+                    </a>
+                    .
+                  </p>
+                </div>
+                {(addQuestionUrl || showAiGenerateQuestionButton) && (
+                  <div className="d-flex gap-2">
+                    {addQuestionUrl && (
+                      <a className="btn btn-primary" href={addQuestionUrl}>
+                        <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                         Add question
                       </a>
-                      ${showAiGenerateQuestionButton
-                        ? html`
-                            <a
-                              class="btn btn-sm btn-primary"
-                              href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}"
-                            >
-                              <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
-                              Generate question with AI
-                            </a>
-                          `
-                        : ''}
-                    </div>
-                  `
-                : ''}
-            </div>
-          `}
-    </div>
-  `;
+                    )}
+                    {showAiGenerateQuestionButton && (
+                      <a className="btn btn-outline-primary" href={aiGenerateUrl}>
+                        <i className="bi bi-stars me-2" aria-hidden="true" />
+                        Generate with AI
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TanstackTableEmptyState>
+          ),
+          noResultsState: (
+            <TanstackTableEmptyState iconName="bi-search">
+              No questions found matching your search criteria.
+            </TanstackTableEmptyState>
+          ),
+        }}
+        onResetColumnFilters={onResetColumnFilters}
+      />
+    </>
+  );
 }
+
+QuestionsTable.displayName = 'QuestionsTable';

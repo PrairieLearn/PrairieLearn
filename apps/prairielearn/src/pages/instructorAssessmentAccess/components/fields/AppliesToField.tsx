@@ -1,68 +1,46 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import {
-  type FieldArrayPath,
-  type Path,
-  useFieldArray,
-  useFormContext,
-  useWatch,
-} from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
-import type { NamePrefix } from '../hooks/fieldNames.js';
-import type { AccessControlFormData, AppliesTo, EnrollmentTarget, TargetType } from '../types.js';
+import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
 
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  onTargetTypeChange,
 }: {
-  namePrefix: NamePrefix;
+  namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  onTargetTypeChange: (targetType: TargetType) => void;
 }) {
-  const { setValue } = useFormContext<AccessControlFormData>();
   const trpc = useTRPC();
 
   const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
 
-  const appliesTo = useWatch({
-    name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
+  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+    name: `${namePrefix}.appliesTo`,
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
-    name: `${namePrefix}.appliesTo.enrollments` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.enrollments`,
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
-    name: `${namePrefix}.appliesTo.studentLabels` as FieldArrayPath<AccessControlFormData>,
+    name: `${namePrefix}.appliesTo.studentLabels`,
   });
-
-  const handleTargetTypeChange = (newType: TargetType) => {
-    setValue(
-      `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
-      {
-        targetType: newType,
-        enrollments: [],
-        studentLabels: [],
-      } as never,
-      { shouldDirty: true },
-    );
-  };
 
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
     replaceEnrollments(students);
   };
 
-  // appliesTo may be undefined during initial render
-  const typedAppliesTo = appliesTo as AppliesTo | undefined;
-  const currentTargetType = typedAppliesTo?.targetType ?? 'enrollment';
-  const enrollments = typedAppliesTo?.enrollments ?? [];
-  const studentLabels = typedAppliesTo?.studentLabels ?? [];
+  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -90,21 +68,21 @@ export function AppliesToField({
           id={`${namePrefix}-target-enrollment`}
           name={`${namePrefix}-target-type`}
           label="Specific students"
-          checked={currentTargetType === 'enrollment'}
-          onChange={() => handleTargetTypeChange('enrollment')}
+          checked={targetType === 'enrollment'}
+          onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
           type="radio"
           id={`${namePrefix}-target-student-label`}
           name={`${namePrefix}-target-type`}
           label="Students by label"
-          checked={currentTargetType === 'student_label'}
-          onChange={() => handleTargetTypeChange('student_label')}
+          checked={targetType === 'student_label'}
+          onChange={() => onTargetTypeChange('student_label')}
         />
       </fieldset>
 
       <div>
-        {currentTargetType === 'enrollment' ? (
+        {targetType === 'enrollment' ? (
           <div className="border rounded overflow-hidden">
             <div
               className={clsx(
@@ -161,50 +139,54 @@ export function AppliesToField({
             )}
           </div>
         ) : (
-          <div className="d-flex flex-wrap align-items-baseline gap-2">
-            <StudentLabelDropdown
-              labels={allLabels ?? []}
-              selectedIds={excludedStudentLabelIds}
-              buttonLabel="Select labels"
-              onToggle={(label) => {
-                if (excludedStudentLabelIds.has(label.id)) {
-                  handleRemoveStudentLabelById(label.id);
-                } else {
-                  appendStudentLabel({
-                    studentLabelId: label.id,
-                    name: label.name,
-                    color: label.color,
-                  });
-                }
-              }}
-            />
-            {studentLabels.length === 0 ? (
-              <span className="text-muted small">No student labels selected</span>
-            ) : (
-              studentLabels.map((sl) => (
-                <StudentLabelBadge
-                  key={sl.studentLabelId}
-                  label={{ name: sl.name, color: sl.color ?? 'gray1' }}
-                >
-                  <button
-                    type="button"
-                    className="btn p-0 lh-1"
-                    aria-label={`Remove label "${sl.name}"`}
-                    onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+          <div>
+            <div className="d-flex flex-wrap align-items-baseline gap-2">
+              <StudentLabelDropdown
+                labels={allLabels ?? []}
+                selectedIds={excludedStudentLabelIds}
+                buttonLabel="Select labels"
+                onToggle={(label) => {
+                  if (excludedStudentLabelIds.has(label.id)) {
+                    handleRemoveStudentLabelById(label.id);
+                  } else {
+                    appendStudentLabel({
+                      studentLabelId: label.id,
+                      name: label.name,
+                      color: label.color,
+                    });
+                  }
+                }}
+              />
+              {studentLabels.length === 0 ? (
+                <span className="text-muted small">No student labels selected</span>
+              ) : (
+                studentLabels.map((sl) => (
+                  <StudentLabelBadge
+                    key={sl.studentLabelId}
+                    label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    <i className="bi bi-x text-danger" aria-hidden="true" />
-                  </button>
-                </StudentLabelBadge>
-              ))
-            )}
+                    <button
+                      type="button"
+                      className="btn p-0 lh-1"
+                      aria-label={`Remove label "${sl.name}"`}
+                      onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                    >
+                      <i className="bi bi-x text-danger" aria-hidden="true" />
+                    </button>
+                  </StudentLabelBadge>
+                ))
+              )}
+            </div>
+            <div className="form-text mt-2">
+              Applies to students with any of the selected labels.
+            </div>
           </div>
         )}
       </div>
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
           This override has no targets. Add at least one{' '}
-          {currentTargetType === 'enrollment' ? 'student' : 'student label'} for this rule to take
-          effect.
+          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
         </Alert>
       )}
     </div>

@@ -200,3 +200,28 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
     pl.add_submitted_file(data, file_name, file_contents)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name", "")
+    answer_name = get_answer_name(file_name)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        text_content = f"// Test {result}"
+        data["raw_submitted_answers"][answer_name] = base64.b64encode(
+            text_content.encode("utf-8")
+        ).decode("utf-8")
+    elif result == "invalid":
+        if allow_blank:
+            # When blank is allowed, there is no truly invalid submission, so
+            # we provide valid content. The grading pipeline will treat this
+            # the same as a correct submission.
+            data["raw_submitted_answers"][answer_name] = base64.b64encode(
+                b"// Test content (blank allowed, no invalid state)"
+            ).decode("utf-8")
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            pl.add_files_format_error(data, f"No submitted answer for {file_name}")

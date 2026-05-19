@@ -597,6 +597,9 @@ async function renderQuestionAndAnswer(
       const { variant } = await selectLastVariantAndSubmission(instanceQuestion.id);
       const locals = {
         ...buildQuestionUrls(context.urlPrefix, variant, context.question, instanceQuestion),
+        urlPrefix: context.urlPrefix,
+        showCorrectAnswer: false,
+        allowAnswerEditing: false,
         questionRenderContext: 'ai_grading' as const,
       };
       const result = await questionModule.render({
@@ -638,6 +641,9 @@ async function renderSampleSubmissions(
       const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
       const locals = {
         ...buildQuestionUrls(context.urlPrefix, variant, context.question, instanceQuestion),
+        urlPrefix: context.urlPrefix,
+        showCorrectAnswer: false,
+        allowAnswerEditing: false,
         questionRenderContext: 'ai_grading' as const,
       };
       const result = await questionModule.render({

@@ -9,6 +9,7 @@ import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 
 import { MemoizedMarkdown } from '../../../components/MemoizedMarkdown.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
@@ -24,6 +25,7 @@ import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { type RubricData, RubricDataSchema } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../trpc/assessmentQuestion/manual-grading.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
@@ -47,7 +49,7 @@ interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
-  aiGradingModelSelectionEnabled: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -63,6 +65,8 @@ interface AssessmentQuestionManualGradingProps {
   chatCsrfToken: string;
   initialChatMessages: StaffAiGradingMessage[];
   initialWorkflowSync: { workflowRunId: string | null; version: number } | null;
+  aiGradingRelativeCosts: Record<string, string>;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -843,7 +847,7 @@ function persistedMessagesToInitialMessages(
       metadata: {
         workflow_run_id: m.workflow_run_id ?? undefined,
         status: m.status as 'streaming' | 'completed' | 'errored',
-        phase: m.phase as RubricPhase,
+        phase: m.phase,
       },
     }));
 }
@@ -859,12 +863,13 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
-  aiGradingModelSelectionEnabled,
+  aiSubmissionGroupingEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
@@ -873,6 +878,7 @@ function AssessmentQuestionManualGradingInner({
   chatCsrfToken,
   initialChatMessages,
   initialWorkflowSync,
+  aiGradingRelativeCosts,
 }: AssessmentQuestionManualGradingInnerProps) {
   const initialRubricData = rubricData;
   const trpc = useTRPC();
@@ -1084,6 +1090,9 @@ function AssessmentQuestionManualGradingInner({
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
+  const setAiGradingModeError = getAppError<ManualGradingError['SetAiGradingMode']>(
+    setAiGradingModeMutation.error,
+  );
 
   const handleClearChat = () => {
     setShowClearConfirm(false);
@@ -1107,16 +1116,18 @@ function AssessmentQuestionManualGradingInner({
   return (
     <div className="d-flex flex-column flex-lg-row gap-3">
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
-        {setAiGradingModeMutation.isError && (
-          <Alert
-            variant="danger"
-            className="mb-3"
-            dismissible
-            onClose={() => setAiGradingModeMutation.reset()}
-          >
-            <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-          </Alert>
-        )}
+        <AppErrorAlert
+          error={setAiGradingModeError}
+          className="mb-3"
+          render={{
+            UNKNOWN: ({ message }) => (
+              <>
+                <strong>Error:</strong> {message}
+              </>
+            ),
+          }}
+          onDismiss={() => setAiGradingModeMutation.reset()}
+        />
         <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb mb-0">
@@ -1175,16 +1186,25 @@ function AssessmentQuestionManualGradingInner({
           assessmentQuestion={assessmentQuestion}
           questionQid={questionQid}
           aiGradingMode={aiGradingMode}
-          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+          aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
           rubricData={rubricDataState}
           instanceQuestionGroups={instanceQuestionGroups}
           courseStaff={courseStaff}
           aiGradingStats={aiGradingStatsState}
           mutations={mutations}
+          initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
           availableAiGradingProviders={availableAiGradingProviders}
+          aiGradingRelativeCosts={aiGradingRelativeCosts}
           rubricEditingDisabled={isGenerating}
           onSetGroupInfoModalState={setGroupInfoModalState}
           onSetConflictModalState={setConflictModalState}
+          onRubricSettingsSaved={({ rubric_data, aiGradingStats: newAiGradingStats }) => {
+            setRubricDataState(rubric_data);
+            setAiGradingStatsState(newAiGradingStats);
+            void queryClient.invalidateQueries({
+              queryKey: trpc.manualGrading.instances.queryKey(),
+            });
+          }}
         />
 
         <GroupInfoModal

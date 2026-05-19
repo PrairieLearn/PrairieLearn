@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
@@ -26,13 +27,15 @@ import { getConfiguredUser } from './utils/auth.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
+  return merge(
+    {
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: '2024-03-21T23:59:00' },
+      },
     },
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 describe('Access control save via tRPC', () => {
@@ -99,10 +102,10 @@ describe('Access control save via tRPC', () => {
     const origHash = await getOrigHash();
 
     const rules: AccessControlJsonInput[] = [
-      makeRule({ listBeforeRelease: true }),
+      makeRule({ beforeRelease: { listed: true } }),
       makeRule({
         labels: ['Section A'],
-        dateControl: { dueDate: '2024-04-01T23:59:00' },
+        dateControl: { due: { date: '2024-04-01T23:59:00' } },
       }),
     ];
 
@@ -116,9 +119,9 @@ describe('Access control save via tRPC', () => {
 
     assert.isArray(parsed.accessControl);
     assert.equal(parsed.accessControl.length, 2);
-    assert.equal(parsed.accessControl[0].listBeforeRelease, true);
+    assert.deepEqual(parsed.accessControl[0].beforeRelease, { listed: true });
     assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
-    assert.equal(parsed.accessControl[1].dateControl.dueDate, '2024-04-01T23:59:00');
+    assert.equal(parsed.accessControl[1].dateControl.due?.date, '2024-04-01T23:59:00');
 
     // Verify other keys are preserved
     assert.equal(parsed.uuid, 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f');
@@ -126,13 +129,11 @@ describe('Access control save via tRPC', () => {
     assert.isArray(parsed.zones);
   });
 
-  test.sequential('omits listBeforeRelease: false and empty objects from disk', async () => {
+  test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
-    ];
+    const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
 
     const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
     assert.isString(result.newHash);
@@ -141,9 +142,7 @@ describe('Access control save via tRPC', () => {
     const parsed = JSON.parse(fileContent);
 
     assert.equal(parsed.accessControl.length, 1);
-    assert.notProperty(parsed.accessControl[0], 'listBeforeRelease');
-    assert.notProperty(parsed.accessControl[0], 'dateControl');
-    assert.notProperty(parsed.accessControl[0], 'afterComplete');
+    assert.notProperty(parsed.accessControl[0], 'beforeRelease');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
@@ -159,48 +158,9 @@ describe('Access control save via tRPC', () => {
     // Second save with the same (now stale) hash must fail.
     await expect(
       client.accessControl.saveAllRules.mutate({
-        rules: [makeRule({ dateControl: { dueDate: '2024-05-01T23:59:00' } })],
+        rules: [makeRule({ dateControl: { due: { date: '2024-05-01T23:59:00' } } })],
         origHash: staleHash,
       }),
     ).rejects.toThrow(/modified since you loaded/);
-  });
-
-  test.sequential('rejects save with no main rule', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [{ labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } }],
-        origHash,
-      }),
-    ).rejects.toThrow(/No defaults found/);
-  });
-
-  test.sequential('rejects save with multiple defaults entries', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [makeRule(), makeRule()],
-        origHash,
-      }),
-    ).rejects.toThrow(/defaults entries/);
-  });
-
-  test.sequential('rejects save with defaults not first', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
-
-    await expect(
-      client.accessControl.saveAllRules.mutate({
-        rules: [
-          { labels: ['Section A'], dateControl: { dueDate: '2024-04-01T23:59:00' } },
-          makeRule(),
-        ],
-        origHash,
-      }),
-    ).rejects.toThrow(/defaults.*must be the first element/);
   });
 });

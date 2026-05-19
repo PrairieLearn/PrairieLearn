@@ -1,5 +1,30 @@
 # @prairielearn/opentelemetry
 
+## 4.0.8
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- 895b3b9: Upgrade OpenTelemetry dependencies
+
+## 4.0.7
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- 9aa950a: Upgrade OpenTelemetry dependencies
+
+## 4.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.4
 
 ### Patch Changes

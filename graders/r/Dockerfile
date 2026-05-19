@@ -23,7 +23,7 @@
 # r2u now supports arm64 binaries to this container can be built for multiple tags.
 
 FROM rocker/r2u:24.04
-ARG CACHEBUST=2026-03-15-14-27-00
+ARG CACHEBUST=2026-04-15-14-34-07
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8

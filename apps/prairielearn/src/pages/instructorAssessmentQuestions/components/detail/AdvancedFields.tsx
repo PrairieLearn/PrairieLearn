@@ -8,6 +8,7 @@ import type {
   UseFormWatch,
 } from 'react-hook-form';
 
+import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { InheritanceSource } from '../../types.js';
 import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
@@ -67,6 +68,7 @@ export function AdvancedFields({
   editMode = true,
   inheritance,
   zoneIndex,
+  assessmentType,
 }: {
   register: UseFormRegister<any>;
   errors?: FieldErrors;
@@ -75,6 +77,7 @@ export function AdvancedFields({
   editMode?: boolean;
   inheritance: AdvancedFieldsInheritance;
   zoneIndex?: number;
+  assessmentType: EnumAssessmentType;
 }) {
   const advanceScorePercRegisterProps = register('advanceScorePerc', {
     setValueAs: coerceToNumber,
@@ -121,7 +124,7 @@ export function AdvancedFields({
       effectiveAdvanceScorePerc == null &&
       effectiveGradeRateMinutes == null &&
       effectiveForceMaxPoints == null &&
-      effectiveAllowRealTimeGrading == null &&
+      (assessmentType === 'Homework' || effectiveAllowRealTimeGrading == null) &&
       !watchedLockpoint
     ) {
       return null;
@@ -389,7 +392,7 @@ export function AdvancedFields({
       {renderAdvanceScorePerc()}
       {renderGradeRateMinutes()}
       {variant !== 'zone' && renderForceMaxPoints()}
-      {renderAllowRealTimeGrading()}
+      {assessmentType !== 'Homework' && renderAllowRealTimeGrading()}
     </>
   );
 

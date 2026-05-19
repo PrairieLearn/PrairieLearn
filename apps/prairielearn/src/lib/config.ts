@@ -6,6 +6,7 @@ import {
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
@@ -26,6 +27,15 @@ const TokenPricingSchema = z.object({
   cacheWrite: z.number().nonnegative(),
   output: z.number().nonnegative(),
 });
+
+const CreditPoolLimitRangeSchema = z
+  .object({
+    minMilliDollars: z.number().int(),
+    maxMilliDollars: z.number().int(),
+  })
+  .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
+    message: 'minMilliDollars must be less than or equal to maxMilliDollars',
+  });
 
 export const STANDARD_COURSE_DIRS = [
   '/course',
@@ -169,6 +179,15 @@ export const ConfigSchema = z.object({
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
+  /**
+   * Whether this server initializes the `@prairielearn/workflows` engine and
+   * runs its crash-recovery loop. Workflows execute question code (e.g. AI
+   * grading renders the question to feed it to the LLM), so they only run
+   * on chunk consumers. `server.ts` throws at boot if this is `true` but
+   * `chunksConsumer` is `false`. Defaults to `false`; chunk-server configs
+   * must opt in explicitly.
+   */
+  workflowsActive: z.boolean().default(false),
   cronActive: z.boolean().default(true),
   /**
    * A list of cron job names that should be run. If this is set to a non-null
@@ -193,6 +212,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
+  cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -450,11 +470,11 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Used to sign JWTs that PrairieLearn provides to PrairieTest for authentication.
-   * PrairieTest should be configured with the same value for
-   * `prairieLearnAuthSecret`.
+   * Shared secret used to sign and verify auth JWTs exchanged between
+   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
+   * configured with the same value under the same key.
    */
-  prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -580,6 +600,16 @@ export const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  /**
+   * Stripe product ID for AI grading credits. Used to create checkout sessions
+   * for instructor credit purchases.
+   */
+  stripeAiGradingCreditsProductId: z.string().nullable().default(null),
+  /**
+   * Whether Stripe AI grading credit refunds are enabled. When disabled,
+   * refund buttons are hidden and the server rejects all refund requests.
+   */
+  stripeAiGradingCreditsRefundsEnabled: z.boolean().default(false),
   aiGradingOpenAiApiKey: z.string().nullable().default(null),
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
@@ -598,13 +628,26 @@ export const ConfigSchema = z.object({
    */
   aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
   /**
-   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+   * adjustments. Applied on both the client (input validation) and server
+   * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
    */
-  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
-  /**
-   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
-   */
-  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  aiGradingCreditPoolLimits: z
+    .object({
+      add: CreditPoolLimitRangeSchema,
+      deduct: CreditPoolLimitRangeSchema,
+      setTransferable: CreditPoolLimitRangeSchema,
+      setNonTransferable: CreditPoolLimitRangeSchema.refine(
+        ({ minMilliDollars }) => minMilliDollars >= 0,
+        { message: 'setNonTransferable.minMilliDollars must be non-negative' },
+      ),
+    })
+    .default({
+      add: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      deduct: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      setTransferable: { minMilliDollars: -1_000_000_000, maxMilliDollars: 1_000_000_000 },
+      setNonTransferable: { minMilliDollars: 0, maxMilliDollars: 1_000_000_000 },
+    }),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
@@ -630,43 +673,50 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
+  newsFeedUrl: z.string().nullable().default(null),
+  /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
+  newsFeedBlogUrl: z.string().nullable().default(null),
+  /**
+   * List of RSS category tags to filter news items by. Only items with at least one matching category will be shown to users.
+   * If no categories are specified, all items will be shown.
+   */
+  newsFeedCategories: z.array(z.string()).default([]),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
-      'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-5-2025-08-07': TokenPricingSchema,
-      'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gpt-5.2-2025-12-11': TokenPricingSchema,
-      'gemini-2.5-flash': TokenPricingSchema,
+      'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
+      'gpt-5.4-2026-03-05': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
-      'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
-      'claude-sonnet-4-5': TokenPricingSchema,
+      'claude-sonnet-4-6': TokenPricingSchema,
+      'claude-opus-4-7': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2025-11-26. Values obtained from
+      // Prices current as of 2026-04-16. Values obtained from
       // https://developers.openai.com/api/docs/pricing
       // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
-      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
-      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
+      'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
+      'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
 
-      // Prices current as of 2025-11-25. Values obtained from
+      // Prices current as of 2026-04-16. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
-      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
-      // Prices current as of 2025-11-25. Values obtained from
-      // https://www.anthropic.com/pricing#api
+      // Prices current as of 2026-04-16. Values obtained from
+      // https://claude.com/pricing#api
       // Anthropic charges 1.25x the input price for cache writes.
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
-      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-      'claude-opus-4-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+      'claude-sonnet-4-6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
+      'claude-opus-4-7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
     }),
   exampleCoursePath: z.string().default('./exampleCourse'),
 });
@@ -715,6 +765,7 @@ export async function loadConfig(paths: string[]) {
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
   ]);
 
   if (config.questionRenderCacheType !== null) {

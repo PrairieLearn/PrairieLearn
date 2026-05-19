@@ -93,6 +93,7 @@ import * as sprocs from './sprocs/index.js';
 import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
+import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
@@ -312,6 +313,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
+    upload.single('file'),
+  );
 
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
@@ -464,6 +469,14 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/auth/institution/:institution_id(\\d+)/saml',
       (await import('./ee/auth/saml/router.js')).default,
+    );
+
+    // Receives a JWT minted by PrairieTest and starts a PrairieLearn session.
+    // Must come before the authn middleware since the user isn't authenticated yet,
+    // and before the CSRF middleware since the JWT signature is the auth proof.
+    app.use(
+      '/pl/auth/prairietest/callback',
+      (await import('./ee/auth/prairietestCallback.js')).default,
     );
   }
 
@@ -719,6 +732,8 @@ export async function initExpress(): Promise<Express> {
       next();
     },
   ]);
+
+  app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
@@ -1293,6 +1308,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
@@ -2341,8 +2360,6 @@ if (shouldStartServer) {
 
     if (isEnterprise() && config.hasAzure) {
       const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
-      // https://github.com/Rel1cx/eslint-react/issues/1690
-      // eslint-disable-next-line @eslint-react/error-boundaries -- Not React; this is passport.use()
       passport.use(getAzureStrategy());
     }
 
@@ -2372,9 +2389,21 @@ if (shouldStartServer) {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
 
-    // Workflow engine uses its own connection pool to avoid deadlocks
-    // with long-running workflow soft locks.
-    await workflows.init(pgConfig, idleErrorHandler);
+    if (config.workflowsActive) {
+      // Workflows execute question code (e.g. AI grading renders the
+      // question to feed it to the LLM), which only works on chunk
+      // consumers. Fail fast on non-chunk fleets so a misconfigured
+      // deployment doesn't silently start the engine on a server that
+      // can't actually run workflows.
+      if (!config.chunksConsumer) {
+        throw new Error(
+          'config.workflowsActive is true but config.chunksConsumer is false; workflows must run on chunk servers because they execute question code',
+        );
+      }
+      // Workflow engine uses its own connection pool to isolate workflow
+      // traffic from request-serving queries on the main pool.
+      await workflows.init(pgConfig, idleErrorHandler);
+    }
 
     const { registerAiGradingWorkflow } =
       await import('./ee/lib/ai-grading/ai-grading-workflow.js');
@@ -2614,7 +2643,9 @@ if (shouldStartServer) {
     }
 
     await cron.init();
-    workflows.startCronLoop();
+    if (config.workflowsActive) {
+      workflows.startRecoveryLoop();
+    }
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
     // When HMR is active, we'll defer this error logging to the Vite plugin, which can

@@ -25,6 +25,7 @@ foreign-key constraints
 referenced by
     access_tokens: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     administrators: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_grading_credit_checkout_sessions: FOREIGN KEY (agent_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_grading_credit_pool_changes: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_grading_messages: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_messages: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -65,12 +66,14 @@ referenced by
     issues: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     issues: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     job_sequences: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    job_sequences: FOREIGN KEY (stop_requested_by_authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     job_sequences: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti13_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti_outcomes: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    news_item_read_states: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     plan_grants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

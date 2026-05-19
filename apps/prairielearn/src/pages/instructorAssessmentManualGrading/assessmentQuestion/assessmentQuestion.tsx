@@ -22,6 +22,7 @@ import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpen
 import { PageLayout } from '../../../components/PageLayout.js';
 import { prepareAgentMessages } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -52,10 +53,13 @@ import {
 import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
@@ -80,8 +84,8 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
       res.locals,
     );
     const aiRubricAgentEnabled = await features.enabledFromLocals(
@@ -93,11 +97,13 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
-      await selectInstanceQuestionGroups({
-        assessmentQuestionId: res.locals.assessment_question.id,
-      }),
-    );
+    const instanceQuestionGroups = aiSubmissionGroupingEnabled
+      ? z.array(StaffInstanceQuestionGroupSchema).parse(
+          await selectInstanceQuestionGroups({
+            assessmentQuestionId: res.locals.assessment_question.id,
+          }),
+        )
+      : [];
 
     const unfilledInstanceQuestionInfo = await selectInstanceQuestionsForManualGrading({
       assessment: res.locals.assessment,
@@ -108,6 +114,27 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
+
+    const initialOngoingJobSequenceTokens = await run(async () => {
+      if (!aiGradingEnabled) {
+        return null;
+      }
+
+      const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
+        type: 'ai_grading',
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+
+      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
+        (acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      return jobSequenceTokens;
+    });
 
     const {
       authz_data,
@@ -124,7 +151,7 @@ router.get(
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
-    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit;
     const search = getUrl(req).search;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -171,6 +198,10 @@ router.get(
       };
     });
 
+    const aiGradingRelativeCosts = aiGradingEnabled
+      ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
+      : {};
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -216,7 +247,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&
                   assessment_question.ai_grading_mode &&
@@ -239,6 +270,8 @@ router.get(
                 chatCsrfToken={chatCsrfToken}
                 initialChatMessages={initialChatMessages}
                 initialWorkflowSync={initialWorkflowSync}
+                aiGradingRelativeCosts={aiGradingRelativeCosts}
+                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
               />
             </Hydrate>
           </>
@@ -266,10 +299,10 @@ router.get(
       req.session.show_submissions_assigned_to_me_only ?? true;
 
     const use_instance_question_groups = await run(async () => {
-      const aiGradingMode =
-        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      const groupingAvailable =
+        (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
         res.locals.assessment_question.ai_grading_mode;
-      if (!aiGradingMode) {
+      if (!groupingAvailable) {
         return false;
       }
       return await selectAssessmentQuestionHasInstanceQuestionGroups({
@@ -342,22 +375,22 @@ router.post(
           url_prefix: urlPrefix,
           authn_user_id: res.locals.authn_user.id,
           user_id: res.locals.user.id,
-          has_course_instance_permission_edit:
-            authz_data.has_course_instance_permission_edit ?? false,
+          has_course_instance_permission_edit: String(
+            authz_data.has_course_instance_permission_edit,
+          ),
         },
         initialState: { step: 'awaiting_input' },
-        phase: 'rubric_setup',
       });
       isNewWorkflow = true;
 
       // startWorkflow returns with status 'running'. The first takeStep
-      // transitions it to 'waiting_for_input' asynchronously (a single DB
-      // round-trip). Wait for that before calling continueWorkflow.
+      // transitions it to 'waiting' asynchronously (a single DB round-trip).
+      // Wait for that before calling continueWorkflow.
       const deadline = Date.now() + 5000;
       let ready = false;
       while (Date.now() < deadline) {
         const freshRun = await getWorkflowRun(workflowRun.id);
-        if (freshRun.status === 'waiting_for_input') {
+        if (freshRun.status === 'waiting') {
           workflowRun = freshRun;
           ready = true;
           break;
@@ -370,21 +403,19 @@ router.post(
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
       if (!ready) {
-        throw new Error(
-          `Workflow ${workflowRun.id} did not reach 'waiting_for_input' within timeout`,
-        );
+        throw new Error(`Workflow ${workflowRun.id} did not reach 'waiting' within timeout`);
       }
     }
 
     // The rubric assistant is designed for single-user use. We use the workflow's
     // atomic state transition as a concurrency lock: continueWorkflow fails if the
-    // workflow isn't in 'waiting_for_input' (i.e., another user already started the
-    // agent). We also check a version counter so that stale clients (whose page
-    // loaded before another user made changes) are rejected before inserting messages.
+    // workflow isn't in 'waiting' (i.e., another user already started the agent).
+    // We also check a version counter so that stale clients (whose page loaded
+    // before another user made changes) are rejected before inserting messages.
     // The second user's chat may be briefly inconsistent — this is acceptable since
     // multi-user simultaneous editing is not the current intended use case.
     if (!isNewWorkflow) {
-      if (workflowRun.status !== 'waiting_for_input') {
+      if (workflowRun.status !== 'waiting') {
         res.status(409).json({
           error: 'The rubric assistant is out of sync. Please reload to continue.',
         });
@@ -674,7 +705,18 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        res.redirect(req.originalUrl);
+        const updatedAssessmentQuestion = await selectAssessmentQuestionById(
+          res.locals.assessment_question.id,
+        );
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: updatedAssessmentQuestion,
+        });
+        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+        const aiGradingStats =
+          aiGradingEnabled && updatedAssessmentQuestion.ai_grading_mode
+            ? await calculateAiGradingStats(updatedAssessmentQuestion)
+            : null;
+        res.json({ rubric_data, aiGradingStats });
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }

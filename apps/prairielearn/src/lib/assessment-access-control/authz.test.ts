@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { z } from 'zod';
 
-import type { SprocAuthzAssessmentSchema } from '../db-types.js';
+import type { SprocAuthzAssessment } from '../db-types.js';
 
 import { applyInstanceAccess } from './authz.js';
-
-type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 const baseAssessmentResult: SprocAuthzAssessment = {
   authorized: true,
@@ -21,6 +18,7 @@ const baseAssessmentResult: SprocAuthzAssessment = {
   show_before_release: false,
   next_active_time: null,
   access_rules: [],
+  access_timeline: [],
 };
 
 const unauthorizedResult: SprocAuthzAssessment = {

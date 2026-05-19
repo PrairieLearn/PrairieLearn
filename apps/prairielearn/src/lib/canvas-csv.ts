@@ -43,9 +43,11 @@ export function canvasPointsPossibleValue(
 }
 
 /**
- * Maps a database record to Canvas CSV field values for the fixed identity
- * columns. Canvas expects ID and SIS User ID to be null, SIS Login ID to
- * be the user's uid, and Section to be null.
+ * Returns Canvas CSV field values for the fixed identity columns. SIS Login ID
+ * is populated with the user's uid so that client-side Canvas matching can
+ * identify each row; the client always rewrites or clears this before
+ * delivering the final CSV to the user. Other identity columns are null unless
+ * overwritten with matched Canvas student data.
  */
 export function canvasStudentRecord(record: { uid: string | null }) {
   return {

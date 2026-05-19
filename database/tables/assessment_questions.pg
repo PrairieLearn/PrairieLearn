@@ -1,5 +1,6 @@
 columns
     advance_score_perc: double precision
+    ai_grading_last_selected_model: text
     ai_grading_mode: boolean not null default false
     allow_real_time_grading: boolean not null
     alternative_group_id: bigint

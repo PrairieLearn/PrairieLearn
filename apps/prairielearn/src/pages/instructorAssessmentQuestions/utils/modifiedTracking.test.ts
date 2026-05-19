@@ -14,7 +14,7 @@ function makeZone(
   return {
     questions: [],
     ...overrides,
-  } as ZoneAssessmentForm;
+  };
 }
 
 type QuestionForm = ZoneAssessmentForm['questions'][number];

@@ -63,11 +63,11 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
-    .on('.pl-drawing-button img', {
+    .on('.pl-drawing-button img, .js-cropper-base-image', {
       element(el) {
         const src = el.getAttribute('src');
-        if (src === '') {
-          el.setAttribute('src', 'pl-drawing-dummy-img.png');
+        if (src == null || src === '') {
+          el.setAttribute('src', 'pl-dummy-img.png');
         }
       },
     })
@@ -84,6 +84,13 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         // Our blank option has no text by default.
         // html-validate claims that it's not recommended to set aria-label on an option.
         el.removeAttribute('aria-label');
+      },
+    })
+    .on('ul.dropdown-menu[aria-labelledby]', {
+      element(el) {
+        // Bootstrap's canonical dropdown pattern uses aria-labelledby on <ul class="dropdown-menu">.
+        // html-validate flags this as "strictly allowed but not recommended" on <ul>.
+        el.removeAttribute('aria-labelledby');
       },
     });
   await rewriter.write(encoder.encode(html));
@@ -315,8 +322,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
+        showCorrectAnswer: false,
+        allowAnswerEditing: true,
         ...buildQuestionUrls(
           '/prefix2',
           { id: 'vid', workspace_id: 'wid' } as unknown as Variant,

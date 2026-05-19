@@ -1,13 +1,11 @@
-import type { z } from 'zod';
-
 import type {
   Assessment,
   CourseInstance,
   EnumCourseInstanceRole,
   EnumCourseRole,
   EnumMode,
-  SprocAuthzAssessmentInstanceSchema,
-  SprocAuthzAssessmentSchema,
+  SprocAuthzAssessment,
+  SprocAuthzAssessmentInstance,
 } from '../db-types.js';
 import { getGroupId } from '../groups.js';
 import { idsEqual } from '../id.js';
@@ -17,17 +15,18 @@ import {
   selectAccessControlRulesForCourseInstance,
   selectUserAccessContext,
 } from './data.js';
-import { type AccessControlResolverResult, resolveAccessControl } from './resolver.js';
-
-type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
-type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
+import {
+  type AccessControlResolverResult,
+  formatDateShort,
+  resolveAccessControl,
+} from './resolver.js';
 
 export interface AuthzDataForAccessControl {
   user: { id: string };
-  mode?: EnumMode;
-  course_role?: EnumCourseRole;
-  course_instance_role?: EnumCourseInstanceRole;
-  has_course_instance_permission_view?: boolean;
+  mode: EnumMode;
+  course_role: EnumCourseRole;
+  course_instance_role: EnumCourseInstanceRole;
+  has_course_instance_permission_view: boolean;
 }
 
 interface ModernAssessmentAccessInput {
@@ -38,9 +37,10 @@ interface ModernAssessmentAccessInput {
   reqDate: Date;
 }
 
-function resolverResultToSprocAuthzAssessment(
+function resolverResultToAuthzAssessment(
   result: AccessControlResolverResult,
-  authzMode: EnumMode | undefined,
+  authzMode: EnumMode,
+  displayTimezone: string,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -48,7 +48,9 @@ function resolverResultToSprocAuthzAssessment(
     credit_date_string: result.creditDateString,
     time_limit_min: result.timeLimitMin,
     password: result.password,
-    active: result.active,
+    // The resolver uses `submittable` (can the student submit work?
+    // the legacy field name is `active`, we map it to the legacy name.
+    active: result.submittable,
     show_closed_assessment: result.showClosedAssessment,
     show_closed_assessment_score: result.showClosedAssessmentScore,
     exam_access_end: result.examAccessEnd,
@@ -56,8 +58,11 @@ function resolverResultToSprocAuthzAssessment(
     // reservation (examAccessEnd is non-null), indicating a live exam session.
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
-    next_active_time: null,
+    next_active_time: result.nextActiveDate
+      ? formatDateShort(result.nextActiveDate, displayTimezone)
+      : null,
     access_rules: [],
+    access_timeline: result.accessTimeline,
   };
 }
 
@@ -78,13 +83,13 @@ export async function resolveModernAssessmentAccess({
     enrollment,
     date: reqDate,
     displayTimezone: courseInstance.display_timezone,
-    authzMode: authzData.mode ?? null,
-    courseRole: authzData.course_role ?? 'None',
-    courseInstanceRole: authzData.course_instance_role ?? 'None',
+    authzMode: authzData.mode,
+    courseRole: authzData.course_role,
+    courseInstanceRole: authzData.course_instance_role,
     prairieTestReservations,
   });
 
-  return resolverResultToSprocAuthzAssessment(result, authzData.mode);
+  return resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone);
 }
 
 interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
@@ -154,7 +159,7 @@ export async function resolveModernAssessmentInstanceAccess({
     assessmentResult,
     ownsInstance,
     timeLimitExpired,
-    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view ?? false,
+    hasCourseInstancePermissionView: authzData.has_course_instance_permission_view,
   });
 }
 
@@ -184,13 +189,16 @@ export async function resolveModernAssessmentAccessBatch({
       enrollment,
       date: reqDate,
       displayTimezone: courseInstance.display_timezone,
-      authzMode: authzData.mode ?? null,
-      courseRole: authzData.course_role ?? 'None',
-      courseInstanceRole: authzData.course_instance_role ?? 'None',
+      authzMode: authzData.mode,
+      courseRole: authzData.course_role,
+      courseInstanceRole: authzData.course_instance_role,
       prairieTestReservations,
     });
 
-    results.set(assessmentId, resolverResultToSprocAuthzAssessment(result, authzData.mode));
+    results.set(
+      assessmentId,
+      resolverResultToAuthzAssessment(result, authzData.mode, courseInstance.display_timezone),
+    );
   }
 
   return results;

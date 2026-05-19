@@ -61,7 +61,7 @@ interface AiGradingContext {
   url_prefix: string;
   authn_user_id: string;
   user_id: string;
-  has_course_instance_permission_edit: boolean;
+  has_course_instance_permission_edit: string;
 }
 
 function getState(context: WorkflowStepContext<Record<string, unknown>>): AiGradingState {
@@ -73,12 +73,10 @@ function getContext(context: WorkflowStepContext<Record<string, unknown>>): AiGr
 }
 
 function result(
-  phase: string,
   state: AiGradingState,
   status: StepResult<Record<string, unknown>>['status'],
 ): StepResult<Record<string, unknown>> {
   return {
-    phase,
     state: state as unknown as Record<string, unknown>,
     status,
   };
@@ -101,7 +99,7 @@ async function reconstructAgentContext(ctx: AiGradingContext): Promise<AiGrading
     urlPrefix: ctx.url_prefix,
     authnUserId: ctx.authn_user_id,
     userId: ctx.user_id,
-    hasCourseInstancePermissionEdit: ctx.has_course_instance_permission_edit,
+    hasCourseInstancePermissionEdit: ctx.has_course_instance_permission_edit === 'true',
   };
 }
 
@@ -234,23 +232,15 @@ async function takeStep(
 
       if (rubricData) {
         logger.info('Rubric exists, moving to rubric_ready');
-        return result(
-          'rubric_setup',
-          { ...state, step: 'rubric_ready', rubric_exists: true },
-          'waiting_for_input',
-        );
+        return result({ ...state, step: 'rubric_ready', rubric_exists: true }, 'waiting');
       } else {
         logger.info('No rubric found, awaiting input');
-        return result(
-          'rubric_setup',
-          { ...state, step: 'awaiting_input', rubric_exists: false },
-          'waiting_for_input',
-        );
+        return result({ ...state, step: 'awaiting_input', rubric_exists: false }, 'waiting');
       }
     }
 
     case 'awaiting_input': {
-      return result('rubric_setup', state, 'waiting_for_input');
+      return result(state, 'waiting');
     }
 
     case 'agent_running': {
@@ -260,7 +250,6 @@ async function takeStep(
 
       if (!messageId || !phase) {
         return {
-          phase: 'rubric_setup',
           state: { ...state, step: 'rubric_ready' } as unknown as Record<string, unknown>,
           status: 'error',
           error_message: 'Missing message_id or phase in agent_running step',
@@ -345,7 +334,6 @@ async function takeStep(
 
       logger.info('Agent completed, returning to rubric_ready');
       return result(
-        'rubric_setup',
         {
           step: 'rubric_ready',
           rubric_exists: true,
@@ -355,17 +343,16 @@ async function takeStep(
           user_message: undefined,
           phase: undefined,
         },
-        'waiting_for_input',
+        'waiting',
       );
     }
 
     case 'rubric_ready': {
-      return result('rubric_setup', state, 'waiting_for_input');
+      return result(state, 'waiting');
     }
 
     default: {
       return {
-        phase: context.run.phase ?? 'rubric_setup',
         state: state as unknown as Record<string, unknown>,
         status: 'error',
         error_message: `Unknown step: ${state.step}`,

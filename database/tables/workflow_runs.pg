@@ -8,7 +8,6 @@ columns
     locked_at: timestamp with time zone
     locked_by: text
     output: text not null default ''::text
-    phase: text
     state: jsonb not null default '{}'::jsonb
     status: enum_workflow_run_status not null default 'running'::enum_workflow_run_status
     type: text not null
@@ -22,4 +21,5 @@ indexes
 
 check constraints
     workflow_runs_context_type_check: CHECK (jsonb_typeof(context) = 'object'::text)
+    workflow_runs_context_value_type_check: CHECK (NOT jsonb_path_exists(context, '$.*?(@.type() != "string")'::jsonpath))
     workflow_runs_state_type_check: CHECK (jsonb_typeof(state) = 'object'::text)

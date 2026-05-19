@@ -19,6 +19,7 @@ import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffCourse,
@@ -26,6 +27,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -135,6 +137,11 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
@@ -153,6 +160,11 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   assessmentToolDefaults,
+  groupsConfigured,
+  groupRoles,
+  assessmentCanView,
+  assessmentCanSubmit,
+  groupsPageUrl,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
@@ -169,6 +181,9 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) =>
       queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
+  const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    questionByQidMutation.error,
+  );
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
 
@@ -503,7 +518,7 @@ function AssessmentEditorInner({
       dispatch({
         type: 'UPDATE_QUESTION',
         questionTrackingId,
-        question: normalized as Partial<QuestionAlternativeForm>,
+        question: normalized,
         alternativeTrackingId,
       });
     } else {
@@ -536,9 +551,7 @@ function AssessmentEditorInner({
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
-      canSubmit: [],
-      canView: [],
-    } as Omit<ZoneAssessmentForm, 'trackingId'>);
+    });
     dispatch({ type: 'ADD_ZONE', zone });
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
   };
@@ -830,6 +843,8 @@ function AssessmentEditorInner({
         return 'Cannot save: one or more zones have configuration errors';
       case 'altPool':
         return 'Cannot save: one or more alternative pools have configuration errors';
+      case 'questionPoints':
+        return 'Cannot save: one or more questions have no points configured';
       default:
         return undefined;
     }
@@ -893,6 +908,11 @@ function AssessmentEditorInner({
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -905,6 +925,11 @@ function AssessmentEditorInner({
       assessment.constant_question_value,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -1108,7 +1133,7 @@ function AssessmentEditorInner({
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}
-                  pickerError={questionByQidMutation.error}
+                  pickerError={pickerError}
                   questionSharingEnabled={questionSharingEnabled}
                   consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
                 />

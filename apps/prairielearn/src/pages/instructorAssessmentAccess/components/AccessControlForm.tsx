@@ -1,24 +1,28 @@
-import clsx from 'clsx';
-import { type ReactNode, useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger, SplitPane, StickyActionBar, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
-import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
+import type {
+  AccessControlJsonWithId,
+  PrairieTestExamMetadata,
+} from '../../../models/assessment-access-control-rules.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
-import { MainRuleForm } from './MainRuleForm.js';
+import { DefaultRuleForm } from './DefaultRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
+  type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
-  jsonToMainRuleFormData,
+  jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
+import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -28,92 +32,51 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
  */
 const accessControlFormInitialRightWidth = 560;
 
-/**
- * Maps react-hook-form error field keys to human-friendly labels.
- * Keys at any depth in the error object are matched.
- */
-const FIELD_LABELS: Record<string, string> = {
-  examUuid: 'Exam UUID',
-  releaseDate: 'Release date',
-  dueDate: 'Due date',
-  durationMinutes: 'Time limit',
-  password: 'Password',
-};
-
-/**
- * Array field keys that should produce indexed labels like "Early deadline 1".
- * When a numeric index is encountered under one of these keys, the label is
- * built from the array name + 1-based index and used as context for child errors.
- */
-const ARRAY_LABELS: Record<string, string> = {
-  earlyDeadlines: 'Early deadline',
-  lateDeadlines: 'Late deadline',
-  prairieTestExams: 'Exam',
-};
-
-function collectErrorMessages(
-  errors: Record<string, unknown> | undefined,
-  parentKey?: string,
-  parentArrayLabel?: string,
-): string[] {
-  if (!errors) return [];
-  const messages: string[] = [];
-  for (const [key, value] of Object.entries(errors)) {
-    if (value && typeof value === 'object') {
-      const obj = value as Record<string, unknown>;
-      if (typeof obj.message === 'string') {
-        const label = FIELD_LABELS[key] ?? parentKey;
-        messages.push(label ? `${label}: ${obj.message}` : obj.message);
-      } else if (ARRAY_LABELS[key]) {
-        messages.push(...collectErrorMessages(obj, parentKey, ARRAY_LABELS[key]));
-      } else if (parentArrayLabel && /^\d+$/.test(key)) {
-        const indexedLabel = `${parentArrayLabel} ${Number(key) + 1}`;
-        messages.push(...collectErrorMessages(obj, indexedLabel));
-      } else {
-        messages.push(
-          ...collectErrorMessages(obj, FIELD_LABELS[key] ?? parentKey, parentArrayLabel),
-        );
-      }
-    }
-  }
-  return messages;
-}
-
-type SelectedRule = { type: 'main' } | { type: 'override'; index: number } | null;
+type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | null;
 
 export function AccessControlForm({
   initialData = defaultInitialData,
+  prairieTestExamMetadata,
+  ptHost,
   onSubmit,
   courseInstance,
+  isExam,
   isSaving = false,
   alert,
 }: {
   initialData?: AccessControlJsonWithId[];
-  onSubmit: (data: AccessControlJsonWithId[]) => void;
+  prairieTestExamMetadata: PrairieTestExamMetadata[];
+  ptHost: string;
+  onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  isExam: boolean;
   isSaving?: boolean;
-  alert?: ReactNode;
+  alert?: StickySaveBarAlert | null;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
 
   const displayTimezone = courseInstance.display_timezone;
-  const mainRule = initialData[0]
-    ? jsonToMainRuleFormData(initialData[0], displayTimezone)
-    : jsonToMainRuleFormData({}, displayTimezone);
+  const defaultRule = initialData[0]
+    ? jsonToDefaultRuleFormData(initialData[0], displayTimezone)
+    : jsonToDefaultRuleFormData({}, displayTimezone);
   const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
   const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
     defaultValues: {
-      mainRule,
+      defaultRule,
       overrides,
     },
   });
 
   const {
+    clearErrors,
     control,
+    getFieldState,
     handleSubmit,
+    setError,
+    setValue,
     watch,
     reset,
     formState: { isDirty, isValid, errors },
@@ -123,31 +86,79 @@ export function AccessControlForm({
     append: appendOverride,
     remove: removeOverride,
     move: moveOverride,
-    insert: insertOverride,
   } = useFieldArray({
     control,
     name: 'overrides',
   });
 
   const watchedData = watch();
+  const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
-  const handleFormSubmit = (data: AccessControlFormData) => {
-    onSubmit(formDataToJson(data));
+  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // and clear them when the underlying issues are resolved. Depends on `errors`
+  // so we re-sync when child `trigger()` calls clear a manual error we set.
+  useEffect(() => {
+    const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
+    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
+      nextManualErrors.set(error.path, error.message);
+    }
+
+    const candidatePaths = new Set<AccessControlFormFieldPath>([
+      ...manualErrorPathsRef.current,
+      ...nextManualErrors.keys(),
+    ]);
+
+    for (const path of candidatePaths) {
+      const fieldState = getFieldState(path);
+      const nextMessage = nextManualErrors.get(path);
+
+      if (nextMessage) {
+        if (!fieldState.error) {
+          setError(path, { type: 'manual', message: nextMessage });
+        } else if (fieldState.error.type === 'manual' && fieldState.error.message !== nextMessage) {
+          setError(path, { type: 'manual', message: nextMessage });
+        }
+      } else if (fieldState.error?.type === 'manual') {
+        clearErrors(path);
+      }
+    }
+
+    manualErrorPathsRef.current = new Set(nextManualErrors.keys());
+  }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
+
+  const handleFormSubmit = async (data: AccessControlFormData) => {
+    await onSubmit(formDataToJson(data));
+    reset(data);
   };
 
   const addOverride = () => {
-    const newOverride = createDefaultOverrideFormData();
-    // Enrollment overrides are inserted before student-label overrides
-    const firstLabelIndex = watchedData.overrides.findIndex(
-      (o) => o.appliesTo.targetType === 'student_label',
-    );
-    if (firstLabelIndex === -1) {
-      appendOverride(newOverride);
-      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
-    } else {
-      insertOverride(firstLabelIndex, newOverride);
-      setSelectedRule({ type: 'override', index: firstLabelIndex });
+    const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
+    appendOverride(newOverride);
+    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+  };
+
+  const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
+    if (watchedData.overrides[index].appliesTo.targetType === targetType) return;
+
+    const labelCount = watchedData.overrides.filter(
+      (o, i) => i !== index && o.appliesTo.targetType === 'student_label',
+    ).length;
+    const newIndex = targetType === 'student_label' ? labelCount : watchedData.overrides.length - 1;
+
+    if (newIndex !== index) {
+      moveOverride(index, newIndex);
     }
+
+    setValue(
+      `overrides.${newIndex}.appliesTo`,
+      {
+        targetType,
+        enrollments: [],
+        studentLabels: [],
+      },
+      { shouldDirty: true, shouldValidate: true },
+    );
+    setSelectedRule({ type: 'override', index: newIndex });
   };
 
   const handleDeleteClick = (index: number) => {
@@ -167,6 +178,20 @@ export function AccessControlForm({
       removeOverride(deletedIndex);
     }
     deleteModal.hide();
+  };
+
+  const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    moveOverride(fromIndex, toIndex);
+
+    if (selectedRule?.type !== 'override') return;
+
+    if (selectedRule.index === fromIndex) {
+      setSelectedRule({ type: 'override', index: toIndex });
+    } else if (fromIndex < selectedRule.index && selectedRule.index <= toIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
+    } else if (toIndex <= selectedRule.index && selectedRule.index < fromIndex) {
+      setSelectedRule({ type: 'override', index: selectedRule.index + 1 });
+    }
   };
 
   const getOverrideName = (index: number): string => {
@@ -196,32 +221,16 @@ export function AccessControlForm({
     }
   };
 
-  const mainRuleErrors = collectErrorMessages(
-    errors.mainRule as Record<string, unknown> | undefined,
-  );
-  const getOverrideErrors = (index: number): string[] =>
-    collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined);
+  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
 
-  const saveDisabledReason = isSaving
-    ? 'Saving...'
-    : !isDirty
-      ? 'No changes to save'
-      : !isValid
-        ? 'Fix validation errors before saving'
-        : null;
-
-  const saveButton = (
-    <button
-      className={clsx('btn btn-sm', saveDisabledReason ? 'btn-outline-secondary' : 'btn-primary')}
-      type="submit"
-      disabled={saveDisabledReason !== null}
-    >
-      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
-    </button>
-  );
+  const saveDisabledReason = !isDirty
+    ? 'No changes to save'
+    : !isValid || hasManualErrors
+      ? 'Fix validation errors before saving'
+      : null;
 
   const rightTitle =
-    selectedRule?.type === 'main'
+    selectedRule?.type === 'default'
       ? 'Defaults'
       : selectedRule?.type === 'override'
         ? getOverrideName(selectedRule.index)
@@ -239,9 +248,9 @@ export function AccessControlForm({
   ) : undefined;
 
   const rightPanel =
-    selectedRule?.type === 'main' ? (
+    selectedRule?.type === 'default' ? (
       <div className="px-3 pb-3">
-        <MainRuleForm displayTimezone={displayTimezone} />
+        <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
       </div>
     ) : selectedRule?.type === 'override' ? (
       (() => {
@@ -253,8 +262,15 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              onTargetTypeChange={(targetType) =>
+                handleOverrideTargetTypeChange(selectedRule.index, targetType)
+              }
             />
-            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
+            <OverrideRuleContent
+              index={selectedRule.index}
+              displayTimezone={displayTimezone}
+              isExam={isExam}
+            />
           </div>
         );
       })()
@@ -282,23 +298,35 @@ export function AccessControlForm({
           left={{
             content: (
               <>
-                <div className="p-3">
-                  {alert}
+                {alert && (
+                  <Alert
+                    className="mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
+                    variant={alert.variant}
+                    dismissible={Boolean(alert.onDismiss)}
+                    onClose={alert.onDismiss}
+                  >
+                    {alert.message}
+                  </Alert>
+                )}
+                <div className="container py-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
-                    mainRule={watchedData.mainRule}
+                    defaultRule={watchedData.defaultRule}
                     overrides={watchedData.overrides}
-                    mainRuleErrors={mainRuleErrors}
-                    getOverrideErrors={getOverrideErrors}
+                    selectedOverrideIndex={
+                      selectedRule?.type === 'override' ? selectedRule.index : null
+                    }
+                    prairieTestExamMetadata={prairieTestExamMetadata}
+                    ptHost={ptHost}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
-                    onMoveOverride={moveOverride}
-                    onEditMainRule={() => setSelectedRule({ type: 'main' })}
-                    onClearMainRule={() =>
+                    onMoveOverride={handleMoveOverride}
+                    onEditDefaultRule={() => setSelectedRule({ type: 'default' })}
+                    onClearDefaultRule={() =>
                       reset(
                         {
-                          mainRule: jsonToMainRuleFormData({}, displayTimezone),
+                          defaultRule: jsonToDefaultRuleFormData({}, displayTimezone),
                           overrides: watch('overrides'),
                         },
                         {
@@ -310,29 +338,11 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickyActionBar
-                  message={isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
-                  actions={
-                    <>
-                      <button
-                        className="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        disabled={isSaving || !isDirty}
-                        onClick={() => reset()}
-                      >
-                        Cancel
-                      </button>
-                      {saveDisabledReason ? (
-                        <OverlayTrigger
-                          tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
-                        >
-                          <span className="d-inline-block">{saveButton}</span>
-                        </OverlayTrigger>
-                      ) : (
-                        saveButton
-                      )}
-                    </>
-                  }
+                <StickySaveBar
+                  visible={isDirty}
+                  isSaving={isSaving}
+                  saveDisabledReason={saveDisabledReason}
+                  onCancel={() => reset()}
                 />
               </>
             ),
