@@ -1,5 +1,7 @@
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
+import type { ConversionWarning } from '@prairielearn/question-conversion';
+
 import type {
   CollisionStrategy,
   ParseWarning,
@@ -13,6 +15,47 @@ import { QuestionReviewPanel } from './QuestionReviewPanel.js';
 
 function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
+}
+
+export function ExternalBankWarnings({ results }: { results: SerializedConversionResult[] }) {
+  const externalWarnings = results.flatMap((r) =>
+    r.warnings.filter((w): w is ConversionWarning & { externalCourseId: string } =>
+      Boolean(w.externalCourseId),
+    ),
+  );
+  if (externalWarnings.length === 0) return null;
+
+  const courseIds = [...new Set(externalWarnings.map((w) => w.externalCourseId))];
+
+  return (
+    <Alert variant="warning" className="mb-3">
+      <div className="d-flex align-items-start gap-2">
+        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+        <div>
+          <strong>Some questions reference external question banks</strong>
+          <p className="mb-2 mt-1">
+            {externalWarnings.length} question group{externalWarnings.length !== 1 ? 's' : ''} in
+            this export pull from question banks that belong to a different Canvas course. These
+            questions are not included in this export and cannot be imported.
+          </p>
+          <p className="mb-1">
+            To import these questions, export the course that contains the original question banks
+            from Canvas and import it here first:
+          </p>
+          <ul className="mb-0">
+            {courseIds.map((id) => (
+              <li key={id}>
+                Canvas course ID <strong>{id}</strong>{' '}
+                <span className="text-muted">
+                  (find it at <code>/courses/{id}</code> on your Canvas instance)
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Alert>
+  );
 }
 
 export function NonRubricWarnings({

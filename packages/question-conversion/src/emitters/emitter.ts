@@ -6,6 +6,8 @@ export interface ConversionWarning {
   questionId: string;
   message: string;
   level?: 'warn' | 'info';
+  /** When set, the warning is about an external question bank from another Canvas course. */
+  externalCourseId?: string;
 }
 
 /** Options for emitting PL output. */

@@ -435,12 +435,14 @@ export class QTI12AssessmentParser implements InputParser {
 
     if (ref) {
       if (isExternal) {
-        const courseHint = sourcebankContext
-          ? ` The bank belongs to Canvas ${sourcebankContext.replace('_', ' ')}; export that course and import it instead.`
+        const externalCourseId = sourcebankContext?.match(/^course_(\d+)$/)?.[1];
+        const courseHint = externalCourseId
+          ? ` The bank belongs to Canvas course ${externalCourseId}; export that course and import it instead.`
           : '';
         warnings.push({
           questionId: ref,
           message: `Question bank reference "${ref}" in ${location} points to an external question bank that is not included in the export.${courseHint}`,
+          externalCourseId,
         });
       } else {
         warnings.push({

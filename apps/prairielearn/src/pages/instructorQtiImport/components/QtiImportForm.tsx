@@ -19,6 +19,7 @@ import {
 
 import {
   AssessmentQuestionsSection,
+  ExternalBankWarnings,
   ImportSummary,
   NonRubricWarnings,
   UploadStep,
@@ -396,6 +397,8 @@ export function QtiImportForm({
               strippedAccessRules={strippedRules}
               parseWarnings={parseWarnings}
             />
+
+            <ExternalBankWarnings results={results} />
 
             <p className="text-muted">
               Review the assessments and questions below, then confirm to create them in your
