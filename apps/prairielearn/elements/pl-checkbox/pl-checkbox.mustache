@@ -30,6 +30,16 @@
     </div>
 {{/answers}}
 
+{{#allow_blank}}
+<button
+    type="button"
+    class="btn btn-link btn-sm p-0 text-secondary small"
+    data-name="{{name}}"
+    aria-label="Clear checkbox choice selection"
+    onclick="window.PLCheckboxClear(this)"
+>Clear</button>
+{{/allow_blank}}
+
 {{#helptext}}
 <div class="d-flex align-items-center gap-2">
     <span>{{{helptext}}}</span>
@@ -50,26 +60,26 @@
 {{#format}}
 {{!Include descriptions for each grading method}}
 {{#net-correct}}
-You must select {{{insert_text}}} You will receive a score of <code>100% * (t - f) / n</code>,
+{{^allow_blank}}You must select {{{insert_text}}}{{/allow_blank}} You will receive a score of <code>100% * (t - f) / n</code>,
 where <code>t</code> is the number of true options that you select, <code>f</code>
 is the number of false options that you select, and <code>n</code> is the total number of true options.
 At minimum, you will receive a score of 0%.
 {{/net-correct}}
 
 {{#each-answer}}
-You must select {{{insert_text}}} You will receive a score of <code>100% * (t + f) / {{num_display_answers}}</code>,
+{{^allow_blank}}You must select {{{insert_text}}}{{/allow_blank}} You will receive a score of <code>100% * (t + f) / {{num_display_answers}}</code>,
 where <code>t</code> is the number of true options that you select and <code>f</code>
 is the number of false options that you do not select.
 {{/each-answer}}
 
 {{#coverage}}
-You must select {{{insert_text}}} You will receive a score of <code>100% * (t / c) * (t / n)</code>,
+{{^allow_blank}}You must select {{{insert_text}}}{{/allow_blank}} You will receive a score of <code>100% * (t / c) * (t / n)</code>,
 where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options,
 and <code>n</code> is the total number of options you select.
 {{/coverage}}
 
 {{#off}}
-You must select {{{insert_text}}} You will receive a score of 100%
+{{^allow_blank}}You must select {{{insert_text}}}{{/allow_blank}} You will receive a score of 100%
 if you select all options that are true and no options that are false.
 Otherwise, you will receive a score of 0%.
 {{/off}}
@@ -107,7 +117,7 @@ Otherwise, you will receive a score of 0%.
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
-        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+        <span>{{^blank_submission}}{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}}{{/blank_submission}} {{{html}}}</span>
         {{#display_feedback}}
             <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
                 {{{feedback}}}
