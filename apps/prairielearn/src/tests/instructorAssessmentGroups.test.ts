@@ -107,9 +107,8 @@ describe('Instructor group controls', () => {
       const body = await response.text();
       assert.include(
         body,
-        'You must have student data viewer permissions to view group memberships',
+        'You must have student data viewer permissions to view student group assignments.',
       );
-      assert.include(body, 'Without it, group membership details are hidden.');
       assert.notInclude(body, users[0].uid);
       assert.notInclude(body, users[1].uid);
     },

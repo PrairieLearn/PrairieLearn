@@ -94,8 +94,7 @@ function StudentDataPermissionCard() {
           View and manage student group assignments for this assessment.
         </div>
         <Alert variant="info" className="mb-0">
-          You must have student data viewer permissions to view group memberships and ungrouped
-          students. Without it, group membership details are hidden.
+          You must have student data viewer permissions to view student group assignments.
         </Alert>
       </div>
     </div>
