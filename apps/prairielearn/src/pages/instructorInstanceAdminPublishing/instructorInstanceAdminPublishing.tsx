@@ -1,4 +1,3 @@
-import assert from 'assert';
 import * as path from 'path';
 
 import { Router } from 'express';
@@ -18,8 +17,9 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -156,9 +156,6 @@ router.get(
       has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
       has_course_instance_permission_view: hasCourseInstancePermissionView,
     } = authzData;
-
-    assert(hasCourseInstancePermissionEdit !== undefined);
-    assert(hasCourseInstancePermissionView !== undefined);
 
     // Only fetch extensions if user has student data view permission
     const publishingExtensions = hasCourseInstancePermissionView

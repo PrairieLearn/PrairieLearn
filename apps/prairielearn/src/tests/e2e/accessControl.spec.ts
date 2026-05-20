@@ -90,11 +90,21 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
+    await expect(page.getByRole('heading', { name: 'Date control' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'After completion' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Time range' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Question visibility' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Score visibility' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Access' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Before release' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Listed for students' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Immediately after completion' })).toBeVisible();
+
     // Verify Section A override card is visible with its student label badge
     await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
-    // Save button should be disabled (no unsaved changes)
-    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
+    // Save bar is hidden when there are no unsaved changes
+    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeHidden();
   });
 
   test('can add a student-label override, configure it, and save', async ({
@@ -208,7 +218,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
-    await panel.getByLabel('Time limit').check();
+    await panel.getByRole('checkbox', { name: 'Time limit' }).check();
 
     // Verify duration input shows default of 60
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
@@ -217,7 +227,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently" from the RichSelect dropdown
-    await panel.getByRole('button', { name: /Question visibility/i }).click();
+    await panel.getByRole('button', { name: 'Question visibility', exact: true }).click();
     await page.getByRole('option', { name: /Hide questions permanently/i }).click();
 
     // Close the detail panel
@@ -225,7 +235,7 @@ test.describe('Access control UI', () => {
 
     // Verify summary shows the changes
     await expect(page.getByText('60 minutes')).toBeVisible();
-    await expect(page.getByText('Questions hidden after completion')).toBeVisible();
+    await expect(page.getByText('Hidden after completion')).toBeVisible();
 
     // Save
     await page.getByRole('button', { name: /Save and sync/i }).click();

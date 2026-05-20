@@ -25,7 +25,6 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -44,6 +43,7 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -476,6 +476,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
+             || checkProp('correct_answer_shown',  'boolean', ['render'],                           [])
              || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
@@ -915,7 +916,7 @@ async function renderPanel({
   variant: Variant;
   submission: Submission | null;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
 }): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -994,10 +995,7 @@ async function renderPanel({
     options,
     preferences: variant.preferences,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
-    editable: !!(
-      locals.allowAnswerEditing &&
-      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
-    ),
+    editable: locals.allowAnswerEditing && locals.questionRenderContext == null,
     manual_grading: run(() => {
       if (locals.questionRenderContext === 'manual_grading') return true;
       if (locals.questionRenderContext === 'ai_grading') {
@@ -1012,6 +1010,7 @@ async function renderPanel({
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
+    correct_answer_shown: locals.showCorrectAnswer,
     num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
@@ -1070,7 +1069,7 @@ async function renderPanelInstrumented({
   variant: Variant;
   question: Question;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
 }): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1109,7 +1108,7 @@ export async function render({
   submission: Submission | null;
   submissions: Submission[];
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');

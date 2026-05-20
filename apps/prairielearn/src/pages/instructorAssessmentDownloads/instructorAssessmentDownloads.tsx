@@ -7,6 +7,11 @@ import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
+import {
+  MINUTE_IN_MILLISECONDS,
+  SECOND_IN_MILLISECONDS,
+  formatDateISO,
+} from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -25,12 +30,15 @@ import {
   type AssessmentSet,
   type Course,
   type CourseInstance,
+  CourseSchema,
   GroupRoleSchema,
   GroupSchema,
   InstanceQuestionSchema,
+  type Question,
   QuestionSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
+  RubricItemSchema,
   SprocUsersGetDisplayedRoleSchema,
   type Submission,
   SubmissionSchema,
@@ -39,6 +47,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { getGroupConfig } from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -57,8 +66,9 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema.nullable(),
-  assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   instance_question_number: InstanceQuestionSchema.shape.number,
   points: InstanceQuestionSchema.shape.points,
@@ -75,19 +85,25 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   options: VariantSchema.shape.options,
   date: SubmissionSchema.shape.date,
   submission_id: SubmissionSchema.shape.id,
-  submission_date_formatted: z.string(),
+  submission_date: SubmissionSchema.shape.date,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   partial_scores: SubmissionSchema.shape.partial_scores,
   override_score: SubmissionSchema.shape.override_score,
   credit: SubmissionSchema.shape.credit,
   mode: SubmissionSchema.shape.mode,
-  grading_requested_at_formatted: z.string().nullable(),
-  graded_at_formatted: z.string().nullable(),
+  grading_requested_at: SubmissionSchema.shape.grading_requested_at,
+  graded_at: SubmissionSchema.shape.graded_at,
   score: SubmissionSchema.shape.score,
-  correct: z.enum(['TRUE', 'FALSE']).nullable(),
+  correct: SubmissionSchema.shape.correct,
   feedback: SubmissionSchema.shape.feedback,
-  rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
-    .extend({ items: RubricGradingItemSchema.pick({ description: true, points: true }).array() })
+  manual_rubric_grading_id: SubmissionSchema.shape.manual_rubric_grading_id,
+  rubric_grading: RubricGradingSchema.nullable(),
+  rubric_grading_items: z
+    .object({
+      description: RubricItemSchema.shape.description,
+      points: RubricGradingItemSchema.shape.points,
+    })
+    .array()
     .nullable(),
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
@@ -107,6 +123,8 @@ const ManualGradingSubmissionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   zone_number: z.number(),
   zone_title: z.string().nullable(),
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   old_score_perc: InstanceQuestionSchema.shape.score_perc,
   old_auto_points: InstanceQuestionSchema.shape.auto_points,
@@ -127,27 +145,24 @@ const ManualGradingSubmissionRowSchema = z.object({
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
 const AssessmentInstanceRowSchema = z.object({
-  assessment_label: z.string(),
   id: UserSchema.shape.id,
   uid: UserSchema.shape.uid.nullable(),
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema,
-  username: z.string().nullable(),
   score_perc: AssessmentInstanceSchema.shape.score_perc,
   points: AssessmentInstanceSchema.shape.points,
   max_points: AssessmentInstanceSchema.shape.max_points,
   number: AssessmentInstanceSchema.shape.number,
   assessment_instance_id: AssessmentInstanceSchema.shape.id,
   open: AssessmentInstanceSchema.shape.open,
-  time_remaining: z.string(),
-  date_formatted: z.string(),
-  duration: z.string().nullable(),
-  duration_secs: z.number().nullable(),
-  duration_mins: z.number().nullable(),
+  date_limit: AssessmentInstanceSchema.shape.date_limit,
+  date: AssessmentInstanceSchema.shape.date,
+  duration: AssessmentInstanceSchema.shape.duration,
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
+type AssessmentInstanceRow = z.infer<typeof AssessmentInstanceRowSchema>;
 
 const CanvasAssessmentInstanceRowSchema = AssessmentInstanceRowSchema.pick({
   uid: true,
@@ -162,10 +177,11 @@ const InstanceQuestionRowSchema = z.object({
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
   role: SprocUsersGetDisplayedRoleSchema.nullable(),
-  assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   zone_number: z.number(),
   zone_title: z.string().nullable(),
+  question_course_id: QuestionSchema.shape.course_id,
+  course_sharing_name: CourseSchema.shape.sharing_name,
   qid: QuestionSchema.shape.qid,
   instance_question_number: InstanceQuestionSchema.shape.number,
   points: InstanceQuestionSchema.shape.points,
@@ -175,16 +191,17 @@ const InstanceQuestionRowSchema = z.object({
   max_points: AssessmentQuestionSchema.shape.max_points,
   max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
   max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-  date_formatted: z.string(),
+  instance_question_created_at: InstanceQuestionSchema.shape.created_at,
   highest_submission_score: z.number().nullable(),
   last_submission_score: z.number().nullable(),
   number_attempts: z.number(),
-  duration_seconds: z.number().nullable(),
+  duration: InstanceQuestionSchema.shape.duration,
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
 });
+type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   return buildFilenames({
@@ -250,6 +267,18 @@ function parseFileContents(contents: any): Buffer | null {
     // Ignore any errors in reading the contents and treat as a blank file.
     return Buffer.from('');
   }
+}
+
+function qidWithSharingName(
+  locals: { course: { id: string } },
+  record: {
+    qid: Question['qid'];
+    question_course_id: Question['course_id'];
+    course_sharing_name: Course['sharing_name'];
+  },
+) {
+  if (idsEqual(locals.course.id, record.question_course_id)) return record.qid;
+  return `@${record.course_sharing_name}/${record.qid}`;
 }
 
 interface RowForFiles {
@@ -380,6 +409,18 @@ router.get(
       course,
     });
 
+    const students = (
+      await sqldb.queryRows(
+        sql.select_course_instance_users,
+        {
+          course_instance_id: course_instance.id,
+        },
+        UserSchema.extend({ role: SprocUsersGetDisplayedRoleSchema }),
+      )
+    )
+      .filter((u) => u.role === 'Student')
+      .map((u) => ({ uid: u.uid, userName: u.name, uin: u.uin }));
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -402,6 +443,7 @@ router.get(
               isMultipleInstance={assessment.multiple_instance}
               isTeamWork={assessment.team_work}
               filenames={filenames}
+              students={students}
             />
           </Hydrate>
         ),
@@ -437,9 +479,25 @@ async function sendInstancesCsv(
     },
     AssessmentInstanceRowSchema,
   );
+  const assessment_label = `${res.locals.assessment_set.name} ${res.locals.assessment.number}`;
 
   res.attachment(req.params.filename);
-  await pipeline(result.stream(100), stringifyWithColumns(columns), res);
+  await pipeline(
+    result.stream(100),
+    stringifyWithColumns(columns, (row: AssessmentInstanceRow) => ({
+      ...row,
+      assessment_label,
+      username: row.uid?.split('@')[0] ?? null,
+      date_formatted: formatDateISO(row.date, res.locals.course_instance.display_timezone),
+      time_remaining: row.open
+        ? row.date_limit == null
+          ? 'Open'
+          : `${Math.floor(Math.max(0, (row.date_limit.getTime() - Date.now()) / MINUTE_IN_MILLISECONDS))} mins`
+        : 'Closed',
+      duration_mins: row.duration == null ? null : row.duration / MINUTE_IN_MILLISECONDS,
+    })),
+    res,
+  );
 }
 
 router.get(
@@ -553,7 +611,20 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+      await pipeline(
+        cursor.stream(100),
+        stringifyWithColumns(columns, (row: InstanceQuestionRow) => ({
+          ...row,
+          assessment_label: assessmentName,
+          date_formatted: formatDateISO(
+            row.instance_question_created_at,
+            res.locals.course_instance.display_timezone,
+          ),
+          duration_seconds: row.duration == null ? null : row.duration / SECOND_IN_MILLISECONDS,
+          qid: qidWithSharingName(res.locals, row),
+        })),
+        res,
+      );
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(
         sql.submissions_for_manual_grading,
@@ -584,9 +655,10 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      const stringifier = stringifyWithColumns(columns, (record) => {
+      const stringifier = stringifyWithColumns(columns, (record: ManualGradingSubmissionRow) => {
         return {
           ...record,
+          qid: qidWithSharingName(res.locals, record),
           // Add empty columns for the user to put data in.
           partial_scores: '',
           score_perc: '',
@@ -637,7 +709,7 @@ router.get(
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
         ['Score', 'score'],
-        ['Correct', 'correct'],
+        ['Correct', 'correct_str'],
         ['Feedback', 'feedback'],
         ['Rubric Grading', 'rubric_grading'],
         ['Question points', 'points'],
@@ -650,7 +722,36 @@ router.get(
       ]);
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+      await pipeline(
+        cursor.stream(100),
+        stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
+          ...row,
+          assessment_label: assessmentName,
+          qid: qidWithSharingName(res.locals, row),
+          submission_date_formatted: formatDateISO(
+            row.submission_date,
+            res.locals.course_instance.display_timezone,
+          ),
+          grading_requested_at_formatted: formatDateISO(
+            row.grading_requested_at,
+            res.locals.course_instance.display_timezone,
+          ),
+          graded_at_formatted: formatDateISO(
+            row.graded_at,
+            res.locals.course_instance.display_timezone,
+          ),
+          correct_str: row.correct == null ? null : row.correct ? 'TRUE' : 'FALSE',
+          rubric_grading:
+            row.manual_rubric_grading_id == null || row.rubric_grading == null
+              ? null
+              : {
+                  computed_points: row.rubric_grading.computed_points,
+                  adjust_points: row.rubric_grading.adjust_points,
+                  items: row.rubric_grading_items ?? [],
+                },
+        })),
+        res,
+      );
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {
       const cursor = await sqldb.queryCursor(
         sql.submissions_for_manual_grading,
@@ -721,7 +822,6 @@ router.get(
       req.params.filename === filenames.canvasPointsCsvFilename
     ) {
       const isPoints = req.params.filename === filenames.canvasPointsCsvFilename;
-      const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
       const scoreKey = isPoints ? 'points' : 'score_perc';
       const canvasColumns: Columns = [...CANVAS_CSV_FIXED_COLUMNS, [assessmentName, scoreKey]];
       const cursor = await sqldb.queryCursor(

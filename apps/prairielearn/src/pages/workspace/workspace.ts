@@ -88,12 +88,14 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
         });
         res.redirect(req.originalUrl);
       } else if (req.body.__action === 'reset') {
-        await workspaceUtils.updateWorkspaceState(
-          workspace_id,
-          'uninitialized',
-          'Resetting container',
-        );
-        await sqldb.execute(sql.increment_workspace_version, { workspace_id });
+        await sqldb.runInTransactionAsync(async () => {
+          await workspaceUtils.updateWorkspaceState(
+            workspace_id,
+            'uninitialized',
+            'Resetting container',
+          );
+          await sqldb.execute(sql.increment_workspace_version, { workspace_id });
+        });
         res.redirect(req.originalUrl);
       } else {
         return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));

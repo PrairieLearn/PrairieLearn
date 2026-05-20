@@ -1,5 +1,6 @@
 export {
   formatDate,
+  formatDateISO,
   formatDateFriendly,
   formatDateHMS,
   formatDateRangeFriendly,

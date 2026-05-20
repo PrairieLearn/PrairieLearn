@@ -133,44 +133,6 @@ SELECT
 FROM
   deleted_course_permissions;
 
--- BLOCK select_and_lock_non_owners
-SELECT
-  *
-FROM
-  course_permissions AS cp
-WHERE
-  cp.course_id = $course_id
-  AND cp.course_role != 'Owner'
-FOR NO KEY UPDATE OF
-  cp;
-
--- BLOCK select_and_lock_course_permissions_without_access
-WITH
-  ci_permissions_by_cp AS (
-    SELECT
-      cip.course_permission_id,
-      MAX(cip.course_instance_role) AS max_course_instance_role
-    FROM
-      course_instance_permissions AS cip
-      JOIN course_permissions AS cp ON (cip.course_permission_id = cp.id)
-    WHERE
-      cp.course_id = $course_id
-      AND cip.course_instance_role != 'None'
-    GROUP BY
-      cip.course_permission_id
-  )
-SELECT
-  cp.*
-FROM
-  course_permissions AS cp
-  LEFT JOIN ci_permissions_by_cp AS cip ON (cp.id = cip.course_permission_id)
-WHERE
-  cp.course_id = $course_id
-  AND cp.course_role = 'None'
-  AND cip.max_course_instance_role IS NULL
-FOR NO KEY UPDATE OF
-  cp;
-
 -- BLOCK insert_course_instance_permissions
 WITH
   existing_course_permission AS (
@@ -237,6 +199,71 @@ SELECT
   *
 FROM
   existing_course_permission;
+
+-- BLOCK upsert_course_instance_permissions_role
+WITH
+  existing_course_permission AS (
+    SELECT
+      cp.*
+    FROM
+      course_permissions AS cp
+    WHERE
+      cp.user_id = $user_id
+      AND cp.course_id = $course_id
+  ),
+  upserted_course_instance_permissions AS (
+    INSERT INTO
+      course_instance_permissions AS cip (
+        course_instance_id,
+        course_instance_role,
+        course_permission_id
+      )
+    SELECT
+      ci.id AS course_instance_id,
+      $course_instance_role,
+      cp.id AS course_permission_id
+    FROM
+      existing_course_permission AS cp
+      JOIN course_instances AS ci ON (ci.course_id = cp.course_id)
+    WHERE
+      ci.id = $course_instance_id
+    ON CONFLICT (course_instance_id, course_permission_id) DO UPDATE
+    SET
+      course_instance_role = EXCLUDED.course_instance_role
+    RETURNING
+      cip.*
+  ),
+  inserted_audit_log AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        user_id,
+        table_name,
+        column_name,
+        row_id,
+        action,
+        parameters,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      cp.course_id,
+      cp.user_id,
+      'course_instance_permissions',
+      'course_instance_role',
+      cip.id,
+      'upsert',
+      jsonb_build_object('course_instance_role', $course_instance_role),
+      to_jsonb(cip)
+    FROM
+      upserted_course_instance_permissions AS cip
+      JOIN existing_course_permission AS cp ON TRUE
+  )
+SELECT
+  *
+FROM
+  upserted_course_instance_permissions;
 
 -- BLOCK update_course_instance_permissions_role
 WITH
@@ -318,39 +345,6 @@ SELECT
 FROM
   deleted_course_instance_permissions AS cip;
 
--- BLOCK delete_all_course_instance_permissions_for_course
-WITH
-  deleted_course_instance_permissions AS (
-    DELETE FROM course_instance_permissions AS cip USING course_permissions AS cp
-    WHERE
-      cip.course_permission_id = cp.id
-      AND cp.course_id = $course_id
-    RETURNING
-      to_jsonb(cip) AS old_state,
-      cip.id,
-      cp.user_id
-  )
-INSERT INTO
-  audit_logs (
-    authn_user_id,
-    course_id,
-    user_id,
-    table_name,
-    row_id,
-    action,
-    old_state
-  )
-SELECT
-  $authn_user_id,
-  $course_id,
-  cip.user_id,
-  'course_instance_permissions',
-  cip.id,
-  'delete',
-  cip.old_state
-FROM
-  deleted_course_instance_permissions AS cip;
-
 -- BLOCK select_course_instance_permission_for_user
 SELECT
   cip.course_instance_role
@@ -369,6 +363,67 @@ FROM
 WHERE
   cp.course_id = $course_id
   AND cp.user_id = $user_id;
+
+-- BLOCK select_course_users
+SELECT
+  to_jsonb(u) AS user,
+  to_jsonb(cp) AS course_permission,
+  jsonb_agg(
+    jsonb_build_object(
+      'id',
+      ci.id,
+      'short_name',
+      ci.short_name,
+      'course_instance_permission_id',
+      cip.id,
+      'course_instance_role',
+      cip.course_instance_role,
+      'course_instance_role_formatted',
+      CASE
+        WHEN cip.course_instance_role = 'Student Data Viewer'::enum_course_instance_role THEN 'Viewer'
+        WHEN cip.course_instance_role = 'Student Data Editor'::enum_course_instance_role THEN 'Editor'
+      END
+    )
+    ORDER BY
+      d.start_date DESC NULLS LAST,
+      d.end_date DESC NULLS LAST,
+      ci.id DESC
+  ) FILTER (
+    WHERE
+      cip.course_instance_role IS NOT NULL
+  ) AS course_instance_roles
+FROM
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
+  FULL JOIN course_instances AS ci ON (
+    ci.course_id = $course_id
+    AND ci.deleted_at IS NULL
+  )
+  LEFT JOIN course_instance_permissions AS cip ON (
+    cip.course_permission_id = cp.id
+    AND ci.id = cip.course_instance_id
+  ),
+  LATERAL (
+    SELECT
+      COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+      COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
+    FROM
+      course_instance_access_rules AS ar
+    WHERE
+      ar.course_instance_id = ci.id
+  ) AS d
+WHERE
+  cp.course_id = $course_id
+GROUP BY
+  u.*,
+  u.uid,
+  u.name,
+  u.id,
+  cp.*
+ORDER BY
+  u.uid,
+  u.name,
+  u.id;
 
 -- BLOCK user_is_instructor_in_any_course
 SELECT

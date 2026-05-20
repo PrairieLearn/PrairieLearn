@@ -200,7 +200,7 @@ WITH
       e.user_id = $user_id
       OR e.pending_uid = $pending_uid
   ),
-  -- Legacy courses: use access rules for dates and check_course_instance_access for filtering
+  -- Legacy courses: use access rules for dates and initial filtering
   legacy_courses AS (
     SELECT
       be.course_id,
@@ -209,15 +209,15 @@ WITH
       be.course_instance,
       be.enrollment,
       NULL::jsonb AS latest_publishing_extension,
-      d.start_date,
-      d.end_date,
+      NULLIF(d.min_start_date, '-infinity'::timestamptz) AS start_date,
+      NULLIF(d.max_end_date, 'infinity'::timestamptz) AS end_date,
       be.course_instance_id
     FROM
       base_enrollments AS be,
       LATERAL (
         SELECT
-          min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date
+          min(coalesce(ar.start_date, '-infinity'::timestamptz)) AS min_start_date,
+          max(coalesce(ar.end_date, 'infinity'::timestamptz)) AS max_end_date
         FROM
           course_instance_access_rules AS ar
         WHERE
@@ -225,12 +225,7 @@ WITH
       ) AS d
     WHERE
       be.modern_publishing IS FALSE
-      AND check_course_instance_access (
-        be.course_instance_id,
-        be.uid,
-        be.institution_id,
-        $req_date
-      )
+      AND $req_date BETWEEN d.min_start_date AND d.max_end_date
   ),
   -- Modern courses: use publishing dates directly and fetch extension data
   modern_courses AS (

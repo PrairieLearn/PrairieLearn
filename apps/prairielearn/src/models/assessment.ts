@@ -74,12 +74,12 @@ export async function selectAssessmentInfoForJob(assessment_id: string) {
   );
 }
 
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
+const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
 });
 export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
-export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   name: AssessmentSetSchema.shape.name,
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
@@ -186,4 +186,17 @@ export function selectAssessmentsCursor({
     { course_instance_id },
     AssessmentRowSchema,
   );
+}
+
+export async function selectAssessmentZonePointsRange({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<{ min: number; max: number }> {
+  const row = await queryRow(
+    sql.select_assessment_zone_points_range,
+    { assessment_id },
+    z.object({ min_total: z.coerce.number(), max_total: z.coerce.number() }),
+  );
+  return { min: row.min_total, max: row.max_total };
 }

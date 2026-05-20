@@ -27,6 +27,7 @@ $(function() {
       type="file"
       accept="image/jpeg,image/png"
       class="js-manual-upload-input d-none"
+      aria-label="Upload image"
     />
     {{/editable}}
     <div class="position-relative">
@@ -144,8 +145,8 @@ $(function() {
             </li>
             {{#mobile_capture_enabled}}
               <li>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
                 >
                   <i class="bi bi-qr-code-scan me-1"></i>
@@ -155,8 +156,8 @@ $(function() {
             {{/mobile_capture_enabled}}
             {{#manual_upload_enabled}}
               <li>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   class="js-manual-upload-button dropdown-item btn btn-sm"
                 >
                   <i class="bi bi-upload me-1"></i>
@@ -198,12 +199,10 @@ $(function() {
     <div class="position-relative border-bottom">
       <video
         class="js-local-camera-video d-block w-100 bg-body-secondary"
-        autoplay
         playsinline
       ></video>
       <div
-        class="js-local-camera-error-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2 d-none"
-        style="pointer-events: none;"
+        class="js-local-camera-error-message pl-image-capture-no-pointer-events position-absolute top-50 start-50 translate-middle text-center text-muted px-2 d-none"
       >
       </div>
     </div>
@@ -243,14 +242,13 @@ $(function() {
         <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1 small">
           Rotation: 
         </label>
-        <input 
+        <input
           id="rotation-slider-{{uuid}}"
-          type="range" 
-          class="js-rotation-slider form-range mx-2" 
-          style="max-width: 200px; min-width: 100px;" 
-          min="-45" 
-          max="45" 
-          step="1" 
+          type="range"
+          class="js-rotation-slider pl-image-capture-rotation-slider form-range mx-2"
+          min="-45"
+          max="45"
+          step="1"
           value="0"
         />  
       </div>

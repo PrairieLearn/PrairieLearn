@@ -74,6 +74,24 @@ describe('Course instance syncing', () => {
     await findSyncedCourseInstance(courseInstanceId);
   });
 
+  it('syncs a course instance whose JSON UUID uses uppercase hex', async () => {
+    const courseData = util.getCourseData();
+    const shortName = 'uppercaseUuid';
+    courseData.courseInstances[shortName] = {
+      ...makeCourseInstance(),
+      courseInstance: {
+        uuid: 'D4875187-B6B5-4DBC-80FA-CDBAA72CA458',
+        longName: 'Uppercase UUID instance',
+      },
+    };
+
+    const { syncResults } = await util.writeAndSyncCourseData(courseData);
+    assert.equal(syncResults.status, 'complete');
+
+    const synced = await findSyncedUndeletedCourseInstance(shortName);
+    assert.equal(synced.uuid, 'd4875187-b6b5-4dbc-80fa-cdbaa72ca458');
+  });
+
   it('syncs access rules', async () => {
     const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [

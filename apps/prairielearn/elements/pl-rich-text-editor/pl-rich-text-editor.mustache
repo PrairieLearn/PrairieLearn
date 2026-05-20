@@ -5,8 +5,11 @@ $(function() {
 });
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"
-       name="{{name}}" value="{{current_file_contents}}"/>
-<div class="pl-rich-text-editor-container position-relative">
+       name="{{name}}" value="{{current_file_contents}}"
+       data-deferred-initial-value="true"/>
+<div class="pl-rich-text-editor-container position-relative"
+     data-min-word-count="{{min_word_count}}"
+     data-max-word-count="{{max_word_count}}">
     {{^clipboard_enabled}}
     <div class="position-absolute end-0 p-3" style="z-index: 11">
       <div id="rte-clipboard-toast-{{editor_uuid}}" class="toast hide bg-warning" role="alert" aria-live="assertive" aria-atomic="true">
@@ -20,9 +23,18 @@ $(function() {
     </div>
     {{/clipboard_enabled}}
     <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
-    {{#counter_enabled}}
-        <div class="pl-rich-text-editor-counter-container">
-            <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>
-        </div>
-    {{/counter_enabled}}
+    {{#footer_enabled}}
+    <div class="pl-rich-text-editor-counter-container align-items-center d-flex justify-content-between">
+      <div class="gap-2">
+        <span id="rte-invalid-{{editor_uuid}}" class="small text-danger d-none"></span>
+      </div>
+
+      <div class="text-secondary text-end">
+        <span id="rte-counter-{{editor_uuid}}"></span>
+        {{#word_count_requirements_text}}
+          <span class="small">({{word_count_requirements_text}})</span>
+        {{/word_count_requirements_text}}
+      </div>
+    </div>
+  {{/footer_enabled}}
 </div>

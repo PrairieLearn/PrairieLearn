@@ -4,13 +4,12 @@ import pathlib
 import random
 from collections import Counter
 from enum import Enum
-from typing import NamedTuple
+from typing import NamedTuple, assert_never
 
 import chevron
 import lxml.etree
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -56,6 +55,7 @@ EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
+BUILTIN_GRADING_DEFAULT = True
 SIZE_DEFAULT = None
 PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
@@ -213,10 +213,24 @@ def prepare_answers_to_display(
     nota_feedback: str | None,
     order_type: OrderType,
     display_type: DisplayType,
+    builtin_grading: bool,
 ) -> list[AnswerTuple]:
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
+
+    if len_total == 0:
+        raise ValueError(
+            "pl-multiple-choice element must have at least 1 answer choice."
+        )
+
+    # When builtin grading is disabled, NOTA/AOTA just controls display
+    # (show/hide) with no correctness semantics.
+    if not builtin_grading:
+        if aota is not AotaNotaType.FALSE:
+            aota = AotaNotaType.INCORRECT
+        if nota is not AotaNotaType.FALSE:
+            nota = AotaNotaType.INCORRECT
 
     if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
         raise ValueError(
@@ -229,7 +243,11 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
         )
 
-    if nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE} and len_correct < 1:
+    if (
+        builtin_grading
+        and nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE}
+        and len_correct < 1
+    ):
         # There must be a correct answer
         raise ValueError(
             'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
@@ -290,7 +308,7 @@ def prepare_answers_to_display(
         #   to one correct answer and as many incorrect answers as needed.
         # - If 'All of the above' is random, we choose the lower bound, so that
         #   the number of answers is stable regardless of the random choice.
-        number_answers = min(1 + len_incorrect, number_answers)
+        number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
 
     if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
         # Either 'None of the above' or 'All of the above' is correct
@@ -317,7 +335,7 @@ def prepare_answers_to_display(
         number_correct = 0
         number_incorrect = number_answers
     else:
-        number_correct = 1
+        number_correct = min(1, len_correct)
         number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
@@ -416,6 +434,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "size",
         "placeholder",
         "aria-label",
+        "builtin-grading",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -435,6 +454,41 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(f"Duplicate params variable name: {name}")
     if name in data["correct_answers"]:
         raise ValueError(f"Duplicate correct_answers variable name: {name}")
+
+    builtin_grading = pl.get_boolean_attrib(
+        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+    )
+
+    if not builtin_grading:
+        if pl.has_attrib(element, "weight"):
+            raise ValueError(
+                '"weight" should not be set when builtin-grading is false.'
+            )
+        restricted_aota_nota_values = {"correct", "incorrect", "random"}
+        aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
+        if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
+            raise ValueError(
+                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
+            )
+        nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
+        if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
+            raise ValueError(
+                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
+            )
+        if pl.has_attrib(element, "hide-score-badge"):
+            raise ValueError(
+                '"hide-score-badge" should not be set when builtin-grading is false.'
+            )
+        for child in element:
+            if child.tag in {"pl-answer", "pl_answer"}:
+                if pl.has_attrib(child, "score"):
+                    raise ValueError(
+                        '"score" on pl-answer should not be set when builtin-grading is false.'
+                    )
+                if pl.has_attrib(child, "feedback"):
+                    raise ValueError(
+                        '"feedback" on pl-answer should not be set when builtin-grading is false.'
+                    )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 
@@ -472,6 +526,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         ),
         order_type=get_order_type(element),
         display_type=get_display_type(element),
+        builtin_grading=builtin_grading,
     )
 
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
@@ -609,6 +664,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
+        if not pl.get_boolean_attrib(
+            element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+        ):
+            return ""
+
         correct_answer = data["correct_answers"].get(name, None)
 
         if correct_answer is None:
@@ -655,6 +715,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
+        return
+
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     submitted_key = data["submitted_answers"].get(name, None)
@@ -678,14 +742,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+
+    number_answers = len(data["params"][name])
+    all_keys = list(it.islice(pl.iter_keys(), number_answers))
+
+    # If the author disables builtin-grading, we want to start randomly picking an option
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
+        # Still test that valid and invalid submissions are handled correctly
+        result = data["test_type"]
+        if result in {"correct", "incorrect"}:
+            data["raw_submitted_answers"][name] = random.choice(all_keys)
+        elif result == "invalid":
+            data["raw_submitted_answers"][name] = "0"
+            data["format_errors"][name] = "INVALID choice"
+        else:
+            assert_never(result)  # type: ignore[arg-type]
+        return
+
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     correct_key = data["correct_answers"][name].get("key", None)
     if correct_key is None:
         raise ValueError("could not determine correct_key")
 
-    number_answers = len(data["params"][name])
-    all_keys = list(it.islice(pl.iter_keys(), number_answers))
     incorrect_keys = list(set(all_keys) - {correct_key})
 
     result = data["test_type"]

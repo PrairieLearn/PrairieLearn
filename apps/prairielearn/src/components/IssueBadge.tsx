@@ -3,34 +3,47 @@ import React from 'react';
 
 import { renderHtml } from '@prairielearn/react';
 
-import { encodeSearchString } from '../lib/uri-util.shared.js';
+import { getCourseIssuesUrl } from '../lib/client/url.js';
+
+type IssueBadgeProps = {
+  count: number;
+  className?: string;
+} & (
+  | {
+      suppressLink: true;
+      courseId?: undefined;
+      courseInstanceId?: undefined;
+      issueQid?: undefined;
+      issueAid?: undefined;
+    }
+  | {
+      suppressLink?: false;
+      courseId: string;
+      courseInstanceId?: undefined;
+      issueQid?: string | null;
+      issueAid?: string | null;
+    }
+  | {
+      suppressLink?: false;
+      courseId?: string | undefined;
+      courseInstanceId: string;
+      issueQid?: string | null;
+      issueAid?: string | null;
+    }
+);
 
 export function IssueBadge({
   count,
   suppressLink,
   issueQid,
   issueAid,
-  urlPrefix,
+  courseId,
+  courseInstanceId,
   className,
   onClick,
-}: {
-  count: number;
-  className?: string;
+}: IssueBadgeProps & {
   onClick?: React.MouseEventHandler<HTMLAnchorElement>;
-} & (
-  | {
-      suppressLink: true;
-      urlPrefix?: undefined;
-      issueQid?: undefined;
-      issueAid?: undefined;
-    }
-  | {
-      suppressLink?: false;
-      urlPrefix: string;
-      issueQid?: string | null;
-      issueAid?: string | null;
-    }
-)) {
+}) {
   // Convert explicitly to a number because some unvalidated queries still return a string (via bigint)
   if (Number(count) === 0) return '';
 
@@ -40,12 +53,15 @@ export function IssueBadge({
     );
   }
 
-  const query = encodeSearchString({ is: 'open', qid: issueQid, assessment: issueAid });
+  const href =
+    courseInstanceId !== undefined
+      ? getCourseIssuesUrl({ courseInstanceId, qid: issueQid, assessment: issueAid })
+      : getCourseIssuesUrl({ courseId, qid: issueQid, assessment: issueAid });
 
   return (
     <a
       className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}
-      href={`${urlPrefix}/course_admin/issues?q=${query}`}
+      href={href}
       aria-label={`${count} open ${count === 1 ? 'issue' : 'issues'}`}
       onClick={onClick}
     >
@@ -54,43 +70,6 @@ export function IssueBadge({
   );
 }
 
-export function IssueBadgeHtml({
-  count,
-  suppressLink,
-  issueQid,
-  issueAid,
-  urlPrefix,
-  className,
-}: {
-  count: number;
-  className?: string;
-} & (
-  | {
-      suppressLink: true;
-      urlPrefix?: undefined;
-      issueQid?: undefined;
-      issueAid?: undefined;
-    }
-  | {
-      suppressLink?: false;
-      urlPrefix: string;
-      issueQid?: string | null;
-      issueAid?: string | null;
-    }
-)) {
-  if (suppressLink) {
-    return renderHtml(
-      <IssueBadge count={count} className={className} suppressLink={suppressLink} />,
-    );
-  }
-
-  return renderHtml(
-    <IssueBadge
-      count={count}
-      className={className}
-      urlPrefix={urlPrefix}
-      issueQid={issueQid}
-      issueAid={issueAid}
-    />,
-  );
+export function IssueBadgeHtml(props: IssueBadgeProps) {
+  return renderHtml(<IssueBadge {...props} />);
 }

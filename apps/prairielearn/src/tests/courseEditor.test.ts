@@ -244,7 +244,12 @@ const testEditData: EditData[] = [
     formSelector: 'body',
     trpcCall: async () => {
       const trpcClient = createTrpcClientForAssessment('1');
-      const result = await trpcClient.assessmentSettings.copyAssessment.mutate();
+      const result = await trpcClient.assessmentSettings.copyAssessment.mutate({
+        aid: 'HW1_copy1',
+        title: 'Homework 1 (copy 1)',
+        number: '1',
+        set: 'Homework',
+      });
       const settingsUrl = `${courseInstanceUrl}/assessment/${result.assessmentId}/settings`;
       const res = await fetch(settingsUrl);
       assert.isOk(res.ok);

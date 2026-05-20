@@ -239,6 +239,16 @@ async function updateInstanceQuestionFromCsvRow(
 ): Promise<boolean> {
   const uid_or_group = record.group_name ?? record.uid;
 
+  // For the QID, accept either the raw QID or the sharing QID format. If the
+  // QID starts with "@", treat it as a sharing QID and split it into
+  // sharing_name and qid components. Otherwise, treat the entire QID as the raw
+  // qid and set sharing_name to null (so it's not enforced).
+  const [sharing_name, ...splitQid] =
+    typeof record.qid === 'string' && record.qid.startsWith('@')
+      ? record.qid.slice(1).split('/')
+      : [null, [record.qid]];
+  const qid = typeof record.qid === 'string' ? splitQid.join('/') : null;
+
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
@@ -247,12 +257,14 @@ async function updateInstanceQuestionFromCsvRow(
         submission_id: record.submission_id,
         uid_or_group,
         ai_number: record.instance,
-        qid: record.qid,
+        qid,
+        sharing_name,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
+        sharing_name: z.string().nullable(),
         qid: z.string(),
       }),
     );
@@ -267,9 +279,16 @@ async function updateInstanceQuestionFromCsvRow(
         `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
-    if (record.qid !== null && submission_data.qid !== record.qid) {
+
+    if (record.qid !== null && submission_data.qid !== qid) {
       throw new Error(
         `Found submission with id=${record.submission_id}, but QID does not match ${record.qid}.`,
+      );
+    }
+
+    if (sharing_name !== null && submission_data.sharing_name !== sharing_name) {
+      throw new Error(
+        `Found submission with id=${record.submission_id}, but sharing name does not match ${record.sharing_name}.`,
       );
     }
 

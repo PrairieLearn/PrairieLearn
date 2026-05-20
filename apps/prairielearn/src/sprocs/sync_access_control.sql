@@ -33,15 +33,17 @@ BEGIN
     INSERT INTO assessment_access_control_rules (
         assessment_id,
         number,
-        list_before_release,
+        before_release_listed,
         target_type,
         date_control_release_date,
-        date_control_due_date_overridden,
+        date_control_due_overridden,
         date_control_due_date,
+        date_control_due_credit,
         date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions,
         date_control_after_last_deadline_credit,
+        date_control_after_last_deadline_overridden,
         date_control_duration_minutes_overridden,
         date_control_duration_minutes,
         date_control_password_overridden,
@@ -56,15 +58,17 @@ BEGIN
     SELECT
         (rule ->> 'assessment_id')::bigint,
         (rule ->> 'number')::integer,
-        (rule ->> 'list_before_release')::boolean,
+        (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
-        (rule ->> 'date_control_due_date_overridden')::boolean,
+        (rule ->> 'date_control_due_overridden')::boolean,
         input_date(rule ->> 'date_control_due_date', ci_timezone),
+        (rule ->> 'date_control_due_credit')::integer,
         (rule ->> 'date_control_early_deadlines_overridden')::boolean,
         (rule ->> 'date_control_late_deadlines_overridden')::boolean,
         (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
         (rule ->> 'date_control_after_last_deadline_credit')::integer,
+        (rule ->> 'date_control_after_last_deadline_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes_overridden')::boolean,
         (rule ->> 'date_control_duration_minutes')::integer,
         (rule ->> 'date_control_password_overridden')::boolean,
@@ -77,14 +81,16 @@ BEGIN
         input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
-        list_before_release = EXCLUDED.list_before_release,
+        before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,
-        date_control_due_date_overridden = EXCLUDED.date_control_due_date_overridden,
+        date_control_due_overridden = EXCLUDED.date_control_due_overridden,
         date_control_due_date = EXCLUDED.date_control_due_date,
+        date_control_due_credit = EXCLUDED.date_control_due_credit,
         date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
         date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
         date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
         date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
+        date_control_after_last_deadline_overridden = EXCLUDED.date_control_after_last_deadline_overridden,
         date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
         date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
         date_control_password_overridden = EXCLUDED.date_control_password_overridden,
@@ -146,9 +152,20 @@ BEGIN
     ON CONFLICT (assessment_access_control_rule_id, date) DO UPDATE SET
         credit = EXCLUDED.credit;
 
-    -- Upsert PrairieTest exams (main rules only).
-    INSERT INTO assessment_access_control_prairietest_exams (assessment_access_control_rule_id, uuid, read_only)
-    SELECT aacr.id, (e ->> 2)::uuid, (e ->> 3)::boolean
+    -- Upsert PrairieTest exams (default rules only).
+    INSERT INTO assessment_access_control_prairietest_exams (
+        assessment_access_control_rule_id,
+        uuid,
+        read_only,
+        after_complete_questions_hidden,
+        after_complete_score_hidden
+    )
+    SELECT
+        aacr.id,
+        (e ->> 2)::uuid,
+        (e ->> 3)::boolean,
+        (e ->> 4)::boolean,
+        (e ->> 5)::boolean
     FROM UNNEST(prairietest_exams_data) AS e
     JOIN assessment_access_control_rules aacr ON
         aacr.assessment_id = (e ->> 0)::bigint
@@ -156,7 +173,9 @@ BEGIN
         AND aacr.target_type = 'none'
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     ON CONFLICT (assessment_access_control_rule_id, uuid) DO UPDATE SET
-        read_only = EXCLUDED.read_only;
+        read_only = EXCLUDED.read_only,
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden;
 
     -- Delete excess rules: rules with number > max incoming number per assessment.
     -- Child rows are cascade-deleted via FK constraints.

@@ -1,30 +1,22 @@
 import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 
-/**
- * Wrapper for override fields that shows an override/remove button
- * when not overridden.
- */
 export function FieldWrapper({
   isOverridden,
   label,
   onOverride,
   onRemoveOverride,
+  headerToggle,
+  headerAction,
   children,
-  headerContent,
 }: {
-  /** Whether the field is currently overridden */
   isOverridden: boolean;
-  /** Label shown when field is not overridden */
   label: string;
-  /** Called when user clicks Override button */
   onOverride?: () => void;
-  /** Called when user clicks Remove Override button */
   onRemoveOverride?: () => void;
-  /** The field content to render when overridden */
+  headerToggle?: ReactNode;
+  headerAction?: ReactNode;
   children: ReactNode;
-  /** Optional: content to display in the header row next to the Remove override button */
-  headerContent?: ReactNode;
 }) {
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
 
@@ -48,17 +40,24 @@ export function FieldWrapper({
           </div>
         ) : (
           <>
-            {(headerContent || onRemoveOverride) && (
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                {headerContent}
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-2 flex-wrap">
+              {headerToggle ?? <strong>{label}</strong>}
+              <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                {headerAction}
                 {onRemoveOverride && (
-                  <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    className="text-nowrap"
+                    aria-label={`Remove override for ${label}`}
+                    onClick={onRemoveOverride}
+                  >
                     Remove override
                   </Button>
                 )}
               </div>
-            )}
-            <div>{children}</div>
+            </div>
+            {children}
           </>
         )}
       </Card.Body>

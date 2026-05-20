@@ -1,27 +1,44 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateAfterCompleteCrossFieldIssues,
+  validateGlobalAfterCompleteIssues,
+  validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
+  validateGlobalStructuralDependencyIssues,
+  validateRuleCreditOrderingIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
-import { type AccessControlFormData, formDataToJson } from './types.js';
+import { type AccessControlFormData, formDataToJson, isReleasedNow } from './types.js';
 
 export type AccessControlFormFieldPath =
-  | 'mainRule.releaseDate'
-  | 'mainRule.dueDate'
-  | `mainRule.earlyDeadlines.${number}.date`
-  | `mainRule.lateDeadlines.${number}.date`
-  | 'mainRule.questionVisibility.visibleFromDate'
-  | 'mainRule.questionVisibility.visibleUntilDate'
-  | 'mainRule.scoreVisibility.visibleFromDate'
-  | `overrides.${number}.releaseDate`
-  | `overrides.${number}.dueDate`
+  | 'defaultRule.release.date'
+  | 'defaultRule.due.date'
+  | 'defaultRule.due.credit'
+  | `defaultRule.earlyDeadlines.${number}.date`
+  | `defaultRule.earlyDeadlines.${number}.credit`
+  | `defaultRule.lateDeadlines.${number}.date`
+  | `defaultRule.lateDeadlines.${number}.credit`
+  | 'defaultRule.afterLastDeadline.credit'
+  | 'defaultRule.questionVisibility'
+  | 'defaultRule.questionVisibility.visibleFromDate'
+  | 'defaultRule.questionVisibility.visibleUntilDate'
+  | 'defaultRule.scoreVisibility'
+  | 'defaultRule.scoreVisibility.visibleFromDate'
+  | `overrides.${number}.release.date`
+  | `overrides.${number}.due.date`
+  | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.earlyDeadlines.${number}.credit`
   | `overrides.${number}.lateDeadlines.${number}.date`
+  | `overrides.${number}.lateDeadlines.${number}.credit`
+  | `overrides.${number}.afterLastDeadline.credit`
+  | `overrides.${number}.questionVisibility`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
+  | `overrides.${number}.scoreVisibility`
   | `overrides.${number}.scoreVisibility.visibleFromDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
@@ -35,25 +52,33 @@ function buildValidationRules(formData: AccessControlFormData): AccessControlVal
 function mapIssueToFormFieldPath(
   issue: AccessControlValidationIssue,
 ): AccessControlFormFieldPath | null {
-  const prefix: 'mainRule' | `overrides.${number}` =
-    issue.ruleIndex === 0 ? 'mainRule' : `overrides.${issue.ruleIndex - 1}`;
+  const prefix: 'defaultRule' | `overrides.${number}` =
+    issue.ruleIndex === 0 ? 'defaultRule' : `overrides.${issue.ruleIndex - 1}`;
 
   switch (issue.path[0]) {
     case 'dateControl':
       switch (issue.path[1]) {
-        case 'releaseDate':
-          return `${prefix}.releaseDate`;
-        case 'dueDate':
-          return `${prefix}.dueDate`;
+        case 'release':
+          return `${prefix}.release.date`;
+        case 'due':
+          return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
-          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.earlyDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
-          return `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+        case 'afterLastDeadline':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
         default:
           return null;
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
+        if (issue.path.length === 2) return `${prefix}.questionVisibility`;
         switch (issue.path[2]) {
           case 'visibleFromDate':
             return `${prefix}.questionVisibility.visibleFromDate`;
@@ -65,6 +90,7 @@ function mapIssueToFormFieldPath(
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (issue.path[1] === 'score') {
+        if (issue.path.length === 2) return `${prefix}.scoreVisibility`;
         switch (issue.path[2]) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           case 'visibleFromDate':
@@ -79,7 +105,54 @@ function mapIssueToFormFieldPath(
   }
 }
 
-export function getGlobalDateValidationErrors(formData: AccessControlFormData): {
+/**
+ * Surface inconsistencies between the "Released" / "Scheduled for release"
+ * radio choice and the chosen date. The radio reflects the user's intent;
+ * if the date contradicts that intent we want a form error rather than
+ * silently flipping the radio.
+ */
+function getReleaseStateValidationErrors(
+  formData: AccessControlFormData,
+  displayTimezone: string,
+): { path: AccessControlFormFieldPath; message: string }[] {
+  const results: { path: AccessControlFormFieldPath; message: string }[] = [];
+
+  const checkRule = (
+    release: AccessControlFormData['defaultRule']['release'],
+    path: AccessControlFormFieldPath,
+  ) => {
+    if (!release.date) return;
+    const dateIsPast = isReleasedNow(release.date, displayTimezone);
+    if (release.released && !dateIsPast) {
+      results.push({
+        path,
+        message: 'Release date must not be in the future when state is Released.',
+      });
+    } else if (!release.released && dateIsPast) {
+      results.push({
+        path,
+        message: 'Release date must be in the future when scheduled for release.',
+      });
+    }
+  };
+
+  if (formData.defaultRule.dateControlEnabled) {
+    checkRule(formData.defaultRule.release, 'defaultRule.release.date');
+  }
+
+  formData.overrides.forEach((override, index) => {
+    if (override.overriddenFields.includes('release')) {
+      checkRule(override.release, `overrides.${index}.release.date`);
+    }
+  });
+
+  return results;
+}
+
+export function getGlobalDateValidationErrors(
+  formData: AccessControlFormData,
+  displayTimezone: string,
+): {
   path: AccessControlFormFieldPath;
   message: string;
 }[] {
@@ -88,18 +161,34 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
 
   const validationRules = buildValidationRules(formData);
 
-  for (const issue of validateGlobalDateConsistencyIssues(validationRules)) {
-    const path = mapIssueToFormFieldPath(issue);
-    if (!path || seenPaths.has(path)) continue;
-    seenPaths.add(path);
-    results.push({ path, message: issue.message });
+  for (const issues of [
+    validateGlobalDateConsistencyIssues(validationRules),
+    validateGlobalCreditConsistencyIssues(validationRules),
+    validateGlobalStructuralDependencyIssues(validationRules),
+    // Run the "no completion mechanism" check before the cross-field check —
+    // both target the same questionVisibility path, but the mechanism error
+    // is more fundamental (cross-field consistency is moot when there's no
+    // mechanism at all).
+    validateGlobalAfterCompleteIssues(validationRules),
+    validateAfterCompleteCrossFieldIssues(validationRules),
+  ]) {
+    for (const issue of issues) {
+      const path = mapIssueToFormFieldPath(issue);
+      if (!path || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      results.push({ path, message: issue.message });
+    }
   }
 
   for (const validationRule of validationRules) {
-    for (const issues of [
-      validateRuleStructuralDependencyIssues(validationRule),
-      validateRuleDateOrderingIssues(validationRule),
-    ]) {
+    const dateIssues = validateRuleDateOrderingIssues(validationRule);
+    const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
+    // Credit ordering assumes deadlines are chronological; skip if dates are
+    // out of order to avoid misleading "credits must strictly decrease" errors.
+    if (dateIssues.length === 0) {
+      issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
+    }
+    for (const issues of issueGroups) {
       for (const issue of issues) {
         const path = mapIssueToFormFieldPath(issue);
         if (!path || seenPaths.has(path)) continue;
@@ -107,6 +196,12 @@ export function getGlobalDateValidationErrors(formData: AccessControlFormData): 
         results.push({ path, message: issue.message });
       }
     }
+  }
+
+  for (const error of getReleaseStateValidationErrors(formData, displayTimezone)) {
+    if (seenPaths.has(error.path)) continue;
+    seenPaths.add(error.path);
+    results.push(error);
   }
 
   return results;
