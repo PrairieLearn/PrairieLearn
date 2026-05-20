@@ -160,6 +160,7 @@ export interface IRZone {
 
 export interface IRSourceBankRef {
   sourceBankRef: string;
+  sourceBankExportId?: string;
   title: string;
   numberChoose?: number;
   points?: number;

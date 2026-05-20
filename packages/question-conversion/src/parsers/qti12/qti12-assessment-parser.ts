@@ -449,6 +449,7 @@ export class QTI12AssessmentParser implements InputParser {
     const selRec = selection as Record<string, unknown>;
     const sourceBankRef = textContent(selRec['sourcebank_ref']);
     if (!sourceBankRef) return undefined;
+    const sourceBankExportId = textContent(selRec['sourcebank_export_id']);
 
     const isExternal =
       textContent(getNestedValue(selRec, 'selection_extension', 'sourcebank_is_external')) ===
@@ -462,6 +463,7 @@ export class QTI12AssessmentParser implements InputParser {
 
     return {
       sourceBankRef,
+      ...(sourceBankExportId ? { sourceBankExportId } : {}),
       title,
       ...(numberChoose != null ? { numberChoose } : {}),
       ...(points != null ? { points } : {}),
