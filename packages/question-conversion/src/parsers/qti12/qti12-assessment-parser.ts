@@ -907,9 +907,7 @@ export class QTI12AssessmentParser implements InputParser {
     const handler = this.registry.get(item.questionType);
     if (!handler) {
       // Caller catches this and records it as a parse warning.
-      throw new Error(
-        `Unsupported question type "${item.questionType}" (supported: ${this.registry.supportedTypes().join(', ')})`,
-      );
+      throw new Error(`Unsupported question type "${item.questionType}"`);
     }
 
     const result = handler.transform(item);

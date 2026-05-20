@@ -919,7 +919,7 @@ describe('QTI12AssessmentParser', async () => {
       assert.isDefined(result.parseWarnings);
       assert.equal(result.parseWarnings!.length, 1);
       assert.equal(result.parseWarnings![0].questionId, 'q1');
-      assert.include(result.parseWarnings![0].message, 'magic_question');
+      assert.equal(result.parseWarnings![0].message, 'Unsupported question type "magic_question"');
     });
 
     it('still parses valid questions when some are unsupported', async () => {
