@@ -57,6 +57,9 @@ export const RawStaffAiGradingMessageSchema = RawAiGradingMessageSchema.pick({
   role: true,
   status: true,
   workflow_run_id: true,
+  model: true,
+  usage_input_tokens: true,
+  usage_output_tokens: true,
 });
 export const StaffAiGradingMessageSchema =
   RawStaffAiGradingMessageSchema.brand<'StaffAiGradingMessage'>();

@@ -82,6 +82,9 @@ type RubricChatMessage = UIMessage<{
   status?: 'streaming' | 'completed' | 'errored' | 'canceled';
   phase?: RubricPhase;
   rubric_modified?: boolean;
+  model?: string | null;
+  usage_input_tokens?: number;
+  usage_output_tokens?: number;
 }>;
 
 // ---------------------------------------------------------------------------
@@ -137,12 +140,14 @@ function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
 function ToolCallStatus({
   state,
   statusText,
+  hasOutputErrors,
 }: {
   state: Exclude<
     ToolUIPart['state'],
     'approval-requested' | 'approval-responded' | 'output-denied' | undefined
   >;
   statusText: ReactNode;
+  hasOutputErrors?: boolean;
 }) {
   const icon = run(() => {
     switch (state) {
@@ -158,6 +163,9 @@ function ToolCallStatus({
           </div>
         );
       case 'output-available':
+        if (hasOutputErrors) {
+          return <i className="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true" />;
+        }
         return <i className="bi bi-check-lg text-success" aria-hidden="true" />;
       case 'output-error':
         return <i className="bi bi-x text-danger" aria-hidden="true" />;
@@ -170,6 +178,30 @@ function ToolCallStatus({
       <span>{statusText}</span>
     </div>
   );
+}
+
+function toolOutputHasErrors(output: unknown): boolean {
+  if (typeof output !== 'string') return false;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    return false;
+  }
+  if (parsed == null || typeof parsed !== 'object') return false;
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.error === 'string' && obj.error.length > 0) return true;
+  if (Array.isArray(obj.errors) && obj.errors.length > 0) return true;
+  if (obj.render_errors != null && typeof obj.render_errors === 'object') {
+    const re = obj.render_errors as Record<string, unknown>;
+    if (Array.isArray(re.question_render_errors) && re.question_render_errors.length > 0) {
+      return true;
+    }
+    if (Array.isArray(re.submission_render_errors) && re.submission_render_errors.length > 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getToolStatusText(
@@ -636,7 +668,14 @@ function ToolCall({ part }: { part: ToolUIPart }) {
     error: 'Error',
   };
 
-  return <ToolCallStatus state={part.state} statusText={getToolStatusText(part.state, messages)} />;
+  const hasOutputErrors = part.state === 'output-available' && toolOutputHasErrors(part.output);
+  const statusText = hasOutputErrors
+    ? `${getToolStatusText(part.state, messages)} (with errors)`
+    : getToolStatusText(part.state, messages);
+
+  return (
+    <ToolCallStatus state={part.state} statusText={statusText} hasOutputErrors={hasOutputErrors} />
+  );
 }
 
 function MasterRubricDiff({
@@ -848,6 +887,9 @@ function persistedMessagesToInitialMessages(
         workflow_run_id: m.workflow_run_id ?? undefined,
         status: m.status as 'streaming' | 'completed' | 'errored',
         phase: m.phase,
+        model: m.model,
+        usage_input_tokens: m.usage_input_tokens,
+        usage_output_tokens: m.usage_output_tokens,
       },
     }));
 }
@@ -900,6 +942,7 @@ function AssessmentQuestionManualGradingInner({
   const [chatInput, setChatInput] = useState('');
   const currentPhaseRef = useRef<RubricPhase>('generate');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showUsageModal, setShowUsageModal] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   // Track workflow run ID and version for consistency checks.
   // Updated from SSE metadata when agent responses complete.
@@ -938,7 +981,14 @@ function AssessmentQuestionManualGradingInner({
       .catch(() => {});
   }, [rubricDataUrl, chatCsrfToken]);
 
-  const { messages, setMessages, sendMessage, resumeStream, status } = useChat<RubricChatMessage>({
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    resumeStream,
+    status,
+    error: chatError,
+  } = useChat<RubricChatMessage>({
     messages: persistedMessagesToInitialMessages(initialChatMessages),
     resume: true,
     transport: new DefaultChatTransport({
@@ -988,6 +1038,10 @@ function AssessmentQuestionManualGradingInner({
           version: message.metadata.workflow_version,
         };
       }
+
+      // Pull the finalized message from the server so per-message usage
+      // (input/output tokens, model) is reflected in the Usage modal.
+      void refreshChatMessages();
 
       const phase = message.metadata?.phase;
 
@@ -1063,6 +1117,17 @@ function AssessmentQuestionManualGradingInner({
     setMessages(persistedMessagesToInitialMessages(serverMessages));
   }, [chatCsrfToken, chatMessagesUrl, setMessages]);
 
+  // When useChat surfaces an error (e.g. the SSE stream was broken by an
+  // upstream API error), the streaming UI stops without showing what
+  // happened. Pull the now-finalized assistant message from the server so
+  // its persisted error text becomes visible.
+
+  useEffect(() => {
+    if (chatError) {
+      void refreshChatMessages();
+    }
+  }, [chatError, refreshChatMessages]);
+
   // Poll to reconnect the SSE stream when the client knows a message is still streaming.
   usePollWhileActive(hasStreamingAssistantMessage && status === 'ready', resumeStream, 1000);
   // Also periodically refresh persisted messages so the UI converges if the stream can't reconnect.
@@ -1102,7 +1167,7 @@ function AssessmentQuestionManualGradingInner({
     }).then(async (response) => {
       if (response.ok) {
         setMessages([]);
-        setHasGeneratedRubric(initialRubricData != null);
+        refreshRubricData();
       } else if (response.status === 409) {
         const data = (await response.json()) as { error?: string };
         setConflictError(
@@ -1238,6 +1303,16 @@ function AssessmentQuestionManualGradingInner({
           <div className="d-flex align-items-center gap-2 px-3 py-2 border-bottom bg-white">
             <i className="bi bi-stars text-primary" />
             <span className="fw-semibold small flex-grow-1">Rubric assistant</span>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                aria-label="View conversation usage"
+                onClick={() => setShowUsageModal(true)}
+              >
+                Usage
+              </button>
+            )}
             {messages.length > 0 && hasCourseInstancePermissionEdit && (
               <>
                 <button
@@ -1356,6 +1431,12 @@ function AssessmentQuestionManualGradingInner({
                     <div className="small text-muted fst-italic">
                       <i className="bi bi-stop-circle me-1" aria-hidden="true" />
                       Generation was stopped
+                    </div>
+                  )}
+                  {message.metadata?.status === 'errored' && (
+                    <div className="small text-danger">
+                      <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+                      The assistant encountered an error and could not finish this response.
                     </div>
                   )}
                   <MasterRubricDiff
@@ -1511,7 +1592,78 @@ function AssessmentQuestionManualGradingInner({
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <UsageModal
+        show={showUsageModal}
+        messages={messages}
+        onHide={() => setShowUsageModal(false)}
+      />
     </div>
+  );
+}
+
+function UsageModal({
+  show,
+  onHide,
+  messages,
+}: {
+  show: boolean;
+  onHide: () => void;
+  messages: RubricChatMessage[];
+}) {
+  const { inputTokens, outputTokens, models, assistantMessageCount } = run(() => {
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let assistantMessageCount = 0;
+    const models = new Set<string>();
+    for (const m of messages) {
+      if (m.role !== 'assistant') continue;
+      assistantMessageCount += 1;
+      const meta = m.metadata ?? {};
+      inputTokens += meta.usage_input_tokens ?? 0;
+      outputTokens += meta.usage_output_tokens ?? 0;
+      if (meta.model) models.add(meta.model);
+    }
+    return { inputTokens, outputTokens, models, assistantMessageCount };
+  });
+
+  const numberFormatter = new Intl.NumberFormat('en-US');
+  const modelList =
+    models.size === 0
+      ? '—'
+      : Array.from(models)
+          .sort((a, b) => a.localeCompare(b))
+          .join(', ');
+
+  return (
+    <Modal show={show} centered onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Conversation usage</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <dl className="row mb-0">
+          <dt className="col-sm-5 text-muted fw-normal">Model</dt>
+          <dd className="col-sm-7">{modelList}</dd>
+
+          <dt className="col-sm-5 text-muted fw-normal">Input tokens</dt>
+          <dd className="col-sm-7">{numberFormatter.format(inputTokens)}</dd>
+
+          <dt className="col-sm-5 text-muted fw-normal">Output tokens</dt>
+          <dd className="col-sm-7">{numberFormatter.format(outputTokens)}</dd>
+
+          <dt className="col-sm-5 text-muted fw-normal">Assistant messages</dt>
+          <dd className="col-sm-7">{numberFormatter.format(assistantMessageCount)}</dd>
+        </dl>
+        <div className="small text-muted mt-3">
+          Token counts update after each assistant message finishes.
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 

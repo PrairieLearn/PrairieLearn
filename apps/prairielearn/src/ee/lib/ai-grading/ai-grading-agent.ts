@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import {
   type LanguageModel,
   type ModelMessage,
@@ -40,19 +40,20 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gemini-3-flash-preview';
+const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5.4-2026-03-05';
 
 // ---------------------------------------------------------------------------
 // Model
 // ---------------------------------------------------------------------------
 
 function getAgenticGradingModel(): { model: LanguageModel; modelId: AiGradingModelId } {
-  assert(config.aiGradingGoogleApiKey, 'AI grading Google API key is not configured');
-  const google = createGoogleGenerativeAI({
-    apiKey: config.aiGradingGoogleApiKey,
+  assert(config.aiGradingOpenAiApiKey, 'AI grading OpenAI API key is not configured');
+  const openai = createOpenAI({
+    apiKey: config.aiGradingOpenAiApiKey,
+    organization: config.aiGradingOpenAiOrganization ?? undefined,
   });
   const modelId = AGENTIC_AI_GRADING_MODEL;
-  return { model: google(modelId), modelId };
+  return { model: openai(modelId), modelId };
 }
 
 // ---------------------------------------------------------------------------
@@ -281,7 +282,7 @@ const AI_GRADING_TOOLS = {
   }),
   getSampleSubmissions: tool({
     description:
-      'Get a batch of sample student submissions (up to 5). Use this to see how students actually answered the question, which helps inform rubric item creation.',
+      'Get a batch of sample student submissions. The tool result includes a text summary of each submission AND any uploaded image attachments inline. IMPORTANT: image attachments are only visible to you on the call where they were just fetched and the steps immediately following. Once you call getSampleSubmissions again (or finish reasoning about the current batch), images from the OLDER call are stripped from your context — only the text summary remains. If you need to look at images of student work again, call getSampleSubmissions again.',
     inputSchema: z.object({}),
     outputSchema: z.string(),
   }),
@@ -321,7 +322,8 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'After generation, you may optionally refine the rubric using surgical editing tools (addRubricItem, editRubricItem, deleteRubricItem, swapRubricItems).',
   'You can also use editRubricSettings to set grader_guidelines (high-level instructions for graders), starting_points, min_points, max_extra_points, and replace_auto_points.',
   'Use getRubric to see the current state of the rubric at any time. Use getAssessmentQuestionPoints to see the fixed point values.',
-  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered.',
+  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered — images uploaded by students are attached inline to the tool result. To save context, images from PRIOR getSampleSubmissions calls are stripped once a newer call is made or after a few subsequent steps; if you need to look at student images again, call getSampleSubmissions again rather than trying to recall them.',
+  'CRITICAL: If a tool result includes a non-empty `errors` array, a `render_errors` object, or an `error` field, you MUST explicitly tell the user in your final reply that an error occurred. If the error mentions rendering, tell them to verify the question/submissions render correctly. Otherwise, say "an error occurred while reading the content." Never produce a final reply that omits these errors — even if the rubric was otherwise generated or edited successfully, the user needs to know the underlying content was incomplete.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
   'IMPORTANT: Rubric point values must be logically consistent. The response from getRubric includes a point_validation section.',
@@ -342,7 +344,8 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'Use addRubricItem, editRubricItem, deleteRubricItem, and swapRubricItems to make targeted changes.',
   'Use editRubricSettings to change grader_guidelines (high-level instructions for graders — NOT specific to any item; use rubric item grader_note for item-specific instructions), starting_points, min_points, max_extra_points, or replace_auto_points.',
   'Use getAssessmentQuestionPoints to see the fixed point values set by the instructor.',
-  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered.',
+  'Use getQuestionContent to see the question prompt and solution. Use getSampleSubmissions to see how students answered — images uploaded by students are attached inline to the tool result. To save context, images from PRIOR getSampleSubmissions calls are stripped once a newer call is made or after a few subsequent steps; if you need to look at student images again, call getSampleSubmissions again rather than trying to recall them.',
+  'CRITICAL: If a tool result includes a non-empty `errors` array, a `render_errors` object, or an `error` field, you MUST explicitly tell the user in your final reply that an error occurred. If the error mentions rendering, tell them to verify the question/submissions render correctly. Otherwise, say "an error occurred while reading the content." Never produce a final reply that omits these errors — even if the rubric was otherwise generated or edited successfully, the user needs to know the underlying content was incomplete.',
   'When the user asks to change multiple items (e.g. "remove all explanations"), call editRubricItem for EACH affected item.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
@@ -466,7 +469,11 @@ async function saveRubricItems(
 async function formatCurrentRubricState(context: AiGradingAgentContext): Promise<string> {
   const rubricData = await getCurrentRubricItems(context);
   if (!rubricData) {
-    return JSON.stringify({ error: 'No rubric exists.' });
+    return JSON.stringify({
+      rubric_exists: false,
+      message:
+        'No rubric has been created yet. This is the expected starting state — call generateRubric to create one. Do not treat this as an error.',
+    });
   }
   const items = rubricData.rubric_items.map((i, idx) => ({
     rubric_item_id: i.rubric_item.id,
@@ -582,9 +589,134 @@ export async function captureRubricSnapshot(
 // Context gathering helpers
 // ---------------------------------------------------------------------------
 
+const MAX_SUBMISSION_TEXT_CHARS = 4000;
+
+interface SubmissionImage {
+  data: string;
+  mediaType: string;
+}
+
+function extractSubmissionParts(content: unknown): {
+  text: string;
+  images: SubmissionImage[];
+} {
+  if (typeof content === 'string') {
+    return { text: truncate(content, MAX_SUBMISSION_TEXT_CHARS), images: [] };
+  }
+  if (!Array.isArray(content)) {
+    return { text: '[submission content unavailable]', images: [] };
+  }
+  const textParts: string[] = [];
+  const images: SubmissionImage[] = [];
+  for (const segment of content) {
+    if (segment && typeof segment === 'object' && 'type' in segment) {
+      const s = segment as {
+        type: string;
+        text?: string;
+        image?: string;
+        mediaType?: string;
+      };
+      if (s.type === 'text' && typeof s.text === 'string') {
+        textParts.push(s.text);
+      } else if (s.type === 'image' && typeof s.image === 'string') {
+        images.push({ data: s.image, mediaType: s.mediaType ?? 'image/jpeg' });
+      }
+    }
+  }
+  const combined = textParts.join('\n').trim();
+  const text = truncate(
+    combined.length > 0 ? combined : '[no text content in submission]',
+    MAX_SUBMISSION_TEXT_CHARS,
+  );
+  return { text, images };
+}
+
+function truncate(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  return text.slice(0, maxChars) + `\n[...truncated ${text.length - maxChars} characters]`;
+}
+
+function extractTextFromToolResultOutput(output: unknown): string {
+  if (output == null || typeof output !== 'object') return '';
+  const o = output as { type?: string; value?: unknown };
+  if (o.type === 'text' && typeof o.value === 'string') return o.value;
+  if (o.type === 'content' && Array.isArray(o.value)) {
+    return o.value
+      .map((v: unknown) => {
+        if (v && typeof v === 'object' && 'type' in v) {
+          const seg = v as { type: string; text?: string };
+          if (seg.type === 'text' && typeof seg.text === 'string') return seg.text;
+        }
+        return '';
+      })
+      .filter((s) => s.length > 0)
+      .join('\n');
+  }
+  if (o.type === 'json') {
+    try {
+      return JSON.stringify(o.value);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+/**
+ * Removes image data from older `getSampleSubmissions` tool results, leaving
+ * only the most recent one intact. Images are heavy (base64 photos) and
+ * accumulating them across tool-loop steps quickly blows the model's context
+ * window. The agent still has the textual summary of older calls, plus full
+ * image visibility for whatever it just fetched.
+ */
+function stripOlderSubmissionImages(messages: ModelMessage[]): ModelMessage[] {
+  let mostRecent: { msgIdx: number; partIdx: number } | null = null;
+  for (let i = messages.length - 1; i >= 0 && !mostRecent; i--) {
+    const msg = messages[i];
+    if (msg.role !== 'tool' || !Array.isArray(msg.content)) continue;
+    for (let j = msg.content.length - 1; j >= 0; j--) {
+      const part = msg.content[j] as { type: string; toolName?: string };
+      if (part.type === 'tool-result' && part.toolName === 'getSampleSubmissions') {
+        mostRecent = { msgIdx: i, partIdx: j };
+        break;
+      }
+    }
+  }
+  if (!mostRecent) return messages;
+
+  return messages.map((msg, mi) => {
+    if (msg.role !== 'tool' || !Array.isArray(msg.content)) return msg;
+    return {
+      ...msg,
+      content: msg.content.map((part, pi) => {
+        if (
+          (part as { type: string }).type !== 'tool-result' ||
+          (part as { toolName?: string }).toolName !== 'getSampleSubmissions'
+        ) {
+          return part;
+        }
+        if (mi === mostRecent.msgIdx && pi === mostRecent.partIdx) {
+          return part;
+        }
+        const trp = part as { output: unknown };
+        const textValue = extractTextFromToolResultOutput(trp.output);
+        return {
+          ...(part as object),
+          output: {
+            type: 'text',
+            value:
+              textValue +
+              '\n[image attachments from this older getSampleSubmissions call were elided to save tokens]',
+          },
+        };
+      }),
+    } as ModelMessage;
+  });
+}
+
 async function renderQuestionAndAnswer(
   context: Pick<AiGradingAgentContext, 'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'>,
-): Promise<{ question_html: string; answer_html: string }> {
+): Promise<{ question_html: string; answer_html: string; errors: string[] }> {
   const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: context.assessmentQuestion.id,
   });
@@ -592,6 +724,7 @@ async function renderQuestionAndAnswer(
   const questionCourse = await getQuestionCourse(context.question, context.course);
   const questionModule = questionServers.getModule(context.question.type);
 
+  const errors: string[] = [];
   for (const instanceQuestion of instanceQuestions) {
     try {
       const { variant } = await selectLastVariantAndSubmission(instanceQuestion.id);
@@ -614,19 +747,23 @@ async function renderQuestionAndAnswer(
       return {
         question_html: result.data.questionHtml,
         answer_html: result.data.answerHtml,
+        errors,
       };
-    } catch {
+    } catch (err) {
+      errors.push(
+        `instance_question_id=${instanceQuestion.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
       continue;
     }
   }
 
-  return { question_html: '', answer_html: '' };
+  return { question_html: '', answer_html: '', errors };
 }
 
 async function renderSampleSubmissions(
   context: Pick<AiGradingAgentContext, 'assessmentQuestion' | 'course' | 'question' | 'urlPrefix'>,
   count = 5,
-): Promise<RenderedSampleSubmission[]> {
+): Promise<{ submissions: RenderedSampleSubmission[]; errors: string[] }> {
   const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: context.assessmentQuestion.id,
   });
@@ -636,6 +773,7 @@ async function renderSampleSubmissions(
   const questionModule = questionServers.getModule(context.question.type);
 
   const submissions: RenderedSampleSubmission[] = [];
+  const errors: string[] = [];
   for (const instanceQuestion of sampled) {
     try {
       const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
@@ -662,11 +800,14 @@ async function renderSampleSubmissions(
           submitted_answer: submission.submitted_answer,
         }),
       });
-    } catch {
+    } catch (err) {
+      errors.push(
+        `instance_question_id=${instanceQuestion.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
       continue;
     }
   }
-  return submissions;
+  return { submissions, errors };
 }
 
 async function getInitializationContext(
@@ -676,9 +817,16 @@ async function getInitializationContext(
   answer_html: string;
   sample_submissions: RenderedSampleSubmission[];
   current_rubric: unknown;
+  question_render_errors: string[];
+  submission_render_errors: string[];
 }> {
-  const { question_html, answer_html } = await renderQuestionAndAnswer(context);
-  const sample_submissions = await renderSampleSubmissions(context);
+  const {
+    question_html,
+    answer_html,
+    errors: question_render_errors,
+  } = await renderQuestionAndAnswer(context);
+  const { submissions: sample_submissions, errors: submission_render_errors } =
+    await renderSampleSubmissions(context);
 
   const rubricData = await manualGrading.selectRubricData({
     assessment_question: context.assessmentQuestion,
@@ -689,6 +837,8 @@ async function getInitializationContext(
     answer_html,
     sample_submissions,
     current_rubric: rubricData,
+    question_render_errors,
+    submission_render_errors,
   };
 }
 
@@ -808,6 +958,12 @@ function buildRubricToolsWithExecute({
   job: JobLogger;
 }) {
   const rubricMutex = createMutex();
+  // Stores image data for each getSampleSubmissions tool call, keyed by
+  // toolCallId. `toModelOutput` reads from this to build a multimodal tool
+  // result so the model genuinely sees the images (rather than receiving
+  // base64 as raw text in the JSON). `prepareStep` later strips images from
+  // older tool-result messages to cap context growth.
+  const submissionImagesByToolCallId = new Map<string, SubmissionImage[]>();
   return {
     generateRubric: tool({
       ...AI_GRADING_TOOLS.generateRubric,
@@ -817,6 +973,32 @@ function buildRubricToolsWithExecute({
 
           const beforeSnapshot = await getRubricSnapshot(context);
           const initContext = await getInitializationContext(context);
+
+          const renderErrors = [
+            ...initContext.question_render_errors,
+            ...initContext.submission_render_errors,
+          ];
+          if (renderErrors.length > 0) {
+            job.error(
+              `generateRubric — ${renderErrors.length} render errors: ${renderErrors.join('; ')}`,
+            );
+          }
+          if (!initContext.question_html) {
+            return JSON.stringify({
+              error:
+                'Failed to render the question. Cannot generate a rubric without question content. Tell the user the rubric was NOT generated because the question failed to render, and ask them to verify the question renders correctly.',
+              question_render_errors: initContext.question_render_errors,
+              submission_render_errors: initContext.submission_render_errors,
+            });
+          }
+          if (initContext.sample_submissions.length === 0) {
+            return JSON.stringify({
+              error:
+                'Failed to render any sample student submissions. Cannot generate a rubric without examples of student work. Tell the user the rubric was NOT generated because no sample submissions could be rendered, and ask them to verify the submissions render correctly.',
+              question_render_errors: initContext.question_render_errors,
+              submission_render_errors: initContext.submission_render_errors,
+            });
+          }
 
           const freshAq = await selectAssessmentQuestionById(context.assessmentQuestion.id);
           const maxManual = freshAq.max_manual_points ?? 0;
@@ -846,6 +1028,24 @@ function buildRubricToolsWithExecute({
 
           for (const sub of initContext.sample_submissions) {
             messages.push(sub.submission_message);
+          }
+
+          if (renderErrors.length > 0) {
+            messages.push({
+              role: 'user',
+              content: [
+                'Note: some rendering operations failed while gathering context.',
+                initContext.question_render_errors.length > 0
+                  ? `Question/answer render errors: ${initContext.question_render_errors.join('; ')}`
+                  : null,
+                initContext.submission_render_errors.length > 0
+                  ? `Sample submission render errors: ${initContext.submission_render_errors.join('; ')}`
+                  : null,
+                'Proceed using only the context that was successfully rendered.',
+              ]
+                .filter(Boolean)
+                .join('\n'),
+            });
           }
 
           if (initContext.current_rubric) {
@@ -908,7 +1108,17 @@ function buildRubricToolsWithExecute({
 
           const mutationResult = await formatMutationResult(context, beforeSnapshot);
           job.info(`generateRubric — saved rubric state: ${mutationResult}`);
-          return mutationResult;
+          if (renderErrors.length === 0) {
+            return mutationResult;
+          }
+          const parsed = JSON.parse(mutationResult);
+          return JSON.stringify({
+            ...parsed,
+            render_errors: {
+              question_render_errors: initContext.question_render_errors,
+              submission_render_errors: initContext.submission_render_errors,
+            },
+          });
         }),
     }),
 
@@ -927,7 +1137,11 @@ function buildRubricToolsWithExecute({
         job.info(`Tool: getRubricItem — input: ${JSON.stringify({ rubric_item_id })}`);
         const rubricData = await getCurrentRubricItems(context);
         if (!rubricData) {
-          return JSON.stringify({ error: 'No rubric exists for this assessment question yet.' });
+          return JSON.stringify({
+            rubric_exists: false,
+            message:
+              'No rubric has been created yet. Call generateRubric to create one. Do not treat this as an error.',
+          });
         }
         const item = rubricData.rubric_items.find((i) => i.rubric_item.id === rubric_item_id);
         if (!item) {
@@ -1182,8 +1396,21 @@ function buildRubricToolsWithExecute({
       ...AI_GRADING_TOOLS.getQuestionContent,
       execute: async () => {
         job.info('Tool: getQuestionContent — rendering question and answer');
-        const { question_html, answer_html } = await renderQuestionAndAnswer(context);
-        const result = JSON.stringify({ question_html, answer_html }, null, 2);
+        const { question_html, answer_html, errors } = await renderQuestionAndAnswer(context);
+        const result = JSON.stringify(
+          {
+            question_html: truncate(question_html, MAX_SUBMISSION_TEXT_CHARS),
+            answer_html: truncate(answer_html, MAX_SUBMISSION_TEXT_CHARS),
+            errors,
+          },
+          null,
+          2,
+        );
+        if (errors.length > 0) {
+          job.error(
+            `Tool: getQuestionContent — ${errors.length} render errors: ${errors.join('; ')}`,
+          );
+        }
         job.info(`Tool: getQuestionContent — output length: ${result.length}`);
         return result;
       },
@@ -1191,21 +1418,58 @@ function buildRubricToolsWithExecute({
 
     getSampleSubmissions: tool({
       ...AI_GRADING_TOOLS.getSampleSubmissions,
-      execute: async () => {
+      execute: async (_input, { toolCallId }) => {
         job.info('Tool: getSampleSubmissions — rendering sample submissions');
-        const submissions = await renderSampleSubmissions(context);
-        const result = JSON.stringify(
-          submissions.map((s) => ({
+        const { submissions, errors } = await renderSampleSubmissions(context, 3);
+        const images: SubmissionImage[] = [];
+        const submissionSummaries = submissions.map((s) => {
+          const parts = extractSubmissionParts(s.submission_message.content);
+          const startIndex = images.length;
+          for (const img of parts.images) images.push(img);
+          return {
             instance_question_id: s.instance_question_id,
-            submission_content: s.submission_message.content,
-          })),
+            submission_text: parts.text,
+            image_count: parts.images.length,
+            image_indices: parts.images.map((_, i) => startIndex + i),
+          };
+        });
+        submissionImagesByToolCallId.set(toolCallId, images);
+        const result = JSON.stringify(
+          {
+            submissions: submissionSummaries,
+            total_images_attached: images.length,
+            errors,
+          },
           null,
           2,
         );
+        if (errors.length > 0) {
+          job.error(
+            `Tool: getSampleSubmissions — ${errors.length} render errors: ${errors.join('; ')}`,
+          );
+        }
         job.info(
-          `Tool: getSampleSubmissions — ${submissions.length} submissions, output length: ${result.length}`,
+          `Tool: getSampleSubmissions — ${submissions.length} submissions, ${images.length} images, ${errors.length} errors, output length: ${result.length}`,
         );
         return result;
+      },
+      toModelOutput: ({ toolCallId, output }) => {
+        const images = submissionImagesByToolCallId.get(toolCallId) ?? [];
+        const text = typeof output === 'string' ? output : JSON.stringify(output);
+        if (images.length === 0) {
+          return { type: 'text', value: text };
+        }
+        return {
+          type: 'content',
+          value: [
+            { type: 'text', text },
+            ...images.map((img) => ({
+              type: 'image-data' as const,
+              data: img.data,
+              mediaType: img.mediaType,
+            })),
+          ],
+        };
       },
     }),
 
@@ -1331,7 +1595,7 @@ function createRubricAgent({
         ? RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT
         : RUBRIC_EDITING_AGENT_SYSTEM_PROMPT,
     stopWhen: [stepCountIs(15), checkCancellation],
-    prepareStep: async () => ({
+    prepareStep: async ({ messages }: { messages: ModelMessage[] }) => ({
       activeTools: [
         'generateRubric',
         'getRubric',
@@ -1346,6 +1610,7 @@ function createRubricAgent({
         'getSampleSubmissions',
         ...(phase === 'edit' ? (['revertRubric'] as const) : []),
       ] as const,
+      messages: stripOlderSubmissionImages(messages),
     }),
     tools: allTools,
   });

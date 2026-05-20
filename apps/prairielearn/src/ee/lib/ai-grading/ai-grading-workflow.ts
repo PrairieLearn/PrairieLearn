@@ -2,6 +2,7 @@ import { JsonToSseTransformStream, type ModelMessage } from 'ai';
 
 import {
   type StepResult,
+  type WorkflowLogger,
   type WorkflowStepContext,
   registerWorkflow,
 } from '@prairielearn/workflows';
@@ -114,6 +115,7 @@ async function runAgentWithStreaming(opts: {
   phase: 'generate' | 'edit';
   assessmentQuestionId: string;
   workflowVersion: number;
+  logger: WorkflowLogger;
 }) {
   const {
     agent,
@@ -126,12 +128,16 @@ async function runAgentWithStreaming(opts: {
     phase,
     assessmentQuestionId,
     workflowVersion,
+    logger,
   } = opts;
 
   try {
     const agentRes = await agent.stream(promptArg);
     let finalParts: unknown[] = [];
-    const errorState = { hasError: false };
+    const errorState: { hasError: boolean; lastError: unknown } = {
+      hasError: false,
+      lastError: null,
+    };
 
     const uiStream = agentRes.toUIMessageStream({
       generateMessageId: () => messageId,
@@ -163,7 +169,13 @@ async function runAgentWithStreaming(opts: {
       },
       onError(err: unknown): string {
         errorState.hasError = true;
-        return String(err);
+        errorState.lastError = err;
+        const errMessage =
+          err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err);
+        logger.error(
+          `Rubric agent stream error (messageId=${messageId}, workflowRunId=${workflowRunId}): ${errMessage}`,
+        );
+        return formatUserFacingError(err);
       },
     });
 
@@ -180,6 +192,13 @@ async function runAgentWithStreaming(opts: {
         ? 'errored'
         : 'completed';
 
+    if (errorState.hasError && !cancellationState.wasCanceled) {
+      finalParts = [
+        ...finalParts,
+        { type: 'text', text: formatUserFacingError(errorState.lastError) },
+      ];
+    }
+
     const rubricSnapshot = await captureRubricSnapshot(assessmentQuestionId);
 
     await finalizeAssistantMessage({
@@ -195,23 +214,34 @@ async function runAgentWithStreaming(opts: {
     });
   } catch (err) {
     // If agent.stream() or pipeTo() throws, the message is stuck in
-    // 'streaming' forever. Finalize it as errored so the UI converges.
-    // Use a generic message for the user-visible parts; full details are
-    // logged by the workflow engine when the re-thrown error is caught.
+    // 'streaming' forever. Finalize it as errored so the UI converges, log
+    // the full error here, and let the workflow continue so the conversation
+    // can keep going.
+    const errMessage = err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err);
+    logger.error(
+      `Rubric agent run failed (messageId=${messageId}, workflowRunId=${workflowRunId}): ${errMessage}`,
+    );
+    const userText = formatUserFacingError(err);
     await finalizeAssistantMessage({
       messageId,
       status: 'errored',
-      parts: [
-        {
-          type: 'text',
-          text: 'Something went wrong while generating a response. Please try again.',
-        },
-      ],
+      parts: [{ type: 'text', text: userText }],
       modelId,
       usage: { inputTokens: 0, outputTokens: 0 },
     });
-    throw err;
   }
+}
+
+function formatUserFacingError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (
+    /token count exceeds|maximum number of tokens|context length|context_length_exceeded/i.test(
+      message,
+    )
+  ) {
+    return "This conversation exceeded the model's context limit, so the message could not be processed. Please start a new conversation (use the Reset button) and try again.";
+  }
+  return 'Something went wrong while generating a response. Please try again.';
 }
 
 async function takeStep(
@@ -305,6 +335,7 @@ async function takeStep(
           phase,
           assessmentQuestionId: ctx.assessment_question_id,
           workflowVersion: state.version ?? 0,
+          logger,
         });
       } else {
         const persistedMessages = await selectAiGradingMessages(ctx.assessment_question_id);
@@ -329,6 +360,7 @@ async function takeStep(
           phase,
           assessmentQuestionId: ctx.assessment_question_id,
           workflowVersion: state.version ?? 0,
+          logger,
         });
       }
 
