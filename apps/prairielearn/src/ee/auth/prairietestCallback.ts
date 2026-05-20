@@ -65,9 +65,14 @@ router.post(
       );
     }
 
+    // Escalate LockDown Browser to medium-high security on the assessment
+    // page. The PT->PL handoff runs at low security so the cross-domain
+    // navigation lands in the main window; medium-high is switched on only
+    // once the student reaches the fully-rendered assessment page. Non-LDB
+    // browsers ignore the rldbsp query parameter.
     const redirectUrl =
       course_instance_id !== undefined && assessment_id !== undefined
-        ? getStudentAssessmentUrl(course_instance_id, assessment_id)
+        ? `${getStudentAssessmentUrl(course_instance_id, assessment_id)}?rldbsp=1`
         : undefined;
 
     await authnLib.loadUser(
