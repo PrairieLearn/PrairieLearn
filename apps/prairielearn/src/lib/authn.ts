@@ -129,6 +129,13 @@ export async function loadUser(
     });
   }
 
+  // Regenerate the session on any identity transition to prevent session
+  // fixation. The authn middleware re-enters this function on every request
+  // with the existing session's user_id, so the guard keeps it a no-op there.
+  if (req.session.user_id !== user_id) {
+    await req.session.regenerate();
+  }
+
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
   req.session.user_id = user_id;
 
