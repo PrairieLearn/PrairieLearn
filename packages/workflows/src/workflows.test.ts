@@ -44,6 +44,7 @@ describe('@prairielearn/workflows', () => {
       throw err;
     });
     // Create the table manually since migrations don't run in package tests.
+    await testPool.execute(sql.create_workflow_run_status_enum);
     await testPool.execute(sql.create_workflow_runs_table);
     await testPool.execute(sql.create_type_status_index);
     await testPool.execute(sql.create_status_running_index);
