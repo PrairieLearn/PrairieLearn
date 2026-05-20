@@ -70,16 +70,6 @@ router.post(
         ? getStudentAssessmentUrl(course_instance_id, assessment_id)
         : undefined;
 
-    if (req.session.user_id === user_id) {
-      // Same user is already authed; skip loadUser so we don't regenerate the
-      // session and bump the assessment instance's client fingerprint counter.
-      // We still refresh the provider so subsequent requests reflect that PT
-      // was the most recent auth path.
-      req.session.authn_provider_name = 'PrairieTest';
-      res.redirect(redirectUrl ?? '/');
-      return;
-    }
-
     await authnLib.loadUser(
       req,
       res,
