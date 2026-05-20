@@ -11,10 +11,12 @@ export function InstructorQtiImport({
   resLocals,
   csrfToken,
   trpcCsrfToken,
+  returnTo,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
   csrfToken: string;
   trpcCsrfToken: string;
+  returnTo: 'assessments' | 'questions';
 }) {
   return PageLayout({
     resLocals,
@@ -34,6 +36,7 @@ export function InstructorQtiImport({
           courseInstanceId={resLocals.course_instance.id}
           csrfToken={csrfToken}
           trpcCsrfToken={trpcCsrfToken}
+          returnTo={returnTo}
         />
       </Hydrate>
     ),
