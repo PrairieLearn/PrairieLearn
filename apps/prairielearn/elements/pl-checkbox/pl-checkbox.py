@@ -123,6 +123,7 @@ def generate_insert_text(
         has_max_select_attrib: Whether max-select attribute is specified
         min_options_to_select: Minimum options that must be selected
         max_options_to_select: Maximum options that can be selected
+        allow_blank: Whether blank submissions are allowed
 
     Returns:
         HTML string for help text
@@ -716,9 +717,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    allow_blank = pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    )
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
@@ -748,7 +747,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    if not (allow_blank and len(submitted_key) == 0 or min_options_to_select <= len(submitted_key) <= max_options_to_select):
+    if not (
+        (allow_blank and len(submitted_key) == 0)
+        or min_options_to_select <= len(submitted_key) <= max_options_to_select
+    ):
         if min_options_to_select != max_options_to_select:
             data["format_errors"][name] = (
                 f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
@@ -792,10 +794,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         score = 1 - 1.0 * number_wrong / number_answers
     elif partial_credit_mode is PartialCreditType.COVERAGE:
-        allow_blank = pl.get_boolean_attrib(
-            element, "allow-blank", ALLOW_BLANK_DEFAULT
-        )
-        if(allow_blank and len(submitted_set) == 0):
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        if allow_blank and len(submitted_set) == 0:
             score = 0
         else:
             n_correct_answers = len(correct_set & submitted_set)
@@ -875,7 +875,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             allow_blank = pl.get_boolean_attrib(
                 element, "allow-blank", ALLOW_BLANK_DEFAULT
             )
-            if(allow_blank and len(correct_keys) == 0):
+            if allow_blank and len(ans) == 0:
                 score = 0
             else:
                 n_correct_answers = len(set(correct_keys) & set(ans))
