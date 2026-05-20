@@ -44,7 +44,7 @@ HIDE_LETTER_KEYS_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
-MIN_SELECT_DEFAULT = 0
+MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 
@@ -737,7 +737,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    if not (min_options_to_select <= len(submitted_key) <= max_options_to_select):
+    if not (allow_blank and len(submitted_key) == 0 or min_options_to_select <= len(submitted_key) <= max_options_to_select):
         if min_options_to_select != max_options_to_select:
             data["format_errors"][name] = (
                 f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
