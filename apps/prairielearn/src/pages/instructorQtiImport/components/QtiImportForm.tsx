@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
+import type { PLAssessmentQuestion } from '@prairielearn/question-conversion';
+
 import { getAppError } from '../../../lib/client/errors.js';
 import {
   getCourseInstanceBaseUrl,
@@ -19,13 +21,14 @@ import {
 
 import {
   AssessmentQuestionsSection,
-  ExternalBankWarnings,
   ImportSummary,
+  MissingBanksStep,
   NonRubricWarnings,
+  UnresolvedBankWarnings,
   UploadStep,
 } from './ImportReviewComponents.js';
 
-type ImportStep = 'upload' | 'review' | 'creating';
+type ImportStep = 'upload' | 'missing-banks' | 'review' | 'creating';
 
 const FALLBACK_ASSESSMENT_SETS = [
   'Homework',
@@ -105,14 +108,116 @@ function buildInitialQuestionOverrides(
   return overrides;
 }
 
+function countUnresolvedSourceBankRefs(results: SerializedConversionResult[]): number {
+  return results.reduce((count, result) => count + (result.sourceBankRefs ?? []).length, 0);
+}
+
+function hasUnresolvedSourceBankRefs(results: SerializedConversionResult[]): boolean {
+  return results.some((result) => (result.sourceBankRefs ?? []).length > 0);
+}
+
+function mergeSourceBankResults(
+  primaryResults: SerializedConversionResult[],
+  supplementalResults: SerializedConversionResult[],
+  { includeUnmatchedBanks = true }: { includeUnmatchedBanks?: boolean } = {},
+): SerializedConversionResult[] {
+  const bankResults = supplementalResults.filter((result) => result.sourceType === 'question-bank');
+  const bankBySourceId = new Map(bankResults.map((result) => [result.sourceId, result]));
+  const usedBankSourceIds = new Set<string>();
+
+  const mergedPrimary = primaryResults.map((result) => {
+    const refs = result.sourceBankRefs ?? [];
+    if (refs.length === 0) return result;
+
+    let changed = false;
+    const questionsByDir = new Map(
+      result.questions.map((question) => [question.directoryName, question]),
+    );
+    const zones = [...result.assessment.infoJson.zones];
+    const remainingRefs: NonNullable<SerializedConversionResult['sourceBankRefs']> = [];
+    const removedWarningQuestionIds = new Set<string>();
+
+    for (const ref of refs) {
+      const bank = bankBySourceId.get(ref.sourceBankRef);
+      if (!bank || bank.questions.length === 0) {
+        remainingRefs.push(ref);
+        continue;
+      }
+
+      usedBankSourceIds.add(bank.sourceId);
+      changed = true;
+      removedWarningQuestionIds.add(ref.sourceBankRef);
+
+      for (const question of bank.questions) {
+        questionsByDir.set(question.directoryName, question);
+      }
+
+      const zoneQuestions: PLAssessmentQuestion[] = bank.questions.map((question) => {
+        const zoneQuestion: PLAssessmentQuestion = { id: question.directoryName };
+        if (question.infoJson.gradingMethod === 'Manual') {
+          if (ref.points != null) zoneQuestion.manualPoints = ref.points;
+        } else if (ref.points != null) {
+          zoneQuestion.autoPoints = ref.points;
+        }
+        return zoneQuestion;
+      });
+      zones.push({
+        title: ref.title,
+        questions: zoneQuestions,
+        ...(ref.numberChoose != null && ref.numberChoose < zoneQuestions.length
+          ? { numberChoose: ref.numberChoose }
+          : {}),
+      });
+    }
+
+    if (!changed) return result;
+
+    return {
+      ...result,
+      sourceBankRefs: remainingRefs.length > 0 ? remainingRefs : undefined,
+      assessment: {
+        ...result.assessment,
+        infoJson: {
+          ...result.assessment.infoJson,
+          zones,
+        },
+      },
+      questions: [...questionsByDir.values()],
+      warnings: result.warnings.filter(
+        (warning) =>
+          !(
+            removedWarningQuestionIds.has(warning.questionId) &&
+            warning.message.includes('Question bank reference')
+          ),
+      ),
+    };
+  });
+
+  const unmatchedBanks = includeUnmatchedBanks
+    ? bankResults.filter((result) => !usedBankSourceIds.has(result.sourceId))
+    : [];
+  return [...mergedPrimary, ...unmatchedBanks];
+}
+
+function mergeEmbeddedSourceBanks(
+  results: SerializedConversionResult[],
+): SerializedConversionResult[] {
+  const assessments = results.filter((result) => result.sourceType !== 'question-bank');
+  if (assessments.length === 0) return results;
+
+  return mergeSourceBankResults(assessments, results);
+}
+
 export function QtiImportForm({
   courseInstanceId,
   csrfToken,
   trpcCsrfToken,
+  returnTo,
 }: {
   courseInstanceId: string;
   csrfToken: string;
   trpcCsrfToken: string;
+  returnTo: 'assessments' | 'questions';
 }) {
   const [trpcClient] = useState(() =>
     createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
@@ -128,48 +233,57 @@ export function QtiImportForm({
   );
   const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<{ message: string; jobSequenceId?: string } | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    jobSequenceId?: string;
+    canRestart?: boolean;
+  } | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+
+  const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
+    const formData = new FormData(form);
+    const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+    const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        Accept: 'application/json',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let message = `Upload failed with status ${response.status}`;
+      try {
+        const body = await response.json();
+        if (typeof body?.error === 'string') {
+          message = body.error;
+        }
+      } catch {
+        // Response wasn't JSON; use default message.
+      }
+      throw new Error(message);
+    }
+
+    return response.json() as Promise<UploadResponse>;
+  };
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setError(null);
     setUploading(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
-      const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
-      const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken,
-          Accept: 'application/json',
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let message = `Upload failed with status ${response.status}`;
-        try {
-          const body = await response.json();
-          if (typeof body?.error === 'string') {
-            message = body.error;
-          }
-        } catch {
-          // Response wasn't JSON; use default message.
-        }
-        throw new Error(message);
-      }
-
-      const data: UploadResponse = await response.json();
+      const data = await uploadExport(form);
 
       if (data.results.length === 0 && data.parseWarnings.length === 0) {
-        throw new Error('No assessments found in the uploaded file');
+        throw new Error('No QTI content found in the uploaded file');
       }
 
       if (data.results.length === 0 && data.parseWarnings.length > 0) {
         throw new Error(
-          `All assessments failed to parse:\n${data.parseWarnings.map((w) => `  ${w.filename}: ${w.message}`).join('\n')}`,
+          `All QTI entries failed to parse:\n${data.parseWarnings.map((w) => `  ${w.filename}: ${w.message}`).join('\n')}`,
         );
       }
 
@@ -177,13 +291,14 @@ export function QtiImportForm({
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
       setParseWarnings(data.parseWarnings);
-      setResults(data.results);
+      const mergedResults = mergeEmbeddedSourceBanks(data.results);
+      setResults(mergedResults);
       if (data.assessmentSetNames.length > 0) {
         setAssessmentSetNames(data.assessmentSetNames);
       }
-      setOverrides(deduplicateAssessmentNumbers(data.results, data.existingAssessmentLabels));
-      setQuestionOverrides(buildInitialQuestionOverrides(data.results, dirs));
-      setStep('review');
+      setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
+      setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, dirs));
+      setStep(hasUnresolvedSourceBankRefs(mergedResults) ? 'missing-banks' : 'review');
     } catch (err) {
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
@@ -191,14 +306,57 @@ export function QtiImportForm({
     }
   };
 
+  const handleBankUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setError(null);
+    setUploading(true);
+
+    try {
+      const data = await uploadExport(form);
+      const previousUnresolvedCount = countUnresolvedSourceBankRefs(results);
+      const mergedResults = mergeSourceBankResults(results, data.results, {
+        includeUnmatchedBanks: false,
+      });
+      const unresolvedCount = countUnresolvedSourceBankRefs(mergedResults);
+      setResults(mergedResults);
+      setParseWarnings((prev) => [...prev, ...data.parseWarnings]);
+      setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, existingDirs));
+      setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
+      if (unresolvedCount >= previousUnresolvedCount) {
+        setError({
+          message:
+            'No matching question banks were found in that upload. Try another Canvas course export, or continue without the missing bank questions.',
+        });
+      }
+      setStep(hasUnresolvedSourceBankRefs(mergedResults) ? 'missing-banks' : 'review');
+    } catch (err) {
+      setError({ message: err instanceof Error ? err.message : 'Upload failed' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const getIncludedQuestionCount = (result: SerializedConversionResult) =>
+    result.questions.filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
+      .length;
+
   const handleCreate = async () => {
     setError(null);
     setStep('creating');
 
     try {
-      const includedAssessments = results
+      const includedResults = results
         .map((result, i) => ({ result, override: overrides[i] }))
-        .filter(({ override }) => override.included);
+        .filter(
+          ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
+        );
+      const includedAssessments = includedResults.filter(
+        ({ result }) => result.sourceType !== 'question-bank',
+      );
+      const includedQuestionCollections = includedResults.filter(
+        ({ result }) => result.sourceType === 'question-bank',
+      );
 
       // Deduplicate assessment directory names so two assessments with the
       // same title don't overwrite each other.
@@ -220,7 +378,7 @@ export function QtiImportForm({
       // consistent name rather than re-resolving per assessment.
       const allocatedDirs = new Set(existingDirs);
       const resolvedDirNames = new Map<string, string>();
-      for (const { result } of includedAssessments) {
+      for (const { result } of includedResults) {
         for (const q of result.questions) {
           if (resolvedDirNames.has(q.directoryName)) continue;
           const qOverride = questionOverrides.get(q.directoryName);
@@ -235,6 +393,28 @@ export function QtiImportForm({
       }
 
       const payload = {
+        questions: includedQuestionCollections.flatMap(({ result }) =>
+          result.questions
+            .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
+            .map((q) => {
+              const qOverride = questionOverrides.get(q.directoryName);
+              const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
+              return {
+                draftId: q.draftId,
+                originalDirectoryName: q.originalDirectoryName,
+                directoryName: dirName,
+                infoJson: {
+                  ...q.infoJson,
+                  ...(qOverride && {
+                    title: qOverride.title,
+                    topic: qOverride.topic,
+                    tags: qOverride.tags,
+                  }),
+                },
+                overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
+              };
+            }),
+        ),
         assessments: includedAssessments.map(({ result, override }) => {
           const includedQuestionDirs = new Set<string>();
 
@@ -245,6 +425,8 @@ export function QtiImportForm({
               const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
               includedQuestionDirs.add(dirName);
               return {
+                draftId: q.draftId,
+                originalDirectoryName: q.originalDirectoryName,
                 directoryName: dirName,
                 infoJson: {
                   ...q.infoJson,
@@ -254,9 +436,6 @@ export function QtiImportForm({
                     tags: qOverride.tags,
                   }),
                 },
-                questionHtml: q.questionHtml,
-                serverPy: q.serverPy,
-                clientFiles: q.clientFiles,
                 overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
               };
             });
@@ -298,7 +477,7 @@ export function QtiImportForm({
       if (payloadBytes > MAX_PAYLOAD_BYTES) {
         throw new Error(
           `The import payload is too large (${(payloadBytes / (1024 * 1024)).toFixed(1)} MB). ` +
-            'Try importing fewer assessments at once, or remove large image assets from the export before importing.',
+            'Try importing fewer items at once, or remove large image assets from the export before importing.',
         );
       }
 
@@ -315,13 +494,19 @@ export function QtiImportForm({
         return;
       }
 
-      window.location.href = `${getCourseInstanceBaseUrl(courseInstanceId)}/instructor/instance_admin/assessments`;
+      const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+      window.location.href =
+        returnTo === 'questions'
+          ? `${baseUrl}/instructor/course_admin/questions`
+          : `${baseUrl}/instructor/instance_admin/assessments`;
     } catch (err) {
       const appError = getAppError<QtiImportError['Create']>(err);
       if (appError?.code === 'SYNC_JOB_FAILED') {
         setError({ message: appError.message, jobSequenceId: appError.jobSequenceId });
+      } else if (appError?.code === 'QTI_IMPORT_DRAFT_UNAVAILABLE') {
+        setError({ message: appError.message, canRestart: true });
       } else {
-        setError({ message: err instanceof Error ? err.message : 'Failed to create assessments' });
+        setError({ message: err instanceof Error ? err.message : 'Failed to create QTI content' });
       }
       setStep('review');
     }
@@ -354,7 +539,22 @@ export function QtiImportForm({
     });
   };
 
-  const includedCount = overrides.filter((o) => o.included).length;
+  const includedAssessmentCount = results.filter(
+    (result, i) =>
+      overrides[i]?.included &&
+      result.sourceType !== 'question-bank' &&
+      getIncludedQuestionCount(result) > 0,
+  ).length;
+  const hasAssessmentResults = results.some((result) => result.sourceType !== 'question-bank');
+  const includedQuestionCount = results.reduce((count, result, i) => {
+    if (!overrides[i]?.included || result.sourceType !== 'question-bank') return count;
+    return count + getIncludedQuestionCount(result);
+  }, 0);
+  const canImport = includedAssessmentCount > 0 || includedQuestionCount > 0;
+  const importButtonLabel =
+    includedAssessmentCount > 0 || (hasAssessmentResults && includedQuestionCount === 0)
+      ? `Import ${includedAssessmentCount} assessment${includedAssessmentCount !== 1 ? 's' : ''}`
+      : `Import ${includedQuestionCount} question${includedQuestionCount !== 1 ? 's' : ''}`;
 
   const resetAll = () => {
     setStep('upload');
@@ -362,6 +562,7 @@ export function QtiImportForm({
     setOverrides([]);
     setExistingDirs(new Set());
     setStrippedRules(null);
+    setParseWarnings([]);
     setQuestionOverrides(new Map());
     setExpandedQuestions(new Set());
   };
@@ -385,10 +586,27 @@ export function QtiImportForm({
                 </Alert.Link>
               </>
             )}
+            {error.canRestart && (
+              <div className="mt-2">
+                <Button variant="outline-danger" size="sm" onClick={resetAll}>
+                  Start over
+                </Button>
+              </div>
+            )}
           </Alert>
         )}
 
         {step === 'upload' && <UploadStep uploading={uploading} onSubmit={handleUpload} />}
+
+        {step === 'missing-banks' && (
+          <MissingBanksStep
+            results={results}
+            uploading={uploading}
+            onSubmit={handleBankUpload}
+            onSkip={() => setStep('review')}
+            onStartOver={resetAll}
+          />
+        )}
 
         {step === 'review' && (
           <>
@@ -398,7 +616,7 @@ export function QtiImportForm({
               parseWarnings={parseWarnings}
             />
 
-            <ExternalBankWarnings results={results} />
+            <UnresolvedBankWarnings results={results} />
 
             <p className="text-muted">
               Review the assessments and questions below, then confirm to create them in your
@@ -422,6 +640,9 @@ export function QtiImportForm({
                       ({result.questions.length} question
                       {result.questions.length !== 1 ? 's' : ''})
                     </span>
+                    {result.sourceType === 'question-bank' && (
+                      <span className="badge color-blue3 ms-2">Question bank</span>
+                    )}
                   </div>
                 </Card.Header>
                 {result.questions.length === 0 && (
@@ -434,55 +655,57 @@ export function QtiImportForm({
                 )}
                 {overrides[i].included && result.questions.length > 0 && (
                   <Card.Body>
-                    <div className="row g-3 mb-3">
-                      <div className="col-md-6">
-                        <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
-                        <Form.Control
-                          id={`title-${i}`}
-                          type="text"
-                          value={overrides[i].title}
-                          onChange={(e) => updateOverride(i, { title: e.target.value })}
-                        />
+                    {result.sourceType !== 'question-bank' && (
+                      <div className="row g-3 mb-3">
+                        <div className="col-md-6">
+                          <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
+                          <Form.Control
+                            id={`title-${i}`}
+                            type="text"
+                            value={overrides[i].title}
+                            onChange={(e) => updateOverride(i, { title: e.target.value })}
+                          />
+                        </div>
+                        <div className="col-md-2">
+                          <Form.Label htmlFor={`type-${i}`}>Type</Form.Label>
+                          <Form.Select
+                            id={`type-${i}`}
+                            value={overrides[i].type}
+                            onChange={(e) =>
+                              updateOverride(i, {
+                                type: e.target.value as 'Homework' | 'Exam',
+                              })
+                            }
+                          >
+                            <option value="Homework">Homework</option>
+                            <option value="Exam">Exam</option>
+                          </Form.Select>
+                        </div>
+                        <div className="col-md-2">
+                          <Form.Label htmlFor={`set-${i}`}>Set</Form.Label>
+                          <Form.Select
+                            id={`set-${i}`}
+                            value={overrides[i].set}
+                            onChange={(e) => updateOverride(i, { set: e.target.value })}
+                          >
+                            {assessmentSetNames.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        </div>
+                        <div className="col-md-2">
+                          <Form.Label htmlFor={`number-${i}`}>Number</Form.Label>
+                          <Form.Control
+                            id={`number-${i}`}
+                            type="text"
+                            value={overrides[i].number}
+                            onChange={(e) => updateOverride(i, { number: e.target.value })}
+                          />
+                        </div>
                       </div>
-                      <div className="col-md-2">
-                        <Form.Label htmlFor={`type-${i}`}>Type</Form.Label>
-                        <Form.Select
-                          id={`type-${i}`}
-                          value={overrides[i].type}
-                          onChange={(e) =>
-                            updateOverride(i, {
-                              type: e.target.value as 'Homework' | 'Exam',
-                            })
-                          }
-                        >
-                          <option value="Homework">Homework</option>
-                          <option value="Exam">Exam</option>
-                        </Form.Select>
-                      </div>
-                      <div className="col-md-2">
-                        <Form.Label htmlFor={`set-${i}`}>Set</Form.Label>
-                        <Form.Select
-                          id={`set-${i}`}
-                          value={overrides[i].set}
-                          onChange={(e) => updateOverride(i, { set: e.target.value })}
-                        >
-                          {assessmentSetNames.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </div>
-                      <div className="col-md-2">
-                        <Form.Label htmlFor={`number-${i}`}>Number</Form.Label>
-                        <Form.Control
-                          id={`number-${i}`}
-                          type="text"
-                          value={overrides[i].number}
-                          onChange={(e) => updateOverride(i, { number: e.target.value })}
-                        />
-                      </div>
-                    </div>
+                    )}
 
                     <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
 
@@ -517,10 +740,10 @@ export function QtiImportForm({
               <Button
                 className="ms-auto"
                 variant="primary"
-                disabled={includedCount === 0}
+                disabled={!canImport}
                 onClick={() => void handleCreate()}
               >
-                Import {includedCount} assessment{includedCount !== 1 ? 's' : ''}
+                {importButtonLabel}
               </Button>
             </div>
           </>
@@ -529,7 +752,7 @@ export function QtiImportForm({
         {step === 'creating' && (
           <div className="text-center py-4">
             <Spinner className="mb-3" />
-            <p>Creating assessments and questions...</p>
+            <p>Creating QTI content...</p>
           </div>
         )}
       </Card.Body>
