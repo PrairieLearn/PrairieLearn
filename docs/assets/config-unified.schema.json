@@ -538,6 +538,10 @@
       "type": "number",
       "default": 60
     },
+    "cronIntervalCleanQtiImportDraftsSec": {
+      "type": "number",
+      "default": 3600
+    },
     "cronIntervalWorkspaceHostLoadsSec": {
       "type": "number",
       "default": 10
