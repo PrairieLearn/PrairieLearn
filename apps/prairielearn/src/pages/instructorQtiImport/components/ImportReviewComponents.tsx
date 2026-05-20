@@ -1,7 +1,5 @@
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
-import type { ConversionWarning } from '@prairielearn/question-conversion';
-
 import type {
   CollisionStrategy,
   ParseWarning,
@@ -17,41 +15,50 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
-export function ExternalBankWarnings({ results }: { results: SerializedConversionResult[] }) {
-  const externalWarnings = results.flatMap((r) =>
-    r.warnings.filter((w): w is ConversionWarning & { externalCourseId: string } =>
-      Boolean(w.externalCourseId),
-    ),
-  );
-  if (externalWarnings.length === 0) return null;
+function uniqueCanvasCourseIds(
+  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
+): string[] {
+  return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
+}
 
-  const courseIds = [...new Set(externalWarnings.map((w) => w.externalCourseId))];
+function CanvasCourseIdList({ courseIds }: { courseIds: string[] }) {
+  return (
+    <ul className="mb-0">
+      {courseIds.map((id) => (
+        <li key={id}>
+          Canvas course ID <strong>{id}</strong>{' '}
+          <span className="text-muted">
+            (find it at <code>/courses/{id}</code> on your Canvas instance)
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function UnresolvedBankWarnings({ results }: { results: SerializedConversionResult[] }) {
+  const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+  if (refs.length === 0) return null;
+
+  const courseIds = uniqueCanvasCourseIds(refs);
 
   return (
     <Alert variant="warning" className="mb-3">
       <div className="d-flex align-items-start gap-2">
         <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
         <div>
-          <strong>Some questions reference external question banks</strong>
+          <strong>Some question banks were not resolved</strong>
           <p className="mb-2 mt-1">
-            {externalWarnings.length} question group{externalWarnings.length !== 1 ? 's' : ''} in
-            this export pull from question banks that belong to a different Canvas course. These
-            questions are not included in this export and cannot be imported.
+            {refs.length} question bank reference{refs.length !== 1 ? 's' : ''} could not be matched
+            to uploaded bank content. Those questions will not be imported unless you start over and
+            upload a course export that contains the referenced banks.
           </p>
-          <p className="mb-1">
-            To import these questions, export the course that contains the original question banks
-            from Canvas and import it here first:
-          </p>
-          <ul className="mb-0">
-            {courseIds.map((id) => (
-              <li key={id}>
-                Canvas course ID <strong>{id}</strong>{' '}
-                <span className="text-muted">
-                  (find it at <code>/courses/{id}</code> on your Canvas instance)
-                </span>
-              </li>
-            ))}
-          </ul>
+          {courseIds.length > 0 && (
+            <>
+              <p className="mb-1">Canvas identified these source courses:</p>
+              <CanvasCourseIdList courseIds={courseIds} />
+            </>
+          )}
         </div>
       </div>
     </Alert>
@@ -101,6 +108,8 @@ export function ImportSummary({
   strippedAccessRules: StrippedAccessRules | null;
   parseWarnings: ParseWarning[];
 }) {
+  const totalAssessments = results.filter((r) => r.sourceType !== 'question-bank').length;
+  const totalQuestionBanks = results.filter((r) => r.sourceType === 'question-bank').length;
   const totalQuestions = results.reduce((sum, r) => sum + r.questions.length, 0);
   const totalAssets = results.reduce(
     (sum, r) => sum + r.questions.reduce((qSum, q) => qSum + Object.keys(q.clientFiles).length, 0),
@@ -148,9 +157,18 @@ export function ImportSummary({
               What can be imported
             </h2>
             <ul className="mb-0">
-              <li>
-                <strong>{results.length}</strong> assessment{results.length !== 1 ? 's' : ''}
-              </li>
+              {totalAssessments > 0 && (
+                <li>
+                  <strong>{totalAssessments}</strong> assessment
+                  {totalAssessments !== 1 ? 's' : ''}
+                </li>
+              )}
+              {totalQuestionBanks > 0 && (
+                <li>
+                  <strong>{totalQuestionBanks}</strong> question bank
+                  {totalQuestionBanks !== 1 ? 's' : ''}
+                </li>
+              )}
               <li>
                 <strong>{totalQuestions}</strong> question{totalQuestions !== 1 ? 's' : ''}
               </li>
@@ -226,6 +244,95 @@ export function UploadStep({
           </>
         )}
       </Button>
+    </form>
+  );
+}
+
+export function MissingBanksStep({
+  results,
+  uploading,
+  onSubmit,
+  onSkip,
+  onStartOver,
+}: {
+  results: SerializedConversionResult[];
+  uploading: boolean;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSkip: () => void;
+  onStartOver: () => void;
+}) {
+  const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+  const courseIds = uniqueCanvasCourseIds(refs);
+
+  return (
+    <form encType="multipart/form-data" onSubmit={onSubmit}>
+      <Alert variant="warning" className="mb-3">
+        <div className="d-flex align-items-start gap-2">
+          <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+          <div>
+            <strong>Some questions are in Canvas question banks</strong>
+            <p className="mb-2 mt-1">
+              This export references {refs.length} question bank{refs.length !== 1 ? 's' : ''} that
+              Canvas did not include. Upload a course export that contains the bank, and
+              PrairieLearn will add matching bank questions to the original assessment review.
+            </p>
+            {courseIds.length > 0 && (
+              <>
+                <p className="mb-1">Canvas identified these source courses:</p>
+                <CanvasCourseIdList courseIds={courseIds} />
+              </>
+            )}
+            {courseIds.length === 0 && (
+              <p className="mb-0">
+                Canvas did not identify the source course ID for these banks. Try uploading the full
+                Canvas course export for this course, or the course that contains the original
+                question banks.
+              </p>
+            )}
+          </div>
+        </div>
+      </Alert>
+
+      <div className="mb-3">
+        <Form.Label htmlFor="qti-bank-file">Question bank course export</Form.Label>
+        <Form.Control
+          id="qti-bank-file"
+          type="file"
+          name="file"
+          accept=".zip,.imscc"
+          disabled={uploading}
+          required
+        />
+        <Form.Text>Upload the Canvas course export that contains the referenced bank.</Form.Text>
+      </div>
+
+      <div className="d-flex gap-2">
+        <Button
+          variant="outline-secondary"
+          type="button"
+          disabled={uploading}
+          onClick={onStartOver}
+        >
+          <i className="bi bi-arrow-left me-1" aria-hidden="true" />
+          Start over
+        </Button>
+        <Button variant="outline-secondary" type="button" disabled={uploading} onClick={onSkip}>
+          Continue without bank
+        </Button>
+        <Button type="submit" variant="primary" disabled={uploading} className="ms-auto">
+          {uploading ? (
+            <>
+              <Spinner size="sm" className="me-2" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+              Upload bank export
+            </>
+          )}
+        </Button>
+      </div>
     </form>
   );
 }
