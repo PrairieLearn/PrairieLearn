@@ -158,6 +158,14 @@ export interface IRZone {
   numberChoose?: number;
 }
 
+export interface IRSourceBankRef {
+  sourceBankRef: string;
+  title: string;
+  numberChoose?: number;
+  points?: number;
+  externalCourseId?: string;
+}
+
 /** Assessment-level metadata extracted from QTI. */
 export interface IRAssessmentMeta {
   /** Time limit in minutes (from qmd_timelimit / time_limit). */
@@ -207,10 +215,12 @@ export interface IRParseWarning {
 export interface IRAssessment {
   sourceId: string;
   title: string;
+  sourceType?: 'assessment' | 'question-bank';
   /** Flat list of all questions (for backward compat / simple use). */
   questions: IRQuestion[];
   /** Questions organized by sections/zones. If present, preferred over flat `questions`. */
   zones?: IRZone[];
+  sourceBankRefs?: IRSourceBankRef[];
   /** Assessment-level metadata. */
   meta?: IRAssessmentMeta;
   /** Assessment-level rubric (resolved from course_settings/rubrics.xml when provided). */
