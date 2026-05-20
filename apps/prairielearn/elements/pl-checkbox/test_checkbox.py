@@ -165,6 +165,7 @@ def test_generate_help_text(case: HelpTextTestCase) -> None:
         has_max_select_attrib=case.has_max,
         min_options_to_select=case.min_val,
         max_options_to_select=case.max_val,
+        allow_blank=case.allow_blank,
     )
     assert result == case.expected
 
