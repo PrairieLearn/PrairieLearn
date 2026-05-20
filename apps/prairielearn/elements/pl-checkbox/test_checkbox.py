@@ -45,6 +45,7 @@ class HelpTextTestCase(NamedTuple):
     has_max: bool
     min_val: int
     max_val: int
+    allow_blank: bool
     expected: str
     id: str
 
