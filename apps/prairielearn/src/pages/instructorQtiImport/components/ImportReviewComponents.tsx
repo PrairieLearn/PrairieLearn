@@ -36,6 +36,28 @@ function CanvasCourseIdList({ courseIds }: { courseIds: string[] }) {
   );
 }
 
+function countReferencedBankQuestions(
+  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
+) {
+  return refs.reduce((sum, ref) => sum + (ref.numberChoose ?? 1), 0);
+}
+
+function sourceBankRefKey(ref: NonNullable<SerializedConversionResult['sourceBankRefs']>[number]) {
+  return ref.sourceBankExportId ?? ref.sourceBankRef;
+}
+
+function uniqueSourceBankRefs(
+  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
+): NonNullable<SerializedConversionResult['sourceBankRefs']> {
+  const seen = new Set<string>();
+  return refs.filter((ref) => {
+    const key = sourceBankRefKey(ref);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function UnresolvedBankWarnings({ results }: { results: SerializedConversionResult[] }) {
   const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
   if (refs.length === 0) return null;
@@ -251,21 +273,38 @@ export function UploadStep({
 export function MissingBanksStep({
   results,
   uploading,
+  successMessage,
   onSubmit,
   onSkip,
   onStartOver,
 }: {
   results: SerializedConversionResult[];
   uploading: boolean;
+  successMessage: string | null;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onSkip: () => void;
   onStartOver: () => void;
 }) {
   const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+  const uniqueRefs = uniqueSourceBankRefs(refs);
   const courseIds = uniqueCanvasCourseIds(refs);
+  const importedQuestionCount = results.reduce((sum, result) => sum + result.questions.length, 0);
+  const missingQuestionCount = countReferencedBankQuestions(refs);
+  const totalQuestionCount = importedQuestionCount + missingQuestionCount;
+  const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
+  const countPrefix = hasUnknownCounts ? 'At least ' : '';
 
   return (
-    <form encType="multipart/form-data" onSubmit={onSubmit}>
+    <>
+      {successMessage && (
+        <Alert variant="success" className="mb-3">
+          <div className="d-flex align-items-start gap-2">
+            <i className="bi bi-check-circle-fill mt-1" aria-hidden="true" />
+            <div>{successMessage}</div>
+          </div>
+        </Alert>
+      )}
+
       <Alert variant="warning" className="mb-3">
         <div className="d-flex align-items-start gap-2">
           <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
@@ -273,37 +312,90 @@ export function MissingBanksStep({
             <strong>Some questions are in Canvas question banks</strong>
             <p className="mb-2 mt-1">
               This export references {refs.length} question bank{refs.length !== 1 ? 's' : ''} that
-              Canvas did not include. Upload a course export that contains the bank, and
-              PrairieLearn will add matching bank questions to the original assessment review.
+              Canvas did not include. Use the file inputs below to upload exported content for each
+              missing bank, and PrairieLearn will add matching bank questions to the original
+              assessment review.
             </p>
-            {courseIds.length > 0 && (
-              <>
-                <p className="mb-1">Canvas identified these source courses:</p>
-                <CanvasCourseIdList courseIds={courseIds} />
-              </>
-            )}
-            {courseIds.length === 0 && (
-              <p className="mb-0">
-                Canvas did not identify the source course ID for these banks. Try uploading the full
-                Canvas course export for this course, or the course that contains the original
-                question banks.
+            {courseIds.length > 1 && (
+              <p className="mb-2">
+                Each input identifies the Canvas course that should contain that bank when Canvas
+                provided a course ID.
               </p>
             )}
+            <p className="mb-2">
+              {countPrefix}
+              <strong>{missingQuestionCount}</strong> of <strong>{totalQuestionCount}</strong>{' '}
+              question
+              {totalQuestionCount !== 1 ? 's' : ''} in this import will be missing without the
+              additional exported content.
+            </p>
           </div>
         </div>
       </Alert>
 
-      <div className="mb-3">
-        <Form.Label htmlFor="qti-bank-file">Question bank course export</Form.Label>
-        <Form.Control
-          id="qti-bank-file"
-          type="file"
-          name="file"
-          accept=".zip,.imscc"
-          disabled={uploading}
-          required
-        />
-        <Form.Text>Upload the Canvas course export that contains the referenced bank.</Form.Text>
+      <div className="d-flex flex-column gap-3 mb-3">
+        {uniqueRefs.map((ref, i) => {
+          const inputId = `qti-bank-file-${i}`;
+          const label = ref.externalCourseId
+            ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
+            : `Supplemental export for "${ref.title}"`;
+
+          return (
+            <form
+              key={sourceBankRefKey(ref)}
+              encType="multipart/form-data"
+              className="border rounded p-3"
+              onSubmit={onSubmit}
+            >
+              <div className="d-flex flex-column flex-md-row gap-3 align-items-md-end">
+                <div className="flex-grow-1">
+                  <div className="fw-semibold">{ref.title}</div>
+                  <div className="text-muted small mb-2">
+                    {ref.externalCourseId ? (
+                      <>
+                        Canvas course ID <strong>{ref.externalCourseId}</strong>{' '}
+                        <span>
+                          (find it at <code>/courses/{ref.externalCourseId}</code> on your Canvas
+                          instance)
+                        </span>
+                      </>
+                    ) : (
+                      'Canvas did not identify the source course ID for this bank.'
+                    )}
+                  </div>
+                  <Form.Label htmlFor={inputId}>{label}</Form.Label>
+                  <Form.Control
+                    id={inputId}
+                    type="file"
+                    name="file"
+                    accept=".zip,.imscc"
+                    disabled={uploading}
+                    required
+                  />
+                  <Form.Text>Upload the Canvas course export that contains this bank.</Form.Text>
+                </div>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={uploading}
+                  aria-label={`Upload export for ${ref.title}`}
+                >
+                  {uploading ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                      Upload export
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          );
+        })}
       </div>
 
       <div className="d-flex gap-2">
@@ -319,21 +411,8 @@ export function MissingBanksStep({
         <Button variant="outline-secondary" type="button" disabled={uploading} onClick={onSkip}>
           Continue without bank
         </Button>
-        <Button type="submit" variant="primary" disabled={uploading} className="ms-auto">
-          {uploading ? (
-            <>
-              <Spinner size="sm" className="me-2" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
-              Upload bank export
-            </>
-          )}
-        </Button>
       </div>
-    </form>
+    </>
   );
 }
 
