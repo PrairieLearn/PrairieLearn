@@ -56,7 +56,15 @@ export class PLEmitter implements OutputEmitter {
 
     const assessmentOutput = this.emitAssessment(assessment, questions, options);
 
-    return { assessmentTitle: assessment.title, assessment: assessmentOutput, questions, warnings };
+    return {
+      sourceId: assessment.sourceId,
+      assessmentTitle: assessment.title,
+      sourceType: assessment.sourceType,
+      sourceBankRefs: assessment.sourceBankRefs,
+      assessment: assessmentOutput,
+      questions,
+      warnings,
+    };
   }
 
   private emitAssessment(

@@ -1,4 +1,4 @@
-import type { IRAssessment } from '../types/ir.js';
+import type { IRAssessment, IRSourceBankRef } from '../types/ir.js';
 import type { PLAssessmentOutput, PLQuestionOutput } from '../types/pl-output.js';
 
 /** A warning produced during conversion. */
@@ -21,7 +21,10 @@ export interface EmitOptions {
 
 /** Result of converting an assessment. */
 export interface ConversionResult {
+  sourceId: string;
   assessmentTitle: string;
+  sourceType?: 'assessment' | 'question-bank';
+  sourceBankRefs?: IRSourceBankRef[];
   assessment: PLAssessmentOutput;
   questions: PLQuestionOutput[];
   warnings: ConversionWarning[];

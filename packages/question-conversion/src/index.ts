@@ -30,6 +30,7 @@ export type {
   IRQuestionBody,
   IRZone,
   IRZoneQuestion,
+  IRSourceBankRef,
   IRChoice,
   IRMatchPair,
   IRMatchDistractor,
