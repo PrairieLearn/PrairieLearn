@@ -361,7 +361,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
 // Types
 // ---------------------------------------------------------------------------
 
-export interface DiffRubricState {
+interface DiffRubricState {
   settings: Record<string, unknown> | null;
   rubric_items: Record<string, unknown>[];
 }
@@ -1292,7 +1292,7 @@ function buildRubricToolsWithExecute({
 // Agent factory
 // ---------------------------------------------------------------------------
 
-export function createRubricAgent({
+function createRubricAgent({
   phase,
   context,
   model,
@@ -1357,7 +1357,7 @@ export function createRubricAgent({
 // Public API
 // ---------------------------------------------------------------------------
 
-export async function restoreRubricFromSnapshot({
+async function restoreRubricFromSnapshot({
   assessment,
   assessmentQuestion,
   authnUserId,
