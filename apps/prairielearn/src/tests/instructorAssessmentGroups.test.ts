@@ -186,7 +186,7 @@ describe('Instructor group controls', () => {
     const body = await response.text();
     assert.include(body, 'Editing group settings requires course editor permissions.');
     assert.include(body, 'Editing group memberships requires student data editor permissions.');
-    assert.notInclude(body, 'Add group');
+    assert.lengthOf(response.$('button:contains("Add group")'), 0);
     assert.include(body, users[0].uid);
     assert.include(body, users[1].uid);
   });
@@ -209,7 +209,7 @@ describe('Instructor group controls', () => {
       body,
       'Disabling group work requires course editor permissions because it changes group settings.',
     );
-    assert.include(body, 'Add group');
+    assert.lengthOf(response.$('button:contains("Add group"):not(:disabled)'), 1);
     assert.include(body, users[0].uid);
     assert.include(body, users[1].uid);
   });
