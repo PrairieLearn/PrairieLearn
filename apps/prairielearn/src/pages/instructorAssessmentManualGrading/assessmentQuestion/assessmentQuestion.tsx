@@ -720,6 +720,7 @@ router.post(
           tag_for_manual_grading: req.body.tag_for_manual_grading,
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
+          check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
         });
         const updatedAssessmentQuestion = await selectAssessmentQuestionById(
           res.locals.assessment_question.id,
@@ -734,7 +735,11 @@ router.post(
             : null;
         res.json({ rubric_data, aiGradingStats });
       } catch (err) {
-        res.status(500).send({ err: String(err) });
+        if (err instanceof manualGrading.RubricModifiedAtConflictError) {
+          res.status(409).send({ err: err.message });
+        } else {
+          res.status(500).send({ err: String(err) });
+        }
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

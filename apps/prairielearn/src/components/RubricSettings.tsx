@@ -125,14 +125,19 @@ export function RubricSettings({
   );
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<{
+    message: string;
+    isConflict: boolean;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
-  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
+  const [modifiedAt, setModifiedAt] = useState<Date | null>(
+    rubricData?.rubric.modified_at != null ? new Date(rubricData.rubric.modified_at) : null,
+  );
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
   const [showSavedNotification, setShowSavedNotification] = useState(false);
 
@@ -197,7 +202,9 @@ export function RubricSettings({
     setMaxExtraPoints(defaultMaxExtraPointsRef.current);
     setGraderGuidelines(defaultGraderGuidelinesRef.current);
     setWasUsingRubric(Boolean(rubricData?.rubric));
-    setModifiedAt(rubricData?.rubric.modified_at ?? null);
+    setModifiedAt(
+      rubricData?.rubric.modified_at != null ? new Date(rubricData.rubric.modified_at) : null,
+    );
   }
 
   // Derived totals/warnings
@@ -524,7 +531,7 @@ export function RubricSettings({
           data = { err: `Error: ${res.statusText}` };
         }
         if (data.err) {
-          return setSettingsError(data.err);
+          return setSettingsError({ message: String(data.err), isConflict: res.status === 409 });
         }
       }
       // Need to handle response separated for assessment question and instance question pages
@@ -1077,12 +1084,26 @@ export function RubricSettings({
             )}
             {settingsError && (
               <Alert
-                key={settingsError}
+                key={settingsError.message}
                 variant="danger"
                 dismissible
                 onClose={() => setSettingsError(null)}
               >
-                {settingsError}
+                {settingsError.isConflict ? (
+                  <>
+                    Someone else updated this rubric.{' '}
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 align-baseline"
+                      onClick={() => window.location.reload()}
+                    >
+                      Reload
+                    </button>{' '}
+                    to see their changes.
+                  </>
+                ) : (
+                  settingsError.message
+                )}
               </Alert>
             )}
 

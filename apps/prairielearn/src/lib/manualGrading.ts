@@ -258,6 +258,13 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param params.grader_guidelines - General guidance and instructions for applying and interpreting the rubric.
  * @param params.authn_user_id - The user_id of the logged in user.
  */
+export class RubricModifiedAtConflictError extends Error {
+  constructor() {
+    super('Someone else updated this rubric.');
+    this.name = 'RubricModifiedAtConflictError';
+  }
+}
+
 export async function updateAssessmentQuestionRubric({
   assessment,
   assessment_question_id,
@@ -270,6 +277,7 @@ export async function updateAssessmentQuestionRubric({
   tag_for_manual_grading,
   grader_guidelines,
   authn_user_id,
+  check_modified_at,
 }: {
   assessment: Assessment;
   assessment_question_id: string;
@@ -282,6 +290,13 @@ export async function updateAssessmentQuestionRubric({
   tag_for_manual_grading: boolean;
   grader_guidelines: string | null;
   authn_user_id: string;
+  /**
+   * If provided and an existing rubric is being updated, the rubric's current
+   * `modified_at` must match this value (milliseconds precision). Throws
+   * {@link RubricModifiedAtConflictError} on mismatch. Pass `null`/omit to skip
+   * the check (e.g. for the AI grading agent, which always wins).
+   */
+  check_modified_at?: Date | null;
 }): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
@@ -328,6 +343,23 @@ export async function updateAssessmentQuestionRubric({
 
     const current_rubric_id = assessment_question.manual_rubric_id;
     let new_rubric_id = current_rubric_id;
+
+    // Optimistic concurrency: reject if the rubric has been modified since the
+    // caller read it. Only checked when updating an existing rubric — first
+    // creation has nothing to compare against.
+    if (check_modified_at != null && current_rubric_id !== null) {
+      const current_modified_at = await sqldb.queryOptionalRow(
+        sql.select_rubric_modified_at,
+        { rubric_id: current_rubric_id },
+        z.object({ modified_at: z.date() }),
+      );
+      if (
+        current_modified_at != null &&
+        current_modified_at.modified_at.getTime() !== check_modified_at.getTime()
+      ) {
+        throw new RubricModifiedAtConflictError();
+      }
+    }
 
     if (!use_rubric) {
       // Rubric exists, but should not exist, remove
