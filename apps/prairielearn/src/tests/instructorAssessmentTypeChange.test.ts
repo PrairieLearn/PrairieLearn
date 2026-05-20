@@ -223,7 +223,7 @@ describe('Changing assessment type', () => {
       assert.equal(dbAssessment.type, 'Homework');
     });
 
-    test.sequential('strips allowRealTimeGrading: false from nested levels', async () => {
+    test.sequential('strips allowRealTimeGrading from nested levels', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -236,7 +236,7 @@ describe('Changing assessment type', () => {
             allowRealTimeGrading: false,
             questions: [
               {
-                allowRealTimeGrading: false,
+                allowRealTimeGrading: true,
                 alternatives: [{ id: 'test/question', autoPoints: 5, allowRealTimeGrading: false }],
               },
             ],

@@ -706,7 +706,7 @@ const changeAssessmentType = t.procedure
           delete info.allowRealTimeGrading;
 
           for (const { block, location } of iterateAssessmentBlocks(info)) {
-            if (block.allowRealTimeGrading === false) delete block.allowRealTimeGrading;
+            delete block.allowRealTimeGrading;
             if (location.kind === 'zone') continue;
             if (Array.isArray(block.points)) block.points = block.points[0];
             if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
