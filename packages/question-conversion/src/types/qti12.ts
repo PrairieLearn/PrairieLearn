@@ -43,6 +43,5 @@ export interface QTI12ParsedAssessment {
   ident: string;
   title: string;
   metadata: Record<string, string>;
-  items: QTI12ParsedItem[];
   sourcePath?: string;
 }
