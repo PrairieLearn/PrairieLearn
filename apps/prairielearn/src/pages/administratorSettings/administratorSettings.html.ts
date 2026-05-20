@@ -328,7 +328,12 @@ export function AdministratorSettings({
                             fold them in.
                           </div>
                         </div>
-                        <button class="btn btn-primary" name="__action" value="run_ai_grading_eval">
+                        <button
+                          type="submit"
+                          class="btn btn-primary"
+                          name="__action"
+                          value="run_ai_grading_eval"
+                        >
                           Run AI grading eval
                         </button>
                       </form>
@@ -364,7 +369,12 @@ export function AdministratorSettings({
                             required
                           />
                         </div>
-                        <button class="btn btn-primary" name="__action" value="upload_verdicts_csv">
+                        <button
+                          type="submit"
+                          class="btn btn-primary"
+                          name="__action"
+                          value="upload_verdicts_csv"
+                        >
                           Upload and commit
                         </button>
                       </form>
@@ -374,6 +384,7 @@ export function AdministratorSettings({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
+                    type="submit"
                     class="btn btn-outline-danger"
                     name="__action"
                     value="delete_ai_grading_eval_courses"
