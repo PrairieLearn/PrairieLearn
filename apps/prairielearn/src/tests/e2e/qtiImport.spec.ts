@@ -195,7 +195,8 @@ async function buildExternalBankAssessmentZip(
         <selection_ordering>
           <selection>
             <selection_number>1</selection_number>
-            <sourcebank_ref>external_bank_1</sourcebank_ref>
+            <sourcebank_ref>12345</sourcebank_ref>
+            <sourcebank_export_id>external_bank_1</sourcebank_export_id>
             <selection_extension>
               <points_per_item>2</points_per_item>
               ${
@@ -219,12 +220,69 @@ async function buildExternalBankAssessmentZip(
   await pipeline(archive, output);
 }
 
-async function buildQuestionBankZip(destPath: string): Promise<void> {
+async function buildMultiExternalBankAssessmentZip(destPath: string): Promise<void> {
   const qtiXml = `<?xml version="1.0" encoding="UTF-8"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
-  <objectbank ident="external_bank_1" title="External Bank">
+  <assessment ident="test_assess_multi_bank_ref" title="E2E Multi Bank Ref Quiz">
     <section ident="root_section">
-      <item ident="bank_q_1" title="Imported Bank Question">
+      <section ident="bank_section_1" title="Bank Questions 1">
+        <selection_ordering>
+          <selection>
+            <selection_number>1</selection_number>
+            <sourcebank_ref>12345</sourcebank_ref>
+            <sourcebank_export_id>external_bank_1</sourcebank_export_id>
+            <selection_extension>
+              <points_per_item>2</points_per_item>
+              <sourcebank_is_external>true</sourcebank_is_external>
+              <sourcebank_context>course_12345</sourcebank_context>
+            </selection_extension>
+          </selection>
+        </selection_ordering>
+      </section>
+      <section ident="bank_section_2" title="Bank Questions 2">
+        <selection_ordering>
+          <selection>
+            <selection_number>1</selection_number>
+            <sourcebank_ref>67890</sourcebank_ref>
+            <sourcebank_export_id>external_bank_2</sourcebank_export_id>
+            <selection_extension>
+              <points_per_item>3</points_per_item>
+              <sourcebank_is_external>true</sourcebank_is_external>
+              <sourcebank_context>course_67890</sourcebank_context>
+            </selection_extension>
+          </selection>
+        </selection_ordering>
+      </section>
+    </section>
+  </assessment>
+</questestinterop>`;
+
+  const archive = archiver('zip');
+  const output = createWriteStream(destPath);
+  archive.append(qtiXml, { name: 'multi-bank-ref.xml' });
+  void archive.finalize();
+  await pipeline(archive, output);
+}
+
+async function buildQuestionBankZip(
+  destPath: string,
+  {
+    bankId = 'external_bank_1',
+    questionId = 'bank_q_1',
+    title = 'External Bank',
+    questionTitle = 'Imported Bank Question',
+  }: {
+    bankId?: string;
+    questionId?: string;
+    title?: string;
+    questionTitle?: string;
+  } = {},
+): Promise<void> {
+  const qtiXml = `<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="${bankId}" title="${title}">
+    <section ident="root_section">
+      <item ident="${questionId}" title="${questionTitle}">
         <itemmetadata>
           <qtimetadata>
             <qtimetadatafield>
@@ -452,11 +510,18 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByText('Canvas did not identify the source course ID')).toBeVisible();
+    await expect(
+      page.getByText(
+        '1 of 1 question in this import will be missing without the additional exported content.',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Canvas did not identify the source course ID for this bank.'),
+    ).toBeVisible();
     await expect(page.getByText('Canvas course ID')).not.toBeVisible();
 
-    await page.getByLabel('Question bank course export').setInputFiles(bankZipPath);
-    await page.getByRole('button', { name: 'Upload bank export' }).click();
+    await page.getByLabel('Supplemental export for "Bank Questions"').setInputFiles(bankZipPath);
+    await page.getByRole('button', { name: 'Upload export for Bank Questions' }).click();
 
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('E2E Bank Ref Quiz')).toBeVisible();
@@ -488,16 +553,88 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
       timeout: 15000,
     });
+    await expect(
+      page.getByText(
+        '1 of 1 question in this import will be missing without the additional exported content.',
+      ),
+    ).toBeVisible();
     await expect(page.getByText('Canvas course ID')).toBeVisible();
     await expect(page.getByText('12345', { exact: true })).toBeVisible();
 
-    await page.getByLabel('Question bank course export').setInputFiles(bankZipPath);
-    await page.getByRole('button', { name: 'Upload bank export' }).click();
+    await page
+      .getByLabel('Supplemental export for "Bank Questions" from Canvas course 12345')
+      .setInputFiles(bankZipPath);
+    await page.getByRole('button', { name: 'Upload export for Bank Questions' }).click();
 
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('E2E Bank Ref Quiz')).toBeVisible();
     await expect(page.getByText('(1 question)')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
+  });
+
+  test('shows success after partially resolving missing question banks', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('qti-content-import');
+
+    const assessmentZipPath = path.join(testCoursePath, 'qti-multi-bank-ref.zip');
+    const firstBankZipPath = path.join(testCoursePath, 'qti-first-bank.zip');
+    const secondBankZipPath = path.join(testCoursePath, 'qti-second-bank.zip');
+    await buildMultiExternalBankAssessmentZip(assessmentZipPath);
+    await buildQuestionBankZip(firstBankZipPath);
+    await buildQuestionBankZip(secondBankZipPath, {
+      bankId: 'external_bank_2',
+      questionId: 'bank_q_2',
+      title: 'Second External Bank',
+      questionTitle: 'Second Imported Bank Question',
+    });
+
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
+    );
+    await page.waitForSelector('.js-hydrated-component');
+
+    await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+
+    await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        '2 of 2 questions in this import will be missing without the additional exported content.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByText('12345', { exact: true })).toBeVisible();
+    await expect(page.getByText('67890', { exact: true })).toBeVisible();
+
+    await page
+      .getByLabel('Supplemental export for "Bank Questions 1" from Canvas course 12345')
+      .setInputFiles(firstBankZipPath);
+    await page.getByRole('button', { name: 'Upload export for Bank Questions 1' }).click();
+
+    await expect(page.getByText('Matched 1 question bank from that upload.')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        '1 of 2 questions in this import will be missing without the additional exported content.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByText('12345', { exact: true })).not.toBeVisible();
+    await expect(page.getByText('67890', { exact: true })).toBeVisible();
+
+    await page
+      .getByLabel('Supplemental export for "Bank Questions 2" from Canvas course 67890')
+      .setInputFiles(secondBankZipPath);
+    await page.getByRole('button', { name: 'Upload export for Bank Questions 2' }).click();
+
+    await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('E2E Multi Bank Ref Quiz')).toBeVisible();
+    await expect(page.getByText('(2 questions)')).toBeVisible();
   });
 
   test('can complete the full import flow', async ({
