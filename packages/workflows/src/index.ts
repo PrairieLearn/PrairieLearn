@@ -11,6 +11,7 @@ export {
   appendWorkflowOutput,
   startRecoveryLoop,
   stopRecoveryLoop,
+  WorkflowConflictError,
 } from './workflows.js';
 
 export type {

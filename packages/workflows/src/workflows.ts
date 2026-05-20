@@ -18,6 +18,21 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Thrown when an operation cannot proceed because the workflow run is not in
+ * the expected status (e.g. attempting to continue a run that is not
+ * `'waiting'`).
+ */
+export class WorkflowConflictError extends Error {
+  constructor(
+    message: string,
+    public readonly runId: string,
+  ) {
+    super(message);
+    this.name = 'WorkflowConflictError';
+  }
+}
+
 const pool = new PostgresPool();
 
 const registeredWorkflows = new Map<string, WorkflowDefinition<any>>();
@@ -211,7 +226,10 @@ export async function continueWorkflow<TState extends Record<string, unknown>>(
   });
 
   if (rowCount === 0) {
-    throw new Error(`Cannot continue workflow ${runId}: not found or not in 'waiting' status`);
+    throw new WorkflowConflictError(
+      `Cannot continue workflow ${runId}: not found or not in 'waiting' status`,
+      runId,
+    );
   }
 
   // Resume execution asynchronously
