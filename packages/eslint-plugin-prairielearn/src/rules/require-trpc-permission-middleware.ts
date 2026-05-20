@@ -23,6 +23,7 @@ const { findVariable } = ASTUtils;
  * Recognized permission middlewares:
  * - requireCoursePermissionPreview / View / Edit / Own
  * - requireCourseInstancePermissionPreview / View / Edit / Own
+ * - Or-combinations of the above, e.g. requireCoursePermissionEditOrCourseInstancePermissionView
  * - requireAdministrator
  *
  * Feature gates like `requireEnhancedAccessControl` and `requireAiGradingFeature`
@@ -36,7 +37,7 @@ const { findVariable } = ASTUtils;
 // TODO: This list requires manual maintenance. We should consider making feature gates
 // not use the `require` prefix, and then we can use a more generic pattern here.
 const PERMISSION_MIDDLEWARE_PATTERN =
-  /^require(Course|CourseInstance)Permission(Preview|View|Edit|Own)$|^requireAdministrator$/;
+  /^require(Course|CourseInstance)Permission(Preview|View|Edit|Own)(Or(Course|CourseInstance)Permission(Preview|View|Edit|Own))*$|^requireAdministrator$/;
 const TERMINAL_METHODS = new Set(['query', 'mutation', 'subscription']);
 
 function unwrapMemberObject(expr: TSESTree.Expression): TSESTree.Expression {

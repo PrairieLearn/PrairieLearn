@@ -85,7 +85,6 @@ const validateUids = t.procedure
     });
   });
 
-// eslint-disable-next-line @prairielearn/require-trpc-permission-middleware -- This metadata is available to either course editors or student data viewers.
 const studentLabels = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
@@ -94,7 +93,6 @@ const studentLabels = t.procedure
     return labels.map((label) => StaffStudentLabelSchema.parse(label));
   });
 
-// eslint-disable-next-line @prairielearn/require-trpc-permission-middleware -- This metadata is available to either course editors or student data viewers.
 const prairieTestExamMetadata = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
