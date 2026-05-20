@@ -71,6 +71,7 @@ def generate_grading_text(
     insert_text: str,
     num_display_answers: int,
     partial_credit_mode: PartialCreditType,
+    allow_blank: bool,
 ) -> str:
     """Generate grading text for checkbox element."""
     grading_key = ""
@@ -92,6 +93,7 @@ def generate_grading_text(
         grading_key: True,
         "insert_text": insert_text,
         "num_display_answers": num_display_answers,
+        "allow_blank": allow_blank,
     }
 
     with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -108,6 +110,7 @@ def generate_insert_text(
     has_max_select_attrib: bool,
     min_options_to_select: int,
     max_options_to_select: int,
+    allow_blank: bool,
 ) -> str:
     """Generate help text for checkbox element.
 
@@ -137,15 +140,20 @@ def generate_insert_text(
 
     if detailed_help_text or (show_min_select and show_max_select):
         if min_options_to_select != max_options_to_select:
-            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
+            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
         else:
-            insert_text = f" exactly <b>{min_options_to_select}</b> options."
+            insert_text = f" exactly <b>{min_options_to_select}</b> options"
     elif show_min_select:
-        insert_text = f" at least <b>{min_options_to_select}</b> options."
+        insert_text = f" at least <b>{min_options_to_select}</b> options"
     elif show_max_select:
-        insert_text = f" at most <b>{max_options_to_select}</b> options."
+        insert_text = f" at most <b>{max_options_to_select}</b> options"
     else:
-        insert_text = " at least 1 option."
+        insert_text = " at least 1 option"
+
+    if allow_blank:
+        insert_text += " (you may also skip this question by leaving it blank)."
+    else:
+        insert_text += "."
 
     insert_text += number_correct_text
 
@@ -560,6 +568,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             has_max_select_attrib = pl.has_attrib(element, "max-select")
             num_display_answers = len(display_answers)
 
+            allow_blank = pl.get_boolean_attrib(
+                element, "allow-blank", ALLOW_BLANK_DEFAULT
+            )
+
             insert_text = generate_insert_text(
                 num_correct=len(correct_answer_list),
                 num_display_answers=num_display_answers,
@@ -569,6 +581,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 has_max_select_attrib=has_max_select_attrib,
                 min_options_to_select=min_options_to_select,
                 max_options_to_select=max_options_to_select,
+                allow_blank=allow_blank,
             )
 
             number_correct_text = generate_number_correct_text(
@@ -594,9 +607,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
                 partial_credit_mode=partial_credit_mode,
-            )
-            allow_blank = pl.get_boolean_attrib(
-                element, "allow-blank", ALLOW_BLANK_DEFAULT
+                allow_blank=allow_blank,
             )
 
         html_params: dict[str, Any] = {
@@ -781,10 +792,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         score = 1 - 1.0 * number_wrong / number_answers
     elif partial_credit_mode is PartialCreditType.COVERAGE:
-        n_correct_answers = len(correct_set & submitted_set)
-        base_score = n_correct_answers / len(correct_set)
-        guessing_factor = n_correct_answers / len(submitted_set)
-        score = base_score * guessing_factor
+        allow_blank = pl.get_boolean_attrib(
+            element, "allow-blank", ALLOW_BLANK_DEFAULT
+        )
+        if(allow_blank and len(submitted_set) == 0):
+            score = 0
+        else:
+            n_correct_answers = len(correct_set & submitted_set)
+            base_score = n_correct_answers / len(correct_set)
+            guessing_factor = n_correct_answers / len(submitted_set)
+            score = base_score * guessing_factor
     else:
         assert_never(partial_credit_mode)
 
@@ -855,10 +872,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             )
             score = 1 - 1.0 * number_wrong / number_answers
         elif partial_credit_mode is PartialCreditType.COVERAGE:
-            n_correct_answers = len(set(correct_keys) & set(ans))
-            base_score = n_correct_answers / len(set(correct_keys))
-            guessing_factor = n_correct_answers / len(set(ans))
-            score = base_score * guessing_factor
+            allow_blank = pl.get_boolean_attrib(
+                element, "allow-blank", ALLOW_BLANK_DEFAULT
+            )
+            if(allow_blank and len(correct_keys) == 0):
+                score = 0
+            else:
+                n_correct_answers = len(set(correct_keys) & set(ans))
+                base_score = n_correct_answers / len(set(correct_keys))
+                guessing_factor = n_correct_answers / len(set(ans))
+                score = base_score * guessing_factor
         else:
             assert_never(partial_credit_mode)
 
