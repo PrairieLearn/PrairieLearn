@@ -138,7 +138,7 @@ function mergeSourceBankResults(
     const removedWarningQuestionIds = new Set<string>();
 
     for (const ref of refs) {
-      const bank = bankBySourceId.get(ref.sourceBankRef);
+      const bank = bankBySourceId.get(ref.sourceBankExportId ?? ref.sourceBankRef);
       if (!bank || bank.questions.length === 0) {
         remainingRefs.push(ref);
         continue;
@@ -238,6 +238,7 @@ export function QtiImportForm({
     jobSequenceId?: string;
     canRestart?: boolean;
   } | null>(null);
+  const [supplementalSuccessMessage, setSupplementalSuccessMessage] = useState<string | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
@@ -272,6 +273,7 @@ export function QtiImportForm({
     e.preventDefault();
     const form = e.currentTarget;
     setError(null);
+    setSupplementalSuccessMessage(null);
     setUploading(true);
 
     try {
@@ -310,6 +312,7 @@ export function QtiImportForm({
     e.preventDefault();
     const form = e.currentTarget;
     setError(null);
+    setSupplementalSuccessMessage(null);
     setUploading(true);
 
     try {
@@ -328,6 +331,11 @@ export function QtiImportForm({
           message:
             'No matching question banks were found in that upload. Try another Canvas course export, or continue without the missing bank questions.',
         });
+      } else if (unresolvedCount > 0) {
+        const matchedCount = previousUnresolvedCount - unresolvedCount;
+        setSupplementalSuccessMessage(
+          `Matched ${matchedCount} question bank${matchedCount !== 1 ? 's' : ''} from that upload. Upload the remaining exported content to resolve the rest.`,
+        );
       }
       setStep(hasUnresolvedSourceBankRefs(mergedResults) ? 'missing-banks' : 'review');
     } catch (err) {
@@ -565,6 +573,7 @@ export function QtiImportForm({
     setParseWarnings([]);
     setQuestionOverrides(new Map());
     setExpandedQuestions(new Set());
+    setSupplementalSuccessMessage(null);
   };
 
   return (
@@ -602,6 +611,7 @@ export function QtiImportForm({
           <MissingBanksStep
             results={results}
             uploading={uploading}
+            successMessage={supplementalSuccessMessage}
             onSubmit={handleBankUpload}
             onSkip={() => setStep('review')}
             onStartOver={resetAll}
