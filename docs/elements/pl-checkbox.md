@@ -20,8 +20,8 @@ as checkboxes.
 
 ## Customizations
 
-| Attribute             | Type    | Default         | Description                                                                                                                                                                                                                          |
-| --------------------- | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Attribute             | Type    | Default         | Description                                                                                                                                                                                                                                                                         |
+| --------------------- | ------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `allow-blank`         | boolean | false           | Whether an empty submission is allowed. When `"false"` (default), empty submissions will not be graded (invalid format); when `"true"`, empty submissions will be assigned a score of 0.                                                                                            |
 | `answers-name`        | string  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                |
 | `detailed-help-text`  | boolean | false           | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.                                                                                                                                                                |
@@ -85,7 +85,8 @@ The `min-select` and `max-select` attributes determine the minimum and maximum n
 
 1. If the `min-select` attribute is explicitly set, then we use the specified value of `min-select`.
 2. If `min-select` is not specified, but `min-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
-3. If steps 1 and 2 do not apply, then we use a default value of 0.
+3. If steps 1 and 2 do not apply, then we use a default value of 1.
+4. If `allow-blank="true"` and the submission is blank, `min-select` is not enforced.
 
 To compute `max-select`, we use a similar algorithm (note the different default value in step 3):
 
