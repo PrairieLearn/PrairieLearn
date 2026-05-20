@@ -9,7 +9,7 @@ import { type ServerJob } from '../../../lib/server-jobs.js';
 
 import { type LoadedEval } from './manifest.js';
 
-export type Verdict = 'correct' | 'incorrect';
+type Verdict = 'correct' | 'incorrect';
 
 export interface VerdictEntry {
   case_id: string;
@@ -23,7 +23,7 @@ export interface VerdictEntry {
   notes: string | null;
 }
 
-export interface VerdictMapValue {
+interface VerdictMapValue {
   verdict: Verdict;
   source: string;
 }

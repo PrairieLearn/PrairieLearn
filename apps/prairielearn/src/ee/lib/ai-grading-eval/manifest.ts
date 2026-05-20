@@ -8,7 +8,7 @@ import { z } from 'zod';
 // so allow `/` and `.` in addition to the QID-style slug characters.
 const QID_REGEX = /^[A-Za-z0-9_][A-Za-z0-9_./-]*$/;
 
-export const EvalEntrySchema = z.object({
+const EvalEntrySchema = z.object({
   id: z
     .string()
     .min(1)
@@ -28,15 +28,15 @@ export const EvalEntrySchema = z.object({
    */
   group_work: z.boolean().default(false),
 });
-export type EvalEntry = z.infer<typeof EvalEntrySchema>;
+type EvalEntry = z.infer<typeof EvalEntrySchema>;
 
-export const EvalsManifestSchema = z.object({
+const EvalsManifestSchema = z.object({
   name: z.string().min(1),
   evals: z.array(EvalEntrySchema).min(1),
 });
 export type EvalsManifest = z.infer<typeof EvalsManifestSchema>;
 
-export const RubricItemSchema = z.object({
+const RubricItemSchema = z.object({
   order: z.number().int().nonnegative(),
   points: z.number(),
   description: z.string(),
@@ -46,7 +46,7 @@ export const RubricItemSchema = z.object({
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
-export const RubricFileSchema = z
+const RubricFileSchema = z
   .object({
     max_extra_points: z.number().default(0),
     min_points: z.number().default(0),
@@ -81,7 +81,7 @@ export interface LoadedEval {
   rubric: RubricFile;
 }
 
-export interface LoadedManifest {
+interface LoadedManifest {
   manifest: EvalsManifest;
   evals: LoadedEval[];
 }

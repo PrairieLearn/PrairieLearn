@@ -13,7 +13,7 @@ const RowSchema = z.object({
   ai_descriptions: z.array(z.string()).optional(),
 });
 
-export type Classification = 'correct' | 'incorrect' | 'unsure';
+type Classification = 'correct' | 'incorrect' | 'unsure';
 
 export interface ClassifiedCase {
   case_id: string;
@@ -23,7 +23,7 @@ export interface ClassifiedCase {
   verdict_source: string;
 }
 
-export interface ClassificationCounts {
+interface ClassificationCounts {
   correct: number;
   incorrect: number;
   unsure: number;

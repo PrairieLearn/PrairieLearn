@@ -14,7 +14,7 @@ import { type EvalsManifest, type LoadedEval } from './manifest.js';
 
 export const EVAL_COURSES_ROOT = path.join(os.tmpdir(), 'prairielearn-ai-grading-evals', 'courses');
 
-export const EVAL_COURSE_INSTANCE_SHORT_NAME = 'evals';
+const EVAL_COURSE_INSTANCE_SHORT_NAME = 'evals';
 
 const TOPIC_COLOR_PALETTE = [
   'red1',
@@ -63,7 +63,7 @@ function collectTopicNames(infos: QuestionInfoForTopic[]): string[] {
   return [...names];
 }
 
-export interface ScaffoldedCourse {
+interface ScaffoldedCourse {
   course: Course;
   coursePath: string;
   courseInstanceShortName: string;
