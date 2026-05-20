@@ -228,7 +228,7 @@ function UploadAssessmentGroupsModal({
     <Modal show={show} onHide={onHide}>
       <form method="POST" encType="multipart/form-data">
         <Modal.Header>
-          <Modal.Title>Upload new group assignments</Modal.Title>
+          <Modal.Title>Upload group memberships</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>Upload a CSV file in the format of:</p>

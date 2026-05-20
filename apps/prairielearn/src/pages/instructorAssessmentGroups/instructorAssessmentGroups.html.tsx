@@ -287,10 +287,10 @@ function InstructorAssessmentGroupsInner({
             <div className="card-body">
               <h5 className="mb-1">Groups</h5>
               <div className="text-muted small mb-3">
-                View and manage student group assignments for this assessment.
+                View and manage student group memberships for this assessment.
               </div>
               <Alert variant="info" className="mb-0">
-                You must have student data viewer permissions to view student group assignments.
+                You must have student data viewer permissions to view student group memberships.
               </Alert>
             </div>
           </div>
@@ -311,13 +311,13 @@ function InstructorAssessmentGroupsInner({
                 !permissions.hasCoursePermissionEdit &&
                 !permissions.hasCourseInstancePermissionEdit
               ) {
-                return 'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group assignments.';
+                return 'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group memberships.';
               }
               if (!permissions.hasCoursePermissionEdit) {
                 return 'Disabling group work requires course editor permissions because it changes group settings.';
               }
               if (!permissions.hasCourseInstancePermissionEdit) {
-                return 'Disabling group work requires student data editor permissions because it permanently removes group assignments.';
+                return 'Disabling group work requires student data editor permissions because it permanently removes group memberships.';
               }
             })}
             onDisable={({ origHash: newHash }) => {

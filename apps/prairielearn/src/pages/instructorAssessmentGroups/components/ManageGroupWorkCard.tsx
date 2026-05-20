@@ -32,7 +32,7 @@ function DisableGroupWorkModal({
       </Modal.Header>
       <Modal.Body>
         <p className="mb-2">
-          All groups, group assignments, and the group configuration for this assessment will be
+          All groups, group memberships, and the group configuration for this assessment will be
           permanently removed.
         </p>
         <p className="mb-0 text-muted small">
@@ -116,7 +116,7 @@ export function ManageGroupWorkCard({
           <div className="flex-grow-1">
             <div className="fw-bold">Disable group work</div>
             <div className="text-muted small">
-              All groups, group assignments, and the group configuration will be permanently
+              All groups, group memberships, and the group configuration will be permanently
               removed.
             </div>
           </div>
