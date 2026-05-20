@@ -676,7 +676,7 @@ export function GroupsCard({
   minGroupSize,
   maxGroupSize,
 }: {
-  groupsCsvFilename?: string;
+  groupsCsvFilename: string;
   initialGroups?: GroupUsersRow[];
   initialNotAssigned?: string[];
   assessment: StaffAssessment;
@@ -827,37 +827,41 @@ export function GroupsCard({
                 </button>
               )}
               <DropdownButton as={ButtonGroup} title="Actions" variant="outline-secondary">
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => uploadModal.showWithData(null)}
-                >
-                  <i className="bi bi-upload me-2" aria-hidden="true" />
-                  Import CSV
-                </Dropdown.Item>
+                {canEdit && (
+                  <Dropdown.Item
+                    as="button"
+                    type="button"
+                    onClick={() => uploadModal.showWithData(null)}
+                  >
+                    <i className="bi bi-upload me-2" aria-hidden="true" />
+                    Import CSV
+                  </Dropdown.Item>
+                )}
                 <Dropdown.Item
                   as="a"
                   href={getAssessmentDownloadUrl({
                     courseInstanceId,
                     assessmentId: assessment.id,
-                    filename: groupsCsvFilename ?? '',
+                    filename: groupsCsvFilename,
                   })}
                 >
                   <i className="bi bi-download me-2" aria-hidden="true" />
                   Export CSV
                 </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  className="text-danger"
-                  onClick={() => deleteAllModal.showWithData(null)}
-                >
-                  <i className="bi bi-trash me-2" aria-hidden="true" />
-                  Delete all
-                </Dropdown.Item>
+                {canEdit && (
+                  <>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      as="button"
+                      type="button"
+                      className="text-danger"
+                      onClick={() => deleteAllModal.showWithData(null)}
+                    >
+                      <i className="bi bi-trash me-2" aria-hidden="true" />
+                      Delete all
+                    </Dropdown.Item>
+                  </>
+                )}
               </DropdownButton>
               <Button
                 variant="outline-secondary"

@@ -129,9 +129,7 @@ router.get(
               assessmentSet={assessment_set}
               permissions={permissions}
               csrfToken={pageContext.__csrf_token}
-              groupsCsvFilename={
-                permissions.hasCourseInstancePermissionView ? groupsCsvFilename : undefined
-              }
+              groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
               notAssigned={notAssigned}

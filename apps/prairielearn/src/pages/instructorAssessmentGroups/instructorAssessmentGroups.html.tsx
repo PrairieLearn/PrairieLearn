@@ -107,7 +107,7 @@ interface InstructorAssessmentGroupsProps {
   assessmentSet: StaffAssessmentSet;
   permissions: InstructorAssessmentGroupsPermissions;
   csrfToken: string;
-  groupsCsvFilename?: string;
+  groupsCsvFilename: string;
   groupConfigInfo?: StaffGroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
@@ -311,7 +311,7 @@ function InstructorAssessmentGroupsInner({
                 !permissions.hasCoursePermissionEdit &&
                 !permissions.hasCourseInstancePermissionEdit
               ) {
-                return 'Disabling group work requires both course editor and student data editor permissions because it permanently removes group assignments.';
+                return 'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group assignments.';
               }
               if (!permissions.hasCoursePermissionEdit) {
                 return 'Disabling group work requires course editor permissions because it changes group settings.';
