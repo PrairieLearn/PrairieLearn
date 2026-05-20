@@ -16,10 +16,12 @@ import {
   type WorkflowRunStatus,
 } from './workflows.types.js';
 
+const sql = loadSqlEquiv(import.meta.url);
+
 /**
  * Thrown when an operation cannot proceed because the workflow run is not in
  * the expected status (e.g. attempting to continue a run that is not
- * `'waiting_for_input'`).
+ * `'waiting'`).
  */
 export class WorkflowConflictError extends Error {
   constructor(
@@ -30,8 +32,6 @@ export class WorkflowConflictError extends Error {
     this.name = 'WorkflowConflictError';
   }
 }
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const pool = new PostgresPool();
 

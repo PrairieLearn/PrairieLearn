@@ -68,11 +68,11 @@ WHERE
 UPDATE workflow_runs
 SET
   state = $state::jsonb,
-  status = $status::enum_workflow_run_status,
+  status = $status,
   error_message = $error_message,
   updated_at = now(),
   completed_at = CASE
-    WHEN $status::enum_workflow_run_status IN ('completed', 'error', 'canceled') THEN now()
+    WHEN $status IN ('completed', 'error', 'canceled') THEN now()
     ELSE completed_at
   END
 WHERE
