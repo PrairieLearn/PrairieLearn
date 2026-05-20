@@ -854,6 +854,43 @@ describe('QTI12AssessmentParser', async () => {
     });
   });
 
+  describe('source bank references', async () => {
+    it('captures Canvas sourcebank_export_id for matching external bank exports', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <section ident="pool" title="External Pool">
+        <selection_ordering>
+          <selection>
+            <sourcebank_ref>105415</sourcebank_ref>
+            <sourcebank_export_id>g664f76fdc719931d67b65146ba8654ee</sourcebank_export_id>
+            <selection_number>4</selection_number>
+            <selection_extension>
+              <points_per_item>1.0</points_per_item>
+              <sourcebank_context>course_67263</sourcebank_context>
+              <sourcebank_is_external>true</sourcebank_is_external>
+            </selection_extension>
+          </selection>
+        </selection_ordering>
+      </section>
+    </section>
+      </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      assert.deepEqual(result.sourceBankRefs, [
+        {
+          sourceBankRef: '105415',
+          sourceBankExportId: 'g664f76fdc719931d67b65146ba8654ee',
+          title: 'External Pool',
+          numberChoose: 4,
+          points: 1,
+          externalCourseId: '67263',
+        },
+      ]);
+    });
+  });
+
   describe('allowed_extensions → file-upload allowedExtensions', async () => {
     const FILE_UPLOAD_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
