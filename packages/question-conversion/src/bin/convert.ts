@@ -75,7 +75,7 @@ program
 
       if (inputStat.isDirectory()) {
         // Prefer the manifest for file discovery — it's present in both quiz
-        // exports and course exports and only lists QTI assessment resources,
+        // exports and course exports and only lists QTI content resources,
         // avoiding non-QTI XML files (course settings, wiki pages, etc.).
         // Fall back to the heuristic directory scan if no manifest is found.
         const manifestFiles = await findQtiFilesFromManifest(resolvedInput);
