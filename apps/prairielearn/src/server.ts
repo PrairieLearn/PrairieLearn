@@ -123,6 +123,22 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
   };
 }
 
+const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const qtiImportUploadDirs = new WeakMap<Request, string>();
+
+async function cleanupQtiUpload(req: Request) {
+  const destination = qtiImportUploadDirs.get(req) ?? req.file?.destination;
+  if (!destination) return;
+  try {
+    await fs.promises.rm(destination, { recursive: true, force: true });
+    qtiImportUploadDirs.delete(req);
+  } catch (err) {
+    logger.warn(
+      `Failed to remove temporary QTI import upload directory: ${(err as Error).message}`,
+    );
+  }
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @returns The express "app" object that was created.
@@ -218,6 +234,31 @@ export async function initExpress(): Promise<Express> {
       parts: config.fileUploadMaxParts,
     },
   });
+  const qtiImportUpload = multer({
+    storage: multer.diskStorage({
+      destination(req, _file, callback) {
+        fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
+          if (!err) {
+            qtiImportUploadDirs.set(req, folder);
+          }
+          callback(err, folder);
+        });
+      },
+    }),
+    limits: {
+      fieldSize: config.fileUploadMaxBytes,
+      fileSize: QTI_IMPORT_MAX_UPLOAD_BYTES,
+      parts: config.fileUploadMaxParts,
+    },
+  });
+  const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
+    qtiImportUpload.single('file')(req, res, (err) => {
+      onFinished(res, () => {
+        void cleanupQtiUpload(req);
+      });
+      next(err);
+    });
+  };
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
     upload.single('file'),
@@ -314,7 +355,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
-    upload.single('file'),
+    qtiImportUploadSingle,
   );
 
   // Collect metrics on workspace proxy sockets. Note that this only tracks
