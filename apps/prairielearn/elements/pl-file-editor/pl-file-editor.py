@@ -131,7 +131,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "max_lines": max_lines,
         "auto_resize": auto_resize,
         "preview": preview,
-        "read_only": "false" if data["editable"] else "true",
+        "editable": data["editable"],
         "uuid": uuid,
         "focus": focus,
         "question": True,
