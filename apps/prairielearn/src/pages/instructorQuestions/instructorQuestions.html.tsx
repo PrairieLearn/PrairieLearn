@@ -16,6 +16,7 @@ interface InstructorQuestionsTableProps {
   courseId: string;
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
+  showImportQuestionsButton: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -36,6 +37,7 @@ function InstructorQuestionsTableInner({
   courseId,
   currentCourseInstanceId,
   showAddQuestionButton,
+  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -56,6 +58,11 @@ function InstructorQuestionsTableInner({
       questionsQueryOptions={trpc.questions.list.queryOptions()}
       addQuestionUrl={
         showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
+      }
+      importQuestionsUrl={
+        showImportQuestionsButton
+          ? `${urlPrefix}/instance_admin/qti_import?return_to=questions`
+          : undefined
       }
     />
   );

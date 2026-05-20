@@ -68,6 +68,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   courseId: string;
   currentCourseInstanceId?: string;
   addQuestionUrl?: string;
+  importQuestionsUrl?: string;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -85,6 +86,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   courseId,
   currentCourseInstanceId,
   addQuestionUrl,
+  importQuestionsUrl,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -272,8 +274,14 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           }),
         }}
         headerButtons={
-          addQuestionUrl || showAiGenerateQuestionButton ? (
+          addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton ? (
             <>
+              {importQuestionsUrl && (
+                <a className="btn btn-light btn-sm" href={importQuestionsUrl}>
+                  <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                  Import questions
+                </a>
+              )}
               {addQuestionUrl && (
                 <a className="btn btn-light btn-sm" href={addQuestionUrl}>
                   <i className="bi bi-plus-lg me-2" aria-hidden="true" />
@@ -315,10 +323,21 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                     .
                   </p>
                 </div>
-                {(addQuestionUrl || showAiGenerateQuestionButton) && (
+                {(addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton) && (
                   <div className="d-flex gap-2">
+                    {importQuestionsUrl && (
+                      <a className="btn btn-primary" href={importQuestionsUrl}>
+                        <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                        Import questions
+                      </a>
+                    )}
                     {addQuestionUrl && (
-                      <a className="btn btn-primary" href={addQuestionUrl}>
+                      <a
+                        className={
+                          importQuestionsUrl ? 'btn btn-outline-primary' : 'btn btn-primary'
+                        }
+                        href={addQuestionUrl}
+                      >
                         <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                         Add question
                       </a>
