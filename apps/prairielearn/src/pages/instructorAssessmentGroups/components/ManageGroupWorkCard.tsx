@@ -64,12 +64,16 @@ export function ManageGroupWorkCard({
   hasAssessmentInstances,
   courseInstanceId,
   assessmentId,
+  canDisable,
+  disableUnavailableReason,
   onDisable,
 }: {
   origHash: string | null;
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessmentId: string;
+  canDisable: boolean;
+  disableUnavailableReason?: string;
   onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -105,6 +109,9 @@ export function ManageGroupWorkCard({
             {appError.message}
           </Alert>
         )}
+        {!canDisable && disableUnavailableReason && (
+          <Alert variant="info">{disableUnavailableReason}</Alert>
+        )}
         <div className="d-flex align-items-center gap-3">
           <div className="flex-grow-1">
             <div className="fw-bold">Disable group work</div>
@@ -115,7 +122,7 @@ export function ManageGroupWorkCard({
           </div>
           <Button
             variant="outline-danger"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !canDisable}
             onClick={() => setShowDisableModal(true)}
           >
             Disable

@@ -672,6 +672,7 @@ export function GroupsCard({
   courseInstanceId,
   csrfToken,
   canEdit,
+  editUnavailableReason,
   minGroupSize,
   maxGroupSize,
 }: {
@@ -683,6 +684,7 @@ export function GroupsCard({
   courseInstanceId: string;
   csrfToken: string;
   canEdit: boolean;
+  editUnavailableReason?: string;
   minGroupSize: number;
   maxGroupSize: number;
 }) {
@@ -872,10 +874,9 @@ export function GroupsCard({
             </div>
           </div>
 
-          {!canEdit && (
+          {!canEdit && editUnavailableReason && (
             <Alert variant="info" className="mb-3">
-              You can view group memberships, but editing memberships requires student data editor
-              permissions.
+              {editUnavailableReason}
             </Alert>
           )}
 

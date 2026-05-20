@@ -52,12 +52,14 @@ describe('Instructor group controls', () => {
 
   let users: User[] = [];
   let assessment_id: string;
+  let individual_assessment_id: string;
   let trpcClient: ReturnType<typeof createAssessmentTrpcClient>;
   let group1RowId: string | undefined;
   let group2RowId: string | undefined;
 
   test.sequential('has group-based homework assessment', async () => {
     assessment_id = await queryScalar(sql.select_group_work_assessment, IdSchema);
+    individual_assessment_id = await queryScalar(sql.select_individual_work_assessment, IdSchema);
     const csrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId: assessment_id }),
@@ -71,6 +73,32 @@ describe('Instructor group controls', () => {
       assessmentId: assessment_id,
       urlBase: siteUrl,
     });
+  });
+
+  test.sequential('group work enable button reflects course edit permissions', async () => {
+    const groupsUrl = `${siteUrl}${getAssessmentUrl({
+      courseInstanceId,
+      assessmentId: individual_assessment_id,
+    })}/groups`;
+    const previewerResponse = await helperClient.fetchCheerio(groupsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
+      },
+    });
+    assert.isTrue(previewerResponse.ok);
+    const previewerBody = await previewerResponse.text();
+    assert.include(previewerBody, 'Enabling group work requires course editor permissions.');
+    assert.lengthOf(previewerResponse.$('button:contains("Enable group work")'), 0);
+
+    const editorResponse = await helperClient.fetchCheerio(groupsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+      },
+    });
+    assert.isTrue(editorResponse.ok);
+    assert.lengthOf(editorResponse.$('button:contains("Enable group work")'), 1);
   });
 
   test.sequential('enroll random users', async () => {
@@ -109,6 +137,35 @@ describe('Instructor group controls', () => {
         body,
         'You must have student data viewer permissions to view student group assignments.',
       );
+      assert.include(body, 'Editing group settings requires course editor permissions.');
+      assert.notInclude(body, users[0].uid);
+      assert.notInclude(body, users[1].uid);
+    },
+  );
+
+  test.sequential(
+    'course editor can edit group settings without seeing membership data',
+    async () => {
+      const groupsUrl = `${siteUrl}${getAssessmentUrl({
+        courseInstanceId,
+        assessmentId: assessment_id,
+      })}/groups`;
+      const response = await helperClient.fetchCheerio(groupsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+        },
+      });
+      assert.isTrue(response.ok);
+      const body = await response.text();
+      assert.include(
+        body,
+        'You must have student data viewer permissions to view student group assignments.',
+      );
+      assert.include(
+        body,
+        'Disabling group work requires student data editor permissions because it permanently removes group assignments.',
+      );
       assert.notInclude(body, users[0].uid);
       assert.notInclude(body, users[1].uid);
     },
@@ -127,11 +184,32 @@ describe('Instructor group controls', () => {
     });
     assert.isTrue(response.ok);
     const body = await response.text();
+    assert.include(body, 'Editing group settings requires course editor permissions.');
+    assert.include(body, 'Editing group memberships requires student data editor permissions.');
+    assert.notInclude(body, 'Add group');
+    assert.include(body, users[0].uid);
+    assert.include(body, users[1].uid);
+  });
+
+  test.sequential('student data editor can edit memberships without editing settings', async () => {
+    const groupsUrl = `${siteUrl}${getAssessmentUrl({
+      courseInstanceId,
+      assessmentId: assessment_id,
+    })}/groups`;
+    const response = await helperClient.fetchCheerio(groupsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+      },
+    });
+    assert.isTrue(response.ok);
+    const body = await response.text();
+    assert.include(body, 'Editing group settings requires course editor permissions.');
     assert.include(
       body,
-      'You can view group memberships, but editing memberships requires student data editor',
+      'Disabling group work requires course editor permissions because it changes group settings.',
     );
-    assert.notInclude(body, 'Add group');
+    assert.include(body, 'Add group');
     assert.include(body, users[0].uid);
     assert.include(body, users[1].uid);
   });

@@ -55,10 +55,12 @@ router.get(
       accessType: 'instructor',
     });
     const { assessment, assessment_set, course, course_instance, authz_data } = pageContext;
-    const canEditGroupSettings = authz_data.has_course_permission_edit && !course.example_course;
-    const canViewStudentData = authz_data.has_course_instance_permission_view;
-    const canEditStudentData =
-      authz_data.has_course_instance_permission_edit && !course.example_course;
+    const permissions = {
+      isExampleCourse: course.example_course,
+      hasCoursePermissionEdit: authz_data.has_course_permission_edit,
+      hasCourseInstancePermissionView: authz_data.has_course_instance_permission_view,
+      hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
+    };
 
     const groupsCsvFilename =
       assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) + 'groups.csv';
@@ -69,7 +71,7 @@ router.get(
       : undefined;
 
     const [groups, notAssigned] =
-      groupConfigInfo && canViewStudentData
+      groupConfigInfo && permissions.hasCourseInstancePermissionView
         ? await Promise.all([
             selectGroupsForConfig(groupConfigInfo.id),
             selectUidsNotInGroup({
@@ -125,11 +127,11 @@ router.get(
               courseInstanceId={course_instance.id}
               assessment={assessment}
               assessmentSet={assessment_set}
-              canEditGroupSettings={canEditGroupSettings}
-              canViewStudentData={canViewStudentData}
-              canEditStudentData={canEditStudentData}
+              permissions={permissions}
               csrfToken={pageContext.__csrf_token}
-              groupsCsvFilename={canViewStudentData ? groupsCsvFilename : undefined}
+              groupsCsvFilename={
+                permissions.hasCourseInstancePermissionView ? groupsCsvFilename : undefined
+              }
               groupConfigInfo={staffGroupConfigInfo}
               groups={groups}
               notAssigned={notAssigned}

@@ -2,6 +2,8 @@ import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
+
 import { getAppError } from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
@@ -26,6 +28,7 @@ function NoGroupConfigCard({
   hasAssessmentInstances,
   courseInstanceId,
   assessment,
+  enableUnavailableReason,
   onEnable,
 }: {
   origHash: string | null;
@@ -33,6 +36,7 @@ function NoGroupConfigCard({
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessment: StaffAssessment;
+  enableUnavailableReason?: string;
   onEnable: (result: {
     origHash: string;
     groupConfig: StaffGroupConfig;
@@ -61,6 +65,11 @@ function NoGroupConfigCard({
           <i className="bi bi-people fs-1 mb-2" />
           <h2 className="h5">This is not a group assessment.</h2>
           <div className="text-muted">{description}</div>
+          {!canEdit && enableUnavailableReason && (
+            <Alert variant="info" className="mt-3 mb-0">
+              {enableUnavailableReason}
+            </Alert>
+          )}
           {canEdit && hasAssessmentInstances && (
             <GroupWorkInstancesWarning
               action="enabling"
@@ -101,13 +110,18 @@ function StudentDataPermissionCard() {
   );
 }
 
+interface InstructorAssessmentGroupsPermissions {
+  isExampleCourse: boolean;
+  hasCoursePermissionEdit: boolean;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+}
+
 interface InstructorAssessmentGroupsProps {
   courseInstanceId: string;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
-  canEditGroupSettings: boolean;
-  canViewStudentData: boolean;
-  canEditStudentData: boolean;
+  permissions: InstructorAssessmentGroupsPermissions;
   csrfToken: string;
   groupsCsvFilename?: string;
   groupConfigInfo?: StaffGroupConfig;
@@ -124,9 +138,7 @@ export function InstructorAssessmentGroups({
   courseInstanceId,
   assessment,
   assessmentSet,
-  canEditGroupSettings,
-  canViewStudentData,
-  canEditStudentData,
+  permissions,
   csrfToken,
   groupsCsvFilename,
   groupConfigInfo,
@@ -154,9 +166,7 @@ export function InstructorAssessmentGroups({
           courseInstanceId={courseInstanceId}
           assessment={assessment}
           assessmentSet={assessmentSet}
-          canEditGroupSettings={canEditGroupSettings}
-          canViewStudentData={canViewStudentData}
-          canEditStudentData={canEditStudentData}
+          permissions={permissions}
           csrfToken={csrfToken}
           groupsCsvFilename={groupsCsvFilename}
           groupConfigInfo={groupConfigInfo}
@@ -177,9 +187,7 @@ function InstructorAssessmentGroupsInner({
   courseInstanceId,
   assessment,
   assessmentSet,
-  canEditGroupSettings,
-  canViewStudentData,
-  canEditStudentData,
+  permissions,
   csrfToken,
   groupsCsvFilename,
   groupConfigInfo: initialGroupConfigInfo,
@@ -203,6 +211,12 @@ function InstructorAssessmentGroupsInner({
   const [saveStatus, setSaveStatus] = useState<
     { kind: 'success' } | { kind: 'error'; message: string } | null
   >(null);
+  const canEditGroupSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canEditStudentData =
+    permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
+  const canDisableGroupWork = canEditGroupSettings && canEditStudentData;
+  const showManageGroupWork =
+    permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
 
   if (!groupConfigInfo) {
     return (
@@ -212,6 +226,14 @@ function InstructorAssessmentGroupsInner({
         hasAssessmentInstances={hasAssessmentInstances}
         courseInstanceId={courseInstanceId}
         assessment={assessment}
+        enableUnavailableReason={run(() => {
+          if (permissions.isExampleCourse) {
+            return 'Enabling group work is not available for example courses.';
+          }
+          if (!permissions.hasCoursePermissionEdit) {
+            return 'Enabling group work requires course editor permissions.';
+          }
+        })}
         onEnable={({
           origHash: newHash,
           groupConfig,
@@ -237,6 +259,14 @@ function InstructorAssessmentGroupsInner({
           groupSettingsDefaults={groupSettingsDefaults}
           origHash={origHash}
           canEdit={canEditGroupSettings}
+          editUnavailableReason={run(() => {
+            if (permissions.isExampleCourse) {
+              return 'Editing group settings is not available for example courses.';
+            }
+            if (!permissions.hasCoursePermissionEdit) {
+              return 'Editing group settings requires course editor permissions.';
+            }
+          })}
           onOrigHashChange={setOrigHash}
           onGroupSizeSaved={(min, max) => {
             setMinGroupSize(min ?? 2);
@@ -246,7 +276,7 @@ function InstructorAssessmentGroupsInner({
           onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
           onClearSaveStatus={() => setSaveStatus(null)}
         />
-        {canViewStudentData ? (
+        {permissions.hasCourseInstancePermissionView ? (
           <GroupsCard
             groupsCsvFilename={groupsCsvFilename}
             initialGroups={groups}
@@ -256,18 +286,44 @@ function InstructorAssessmentGroupsInner({
             courseInstanceId={courseInstanceId}
             csrfToken={csrfToken}
             canEdit={canEditStudentData}
+            editUnavailableReason={run(() => {
+              if (permissions.isExampleCourse) {
+                return 'Editing group memberships is not available for example courses.';
+              }
+              if (!permissions.hasCourseInstancePermissionEdit) {
+                return 'Editing group memberships requires student data editor permissions.';
+              }
+            })}
             minGroupSize={minGroupSize}
             maxGroupSize={maxGroupSize}
           />
         ) : (
           <StudentDataPermissionCard />
         )}
-        {canEditGroupSettings && canEditStudentData && (
+        {showManageGroupWork && (
           <ManageGroupWorkCard
             origHash={origHash}
             hasAssessmentInstances={hasAssessmentInstances}
             courseInstanceId={courseInstanceId}
             assessmentId={assessment.id}
+            canDisable={canDisableGroupWork}
+            disableUnavailableReason={run(() => {
+              if (permissions.isExampleCourse) {
+                return 'Disabling group work is not available for example courses.';
+              }
+              if (
+                !permissions.hasCoursePermissionEdit &&
+                !permissions.hasCourseInstancePermissionEdit
+              ) {
+                return 'Disabling group work requires both course editor and student data editor permissions because it permanently removes group assignments.';
+              }
+              if (!permissions.hasCoursePermissionEdit) {
+                return 'Disabling group work requires course editor permissions because it changes group settings.';
+              }
+              if (!permissions.hasCourseInstancePermissionEdit) {
+                return 'Disabling group work requires student data editor permissions because it permanently removes group assignments.';
+              }
+            })}
             onDisable={({ origHash: newHash }) => {
               setOrigHash(newHash);
               setGroupSettingsDefaults(null);
