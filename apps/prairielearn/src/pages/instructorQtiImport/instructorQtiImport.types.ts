@@ -1,24 +1,50 @@
 import type {
   ConversionWarning,
+  IRSourceBankRef,
   PLAssessmentInfoJson,
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
 
-/** Serialized version of PLQuestionOutput with clientFiles as base64 strings. */
+export interface SerializedClientFile {
+  size: number;
+}
+
+/** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
+  draftId: string;
+  originalDirectoryName: string;
   directoryName: string;
   sourceId: string;
   infoJson: PLQuestionInfoJson;
   questionHtml: string;
   serverPy?: string;
-  clientFiles: Record<string, string>;
+  clientFiles: Record<string, SerializedClientFile>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
 }
 
-/** Serialized version of ConversionResult. */
+export interface StoredSerializedQuestionOutput extends Omit<
+  SerializedQuestionOutput,
+  'draftId' | 'originalDirectoryName' | 'clientFiles'
+> {
+  clientFiles: Record<string, string>;
+}
+
+/** Conversion result stored server-side while the user reviews an import. */
+export interface StoredSerializedConversionResult extends Omit<
+  SerializedConversionResult,
+  'draftId' | 'questions'
+> {
+  questions: StoredSerializedQuestionOutput[];
+}
+
+/** Conversion result sent to the browser for review. */
 export interface SerializedConversionResult {
+  draftId: string;
+  sourceId: string;
   assessmentTitle: string;
+  sourceType?: 'assessment' | 'question-bank';
+  sourceBankRefs?: IRSourceBankRef[];
   assessment: {
     directoryName: string;
     infoJson: PLAssessmentInfoJson;
