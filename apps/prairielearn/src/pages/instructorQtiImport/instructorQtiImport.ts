@@ -14,6 +14,7 @@ import {
   QTI12AssessmentParser,
   type QtiFileEntry,
   findQtiFilesFromManifest,
+  findQtiXmlFiles,
   parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
@@ -24,6 +25,7 @@ import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
+import { createQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
@@ -33,6 +35,7 @@ import { InstructorQtiImport } from './instructorQtiImport.html.js';
 import type {
   ParseWarning,
   SerializedConversionResult,
+  StoredSerializedConversionResult,
   StrippedAccessRules,
   UploadResponse,
 } from './instructorQtiImport.types.js';
@@ -82,6 +85,7 @@ router.get(
         resLocals: res.locals,
         csrfToken: uploadCsrfToken,
         trpcCsrfToken,
+        returnTo: req.query.return_to === 'questions' ? 'questions' : 'assessments',
       }),
     );
   }),
@@ -104,18 +108,21 @@ router.post(
     try {
       // Extract the archive to the temp directory.
       try {
-        const directory = await unzipper.Open.buffer(file.buffer);
+        if (!file.path) {
+          throw new Error('Uploaded archive was not written to disk');
+        }
+        const directory = await unzipper.Open.file(file.path);
         await directory.extract({ path: tempDir });
       } catch {
         throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
       }
 
-      // Find QTI assessment files from the manifest. If the archive has a
+      // Find QTI content files from the manifest. If the archive has a
       // wrapper directory (e.g. "course-export/imsmanifest.xml" instead of
       // "imsmanifest.xml" at root), descend into it. macOS zip tools add a
       // __MACOSX/ sibling with resource forks, so filter those out first.
       let contentDir = tempDir;
-      let entries = await findQtiFilesFromManifest(contentDir);
+      let entries = await findQtiEntries(contentDir);
       if (entries.length === 0) {
         const children = (await readdir(tempDir)).filter(
           (name) => !name.startsWith('.') && name !== '__MACOSX',
@@ -124,15 +131,12 @@ router.post(
           const child = path.join(tempDir, children[0]);
           if ((await fsStat(child)).isDirectory()) {
             contentDir = child;
-            entries = await findQtiFilesFromManifest(contentDir);
+            entries = await findQtiEntries(contentDir);
           }
         }
       }
       if (entries.length === 0) {
-        throw new HttpStatusError(
-          400,
-          'No QTI assessment files found in the uploaded archive. The archive must include a valid imsmanifest.xml.',
-        );
+        throw new HttpStatusError(400, 'No QTI content files found in the uploaded archive.');
       }
 
       // Try to read rubrics from course_settings/rubrics.xml (not present in quiz-only exports).
@@ -144,10 +148,10 @@ router.post(
         }
       });
 
-      // Convert each assessment, deduplicating slugs so that same-titled
-      // assessments (e.g. two "Quiz 1") don't collide on question prefixes.
+      // Convert each QTI entry, deduplicating slugs so same-titled entries
+      // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
-      const results: SerializedConversionResult[] = [];
+      const results: StoredSerializedConversionResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
         const result = await convertEntry(entry, rubricsXml, usedSlugs);
@@ -195,8 +199,16 @@ router.post(
         selectAssessments({ course_instance_id: res.locals.course_instance.id }),
       ]);
 
-      const response: UploadResponse = {
+      const draftId = await createQtiImportDraft<StoredSerializedConversionResult>({
+        courseId: res.locals.course.id,
+        courseInstanceId: res.locals.course_instance.id,
+        userId: res.locals.authn_user.id,
         results,
+      });
+      const clientResults = results.map((result) => stripDraftResultForClient(result, draftId));
+
+      const response: UploadResponse = {
+        results: clientResults,
         parseWarnings,
         existingQuestionDirs,
         strippedAccessRules: stripped,
@@ -215,10 +227,20 @@ router.post(
 );
 
 type ConvertEntryResult =
-  | { ok: true; value: SerializedConversionResult }
+  | { ok: true; value: StoredSerializedConversionResult }
   | { ok: false; warning: ParseWarning };
 
-/** Convert a single QTI assessment entry to a serialized result. */
+async function findQtiEntries(contentDir: string): Promise<QtiFileEntry[]> {
+  const manifestEntries = await findQtiFilesFromManifest(contentDir);
+  if (manifestEntries.length > 0) return manifestEntries;
+
+  return (await findQtiXmlFiles(contentDir)).map((qtiPath) => ({
+    qtiPath,
+    assessmentDir: path.dirname(qtiPath),
+  }));
+}
+
+/** Convert a single QTI entry to a serialized result. */
 async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
@@ -304,7 +326,7 @@ async function serializeConversionResult(
   result: ConversionResult,
   questionPrefix: string,
   webResourcesDir: string,
-): Promise<SerializedConversionResult> {
+): Promise<StoredSerializedConversionResult> {
   const extraWarnings: ConversionWarning[] = [];
 
   const questions = await Promise.all(
@@ -340,13 +362,37 @@ async function serializeConversionResult(
   );
 
   return {
+    sourceId: result.sourceId,
     assessmentTitle: result.assessmentTitle,
+    sourceType: result.sourceType,
+    sourceBankRefs: result.sourceBankRefs,
     assessment: {
       directoryName: result.assessment.directoryName,
       infoJson: result.assessment.infoJson,
     },
     questions,
     warnings: [...result.warnings, ...extraWarnings],
+  };
+}
+
+function stripDraftResultForClient(
+  result: StoredSerializedConversionResult,
+  draftId: string,
+): SerializedConversionResult {
+  return {
+    ...result,
+    draftId,
+    questions: result.questions.map((question) => ({
+      ...question,
+      draftId,
+      originalDirectoryName: question.directoryName,
+      clientFiles: Object.fromEntries(
+        Object.entries(question.clientFiles).map(([name, content]) => [
+          name,
+          { size: Buffer.byteLength(content, 'base64') },
+        ]),
+      ),
+    })),
   };
 }
 
