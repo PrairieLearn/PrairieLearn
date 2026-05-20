@@ -94,22 +94,6 @@ function NoGroupConfigCard({
   );
 }
 
-function StudentDataPermissionCard() {
-  return (
-    <div className="card">
-      <div className="card-body">
-        <h5 className="mb-1">Groups</h5>
-        <div className="text-muted small mb-3">
-          View and manage student group assignments for this assessment.
-        </div>
-        <Alert variant="info" className="mb-0">
-          You must have student data viewer permissions to view student group assignments.
-        </Alert>
-      </div>
-    </div>
-  );
-}
-
 interface InstructorAssessmentGroupsPermissions {
   isExampleCourse: boolean;
   hasCoursePermissionEdit: boolean;
@@ -276,6 +260,7 @@ function InstructorAssessmentGroupsInner({
           onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
           onClearSaveStatus={() => setSaveStatus(null)}
         />
+
         {permissions.hasCourseInstancePermissionView ? (
           <GroupsCard
             groupsCsvFilename={groupsCsvFilename}
@@ -298,8 +283,19 @@ function InstructorAssessmentGroupsInner({
             maxGroupSize={maxGroupSize}
           />
         ) : (
-          <StudentDataPermissionCard />
+          <div className="card">
+            <div className="card-body">
+              <h5 className="mb-1">Groups</h5>
+              <div className="text-muted small mb-3">
+                View and manage student group assignments for this assessment.
+              </div>
+              <Alert variant="info" className="mb-0">
+                You must have student data viewer permissions to view student group assignments.
+              </Alert>
+            </div>
+          </div>
         )}
+
         {showManageGroupWork && (
           <ManageGroupWorkCard
             origHash={origHash}
@@ -334,6 +330,7 @@ function InstructorAssessmentGroupsInner({
           />
         )}
       </div>
+
       {canEditGroupSettings && saveStatus && (
         <div className="position-sticky bottom-0 z-3 bg-body border-top">
           {saveStatus.kind === 'success' && (
