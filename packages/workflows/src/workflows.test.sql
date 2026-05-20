@@ -1,19 +1,20 @@
+-- BLOCK create_workflow_run_status_enum
+-- Mirrors the production migration. Needed because `update_step` casts
+-- the status parameter to `enum_workflow_run_status`. The test database
+-- is dropped and recreated per worker so this is unconditional.
+CREATE TYPE enum_workflow_run_status AS ENUM(
+  'running',
+  'waiting',
+  'completed',
+  'error',
+  'canceled'
+);
+
 -- BLOCK create_workflow_runs_table
--- Mirrors the production migration, except that `status` is a `text` column
--- with a CHECK constraint instead of the `enum_workflow_run_status` enum,
--- so the test setup doesn't need to create the enum type.
 CREATE TABLE IF NOT EXISTS workflow_runs (
   id bigserial PRIMARY KEY,
   type text NOT NULL,
-  status text NOT NULL DEFAULT 'running' CHECK (
-    status IN (
-      'running',
-      'waiting',
-      'completed',
-      'error',
-      'canceled'
-    )
-  ),
+  status enum_workflow_run_status NOT NULL DEFAULT 'running',
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   locked_by text,
   locked_at timestamptz,
