@@ -60,13 +60,92 @@ describe('QTI12AssessmentParser', async () => {
   });
 
   describe('canParse', async () => {
-    it('returns true for QTI 1.2 assessment XML', async () => {
+    it('returns true for QTI 1.2 XML with an assessment', async () => {
       assert.isTrue(parser.canParse(readFixture('canvas-mc.xml')));
+    });
+
+    it('returns true for QTI 1.2 object bank XML', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank"/>
+</questestinterop>`;
+      assert.isTrue(parser.canParse(xml));
     });
 
     it('returns false for non-QTI XML', async () => {
       assert.isFalse(parser.canParse('<html><body>hello</body></html>'));
     });
+  });
+
+  it('parses object banks as question collections', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank">
+    <section ident="root_section">
+      <item ident="q1" title="Bank question">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;</mattext></material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+              <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+            <setvar varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </objectbank>
+</questestinterop>`;
+    const result = await parser.parse(xml);
+    assert.equal(result.title, 'Question Bank');
+    assert.equal(result.sourceType, 'question-bank');
+    assert.lengthOf(result.questions, 1);
+    assert.equal(result.questions[0].title, 'Bank question');
+  });
+
+  it('parses Canvas object banks with direct items and bank_title metadata', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1">
+    <qtimetadata>
+      <qtimetadatafield><fieldlabel>bank_title</fieldlabel><fieldentry>Syllabus Quiz</fieldentry></qtimetadatafield>
+    </qtimetadata>
+    <item ident="q1" title="1">
+      <itemmetadata><qtimetadata>
+        <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+      </qtimetadata></itemmetadata>
+      <presentation>
+        <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;</mattext></material>
+        <response_lid ident="response1" rcardinality="Single">
+          <render_choice>
+            <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+            <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+          </render_choice>
+        </response_lid>
+      </presentation>
+      <resprocessing>
+        <respcondition continue="No">
+          <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+          <setvar varname="SCORE">100</setvar>
+        </respcondition>
+      </resprocessing>
+    </item>
+  </objectbank>
+</questestinterop>`;
+    const result = await parser.parse(xml);
+    assert.equal(result.title, 'Syllabus Quiz');
+    assert.equal(result.sourceType, 'question-bank');
+    assert.lengthOf(result.questions, 1);
+    assert.equal(result.questions[0].title, '1');
   });
 
   describe('correct condition parsing', async () => {
