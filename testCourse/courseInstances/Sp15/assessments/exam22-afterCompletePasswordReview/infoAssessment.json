@@ -1,7 +1,7 @@
 {
   "uuid": "c3d4e5f6-a7b8-49c0-9d1e-2f3a4b5c6d7e",
   "type": "Exam",
-  "title": "After complete password review",
+  "title": "Password-protected timed exam",
   "set": "Exam",
   "number": "22",
   "requireHonorCode": false,
