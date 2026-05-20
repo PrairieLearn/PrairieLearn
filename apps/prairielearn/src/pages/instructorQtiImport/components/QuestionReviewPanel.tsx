@@ -109,7 +109,7 @@ export function QuestionReviewPanel({
     fileEntries.push({
       name,
       path: `clientFilesQuestion/${name}`,
-      content: `(binary file — ${filesize(Math.ceil((q.clientFiles[name].length * 3) / 4), { round: 0 })})`,
+      content: `(binary file - ${filesize(q.clientFiles[name].size, { round: 0 })})`,
       icon: 'bi-file-earmark-image',
     });
   }
