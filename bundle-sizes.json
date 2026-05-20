@@ -365,9 +365,9 @@
     "brotli": 193847
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 1199988,
-    "gzip": 355713,
-    "brotli": 307543
+    "raw": 1199987,
+    "gzip": 355712,
+    "brotli": 307554
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 396483,
@@ -420,8 +420,8 @@
     "brotli": 331183
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1342829,
-    "gzip": 399036,
-    "brotli": 328107
+    "raw": 1342779,
+    "gzip": 399026,
+    "brotli": 328049
   }
 }
