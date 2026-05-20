@@ -440,7 +440,9 @@ export function PageLayout({
             </div>
           </div>
         </div>
-        ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
+        ${resolvedOptions.showFooter && !resLocals.lockdown_browser
+          ? renderHtml(<PageFooter />)
+          : ''}
       </body>
     </html>
   `.toString();

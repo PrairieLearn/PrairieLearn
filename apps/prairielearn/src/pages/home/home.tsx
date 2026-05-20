@@ -165,6 +165,7 @@ router.get(
             unreadNewsItems={unreadNewsItems}
             blogUrl={config.newsFeedBlogUrl}
             now={res.locals.req_date}
+            lockdownBrowser={res.locals.lockdown_browser}
           />
         ),
       }),

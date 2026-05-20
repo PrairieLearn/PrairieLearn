@@ -17,6 +17,7 @@ const PrairieTestJwtPayloadSchema = z.object({
   user_id: z.string(),
   course_instance_id: z.string().optional(),
   assessment_id: z.string().optional(),
+  lockdown_browser: z.boolean().optional(),
 });
 
 router.post(
@@ -55,7 +56,7 @@ router.post(
         cause: err,
       });
     }
-    const { user_id, course_instance_id, assessment_id } =
+    const { user_id, course_instance_id, assessment_id, lockdown_browser } =
       PrairieTestJwtPayloadSchema.parse(payload);
 
     if ((course_instance_id === undefined) !== (assessment_id === undefined)) {
@@ -74,6 +75,10 @@ router.post(
       course_instance_id !== undefined && assessment_id !== undefined
         ? `${getStudentAssessmentUrl(course_instance_id, assessment_id)}?rldbsp=1`
         : undefined;
+
+    // Record whether the student authenticated through the LockDown Browser
+    // flow so PrairieLearn pages can conditionally hide navigation elements.
+    req.session.lockdown_browser = lockdown_browser ?? false;
 
     await authnLib.loadUser(
       req,

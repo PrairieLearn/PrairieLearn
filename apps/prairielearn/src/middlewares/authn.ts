@@ -16,6 +16,7 @@ const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 
 export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
+  res.locals.lockdown_browser = false;
 
   if (req.method === 'OPTIONS') {
     // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -176,6 +177,10 @@ export default asyncHandler(async (req, res, next) => {
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
   });
+
+  // Surface the LockDown Browser flag recorded on the session at PT->PL
+  // login so pages can conditionally hide navigation elements.
+  res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
 
   next();
 });
