@@ -219,13 +219,29 @@ function renderRubricTable(
         ${rubricItems.map(
           (item) => html`
             <tr>
-              <td class="text-center">
+              <td class="text-center align-top">
                 ${aiSelected.has(item.description)
                   ? html`<span class="text-success fw-bold">✓</span>`
                   : ''}
               </td>
-              <td>${item.description}</td>
-              <td><span class="badge bg-secondary">${formatPoints(item.points)}</span></td>
+              <td>
+                <div class="fw-medium">${item.description}</div>
+                ${item.explanation
+                  ? html`<div class="rubric-detail">
+                      <span class="rubric-detail-label">Explanation</span>
+                      <span class="rubric-detail-body">${item.explanation}</span>
+                    </div>`
+                  : ''}
+                ${item.grader_note
+                  ? html`<div class="rubric-detail">
+                      <span class="rubric-detail-label">Grader note</span>
+                      <span class="rubric-detail-body">${item.grader_note}</span>
+                    </div>`
+                  : ''}
+              </td>
+              <td class="align-top">
+                <span class="badge bg-secondary">${formatPoints(item.points)}</span>
+              </td>
             </tr>
           `,
         )}
@@ -306,6 +322,32 @@ function renderPacketHtml({
           .grading-panel {
             position: sticky;
             top: 1rem;
+          }
+          .rubric-detail {
+            margin-top: 0.35rem;
+            font-size: 0.85rem;
+            line-height: 1.35;
+          }
+          .rubric-detail-label {
+            display: inline-block;
+            margin-right: 0.4rem;
+            padding: 0.05rem 0.4rem;
+            background: #e9ecef;
+            color: #495057;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            vertical-align: middle;
+          }
+          .rubric-detail-body {
+            white-space: pre-wrap;
+            color: #495057;
+          }
+          .table > tbody > tr > td {
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
           }
         </style>
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
