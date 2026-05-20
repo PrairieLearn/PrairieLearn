@@ -874,8 +874,8 @@ export function GroupsCard({
 
           {!canEdit && (
             <Alert variant="info" className="mb-3">
-              You can view group memberships, but editing memberships requires Student Data Editor
-              permission.
+              You can view group memberships, but editing memberships requires student data editor
+              permissions.
             </Alert>
           )}
 
