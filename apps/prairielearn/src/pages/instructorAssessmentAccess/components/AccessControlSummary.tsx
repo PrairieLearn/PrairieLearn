@@ -94,12 +94,14 @@ function DefaultRuleSummaryContent({
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
+  canFetchPrairieTestMetadata,
 }: {
   rule: DefaultRuleData;
   formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canFetchPrairieTestMetadata: boolean;
 }) {
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
   const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
@@ -127,6 +129,7 @@ function DefaultRuleSummaryContent({
                 initialMetadata={prairieTestExamMetadata}
                 ptHost={ptHost}
                 formErrors={formErrors}
+                canFetchMetadata={canFetchPrairieTestMetadata}
               />
             )}
 
@@ -165,6 +168,7 @@ export function AccessControlSummary({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
   defaultRule: DefaultRuleData;
@@ -186,6 +190,7 @@ export function AccessControlSummary({
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }) {
   const dndId = useId();
@@ -216,9 +221,15 @@ export function AccessControlSummary({
   const overridesErrorCount = countErrors(errors.overrides);
   const hiddenEnrollmentRuleNoun =
     hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
+  const hiddenEnrollmentRuleVerb = hiddenEnrollmentRuleCount === 1 ? 'is' : 'are';
 
   return (
     <div>
+      {readOnlyMessage && (
+        <Alert variant="info" className="mb-4">
+          {readOnlyMessage}
+        </Alert>
+      )}
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0 d-flex align-items-center">
@@ -264,6 +275,7 @@ export function AccessControlSummary({
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
+          canFetchPrairieTestMetadata={canEdit}
         />
       </section>
 
@@ -289,15 +301,23 @@ export function AccessControlSummary({
           )}
         </div>
         <small className="text-body-secondary d-block mb-3">
-          Customize settings for specific students or groups. Fields not overridden are inherited
-          from the defaults and any earlier overrides.
+          Customize settings for specific students or students with specific labels. Fields not
+          overridden are inherited from the defaults and any earlier overrides.
         </small>
+
+        {canEdit && !canEditEnrollmentRules && (
+          <Alert variant="info" className="mb-3">
+            You can edit defaults and student-label overrides. Student-specific overrides require
+            Student Data Editor permission.
+          </Alert>
+        )}
 
         {hiddenEnrollmentRuleCount > 0 && (
           <Alert variant="info" className="mb-3">
-            This assessment has {hiddenEnrollmentRuleCount} {hiddenEnrollmentRuleNoun} hidden
-            because you do not have Student Data Viewer permission. These overrides will be
-            preserved when you save other access settings.
+            This assessment has {hiddenEnrollmentRuleCount} {hiddenEnrollmentRuleNoun} that{' '}
+            {hiddenEnrollmentRuleVerb} hidden because you do not have Student Data Viewer
+            permission. These overrides remain in place when you save, but visible changes may still
+            affect them through inherited settings.
           </Alert>
         )}
 

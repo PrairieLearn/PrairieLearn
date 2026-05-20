@@ -63,8 +63,12 @@ router.get(
       'enhanced-access-control',
       res.locals,
     );
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const readOnlyMessage = !res.locals.authz_data.has_course_permission_edit
+      ? 'You must be a course editor to edit access settings.'
+      : res.locals.course.example_course
+        ? "You can't edit access settings in the example course."
+        : null;
+    const canEdit = readOnlyMessage == null;
     const canViewEnrollmentRules = res.locals.authz_data.has_course_instance_permission_view;
     const canEditEnrollmentRules =
       canEdit && res.locals.authz_data.has_course_instance_permission_edit;
@@ -109,6 +113,7 @@ router.get(
           ptHost: config.ptHost,
           canEdit,
           canEditEnrollmentRules,
+          readOnlyMessage,
           hiddenEnrollmentRuleCount,
         }),
       );

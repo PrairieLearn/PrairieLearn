@@ -383,6 +383,7 @@ export function InstructorAssessmentAccessNew({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
@@ -393,6 +394,7 @@ export function InstructorAssessmentAccessNew({
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }) {
   const pageContext = extractPageContext(resLocals, {
@@ -428,6 +430,7 @@ export function InstructorAssessmentAccessNew({
           ptHost={ptHost}
           canEdit={canEdit}
           canEditEnrollmentRules={canEditEnrollmentRules}
+          readOnlyMessage={readOnlyMessage}
           hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         />
       </Hydrate>

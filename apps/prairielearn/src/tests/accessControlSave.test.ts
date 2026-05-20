@@ -262,6 +262,39 @@ describe('Access control save via tRPC', () => {
     },
   );
 
+  test.sequential(
+    'allows course editors without student data view to load access metadata',
+    async () => {
+      const courseEditor = {
+        uid: 'access-control-metadata-editor@example.com',
+        name: 'Access Control Metadata Editor',
+        uin: '100000005',
+        email: 'access-control-metadata-editor@example.com',
+      };
+      const user = await getOrCreateUser(courseEditor);
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: courseEditor.uid,
+        course_role: 'Editor',
+        authn_user_id: user.id,
+      });
+
+      await withUser(courseEditor, async () => {
+        const client = await createClient();
+        const labels = await client.accessControl.studentLabels.query();
+        assert.include(
+          labels.map((label) => label.name),
+          'Section A',
+        );
+
+        const examMetadata = await client.accessControl.prairieTestExamMetadata.query({
+          examUuids: [],
+        });
+        assert.deepEqual(examMetadata, []);
+      });
+    },
+  );
+
   test.sequential('requires student data edit to sync enrollment-specific rules', async () => {
     const courseEditor = {
       uid: 'access-control-enrollment-editor@example.com',

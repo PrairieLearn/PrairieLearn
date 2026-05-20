@@ -1118,12 +1118,14 @@ export function PrairieTestExamsTable({
   initialMetadata,
   ptHost,
   formErrors,
+  canFetchMetadata,
 }: {
   exams: DefaultRuleData['prairieTestExams'];
   beforeReleaseListed: boolean;
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
   formErrors?: FieldErrors<DefaultRuleData>;
+  canFetchMetadata: boolean;
 }) {
   const trpc = useTRPC();
 
@@ -1141,7 +1143,7 @@ export function PrairieTestExamsTable({
   // metadata until the first query result lands.
   const { data: metadata } = useQuery({
     ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
-    enabled: validExamUuids.length > 0,
+    enabled: canFetchMetadata && validExamUuids.length > 0,
     initialData: initialMetadata,
   });
 

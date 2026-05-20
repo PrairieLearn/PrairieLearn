@@ -28,6 +28,7 @@ interface AssessmentAccessControlProps {
   ptHost: string;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }
 
@@ -39,6 +40,7 @@ function AssessmentAccessControlInner({
   ptHost,
   canEdit,
   canEditEnrollmentRules,
+  readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -121,6 +123,7 @@ function AssessmentAccessControlInner({
         alert={saveAlert}
         canEdit={canEdit}
         canEditEnrollmentRules={canEditEnrollmentRules}
+        readOnlyMessage={readOnlyMessage}
         hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         onSubmit={handleFormSubmit}
       />

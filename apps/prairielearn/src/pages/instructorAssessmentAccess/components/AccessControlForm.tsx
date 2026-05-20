@@ -44,6 +44,7 @@ export function AccessControlForm({
   alert,
   canEdit,
   canEditEnrollmentRules,
+  readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
   initialData?: AccessControlJsonWithId[];
@@ -55,6 +56,7 @@ export function AccessControlForm({
   alert?: StickySaveBarAlert | null;
   canEdit: boolean;
   canEditEnrollmentRules: boolean;
+  readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
@@ -88,6 +90,7 @@ export function AccessControlForm({
 
   const {
     append: appendOverride,
+    insert: insertOverride,
     remove: removeOverride,
     move: moveOverride,
   } = useFieldArray({
@@ -144,8 +147,18 @@ export function AccessControlForm({
     if (!canEditEnrollmentRules) {
       newOverride.appliesTo.targetType = 'student_label';
     }
-    appendOverride(newOverride);
-    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    if (newOverride.appliesTo.targetType === 'student_label') {
+      const firstEnrollmentIndex = watchedData.overrides.findIndex(
+        (override) => override.appliesTo.targetType === 'enrollment',
+      );
+      const insertIndex =
+        firstEnrollmentIndex === -1 ? watchedData.overrides.length : firstEnrollmentIndex;
+      insertOverride(insertIndex, newOverride);
+      setSelectedRule({ type: 'override', index: insertIndex });
+    } else {
+      appendOverride(newOverride);
+      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    }
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
@@ -297,6 +310,10 @@ export function AccessControlForm({
     (selectedRule?.type !== 'override' ||
       watchedData.overrides[selectedRule.index]?.appliesTo.targetType !== 'enrollment' ||
       canEditEnrollmentRules);
+  const studentSpecificEditMessage =
+    canEdit && !canEditEnrollmentRules
+      ? 'Specific-student overrides require Student Data Editor permission. You can still create or edit overrides for students with specific labels.'
+      : null;
 
   const rightPanel =
     selectedRule?.type === 'default' ? (
@@ -313,7 +330,9 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              canEditTargets={selectedRuleCanEdit}
               canTargetEnrollments={canEditEnrollmentRules}
+              studentSpecificEditMessage={studentSpecificEditMessage}
               onTargetTypeChange={(targetType) =>
                 handleOverrideTargetTypeChange(selectedRule.index, targetType)
               }
@@ -369,6 +388,7 @@ export function AccessControlForm({
                     ptHost={ptHost}
                     canEdit={canEdit}
                     canEditEnrollmentRules={canEditEnrollmentRules}
+                    readOnlyMessage={readOnlyMessage}
                     hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}

@@ -14,20 +14,28 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  canEditTargets,
   canTargetEnrollments,
+  studentSpecificEditMessage,
   onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  canEditTargets: boolean;
   canTargetEnrollments: boolean;
+  studentSpecificEditMessage: string | null;
   onTargetTypeChange: (targetType: TargetType) => void;
 }) {
   const trpc = useTRPC();
 
-  const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
-
   const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
     name: `${namePrefix}.appliesTo`,
+  });
+  const { targetType, enrollments, studentLabels } = appliesTo;
+
+  const { data: allLabels } = useQuery({
+    ...trpc.accessControl.studentLabels.queryOptions(),
+    enabled: canEditTargets && targetType === 'student_label',
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
@@ -41,8 +49,6 @@ export function AppliesToField({
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
     replaceEnrollments(students);
   };
-
-  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -64,10 +70,9 @@ export function AppliesToField({
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
-      {!canTargetEnrollments && (
+      {studentSpecificEditMessage && (
         <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
-          You must have Student Data Editor permission to create or edit overrides for specific
-          students.
+          {studentSpecificEditMessage}
         </Alert>
       )}
       <fieldset className="mb-3">
@@ -78,8 +83,10 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
-          disabled={!canTargetEnrollments}
-          aria-describedby={!canTargetEnrollments ? studentSpecificPermissionMessageId : undefined}
+          disabled={!canEditTargets || !canTargetEnrollments}
+          aria-describedby={
+            studentSpecificEditMessage ? studentSpecificPermissionMessageId : undefined
+          }
           onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
@@ -88,6 +95,7 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
+          disabled={!canEditTargets}
           onChange={() => onTargetTypeChange('student_label')}
         />
       </fieldset>
@@ -156,7 +164,9 @@ export function AppliesToField({
                 labels={allLabels ?? []}
                 selectedIds={excludedStudentLabelIds}
                 buttonLabel="Select labels"
+                disabled={!canEditTargets}
                 onToggle={(label) => {
+                  if (!canEditTargets) return;
                   if (excludedStudentLabelIds.has(label.id)) {
                     handleRemoveStudentLabelById(label.id);
                   } else {
