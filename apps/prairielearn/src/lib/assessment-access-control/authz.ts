@@ -189,7 +189,7 @@ interface ModernAssessmentAccessBatchInput {
   reqDate: Date;
 }
 
-export async function resolveModernAssessmentAccessBatch({
+export async function resolveModernAssessmentAccessResultsBatch({
   courseInstance,
   userId,
   authzData,
@@ -235,16 +235,19 @@ export function resolverResultToAuthzAssessmentForInstance({
 }): SprocAuthzAssessment {
   const resultForInstance = run((): AccessControlResolverResult => {
     if (assessmentInstance == null) return result;
+    if (result.visibilitySource === 'prairieTest') return result;
 
     const timeLimitExpired =
       assessmentInstance.date_limit != null && assessmentInstance.date_limit <= reqDate;
-    if (result.visibilitySource === 'prairieTest') return result;
     if (assessmentInstance.open !== false && !timeLimitExpired) {
       return result;
     }
 
     return {
       ...result,
+      creditDateString: 'None',
+      timeLimitMin: null,
+      password: null,
       visibility: result.afterCompleteVisibility,
       visibilitySource: 'afterComplete',
       complete: true,

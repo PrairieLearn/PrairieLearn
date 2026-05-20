@@ -2,7 +2,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   type AuthzDataForAccessControl,
-  resolveModernAssessmentAccessBatch,
+  resolveModernAssessmentAccessResultsBatch,
   resolverResultToAuthzAssessmentForInstance,
 } from './assessment-access-control/authz.js';
 import { type CourseInstance } from './db-types.js';
@@ -39,7 +39,7 @@ async function applyModernAccessControl<
   const hasModern = rows.some((r) => r.modern_access_control);
   if (!hasModern) return;
 
-  const modernAccessByAssessment = await resolveModernAssessmentAccessBatch({
+  const modernAccessByAssessment = await resolveModernAssessmentAccessResultsBatch({
     courseInstance: params.courseInstance,
     userId: params.userId,
     authzData: params.authzData,

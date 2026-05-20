@@ -157,7 +157,12 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
 
   it('applies afterComplete score visibility when an instance is closed', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
-      result: baseResolverResult,
+      result: {
+        ...baseResolverResult,
+        creditDateString: '100% until 12:00, Sat, Mar 15',
+        timeLimitMin: 60,
+        password: 'secret',
+      },
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
       assessmentInstance: { open: false, date_limit: null },
@@ -167,11 +172,19 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     expect(result.show_closed_assessment).toBe(false);
     expect(result.show_closed_assessment_score).toBe(false);
     expect(result.active).toBe(false);
+    expect(result.credit_date_string).toBe('None');
+    expect(result.time_limit_min).toBeNull();
+    expect(result.password).toBeNull();
   });
 
   it('applies afterComplete score visibility when the time limit has expired', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
-      result: baseResolverResult,
+      result: {
+        ...baseResolverResult,
+        creditDateString: '100% until 12:00, Sat, Mar 15',
+        timeLimitMin: 60,
+        password: 'secret',
+      },
       authzMode: 'Public',
       displayTimezone: 'America/Chicago',
       assessmentInstance: { open: true, date_limit: new Date('2025-03-10T00:00:00Z') },
@@ -181,6 +194,9 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     expect(result.show_closed_assessment).toBe(false);
     expect(result.show_closed_assessment_score).toBe(false);
     expect(result.active).toBe(false);
+    expect(result.credit_date_string).toBe('None');
+    expect(result.time_limit_min).toBeNull();
+    expect(result.password).toBeNull();
   });
 
   it('leaves PrairieTest visibility in control while a reservation is active', () => {

@@ -1,5 +1,6 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { gradeAssessmentInstance, makeAssessmentInstance } from '../lib/assessment.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -50,6 +51,11 @@ describe(
         tid: 'exam21-afterCompleteTimeLimit',
       });
       context.timedExamAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${timedExamAssessmentId}/`;
+
+      context.passwordReviewAssessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam22-afterCompletePasswordReview',
+      });
     });
 
     afterAll(helperServer.after);
@@ -103,6 +109,24 @@ describe(
     });
 
     test.sequential(
+      'create a password-protected timed exam instance during the active window',
+      async () => {
+        const user = await selectUserByUid('student@example.com');
+        const assessmentInstanceId = await makeAssessmentInstance({
+          assessment: context.passwordReviewAssessment,
+          user_id: user.id,
+          authn_user_id: user.id,
+          mode: 'Public',
+          time_limit_min: 10,
+          date: new Date('2026-04-05T00:00:00Z'),
+          client_fingerprint_id: null,
+        });
+        context.passwordReviewAssessmentInstanceId = assessmentInstanceId;
+        context.passwordReviewAssessmentInstanceUrl = `${context.courseInstanceBaseUrl}/assessment_instance/${assessmentInstanceId}`;
+      },
+    );
+
+    test.sequential(
       'student assessments list shows the score during the active window',
       async () => {
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
@@ -137,6 +161,63 @@ describe(
         });
         assert.isTrue(response.ok);
         assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 0);
+      },
+    );
+
+    test.sequential(
+      'student assessments list omits available credit after the timed assessment expires',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: afterTimeLimitCookie },
+        });
+        assert.isTrue(response.ok);
+
+        const row = response.$('tr:contains("After complete time limit visibility")');
+        assert.lengthOf(row, 1);
+        assert.equal(row.find('td').eq(2).text().trim(), '');
+      },
+    );
+
+    test.sequential(
+      'student can review an expired password-protected timed assessment without a password prompt',
+      async () => {
+        const response = await helperClient.fetchCheerio(
+          context.passwordReviewAssessmentInstanceUrl,
+          {
+            headers: { cookie: afterTimeLimitCookie },
+          },
+        );
+        assert.isTrue(response.ok);
+        assert.include(response.url, '/assessment_instance/');
+        assert.notInclude(response.url, '/password');
+      },
+    );
+
+    test.sequential('close the password-protected timed exam before the deadline', async () => {
+      const user = await selectUserByUid('student@example.com');
+      await gradeAssessmentInstance({
+        assessment_instance_id: context.passwordReviewAssessmentInstanceId,
+        user_id: user.id,
+        authn_user_id: user.id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+        client_fingerprint_id: null,
+      });
+    });
+
+    test.sequential(
+      'student assessments list omits available credit after an instance is closed',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
+
+        const row = response.$('tr:contains("After complete password review")');
+        assert.lengthOf(row, 1);
+        assert.equal(row.find('td').eq(2).text().trim(), '');
       },
     );
 

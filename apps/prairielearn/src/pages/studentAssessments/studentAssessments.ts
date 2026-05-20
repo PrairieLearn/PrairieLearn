@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
-  resolveModernAssessmentAccessBatch,
+  resolveModernAssessmentAccessResultsBatch,
   resolverResultToAuthzAssessmentForInstance,
 } from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -36,7 +36,7 @@ router.get(
 
     const hasModern = rows.some((r) => r.modern_access_control);
     const modernAccessByAssessment = hasModern
-      ? await resolveModernAssessmentAccessBatch({
+      ? await resolveModernAssessmentAccessResultsBatch({
           courseInstance: res.locals.course_instance,
           userId: res.locals.user.id,
           authzData: res.locals.authz_data,
