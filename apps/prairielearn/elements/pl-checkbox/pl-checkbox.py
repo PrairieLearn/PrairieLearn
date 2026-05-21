@@ -886,7 +886,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
         # This mimics what a browser does when no checkbox is selected: we simply get no value
         # for that form field.
-        data["format_errors"][name] = "You must select at least one option."
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        if not allow_blank:
+            data["format_errors"][name] = "You must select at least one option."
+        else:
+            # If allow_blank is true, it shouldn't actually be an "invalid" test type
+            # for a blank submission anymore.
+            pass 
     else:
         assert_never(result)
 

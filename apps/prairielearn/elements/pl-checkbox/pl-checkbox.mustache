@@ -30,7 +30,7 @@
     </div>
 {{/answers}}
 
-{{#allow_blank}}
+{{#editable}}{{#allow_blank}}
 <button
     type="button"
     class="btn btn-link btn-sm p-0 text-secondary small"
@@ -38,7 +38,7 @@
     aria-label="Clear checkbox choice selection"
     onclick="window.PLCheckboxClear(this)"
 >Clear</button>
-{{/allow_blank}}
+{{/allow_blank}}{{/editable}}
 
 {{#helptext}}
 <div class="d-flex align-items-center gap-2">
@@ -117,7 +117,7 @@ Otherwise, you will receive a score of 0%.
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
-        <span>{{^blank_submission}}{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}}{{/blank_submission}} {{{html}}}</span>
+        <span>{{^blank_submission}}{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{/blank_submission}}{{{html}}}</span>
         {{#display_feedback}}
             <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
                 {{{feedback}}}
