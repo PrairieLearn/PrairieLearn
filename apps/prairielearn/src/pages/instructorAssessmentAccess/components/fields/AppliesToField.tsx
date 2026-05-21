@@ -7,6 +7,7 @@ import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
@@ -14,19 +15,21 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
-  canEditTargets,
-  canTargetEnrollments,
-  studentSpecificEditMessage,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
   onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
-  canEditTargets: boolean;
-  canTargetEnrollments: boolean;
-  studentSpecificEditMessage: string | null;
+  /** Whether the user has page-level permission to edit access settings at all. */
+  canEditAccessSettings: boolean;
+  /** Whether the user has permission to edit enrollment-targeted rules. */
+  canEditEnrollmentRules: boolean;
   onTargetTypeChange: (targetType: TargetType) => void;
 }) {
   const trpc = useTRPC();
+  const ruleEditable = useAccessControlRuleEditable();
+  const showStudentLabelOnlyHint = canEditAccessSettings && !canEditEnrollmentRules;
 
   const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
     name: `${namePrefix}.appliesTo`,
@@ -35,7 +38,7 @@ export function AppliesToField({
 
   const { data: allLabels } = useQuery({
     ...trpc.accessControl.studentLabels.queryOptions(),
-    enabled: canEditTargets && targetType === 'student_label',
+    enabled: ruleEditable && targetType === 'student_label',
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
@@ -71,9 +74,10 @@ export function AppliesToField({
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
-      {studentSpecificEditMessage && (
+      {showStudentLabelOnlyHint && (
         <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
-          {studentSpecificEditMessage}
+          Specific-student overrides require Student Data Editor permission. You can still create or
+          edit overrides for students with specific labels.
         </Alert>
       )}
       <fieldset className="mb-3">
@@ -84,9 +88,9 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
-          disabled={!canEditTargets || !canTargetEnrollments}
+          disabled={!ruleEditable || !canEditEnrollmentRules}
           aria-describedby={
-            studentSpecificEditMessage ? studentSpecificPermissionMessageId : undefined
+            showStudentLabelOnlyHint ? studentSpecificPermissionMessageId : undefined
           }
           onChange={() => onTargetTypeChange('enrollment')}
         />
@@ -96,7 +100,7 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
-          disabled={!canEditTargets}
+          disabled={!ruleEditable}
           onChange={() => onTargetTypeChange('student_label')}
         />
       </fieldset>
@@ -113,7 +117,7 @@ export function AppliesToField({
               <span className="small text-muted">
                 {enrollments.length} {enrollments.length === 1 ? 'student' : 'students'}
               </span>
-              {canEditTargets && (
+              {ruleEditable && (
                 <div className="ms-auto">
                   <AddStudentsModal
                     selectedUids={excludedUids}
@@ -146,7 +150,7 @@ export function AppliesToField({
                         </a>
                         {s.name && <span className="text-muted small">{s.name}</span>}
                       </div>
-                      {canEditTargets && (
+                      {ruleEditable && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -165,7 +169,7 @@ export function AppliesToField({
         ) : (
           <div>
             <div className="d-flex flex-wrap align-items-baseline gap-2">
-              {canEditTargets && (
+              {ruleEditable && (
                 <StudentLabelDropdown
                   labels={allLabels ?? []}
                   selectedIds={excludedStudentLabelIds}
@@ -191,7 +195,7 @@ export function AppliesToField({
                     key={sl.studentLabelId}
                     label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    {canEditTargets && (
+                    {ruleEditable && (
                       <button
                         type="button"
                         className="btn p-0 lh-1"
@@ -214,7 +218,7 @@ export function AppliesToField({
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
           This override has no targets.{' '}
-          {canEditTargets
+          {ruleEditable
             ? `Add at least one ${targetDescription} for this rule to take effect.`
             : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`}
         </Alert>

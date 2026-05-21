@@ -16,7 +16,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { useAccessControlCanEdit } from '../AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -147,7 +147,7 @@ function DeadlineArrayInput({
   appendDeadline: UseFieldArrayAppend<AccessControlFormData, DeadlineArrayFieldName>;
   removeDeadline: UseFieldArrayRemove;
 }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
@@ -318,7 +318,7 @@ function DeadlineArrayInput({
             id={`${idPrefix}-${type}-deadlines-enabled`}
             label={isEarly ? 'Early deadlines' : 'Late deadlines'}
             checked={deadlineFields.length > 0}
-            disabled={!canEdit || (addEarlyDisabled && deadlineFields.length === 0)}
+            disabled={!ruleEditable || (addEarlyDisabled && deadlineFields.length === 0)}
             title={
               addEarlyDisabled && deadlineFields.length === 0 ? addEarlyDisabledTitle : undefined
             }
@@ -330,7 +330,7 @@ function DeadlineArrayInput({
               }
             }}
           />
-          {canEdit && (
+          {ruleEditable && (
             <Button
               size="sm"
               variant="outline-primary"
@@ -366,7 +366,7 @@ function DeadlineArrayInput({
                     : undefined
                 }
                 placeholder="Deadline Date"
-                disabled={!canEdit}
+                disabled={!ruleEditable}
                 {...register(`${fieldArrayName}.${index}.date`, {
                   validate: (value) => validateDate(value, index),
                 })}
@@ -402,7 +402,7 @@ function DeadlineArrayInput({
                     return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
                   })}
                   step={1}
-                  disabled={!canEdit}
+                  disabled={!ruleEditable}
                   onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
@@ -411,7 +411,7 @@ function DeadlineArrayInput({
                 />
                 <InputGroup.Text>%</InputGroup.Text>
               </InputGroup>
-              {canEdit && (
+              {ruleEditable && (
                 <Button
                   size="sm"
                   variant="outline-danger"
@@ -510,7 +510,7 @@ export function OverrideDeadlineArrayField({
   type: 'early' | 'late';
   displayTimezone: string;
 }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
@@ -582,13 +582,13 @@ export function OverrideDeadlineArrayField({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={label}
           checked={fields.length > 0}
-          disabled={!canEdit || (addEarlyDisabled && fields.length === 0)}
+          disabled={!ruleEditable || (addEarlyDisabled && fields.length === 0)}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
           onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
         />
       }
       headerAction={
-        canEdit ? (
+        ruleEditable ? (
           <Button
             size="sm"
             variant="outline-primary"
@@ -611,7 +611,7 @@ export function OverrideDeadlineArrayField({
         <Alert variant="info" className="py-2 mb-0">
           With no {type} deadlines set, this override clears any {type} deadlines inherited from the
           defaults or earlier overrides.
-          {canEdit && <> Click "Remove override" to inherit them instead.</>}
+          {ruleEditable && <> Click "Remove override" to inherit them instead.</>}
         </Alert>
       )}
       <DeadlineArrayInput

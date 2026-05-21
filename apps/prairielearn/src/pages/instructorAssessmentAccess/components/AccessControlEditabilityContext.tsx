@@ -3,21 +3,25 @@ import { type ReactNode, createContext, use } from 'react';
 const AccessControlEditabilityContext = createContext<boolean | null>(null);
 
 export function AccessControlEditabilityProvider({
-  canEdit,
+  ruleEditable,
   children,
 }: {
-  canEdit: boolean;
+  ruleEditable: boolean;
   children: ReactNode;
 }) {
   return (
-    <AccessControlEditabilityContext value={canEdit}>{children}</AccessControlEditabilityContext>
+    <AccessControlEditabilityContext value={ruleEditable}>
+      {children}
+    </AccessControlEditabilityContext>
   );
 }
 
-export function useAccessControlCanEdit(): boolean {
-  const canEdit = use(AccessControlEditabilityContext);
-  if (canEdit == null) {
-    throw new Error('useAccessControlCanEdit must be used within AccessControlEditabilityProvider');
+export function useAccessControlRuleEditable(): boolean {
+  const ruleEditable = use(AccessControlEditabilityContext);
+  if (ruleEditable == null) {
+    throw new Error(
+      'useAccessControlRuleEditable must be used within AccessControlEditabilityProvider',
+    );
   }
-  return canEdit;
+  return ruleEditable;
 }

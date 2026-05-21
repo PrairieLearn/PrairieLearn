@@ -5,7 +5,7 @@ import { useController, useWatch } from 'react-hook-form';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { useAccessControlCanEdit } from '../AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
@@ -41,7 +41,7 @@ function DueDateInput({
   creditError?: string;
   displayTimezone: string;
 }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const effectiveCredit = value.credit ?? 100;
 
   const getCreditPeriodText = () => {
@@ -76,7 +76,7 @@ function DueDateInput({
           id={`${idPrefix}-due-never`}
           label="No due date"
           checked={value.date === null}
-          disabled={!canEdit}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) onChange({ ...value, date: null });
           }}
@@ -87,7 +87,7 @@ function DueDateInput({
           id={`${idPrefix}-due-on-date`}
           label="Due on date"
           checked={value.date !== null}
-          disabled={!canEdit}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
@@ -116,7 +116,7 @@ function DueDateInput({
             aria-invalid={!!dateError}
             aria-errormessage={dateError ? `${idPrefix}-due-date-error` : undefined}
             value={value.date}
-            disabled={!canEdit}
+            disabled={!ruleEditable}
             onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
           {dateError && (
@@ -133,7 +133,7 @@ function DueDateInput({
         {!value.customCredit ? (
           <span className="text-muted small">
             100% credit (default)
-            {canEdit && (
+            {ruleEditable && (
               <>
                 {' '}
                 <Button
@@ -168,7 +168,7 @@ function DueDateInput({
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
                 value={value.credit ?? ''}
                 placeholder="100"
-                disabled={!canEdit}
+                disabled={!ruleEditable}
                 onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
@@ -178,7 +178,7 @@ function DueDateInput({
               />
               <InputGroup.Text>%</InputGroup.Text>
             </InputGroup>
-            {canEdit && (
+            {ruleEditable && (
               <Button
                 variant="link"
                 size="sm"

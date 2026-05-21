@@ -285,14 +285,10 @@ export function AccessControlForm({
     (selectedRule?.type !== 'override' ||
       watchedData.overrides[selectedRule.index]?.appliesTo.targetType !== 'enrollment' ||
       canEditEnrollmentRules);
-  const studentSpecificEditMessage =
-    canEdit && !canEditEnrollmentRules
-      ? 'Specific-student overrides require Student Data Editor permission. You can still create or edit overrides for students with specific labels.'
-      : null;
 
   const rightPanel =
     selectedRule?.type === 'default' ? (
-      <AccessControlEditabilityProvider canEdit={selectedRuleCanEdit}>
+      <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
         <div className="px-3 pb-3">
           <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
         </div>
@@ -303,14 +299,13 @@ export function AccessControlForm({
           return null;
         }
         return (
-          <AccessControlEditabilityProvider canEdit={selectedRuleCanEdit}>
+          <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
             <div className="px-3 pb-3">
               <AppliesToField
                 namePrefix={`overrides.${selectedRule.index}`}
                 courseInstanceId={courseInstance.id}
-                canEditTargets={selectedRuleCanEdit}
-                canTargetEnrollments={canEditEnrollmentRules}
-                studentSpecificEditMessage={studentSpecificEditMessage}
+                canEditAccessSettings={canEdit}
+                canEditEnrollmentRules={canEditEnrollmentRules}
                 onTargetTypeChange={(targetType) =>
                   handleOverrideTargetTypeChange(selectedRule.index, targetType)
                 }

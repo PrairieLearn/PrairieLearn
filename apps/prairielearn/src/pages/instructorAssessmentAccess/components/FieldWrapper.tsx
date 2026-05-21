@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 
-import { useAccessControlCanEdit } from './AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 
 export function FieldWrapper({
   isOverridden,
@@ -20,9 +20,9 @@ export function FieldWrapper({
   headerAction?: ReactNode;
   children: ReactNode;
 }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
-  const showHeaderActions = headerAction != null || (canEdit && onRemoveOverride != null);
+  const showHeaderActions = headerAction != null || (ruleEditable && onRemoveOverride != null);
 
   return (
     <Card style={cardStyle}>
@@ -30,7 +30,7 @@ export function FieldWrapper({
         {!isOverridden ? (
           <div className="d-flex justify-content-between align-items-center">
             <span className="text-muted">{label}</span>
-            {canEdit && onOverride && (
+            {ruleEditable && onOverride && (
               <Button
                 size="sm"
                 variant="outline-primary"
@@ -49,7 +49,7 @@ export function FieldWrapper({
               {showHeaderActions && (
                 <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
                   {headerAction}
-                  {canEdit && onRemoveOverride && (
+                  {ruleEditable && onRemoveOverride && (
                     <Button
                       size="sm"
                       variant="outline-danger"

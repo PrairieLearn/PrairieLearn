@@ -1,7 +1,7 @@
 import { Form } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
-import { useAccessControlCanEdit } from '../AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import { type AccessControlFormData, isReleasedNow } from '../types.js';
@@ -32,7 +32,7 @@ function ReleaseDateInput({
   idPrefix: string;
   displayTimezone: string;
 }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <Form.Group>
       <div className="mb-2">
@@ -42,7 +42,7 @@ function ReleaseDateInput({
           id={`${idPrefix}-release-now`}
           label="Released"
           checked={released}
-          disabled={!canEdit}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               onChangeReleased(true);
@@ -61,7 +61,7 @@ function ReleaseDateInput({
           id={`${idPrefix}-release-scheduled`}
           label="Scheduled for release"
           checked={!released}
-          disabled={!canEdit}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               onChangeReleased(false);
@@ -82,7 +82,7 @@ function ReleaseDateInput({
         aria-invalid={!!error}
         aria-errormessage={error ? `${idPrefix}-release-date-error` : undefined}
         value={date ?? ''}
-        disabled={!canEdit}
+        disabled={!ruleEditable}
         onChange={({ currentTarget }) => onChangeDate(currentTarget.value)}
       />
       {error && (

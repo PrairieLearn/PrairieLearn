@@ -11,7 +11,7 @@ import {
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
-import { useAccessControlCanEdit } from './AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
@@ -50,7 +50,7 @@ function getAfterCompleteVisibilityMode(
 }
 
 function ExamAfterCompleteFields({ index }: { index: number }) {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const { field: questionsHiddenField } = useController<
     AccessControlFormData,
     `defaultRule.prairieTestExams.${number}.afterCompleteQuestionsHidden`
@@ -91,7 +91,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
         aria-label="After completion visibility during reservation"
         id={`defaultRule-exam-after-complete-${index}`}
         minWidth={300}
-        disabled={!canEdit || readOnly}
+        disabled={!ruleEditable || readOnly}
         onChange={handleModeChange}
       />
       {!readOnly && selectedDescription && (
@@ -107,7 +107,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
 }
 
 export function PrairieTestControlForm() {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const { register, setValue, trigger } = useFormContext<AccessControlFormData>();
 
   const {
@@ -151,7 +151,7 @@ export function PrairieTestControlForm() {
           <Form.Group className="mb-3" controlId={`defaultRule-exam-uuid-${index}`}>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <Form.Label className="mb-0">Exam UUID</Form.Label>
-              {canEdit && (
+              {ruleEditable && (
                 <Button
                   size="sm"
                   variant="outline-danger"
@@ -172,7 +172,7 @@ export function PrairieTestControlForm() {
               }
               aria-describedby={`defaultRule-exam-uuid-${index}-help`}
               defaultValue=""
-              disabled={!canEdit}
+              disabled={!ruleEditable}
               placeholder="e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c"
               {...register(`defaultRule.prairieTestExams.${index}.examUuid`, {
                 required: 'Exam UUID is required',
@@ -210,7 +210,7 @@ export function PrairieTestControlForm() {
               id={`defaultRule-exam-readonly-${index}`}
               label="Read-only mode"
               defaultChecked={false}
-              disabled={!canEdit}
+              disabled={!ruleEditable}
               {...register(`defaultRule.prairieTestExams.${index}.readOnly`, {
                 onChange: (e: ChangeEvent<HTMLInputElement>) => {
                   if (e.target.checked) {
@@ -240,7 +240,7 @@ export function PrairieTestControlForm() {
           <ExamAfterCompleteFields index={index} />
         </div>
       ))}
-      {canEdit && (
+      {ruleEditable && (
         <Button
           size="sm"
           variant="outline-primary"

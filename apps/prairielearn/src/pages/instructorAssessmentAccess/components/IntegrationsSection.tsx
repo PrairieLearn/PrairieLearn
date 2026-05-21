@@ -3,12 +3,12 @@ import { useFormContext, useWatch } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
-import { useAccessControlCanEdit } from './AccessControlEditabilityContext.js';
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const canEdit = useAccessControlCanEdit();
+  const ruleEditable = useAccessControlRuleEditable();
   const { setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
@@ -47,7 +47,7 @@ export function IntegrationsSection() {
         id="defaultRule-prairietest-enabled"
         label={<strong>PrairieTest</strong>}
         checked={prairieTestEnabled}
-        disabled={!canEdit}
+        disabled={!ruleEditable}
         aria-describedby="defaultRule-prairietest-help"
         onChange={(e) => {
           if (!e.target.checked) {
