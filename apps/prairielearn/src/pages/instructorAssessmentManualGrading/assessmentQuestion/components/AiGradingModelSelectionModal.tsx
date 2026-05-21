@@ -469,7 +469,15 @@ function AiGradingAvailabilityAlert({
           content: (
             <>
               Billing to credit pool &middot; {formatMilliDollars(state.creditBalanceMilliDollars)}{' '}
-              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />
+              available &middot; <SettingsLink url={aiGradingSettingsUrl} text="Manage credits" />{' '}
+              &middot;{' '}
+              <a
+                href="https://docs.prairielearn.com/aiGrading/#factors-affecting-cost-and-runtime"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Factors affecting cost
+              </a>
             </>
           ),
         };

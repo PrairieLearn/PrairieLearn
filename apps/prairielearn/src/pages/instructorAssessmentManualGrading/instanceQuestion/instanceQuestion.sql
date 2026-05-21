@@ -104,16 +104,29 @@ ORDER BY
   s.id DESC;
 
 -- BLOCK select_last_manual_grader_for_instance_question
+WITH
+  latest_submission AS (
+    SELECT
+      s.id
+    FROM
+      variants AS v
+      JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+      v.instance_question_id = $instance_question_id
+    ORDER BY
+      v.date DESC,
+      s.date DESC
+    LIMIT
+      1
+  )
 SELECT
   COALESCE(u.name, u.uid) AS grader_name
 FROM
   grading_jobs AS gj
-  JOIN submissions AS s ON (s.id = gj.submission_id)
-  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN latest_submission AS ls ON (ls.id = gj.submission_id)
   JOIN users AS u ON (u.id = gj.auth_user_id)
 WHERE
-  v.instance_question_id = $instance_question_id
-  AND gj.grading_method = 'Manual'
+  gj.grading_method = 'Manual'
   AND gj.deleted_at IS NULL
 ORDER BY
   gj.graded_at DESC NULLS LAST
