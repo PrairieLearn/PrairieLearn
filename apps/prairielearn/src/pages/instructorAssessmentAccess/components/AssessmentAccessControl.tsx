@@ -88,7 +88,7 @@ function AssessmentAccessControlInner({
 
     await saveMutation.mutateAsync({
       rules: jsonRules,
-      ...(shouldSyncEnrollmentRules ? { enrollmentRules } : {}),
+      enrollmentRules: shouldSyncEnrollmentRules ? enrollmentRules : undefined,
       origHash,
     });
   };
