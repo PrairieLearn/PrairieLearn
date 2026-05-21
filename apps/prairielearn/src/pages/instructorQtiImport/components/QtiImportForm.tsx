@@ -233,6 +233,7 @@ export function QtiImportForm({
   );
   const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBankKey, setUploadingBankKey] = useState<string | null>(null);
   const [error, setError] = useState<{
     message: string;
     jobSequenceId?: string;
@@ -275,6 +276,7 @@ export function QtiImportForm({
     setError(null);
     setSupplementalSuccessMessage(null);
     setUploading(true);
+    setUploadingBankKey(null);
 
     try {
       const data = await uploadExport(form);
@@ -304,6 +306,7 @@ export function QtiImportForm({
     } catch (err) {
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
+      setUploadingBankKey(null);
       setUploading(false);
     }
   };
@@ -314,6 +317,7 @@ export function QtiImportForm({
     setError(null);
     setSupplementalSuccessMessage(null);
     setUploading(true);
+    setUploadingBankKey(form.dataset.sourceBankKey ?? null);
 
     try {
       const data = await uploadExport(form);
@@ -574,6 +578,7 @@ export function QtiImportForm({
     setQuestionOverrides(new Map());
     setExpandedQuestions(new Set());
     setSupplementalSuccessMessage(null);
+    setUploadingBankKey(null);
   };
 
   return (
@@ -611,6 +616,7 @@ export function QtiImportForm({
           <MissingBanksStep
             results={results}
             uploading={uploading}
+            uploadingBankKey={uploadingBankKey}
             successMessage={supplementalSuccessMessage}
             onSubmit={handleBankUpload}
             onSkip={() => setStep('review')}

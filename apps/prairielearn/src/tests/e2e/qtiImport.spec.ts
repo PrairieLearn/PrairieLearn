@@ -694,10 +694,34 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('12345', { exact: true })).toBeVisible();
     await expect(page.getByText('67890', { exact: true })).toBeVisible();
 
+    let continueBankUpload: () => void;
+    const continueBankUploadPromise = new Promise<void>((resolve) => {
+      continueBankUpload = resolve;
+    });
+    await page.route('**/qti_import/upload', async (route) => {
+      await continueBankUploadPromise;
+      await route.fallback();
+    });
+
     await page
       .getByLabel('Supplemental export for "Bank Questions 1" from Canvas course 12345')
       .setInputFiles(firstBankZipPath);
-    await page.getByRole('button', { name: 'Upload export for Bank Questions 1' }).click();
+    const firstBankUploadButton = page.getByRole('button', {
+      name: 'Upload export for Bank Questions 1',
+    });
+    const secondBankUploadButton = page.getByRole('button', {
+      name: 'Upload export for Bank Questions 2',
+    });
+    await firstBankUploadButton.click();
+
+    await expect(page.getByText('Processing...')).toHaveCount(1);
+    await expect(firstBankUploadButton).toContainText('Processing...');
+    await expect(secondBankUploadButton).toBeDisabled();
+    await expect(secondBankUploadButton).toContainText('Upload export');
+    await expect(secondBankUploadButton).not.toContainText('Processing...');
+
+    continueBankUpload!();
+    await page.unroute('**/qti_import/upload');
 
     await expect(page.getByText('Matched 1 question bank from that upload.')).toBeVisible({
       timeout: 15000,

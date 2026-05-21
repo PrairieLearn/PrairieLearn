@@ -316,6 +316,7 @@ export function UploadStep({
 export function MissingBanksStep({
   results,
   uploading,
+  uploadingBankKey,
   successMessage,
   onSubmit,
   onSkip,
@@ -323,6 +324,7 @@ export function MissingBanksStep({
 }: {
   results: SerializedConversionResult[];
   uploading: boolean;
+  uploadingBankKey: string | null;
   successMessage: string | null;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onSkip: () => void;
@@ -379,34 +381,37 @@ export function MissingBanksStep({
       <div className="d-flex flex-column gap-3 mb-3">
         {uniqueRefs.map((ref, i) => {
           const inputId = `qti-bank-file-${i}`;
+          const refKey = sourceBankRefKey(ref);
+          const isUploadingThisBank = uploadingBankKey === refKey;
           const label = ref.externalCourseId
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
 
           return (
             <form
-              key={sourceBankRefKey(ref)}
+              key={refKey}
+              data-source-bank-key={refKey}
               encType="multipart/form-data"
               className="border rounded p-3"
               onSubmit={onSubmit}
             >
-              <div className="d-flex flex-column flex-md-row gap-3 align-items-md-end">
+              <div className="fw-semibold">{ref.title}</div>
+              <div className="text-muted small mb-2">
+                {ref.externalCourseId ? (
+                  <>
+                    Canvas course ID <strong>{ref.externalCourseId}</strong>{' '}
+                    <span>
+                      (find it at <code>/courses/{ref.externalCourseId}</code> on your Canvas
+                      instance)
+                    </span>
+                  </>
+                ) : (
+                  'Canvas did not identify the source course ID for this bank.'
+                )}
+              </div>
+              <Form.Label htmlFor={inputId}>{label}</Form.Label>
+              <div className="d-flex flex-column flex-md-row gap-2 align-items-md-start">
                 <div className="flex-grow-1">
-                  <div className="fw-semibold">{ref.title}</div>
-                  <div className="text-muted small mb-2">
-                    {ref.externalCourseId ? (
-                      <>
-                        Canvas course ID <strong>{ref.externalCourseId}</strong>{' '}
-                        <span>
-                          (find it at <code>/courses/{ref.externalCourseId}</code> on your Canvas
-                          instance)
-                        </span>
-                      </>
-                    ) : (
-                      'Canvas did not identify the source course ID for this bank.'
-                    )}
-                  </div>
-                  <Form.Label htmlFor={inputId}>{label}</Form.Label>
                   <Form.Control
                     id={inputId}
                     type="file"
@@ -419,11 +424,12 @@ export function MissingBanksStep({
                 </div>
                 <Button
                   type="submit"
+                  className="flex-shrink-0"
                   variant="primary"
                   disabled={uploading}
                   aria-label={`Upload export for ${ref.title}`}
                 >
-                  {uploading ? (
+                  {isUploadingThisBank ? (
                     <>
                       <Spinner size="sm" className="me-2" />
                       Processing...
