@@ -110,7 +110,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-An assessment is complete when students can no longer answer questions, usually after the last late deadline, after a timed assessment closes, or after an instructor closes it.
+An assessment is complete when students can no longer answer questions, usually after the due date and any late deadlines pass, after a timed assessment closes, or after an instructor closes it.
 
 Question visibility options:
 

@@ -16,7 +16,6 @@ export async function init() {
       'array_var.sql',
       'histogram.sql',
       'array_histogram.sql',
-      'format_interval.sql',
       'format_date_short.sql',
       'format_date_full.sql',
       'format_date_full_compact.sql',

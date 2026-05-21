@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Form, InputGroup } from 'react-bootstrap';
+import { Alert, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
   get,
@@ -54,6 +54,12 @@ export function getAfterLastDeadlineLabel(lateDeadlines: DeadlineEntry[]): strin
   return 'After late deadlines';
 }
 
+function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
+  if (lateDeadlines.length === 0) return 'due date';
+  if (lateDeadlines.length === 1) return 'late deadline';
+  return 'late deadlines';
+}
+
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   if (value == null) return 'no_access';
   if (!value.allowSubmissions) return 'no_submissions';
@@ -94,11 +100,13 @@ function AfterLastDeadlineInput({
   onChange,
   overrideIndex,
   displayTimezone,
+  isExam,
 }: {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
   overrideIndex?: number;
   displayTimezone: string;
+  isExam: boolean;
 }) {
   const canEdit = useAccessControlCanEdit();
   const isOverride = overrideIndex != null;
@@ -184,6 +192,9 @@ function AfterLastDeadlineInput({
     }
   };
 
+  const showExamSubmissionsWarning = isExam && value?.allowSubmissions === true;
+  const deadlineNoun = isOverride ? 'last deadline' : getLastDeadlineNoun(lateDeadlines);
+
   return (
     <Form.Group>
       <small className="text-muted d-block">{getLastDeadlineText()}</small>
@@ -198,6 +209,12 @@ function AfterLastDeadlineInput({
           onChange={handleModeChange}
         />
       </div>
+      {showExamSubmissionsWarning && (
+        <Alert variant="warning" className="mt-2 mb-0">
+          This is an Exam assessment. Consider disallowing submissions after the {deadlineNoun}{' '}
+          unless you want students to keep working.
+        </Alert>
+      )}
       {mode === 'partial_credit' && (
         <div className="mt-2">
           <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -268,7 +285,13 @@ function AfterLastDeadlineInput({
   );
 }
 
-export function DefaultAfterLastDeadlineField({ displayTimezone }: { displayTimezone: string }) {
+export function DefaultAfterLastDeadlineField({
+  displayTimezone,
+  isExam,
+}: {
+  displayTimezone: string;
+  isExam: boolean;
+}) {
   const { field } = useController<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
   });
@@ -283,6 +306,7 @@ export function DefaultAfterLastDeadlineField({ displayTimezone }: { displayTime
       <AfterLastDeadlineInput
         value={field.value}
         displayTimezone={displayTimezone}
+        isExam={isExam}
         onChange={field.onChange}
       />
     </div>
@@ -292,9 +316,11 @@ export function DefaultAfterLastDeadlineField({ displayTimezone }: { displayTime
 export function OverrideAfterLastDeadlineField({
   index,
   displayTimezone,
+  isExam,
 }: {
   index: number;
   displayTimezone: string;
+  isExam: boolean;
 }) {
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
@@ -323,6 +349,7 @@ export function OverrideAfterLastDeadlineField({
         value={field.value}
         overrideIndex={index}
         displayTimezone={displayTimezone}
+        isExam={isExam}
         onChange={field.onChange}
       />
     </FieldWrapper>

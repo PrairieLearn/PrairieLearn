@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "4.1.4",
+  "version": "4.1.5",
   "type": "module",
   "repository": {
     "type": "git",
@@ -37,7 +37,6 @@
     "express": "^4.22.1 <5",
     "get-port": "^7.2.0",
     "node-fetch": "^3.3.2",
-    "tsx": "^4.21.0",
     "vitest": "^4.1.5"
   }
 }

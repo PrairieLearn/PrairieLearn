@@ -1,5 +1,11 @@
 # @prairielearn/sanitize
 
+## 3.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 3.0.4
 
 ### Patch Changes

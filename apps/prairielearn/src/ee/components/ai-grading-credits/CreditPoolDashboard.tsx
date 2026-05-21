@@ -19,6 +19,7 @@ export function CreditPoolDashboard({
   balanceContext,
   dimmed,
   onPurchaseClick,
+  onRedeemFreeCreditClick,
   canEdit = true,
   header,
   children,
@@ -30,6 +31,7 @@ export function CreditPoolDashboard({
   balanceContext: 'admin' | 'instructor';
   dimmed?: boolean;
   onPurchaseClick?: () => void;
+  onRedeemFreeCreditClick?: () => void;
   canEdit?: boolean;
   header?: React.ReactNode;
   children?: React.ReactNode;
@@ -101,19 +103,32 @@ export function CreditPoolDashboard({
           <p className="text-muted mb-3">
             {canEdit
               ? 'Buy credits to start grading submissions with AI.'
-              : 'You must be a course owner to purchase AI grading credits.'}
+              : 'You must be a course owner to purchase or redeem AI grading credits.'}
           </p>
-          {onPurchaseClick && (
-            <button
-              type="button"
-              className="btn btn-primary d-inline-flex align-items-center gap-2"
-              disabled={!canEdit}
-              onClick={onPurchaseClick}
-            >
-              <i className="bi bi-cart-plus" aria-hidden="true" />
-              Purchase credits
-            </button>
-          )}
+          <div className="d-flex flex-column align-items-center gap-2">
+            {onRedeemFreeCreditClick && (
+              <button
+                type="button"
+                className="btn btn-success d-inline-flex align-items-center gap-2"
+                disabled={!canEdit}
+                onClick={onRedeemFreeCreditClick}
+              >
+                <i className="bi bi-gift-fill" aria-hidden="true" />
+                Redeem free credit
+              </button>
+            )}
+            {onPurchaseClick && (
+              <button
+                type="button"
+                className="btn btn-primary d-inline-flex align-items-center gap-2"
+                disabled={!canEdit}
+                onClick={onPurchaseClick}
+              >
+                <i className="bi bi-cart-plus" aria-hidden="true" />
+                Purchase credits
+              </button>
+            )}
+          </div>
         </div>
       );
     }

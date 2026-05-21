@@ -1,25 +1,26 @@
 globs:
-  - "**/*.md"
+  - '**/*.md'
 
 ignores:
-  - "**/node_modules/**"
-  - "exampleCourse/**"
-  - "testCourse/**"
-  - "**/dist/**"
-  - "**/test-results/**"
-  - ".claude/**"
-  - ".venv/**"
-  - ".agents/**"
-  - ".changeset/**"
-  - ".context/**"
-  - ".github/PULL_REQUEST_TEMPLATE.md"
+  - '**/node_modules/**'
+  - 'exampleCourse/**'
+  - 'testCourse/**'
+  - '**/dist/**'
+  - '**/test-results/**'
+  - '.claude/**'
+  - '.cursor/**'
+  - '.venv/**'
+  - '.agents/**'
+  - '.changeset/**'
+  - '.context/**'
+  - '.github/PULL_REQUEST_TEMPLATE.md'
 
 config:
   MD013: false # Line length
   MD024: false # Multiple headings with the same content
   MD046: false # indented / fenced code blocks (false positives)
   MD026:
-    punctuation: ".,;:"
+    punctuation: '.,;:'
   MD033: # No inline HTML
     allowed_elements:
       - div

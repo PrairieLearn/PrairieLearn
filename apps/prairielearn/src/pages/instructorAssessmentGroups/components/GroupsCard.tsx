@@ -25,6 +25,7 @@ import {
 import type { GroupUsersRow } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { ActionAccess } from '../types.js';
 
 function EditGroupModal({
   row,
@@ -228,7 +229,7 @@ function UploadAssessmentGroupsModal({
     <Modal show={show} onHide={onHide}>
       <form method="POST" encType="multipart/form-data">
         <Modal.Header>
-          <Modal.Title>Upload new group assignments</Modal.Title>
+          <Modal.Title>Upload group memberships</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>Upload a CSV file in the format of:</p>
@@ -671,18 +672,18 @@ export function GroupsCard({
   assessmentSet,
   courseInstanceId,
   csrfToken,
-  canEdit,
+  editAccess,
   minGroupSize,
   maxGroupSize,
 }: {
-  groupsCsvFilename?: string;
+  groupsCsvFilename: string;
   initialGroups?: GroupUsersRow[];
   initialNotAssigned?: string[];
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
   courseInstanceId: string;
   csrfToken: string;
-  canEdit: boolean;
+  editAccess: ActionAccess;
   minGroupSize: number;
   maxGroupSize: number;
 }) {
@@ -690,6 +691,7 @@ export function GroupsCard({
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
+  const canEdit = editAccess.status === 'allowed';
   const trpc = useTRPC();
   const refreshMutation = useMutation(
     trpc.assessmentGroups.refreshGroups.mutationOptions({
@@ -825,37 +827,41 @@ export function GroupsCard({
                 </button>
               )}
               <DropdownButton as={ButtonGroup} title="Actions" variant="outline-secondary">
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => uploadModal.showWithData(null)}
-                >
-                  <i className="bi bi-upload me-2" aria-hidden="true" />
-                  Import CSV
-                </Dropdown.Item>
+                {canEdit && (
+                  <Dropdown.Item
+                    as="button"
+                    type="button"
+                    onClick={() => uploadModal.showWithData(null)}
+                  >
+                    <i className="bi bi-upload me-2" aria-hidden="true" />
+                    Import CSV
+                  </Dropdown.Item>
+                )}
                 <Dropdown.Item
                   as="a"
                   href={getAssessmentDownloadUrl({
                     courseInstanceId,
                     assessmentId: assessment.id,
-                    filename: groupsCsvFilename ?? '',
+                    filename: groupsCsvFilename,
                   })}
                 >
                   <i className="bi bi-download me-2" aria-hidden="true" />
                   Export CSV
                 </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  className="text-danger"
-                  onClick={() => deleteAllModal.showWithData(null)}
-                >
-                  <i className="bi bi-trash me-2" aria-hidden="true" />
-                  Delete all
-                </Dropdown.Item>
+                {canEdit && (
+                  <>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      as="button"
+                      type="button"
+                      className="text-danger"
+                      onClick={() => deleteAllModal.showWithData(null)}
+                    >
+                      <i className="bi bi-trash me-2" aria-hidden="true" />
+                      Delete all
+                    </Dropdown.Item>
+                  </>
+                )}
               </DropdownButton>
               <Button
                 variant="outline-secondary"
@@ -871,6 +877,12 @@ export function GroupsCard({
               </Button>
             </div>
           </div>
+
+          {editAccess.status === 'denied' && (
+            <Alert variant="info" className="mb-3">
+              {editAccess.reason}
+            </Alert>
+          )}
 
           {notAssigned && notAssigned.length > 0 && (
             <Alert

@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 3.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 3.1.4
 
 ### Patch Changes

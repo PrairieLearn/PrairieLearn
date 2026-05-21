@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.7
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 3.0.6
 
 ### Patch Changes

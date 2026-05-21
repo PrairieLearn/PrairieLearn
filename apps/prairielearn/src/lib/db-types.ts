@@ -133,7 +133,7 @@ export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRo
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -152,7 +152,7 @@ export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -713,6 +713,7 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseSchema = z.object({
+  ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),

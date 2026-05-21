@@ -425,6 +425,7 @@ export function InstructorAssessmentAccessNew({
           csrfToken={trpcCsrfToken}
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
+          isExam={resLocals.assessment.type === 'Exam'}
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
