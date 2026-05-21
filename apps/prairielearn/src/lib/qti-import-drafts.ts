@@ -1,12 +1,11 @@
 import crypto from 'node:crypto';
 
-import { S3 } from '@aws-sdk/client-s3';
-
-import { deleteFromS3, getFromS3, makeS3ClientConfig, uploadToS3 } from './aws.js';
+import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 
+// The file-store bucket lifecycle policy must expire this prefix after 24 hours.
+// Successful imports still delete their draft immediately; lifecycle handles abandoned drafts.
 const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
-const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface QtiImportDraftData<T> {
   courseId: string;
@@ -56,33 +55,4 @@ export async function readQtiImportDraft<T>({
 
 export async function deleteQtiImportDraft(draftId: string): Promise<void> {
   await deleteFromS3(config.fileStoreS3Bucket, draftKey(draftId));
-}
-
-export async function cleanupOldQtiImportDrafts(): Promise<void> {
-  const s3 = new S3(makeS3ClientConfig());
-  const cutoff = Date.now() - DRAFT_MAX_AGE_MS;
-  let continuationToken: string | undefined;
-
-  do {
-    const listed = await s3.listObjectsV2({
-      Bucket: config.fileStoreS3Bucket,
-      Prefix: DRAFT_KEY_PREFIX,
-      ContinuationToken: continuationToken,
-    });
-
-    await Promise.all(
-      (listed.Contents ?? []).map(async (object) => {
-        if (!object.Key || !object.LastModified || object.LastModified.getTime() >= cutoff) {
-          return;
-        }
-
-        await s3.deleteObject({
-          Bucket: config.fileStoreS3Bucket,
-          Key: object.Key,
-        });
-      }),
-    );
-
-    continuationToken = listed.NextContinuationToken;
-  } while (continuationToken);
 }

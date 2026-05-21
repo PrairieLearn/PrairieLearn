@@ -199,7 +199,6 @@ export const ConfigSchema = z.object({
   cronIntervalCalculateAssessmentQuestionStatsSec: z.number().default(10 * 60),
   cronIntervalWorkspaceTimeoutStopSec: z.number().default(60),
   cronIntervalWorkspaceTimeoutWarnSec: z.number().default(60),
-  cronIntervalCleanQtiImportDraftsSec: z.number().default(60 * 60),
   cronIntervalWorkspaceHostLoadsSec: z.number().default(10),
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),

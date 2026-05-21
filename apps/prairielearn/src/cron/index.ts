@@ -104,11 +104,6 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
-    {
-      name: 'cleanQtiImportDrafts',
-      module: await import('./cleanQtiImportDrafts.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanQtiImportDraftsSec,
-    },
   ];
 
   if (config.newsFeedUrl) {
