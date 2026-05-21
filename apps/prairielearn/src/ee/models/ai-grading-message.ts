@@ -39,14 +39,6 @@ export async function cancelLatestStreamingAiGradingMessage(assessmentQuestionId
   });
 }
 
-export async function selectAiGradingMessageById(assessmentQuestionId: string, id: string) {
-  return await queryOptionalRow(
-    sql.select_ai_grading_message_by_id,
-    { assessment_question_id: assessmentQuestionId, id },
-    AiGradingMessageSchema,
-  );
-}
-
 export async function selectFirstAiGradingMessage(assessmentQuestionId: string) {
   return await queryOptionalRow(
     sql.select_first_ai_grading_message,

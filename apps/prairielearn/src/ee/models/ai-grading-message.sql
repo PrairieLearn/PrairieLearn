@@ -46,15 +46,6 @@ WHERE
   AND status = 'streaming'
   AND role = 'assistant';
 
--- BLOCK select_ai_grading_message_by_id
-SELECT
-  *
-FROM
-  ai_grading_messages
-WHERE
-  id = $id
-  AND assessment_question_id = $assessment_question_id;
-
 -- BLOCK select_first_ai_grading_message
 SELECT
   *

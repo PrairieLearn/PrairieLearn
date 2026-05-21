@@ -52,14 +52,14 @@ import {
 /** AI Grading Messages */
 export const RawStaffAiGradingMessageSchema = RawAiGradingMessageSchema.pick({
   id: true,
+  model: true,
   parts: true,
   phase: true,
   role: true,
   status: true,
-  workflow_run_id: true,
-  model: true,
   usage_input_tokens: true,
   usage_output_tokens: true,
+  workflow_run_id: true,
 });
 export const StaffAiGradingMessageSchema =
   RawStaffAiGradingMessageSchema.brand<'StaffAiGradingMessage'>();
