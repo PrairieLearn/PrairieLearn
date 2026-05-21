@@ -15,6 +15,21 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
+const UNREFERENCED_ASSET_WARNING_PREFIX =
+  'Unreferenced asset file(s) will not be included because they are not referenced in the questions or assessments: ';
+
+function isUnreferencedAssetWarning(message: string): boolean {
+  return message.startsWith(UNREFERENCED_ASSET_WARNING_PREFIX);
+}
+
+function unreferencedAssetFilenames(message: string): string[] {
+  if (!isUnreferencedAssetWarning(message)) return [];
+  return message
+    .slice(UNREFERENCED_ASSET_WARNING_PREFIX.length)
+    .split(', ')
+    .filter((name) => name.length > 0);
+}
+
 function uniqueCanvasCourseIds(
   refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
 ): string[] {
@@ -94,7 +109,9 @@ export function NonRubricWarnings({
   warnings: SerializedConversionResult['warnings'];
   questions: SerializedQuestionOutput[];
 }) {
-  const filtered = warnings.filter((w) => !isRubricWarning(w.message));
+  const filtered = warnings.filter(
+    (w) => !isRubricWarning(w.message) && !isUnreferencedAssetWarning(w.message),
+  );
   if (filtered.length === 0) return null;
 
   const questionBySourceId = new Map(
@@ -146,6 +163,10 @@ export function ImportSummary({
     .filter((w) => !isRubricWarning(w.message) && w.message.includes('Unsupported'))
     .map((w) => w.message);
   const uniqueUnsupported = [...new Set(unsupportedTypes)];
+  const unreferencedAssets = allWarnings
+    .filter((w) => isUnreferencedAssetWarning(w.message))
+    .flatMap((w) => unreferencedAssetFilenames(w.message));
+  const uniqueUnreferencedAssets = [...new Set(unreferencedAssets)];
 
   const totalSkippedVideos = results.reduce(
     (sum, r) => sum + r.questions.reduce((qSum, q) => qSum + q.skippedVideos.length, 0),
@@ -167,7 +188,7 @@ export function ImportSummary({
     notImportedItems.push(`${pw.filename}: ${pw.message}`);
   }
 
-  const hasNotImported = notImportedItems.length > 0;
+  const hasNotImported = notImportedItems.length > 0 || uniqueUnreferencedAssets.length > 0;
 
   return (
     <div className="row g-3 mb-4">
@@ -216,6 +237,28 @@ export function ImportSummary({
                 {notImportedItems.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
+                {uniqueUnreferencedAssets.length > 0 && (
+                  <li>
+                    {uniqueUnreferencedAssets.length} asset file
+                    {uniqueUnreferencedAssets.length !== 1 ? 's' : ''} will not be included because{' '}
+                    {uniqueUnreferencedAssets.length !== 1 ? 'they are' : 'it is'} not referenced in
+                    the questions or assessments.
+                    <details className="mt-1">
+                      <summary>
+                        <small className="text-secondary">
+                          Show {uniqueUnreferencedAssets.length} files
+                        </small>
+                      </summary>
+                      <ul className="mb-0 mt-1">
+                        {uniqueUnreferencedAssets.map((filename) => (
+                          <li key={filename}>
+                            <small>{filename}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </li>
+                )}
               </ul>
             </Card.Body>
           </Card>

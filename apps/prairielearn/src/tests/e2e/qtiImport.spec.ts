@@ -86,6 +86,58 @@ async function buildQtiZip(
   await pipeline(archive, output);
 }
 
+async function buildQtiZipWithUnusedAsset(destPath: string): Promise<void> {
+  const qtiXml = `<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="test_assess_assets" title="E2E Asset Quiz">
+    <section ident="root_section">
+      <item ident="q_asset_1" title="Asset Question">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>multiple_choice_question</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;p&gt;&lt;img src="$IMS-CC-FILEBASE$/used.png" alt="Used"&gt;&lt;/p&gt;</mattext>
+          </material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="1001">
+                <material><mattext texttype="text/plain">Correct</mattext></material>
+              </response_label>
+              <response_label ident="1002">
+                <material><mattext texttype="text/plain">Incorrect</mattext></material>
+              </response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar>
+              <varequal respident="response1">1001</varequal>
+            </conditionvar>
+            <setvar action="Set" varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>`;
+
+  const archive = archiver('zip');
+  const output = createWriteStream(destPath);
+  archive.append(qtiXml, { name: 'asset-quiz.xml' });
+  archive.append(Buffer.from('used image'), { name: 'web_resources/used.png' });
+  archive.append(Buffer.from('unused image'), { name: 'web_resources/unused.png' });
+  archive.append('not an imported binary asset', { name: 'web_resources/notes.txt' });
+  void archive.finalize();
+  await pipeline(archive, output);
+}
+
 async function buildEmbeddedBankCourseZip(destPath: string): Promise<void> {
   const assessmentXml = `<?xml version="1.0" encoding="UTF-8"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
@@ -434,6 +486,37 @@ test.describe('QTI Import', () => {
 
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
+  });
+
+  test('reports unreferenced binary assets without importing them', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('qti-content-import');
+
+    const zipPath = path.join(testCoursePath, 'qti-unused-asset-fixture.zip');
+    await buildQtiZipWithUnusedAsset(zipPath);
+
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
+    );
+    await page.waitForSelector('.js-hydrated-component');
+
+    await page.getByLabel('Export file').setInputFiles(zipPath);
+    await page.getByRole('button', { name: 'Import content' }).click();
+
+    await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('1 image and other asset')).toBeVisible();
+    await expect(
+      page.getByText(
+        '1 unreferenced asset file will not be included because it is not referenced in the questions or assessments.',
+      ),
+    ).toBeVisible();
+    await page.getByText('Show files').click();
+    await expect(page.getByText('unused.png')).toBeVisible();
+    await expect(page.getByText('notes.txt')).not.toBeVisible();
   });
 
   test('can upload a Canvas quiz export with plain imsqti resource type', async ({
