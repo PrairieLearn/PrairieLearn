@@ -25,6 +25,7 @@ import {
 import type { GroupUsersRow } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { ActionAccess } from '../types.js';
 
 function EditGroupModal({
   row,
@@ -671,8 +672,7 @@ export function GroupsCard({
   assessmentSet,
   courseInstanceId,
   csrfToken,
-  canEdit,
-  editUnavailableReason,
+  editAccess,
   minGroupSize,
   maxGroupSize,
 }: {
@@ -683,8 +683,7 @@ export function GroupsCard({
   assessmentSet: StaffAssessmentSet;
   courseInstanceId: string;
   csrfToken: string;
-  canEdit: boolean;
-  editUnavailableReason?: string;
+  editAccess: ActionAccess;
   minGroupSize: number;
   maxGroupSize: number;
 }) {
@@ -692,6 +691,7 @@ export function GroupsCard({
   const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
+  const canEdit = editAccess.status === 'allowed';
   const trpc = useTRPC();
   const refreshMutation = useMutation(
     trpc.assessmentGroups.refreshGroups.mutationOptions({
@@ -878,9 +878,9 @@ export function GroupsCard({
             </div>
           </div>
 
-          {!canEdit && editUnavailableReason && (
+          {editAccess.status === 'denied' && (
             <Alert variant="info" className="mb-3">
-              {editUnavailableReason}
+              {editAccess.reason}
             </Alert>
           )}
 

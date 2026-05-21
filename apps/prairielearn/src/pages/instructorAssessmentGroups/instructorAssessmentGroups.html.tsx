@@ -21,22 +21,23 @@ import { GroupSettingsCard } from './components/GroupSettingsCard.js';
 import { GroupWorkInstancesWarning } from './components/GroupWorkInstancesWarning.js';
 import { GroupsCard } from './components/GroupsCard.js';
 import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
+import type { ActionAccess } from './types.js';
+
+const ALLOWED_ACCESS = { status: 'allowed' } satisfies ActionAccess;
 
 function NoGroupConfigCard({
   origHash,
-  canEdit,
+  enableAccess,
   hasAssessmentInstances,
   courseInstanceId,
   assessment,
-  enableUnavailableReason,
   onEnable,
 }: {
   origHash: string | null;
-  canEdit: boolean;
+  enableAccess: ActionAccess;
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessment: StaffAssessment;
-  enableUnavailableReason?: string;
   onEnable: (result: {
     origHash: string;
     groupConfig: StaffGroupConfig;
@@ -49,6 +50,7 @@ function NoGroupConfigCard({
   const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
 
+  const canEdit = enableAccess.status === 'allowed';
   const description = canEdit
     ? 'Enable group work to allow students to collaborate and submit as groups.'
     : 'Group work is not enabled for this assessment.';
@@ -65,9 +67,9 @@ function NoGroupConfigCard({
           <i className="bi bi-people fs-1 mb-2" />
           <h2 className="h5">This is not a group assessment.</h2>
           <div className="text-muted">{description}</div>
-          {!canEdit && enableUnavailableReason && (
+          {enableAccess.status === 'denied' && (
             <Alert variant="info" className="mt-3 mb-0">
-              {enableUnavailableReason}
+              {enableAccess.reason}
             </Alert>
           )}
           {canEdit && hasAssessmentInstances && (
@@ -198,7 +200,6 @@ function InstructorAssessmentGroupsInner({
   const canEditGroupSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
   const canEditStudentData =
     permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
-  const canDisableGroupWork = canEditGroupSettings && canEditStudentData;
   const showManageGroupWork =
     permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
 
@@ -206,18 +207,22 @@ function InstructorAssessmentGroupsInner({
     return (
       <NoGroupConfigCard
         origHash={origHash}
-        canEdit={canEditGroupSettings}
+        enableAccess={run<ActionAccess>(() => {
+          if (canEditGroupSettings) return ALLOWED_ACCESS;
+          if (permissions.isExampleCourse) {
+            return {
+              status: 'denied',
+              reason: 'Enabling group work is not available for the example course.',
+            };
+          }
+          return {
+            status: 'denied',
+            reason: 'Enabling group work requires course editor permissions.',
+          };
+        })}
         hasAssessmentInstances={hasAssessmentInstances}
         courseInstanceId={courseInstanceId}
         assessment={assessment}
-        enableUnavailableReason={run(() => {
-          if (permissions.isExampleCourse) {
-            return 'Enabling group work is not available for the example course.';
-          }
-          if (!permissions.hasCoursePermissionEdit) {
-            return 'Enabling group work requires course editor permissions.';
-          }
-        })}
         onEnable={({
           origHash: newHash,
           groupConfig,
@@ -242,14 +247,18 @@ function InstructorAssessmentGroupsInner({
           groupConfigInfo={groupConfigInfo}
           groupSettingsDefaults={groupSettingsDefaults}
           origHash={origHash}
-          canEdit={canEditGroupSettings}
-          editUnavailableReason={run(() => {
+          editAccess={run<ActionAccess>(() => {
+            if (canEditGroupSettings) return ALLOWED_ACCESS;
             if (permissions.isExampleCourse) {
-              return 'Editing group settings is not available for the example course.';
+              return {
+                status: 'denied',
+                reason: 'Editing group settings is not available for the example course.',
+              };
             }
-            if (!permissions.hasCoursePermissionEdit) {
-              return 'Editing group settings requires course editor permissions.';
-            }
+            return {
+              status: 'denied',
+              reason: 'Editing group settings requires course editor permissions.',
+            };
           })}
           onOrigHashChange={setOrigHash}
           onGroupSizeSaved={(min, max) => {
@@ -270,14 +279,18 @@ function InstructorAssessmentGroupsInner({
             assessmentSet={assessmentSet}
             courseInstanceId={courseInstanceId}
             csrfToken={csrfToken}
-            canEdit={canEditStudentData}
-            editUnavailableReason={run(() => {
+            editAccess={run<ActionAccess>(() => {
+              if (canEditStudentData) return ALLOWED_ACCESS;
               if (permissions.isExampleCourse) {
-                return 'Editing group memberships is not available for the example course.';
+                return {
+                  status: 'denied',
+                  reason: 'Editing group memberships is not available for the example course.',
+                };
               }
-              if (!permissions.hasCourseInstancePermissionEdit) {
-                return 'Editing group memberships requires student data editor permissions.';
-              }
+              return {
+                status: 'denied',
+                reason: 'Editing group memberships requires student data editor permissions.',
+              };
             })}
             minGroupSize={minGroupSize}
             maxGroupSize={maxGroupSize}
@@ -302,23 +315,36 @@ function InstructorAssessmentGroupsInner({
             hasAssessmentInstances={hasAssessmentInstances}
             courseInstanceId={courseInstanceId}
             assessmentId={assessment.id}
-            canDisable={canDisableGroupWork}
-            disableUnavailableReason={run(() => {
+            disableAccess={run<ActionAccess>(() => {
+              if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
               if (permissions.isExampleCourse) {
-                return 'Disabling group work is not available for the example course.';
+                return {
+                  status: 'denied',
+                  reason: 'Disabling group work is not permitted for the example course.',
+                };
               }
               if (
                 !permissions.hasCoursePermissionEdit &&
                 !permissions.hasCourseInstancePermissionEdit
               ) {
-                return 'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group memberships.';
+                return {
+                  status: 'denied',
+                  reason:
+                    'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group memberships.',
+                };
               }
               if (!permissions.hasCoursePermissionEdit) {
-                return 'Disabling group work requires course editor permissions because it changes group settings.';
+                return {
+                  status: 'denied',
+                  reason:
+                    'Disabling group work requires course editor permissions because it changes group settings.',
+                };
               }
-              if (!permissions.hasCourseInstancePermissionEdit) {
-                return 'Disabling group work requires student data editor permissions because it permanently removes group memberships.';
-              }
+              return {
+                status: 'denied',
+                reason:
+                  'Disabling group work requires student data editor permissions because it permanently removes group memberships.',
+              };
             })}
             onDisable={({ origHash: newHash }) => {
               setOrigHash(newHash);

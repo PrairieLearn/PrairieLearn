@@ -12,6 +12,7 @@ import { type StaffGroupConfig } from '../../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-config.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { ActionAccess } from '../types.js';
 
 const SAVE_FAILED_FALLBACK = 'Failed to save group configuration.';
 
@@ -81,8 +82,7 @@ export function GroupSettingsCard({
   groupConfigInfo,
   groupSettingsDefaults,
   origHash,
-  canEdit,
-  editUnavailableReason,
+  editAccess,
   onOrigHashChange,
   onGroupSizeSaved,
   onSaved,
@@ -92,8 +92,7 @@ export function GroupSettingsCard({
   groupConfigInfo: StaffGroupConfig;
   groupSettingsDefaults: GroupSettingsFormValues | null;
   origHash: string | null;
-  canEdit: boolean;
-  editUnavailableReason?: string;
+  editAccess: ActionAccess;
   onOrigHashChange: (hash: string | null) => void;
   onGroupSizeSaved: (min: number | null, max: number | null) => void;
   onSaved: () => void;
@@ -101,6 +100,7 @@ export function GroupSettingsCard({
   onClearSaveStatus: () => void;
 }) {
   const [showRecommendedRolesModal, setShowRecommendedRolesModal] = useState(false);
+  const canEdit = editAccess.status === 'allowed';
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.updateGroupConfig.mutationOptions());
 
@@ -245,9 +245,9 @@ export function GroupSettingsCard({
           <div className="text-muted small mb-4">
             Configure how groups work for this assessment.
           </div>
-          {!canEdit && editUnavailableReason && (
+          {editAccess.status === 'denied' && (
             <Alert variant="info" className="mb-4">
-              {editUnavailableReason}
+              {editAccess.reason}
             </Alert>
           )}
           <fieldset disabled={!canEdit}>

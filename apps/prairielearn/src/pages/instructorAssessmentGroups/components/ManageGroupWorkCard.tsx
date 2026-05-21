@@ -5,6 +5,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import { getAppError } from '../../../lib/client/errors.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { ActionAccess } from '../types.js';
 
 import { GroupWorkInstancesWarning } from './GroupWorkInstancesWarning.js';
 
@@ -32,8 +33,8 @@ function DisableGroupWorkModal({
       </Modal.Header>
       <Modal.Body>
         <p className="mb-2">
-          All groups, group memberships, and the group configuration for this assessment will be
-          permanently removed.
+          All group configuration for this assessment, including groups and their memberships, will
+          be permanently removed.
         </p>
         <p className="mb-0 text-muted small">
           Students will need to be re-grouped if you enable group work again later.
@@ -64,19 +65,18 @@ export function ManageGroupWorkCard({
   hasAssessmentInstances,
   courseInstanceId,
   assessmentId,
-  canDisable,
-  disableUnavailableReason,
+  disableAccess,
   onDisable,
 }: {
   origHash: string | null;
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessmentId: string;
-  canDisable: boolean;
-  disableUnavailableReason?: string;
+  disableAccess: ActionAccess;
   onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
+  const canDisable = disableAccess.status === 'allowed';
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.disableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['DisableGroupWork']>(mutation.error);
@@ -109,15 +109,13 @@ export function ManageGroupWorkCard({
             {appError.message}
           </Alert>
         )}
-        {!canDisable && disableUnavailableReason && (
-          <Alert variant="info">{disableUnavailableReason}</Alert>
-        )}
+        {disableAccess.status === 'denied' && <Alert variant="info">{disableAccess.reason}</Alert>}
         <div className="d-flex align-items-center gap-3">
           <div className="flex-grow-1">
             <div className="fw-bold">Disable group work</div>
             <div className="text-muted small">
-              All groups, group memberships, and the group configuration will be permanently
-              removed.
+              All group configuration for this assessment, including groups and their memberships,
+              will be permanently removed.
             </div>
           </div>
           <Button
