@@ -164,7 +164,7 @@ export function AccessControlSummary({
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
-  canEdit,
+  canEditAccessSettings,
   canEditEnrollmentRules,
   readOnlyMessage,
   hiddenEnrollmentRuleCount,
@@ -186,7 +186,7 @@ export function AccessControlSummary({
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  canEdit: boolean;
+  canEditAccessSettings: boolean;
   canEditEnrollmentRules: boolean;
   readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
@@ -200,7 +200,7 @@ export function AccessControlSummary({
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!canEdit) return;
+    if (!canEditAccessSettings) return;
     if (!over || active.id === over.id) return;
     const oldIndex = sortableIds.indexOf(String(active.id));
     const newIndex = sortableIds.indexOf(String(over.id));
@@ -242,14 +242,19 @@ export function AccessControlSummary({
             <Button
               variant="outline-primary"
               size="sm"
-              aria-label={canEdit ? 'Edit' : 'View'}
+              aria-label={canEditAccessSettings ? 'Edit' : 'View'}
               className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
-              <i className={canEdit ? 'bi bi-pencil' : 'bi bi-eye'} aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">{canEdit ? 'Edit' : 'View'}</span>
+              <i
+                className={canEditAccessSettings ? 'bi bi-pencil' : 'bi bi-eye'}
+                aria-hidden="true"
+              />
+              <span className="toolbar-btn-label ms-1">
+                {canEditAccessSettings ? 'Edit' : 'View'}
+              </span>
             </Button>
-            {canEdit && (
+            {canEditAccessSettings && (
               <Button
                 variant="outline-danger"
                 size="sm"
@@ -273,7 +278,7 @@ export function AccessControlSummary({
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
-          canFetchPrairieTestMetadata={canEdit}
+          canFetchPrairieTestMetadata={canEditAccessSettings}
         />
       </section>
 
@@ -287,7 +292,7 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          {canEdit && (
+          {canEditAccessSettings && (
             <Button
               variant="primary"
               size="sm"
@@ -303,19 +308,19 @@ export function AccessControlSummary({
           overridden are inherited from the defaults and any earlier overrides.
         </small>
 
-        {canEdit && !canEditEnrollmentRules && (
+        {canEditAccessSettings && !canEditEnrollmentRules && (
           <Alert variant="info" className="mb-3">
-            You can edit defaults and student-label overrides. Student-specific overrides require
-            Student Data Editor permission.
+            You can edit defaults and overrides for students with specific labels. Student-specific
+            overrides require student data editor permissions.
           </Alert>
         )}
 
         {hiddenEnrollmentRuleCount > 0 && (
           <Alert variant="info" className="mb-3">
             This assessment has {hiddenEnrollmentRuleCount} {hiddenEnrollmentRuleNoun} that{' '}
-            {hiddenEnrollmentRuleVerb} hidden because you do not have Student Data Viewer
-            permission. These overrides remain in place when you save, but visible changes may still
-            affect them through inherited settings.
+            {hiddenEnrollmentRuleVerb} hidden because you do not have student data viewer
+            permissions. These overrides remain in place when you save, but visible changes may
+            still affect them through inherited settings.
           </Alert>
         )}
 
@@ -345,7 +350,7 @@ export function AccessControlSummary({
                     ? 'Overrides for specific students'
                     : 'Overrides for student labels';
                 const canEditOverride =
-                  canEdit &&
+                  canEditAccessSettings &&
                   (override.appliesTo.targetType !== 'enrollment' || canEditEnrollmentRules);
 
                 return (

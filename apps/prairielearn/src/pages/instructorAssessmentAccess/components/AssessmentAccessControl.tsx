@@ -18,6 +18,13 @@ import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 
+export interface AssessmentAccessControlPermissions {
+  isExampleCourse: boolean;
+  hasCoursePermissionEdit: boolean;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+}
+
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
@@ -27,9 +34,7 @@ interface AssessmentAccessControlProps {
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  canEdit: boolean;
-  canEditEnrollmentRules: boolean;
-  readOnlyMessage: string | null;
+  permissions: AssessmentAccessControlPermissions;
   hiddenEnrollmentRuleCount: number;
 }
 
@@ -40,14 +45,24 @@ function AssessmentAccessControlInner({
   initialData,
   prairieTestExamMetadata,
   ptHost,
-  canEdit,
-  canEditEnrollmentRules,
-  readOnlyMessage,
+  permissions,
   hiddenEnrollmentRuleCount,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
   const trpc = useTRPC();
+  const canEditAccessSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canEditEnrollmentRules =
+    canEditAccessSettings && permissions.hasCourseInstancePermissionEdit;
+  const readOnlyMessage = run(() => {
+    if (permissions.isExampleCourse) {
+      return 'Editing access settings is not available for the example course.';
+    }
+    if (!permissions.hasCoursePermissionEdit) {
+      return 'Editing access settings requires course editor permissions.';
+    }
+    return null;
+  });
 
   const saveMutation = useMutation(
     trpc.accessControl.saveAllRules.mutationOptions({
@@ -122,7 +137,7 @@ function AssessmentAccessControlInner({
         ptHost={ptHost}
         isSaving={saveMutation.isPending}
         alert={saveAlert}
-        canEdit={canEdit}
+        canEditAccessSettings={canEditAccessSettings}
         canEditEnrollmentRules={canEditEnrollmentRules}
         readOnlyMessage={readOnlyMessage}
         hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}

@@ -44,7 +44,7 @@ export function AccessControlForm({
   isExam,
   isSaving = false,
   alert,
-  canEdit,
+  canEditAccessSettings,
   canEditEnrollmentRules,
   readOnlyMessage,
   hiddenEnrollmentRuleCount,
@@ -57,7 +57,7 @@ export function AccessControlForm({
   isExam: boolean;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
-  canEdit: boolean;
+  canEditAccessSettings: boolean;
   canEditEnrollmentRules: boolean;
   readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
@@ -137,7 +137,7 @@ export function AccessControlForm({
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
-    if (!canEdit) return;
+    if (!canEditAccessSettings) return;
 
     await onSubmit(formDataToJson(data));
     reset(data);
@@ -281,7 +281,7 @@ export function AccessControlForm({
   ) : undefined;
 
   const selectedRuleCanEdit =
-    canEdit &&
+    canEditAccessSettings &&
     (selectedRule?.type !== 'override' ||
       watchedData.overrides[selectedRule.index]?.appliesTo.targetType !== 'enrollment' ||
       canEditEnrollmentRules);
@@ -304,7 +304,7 @@ export function AccessControlForm({
               <AppliesToField
                 namePrefix={`overrides.${selectedRule.index}`}
                 courseInstanceId={courseInstance.id}
-                canEditAccessSettings={canEdit}
+                canEditAccessSettings={canEditAccessSettings}
                 canEditEnrollmentRules={canEditEnrollmentRules}
                 onTargetTypeChange={(targetType) =>
                   handleOverrideTargetTypeChange(selectedRule.index, targetType)
@@ -364,7 +364,7 @@ export function AccessControlForm({
                     }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
-                    canEdit={canEdit}
+                    canEditAccessSettings={canEditAccessSettings}
                     canEditEnrollmentRules={canEditEnrollmentRules}
                     readOnlyMessage={readOnlyMessage}
                     hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
@@ -387,7 +387,7 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                {canEdit && (
+                {canEditAccessSettings && (
                   <StickySaveBar
                     visible={isDirty}
                     isSaving={isSaving}

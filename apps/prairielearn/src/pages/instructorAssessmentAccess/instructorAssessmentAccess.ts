@@ -63,23 +63,22 @@ router.get(
       'enhanced-access-control',
       res.locals,
     );
-    const readOnlyMessage = !res.locals.authz_data.has_course_permission_edit
-      ? 'You must be a course editor to edit access settings.'
-      : res.locals.course.example_course
-        ? "You can't edit access settings in the example course."
-        : null;
-    const canEdit = readOnlyMessage == null;
-    const canViewEnrollmentRules = res.locals.authz_data.has_course_instance_permission_view;
-    const canEditEnrollmentRules =
-      canEdit && res.locals.authz_data.has_course_instance_permission_edit;
+    const permissions = {
+      isExampleCourse: res.locals.course.example_course,
+      hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      hasCourseInstancePermissionView: res.locals.authz_data.has_course_instance_permission_view,
+      hasCourseInstancePermissionEdit: res.locals.authz_data.has_course_instance_permission_edit,
+    };
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
         selectAccessControlRules(
           res.locals.assessment,
-          canViewEnrollmentRules ? undefined : ['none', 'student_label'],
+          permissions.hasCourseInstancePermissionView ? undefined : ['none', 'student_label'],
         ),
-        canViewEnrollmentRules ? 0 : countEnrollmentAccessControlRules(res.locals.assessment),
+        permissions.hasCourseInstancePermissionView
+          ? 0
+          : countEnrollmentAccessControlRules(res.locals.assessment),
       ]);
       const initialExamUuids = Array.from(
         new Set(
@@ -112,9 +111,7 @@ router.get(
           initialData: jsonRules,
           prairieTestExamMetadata,
           ptHost: config.ptHost,
-          canEdit,
-          canEditEnrollmentRules,
-          readOnlyMessage,
+          permissions,
           hiddenEnrollmentRuleCount,
         }),
       );
@@ -181,6 +178,7 @@ router.get(
     }
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
+    const canEdit = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
     res.send(
       InstructorAssessmentAccess({
         resLocals: res.locals,

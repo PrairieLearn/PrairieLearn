@@ -371,6 +371,14 @@ describe('Access control save via tRPC', () => {
     const courseEditorOnlyHtml = await courseEditorOnlyResponse.text();
     assert.notInclude(courseEditorOnlyHtml, enrollmentOverrideStudentUid);
     assert.include(courseEditorOnlyHtml, '"hiddenEnrollmentRuleCount":1');
+    assert.include(
+      courseEditorOnlyHtml,
+      'Student-specific overrides require student data editor permissions.',
+    );
+    assert.include(
+      courseEditorOnlyHtml,
+      'hidden because you do not have student data viewer permissions',
+    );
 
     const courseEditorWithStudentDataViewResponse = await helperClient.fetchCheerio(accessUrl, {
       headers: {

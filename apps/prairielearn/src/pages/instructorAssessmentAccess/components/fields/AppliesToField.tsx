@@ -76,8 +76,8 @@ export function AppliesToField({
       </div>
       {showStudentLabelOnlyHint && (
         <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
-          Specific-student overrides require Student Data Editor permission. You can still create or
-          edit overrides for students with specific labels.
+          Student-specific overrides require student data editor permissions. You can still create
+          or edit overrides for students with specific labels.
         </Alert>
       )}
       <fieldset className="mb-3">
