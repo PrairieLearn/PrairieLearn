@@ -1635,7 +1635,7 @@ function UsageModal({
           <dd className="col-sm-7">{numberFormatter.format(assistantMessageCount)}</dd>
         </dl>
         <div className="small text-muted mt-3">
-          Token counts update after each assistant message finishes.
+          Usage information updates after each assistant message is sent.
         </div>
       </Modal.Body>
       <Modal.Footer>
