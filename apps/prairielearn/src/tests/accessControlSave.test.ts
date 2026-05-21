@@ -228,77 +228,12 @@ describe('Access control save via tRPC', () => {
     assert.notProperty(parsed.accessControl[0], 'beforeRelease');
   });
 
-  test.sequential(
-    'allows course editors without student data edit to save JSON rules',
-    async () => {
-      const courseEditor = await getOrCreateUser({
-        uid: 'access-control-editor@example.com',
-        name: 'Access Control Editor',
-        uin: '100000001',
-        email: 'access-control-editor@example.com',
-      });
-      await insertCoursePermissionsByUserUid({
-        course_id: '1',
-        uid: courseEditor.uid,
-        course_role: 'Editor',
-        authn_user_id: courseEditor.id,
-      });
-
-      await withUser(courseEditor, async () => {
-        const client = await createClient();
-        const origHash = await getOrigHash();
-        const result = await client.accessControl.saveAllRules.mutate({
-          rules: [makeRule({ dateControl: { due: { date: '2024-04-15T23:59:00' } } })],
-          origHash,
-        });
-        assert.isString(result.newHash);
-        assert.notEqual(result.newHash, origHash);
-      });
-
-      const fileContent = await fs.readFile(assessmentPath(), 'utf8');
-      const parsed = JSON.parse(fileContent);
-      assert.equal(parsed.accessControl[0].dateControl.due?.date, '2024-04-15T23:59:00');
-    },
-  );
-
-  test.sequential(
-    'allows course editors without student data view to load access metadata',
-    async () => {
-      const courseEditor = await getOrCreateUser({
-        uid: 'access-control-metadata-editor@example.com',
-        name: 'Access Control Metadata Editor',
-        uin: '100000005',
-        email: 'access-control-metadata-editor@example.com',
-      });
-      await insertCoursePermissionsByUserUid({
-        course_id: '1',
-        uid: courseEditor.uid,
-        course_role: 'Editor',
-        authn_user_id: courseEditor.id,
-      });
-
-      await withUser(courseEditor, async () => {
-        const client = await createClient();
-        const labels = await client.accessControl.studentLabels.query();
-        assert.include(
-          labels.map((label) => label.name),
-          'Section A',
-        );
-
-        const examMetadata = await client.accessControl.prairieTestExamMetadata.query({
-          examUuids: [],
-        });
-        assert.deepEqual(examMetadata, []);
-      });
-    },
-  );
-
-  test.sequential('requires student data edit to sync enrollment-specific rules', async () => {
+  test.sequential('course editor without student data permissions', async () => {
     const courseEditor = await getOrCreateUser({
-      uid: 'access-control-enrollment-editor@example.com',
-      name: 'Access Control Enrollment Editor',
-      uin: '100000002',
-      email: 'access-control-enrollment-editor@example.com',
+      uid: 'access-control-course-editor@example.com',
+      name: 'Access Control Course Editor',
+      uin: '100000001',
+      email: 'access-control-course-editor@example.com',
     });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -310,36 +245,57 @@ describe('Access control save via tRPC', () => {
     await withUser(courseEditor, async () => {
       const client = await createClient();
       const origHash = await getOrigHash();
+
+      const saveResult = await client.accessControl.saveAllRules.mutate({
+        rules: [makeRule({ dateControl: { due: { date: '2024-04-15T23:59:00' } } })],
+        origHash,
+      });
+      assert.isString(saveResult.newHash);
+      assert.notEqual(saveResult.newHash, origHash);
+      const parsed = JSON.parse(await fs.readFile(assessmentPath(), 'utf8'));
+      assert.equal(parsed.accessControl[0].dateControl.due?.date, '2024-04-15T23:59:00');
+
+      const labels = await client.accessControl.studentLabels.query();
+      assert.include(
+        labels.map((label) => label.name),
+        'Section A',
+      );
+      assert.deepEqual(
+        await client.accessControl.prairieTestExamMetadata.query({ examUuids: [] }),
+        [],
+      );
+
       await expect(
         client.accessControl.saveAllRules.mutate({
           rules: [makeRule()],
           enrollmentRules: [],
-          origHash,
+          origHash: saveResult.newHash,
         }),
       ).rejects.toThrow(/student data editor/);
     });
+
+    const response = await helperClient.fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access`,
+      {
+        headers: {
+          cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditor.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None`,
+        },
+      },
+    );
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.notInclude(html, enrollmentOverrideStudentUid);
+    assert.include(html, '"hiddenEnrollmentRuleCount":1');
+    assert.include(html, 'Student-specific overrides require student data editor permissions.');
+    assert.include(html, 'hidden because you do not have student data viewer permissions');
   });
 
-  test.sequential('requires student data view to render enrollment-specific rules', async () => {
-    const accessUrl = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access`;
-    const courseEditorOnly = await getOrCreateUser({
-      uid: 'access-control-page-editor@example.com',
-      name: 'Access Control Page Editor',
-      uin: '100000003',
-      email: 'access-control-page-editor@example.com',
-    });
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: courseEditorOnly.uid,
-      course_role: 'Editor',
-      authn_user_id: courseEditorOnly.id,
-    });
-
+  test.sequential('course editor with student data view permissions', async () => {
     const courseEditorWithStudentDataView = await getOrCreateUser({
-      uid: 'access-control-page-student-data-viewer@example.com',
-      name: 'Access Control Page Student Data Viewer',
-      uin: '100000004',
-      email: 'access-control-page-student-data-viewer@example.com',
+      uid: 'access-control-student-data-viewer@example.com',
+      name: 'Access Control Student Data Viewer',
+      uin: '100000002',
+      email: 'access-control-student-data-viewer@example.com',
     });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -355,34 +311,18 @@ describe('Access control save via tRPC', () => {
       authn_user_id: courseEditorWithStudentDataView.id,
     });
 
-    const courseEditorOnlyResponse = await helperClient.fetchCheerio(accessUrl, {
-      headers: {
-        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorOnly.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None`,
+    const response = await helperClient.fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access`,
+      {
+        headers: {
+          cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorWithStudentDataView.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Viewer`,
+        },
       },
-    });
-    assert.equal(courseEditorOnlyResponse.status, 200);
-    const courseEditorOnlyHtml = await courseEditorOnlyResponse.text();
-    assert.notInclude(courseEditorOnlyHtml, enrollmentOverrideStudentUid);
-    assert.include(courseEditorOnlyHtml, '"hiddenEnrollmentRuleCount":1');
-    assert.include(
-      courseEditorOnlyHtml,
-      'Student-specific overrides require student data editor permissions.',
     );
-    assert.include(
-      courseEditorOnlyHtml,
-      'hidden because you do not have student data viewer permissions',
-    );
-
-    const courseEditorWithStudentDataViewResponse = await helperClient.fetchCheerio(accessUrl, {
-      headers: {
-        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorWithStudentDataView.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Viewer`,
-      },
-    });
-    assert.equal(courseEditorWithStudentDataViewResponse.status, 200);
-    const courseEditorWithStudentDataViewHtml =
-      await courseEditorWithStudentDataViewResponse.text();
-    assert.include(courseEditorWithStudentDataViewHtml, enrollmentOverrideStudentUid);
-    assert.include(courseEditorWithStudentDataViewHtml, '"hiddenEnrollmentRuleCount":0');
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.include(html, enrollmentOverrideStudentUid);
+    assert.include(html, '"hiddenEnrollmentRuleCount":0');
   });
 
   test.sequential('rejects save with stale origHash', async () => {
