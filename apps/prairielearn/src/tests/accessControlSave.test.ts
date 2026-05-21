@@ -231,18 +231,17 @@ describe('Access control save via tRPC', () => {
   test.sequential(
     'allows course editors without student data edit to save JSON rules',
     async () => {
-      const courseEditor = {
+      const courseEditor = await getOrCreateUser({
         uid: 'access-control-editor@example.com',
         name: 'Access Control Editor',
         uin: '100000001',
         email: 'access-control-editor@example.com',
-      };
-      const user = await getOrCreateUser(courseEditor);
+      });
       await insertCoursePermissionsByUserUid({
         course_id: '1',
         uid: courseEditor.uid,
         course_role: 'Editor',
-        authn_user_id: user.id,
+        authn_user_id: courseEditor.id,
       });
 
       await withUser(courseEditor, async () => {
@@ -265,18 +264,17 @@ describe('Access control save via tRPC', () => {
   test.sequential(
     'allows course editors without student data view to load access metadata',
     async () => {
-      const courseEditor = {
+      const courseEditor = await getOrCreateUser({
         uid: 'access-control-metadata-editor@example.com',
         name: 'Access Control Metadata Editor',
         uin: '100000005',
         email: 'access-control-metadata-editor@example.com',
-      };
-      const user = await getOrCreateUser(courseEditor);
+      });
       await insertCoursePermissionsByUserUid({
         course_id: '1',
         uid: courseEditor.uid,
         course_role: 'Editor',
-        authn_user_id: user.id,
+        authn_user_id: courseEditor.id,
       });
 
       await withUser(courseEditor, async () => {
@@ -296,18 +294,17 @@ describe('Access control save via tRPC', () => {
   );
 
   test.sequential('requires student data edit to sync enrollment-specific rules', async () => {
-    const courseEditor = {
+    const courseEditor = await getOrCreateUser({
       uid: 'access-control-enrollment-editor@example.com',
       name: 'Access Control Enrollment Editor',
       uin: '100000002',
       email: 'access-control-enrollment-editor@example.com',
-    };
-    const user = await getOrCreateUser(courseEditor);
+    });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: courseEditor.uid,
       course_role: 'Editor',
-      authn_user_id: user.id,
+      authn_user_id: courseEditor.id,
     });
 
     await withUser(courseEditor, async () => {
@@ -325,32 +322,28 @@ describe('Access control save via tRPC', () => {
 
   test.sequential('requires student data view to render enrollment-specific rules', async () => {
     const accessUrl = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessmentId}/access`;
-    const courseEditorOnlyUser = {
+    const courseEditorOnly = await getOrCreateUser({
       uid: 'access-control-page-editor@example.com',
       name: 'Access Control Page Editor',
       uin: '100000003',
       email: 'access-control-page-editor@example.com',
-    };
-    const courseEditorOnly = await getOrCreateUser(courseEditorOnlyUser);
+    });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
-      uid: courseEditorOnlyUser.uid,
+      uid: courseEditorOnly.uid,
       course_role: 'Editor',
       authn_user_id: courseEditorOnly.id,
     });
 
-    const courseEditorWithStudentDataViewUser = {
+    const courseEditorWithStudentDataView = await getOrCreateUser({
       uid: 'access-control-page-student-data-viewer@example.com',
       name: 'Access Control Page Student Data Viewer',
       uin: '100000004',
       email: 'access-control-page-student-data-viewer@example.com',
-    };
-    const courseEditorWithStudentDataView = await getOrCreateUser(
-      courseEditorWithStudentDataViewUser,
-    );
+    });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
-      uid: courseEditorWithStudentDataViewUser.uid,
+      uid: courseEditorWithStudentDataView.uid,
       course_role: 'Editor',
       authn_user_id: courseEditorWithStudentDataView.id,
     });
@@ -364,7 +357,7 @@ describe('Access control save via tRPC', () => {
 
     const courseEditorOnlyResponse = await helperClient.fetchCheerio(accessUrl, {
       headers: {
-        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorOnlyUser.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None`,
+        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorOnly.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None`,
       },
     });
     assert.equal(courseEditorOnlyResponse.status, 200);
@@ -382,7 +375,7 @@ describe('Access control save via tRPC', () => {
 
     const courseEditorWithStudentDataViewResponse = await helperClient.fetchCheerio(accessUrl, {
       headers: {
-        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorWithStudentDataViewUser.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Viewer`,
+        cookie: `pl_test_user=test_instructor; pl2_requested_uid=${courseEditorWithStudentDataView.uid}; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Viewer`,
       },
     });
     assert.equal(courseEditorWithStudentDataViewResponse.status, 200);
