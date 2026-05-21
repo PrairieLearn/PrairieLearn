@@ -184,11 +184,7 @@ function mergeSourceBankResults(
       },
       questions: [...questionsByDir.values()],
       warnings: result.warnings.filter(
-        (warning) =>
-          !(
-            removedWarningQuestionIds.has(warning.questionId) &&
-            warning.message.includes('Question bank reference')
-          ),
+        (warning) => !removedWarningQuestionIds.has(warning.questionId),
       ),
     };
   });
@@ -564,10 +560,16 @@ export function QtiImportForm({
     return count + getIncludedQuestionCount(result);
   }, 0);
   const canImport = includedAssessmentCount > 0 || includedQuestionCount > 0;
-  const importButtonLabel =
-    includedAssessmentCount > 0 || (hasAssessmentResults && includedQuestionCount === 0)
-      ? `Import ${includedAssessmentCount} assessment${includedAssessmentCount !== 1 ? 's' : ''}`
-      : `Import ${includedQuestionCount} question${includedQuestionCount !== 1 ? 's' : ''}`;
+  const labelParts: string[] = [];
+  if (includedAssessmentCount > 0 || hasAssessmentResults) {
+    labelParts.push(
+      `${includedAssessmentCount} assessment${includedAssessmentCount !== 1 ? 's' : ''}`,
+    );
+  }
+  if (includedQuestionCount > 0 || labelParts.length === 0) {
+    labelParts.push(`${includedQuestionCount} question${includedQuestionCount !== 1 ? 's' : ''}`);
+  }
+  const importButtonLabel = `Import ${labelParts.join(' and ')}`;
 
   const resetAll = () => {
     setStep('upload');

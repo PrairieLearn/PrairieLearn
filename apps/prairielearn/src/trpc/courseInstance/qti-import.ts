@@ -195,14 +195,17 @@ const create = t.procedure
       IdSchema,
     );
 
-    const count = assessmentIds.length;
-    if (count > 0) {
-      flash('success', `${count} assessment${count !== 1 ? 's' : ''} imported successfully.`);
-    } else if (questions.length > 0) {
-      flash(
-        'success',
-        `${questions.length} question${questions.length !== 1 ? 's' : ''} imported successfully.`,
-      );
+    const assessmentCount = assessmentIds.length;
+    const questionCount = questions.length;
+    const parts: string[] = [];
+    if (assessmentCount > 0) {
+      parts.push(`${assessmentCount} assessment${assessmentCount !== 1 ? 's' : ''}`);
+    }
+    if (questionCount > 0) {
+      parts.push(`${questionCount} question${questionCount !== 1 ? 's' : ''}`);
+    }
+    if (parts.length > 0) {
+      flash('success', `${parts.join(' and ')} imported successfully.`);
     }
 
     return {
