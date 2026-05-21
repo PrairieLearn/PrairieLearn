@@ -892,7 +892,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             # If allow_blank is true, it shouldn't actually be an "invalid" test type
             # for a blank submission anymore.
-            pass 
+            pass
     else:
         assert_never(result)
 

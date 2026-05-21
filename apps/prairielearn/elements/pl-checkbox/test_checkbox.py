@@ -710,13 +710,13 @@ def test_grade_coverage_with_duplicates() -> None:
 def test_grade_blank_submission() -> None:
     """Test that a blank submission results in a score of 0"""
     data = create_test_data(
-        submitted=[], # Empty submission
+        submitted=[],  # Empty submission
         correct=["a", "b"],
         all_params=["a", "b", "c", "d"],
     )
-    element_html = '<pl-checkbox answers-name="test" allow-blank="true"></pl-checkbox>'    
+    element_html = '<pl-checkbox answers-name="test" allow-blank="true"></pl-checkbox>'
     pl_checkbox.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 0.0
+    assert data["partial_scores"]["test"]["score"] == 0
 
 
 def test_max_correct_respected_without_number_answers() -> None:
@@ -787,4 +787,3 @@ def test_max_correct_respected_without_number_answers() -> None:
         assert num_correct >= 2, (
             f"min-correct=2 was specified but only {num_correct} correct answers were shown."
         )
-
