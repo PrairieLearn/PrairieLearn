@@ -26,7 +26,12 @@ import {
   generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
 } from './RuleSummary.js';
-import type { AccessControlFormData, DefaultRuleData, OverrideData } from './types.js';
+import {
+  type AccessControlFormData,
+  type DefaultRuleData,
+  type OverrideData,
+  isOverrideEditable,
+} from './types.js';
 
 /**
  * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
@@ -349,9 +354,10 @@ export function AccessControlSummary({
                   override.appliesTo.targetType === 'enrollment'
                     ? 'Overrides for specific students'
                     : 'Overrides for student labels';
-                const canEditOverride =
-                  canEditAccessSettings &&
-                  (override.appliesTo.targetType !== 'enrollment' || canEditEnrollmentRules);
+                const canEditOverride = isOverrideEditable(override, {
+                  canEditAccessSettings,
+                  canEditEnrollmentRules,
+                });
 
                 return (
                   <Fragment key={sortableIds[index]}>

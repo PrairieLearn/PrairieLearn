@@ -20,6 +20,7 @@ import {
   type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
+  isOverrideEditable,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
@@ -206,13 +207,10 @@ export function AccessControlForm({
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
-    if (
-      !canEditEnrollmentRules &&
-      (watchedData.overrides[fromIndex]?.appliesTo.targetType === 'enrollment' ||
-        watchedData.overrides[toIndex]?.appliesTo.targetType === 'enrollment')
-    ) {
-      return;
-    }
+    const permissions = { canEditAccessSettings, canEditEnrollmentRules };
+    const fromEditable = isOverrideEditable(watchedData.overrides[fromIndex], permissions);
+    const toEditable = isOverrideEditable(watchedData.overrides[toIndex], permissions);
+    if (!fromEditable || !toEditable) return;
 
     moveOverride(fromIndex, toIndex);
 
@@ -281,10 +279,12 @@ export function AccessControlForm({
   ) : undefined;
 
   const selectedRuleCanEdit =
-    canEditAccessSettings &&
-    (selectedRule?.type !== 'override' ||
-      watchedData.overrides[selectedRule.index]?.appliesTo.targetType !== 'enrollment' ||
-      canEditEnrollmentRules);
+    selectedRule?.type === 'override'
+      ? isOverrideEditable(watchedData.overrides[selectedRule.index], {
+          canEditAccessSettings,
+          canEditEnrollmentRules,
+        })
+      : canEditAccessSettings;
 
   const rightPanel =
     selectedRule?.type === 'default' ? (
