@@ -12,10 +12,14 @@ import { getAppError } from '../lib/client/errors.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
-import { getOriginalHash } from '../lib/editorUtil.js';
+import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { type AssessmentSettingsError } from '../trpc/assessment/assessment-settings.js';
+import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import {
+  type AssessmentSettingsError,
+  settingsScope,
+} from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -45,7 +49,7 @@ function assessmentDevDir() {
 }
 
 async function getOrigHash(infoPath: string) {
-  return (await getOriginalHash(infoPath)) ?? '';
+  return (await computeScopedJsonHash<AssessmentJsonInput>(infoPath, settingsScope)) ?? '';
 }
 
 async function setQuestionsPrivateForCourse(course_id: string) {
@@ -309,7 +313,7 @@ describe('Editing assessment settings', () => {
         const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
         assert.isNotNull(appError);
         assert.equal(appError.code, 'UNKNOWN');
-        assert.include(appError.message, 'infoAssessment.json does not exist');
+        assert.match(appError.message, /ENOENT|no such file/i);
       }
     } finally {
       await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
