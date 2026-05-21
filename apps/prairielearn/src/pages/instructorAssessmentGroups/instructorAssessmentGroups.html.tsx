@@ -212,7 +212,7 @@ function InstructorAssessmentGroupsInner({
         assessment={assessment}
         enableUnavailableReason={run(() => {
           if (permissions.isExampleCourse) {
-            return 'Enabling group work is not available for example courses.';
+            return 'Enabling group work is not available for the example course.';
           }
           if (!permissions.hasCoursePermissionEdit) {
             return 'Enabling group work requires course editor permissions.';
@@ -245,7 +245,7 @@ function InstructorAssessmentGroupsInner({
           canEdit={canEditGroupSettings}
           editUnavailableReason={run(() => {
             if (permissions.isExampleCourse) {
-              return 'Editing group settings is not available for example courses.';
+              return 'Editing group settings is not available for the example course.';
             }
             if (!permissions.hasCoursePermissionEdit) {
               return 'Editing group settings requires course editor permissions.';
@@ -273,7 +273,7 @@ function InstructorAssessmentGroupsInner({
             canEdit={canEditStudentData}
             editUnavailableReason={run(() => {
               if (permissions.isExampleCourse) {
-                return 'Editing group memberships is not available for example courses.';
+                return 'Editing group memberships is not available for the example course.';
               }
               if (!permissions.hasCourseInstancePermissionEdit) {
                 return 'Editing group memberships requires student data editor permissions.';
@@ -305,7 +305,7 @@ function InstructorAssessmentGroupsInner({
             canDisable={canDisableGroupWork}
             disableUnavailableReason={run(() => {
               if (permissions.isExampleCourse) {
-                return 'Disabling group work is not available for example courses.';
+                return 'Disabling group work is not available for the example course.';
               }
               if (
                 !permissions.hasCoursePermissionEdit &&
