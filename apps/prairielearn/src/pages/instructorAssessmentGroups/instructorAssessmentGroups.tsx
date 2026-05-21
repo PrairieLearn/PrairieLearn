@@ -46,7 +46,7 @@ function getAssessmentPath(
 router.get(
   '/',
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_instance_permission_view'],
+    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (_req, res) => {
@@ -55,9 +55,12 @@ router.get(
       accessType: 'instructor',
     });
     const { assessment, assessment_set, course, course_instance, authz_data } = pageContext;
-    const canEditCourse = authz_data.has_course_permission_edit && !course.example_course;
-    const canEditCourseInstance =
-      authz_data.has_course_instance_permission_edit && !course.example_course;
+    const permissions = {
+      isExampleCourse: course.example_course,
+      hasCoursePermissionEdit: authz_data.has_course_permission_edit,
+      hasCourseInstancePermissionView: authz_data.has_course_instance_permission_view,
+      hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
+    };
 
     const groupsCsvFilename =
       assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) + 'groups.csv';
@@ -67,15 +70,16 @@ router.get(
       ? StaffGroupConfigSchema.parse(groupConfigInfo)
       : undefined;
 
-    const [groups, notAssigned] = groupConfigInfo
-      ? await Promise.all([
-          selectGroupsForConfig(groupConfigInfo.id),
-          selectUidsNotInGroup({
-            group_config_id: groupConfigInfo.id,
-            course_instance_id: groupConfigInfo.course_instance_id,
-          }),
-        ])
-      : [undefined, undefined];
+    const [groups, notAssigned] =
+      groupConfigInfo && permissions.hasCourseInstancePermissionView
+        ? await Promise.all([
+            selectGroupsForConfig(groupConfigInfo.id),
+            selectUidsNotInGroup({
+              group_config_id: groupConfigInfo.id,
+              course_instance_id: groupConfigInfo.course_instance_id,
+            }),
+          ])
+        : [undefined, undefined];
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -123,8 +127,7 @@ router.get(
               courseInstanceId={course_instance.id}
               assessment={assessment}
               assessmentSet={assessment_set}
-              canEditCourse={canEditCourse}
-              canEditCourseInstance={canEditCourseInstance}
+              permissions={permissions}
               csrfToken={pageContext.__csrf_token}
               groupsCsvFilename={groupsCsvFilename}
               groupConfigInfo={staffGroupConfigInfo}
