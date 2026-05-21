@@ -31,7 +31,7 @@ export interface ParseOptions {
   /**
    * File extensions (e.g. ".mp4") to exclude from imported assets. Tags in the prompt HTML
    * that reference excluded files are commented out, and the files are not added to the
-   * question's asset list. Excluded filenames are reported on `IRQuestion.skippedFiles`.
+   * question's asset list. Excluded source paths are reported on `IRQuestion.skippedFiles`.
    */
   excludeFileExtensions?: Set<string>;
 }

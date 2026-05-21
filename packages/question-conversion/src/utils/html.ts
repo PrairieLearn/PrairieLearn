@@ -103,11 +103,11 @@ const IMS_REF_OR_TAG_RE =
  *
  * When `excludeExtensions` is provided, a tag that references a file with an excluded
  * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
- * the path is readable), and the file is omitted from `fileRefs`. Excluded filenames are
+ * the path is readable), and the file is omitted from `fileRefs`. Excluded source paths are
  * returned in `skippedFiles`.
  *
  * Returns the rewritten HTML, a map of `{ filename → original decoded relative path }`
- * for files that should be copied to clientFilesQuestion, and the list of skipped filenames.
+ * for files that should be copied to clientFilesQuestion, and the list of skipped source paths.
  */
 export function resolveImsFileRefs(
   html: string,
@@ -121,6 +121,7 @@ export function resolveImsFileRefs(
   // resolve to the same generated filename whether or not they're skipped.
   const pathByFilename = new Map<string, string>();
   const skipped = new Set<string>();
+  const skippedPaths = new Set<string>();
 
   function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
     const decodedPath = decodeURIComponent(rawPath);
@@ -136,7 +137,10 @@ export function resolveImsFileRefs(
     }
     pathByFilename.set(filename, decodedPath);
     const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
-    if (excluded) skipped.add(filename);
+    if (excluded) {
+      skipped.add(filename);
+      skippedPaths.add(decodedPath);
+    }
     return { filename, excluded };
   }
 
@@ -173,7 +177,7 @@ export function resolveImsFileRefs(
     if (!skipped.has(filename)) fileRefs.set(filename, path);
   }
 
-  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skipped] };
+  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedPaths] };
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;

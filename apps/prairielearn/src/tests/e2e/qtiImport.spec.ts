@@ -511,10 +511,10 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('1 image and other asset')).toBeVisible();
     await expect(
       page.getByText(
-        '1 unreferenced asset file will not be included because it is not referenced in the questions or assessments.',
+        '1 asset file will not be included because it is not referenced in the questions or assessments.',
       ),
     ).toBeVisible();
-    await page.getByText('Show files').click();
+    await page.getByText('Show 1 file').click();
     await expect(page.getByText('unused.png')).toBeVisible();
     await expect(page.getByText('notes.txt')).not.toBeVisible();
   });
@@ -666,6 +666,7 @@ test.describe('QTI Import', () => {
     const assessmentZipPath = path.join(testCoursePath, 'qti-multi-bank-ref.zip');
     const firstBankZipPath = path.join(testCoursePath, 'qti-first-bank.zip');
     const secondBankZipPath = path.join(testCoursePath, 'qti-second-bank.zip');
+    const unmatchedBankZipPath = path.join(testCoursePath, 'qti-unmatched-bank.zip');
     await buildMultiExternalBankAssessmentZip(assessmentZipPath);
     await buildQuestionBankZip(firstBankZipPath);
     await buildQuestionBankZip(secondBankZipPath, {
@@ -673,6 +674,12 @@ test.describe('QTI Import', () => {
       questionId: 'bank_q_2',
       title: 'Second External Bank',
       questionTitle: 'Second Imported Bank Question',
+    });
+    await buildQuestionBankZip(unmatchedBankZipPath, {
+      bankId: 'unmatched_bank',
+      questionId: 'unmatched_q',
+      title: 'Unmatched Bank',
+      questionTitle: 'Unmatched Question',
     });
 
     await page.goto(
@@ -694,6 +701,26 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('12345', { exact: true })).toBeVisible();
     await expect(page.getByText('67890', { exact: true })).toBeVisible();
 
+    const firstBankUploadButton = page.getByRole('button', {
+      name: 'Upload export for Bank Questions 1',
+    });
+    const secondBankUploadButton = page.getByRole('button', {
+      name: 'Upload export for Bank Questions 2',
+    });
+
+    await page
+      .getByLabel('Supplemental export for "Bank Questions 1" from Canvas course 12345')
+      .setInputFiles(unmatchedBankZipPath);
+    await firstBankUploadButton.click();
+    await expect(
+      page.getByText('No matching question banks were found in that upload.'),
+    ).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(firstBankUploadButton).toBeEnabled();
+    await expect(firstBankUploadButton).toContainText('Upload export');
+    await expect(firstBankUploadButton).not.toContainText('Processing...');
+
     let continueBankUpload: () => void;
     const continueBankUploadPromise = new Promise<void>((resolve) => {
       continueBankUpload = resolve;
@@ -706,12 +733,6 @@ test.describe('QTI Import', () => {
     await page
       .getByLabel('Supplemental export for "Bank Questions 1" from Canvas course 12345')
       .setInputFiles(firstBankZipPath);
-    const firstBankUploadButton = page.getByRole('button', {
-      name: 'Upload export for Bank Questions 1',
-    });
-    const secondBankUploadButton = page.getByRole('button', {
-      name: 'Upload export for Bank Questions 2',
-    });
     await firstBankUploadButton.click();
 
     await expect(page.getByText('Processing...')).toHaveCount(1);

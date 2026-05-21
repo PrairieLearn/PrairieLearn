@@ -345,6 +345,7 @@ export function QtiImportForm({
     } catch (err) {
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
+      setUploadingBankKey(null);
       setUploading(false);
     }
   };

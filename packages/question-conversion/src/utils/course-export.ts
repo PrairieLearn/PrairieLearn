@@ -136,11 +136,14 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
     // Resolve the primary QTI file path.
     // Canvas IMS CC: path is in a <file href="..."> child element.
     // Standard IMS QTI: path may be the `href` attribute on <resource> itself.
-    const fileEl = r['file'];
     const ccHref =
-      fileEl != null && typeof fileEl === 'object'
-        ? attr(fileEl as Record<string, unknown>, 'href')
-        : attr(r, 'href');
+      ensureArray(r['file'] as unknown)
+        .map((file) =>
+          file != null && typeof file === 'object'
+            ? attr(file as Record<string, unknown>, 'href')
+            : '',
+        )
+        .find((href) => isQtiXmlFilename(path.basename(href))) || attr(r, 'href');
     if (!ccHref || (!ccHref.endsWith('.xml') && !ccHref.endsWith('.xml.qti'))) continue;
 
     const ccQtiPath = path.join(dir, ccHref.replaceAll('/', path.sep));

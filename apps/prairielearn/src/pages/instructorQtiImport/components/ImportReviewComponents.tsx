@@ -246,7 +246,8 @@ export function ImportSummary({
                     <details className="mt-1">
                       <summary>
                         <small className="text-secondary">
-                          Show {uniqueUnreferencedAssets.length} files
+                          Show {uniqueUnreferencedAssets.length} file
+                          {uniqueUnreferencedAssets.length !== 1 ? 's' : ''}
                         </small>
                       </summary>
                       <ul className="mb-0 mt-1">
@@ -382,7 +383,7 @@ export function MissingBanksStep({
         {uniqueRefs.map((ref, i) => {
           const inputId = `qti-bank-file-${i}`;
           const refKey = sourceBankRefKey(ref);
-          const isUploadingThisBank = uploadingBankKey === refKey;
+          const isUploadingThisBank = uploading && uploadingBankKey === refKey;
           const label = ref.externalCourseId
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
@@ -458,7 +459,7 @@ export function MissingBanksStep({
           Start over
         </Button>
         <Button variant="outline-secondary" type="button" disabled={uploading} onClick={onSkip}>
-          Continue without bank
+          Continue without additional content
         </Button>
       </div>
     </>

@@ -219,6 +219,23 @@ describe('findQtiFilesFromManifest', () => {
       assert.equal(bank.qtiPath, path.join(tmpDir, 'non_cc_assessments', 'bank1.xml.qti'));
       assert.equal(bank.assessmentDir, path.join(tmpDir, 'non_cc_assessments'));
     });
+
+    it('resolves the QTI XML when a resource has multiple file children', async () => {
+      await writeFile(
+        path.join(tmpDir, 'imsmanifest.xml'),
+        `<?xml version="1.0"?><manifest><resources>
+          <resource identifier="quiz1" type="imsqti_xmlv1p2/imscc_xmlv1p1/assessment">
+            <file href="quiz1/assessment_meta.xml"/>
+            <file href="quiz1/quiz.xml"/>
+          </resource>
+        </resources></manifest>`,
+      );
+
+      const entries = await findQtiFilesFromManifest(tmpDir);
+
+      assert.equal(entries.length, 1);
+      assert.equal(entries[0].qtiPath, path.join(tmpDir, 'quiz1', 'quiz.xml'));
+    });
   });
 
   describe('standard IMS QTI manifest (non-Canvas)', () => {
