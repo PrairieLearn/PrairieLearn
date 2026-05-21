@@ -590,9 +590,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 helptext = (
                     f'<small class="form-text text-muted">Select {insert_text}</small>'
                 )
-            else:
-                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+            # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+            elif allow_blank:
                 helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
+            else:
+                helptext = f'<small class="form-text text-muted">Select all possible options that apply. <strong>At least one selection is required.</strong>{number_correct_text}</small>'
 
             grading_info = generate_grading_text(
                 insert_text=insert_text,
