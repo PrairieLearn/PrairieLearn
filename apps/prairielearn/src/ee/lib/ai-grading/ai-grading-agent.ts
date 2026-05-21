@@ -288,13 +288,14 @@ const AI_GRADING_TOOLS = {
   }),
   revertRubric: tool({
     description:
-      'Atomically revert the rubric to the state it was in right after a specific message. Call this when the user asks to revert. Use message_id="0" to revert to the initial rubric state before any AI changes were made.',
+      'Atomically revert the rubric to the state it was in at a specific message in this conversation. Call this when the user asks to revert. Use display_number=0 to revert to the initial rubric state before any AI changes were made.',
     inputSchema: z.object({
-      message_id: z
-        .string()
-        .regex(/^\d+$/, 'message_id must be a non-negative integer string')
+      display_number: z
+        .number()
+        .int()
+        .min(0)
         .describe(
-          'The database ID of the message to revert to. "0" = initial rubric state before any AI changes. Any other value = rubric state right after that message.',
+          'The 1-based display number of the message to revert to, counting both user and assistant messages in conversation order. Use 0 to revert to the initial rubric state before any AI changes were made.',
         ),
     }),
     outputSchema: z.string(),
@@ -349,7 +350,7 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'When the user asks to change multiple items (e.g. "remove all explanations"), call editRubricItem for EACH affected item.',
   'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
   'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
-  'When the user asks to revert the rubric, call the revertRubric tool with the message_id they specify. Use message_id="0" for the initial state. Do NOT manually edit individual items to revert — always use the revertRubric tool.',
+  'When the user asks to revert the rubric, call the revertRubric tool with the display_number they specify. display_number is the 1-based position of the message in this conversation, counting BOTH user and assistant messages in order (message 1 = first user message, message 2 = first assistant reply, message 3 = next user message, and so on). Use display_number=0 for the initial state before any AI changes. Do NOT manually edit individual items to revert — always use the revertRubric tool.',
   'IMPORTANT: After making changes, check the point_validation in the getRubric response. If there are errors, fix them immediately by adjusting items or settings.',
   'You may temporarily go outside valid point ranges during multi-step edits, but you must correct any validation errors before finishing.',
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
@@ -1475,45 +1476,50 @@ function buildRubricToolsWithExecute({
 
     revertRubric: tool({
       ...AI_GRADING_TOOLS.revertRubric,
-      execute: async ({ message_id: messageId }) =>
+      execute: async ({ display_number: displayNumber }) =>
         rubricMutex.run(async () => {
-          job.info(`Tool: revertRubric — message_id: ${messageId}`);
+          job.info(`Tool: revertRubric — display_number: ${displayNumber}`);
 
-          if (!/^\d+$/.test(messageId)) {
-            return JSON.stringify({
-              error: `Invalid message_id "${messageId}". Must be a non-negative integer.`,
-            });
-          }
-
-          const { selectAiGradingMessageById, selectFirstAiGradingMessage } =
+          const { selectAiGradingMessages, selectFirstAiGradingMessage } =
             await import('../../models/ai-grading-message.js');
 
-          // message_id "0" means revert to the initial state before any AI changes.
-          // Use the rubric_snapshot from the very first message in the conversation.
-          const targetMessage =
-            messageId === '0'
-              ? await selectFirstAiGradingMessage(context.assessmentQuestion.id)
-              : await selectAiGradingMessageById(context.assessmentQuestion.id, messageId);
+          let snapshot: DiffRubricState | null = null;
+          let targetDescription: string;
 
-          job.info(
-            `Retrieved message: id=${targetMessage?.id ?? 'null'}, role=${targetMessage?.role ?? 'null'}, status=${targetMessage?.status ?? 'null'}, has_rubric_snapshot=${targetMessage?.rubric_snapshot != null}`,
-          );
-
-          if (!targetMessage) {
-            job.error(`Message ID ${messageId} not found.`);
-            return JSON.stringify({
-              error: `Message ID ${messageId} not found.`,
-            });
+          if (displayNumber === 0) {
+            // Initial state before any AI changes — captured on the very
+            // first message of the conversation.
+            const firstMessage = await selectFirstAiGradingMessage(context.assessmentQuestion.id);
+            snapshot = (firstMessage?.rubric_snapshot as DiffRubricState | null) ?? null;
+            targetDescription = 'the initial state (before any AI changes)';
+          } else {
+            const messages = await selectAiGradingMessages(context.assessmentQuestion.id);
+            if (displayNumber > messages.length) {
+              return JSON.stringify({
+                error: `Message ${displayNumber} does not exist; this conversation only has ${messages.length} messages.`,
+              });
+            }
+            // Walk back from the target to the most recent message that has a
+            // rubric snapshot (only assistant messages whose runs finished
+            // capture one). This matches the user's intent of "the rubric as
+            // it stood at message N".
+            for (let i = displayNumber - 1; i >= 0; i--) {
+              const m = messages[i];
+              if (m.rubric_snapshot) {
+                snapshot = m.rubric_snapshot as DiffRubricState;
+                break;
+              }
+            }
+            targetDescription = `message ${displayNumber}`;
           }
 
-          const snapshot = targetMessage.rubric_snapshot as DiffRubricState | null;
           job.info(
-            `Snapshot for message ID ${messageId}: ${snapshot ? JSON.stringify(snapshot).slice(0, 200) + '...' : 'NULL'}`,
+            `Snapshot for display_number=${displayNumber}: ${snapshot ? JSON.stringify(snapshot).slice(0, 200) + '...' : 'NULL'}`,
           );
 
           if (!snapshot) {
             return JSON.stringify({
-              error: `No rubric state recorded for message ID ${messageId}.`,
+              error: `No rubric snapshot found at or before ${targetDescription}.`,
             });
           }
 
@@ -1544,7 +1550,7 @@ function buildRubricToolsWithExecute({
           }
 
           const afterSnapshot = await getRubricSnapshot(context);
-          job.info(`revertRubric complete — reverted to message ID ${messageId}`);
+          job.info(`revertRubric complete — reverted to ${targetDescription}`);
 
           return JSON.stringify({ before: beforeSnapshot, after: afterSnapshot });
         }),

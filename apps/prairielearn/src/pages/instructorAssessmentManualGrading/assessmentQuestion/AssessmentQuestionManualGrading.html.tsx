@@ -1331,10 +1331,10 @@ function AssessmentQuestionManualGradingInner({
                       mutationMsgIndices.length >= 2
                         ? mutationMsgIndices[mutationMsgIndices.length - 2]
                         : -1;
-                    const targetMessageId = targetIndex === -1 ? '0' : messages[targetIndex].id;
+                    const targetDisplayNumber = targetIndex === -1 ? 0 : targetIndex + 1;
                     currentPhaseRef.current = 'edit';
                     void sendMessage({
-                      text: `Revert to the rubric from message ID ${targetMessageId}`,
+                      text: `Revert rubric to state at message ${targetDisplayNumber}`,
                     });
                   }}
                 >
@@ -1369,6 +1369,10 @@ function AssessmentQuestionManualGradingInner({
               </div>
             )}
             {messages.map((message, msgIndex) => {
+              // Display number is the 1-based position of the message in the
+              // conversation, counting both user and assistant messages.
+              const displayNumber = msgIndex + 1;
+
               if (message.role === 'user') {
                 const textContent = message.parts
                   .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -1377,37 +1381,13 @@ function AssessmentQuestionManualGradingInner({
                   .join('\n\n');
                 if (!textContent) return null;
 
-                const revertMatch = textContent.match(/Revert to the rubric from message ID (\d+)/);
-
                 return (
                   <div key={message.id} className="d-flex flex-row-reverse mb-3">
                     <div
                       className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
                       style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
                     >
-                      {revertMatch ? (
-                        <>
-                          <span>Revert rubric to a previous state</span>
-                          <div
-                            className="d-flex align-items-center gap-2 rounded border px-2 py-1"
-                            style={{
-                              background: 'rgba(13, 110, 253, 0.06)',
-                              borderColor: 'rgba(13, 110, 253, 0.25)',
-                              fontSize: '0.8rem',
-                              color: '#495057',
-                            }}
-                          >
-                            <i
-                              className="bi bi-bookmark-fill"
-                              style={{ color: '#0d6efd', fontSize: '0.7rem' }}
-                              aria-hidden="true"
-                            />
-                            <span>Reverting to a previous rubric state</span>
-                          </div>
-                        </>
-                      ) : (
-                        textContent
-                      )}
+                      {textContent}
                     </div>
                   </div>
                 );
@@ -1450,7 +1430,7 @@ function AssessmentQuestionManualGradingInner({
                           onConfirm={() => {
                             currentPhaseRef.current = 'edit';
                             void sendMessage({
-                              text: `Revert to the rubric from message ID ${message.id}`,
+                              text: `Revert rubric to state at message ${displayNumber}`,
                             });
                           }}
                         />
