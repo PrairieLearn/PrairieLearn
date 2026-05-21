@@ -75,9 +75,10 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
-        canViewEnrollmentRules
-          ? selectAccessControlRules(res.locals.assessment)
-          : selectAccessControlRules(res.locals.assessment, ['none', 'student_label']),
+        selectAccessControlRules(
+          res.locals.assessment,
+          canViewEnrollmentRules ? undefined : ['none', 'student_label'],
+        ),
         canViewEnrollmentRules ? 0 : countEnrollmentAccessControlRules(res.locals.assessment),
       ]);
       const initialExamUuids = Array.from(

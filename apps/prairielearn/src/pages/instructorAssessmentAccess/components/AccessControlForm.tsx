@@ -142,8 +142,6 @@ export function AccessControlForm({
   };
 
   const addOverride = () => {
-    if (!canEdit) return;
-
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
     if (!canEditEnrollmentRules) {
       newOverride.appliesTo.targetType = 'student_label';
@@ -163,14 +161,6 @@ export function AccessControlForm({
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
-    if (!canEdit) return;
-    if (
-      !canEditEnrollmentRules &&
-      (targetType === 'enrollment' ||
-        watchedData.overrides[index].appliesTo.targetType === 'enrollment')
-    ) {
-      return;
-    }
     if (watchedData.overrides[index].appliesTo.targetType === targetType) return;
 
     const labelCount = watchedData.overrides.filter(
@@ -195,29 +185,12 @@ export function AccessControlForm({
   };
 
   const handleDeleteClick = (index: number) => {
-    if (!canEdit) return;
-    if (
-      !canEditEnrollmentRules &&
-      watchedData.overrides[index]?.appliesTo.targetType === 'enrollment'
-    ) {
-      return;
-    }
-
     deleteModal.showWithData({ index, name: getOverrideName(index) });
   };
 
   const handleDeleteConfirm = () => {
-    if (!canEdit) return;
-
     if (deleteModal.data !== null) {
       const deletedIndex = deleteModal.data.index;
-      if (
-        !canEditEnrollmentRules &&
-        watchedData.overrides[deletedIndex]?.appliesTo.targetType === 'enrollment'
-      ) {
-        deleteModal.hide();
-        return;
-      }
       if (selectedRule?.type === 'override') {
         if (selectedRule.index === deletedIndex) {
           setSelectedRule(null);
@@ -231,7 +204,6 @@ export function AccessControlForm({
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
-    if (!canEdit) return;
     if (
       !canEditEnrollmentRules &&
       (watchedData.overrides[fromIndex]?.appliesTo.targetType === 'enrollment' ||

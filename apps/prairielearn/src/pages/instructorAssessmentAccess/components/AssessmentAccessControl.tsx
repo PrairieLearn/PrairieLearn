@@ -57,8 +57,6 @@ function AssessmentAccessControlInner({
   );
 
   const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
-    if (!canEdit) return;
-
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')

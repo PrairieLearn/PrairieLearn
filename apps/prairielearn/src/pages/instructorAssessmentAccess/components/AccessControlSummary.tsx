@@ -48,7 +48,6 @@ function SortableOverrideCard({
   onRemove,
   isActive,
   canEdit,
-  editLabel,
 }: {
   id: string;
   override: OverrideData;
@@ -59,7 +58,6 @@ function SortableOverrideCard({
   onEdit: () => void;
   onRemove: () => void;
   canEdit: boolean;
-  editLabel: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -80,7 +78,7 @@ function SortableOverrideCard({
         formErrors={formErrors}
         isActive={isActive}
         dragHandleProps={canEdit ? { ...attributes, ...listeners } : undefined}
-        editLabel={editLabel}
+        canEdit={canEdit}
         onEdit={onEdit}
         onRemove={canEdit ? onRemove : undefined}
       />
@@ -367,7 +365,6 @@ export function AccessControlSummary({
                       displayTimezone={displayTimezone}
                       isActive={selectedOverrideIndex === index}
                       canEdit={canEditOverride}
-                      editLabel={canEditOverride ? 'Edit' : 'View'}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />
