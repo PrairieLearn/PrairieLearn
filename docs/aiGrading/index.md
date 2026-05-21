@@ -136,7 +136,7 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
-**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Student submissions are not used for model training.
+**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Student submissions are not used for model training when using PrairieLearn AI grading credits.
 
 ## Billing
 
