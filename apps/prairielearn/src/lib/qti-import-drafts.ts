@@ -8,7 +8,7 @@ import { config } from './config.js';
 const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export interface QtiImportDraftData<T> {
+interface QtiImportDraftData<T> {
   courseId: string;
   courseInstanceId: string;
   userId: string;

@@ -5,10 +5,6 @@ import type {
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
 
-export interface SerializedClientFile {
-  size: number;
-}
-
 /** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
   draftId: string;
@@ -18,12 +14,12 @@ export interface SerializedQuestionOutput {
   infoJson: PLQuestionInfoJson;
   questionHtml: string;
   serverPy?: string;
-  clientFiles: Record<string, SerializedClientFile>;
+  clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
 }
 
-export interface StoredSerializedQuestionOutput extends Omit<
+interface StoredSerializedQuestionOutput extends Omit<
   SerializedQuestionOutput,
   'draftId' | 'originalDirectoryName' | 'clientFiles'
 > {
