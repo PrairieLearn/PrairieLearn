@@ -224,7 +224,7 @@ const setAssignedGraderMutation = t.procedure
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'The assigned grader does not have Student Data Editor permission.',
+          message: 'The assigned grader does not have student data editor permissions.',
         });
       }
     }
