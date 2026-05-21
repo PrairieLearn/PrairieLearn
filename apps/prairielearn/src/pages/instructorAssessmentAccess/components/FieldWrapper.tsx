@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 
+import { useAccessControlCanEdit } from './AccessControlEditabilityContext.js';
+
 export function FieldWrapper({
   isOverridden,
   label,
@@ -18,7 +20,9 @@ export function FieldWrapper({
   headerAction?: ReactNode;
   children: ReactNode;
 }) {
+  const canEdit = useAccessControlCanEdit();
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
+  const showHeaderActions = headerAction != null || (canEdit && onRemoveOverride != null);
 
   return (
     <Card style={cardStyle}>
@@ -26,7 +30,7 @@ export function FieldWrapper({
         {!isOverridden ? (
           <div className="d-flex justify-content-between align-items-center">
             <span className="text-muted">{label}</span>
-            {onOverride && (
+            {canEdit && onOverride && (
               <Button
                 size="sm"
                 variant="outline-primary"
@@ -42,20 +46,22 @@ export function FieldWrapper({
           <>
             <div className="d-flex justify-content-between align-items-center gap-3 mb-2 flex-wrap">
               {headerToggle ?? <strong>{label}</strong>}
-              <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-                {headerAction}
-                {onRemoveOverride && (
-                  <Button
-                    size="sm"
-                    variant="outline-danger"
-                    className="text-nowrap"
-                    aria-label={`Remove override for ${label}`}
-                    onClick={onRemoveOverride}
-                  >
-                    Remove override
-                  </Button>
-                )}
-              </div>
+              {showHeaderActions && (
+                <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                  {headerAction}
+                  {canEdit && onRemoveOverride && (
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      className="text-nowrap"
+                      aria-label={`Remove override for ${label}`}
+                      onClick={onRemoveOverride}
+                    >
+                      Remove override
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             {children}
           </>

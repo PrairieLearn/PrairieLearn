@@ -1,6 +1,7 @@
 import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { useAccessControlCanEdit } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -17,6 +18,7 @@ function DurationDetails({
   idPrefix: string;
   error?: string;
 }) {
+  const canEdit = useAccessControlCanEdit();
   return (
     <>
       {value !== null && (
@@ -30,6 +32,7 @@ function DurationDetails({
               value={value || ''}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
+              disabled={!canEdit}
               onChange={({ currentTarget }) => {
                 if (currentTarget.value === '') {
                   onChange(0);
@@ -77,11 +80,13 @@ function DurationToggle({
   onChange: (value: number | null) => void;
   idPrefix: string;
 }) {
+  const canEdit = useAccessControlCanEdit();
   return (
     <ToggleTitle
       id={`${idPrefix}-time-limit-enabled`}
       label="Time limit"
       checked={value !== null}
+      disabled={!canEdit}
       onChange={(checked) => onChange(checked ? 60 : null)}
     />
   );

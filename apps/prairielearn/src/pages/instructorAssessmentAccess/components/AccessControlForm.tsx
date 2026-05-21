@@ -10,6 +10,7 @@ import type {
   PrairieTestExamMetadata,
 } from '../../../models/assessment-access-control-rules.js';
 
+import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { DefaultRuleForm } from './DefaultRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
@@ -317,28 +318,32 @@ export function AccessControlForm({
 
   const rightPanel =
     selectedRule?.type === 'default' ? (
-      <div className="px-3 pb-3">
-        <DefaultRuleForm displayTimezone={displayTimezone} />
-      </div>
+      <AccessControlEditabilityProvider canEdit={selectedRuleCanEdit}>
+        <div className="px-3 pb-3">
+          <DefaultRuleForm displayTimezone={displayTimezone} />
+        </div>
+      </AccessControlEditabilityProvider>
     ) : selectedRule?.type === 'override' ? (
       (() => {
         if (selectedRule.index >= watchedData.overrides.length) {
           return null;
         }
         return (
-          <div className="px-3 pb-3">
-            <AppliesToField
-              namePrefix={`overrides.${selectedRule.index}`}
-              courseInstanceId={courseInstance.id}
-              canEditTargets={selectedRuleCanEdit}
-              canTargetEnrollments={canEditEnrollmentRules}
-              studentSpecificEditMessage={studentSpecificEditMessage}
-              onTargetTypeChange={(targetType) =>
-                handleOverrideTargetTypeChange(selectedRule.index, targetType)
-              }
-            />
-            <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
-          </div>
+          <AccessControlEditabilityProvider canEdit={selectedRuleCanEdit}>
+            <div className="px-3 pb-3">
+              <AppliesToField
+                namePrefix={`overrides.${selectedRule.index}`}
+                courseInstanceId={courseInstance.id}
+                canEditTargets={selectedRuleCanEdit}
+                canTargetEnrollments={canEditEnrollmentRules}
+                studentSpecificEditMessage={studentSpecificEditMessage}
+                onTargetTypeChange={(targetType) =>
+                  handleOverrideTargetTypeChange(selectedRule.index, targetType)
+                }
+              />
+              <OverrideRuleContent index={selectedRule.index} displayTimezone={displayTimezone} />
+            </div>
+          </AccessControlEditabilityProvider>
         );
       })()
     ) : null;
@@ -421,11 +426,7 @@ export function AccessControlForm({
             ),
           }}
           right={{
-            content: (
-              <fieldset disabled={!selectedRuleCanEdit} className="border-0 p-0 m-0">
-                {rightPanel}
-              </fieldset>
-            ),
+            content: rightPanel,
             title: rightTitle,
             headerAction: rightHeaderAction,
             collapsed: selectedRule == null ? true : undefined,

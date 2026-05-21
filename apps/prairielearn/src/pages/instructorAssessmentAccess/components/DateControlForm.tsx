@@ -1,6 +1,7 @@
 import { Col, Form, Row } from 'react-bootstrap';
 import { useFormContext, useWatch } from 'react-hook-form';
 
+import { useAccessControlCanEdit } from './AccessControlEditabilityContext.js';
 import {
   DefaultAfterLastDeadlineField,
   OverrideAfterLastDeadlineField,
@@ -25,6 +26,7 @@ export function DefaultDateControlForm({
   description?: string;
   displayTimezone: string;
 }) {
+  const canEdit = useAccessControlCanEdit();
   const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
@@ -52,6 +54,7 @@ export function DefaultDateControlForm({
           type="checkbox"
           id="defaultRule-date-control-enabled"
           label={<strong>{title}</strong>}
+          disabled={!canEdit}
           {...register('defaultRule.dateControlEnabled', {
             onChange: (e) => {
               if (e.target.checked && !getValues('defaultRule.release.date')) {

@@ -12,6 +12,7 @@ import {
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { useAccessControlCanEdit } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
@@ -99,6 +100,7 @@ function AfterLastDeadlineInput({
   overrideIndex?: number;
   displayTimezone: string;
 }) {
+  const canEdit = useAccessControlCanEdit();
   const isOverride = overrideIndex != null;
   const creditFieldPath = isOverride
     ? (`overrides.${overrideIndex}.afterLastDeadline.credit` as const)
@@ -192,6 +194,7 @@ function AfterLastDeadlineInput({
           aria-label={label}
           id={`${idPrefix}-after-deadline-mode`}
           minWidth={300}
+          disabled={!canEdit}
           onChange={handleModeChange}
         />
       </div>
@@ -219,6 +222,7 @@ function AfterLastDeadlineInput({
                 step={1}
                 placeholder="0"
                 isInvalid={!!creditError}
+                disabled={!canEdit}
                 onWheel={({ currentTarget }) => currentTarget.blur()}
                 {...register(creditFieldPath, {
                   shouldUnregister: true,

@@ -63,6 +63,7 @@ export function AppliesToField({
   const excludedUids = new Set(enrollments.map((i) => i.uid));
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+  const targetDescription = targetType === 'enrollment' ? 'student' : 'student label';
   const studentSpecificPermissionMessageId = `${namePrefix}-student-specific-permission-message`;
 
   return (
@@ -112,22 +113,24 @@ export function AppliesToField({
               <span className="small text-muted">
                 {enrollments.length} {enrollments.length === 1 ? 'student' : 'students'}
               </span>
-              <div className="ms-auto">
-                <AddStudentsModal
-                  selectedUids={excludedUids}
-                  renderTrigger={({ onClick }) => (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-decoration-none"
-                      onClick={onClick}
-                    >
-                      Select students…
-                    </Button>
-                  )}
-                  onSaveStudents={handleSaveStudents}
-                />
-              </div>
+              {canEditTargets && (
+                <div className="ms-auto">
+                  <AddStudentsModal
+                    selectedUids={excludedUids}
+                    renderTrigger={({ onClick }) => (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-decoration-none"
+                        onClick={onClick}
+                      >
+                        Select students…
+                      </Button>
+                    )}
+                    onSaveStudents={handleSaveStudents}
+                  />
+                </div>
+              )}
             </div>
             {enrollments.length > 0 && (
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -143,14 +146,16 @@ export function AppliesToField({
                         </a>
                         {s.name && <span className="text-muted small">{s.name}</span>}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={`Remove ${s.name ?? s.uid}`}
-                        onClick={() => handleRemoveEnrollmentByUid(s.uid)}
-                      >
-                        <i className="bi bi-trash text-danger" aria-hidden="true" />
-                      </Button>
+                      {canEditTargets && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${s.name ?? s.uid}`}
+                          onClick={() => handleRemoveEnrollmentByUid(s.uid)}
+                        >
+                          <i className="bi bi-trash text-danger" aria-hidden="true" />
+                        </Button>
+                      )}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -160,24 +165,24 @@ export function AppliesToField({
         ) : (
           <div>
             <div className="d-flex flex-wrap align-items-baseline gap-2">
-              <StudentLabelDropdown
-                labels={allLabels ?? []}
-                selectedIds={excludedStudentLabelIds}
-                buttonLabel="Select labels"
-                disabled={!canEditTargets}
-                onToggle={(label) => {
-                  if (!canEditTargets) return;
-                  if (excludedStudentLabelIds.has(label.id)) {
-                    handleRemoveStudentLabelById(label.id);
-                  } else {
-                    appendStudentLabel({
-                      studentLabelId: label.id,
-                      name: label.name,
-                      color: label.color,
-                    });
-                  }
-                }}
-              />
+              {canEditTargets && (
+                <StudentLabelDropdown
+                  labels={allLabels ?? []}
+                  selectedIds={excludedStudentLabelIds}
+                  buttonLabel="Select labels"
+                  onToggle={(label) => {
+                    if (excludedStudentLabelIds.has(label.id)) {
+                      handleRemoveStudentLabelById(label.id);
+                    } else {
+                      appendStudentLabel({
+                        studentLabelId: label.id,
+                        name: label.name,
+                        color: label.color,
+                      });
+                    }
+                  }}
+                />
+              )}
               {studentLabels.length === 0 ? (
                 <span className="text-muted small">No student labels selected</span>
               ) : (
@@ -186,14 +191,16 @@ export function AppliesToField({
                     key={sl.studentLabelId}
                     label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    <button
-                      type="button"
-                      className="btn p-0 lh-1"
-                      aria-label={`Remove label "${sl.name}"`}
-                      onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
-                    >
-                      <i className="bi bi-x text-danger" aria-hidden="true" />
-                    </button>
+                    {canEditTargets && (
+                      <button
+                        type="button"
+                        className="btn p-0 lh-1"
+                        aria-label={`Remove label "${sl.name}"`}
+                        onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                      >
+                        <i className="bi bi-x text-danger" aria-hidden="true" />
+                      </button>
+                    )}
                   </StudentLabelBadge>
                 ))
               )}
@@ -206,8 +213,10 @@ export function AppliesToField({
       </div>
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
-          This override has no targets. Add at least one{' '}
-          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
+          This override has no targets.{' '}
+          {canEditTargets
+            ? `Add at least one ${targetDescription} for this rule to take effect.`
+            : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`}
         </Alert>
       )}
     </div>
