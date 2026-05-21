@@ -708,7 +708,7 @@ router.post(
         if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
-            'Assigned grader does not have Student Data Editor permission',
+            'The assigned grader does not have student data editor permissions.',
           );
         }
       }

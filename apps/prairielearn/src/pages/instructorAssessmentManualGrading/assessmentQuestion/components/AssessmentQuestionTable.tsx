@@ -828,8 +828,8 @@ export function AssessmentQuestionTable({
                       tooltip={{
                         body: (
                           <>
-                            Only staff with <strong>Student Data Editor</strong> permissions or
-                            higher can be assigned as graders
+                            Only staff with student data editor permissions can be assigned as
+                            graders
                           </>
                         ),
                         props: { id: 'assign-for-grading-tooltip' },
