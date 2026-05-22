@@ -72,7 +72,12 @@ function optionalLiteralStringAttribute(
 }
 
 function allAnswers(element: TagElement): TagElement[] {
-  return [...element.childrenWithTag('pl-answer')];
+  return [
+    ...element.childrenWithTag('pl-answer'),
+    ...element
+      .childrenWithTag('pl-block-group')
+      .flatMap((group) => [...group.childrenWithTag('pl-answer')]),
+  ];
 }
 
 function hasOptionalBlocks(element: TagElement): boolean {
@@ -117,7 +122,7 @@ function validateTagCharacters(element: TagElement, context: ValidatorContext) {
 
 export const validators: TagValidator[] = defineTagValidators('pl-order-blocks', {
   'pl/order-blocks-children'(element, context) {
-    if (element.childrenWithTag('pl-answer').length === 0 && allAnswers(element).length === 0) {
+    if (allAnswers(element).length === 0) {
       context.reportElement(element, 'pl-order-blocks element must have at least 1 answer block.');
     }
   },

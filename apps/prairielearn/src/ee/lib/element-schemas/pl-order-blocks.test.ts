@@ -36,6 +36,31 @@ describe('pl-order-blocks schema', () => {
     assert.deepEqual(messages, []);
   });
 
+  it('accepts DAG order blocks where every answer is in a block group', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks" grading-method="dag">
+        <pl-block-group tag="case-a">
+          <pl-answer correct="true" tag="a1">First case</pl-answer>
+          <pl-answer correct="true" tag="a2" depends="a1">Finish case</pl-answer>
+        </pl-block-group>
+      </pl-order-blocks>
+    `);
+
+    assert.deepEqual(messages, []);
+  });
+
+  it('counts incorrect answers inside DAG block groups', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks" grading-method="dag" max-incorrect="1">
+        <pl-block-group tag="case-a">
+          <pl-answer correct="false" tag="a1">Distractor</pl-answer>
+        </pl-block-group>
+      </pl-order-blocks>
+    `);
+
+    assert.deepEqual(messages, []);
+  });
+
   it('requires answers-name', async () => {
     const messages = await lintMessages(`
       <pl-order-blocks>
