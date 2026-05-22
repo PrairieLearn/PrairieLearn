@@ -281,7 +281,7 @@ router.get(
         question: res.locals.question,
         messages,
         questionFiles: questionFilesData.files,
-        allQuestionFilesHtml: questionFilesData.allFilesHtml,
+        fileBrowser: questionFilesData.fileBrowser,
         selectedFile: questionFilesData.selectedFile,
         selectedFilePreview: questionFilesData.selectedFilePreview,
         richTextEditorEnabled,

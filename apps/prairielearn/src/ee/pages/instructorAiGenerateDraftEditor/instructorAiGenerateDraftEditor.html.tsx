@@ -2,6 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import type { DraftQuestionFileBrowserData } from '../../../components/DraftQuestionFileBrowser.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
   compiledScriptTag,
@@ -32,7 +33,7 @@ export function InstructorAiGenerateDraftEditor({
   question,
   messages,
   questionFiles,
-  allQuestionFilesHtml,
+  fileBrowser,
   selectedFile,
   selectedFilePreview,
   richTextEditorEnabled,
@@ -43,7 +44,7 @@ export function InstructorAiGenerateDraftEditor({
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  allQuestionFilesHtml: string;
+  fileBrowser: DraftQuestionFileBrowserData | null;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;
@@ -127,7 +128,7 @@ export function InstructorAiGenerateDraftEditor({
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
-          allQuestionFilesHtml={allQuestionFilesHtml}
+          fileBrowser={fileBrowser}
           selectedFile={selectedFile}
           selectedFilePreview={selectedFilePreview}
           richTextEditorEnabled={richTextEditorEnabled}

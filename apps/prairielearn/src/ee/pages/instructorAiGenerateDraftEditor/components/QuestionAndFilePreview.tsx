@@ -11,6 +11,10 @@ import { Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
+import {
+  DraftQuestionFileBrowser,
+  type DraftQuestionFileBrowserData,
+} from '../../../../components/DraftQuestionFileBrowser.js';
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type {
@@ -300,7 +304,7 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
 }
 
 function AllQuestionFiles({
-  allQuestionFilesHtml,
+  fileBrowser,
   selectedFile,
   selectedFilePreview,
   allFilesHref,
@@ -314,7 +318,7 @@ function AllQuestionFiles({
   onHasChangesChange,
   editorRef,
 }: {
-  allQuestionFilesHtml: string;
+  fileBrowser: DraftQuestionFileBrowserData | null;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
@@ -328,42 +332,9 @@ function AllQuestionFiles({
   onHasChangesChange: (hasChanges: boolean) => void;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
-  const fileListingRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (selectedFile == null) onHasChangesChange(false);
   }, [onHasChangesChange, selectedFile]);
-
-  useEffect(() => {
-    const fileListing = fileListingRef.current;
-    if (!fileListing) return;
-
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-
-      const link = target.closest<HTMLAnchorElement>('a[data-selected-file-path]');
-      const filePath = link?.dataset.selectedFilePath;
-      if (filePath != null) {
-        event.preventDefault();
-        onSelectFile(filePath);
-        return;
-      }
-
-      const directoryLink = target.closest<HTMLAnchorElement>('a[data-selected-directory-path]');
-      const directoryPath = directoryLink?.dataset.selectedDirectoryPath;
-      if (directoryPath == null) return;
-
-      event.preventDefault();
-      onSelectDirectory(directoryPath === '' ? null : directoryPath);
-    };
-
-    fileListing.addEventListener('click', handleClick);
-
-    return () => {
-      fileListing.removeEventListener('click', handleClick);
-    };
-  }, [onSelectDirectory, onSelectFile]);
 
   if (!qid) return null;
 
@@ -395,11 +366,39 @@ function AllQuestionFiles({
 
   return (
     <div className="p-3">
-      <div
-        ref={fileListingRef}
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{ __html: allQuestionFilesHtml }}
-      />
+      {fileBrowser != null && (
+        <DraftQuestionFileBrowser
+          data={fileBrowser}
+          onSelectFile={onSelectFile}
+          onSelectDirectory={onSelectDirectory}
+        />
+      )}
+    </div>
+  );
+}
+
+function FilePreviewContent({
+  content,
+  fileName,
+}: {
+  content: SelectedQuestionFilePreview['content'];
+  fileName: string;
+}) {
+  if (content.kind === 'image') {
+    return <img src={content.src} className="img-fluid" alt={`Preview of ${fileName}`} />;
+  }
+  if (content.kind === 'pdf') {
+    return (
+      <div className="ratio ratio-4x3">
+        <iframe src={content.src} title={`PDF preview of ${fileName}`}>
+          This PDF cannot be displayed.
+        </iframe>
+      </div>
+    );
+  }
+  return (
+    <div className="alert alert-warning" role="alert">
+      No preview available.
     </div>
   );
 }
@@ -433,18 +432,19 @@ function SelectedQuestionFilePreviewPanel({
           </a>
         </div>
       </div>
-      <div
-        className="flex-grow-1 overflow-auto p-3"
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{ __html: selectedFilePreview.html }}
-      />
+      <div className="flex-grow-1 overflow-auto p-3">
+        <FilePreviewContent
+          content={selectedFilePreview.content}
+          fileName={selectedFilePreview.path.split('/').at(-1) ?? selectedFilePreview.path}
+        />
+      </div>
     </div>
   );
 }
 
 export function QuestionAndFilePreview({
   questionFiles,
-  allQuestionFilesHtml,
+  fileBrowser,
   selectedFile,
   selectedFilePreview,
   allFilesHref,
@@ -468,7 +468,7 @@ export function QuestionAndFilePreview({
   onSelectedFileSaved,
 }: {
   questionFiles: Record<string, string>;
-  allQuestionFilesHtml: string;
+  fileBrowser: DraftQuestionFileBrowserData | null;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
@@ -577,7 +577,7 @@ export function QuestionAndFilePreview({
       </Tab.Pane>
       <Tab.Pane eventKey="all-files" className="h-100">
         <AllQuestionFiles
-          allQuestionFilesHtml={allQuestionFilesHtml}
+          fileBrowser={fileBrowser}
           selectedFile={selectedFile}
           selectedFilePreview={selectedFilePreview}
           allFilesHref={allFilesHref}
