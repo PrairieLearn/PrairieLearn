@@ -13,7 +13,6 @@ import type {
   DraftQuestionFileBrowserFile,
 } from '../components/DraftQuestionFileBrowser.js';
 import { browseDirectory, browseFile } from '../components/FileBrowser.js';
-import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { b64EncodeUnicode } from './base64-util.js';
 import { config } from './config.js';
@@ -240,9 +239,6 @@ async function buildDraftQuestionFileBrowserData({
     ...resLocals,
     navPage: 'question',
   });
-  const fileActionUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view/${encodeCourseFilePath(
-    questionRootPath,
-  )}`;
 
   /**
    * Resolves a course-root-relative path (with OS separators) to a path
@@ -260,8 +256,6 @@ async function buildDraftQuestionFileBrowserData({
       id: file.id,
       name: file.name,
       selectedFilePath,
-      coursePath: file.path,
-      workingDirectory: file.dir,
       downloadUrl: `${paths.urlPrefix}/file_download/${encodePath(file.path)}?attachment=${encodeURIComponent(
         file.name,
       )}`,
@@ -301,19 +295,13 @@ async function buildDraftQuestionFileBrowserData({
   return {
     isReadOnly: false,
     hasEditPermission: paths.hasEditPermission,
-    csrfToken: generateCsrfToken({
-      url: fileActionUrl,
-      authnUserId: resLocals.authn_user.id,
-    }),
-    fileActionUrl,
     editorUrl,
-    workingPath: paths.workingPath,
     selectedDirectory,
     maxFileSizeBytes: config.fileUploadMaxBytes,
     breadcrumb,
     specialDirs: paths.specialDirs.map((d) => ({
       label: d.label,
-      path: d.path,
+      directory: toQuestionRelativePath(path.relative(resLocals.course.path, d.path)),
       infoHtml: d.info.toString(),
     })),
     files,

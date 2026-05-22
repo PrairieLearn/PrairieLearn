@@ -32,14 +32,10 @@ export function FileUploadForm({
   file,
   csrfToken,
   maxFileSizeBytes,
-  action,
-  redirectUrl,
 }: {
   file: FileUploadInfo;
   csrfToken: string;
   maxFileSizeBytes: number;
-  action?: string;
-  redirectUrl?: string;
 }) {
   return html`
     <form
@@ -47,7 +43,6 @@ export function FileUploadForm({
       name="instructor-file-upload-form-${file.id}"
       method="POST"
       enctype="multipart/form-data"
-      ${action ? html`action="${action}"` : ''}
       novalidate
     >
       ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
@@ -69,9 +64,6 @@ export function FileUploadForm({
       <div class="mb-3">
         <input type="hidden" name="__action" value="upload_file" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        ${redirectUrl
-          ? html`<input type="hidden" name="redirect_url" value="${redirectUrl}" />`
-          : ''}
         ${file.path != null
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
@@ -87,24 +79,15 @@ export function FileUploadForm({
 export function FileDeleteForm({
   file,
   csrfToken,
-  action,
-  redirectUrl,
 }: {
   file: FileDeleteInfo;
   csrfToken: string;
-  action?: string;
-  redirectUrl?: string;
 }) {
   return html`
-    <form
-      name="instructor-file-delete-form-${file.id}"
-      method="POST"
-      ${action ? html`action="${action}"` : ''}
-    >
+    <form name="instructor-file-delete-form-${file.id}" method="POST">
       <p>Are you sure you want to delete <strong>${file.name}</strong>?</p>
       <input type="hidden" name="__action" value="delete_file" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      ${redirectUrl ? html`<input type="hidden" name="redirect_url" value="${redirectUrl}" />` : ''}
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
@@ -118,14 +101,10 @@ export function FileRenameForm({
   file,
   csrfToken,
   isViewingFile,
-  action,
-  redirectUrl,
 }: {
   file: FileRenameInfo;
   csrfToken: string;
   isViewingFile: boolean;
-  action?: string;
-  redirectUrl?: string;
 }) {
   const FILE_NAME_PATTERN =
     /(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?/;
@@ -134,12 +113,10 @@ export function FileRenameForm({
       name="instructor-file-rename-form-${file.id}"
       method="POST"
       class="needs-validation"
-      ${action ? html`action="${action}"` : ''}
       novalidate
     >
       <input type="hidden" name="__action" value="rename_file" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      ${redirectUrl ? html`<input type="hidden" name="redirect_url" value="${redirectUrl}" />` : ''}
       <input type="hidden" name="working_path" value="${file.dir}" />
       ${isViewingFile ? html`<input type="hidden" name="was_viewing_file" value="true" />` : ''}
       <input type="hidden" name="old_file_name" value="${file.name}" />
