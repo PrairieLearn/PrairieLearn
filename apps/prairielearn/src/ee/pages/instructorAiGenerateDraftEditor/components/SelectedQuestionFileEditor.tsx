@@ -3,12 +3,16 @@ import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
-import { getAppError } from '../../../../lib/client/errors.js';
-import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
+import {
+  type AppError,
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../../../lib/client/errors.js';
+import type { SelectedQuestionFile } from '../../../../lib/draft-question-files/browser.js';
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
-import { applyDraftFileEditResult } from './draftFileEditResult.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
 
@@ -51,15 +55,12 @@ export function SelectedQuestionFileBreadcrumb({
 function getSaveStatus({
   hasChanges,
   isSaving,
-  saveError,
   isGenerating,
 }: {
   hasChanges: boolean;
   isSaving: boolean;
-  saveError: string | null;
   isGenerating: boolean;
 }) {
-  if (saveError) return saveError;
   if (isSaving) return 'Saving...';
   if (isGenerating) return 'Read-only while generation is in progress.';
   if (hasChanges) return 'Unsaved changes.';
@@ -71,6 +72,7 @@ export function SelectedQuestionFileEditor({
   questionId,
   isGenerating,
   allFilesHref,
+  urlPrefix,
   onShowAllFiles,
   onSaved,
   editorRef,
@@ -79,6 +81,7 @@ export function SelectedQuestionFileEditor({
   questionId: string;
   isGenerating: boolean;
   allFilesHref: string;
+  urlPrefix: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
@@ -88,9 +91,9 @@ export function SelectedQuestionFileEditor({
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<AppError<AiDraftFilesError['Save']> | null>(null);
   const hasChanges = contents !== savedContents;
-  const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError, isGenerating });
+  const saveStatus = getSaveStatus({ hasChanges, isSaving, isGenerating });
 
   useImperativeHandle(editorRef, () => ({
     discardChanges: () => {
@@ -108,14 +111,20 @@ export function SelectedQuestionFileEditor({
     setSaveError(null);
 
     try {
-      const result = await saveMutation.mutateAsync({
+      await saveMutation.mutateAsync({
         questionId,
         filePath: selectedFile.path,
         encodedContents: b64EncodeUnicode(contents),
       });
-      await applyDraftFileEditResult(result, onSaved);
+      setSaveError(null);
+      await onSaved();
     } catch (err) {
-      setSaveError(getAppError<AiDraftFilesError['Save']>(err)?.message ?? SAVE_ERROR_MESSAGE);
+      setSaveError(
+        getAppError<AiDraftFilesError['Save']>(err) ?? {
+          code: 'UNKNOWN',
+          message: SAVE_ERROR_MESSAGE,
+        },
+      );
     } finally {
       setIsSaving(false);
     }
@@ -130,7 +139,14 @@ export function SelectedQuestionFileEditor({
             allFilesHref={allFilesHref}
             onShowAllFiles={onShowAllFiles}
           />
-          <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>{saveStatus}</div>
+          <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
+            {saveError != null
+              ? renderAppError(saveError, {
+                  EDIT_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                  UNKNOWN: ({ message }) => message,
+                })
+              : saveStatus}
+          </div>
         </div>
         <div className="d-flex align-items-center gap-2">
           <form className="mb-0" onSubmit={handleSubmit}>

@@ -2,76 +2,60 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import {
   type DraftQuestionFilesLocals,
-  deleteDraftQuestionFile,
   getQuestionFilesData,
-  getSelectedQuestionDirectory,
-  getSelectedQuestionFilePath,
-  normalizeQuestionFilePath,
+} from '../../lib/draft-question-files/browser.js';
+import {
+  EditJobFailedError,
+  deleteDraftQuestionFile,
   renameDraftQuestionFile,
   saveDraftQuestionFile,
-} from '../../lib/draft-question-files.js';
+} from '../../lib/draft-question-files/mutations.js';
+import {
+  ModifiableQuestionFilePathSchema,
+  OptionalSelectedDirectorySchema,
+  OptionalSelectedFilePathSchema,
+} from '../../lib/draft-question-files/paths.js';
+import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
 import { features } from '../../lib/features/index.js';
-import { idsEqual } from '../../lib/id.js';
-import { selectOptionalQuestionById } from '../../models/question.js';
-import { appErrorFormatter } from '../app-errors.js';
+import { appErrorFormatter, throwAppError } from '../app-errors.js';
+
+/** A draft file edit whose underlying server job failed to sync. */
+type EditJobFailed = { code: 'EDIT_JOB_FAILED'; jobSequenceId: string };
 
 export interface AiDraftFilesError {
   List: never;
-  Save: never;
-  Rename: never;
-  Delete: never;
+  Save: EditJobFailed;
+  Rename: EditJobFailed;
+  Delete: EditJobFailed;
 }
 
 const ListInputSchema = z.object({
   questionId: IdSchema,
-  selectedFilePath: z.string().nullable(),
-  selectedDirectory: z.string().nullable(),
+  selectedFilePath: OptionalSelectedFilePathSchema,
+  selectedDirectory: OptionalSelectedDirectorySchema,
 });
 
 const SaveInputSchema = z.object({
   questionId: IdSchema,
-  filePath: z.string(),
+  filePath: ModifiableQuestionFilePathSchema,
   encodedContents: z.string(),
 });
 
 const RenameInputSchema = z.object({
   questionId: IdSchema,
-  oldFilePath: z.string(),
-  newFilePath: z.string(),
+  oldFilePath: ModifiableQuestionFilePathSchema,
+  newFilePath: ModifiableQuestionFilePathSchema,
 });
 
 const DeleteInputSchema = z.object({
   questionId: IdSchema,
-  filePath: z.string(),
+  filePath: ModifiableQuestionFilePathSchema,
 });
-
-async function selectDraftQuestionOrThrow({
-  courseId,
-  questionId,
-}: {
-  courseId: string;
-  questionId: string;
-}) {
-  const question = await selectOptionalQuestionById(questionId);
-  if (
-    question == null ||
-    !idsEqual(question.course_id, courseId) ||
-    question.deleted_at != null ||
-    !question.draft
-  ) {
-    throw new TRPCError({
-      code: 'NOT_FOUND',
-      message: 'Draft question not found',
-    });
-  }
-  return question;
-}
 
 /**
  * The `aiDraftFiles` router is mounted in both the `course` and `courseInstance`
@@ -122,22 +106,17 @@ const requireAiQuestionGenerationEnabled = t.middleware(async (opts) => {
 });
 
 /**
- * Translates `HttpStatusError`s thrown by the shared draft-question-files lib
- * into `TRPCError`s. Without this, a raw `HttpStatusError` would surface as a
- * generic 500, since `appErrorFormatter` only understands tRPC's own errors.
+ * Translates an {@link EditJobFailedError} raised by a file mutation into a
+ * typed `EDIT_JOB_FAILED` app error, so the client can render a link to the
+ * job's logs. Other errors propagate unchanged.
  */
-const translateHttpStatusErrors = t.middleware(async (opts) => {
+const translateEditJobFailedError = t.middleware(async (opts) => {
   const result = await opts.next();
-  if (!result.ok && result.error.cause instanceof error.HttpStatusError) {
-    const httpError = result.error.cause;
-    throw new TRPCError({
-      code:
-        httpError.status === 404
-          ? 'NOT_FOUND'
-          : httpError.status === 403
-            ? 'FORBIDDEN'
-            : 'BAD_REQUEST',
-      message: httpError.message,
+  if (!result.ok && result.error.cause instanceof EditJobFailedError) {
+    throwAppError<AiDraftFilesError['Save']>({
+      code: 'EDIT_JOB_FAILED',
+      message: 'The file edit failed to sync.',
+      jobSequenceId: result.error.cause.jobSequenceId,
     });
   }
   return result;
@@ -146,18 +125,21 @@ const translateHttpStatusErrors = t.middleware(async (opts) => {
 /** Resolves the draft question named by the request's `questionId` onto `ctx`. */
 const resolveDraftQuestion = t.middleware(async (opts) => {
   const { questionId } = z.object({ questionId: IdSchema }).parse(await opts.getRawInput());
-  const question = await selectDraftQuestionOrThrow({
+  const classified = await classifyDraftQuestion({
     courseId: opts.ctx.course.id,
     questionId,
   });
-  return opts.next({ ctx: { question } });
+  if (classified.kind !== 'draft') {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Draft question not found' });
+  }
+  return opts.next({ ctx: { question: classified.question } });
 });
 
 const aiDraftFilesProcedure = t.procedure
   .use(requireCoursePermissionEdit)
   .use(requireNotExampleCourse)
   .use(requireAiQuestionGenerationEnabled)
-  .use(translateHttpStatusErrors)
+  .use(translateEditJobFailedError)
   .use(resolveDraftQuestion);
 
 export const aiDraftFilesRouter = t.router({
@@ -165,44 +147,44 @@ export const aiDraftFilesRouter = t.router({
     return await getQuestionFilesData({
       resLocals: { ...ctx.locals, question: ctx.question },
       editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${ctx.question.id}`,
-      selectedFilePath: getSelectedQuestionFilePath(input.selectedFilePath),
-      selectedDirectory: getSelectedQuestionDirectory(input.selectedDirectory),
+      selectedFilePath: input.selectedFilePath,
+      selectedDirectory: input.selectedDirectory,
     });
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
-    return await saveDraftQuestionFile({
+    await saveDraftQuestionFile({
       course: ctx.locals.course,
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
       authz_data: ctx.authz_data,
-      urlPrefix: ctx.locals.urlPrefix,
-      filePath: normalizeQuestionFilePath(input.filePath),
+      filePath: input.filePath,
       contents: b64DecodeUnicode(input.encodedContents),
     });
+    return null;
   }),
   rename: aiDraftFilesProcedure.input(RenameInputSchema).mutation(async ({ ctx, input }) => {
-    return await renameDraftQuestionFile({
+    await renameDraftQuestionFile({
       course: ctx.locals.course,
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
       authz_data: ctx.authz_data,
-      urlPrefix: ctx.locals.urlPrefix,
       oldFilePath: input.oldFilePath,
       newFilePath: input.newFilePath,
     });
+    return null;
   }),
   delete: aiDraftFilesProcedure.input(DeleteInputSchema).mutation(async ({ ctx, input }) => {
-    return await deleteDraftQuestionFile({
+    await deleteDraftQuestionFile({
       course: ctx.locals.course,
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
       authz_data: ctx.authz_data,
-      urlPrefix: ctx.locals.urlPrefix,
       filePath: input.filePath,
     });
+    return null;
   }),
 });
 

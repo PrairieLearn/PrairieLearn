@@ -5,13 +5,18 @@ import { type FormEvent, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import {
+  type AppError,
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../lib/client/errors.js';
 import { FILE_NAME_PATTERN } from '../lib/file-names.js';
 
 /**
- * Callbacks that perform draft question file mutations. Each resolves on success
- * and rejects with an `Error` whose message should be shown to the user. A
- * handler may instead navigate the browser away (e.g. to an edit error page),
- * in which case it resolves without the popover needing to react.
+ * Callbacks that perform draft question file mutations. Each resolves on
+ * success and rejects on failure; the rejection is rendered in the action's
+ * popover via {@link getAppError}.
  */
 export interface DraftQuestionFileBrowserActions {
   /**
@@ -34,14 +39,33 @@ function getParentDirectory(filePath: string): string {
   return lastSlash === -1 ? '' : filePath.slice(0, lastSlash);
 }
 
-function getErrorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
+/** A draft file mutation whose underlying server job failed to sync. */
+type DraftFileActionError = { code: 'EDIT_JOB_FAILED'; jobSequenceId: string };
+
+/** Extracts a typed action error, falling back to `fallbackMessage`. */
+function resolveActionError(err: unknown, fallbackMessage: string): AppError<DraftFileActionError> {
+  return getAppError<DraftFileActionError>(err) ?? { code: 'UNKNOWN', message: fallbackMessage };
+}
+
+/** Renders a draft file action error, linking to the job logs on a sync failure. */
+function ActionError({
+  error,
+  urlPrefix,
+}: {
+  error: AppError<DraftFileActionError>;
+  urlPrefix: string;
+}) {
+  return renderAppError(error, {
+    EDIT_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+    UNKNOWN: ({ message }) => message,
+  });
 }
 
 function DraftFileUploadForm({
   idPrefix,
   infoDirectory,
   maxFileSizeBytes,
+  urlPrefix,
   onCancel,
   onSubmit,
 }: {
@@ -49,6 +73,7 @@ function DraftFileUploadForm({
   /** When set, a note tells the user the file will be placed in this directory. */
   infoDirectory: string | null;
   maxFileSizeBytes: number;
+  urlPrefix: string;
   onCancel: () => void;
   onSubmit: (file: File) => Promise<void>;
 }) {
@@ -56,7 +81,7 @@ function DraftFileUploadForm({
   const errorId = `${idPrefix}-error`;
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,7 +92,7 @@ function DraftFileUploadForm({
     try {
       await onSubmit(file);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to upload file.'));
+      setError(resolveActionError(err, 'Failed to upload file.'));
       setIsSubmitting(false);
     }
   }
@@ -98,7 +123,7 @@ function DraftFileUploadForm({
       </div>
       {error ? (
         <div id={errorId} className="text-danger small mb-3" role="alert">
-          {error}
+          <ActionError error={error} urlPrefix={urlPrefix} />
         </div>
       ) : null}
       <div className="text-end justify-content-end gap-2 d-flex flex-wrap">
@@ -122,12 +147,14 @@ function DraftFileRenameForm({
   idPrefix,
   fileName,
   oldFilePath,
+  urlPrefix,
   onCancel,
   onSubmit,
 }: {
   idPrefix: string;
   fileName: string;
   oldFilePath: string;
+  urlPrefix: string;
   onCancel: () => void;
   onSubmit: (newFilePath: string) => Promise<void>;
 }) {
@@ -136,7 +163,7 @@ function DraftFileRenameForm({
   const [value, setValue] = useState(fileName);
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<AppError<DraftFileActionError> | null>(null);
 
   const validationError = run(() => {
     const trimmed = value.trim();
@@ -147,7 +174,8 @@ function DraftFileRenameForm({
     }
     return null;
   });
-  const displayError = submitError ?? (showValidation ? validationError : null);
+  const showValidationError = showValidation && validationError != null;
+  const hasError = submitError != null || showValidationError;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -164,7 +192,7 @@ function DraftFileRenameForm({
       const newFilePath = parentDirectory === '' ? trimmed : `${parentDirectory}/${trimmed}`;
       await onSubmit(newFilePath);
     } catch (err) {
-      setSubmitError(getErrorMessage(err, 'Failed to rename file.'));
+      setSubmitError(resolveActionError(err, 'Failed to rename file.'));
       setIsSubmitting(false);
     }
   }
@@ -184,15 +212,19 @@ function DraftFileRenameForm({
         <input
           type="text"
           id={inputId}
-          className={clsx('form-control', displayError != null && 'is-invalid')}
+          className={clsx('form-control', hasError && 'is-invalid')}
           value={value}
-          aria-invalid={displayError != null}
-          aria-errormessage={displayError != null ? errorId : undefined}
+          aria-invalid={hasError}
+          aria-errormessage={hasError ? errorId : undefined}
           onChange={(event) => setValue(event.target.value)}
         />
-        {displayError ? (
+        {submitError != null ? (
           <div id={errorId} className="invalid-feedback d-block" role="alert">
-            {displayError}
+            <ActionError error={submitError} urlPrefix={urlPrefix} />
+          </div>
+        ) : showValidationError ? (
+          <div id={errorId} className="invalid-feedback d-block" role="alert">
+            {validationError}
           </div>
         ) : null}
       </div>
@@ -216,17 +248,19 @@ function DraftFileRenameForm({
 function DraftFileDeleteForm({
   idPrefix,
   fileName,
+  urlPrefix,
   onCancel,
   onSubmit,
 }: {
   idPrefix: string;
   fileName: string;
+  urlPrefix: string;
   onCancel: () => void;
   onSubmit: () => Promise<void>;
 }) {
   const errorId = `${idPrefix}-error`;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -237,7 +271,7 @@ function DraftFileDeleteForm({
     try {
       await onSubmit();
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to delete file.'));
+      setError(resolveActionError(err, 'Failed to delete file.'));
       setIsSubmitting(false);
     }
   }
@@ -249,7 +283,7 @@ function DraftFileDeleteForm({
       </p>
       {error ? (
         <div id={errorId} className="text-danger small mb-2" role="alert">
-          {error}
+          <ActionError error={error} urlPrefix={urlPrefix} />
         </div>
       ) : null}
       <div className="text-end justify-content-end gap-2 d-flex flex-wrap">
@@ -279,6 +313,7 @@ export function UploadFileButton({
   maxFileSizeBytes,
   targetFilePath,
   directory,
+  urlPrefix,
   onUploadFile,
 }: {
   id: string;
@@ -290,6 +325,7 @@ export function UploadFileButton({
   maxFileSizeBytes: number;
   targetFilePath: string | null;
   directory: string | null;
+  urlPrefix: string;
   onUploadFile: DraftQuestionFileBrowserActions['onUploadFile'];
 }) {
   const [show, setShow] = useState(false);
@@ -307,6 +343,7 @@ export function UploadFileButton({
             idPrefix={id}
             infoDirectory={infoDirectory ?? null}
             maxFileSizeBytes={maxFileSizeBytes}
+            urlPrefix={urlPrefix}
             onCancel={() => setShow(false)}
             onSubmit={async (file) => {
               await onUploadFile({ file, targetFilePath, directory });
@@ -330,12 +367,14 @@ export function RenameFileButton({
   fileName,
   oldFilePath,
   disabled,
+  urlPrefix,
   onRenameFile,
 }: {
   id: string;
   fileName: string;
   oldFilePath: string;
   disabled?: boolean;
+  urlPrefix: string;
   onRenameFile: DraftQuestionFileBrowserActions['onRenameFile'];
 }) {
   const [show, setShow] = useState(false);
@@ -353,6 +392,7 @@ export function RenameFileButton({
             idPrefix={id}
             fileName={fileName}
             oldFilePath={oldFilePath}
+            urlPrefix={urlPrefix}
             onCancel={() => setShow(false)}
             onSubmit={async (newFilePath) => {
               await onRenameFile({ oldFilePath, newFilePath });
@@ -382,12 +422,14 @@ export function DeleteFileButton({
   fileName,
   filePath,
   disabled,
+  urlPrefix,
   onDeleteFile,
 }: {
   id: string;
   fileName: string;
   filePath: string;
   disabled?: boolean;
+  urlPrefix: string;
   onDeleteFile: DraftQuestionFileBrowserActions['onDeleteFile'];
 }) {
   const [show, setShow] = useState(false);
@@ -404,6 +446,7 @@ export function DeleteFileButton({
           <DraftFileDeleteForm
             idPrefix={id}
             fileName={fileName}
+            urlPrefix={urlPrefix}
             onCancel={() => setShow(false)}
             onSubmit={async () => {
               await onDeleteFile({ filePath });

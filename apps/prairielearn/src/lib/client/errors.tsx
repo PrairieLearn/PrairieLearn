@@ -25,6 +25,18 @@ export type AppError<T> =
   | { code: 'UNKNOWN'; message: string };
 
 /**
+ * An error carrying typed {@link AppError} metadata, thrown from non-tRPC code
+ * paths (e.g. a `fetch`-based file upload) so {@link getAppError} can surface it
+ * the same way as a tRPC `AppError`.
+ */
+export class AppErrorException extends Error {
+  constructor(readonly appError: { code: string; message: string } & Record<string, unknown>) {
+    super(appError.message);
+    this.name = 'AppErrorException';
+  }
+}
+
+/**
  * Extracts a typed app-level error from a tRPC error, narrowed to the
  * error type `T`. Returns `{ code: 'UNKNOWN' }` for errors without typed
  * metadata (plain `TRPCError` throws, network failures, permission errors, etc.).
@@ -41,6 +53,9 @@ export type AppError<T> =
  * which require an exhaustive renderer for each variant.
  */
 export function getAppError<T>(error: unknown): AppError<T> | null {
+  if (error instanceof AppErrorException) {
+    return { ...(error.appError as unknown as ResolveAppError<T>), message: error.message };
+  }
   if (error instanceof TRPCClientError) {
     const appError = (error.data as { appError?: ResolveAppError<T> } | undefined)?.appError;
     if (appError) return { ...appError, message: error.message };
