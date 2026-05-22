@@ -1,76 +1,120 @@
 # Importing content from other platforms
 
-If you're migrating from Canvas or another learning management system, you can import your existing quizzes and questions directly into PrairieLearn. The import tool reads standard QTI 1.2 exports — the same format that Canvas and many other platforms produce when you export quiz content.
+If you're migrating from Canvas or another learning management system, you can import existing quizzes, assessments, question banks, and questions into PrairieLearn. The import tool reads QTI 1.2 content, which is the format Canvas exports for quiz and course content.
 
 !!! info
 
-    This feature requires the `qti-content-import` feature flag to be enabled for your course. If you don't see the "Import content" button on your Assessments page, contact your PrairieLearn administrator.
+    This feature requires the `qti-content-import` feature flag to be enabled for your course. If you don't see import options on the Assessments or Questions pages, contact your PrairieLearn administrator.
+
+## Overview
+
+The importer is a review-and-confirm workflow:
+
+1. Export quiz or course content from Canvas or another LMS.
+2. Upload the exported `.zip` or `.imscc` file to PrairieLearn.
+3. If the upload references Canvas question banks that were not included in the file, PrairieLearn asks for supplemental course exports that contain those banks. You can also continue without the missing bank content.
+4. Review what PrairieLearn found. The review page separates **Assessments** from **Question banks**:
+   - Assessments are imported to PrairieLearn with their questions and basic quiz structure. After import, you can edit their settings, adjust question order and points, and assign them like any other assessment.
+   - Question banks are imported as a set of PrairieLearn questions in your course. You can add them to existing assessments or use them in any new assessments you create.
+5. Optionally edit assessment settings and question metadata before importing.
+6. Confirm the import. PrairieLearn writes the files to your course repository and syncs them automatically.
+
+## Where to start an import
+
+You can start the QTI importer from either of these pages:
+
+- On a course instance **Assessments** page, click **Import content**.
+- On the **Questions** page, open the **Add questions** dropdown and click **Import questions**.
+
+Both entry points use the same importer. If you start from the Questions page, PrairieLearn returns you to the Questions page after the import completes. Otherwise, it returns you to the Assessments page.
 
 ## What you can import
 
-The import tool supports both individual quiz exports (`.zip` files) and full course exports (`.imscc` files). It handles most standard question types:
+The import tool supports individual quiz exports (`.zip` files) and full course exports (`.imscc` files). It handles the following QTI 1.2 question types:
 
-| QTI question type             | PrairieLearn element                                              |
+| QTI question type             | PrairieLearn output                                               |
 | ----------------------------- | ----------------------------------------------------------------- |
 | Multiple choice               | [`pl-multiple-choice`](elements/pl-multiple-choice.md)            |
 | True/false                    | [`pl-multiple-choice`](elements/pl-multiple-choice.md)            |
 | Multiple answers (select all) | [`pl-checkbox`](elements/pl-checkbox.md)                          |
 | Fill in the blank             | [`pl-string-input`](elements/pl-string-input.md)                  |
-| Fill in multiple blanks       | [`pl-string-input`](elements/pl-string-input.md) (inline)         |
-| Multiple dropdowns            | [`pl-dropdown`](elements/pl-dropdown.md) (inline)                 |
+| Fill in multiple blanks       | Inline [`pl-string-input`](elements/pl-string-input.md) blanks    |
+| Multiple dropdowns            | Inline [`pl-dropdown`](elements/pl-dropdown.md) blanks            |
 | Matching                      | [`pl-matching`](elements/pl-matching.md)                          |
 | Numerical answer              | [`pl-number-input`](elements/pl-number-input.md)                  |
+| Short answer                  | `pl-string-input`, `pl-integer-input`, or `pl-number-input`       |
 | Calculated / formula          | [`pl-number-input`](elements/pl-number-input.md) with `server.py` |
 | Essay / free response         | [`pl-rich-text-editor`](elements/pl-rich-text-editor.md)          |
 | File upload                   | [`pl-file-upload`](elements/pl-file-upload.md)                    |
 | Ordering                      | [`pl-order-blocks`](elements/pl-order-blocks.md)                  |
-| Text-only (no response)       | Prompt only                                                       |
+| Text-only (no response)       | Prompt-only question panel                                        |
 
-Embedded images and other non-video media files referenced by questions are also imported.
+Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory.
 
 ## What isn't imported
 
-- **Access rules** — Time limits, passwords, and start/end dates are not imported. These should be configured in PrairieLearn's [access control](assessment/accessControl.md) system.
-- **Rubrics** — Rubric definitions are not imported from QTI exports.
-- **Video files** — Video content (`.mp4`, `.webm`, `.mov`, etc.) is excluded from the import due to file size. The import review screen will list any skipped video files so you can re-host them separately.
-- **Question banks / pools** — Canvas question banks are only included in full course exports (`.imscc`), not quiz-only exports, and won't be imported to PrairieLearn unless an imported quiz includes them.
-- **Student data** — Submissions, grades, and enrollment data are not part of QTI exports.
+- **Access rules**: Time limits, passwords, and start/end dates are stripped during import. Configure these after import with PrairieLearn's [access control](assessment/accessControl.md) system.
+- **Rubrics**: Rubric definitions are not imported from QTI exports.
+- **Video files**: Video content (`.mp4`, `.webm`, `.mov`, etc.) is excluded due to file size. The review page lists skipped video files on the affected questions so you can re-host or replace them separately.
+- **Missing Canvas question bank content**: Your exports may reference question banks without including the actual bank questions. PrairieLearn can only import those questions if you provide a course export that contains the matching bank content, or if the original upload already includes it.
+- **Student data**: Submissions, grades, and enrollment data are not part of QTI exports and are not imported.
 
-The import review screen will tell you specifically what was and wasn't included for each upload.
+The review page summarizes what can be imported and what known content was skipped or stripped.
+
+## Canvas question banks
+
+Canvas exports can represent question banks in several ways:
+
+- A full course export may include the question bank content directly. PrairieLearn imports those banks as standalone PrairieLearn questions and can attach matching bank questions to assessments that reference them.
+- A quiz export may only contain a reference to a question bank. When that happens, PrairieLearn pauses on a **Some questions are in Canvas question banks** step and asks you to upload supplemental exported content for each missing bank.
+- If Canvas identifies the source course for a missing bank, PrairieLearn shows the Canvas course ID to help you find the right course export. You can find that ID in Canvas URLs such as `/courses/12345`.
+- If you upload supplemental content that does not contain the referenced bank, PrairieLearn shows an alert and lets you try another file.
+- If you continue without additional content, the unresolved bank questions are omitted from the imported assessment. PrairieLearn shows a warning on the review page for any bank references that remain unresolved.
+
+When multiple assessments use the same imported bank questions, PrairieLearn points them at the same imported question directories instead of creating duplicate copies.
+
+## Duplicate questions
+
+PrairieLearn deduplicates identical generated questions during the import. If two source questions produce the same title, generated question markup, grading code, grading metadata, skipped video list, and client file contents, PrairieLearn imports one copy and rewrites assessments to reference that shared question.
+
+This is intended for cases where Canvas exports copied questions or repeated question bank content. Questions that differ in generated content are imported separately.
 
 ## How to export from Canvas
 
 1. In Canvas, go to **Settings** for your course.
 2. Click **Export Course Content**.
 3. Choose either:
-   - **Quiz** — exports a single quiz as a `.zip` file
-   - **Course** — exports everything as an `.imscc` file (this is the better option if you want to import multiple quizzes at once)
+   - **Quiz**: exports a single quiz as a `.zip` file.
+   - **Course**: exports the course as an `.imscc` file. Use this when importing multiple quizzes, question banks, or quizzes that depend on question banks.
 4. Download the export file when it's ready.
 
-Other LMS platforms may have similar export features — look for "QTI export" or "IMS Common Cartridge export" in your platform's documentation.
+Other LMS platforms may have similar export features. Look for "QTI export" or "IMS Common Cartridge export" in your platform's documentation.
 
 ## Importing into PrairieLearn
 
-1. Navigate to your course instance's **Assessments** page.
-2. Click the **Import content** button in the top-right corner.
-3. Upload your `.zip` or `.imscc` file.
-4. Review the import summary. You'll see:
-   - How many assessments and questions were found
-   - Any content that wasn't imported (rubrics, access rules, video files, etc.)
-5. For each assessment, you can edit the **title**, **type** (Homework or Exam), **set**, and **number** before creating it.
-6. Expand the **Questions** section on any assessment to review individual questions. For each question, you can:
-   - Edit the **title**, **topic**, and **tags**
-   - Browse the generated files (question markup, `info.json`, `server.py`, images) in the file tree
-   - View syntax-highlighted previews of each file
-   - Exclude specific questions from the import using the checkbox
-7. If any questions conflict with existing questions in your course (for example, if you're re-importing), you'll see a warning with options to either **overwrite** the existing question or **create a copy** with a different name.
-8. Click **Create** to finalize the import. The questions and assessments will be written to your course and synced automatically.
+1. Open the importer from the Assessments or Questions page.
+2. Upload a `.zip` quiz export or `.imscc` course export.
+3. If PrairieLearn asks for supplemental question bank content, upload the requested course export files or click **Continue without additional content**.
+4. Review the import summary. It may include:
+   - The number of assessments, question banks, questions, and referenced assets that can be imported.
+   - Access rules, rubrics, videos, unsupported content, or parse warnings that will not be imported.
+   - Warnings for unresolved question bank references.
+5. In the **Assessments** section, choose which assessments to import. For each assessment, you can edit the **title**, **type** (Homework or Exam), **set**, and **number**.
+6. In the **Question banks** section, choose which question banks to import as standalone PrairieLearn questions.
+7. Expand the **Questions** section on any assessment or question bank to review individual questions. For each question, you can:
+   - Edit the **title**, **topic**, and **tags**.
+   - Browse the generated files, including `info.json`, `question.html`, `server.py`, and referenced assets.
+   - View syntax-highlighted file contents.
+   - Exclude the question from the import.
+8. If an imported question conflicts with an existing question directory, choose **Replace existing question** or **Keep both**. You can also apply overwrite/rename choices to all conflicts in a section.
+9. Click the final **Import** button to create the selected content.
 
-After import, you'll find your new assessments on the Assessments page and the imported questions under `questions/imported/` in your course files. From there, you can edit them just like any other PrairieLearn content — adjust grading settings, add randomization with `server.py`, refine the HTML, or reorganize the file structure.
+Imported questions are written under `questions/imported/`. Imported assessments are written under the current course instance's `assessments/` directory. After import, you can edit the generated content like any other PrairieLearn question or assessment.
 
 ## Tips
 
-- **Start with a single quiz** to get a feel for the import process before importing a full course export.
-- **Review the generated markup** — the converter does its best to produce clean PrairieLearn HTML, but you may want to adjust formatting or add features that weren't part of the original quiz (like randomized parameters).
+- **Use a full Canvas course export for question banks.** Quiz exports often contain only references to banks, not the bank questions themselves.
+- **Start with a single quiz** to get a feel for the import process before importing a large course export.
+- **Review the generated markup**. The converter does its best to produce clean PrairieLearn HTML, but you may want to adjust formatting, grading behavior, or randomized parameters after import.
 - **Imported questions are tagged** with `imported` by default, making them easy to find and filter in the Questions list.
-- **Question types that require manual grading** (essays, file uploads) are automatically marked with `gradingMethod: "Manual"` so they'll appear in the manual grading queue.
+- **Manually graded source questions** such as essays and file uploads are marked for manual grading in PrairieLearn.
