@@ -1,10 +1,14 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
-import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
+import {
+  type JobSequenceWithTokens,
+  StaffJobSequenceWithJobsSchema,
+} from '../../lib/server-jobs.types.js';
 
 export function EditError({
   resLocals,
@@ -79,7 +83,12 @@ export function EditError({
       </div>
 
       <div class="collapse" id="job-sequence-results">
-        ${JobSequenceResults({ course, jobSequence })}
+        ${renderHtml(
+          <JobSequenceResults
+            jobSequence={StaffJobSequenceWithJobsSchema.parse(jobSequence)}
+            timeZone={course?.display_timezone || 'UTC'}
+          />,
+        )}
       </div>
     `,
   });

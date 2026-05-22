@@ -33,7 +33,7 @@ export async function getOriginalHash(filePath: string) {
  * file inside a v3 question's directory, as determined by reading the sibling
  * `info.json`.
  */
-export async function isV3QuestionHtmlFile(coursePath: string, relPath: string): Promise<boolean> {
+async function isV3QuestionHtmlFile(coursePath: string, relPath: string): Promise<boolean> {
   const components = path.normalize(relPath).split(path.posix.sep);
   if (components.length < 3) return false;
   if (components[0] !== 'questions') return false;

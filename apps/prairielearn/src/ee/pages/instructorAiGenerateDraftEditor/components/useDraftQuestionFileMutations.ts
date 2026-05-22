@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
-import { readAppErrorResponse } from '../../../../lib/client/errors.js';
+import { unwrapAppResponse } from '../../../../lib/client/errors.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
 
@@ -37,7 +37,7 @@ async function uploadDraftFile({
   // A failed sync job comes back as a `SYNC_JOB_FAILED` app error, surfaced the
   // same way the tRPC mutations' errors are so the file browser renders it
   // identically.
-  await readAppErrorResponse(response);
+  await unwrapAppResponse(response);
 }
 
 /**

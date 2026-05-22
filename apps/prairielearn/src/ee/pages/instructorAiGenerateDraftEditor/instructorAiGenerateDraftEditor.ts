@@ -23,6 +23,7 @@ import {
 import { getQuestionFilesData } from '../../../lib/draft-question-files/browser.js';
 import {
   EditJobFailedError,
+  editJobFailedAppError,
   uploadDraftQuestionFile,
 } from '../../../lib/draft-question-files/mutations.js';
 import {
@@ -383,7 +384,7 @@ router.post(
     // A failed sync job is an expected outcome rather than a crash: report it
     // as an HTTP 400 carrying a `SYNC_JOB_FAILED` app error — the same shape the
     // tRPC file mutations raise via `throwAppError` — so the client narrows on
-    // it identically (see `readAppErrorResponse`).
+    // it identically (see `unwrapAppResponse`).
     try {
       await uploadDraftQuestionFile({
         course: res.locals.course,
@@ -396,13 +397,9 @@ router.post(
       });
     } catch (err) {
       if (err instanceof EditJobFailedError) {
-        res.status(400).json({
-          appError: {
-            code: 'SYNC_JOB_FAILED',
-            message: 'The file upload failed to sync.',
-            jobSequenceId: err.jobSequenceId,
-          },
-        });
+        res
+          .status(400)
+          .json({ appError: editJobFailedAppError(err, 'The file upload failed to sync.') });
         return;
       }
       throw err;
@@ -453,13 +450,11 @@ router.post(
         // same shape the tRPC file mutations raise; other errors (e.g. an
         // invalid QID) propagate to the standard error handler.
         if (err instanceof EditJobFailedError) {
-          res.status(400).json({
-            appError: {
-              code: 'SYNC_JOB_FAILED',
-              message: 'Renaming the question failed to sync.',
-              jobSequenceId: err.jobSequenceId,
-            },
-          });
+          res
+            .status(400)
+            .json({
+              appError: editJobFailedAppError(err, 'Renaming the question failed to sync.'),
+            });
           return;
         }
         throw err;

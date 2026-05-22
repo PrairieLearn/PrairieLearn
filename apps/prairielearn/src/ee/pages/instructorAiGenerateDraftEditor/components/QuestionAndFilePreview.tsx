@@ -248,8 +248,10 @@ export function QuestionAndFilePreview({
   onSelectedFileSaved: () => Promise<unknown>;
   onReloadSelectedFile: () => Promise<unknown>;
 }) {
-  const { wrapperRef, newVariant, previewError, retryPreview, dismissPreviewError } =
-    useQuestionHtml({ variantUrl, variantCsrfToken });
+  const { wrapperRef, newVariant, previewError, dismissPreviewError } = useQuestionHtml({
+    variantUrl,
+    variantCsrfToken,
+  });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
   const selectedFileEditorRef = useRef<SelectedQuestionFileEditorHandle>(null);
 
@@ -272,8 +274,12 @@ export function QuestionAndFilePreview({
       <Tab.Pane eventKey="preview" className="h-100">
         {previewError && (
           <Alert variant="danger" className="m-3 mb-0" dismissible onClose={dismissPreviewError}>
-            <span className="me-2">{previewError}</span>
-            <button type="button" className="btn btn-sm btn-outline-danger" onClick={retryPreview}>
+            <span className="me-2">{previewError.message}</span>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              onClick={previewError.retry}
+            >
               <i className="fa fa-refresh me-1" aria-hidden="true" />
               Retry
             </button>

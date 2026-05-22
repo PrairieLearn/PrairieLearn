@@ -1,5 +1,6 @@
+import { useMutation } from '@tanstack/react-query';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
@@ -7,6 +8,13 @@ interface VariantResponse {
   questionContainerHtml: string;
   extraHeadersHtml: string;
   variantId: string;
+}
+
+interface PreviewRequest {
+  /** `fetch` options; omitted for a plain GET that loads a fresh variant. */
+  init?: RequestInit;
+  /** User-facing message shown if the request fails. */
+  errorMessage: string;
 }
 
 function assertOkResponse(response: Response) {
@@ -158,8 +166,8 @@ function formDataToJson(
  * variants, swaps the `.question-container`, and re-injects question assets
  * (stylesheets, scripts, importmaps) into the document head. Returns the
  * wrapper ref to attach to the preview container, a `newVariant` callback, and
- * `previewError` / `retryPreview` / `dismissPreviewError` for surfacing and
- * recovering from a failed refresh.
+ * `previewError` (which carries its own `retry`) plus `dismissPreviewError` for
+ * surfacing and recovering from a failed refresh.
  */
 export function useQuestionHtml({
   variantUrl,
@@ -169,16 +177,16 @@ export function useQuestionHtml({
   variantCsrfToken: string;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const lastRequestRef = useRef<{ init?: RequestInit; errorMessage: string } | null>(null);
 
   // Records the rendered variant in the URL so a reload restores it. nuqs keeps
   // this consistent with the `file` / `dir` / `tab` params and replaces (rather
   // than pushes) the history entry by default.
   const [, setVariantId] = useQueryState('variant_id', parseAsString);
 
-  const refreshPreview = useCallback(
-    async (init?: RequestInit) => {
+  const previewMutation = useMutation({
+    mutationFn: async ({ init }: PreviewRequest) => {
+      // The variant render returns server-rendered HTML, not typed data, so
+      // we avoid using tRPC.
       const response = await fetch(variantUrl, init);
       assertOkResponse(response);
       const variantResponse = (await response.json()) as VariantResponse;
@@ -187,26 +195,18 @@ export function useQuestionHtml({
       }
       await setVariantId(variantResponse.variantId);
     },
-    [variantUrl, setVariantId],
-  );
-
-  /**
-   * Runs a preview refresh, recording it so `retryPreview` can replay it and
-   * surfacing a user-visible message on failure instead of failing silently.
-   */
-  const runPreviewRequest = useCallback(
-    async (init: RequestInit | undefined, errorMessage: string) => {
-      lastRequestRef.current = { init, errorMessage };
-      try {
-        await refreshPreview(init);
-        setPreviewError(null);
-      } catch (err) {
-        console.error(errorMessage, err);
-        setPreviewError(errorMessage);
-      }
+    onError: (err, { errorMessage }) => {
+      console.error(errorMessage, err);
     },
-    [refreshPreview],
-  );
+  });
+  const { mutate: refreshPreview } = previewMutation;
+
+  // The failed request stays on the mutation, so `retry` just replays it.
+  const failedRequest = previewMutation.isError ? previewMutation.variables : undefined;
+  const previewError = failedRequest
+    ? { message: failedRequest.errorMessage, retry: () => refreshPreview(failedRequest) }
+    : null;
+  const dismissPreviewError = previewMutation.reset;
 
   const handleSubmit = useCallback(
     (e: Event) => {
@@ -232,31 +232,23 @@ export function useQuestionHtml({
 
       formData.set('__csrf_token', variantCsrfToken);
 
-      void runPreviewRequest(
-        {
+      refreshPreview({
+        init: {
           method: form.method,
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(formDataToJson(formData)),
         },
-        'Failed to update the question preview.',
-      );
+        errorMessage: 'Failed to update the question preview.',
+      });
     },
-    [runPreviewRequest, variantCsrfToken],
+    [refreshPreview, variantCsrfToken],
   );
 
   const newVariant = useCallback(() => {
-    void runPreviewRequest(undefined, 'Failed to load a new question variant.');
-  }, [runPreviewRequest]);
-
-  const retryPreview = useCallback(() => {
-    const lastRequest = lastRequestRef.current;
-    if (lastRequest == null) return;
-    void runPreviewRequest(lastRequest.init, lastRequest.errorMessage);
-  }, [runPreviewRequest]);
-
-  const dismissPreviewError = useCallback(() => setPreviewError(null), []);
+    refreshPreview({ errorMessage: 'Failed to load a new question variant.' });
+  }, [refreshPreview]);
 
   const handleNewVariantButtonClick = useCallback(
     (e: Event) => {
@@ -282,5 +274,5 @@ export function useQuestionHtml({
     };
   }, [handleSubmit, handleNewVariantButtonClick]);
 
-  return { wrapperRef, newVariant, previewError, retryPreview, dismissPreviewError };
+  return { wrapperRef, newVariant, previewError, dismissPreviewError };
 }

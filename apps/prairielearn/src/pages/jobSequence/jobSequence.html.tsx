@@ -1,10 +1,18 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import {
+  JobSequenceResults,
+  type JobSequenceResultsData,
+} from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
-import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
+import {
+  type JobSequenceWithTokens,
+  StaffJobSequenceWithJobsSchema,
+} from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
@@ -40,7 +48,25 @@ export function JobSequence({
             </div>
           `
         : ''}
-      ${JobSequenceResults({ course: resLocals.course, jobSequence: job_sequence })}
+      ${EncodedData<JobSequenceResultsData>(
+        {
+          jobSequenceId: job_sequence.id,
+          token: job_sequence.token,
+          jobCount: job_sequence.jobs.length,
+          jobs: job_sequence.jobs.map((job) => ({
+            id: job.id,
+            status: job.status,
+            token: job.token,
+          })),
+        },
+        'job-sequence-results-data',
+      )}
+      ${renderHtml(
+        <JobSequenceResults
+          jobSequence={StaffJobSequenceWithJobsSchema.parse(job_sequence)}
+          timeZone={resLocals.course?.display_timezone || 'UTC'}
+        />,
+      )}
     `,
   });
 }
