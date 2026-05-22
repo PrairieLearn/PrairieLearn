@@ -139,8 +139,13 @@ router.post(
         }
         const directory = await unzipper.Open.file(file.path);
         await directory.extract({ path: tempDir });
-      } catch {
-        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
+      } catch (err) {
+        throw Object.assign(
+          new HttpStatusError(400, 'The uploaded archive is invalid or corrupt'),
+          {
+            cause: err,
+          },
+        );
       }
 
       // Find QTI content files from the manifest. If the archive has a
