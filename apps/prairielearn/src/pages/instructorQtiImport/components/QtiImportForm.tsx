@@ -151,6 +151,8 @@ function mergeSourceBankResults(
   const usedBankSourceIds = new Set<string>();
 
   const mergedPrimary = primaryResults.map((result) => {
+    if (result.sourceType === 'question-bank') return result;
+
     const refs = result.unresolvedSourceBankRefs ?? [];
     if (refs.length === 0) return result;
 
@@ -223,7 +225,7 @@ function mergeSourceBankResults(
 function mergeEmbeddedSourceBanks(
   results: SerializedConversionResult[],
 ): SerializedConversionResult[] {
-  const assessments = results.filter((result) => result.sourceType !== 'question-bank');
+  const assessments = results.filter((result) => result.sourceType === 'assessment');
   if (assessments.length === 0) return results;
 
   return mergeSourceBankResults(assessments, results);
@@ -391,7 +393,7 @@ export function QtiImportForm({
           ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
         );
       const includedAssessments = includedResults.filter(
-        ({ result }) => result.sourceType !== 'question-bank',
+        ({ result }) => result.sourceType === 'assessment',
       );
       const includedQuestionCollections = includedResults.filter(
         ({ result }) => result.sourceType === 'question-bank',
@@ -578,13 +580,13 @@ export function QtiImportForm({
   const includedAssessmentCount = results.filter(
     (result, i) =>
       overrides[i]?.included &&
-      result.sourceType !== 'question-bank' &&
+      result.sourceType === 'assessment' &&
       getIncludedQuestionCount(result) > 0,
   ).length;
-  const hasAssessmentResults = results.some((result) => result.sourceType !== 'question-bank');
+  const hasAssessmentResults = results.some((result) => result.sourceType === 'assessment');
   const includedQuestionDirs = new Set<string>();
   for (const [i, result] of results.entries()) {
-    if (!overrides[i]?.included || result.sourceType !== 'question-bank') continue;
+    if (!overrides[i]?.included || result.sourceType === 'assessment') continue;
     for (const question of result.questions) {
       if (questionOverrides.get(question.directoryName)?.included !== false) {
         includedQuestionDirs.add(question.directoryName);
@@ -605,7 +607,7 @@ export function QtiImportForm({
   const importButtonLabel = `Import ${labelParts.join(' and ')}`;
   const indexedResults = results.map((result, index) => ({ result, index }));
   const assessmentResults = indexedResults.filter(
-    ({ result }) => result.sourceType !== 'question-bank',
+    ({ result }) => result.sourceType === 'assessment',
   );
   const questionBankResults = indexedResults.filter(
     ({ result }) => result.sourceType === 'question-bank',
@@ -666,7 +668,7 @@ export function QtiImportForm({
       )}
       {overrides[i].included && result.questions.length > 0 && (
         <Card.Body>
-          {result.sourceType !== 'question-bank' && (
+          {result.sourceType === 'assessment' && (
             <div className="row g-3 mb-3">
               <div className="col-md-6">
                 <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>

@@ -367,18 +367,32 @@ async function serializeConversionResult(
     }),
   );
 
+  const serializedBase = {
+    sourceId: result.sourceId,
+    assessmentTitle: result.assessmentTitle,
+    assessment: {
+      directoryName: result.assessment.directoryName,
+      infoJson: result.assessment.infoJson,
+    },
+    questions,
+    warnings: [...result.warnings, ...extraWarnings],
+  };
+
+  if (result.sourceType === 'question-bank') {
+    return {
+      result: {
+        ...serializedBase,
+        sourceType: 'question-bank',
+      },
+      webResourcesDir,
+    };
+  }
+
   return {
     result: {
-      sourceId: result.sourceId,
-      assessmentTitle: result.assessmentTitle,
-      sourceType: result.sourceType,
+      ...serializedBase,
+      sourceType: 'assessment',
       unresolvedSourceBankRefs: result.unresolvedSourceBankRefs,
-      assessment: {
-        directoryName: result.assessment.directoryName,
-        infoJson: result.assessment.infoJson,
-      },
-      questions,
-      warnings: [...result.warnings, ...extraWarnings],
     },
     webResourcesDir,
   };
@@ -465,7 +479,7 @@ export function deduplicateIdenticalQuestions(
     string,
     {
       question: StoredSerializedConversionResult['questions'][number];
-      sourceType?: StoredSerializedConversionResult['sourceType'];
+      sourceType: StoredSerializedConversionResult['sourceType'];
     }
   >();
 
@@ -475,7 +489,7 @@ export function deduplicateIdenticalQuestions(
       const existing = canonicalByFingerprint.get(fingerprint);
       if (
         !existing ||
-        (result.sourceType === 'question-bank' && existing.sourceType !== 'question-bank')
+        (result.sourceType === 'question-bank' && existing.sourceType === 'assessment')
       ) {
         canonicalByFingerprint.set(fingerprint, {
           question,

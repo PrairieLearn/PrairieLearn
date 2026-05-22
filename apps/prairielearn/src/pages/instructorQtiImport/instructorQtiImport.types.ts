@@ -26,22 +26,14 @@ interface StoredSerializedQuestionOutput extends Omit<
   clientFiles: Record<string, string>;
 }
 
-/** Conversion result stored server-side while the user reviews an import. */
-export interface StoredSerializedConversionResult extends Omit<
-  SerializedConversionResult,
-  'draftId' | 'questions'
-> {
-  questions: StoredSerializedQuestionOutput[];
-}
-
-/** Conversion result sent to the browser for review. */
-export interface SerializedConversionResult {
+interface SerializedConversionResultBase {
   draftId: string;
   sourceId: string;
   assessmentTitle: string;
-  sourceType?: 'assessment' | 'question-bank';
-  /** Question bank references that still need supplemental content before import. */
-  unresolvedSourceBankRefs?: IRSourceBankRef[];
+  /**
+   * PrairieLearn assessment-shaped output used for review. For question banks, this is only used
+   * to group the questions during import; it is not imported as an assessment.
+   */
   assessment: {
     directoryName: string;
     infoJson: PLAssessmentInfoJson;
@@ -49,6 +41,40 @@ export interface SerializedConversionResult {
   questions: SerializedQuestionOutput[];
   warnings: ConversionWarning[];
 }
+
+export interface SerializedAssessmentConversionResult extends SerializedConversionResultBase {
+  sourceType: 'assessment';
+  /** Question bank references that still need supplemental content before import. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
+}
+
+export interface SerializedQuestionBankConversionResult extends SerializedConversionResultBase {
+  sourceType: 'question-bank';
+  unresolvedSourceBankRefs?: undefined;
+}
+
+/** Conversion result sent to the browser for review. */
+export type SerializedConversionResult =
+  | SerializedAssessmentConversionResult
+  | SerializedQuestionBankConversionResult;
+
+type StoredSerializedConversionResultBase = Omit<
+  SerializedConversionResultBase,
+  'draftId' | 'questions'
+> & {
+  questions: StoredSerializedQuestionOutput[];
+};
+
+/** Conversion result stored server-side while the user reviews an import. */
+export type StoredSerializedConversionResult =
+  | (StoredSerializedConversionResultBase & {
+      sourceType: 'assessment';
+      unresolvedSourceBankRefs?: IRSourceBankRef[];
+    })
+  | (StoredSerializedConversionResultBase & {
+      sourceType: 'question-bank';
+      unresolvedSourceBankRefs?: undefined;
+    });
 
 /** Access rule properties that were present but stripped during import. */
 export interface StrippedAccessRules {

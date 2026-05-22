@@ -56,10 +56,21 @@ export class PLEmitter implements OutputEmitter {
 
     const assessmentOutput = this.emitAssessment(assessment, questions, options);
 
+    if (assessment.sourceType === 'question-bank') {
+      return {
+        sourceId: assessment.sourceId,
+        assessmentTitle: assessment.title,
+        sourceType: 'question-bank',
+        assessment: assessmentOutput,
+        questions,
+        warnings,
+      };
+    }
+
     return {
       sourceId: assessment.sourceId,
       assessmentTitle: assessment.title,
-      sourceType: assessment.sourceType,
+      sourceType: 'assessment',
       unresolvedSourceBankRefs:
         'unresolvedSourceBankRefs' in assessment ? assessment.unresolvedSourceBankRefs : undefined,
       assessment: assessmentOutput,

@@ -133,7 +133,7 @@ export function ImportSummary({
   strippedAccessRules: StrippedAccessRules | null;
   parseWarnings: ParseWarning[];
 }) {
-  const totalAssessments = results.filter((r) => r.sourceType !== 'question-bank').length;
+  const totalAssessments = results.filter((r) => r.sourceType === 'assessment').length;
   const totalQuestionBanks = results.filter((r) => r.sourceType === 'question-bank').length;
   const uniqueQuestions = new Map(
     results.flatMap((result) =>

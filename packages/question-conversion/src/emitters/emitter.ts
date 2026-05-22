@@ -19,17 +19,27 @@ export interface EmitOptions {
   questionIdPrefix?: string;
 }
 
-/** Result of converting an assessment. */
-export interface ConversionResult {
+interface ConversionResultBase {
   sourceId: string;
   assessmentTitle: string;
-  sourceType?: 'assessment' | 'question-bank';
-  /** Bank references that still need supplemental content to become importable questions. */
-  unresolvedSourceBankRefs?: IRSourceBankRef[];
   assessment: PLAssessmentOutput;
   questions: PLQuestionOutput[];
   warnings: ConversionWarning[];
 }
+
+export interface AssessmentConversionResult extends ConversionResultBase {
+  sourceType: 'assessment';
+  /** Bank references that still need supplemental content to become importable questions. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
+}
+
+export interface QuestionBankConversionResult extends ConversionResultBase {
+  sourceType: 'question-bank';
+  unresolvedSourceBankRefs?: undefined;
+}
+
+/** Result of converting an item container. */
+export type ConversionResult = AssessmentConversionResult | QuestionBankConversionResult;
 
 /** Interface for format-specific output emitters. */
 export interface OutputEmitter {
