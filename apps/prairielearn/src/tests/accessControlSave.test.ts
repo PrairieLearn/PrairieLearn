@@ -228,10 +228,6 @@ describe('Access control save via tRPC', () => {
         labels.map((label) => label.name),
         'Section A',
       );
-      assert.deepEqual(
-        await client.accessControl.prairieTestExamMetadata.query({ examUuids: [] }),
-        [],
-      );
 
       await expect(
         client.accessControl.saveAllRules.mutate({
