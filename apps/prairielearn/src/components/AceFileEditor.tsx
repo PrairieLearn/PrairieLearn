@@ -5,7 +5,6 @@ export interface AceFileEditorHandle {
   readonly editor: ace.Ace.Editor | null;
   focus: () => void;
   resize: () => void;
-  setReadOnly: (readOnly: boolean) => void;
 }
 
 export function AceFileEditor({
@@ -48,7 +47,6 @@ export function AceFileEditor({
     },
     focus: () => editorRef.current?.focus(),
     resize: () => editorRef.current?.resize(),
-    setReadOnly: (nextReadOnly) => editorRef.current?.setReadOnly(nextReadOnly),
   }));
 
   // Ace owns the editor DOM, so this effect creates and tears down the editor instance.
