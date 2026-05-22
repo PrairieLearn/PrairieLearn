@@ -295,17 +295,30 @@ export function QtiImportForm({
     return response.json() as Promise<UploadResponse>;
   };
 
-  const handleUpload = async (e: FormEvent<HTMLFormElement>) => {
+  const handleExportUpload = async (
+    e: FormEvent<HTMLFormElement>,
+    onSuccess: (data: UploadResponse) => void,
+  ) => {
     e.preventDefault();
     const form = e.currentTarget;
     setError(null);
     setSupplementalSuccessMessage(null);
     setUploading(true);
-    setUploadingBankKey(null);
+    setUploadingBankKey(form.dataset.sourceBankKey ?? null);
 
     try {
       const data = await uploadExport(form);
+      onSuccess(data);
+    } catch (err) {
+      setError({ message: err instanceof Error ? err.message : 'Upload failed' });
+    } finally {
+      setUploadingBankKey(null);
+      setUploading(false);
+    }
+  };
 
+  const handleUpload = async (e: FormEvent<HTMLFormElement>) => {
+    await handleExportUpload(e, (data) => {
       if (data.results.length === 0 && data.parseWarnings.length === 0) {
         throw new Error('No QTI content found in the uploaded file');
       }
@@ -328,24 +341,11 @@ export function QtiImportForm({
       setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
       setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, dirs));
       setStep(hasUnresolvedSourceBankRefs(mergedResults) ? 'missing-banks' : 'review');
-    } catch (err) {
-      setError({ message: err instanceof Error ? err.message : 'Upload failed' });
-    } finally {
-      setUploadingBankKey(null);
-      setUploading(false);
-    }
+    });
   };
 
   const handleBankUpload = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    setError(null);
-    setSupplementalSuccessMessage(null);
-    setUploading(true);
-    setUploadingBankKey(form.dataset.sourceBankKey ?? null);
-
-    try {
-      const data = await uploadExport(form);
+    await handleExportUpload(e, (data) => {
       const previousUnresolvedCount = countUnresolvedSourceBankRefs(results);
       const mergedResults = mergeSourceBankResults(results, data.results, {
         includeUnmatchedBanks: false,
@@ -370,12 +370,7 @@ export function QtiImportForm({
         );
       }
       setStep(hasUnresolvedSourceBankRefs(mergedResults) ? 'missing-banks' : 'review');
-    } catch (err) {
-      setError({ message: err instanceof Error ? err.message : 'Upload failed' });
-    } finally {
-      setUploadingBankKey(null);
-      setUploading(false);
-    }
+    });
   };
 
   const getIncludedQuestionCount = (result: SerializedConversionResult) =>
