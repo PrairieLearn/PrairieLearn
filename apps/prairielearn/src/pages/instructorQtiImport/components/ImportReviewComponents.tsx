@@ -107,12 +107,9 @@ export function NonRubricWarnings({
       <ul className="mb-0 mt-1">
         {filtered.map((w) => {
           const q = questionBySourceId.get(w.questionId);
-          const prefix = q
-            ? `For question "${q.title}" (#${q.number})`
-            : `For question "${w.questionId}"`;
           return (
             <li key={`${w.questionId}-${w.message}`}>
-              {prefix}: {w.message}
+              {q ? `For question "${q.title}" (#${q.number}): ${w.message}` : w.message}
             </li>
           );
         })}
