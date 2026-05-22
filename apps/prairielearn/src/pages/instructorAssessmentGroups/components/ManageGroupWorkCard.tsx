@@ -36,8 +36,8 @@ function DisableGroupWorkModal({
           All group configuration for this assessment, including groups and their memberships, will
           be permanently removed.
         </p>
-        <p className="mb-0 text-muted small">
-          Students will need to be re-grouped if you enable group work again later.
+        <p className="mb-0">
+          If you enable group work again later, students will need to be assigned to groups again.
         </p>
         {hasAssessmentInstances && (
           <GroupWorkInstancesWarning
@@ -66,6 +66,7 @@ export function ManageGroupWorkCard({
   courseInstanceId,
   assessmentId,
   disableAccess,
+  membershipSummary,
   onDisable,
 }: {
   origHash: string | null;
@@ -73,6 +74,7 @@ export function ManageGroupWorkCard({
   courseInstanceId: string;
   assessmentId: string;
   disableAccess: ActionAccess;
+  membershipSummary?: { groupCount: number; unassignedStudentCount: number };
   onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -102,28 +104,37 @@ export function ManageGroupWorkCard({
           )
         }
       />
-      <div className="card-body">
-        <h5 className="mb-3">Manage group work</h5>
+      <div className="card-body py-2">
         {appError && (
-          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          <Alert variant="danger" className="mb-2" dismissible onClose={() => mutation.reset()}>
             {appError.message}
           </Alert>
         )}
-        {disableAccess.status === 'denied' && <Alert variant="info">{disableAccess.reason}</Alert>}
-        <div className="d-flex align-items-center gap-3">
-          <div className="flex-grow-1">
-            <div className="fw-bold">Disable group work</div>
-            <div className="text-muted small">
-              All group configuration for this assessment, including groups and their memberships,
-              will be permanently removed.
+        {disableAccess.status === 'denied' && (
+          <Alert variant="info" className="mb-2">
+            {disableAccess.reason}
+          </Alert>
+        )}
+        <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-between gap-2">
+          <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-1 gap-sm-3">
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
+              <span className="fw-semibold">Group work is enabled</span>
             </div>
+            {membershipSummary && (
+              <div className="text-muted small">
+                {`${membershipSummary.groupCount} group${membershipSummary.groupCount === 1 ? '' : 's'} · ${membershipSummary.unassignedStudentCount} student${membershipSummary.unassignedStudentCount === 1 ? '' : 's'} unassigned`}
+              </div>
+            )}
           </div>
           <Button
+            size="sm"
             variant="outline-danger"
+            className="text-nowrap align-self-start align-self-lg-center"
             disabled={mutation.isPending || !canDisable}
             onClick={() => setShowDisableModal(true)}
           >
-            Disable
+            Disable group work
           </Button>
         </div>
       </div>

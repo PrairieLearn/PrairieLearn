@@ -1,4 +1,4 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
@@ -186,8 +186,6 @@ function InstructorAssessmentGroupsInner({
   const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
   const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
   const [origHash, setOrigHash] = useState(initialOrigHash);
-  const [groups, setGroups] = useState(initialGroups);
-  const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
   const [minGroupSize, setMinGroupSize] = useState(
     groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
   );
@@ -198,10 +196,28 @@ function InstructorAssessmentGroupsInner({
     { kind: 'success' } | { kind: 'error'; message: string } | null
   >(null);
   const canEditGroupSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canViewStudentData = permissions.hasCourseInstancePermissionView;
   const canEditStudentData =
     permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
   const showManageGroupWork =
     permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const groupMembershipQueryKey = trpc.assessmentGroups.membership.queryKey();
+  const groupMembershipQuery = useQuery({
+    ...trpc.assessmentGroups.membership.queryOptions(),
+    enabled: !!groupConfigInfo && canViewStudentData,
+    initialData: {
+      groups: initialGroups ?? [],
+      notAssigned: initialNotAssigned ?? [],
+    },
+    staleTime: Infinity,
+  });
+
+  const refreshGroupMembership = () => {
+    // Refetch errors surface via the membership query's `error` state; swallow here.
+    void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey }).catch(() => {});
+  };
 
   if (!groupConfigInfo) {
     return (
@@ -233,88 +249,42 @@ function InstructorAssessmentGroupsInner({
           setOrigHash(newHash);
           setGroupConfigInfo(groupConfig);
           setGroupSettingsDefaults(newDefaults);
-          setGroups(newGroups);
-          setNotAssigned(newNotAssigned);
+          if (canViewStudentData) {
+            queryClient.setQueryData(groupMembershipQueryKey, {
+              groups: newGroups ?? [],
+              notAssigned: newNotAssigned ?? [],
+            });
+          }
         }}
       />
     );
   }
 
+  const groupMembership = groupMembershipQuery.data;
+  const unassignedStudentCount = groupMembership.notAssigned.length;
+  const groupMembershipError =
+    groupMembershipQuery.error == null
+      ? null
+      : (getAppError<AssessmentGroupsError['Membership']>(groupMembershipQuery.error)?.message ??
+        'An unknown error occurred.');
+
   return (
     <>
       <div className="container d-flex flex-column gap-3 py-3">
-        <GroupSettingsCard
-          groupConfigInfo={groupConfigInfo}
-          groupSettingsDefaults={groupSettingsDefaults}
-          origHash={origHash}
-          editAccess={run<ActionAccess>(() => {
-            if (canEditGroupSettings) return ALLOWED_ACCESS;
-            if (permissions.isExampleCourse) {
-              return {
-                status: 'denied',
-                reason: 'Editing group settings is not available for the example course.',
-              };
-            }
-            return {
-              status: 'denied',
-              reason: 'Editing group settings requires course editor permissions.',
-            };
-          })}
-          onOrigHashChange={setOrigHash}
-          onGroupSizeSaved={(min, max) => {
-            setMinGroupSize(min ?? 2);
-            setMaxGroupSize(max ?? 4);
-          }}
-          onSaved={() => setSaveStatus({ kind: 'success' })}
-          onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
-          onClearSaveStatus={() => setSaveStatus(null)}
-        />
-
-        {permissions.hasCourseInstancePermissionView ? (
-          <GroupsCard
-            groupsCsvFilename={groupsCsvFilename}
-            initialGroups={groups}
-            initialNotAssigned={notAssigned}
-            assessment={assessment}
-            assessmentSet={assessmentSet}
-            courseInstanceId={courseInstanceId}
-            csrfToken={csrfToken}
-            editAccess={run<ActionAccess>(() => {
-              if (canEditStudentData) return ALLOWED_ACCESS;
-              if (permissions.isExampleCourse) {
-                return {
-                  status: 'denied',
-                  reason: 'Editing group memberships is not available for the example course.',
-                };
-              }
-              return {
-                status: 'denied',
-                reason: 'Editing group memberships requires student data editor permissions.',
-              };
-            })}
-            minGroupSize={minGroupSize}
-            maxGroupSize={maxGroupSize}
-          />
-        ) : (
-          <div className="card">
-            <div className="card-body">
-              <h5 className="mb-1">Groups</h5>
-              <div className="text-muted small mb-3">
-                View and manage student group memberships for this assessment.
-              </div>
-              <Alert variant="info" className="mb-0">
-                You must have student data viewer permissions to view student group memberships.
-              </Alert>
-            </div>
-          </div>
-        )}
-
         {showManageGroupWork && (
           <ManageGroupWorkCard
             origHash={origHash}
             hasAssessmentInstances={hasAssessmentInstances}
             courseInstanceId={courseInstanceId}
             assessmentId={assessment.id}
+            membershipSummary={
+              canViewStudentData
+                ? {
+                    groupCount: groupMembership.groups.length,
+                    unassignedStudentCount,
+                  }
+                : undefined
+            }
             disableAccess={run<ActionAccess>(() => {
               if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
               if (permissions.isExampleCourse) {
@@ -350,10 +320,79 @@ function InstructorAssessmentGroupsInner({
               setOrigHash(newHash);
               setGroupSettingsDefaults(null);
               setGroupConfigInfo(undefined);
-              setGroups([]);
-              setNotAssigned([]);
+              queryClient.setQueryData(groupMembershipQueryKey, { groups: [], notAssigned: [] });
             }}
           />
+        )}
+        <GroupSettingsCard
+          groupConfigInfo={groupConfigInfo}
+          groupSettingsDefaults={groupSettingsDefaults}
+          origHash={origHash}
+          editAccess={run<ActionAccess>(() => {
+            if (canEditGroupSettings) return ALLOWED_ACCESS;
+            if (permissions.isExampleCourse) {
+              return {
+                status: 'denied',
+                reason: 'Editing group settings is not available for the example course.',
+              };
+            }
+            return {
+              status: 'denied',
+              reason: 'Editing group settings requires course editor permissions.',
+            };
+          })}
+          onOrigHashChange={setOrigHash}
+          onGroupSizeSaved={(min, max) => {
+            setMinGroupSize(min ?? 2);
+            setMaxGroupSize(max ?? 4);
+          }}
+          onSaved={() => setSaveStatus({ kind: 'success' })}
+          onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
+          onClearSaveStatus={() => setSaveStatus(null)}
+        />
+
+        {canViewStudentData ? (
+          <GroupsCard
+            groupsCsvFilename={groupsCsvFilename}
+            groups={groupMembership.groups}
+            notAssigned={groupMembership.notAssigned}
+            assessment={assessment}
+            assessmentSet={assessmentSet}
+            courseInstanceId={courseInstanceId}
+            csrfToken={csrfToken}
+            editAccess={run<ActionAccess>(() => {
+              if (canEditStudentData) return ALLOWED_ACCESS;
+              if (permissions.isExampleCourse) {
+                return {
+                  status: 'denied',
+                  reason: 'Editing group memberships is not available for the example course.',
+                };
+              }
+              return {
+                status: 'denied',
+                reason: 'Editing group memberships requires student data editor permissions.',
+              };
+            })}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
+            lastRefreshedAt={groupMembershipQuery.dataUpdatedAt}
+            isRefreshingGroups={groupMembershipQuery.isFetching}
+            membershipErrorMessage={groupMembershipError}
+            onRefreshGroups={refreshGroupMembership}
+            onGroupMembershipChanged={refreshGroupMembership}
+          />
+        ) : (
+          <div className="card">
+            <div className="card-body">
+              <h5 className="mb-1">Groups</h5>
+              <div className="text-muted small mb-3">
+                View and manage student group memberships for this assessment.
+              </div>
+              <Alert variant="info" className="mb-0">
+                You must have student data viewer permissions to view student group memberships.
+              </Alert>
+            </div>
+          </div>
         )}
       </div>
 

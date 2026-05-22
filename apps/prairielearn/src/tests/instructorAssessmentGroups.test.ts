@@ -269,4 +269,19 @@ describe('Instructor group controls', () => {
     assert.match(failures[0].message, /in another group/);
     assert.notOk(group.users.some((u) => u.uid === users[4].uid));
   });
+
+  test.sequential('can fetch current group membership', async () => {
+    assert.isDefined(group1RowId);
+    assert.isDefined(group2RowId);
+
+    const membership = await trpcClient.assessmentGroups.membership.query();
+
+    assert.includeMembers(
+      membership.groups.map((group) => group.group_id),
+      [group1RowId, group2RowId],
+    );
+    for (const user of users) {
+      assert.notInclude(membership.notAssigned, user.uid);
+    }
+  });
 });

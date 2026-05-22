@@ -57,6 +57,7 @@ export interface AssessmentGroupsError {
   DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RandomizeGroups: never;
+  Membership: never;
   RefreshGroups: never;
 }
 
@@ -455,22 +456,32 @@ const disableGroupWork = t.procedure
     return { origHash: newHash };
   });
 
+async function selectGroupMembership(ctx: AssessmentTrpcCtx) {
+  const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+  if (!groupConfig) {
+    return { groups: [], notAssigned: [] };
+  }
+
+  const [groups, notAssigned] = await Promise.all([
+    selectGroupsForConfig(groupConfig.id),
+    selectUidsNotInGroup({
+      group_config_id: groupConfig.id,
+      course_instance_id: groupConfig.course_instance_id,
+    }),
+  ]);
+  return { groups, notAssigned };
+}
+
+const membership = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .query(async ({ ctx }) => await selectGroupMembership(ctx));
+
+// Deploy-window compatibility shim: in-flight browser tabs loaded against the
+// previous bundle still call `refreshGroups`. Keep through one release cycle,
+// then delete in a follow-up PR once the new bundle has fully rolled out.
 const refreshGroups = t.procedure
   .use(requireCourseInstancePermissionView)
-  .mutation(async ({ ctx }) => {
-    const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
-    if (!groupConfig) {
-      return { groups: [], notAssigned: [] };
-    }
-    const [groups, notAssigned] = await Promise.all([
-      selectGroupsForConfig(groupConfig.id),
-      selectUidsNotInGroup({
-        group_config_id: groupConfig.id,
-        course_instance_id: groupConfig.course_instance_id,
-      }),
-    ]);
-    return { groups, notAssigned };
-  });
+  .mutation(async ({ ctx }) => await selectGroupMembership(ctx));
 
 const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
@@ -508,6 +519,7 @@ export const assessmentGroupsRouter = t.router({
   enableGroupWork,
   disableGroupWork,
   updateGroupConfig,
+  membership,
   randomizeGroups,
   refreshGroups,
 });
