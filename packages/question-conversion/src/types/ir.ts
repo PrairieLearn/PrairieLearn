@@ -133,7 +133,7 @@ export interface IRQuestion {
   feedback?: IRFeedback;
   assets: Map<string, AssetReference>;
   /**
-   * Source paths the parser chose to omit. Their referencing tags have been commented out
+   * Source paths the parser chose not to emit. Their referencing tags have been commented out
    * in `promptHtml` and the files are not included in `assets`.
    */
   skippedFiles?: string[];
