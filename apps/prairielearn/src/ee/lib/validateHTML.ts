@@ -685,6 +685,9 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
         case 'correct-answer':
           usedCorrectAnswer = true;
           break;
+        case 'correct-answer-format':
+          assertInChoices('pl-string-input', key, val, ['exact', 'regex'], errors);
+          break;
         case 'label':
         case 'aria-label':
         case 'suffix':
