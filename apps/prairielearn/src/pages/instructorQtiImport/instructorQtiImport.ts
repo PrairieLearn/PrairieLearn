@@ -162,7 +162,7 @@ router.post(
         }
       }
       await addUnreferencedAssetWarnings(convertedEntries);
-      const results = convertedEntries.map((entry) => entry.result);
+      const results = deduplicateIdenticalQuestions(convertedEntries.map((entry) => entry.result));
 
       // Strip access rules (time limits, passwords, dates) from imported assessments
       // and track what was removed so the UI can inform the user.
@@ -495,6 +495,89 @@ export async function serializeClientFiles(
     }
   }
   return { files, missingFiles, referencedFiles };
+}
+
+function questionFingerprint(question: StoredSerializedConversionResult['questions'][number]) {
+  return JSON.stringify({
+    title: question.infoJson.title,
+    type: question.infoJson.type,
+    singleVariant: question.infoJson.singleVariant ?? null,
+    gradingMethod: question.infoJson.gradingMethod ?? null,
+    questionHtml: question.questionHtml,
+    serverPy: question.serverPy ?? null,
+    clientFiles: Object.entries(question.clientFiles).sort(([a], [b]) => a.localeCompare(b)),
+    skippedVideos: [...question.skippedVideos].sort(),
+  });
+}
+
+export function deduplicateIdenticalQuestions(
+  results: StoredSerializedConversionResult[],
+): StoredSerializedConversionResult[] {
+  const canonicalByFingerprint = new Map<
+    string,
+    {
+      question: StoredSerializedConversionResult['questions'][number];
+      sourceType?: StoredSerializedConversionResult['sourceType'];
+    }
+  >();
+
+  for (const result of results) {
+    for (const question of result.questions) {
+      const fingerprint = questionFingerprint(question);
+      const existing = canonicalByFingerprint.get(fingerprint);
+      if (
+        !existing ||
+        (result.sourceType === 'question-bank' && existing.sourceType !== 'question-bank')
+      ) {
+        canonicalByFingerprint.set(fingerprint, {
+          question,
+          sourceType: result.sourceType,
+        });
+      }
+    }
+  }
+
+  return results.map((result) => {
+    const canonicalDirectoryNameByOriginal = new Map<string, string>();
+    const canonicalWarningIdByOriginal = new Map<string, string>();
+    const questionsByDirectoryName = new Map<
+      string,
+      StoredSerializedConversionResult['questions'][number]
+    >();
+
+    for (const question of result.questions) {
+      const canonical =
+        canonicalByFingerprint.get(questionFingerprint(question))?.question ?? question;
+      canonicalDirectoryNameByOriginal.set(question.directoryName, canonical.directoryName);
+      canonicalWarningIdByOriginal.set(question.directoryName, canonical.directoryName);
+      canonicalWarningIdByOriginal.set(question.sourceId, canonical.sourceId);
+      if (!questionsByDirectoryName.has(canonical.directoryName)) {
+        questionsByDirectoryName.set(canonical.directoryName, canonical);
+      }
+    }
+
+    return {
+      ...result,
+      assessment: {
+        ...result.assessment,
+        infoJson: {
+          ...result.assessment.infoJson,
+          zones: result.assessment.infoJson.zones.map((zone) => ({
+            ...zone,
+            questions: zone.questions.map((question) => ({
+              ...question,
+              id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+            })),
+          })),
+        },
+      },
+      questions: [...questionsByDirectoryName.values()],
+      warnings: result.warnings.map((warning) => ({
+        ...warning,
+        questionId: canonicalWarningIdByOriginal.get(warning.questionId) ?? warning.questionId,
+      })),
+    };
+  });
 }
 
 async function addUnreferencedAssetWarnings(entries: SerializedEntryResult[]) {

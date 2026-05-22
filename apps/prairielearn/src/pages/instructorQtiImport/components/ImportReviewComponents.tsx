@@ -149,9 +149,14 @@ export function ImportSummary({
 }) {
   const totalAssessments = results.filter((r) => r.sourceType !== 'question-bank').length;
   const totalQuestionBanks = results.filter((r) => r.sourceType === 'question-bank').length;
-  const totalQuestions = results.reduce((sum, r) => sum + r.questions.length, 0);
-  const totalAssets = results.reduce(
-    (sum, r) => sum + r.questions.reduce((qSum, q) => qSum + Object.keys(q.clientFiles).length, 0),
+  const uniqueQuestions = new Map(
+    results.flatMap((result) =>
+      result.questions.map((question) => [question.directoryName, question] as const),
+    ),
+  );
+  const totalQuestions = uniqueQuestions.size;
+  const totalAssets = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + Object.keys(question.clientFiles).length,
     0,
   );
 
@@ -168,8 +173,8 @@ export function ImportSummary({
     .flatMap((w) => unreferencedAssetFilenames(w.message));
   const uniqueUnreferencedAssets = [...new Set(unreferencedAssets)];
 
-  const totalSkippedVideos = results.reduce(
-    (sum, r) => sum + r.questions.reduce((qSum, q) => qSum + q.skippedVideos.length, 0),
+  const totalSkippedVideos = [...uniqueQuestions.values()].reduce(
+    (sum, question) => sum + question.skippedVideos.length,
     0,
   );
 

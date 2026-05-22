@@ -401,29 +401,34 @@ export function QtiImportForm({
         }
       }
 
+      const questionPayloads = includedQuestionCollections.flatMap(({ result }) =>
+        result.questions
+          .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
+          .map((q) => {
+            const qOverride = questionOverrides.get(q.directoryName);
+            const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
+            return {
+              draftId: q.draftId,
+              originalDirectoryName: q.originalDirectoryName,
+              directoryName: dirName,
+              infoJson: {
+                ...q.infoJson,
+                ...(qOverride && {
+                  title: qOverride.title,
+                  topic: qOverride.topic,
+                  tags: qOverride.tags,
+                }),
+              },
+              overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
+            };
+          }),
+      );
+      const questionPayloadsByDirectoryName = new Map(
+        questionPayloads.map((question) => [question.directoryName, question]),
+      );
+
       const payload = {
-        questions: includedQuestionCollections.flatMap(({ result }) =>
-          result.questions
-            .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
-            .map((q) => {
-              const qOverride = questionOverrides.get(q.directoryName);
-              const dirName = resolvedDirNames.get(q.directoryName) ?? q.directoryName;
-              return {
-                draftId: q.draftId,
-                originalDirectoryName: q.originalDirectoryName,
-                directoryName: dirName,
-                infoJson: {
-                  ...q.infoJson,
-                  ...(qOverride && {
-                    title: qOverride.title,
-                    topic: qOverride.topic,
-                    tags: qOverride.tags,
-                  }),
-                },
-                overwrite: qOverride?.collides && qOverride.collisionStrategy === 'overwrite',
-              };
-            }),
-        ),
+        questions: [...questionPayloadsByDirectoryName.values()],
         assessments: includedAssessments.map(({ result, override }) => {
           const includedQuestionDirs = new Set<string>();
 
@@ -555,10 +560,16 @@ export function QtiImportForm({
       getIncludedQuestionCount(result) > 0,
   ).length;
   const hasAssessmentResults = results.some((result) => result.sourceType !== 'question-bank');
-  const includedQuestionCount = results.reduce((count, result, i) => {
-    if (!overrides[i]?.included || result.sourceType !== 'question-bank') return count;
-    return count + getIncludedQuestionCount(result);
-  }, 0);
+  const includedQuestionDirs = new Set<string>();
+  for (const [i, result] of results.entries()) {
+    if (!overrides[i]?.included || result.sourceType !== 'question-bank') continue;
+    for (const question of result.questions) {
+      if (questionOverrides.get(question.directoryName)?.included !== false) {
+        includedQuestionDirs.add(question.directoryName);
+      }
+    }
+  }
+  const includedQuestionCount = includedQuestionDirs.size;
   const canImport = includedAssessmentCount > 0 || includedQuestionCount > 0;
   const labelParts: string[] = [];
   if (includedAssessmentCount > 0 || hasAssessmentResults) {
