@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access, copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Command } from 'commander';
@@ -18,6 +18,7 @@ import {
   type QtiFileEntry,
   detectCourseExport,
   findQtiFilesFromManifest,
+  findQtiXmlFiles,
 } from '../utils/course-export.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
@@ -194,42 +195,6 @@ async function resolveTimezone(
       'or ensure infoCourse.json already contains a "timezone" field.',
   );
   process.exit(1);
-}
-
-const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
-
-function isQtiXml(filename: string): boolean {
-  return filename.endsWith('.xml') && !NON_QTI_XML_FILES.has(filename);
-}
-
-/**
- * Find QTI XML files in a directory. Handles two cases:
- * - The directory itself contains a QTI XML (single quiz dir)
- * - The directory contains subdirectories, each with a QTI XML (bulk export folder)
- */
-async function findQtiXmlFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir);
-
-  // Check if the directory itself contains a QTI XML (not a manifest)
-  const directXml = entries.find(isQtiXml);
-  if (directXml) {
-    return [path.join(dir, directXml)];
-  }
-
-  // Otherwise look in subdirectories
-  const xmlFiles: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(dir, entry);
-    const entryStat = await stat(entryPath);
-    if (entryStat.isDirectory()) {
-      const subEntries = await readdir(entryPath);
-      const xml = subEntries.find(isQtiXml);
-      if (xml) {
-        xmlFiles.push(path.join(entryPath, xml));
-      }
-    }
-  }
-  return xmlFiles;
 }
 
 interface ParsedInput {
