@@ -1,1 +1,1 @@
-This question uses `<pl-string-input>` with two choices of correct answer specified via the `correct-answer-format="regex"` attribute, case-insensitive, human-readable answer, no randomization.
+This question uses `<pl-string-input>` with a regular-expression correct answer, set with `correct-answer-format="regex"`. The pattern accepts any of three plant macronutrients, written either as a full word or as a chemical symbol. `ignore-case="true"` makes matching case-insensitive, and a `<pl-answer-panel>` shows a human-readable answer. The question is not randomized.
