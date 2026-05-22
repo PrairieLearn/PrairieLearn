@@ -1,6 +1,7 @@
 import type { Stats } from 'node:fs';
 import * as path from 'node:path';
 
+import { fileTypeFromFile } from 'file-type';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -8,7 +9,7 @@ import { config } from '../config.js';
 import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import { readEditableTextFile } from '../editableFile.js';
-import { browseDirectory, browseFile } from '../file-browser.js';
+import { browseDirectory } from '../file-browser.js';
 import { getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';
 
@@ -78,6 +79,8 @@ export interface DraftQuestionFileBrowserData {
 export interface SelectedQuestionFile {
   path: string;
   encodedContents: string;
+  /** Hash of the contents as opened, used as the save's stale-edit (TOCTOU) guard. */
+  contentHash: string;
   aceMode: string;
   lintHtmlMustache: boolean;
 }
@@ -93,8 +96,13 @@ export interface SelectedQuestionFilePreview {
   content: { kind: 'image'; src: string } | { kind: 'pdf'; src: string } | { kind: 'none' };
 }
 
+/**
+ * The `res.locals` slice the draft file panel needs. Also serves as the
+ * `aiDraftFiles` tRPC context's `locals` contract, so it carries the `user` /
+ * `authn_user` the file mutation procedures forward to
+ * {@link DraftQuestionFileMutationContext}.
+ */
 export interface DraftQuestionFilesLocals {
-  __csrf_token: string;
   authn_user: User;
   authz_data: {
     has_course_permission_edit: boolean;
@@ -150,7 +158,7 @@ async function readSelectedQuestionFile({
     });
     const encodedPath = encodeCourseFilePath(paths.workingPathRelativeToCourse);
     const fileDownloadUrl = `${paths.urlPrefix}/file_download/${encodedPath}`;
-    const fileInfo = await browseFile({ paths });
+    const fileType = await fileTypeFromFile(fullPath);
 
     return {
       selectedFile: null,
@@ -158,9 +166,9 @@ async function readSelectedQuestionFile({
         path: filePath,
         fileViewUrl: `${paths.urlPrefix}/file_view/${encodedPath}`,
         downloadUrl: `${fileDownloadUrl}?attachment=${encodeURIComponent(path.basename(filePath))}`,
-        content: fileInfo.isImage
+        content: fileType?.mime.startsWith('image')
           ? { kind: 'image', src: fileDownloadUrl }
-          : fileInfo.isPDF
+          : fileType?.mime === 'application/pdf'
             ? { kind: 'pdf', src: `${fileDownloadUrl}?type=application/pdf#view=FitH` }
             : { kind: 'none' },
       },
@@ -178,6 +186,7 @@ async function readSelectedQuestionFile({
     selectedFile: {
       path: filePath,
       encodedContents: editableFile.contents,
+      contentHash: editableFile.contentHash,
       aceMode: editableFile.aceMode,
       lintHtmlMustache: editableFile.lintHtmlMustache,
     },
