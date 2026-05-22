@@ -97,12 +97,7 @@ export interface SelectedQuestionFilePreview {
   content: { kind: 'image'; src: string } | { kind: 'pdf'; src: string } | { kind: 'none' };
 }
 
-/**
- * Everything the draft editor needs to render its file panels: the question's
- * file contents (for the code editors), the file browser listing, and the
- * currently selected file as editable text or a binary preview. Travels from
- * the page through the editor components as a single unit.
- */
+/** The file data the draft editor renders: code-file contents, browser listing, and selection. */
 export interface QuestionFilesData {
   /** Base64-encoded file contents, keyed by question-relative path. */
   files: Record<string, string>;

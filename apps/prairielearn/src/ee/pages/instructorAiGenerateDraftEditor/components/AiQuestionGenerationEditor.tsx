@@ -1,5 +1,5 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Nav, Tab } from 'react-bootstrap';
 
@@ -10,7 +10,6 @@ import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { QuestionFilesData } from '../../../../lib/draft-question-files/browser.js';
-import { getEditorUrlWithSelectedDirectory } from '../../../../lib/draft-question-files/urls.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -23,11 +22,11 @@ import {
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import { TRPCProvider, createAiDraftFilesTrpcClient, useTRPC } from './aiDraftFilesTrpc.js';
 import { DraftFilesContext, type DraftFilesContextValue } from './draftFilesContext.js';
-import { useDraftQuestionFileMutations } from './useDraftQuestionFileMutations.js';
-
-const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor'] as const;
-
-type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
+import {
+  AI_DRAFT_EDITOR_TABS,
+  type AiDraftEditorTab,
+  useDraftFileNavigation,
+} from './useDraftFileNavigation.js';
 
 interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
@@ -69,8 +68,7 @@ function AiQuestionGenerationEditorInner({
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
   const unsavedChangesRef = useRef<UnsavedChangesHandle>(null);
-  const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
-  const [selectedDirectory, setSelectedDirectory] = useQueryState('dir', parseAsString);
+  const { selectedFilePath, selectedDirectory } = useDraftFileNavigation();
   const initialFileQuery = useMemo(() => {
     const params = new URLSearchParams(search);
     return {
@@ -113,17 +111,6 @@ function AiQuestionGenerationEditorInner({
     [refetchFiles],
   );
 
-  const handleFilesMutated = useCallback(async () => {
-    await refetchFiles();
-    newVariantRef.current?.newVariant();
-  }, [refetchFiles]);
-
-  const fileBrowserActions = useDraftQuestionFileMutations({
-    questionId: question.id,
-    uploadUrl: `${urlPrefix}/ai_generate_editor/${question.id}/files`,
-    uploadCsrfToken,
-    onMutated: handleFilesMutated,
-  });
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
     parseAsStringLiteral(AI_DRAFT_EDITOR_TABS)
@@ -137,11 +124,6 @@ function AiQuestionGenerationEditorInner({
   );
   const activeTabKey =
     activeTab === 'rich-text-editor' && !richTextEditorEnabled ? 'preview' : activeTab;
-  const allFilesHref = useMemo(
-    () =>
-      getEditorUrlWithSelectedDirectory({ editorUrl: '', directory: selectedDirectory, search }),
-    [search, selectedDirectory],
-  );
 
   const handleSelectTab = useCallback(
     (tab: string | null) => {
@@ -152,60 +134,14 @@ function AiQuestionGenerationEditorInner({
     [setActiveTab],
   );
 
-  const handleSelectFile = useCallback(
-    async (filePath: string) => {
-      await setSelectedFilePath(filePath);
-      await setActiveTab('all-files', { clearOnDefault: false });
-    },
-    [setActiveTab, setSelectedFilePath],
-  );
-
-  const handleClearSelectedFile = useCallback(async () => {
-    await setActiveTab('all-files', { clearOnDefault: false });
-    await setSelectedFilePath(null);
-  }, [setActiveTab, setSelectedFilePath]);
-
-  const handleSelectDirectory = useCallback(
-    async (directory: string | null) => {
-      await setSelectedFilePath(null);
-      await setSelectedDirectory(directory);
-      await setActiveTab('all-files', { clearOnDefault: false });
-    },
-    [setActiveTab, setSelectedDirectory, setSelectedFilePath],
-  );
-
   const isQuestionEmpty = useMemo(
     () => b64DecodeUnicode(currentQuestionFilesData.files['question.html'] ?? '').trim() === '',
     [currentQuestionFilesData],
   );
 
   const draftFilesContextValue = useMemo<DraftFilesContextValue>(
-    () => ({
-      questionId: question.id,
-      urlPrefix,
-      search,
-      allFilesHref,
-      isGenerating,
-      fileBrowserActions,
-      selectFile: (filePath) => void handleSelectFile(filePath),
-      selectDirectory: (directory) => void handleSelectDirectory(directory),
-      clearSelectedFile: () => void handleClearSelectedFile(),
-      onFilesMutated: handleFilesMutated,
-      refetchFiles,
-    }),
-    [
-      question.id,
-      urlPrefix,
-      search,
-      allFilesHref,
-      isGenerating,
-      fileBrowserActions,
-      handleSelectFile,
-      handleSelectDirectory,
-      handleClearSelectedFile,
-      handleFilesMutated,
-      refetchFiles,
-    ],
+    () => ({ questionId: question.id, urlPrefix, search, isGenerating, uploadCsrfToken }),
+    [question.id, urlPrefix, search, isGenerating, uploadCsrfToken],
   );
 
   return (

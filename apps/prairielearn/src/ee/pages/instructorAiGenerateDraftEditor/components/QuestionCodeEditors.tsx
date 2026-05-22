@@ -10,7 +10,7 @@ import {
 } from '../../../../lib/client/errors.js';
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
-import { useTRPC } from './aiDraftFilesTrpc.js';
+import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
 import { useDraftFiles } from './draftFilesContext.js';
 
 export interface QuestionCodeEditorsHandle {
@@ -24,17 +24,20 @@ export function QuestionCodeEditors({
   htmlContents,
   pythonContents,
   filesError,
+  onFileMutated,
   editorRef,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
   filesError?: { message: string } | null;
+  onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating, onFilesMutated, refetchFiles } = useDraftFiles();
+  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
-    trpc.aiDraftFiles.saveFiles.mutationOptions({ onSuccess: () => onFilesMutated() }),
+    trpc.aiDraftFiles.saveFiles.mutationOptions({ onSuccess: () => onFileMutated() }),
   );
 
   const savedHtml = htmlContents ?? '';
@@ -113,7 +116,7 @@ export function QuestionCodeEditors({
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              onClick={() => void refetchFiles()}
+              onClick={() => void refetchDraftFiles()}
             >
               <i className="fa fa-refresh me-1" aria-hidden="true" />
               Retry

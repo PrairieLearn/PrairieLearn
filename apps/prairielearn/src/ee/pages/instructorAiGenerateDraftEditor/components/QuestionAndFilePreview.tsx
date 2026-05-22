@@ -1,4 +1,4 @@
-import { type Ref, useEffect, useImperativeHandle, useRef } from 'react';
+import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { Alert, Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
@@ -18,7 +18,10 @@ import {
   SelectedQuestionFileEditor,
   type SelectedQuestionFileEditorHandle,
 } from './SelectedQuestionFileEditor.js';
+import { useRefetchDraftFiles } from './aiDraftFilesTrpc.js';
 import { useDraftFiles } from './draftFilesContext.js';
+import { useDraftFileNavigation } from './useDraftFileNavigation.js';
+import { useDraftQuestionFileMutations } from './useDraftQuestionFileMutations.js';
 import { useQuestionHtml } from './useQuestionHtml.js';
 
 export interface NewVariantHandle {
@@ -53,14 +56,23 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
 function AllQuestionFiles({
   questionFilesData,
   qid,
+  onFileMutated,
   editorRef,
 }: {
   questionFilesData: QuestionFilesData;
   qid: string | null;
+  onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
-  const { fileBrowserActions, search, selectFile, selectDirectory } = useDraftFiles();
+  const { questionId, urlPrefix, uploadCsrfToken, search } = useDraftFiles();
+  const { selectFile, selectDirectory } = useDraftFileNavigation();
   const { fileBrowser, selectedFile, selectedFilePreview } = questionFilesData;
+  const fileBrowserActions = useDraftQuestionFileMutations({
+    questionId,
+    urlPrefix,
+    uploadCsrfToken,
+    onMutated: onFileMutated,
+  });
 
   if (!qid) return null;
 
@@ -72,6 +84,7 @@ function AllQuestionFiles({
         key={`${selectedFile.path}:${selectedFile.contentHash}`}
         selectedFile={selectedFile}
         editorRef={editorRef}
+        onFileMutated={onFileMutated}
       />
     );
   }
@@ -178,6 +191,7 @@ export function QuestionAndFilePreview({
   onSelectTab: (tab: 'files') => void;
 }) {
   const { isGenerating } = useDraftFiles();
+  const refetchDraftFiles = useRefetchDraftFiles();
   const { wrapperRef, newVariant, previewError, dismissPreviewError } = useQuestionHtml({
     variantUrl,
     variantCsrfToken,
@@ -200,6 +214,12 @@ export function QuestionAndFilePreview({
       (internalCodeEditorsRef.current?.getHasChanges() ?? false) ||
       (selectedFileEditorRef.current?.getHasChanges() ?? false),
   }));
+
+  // After a file mutation: refresh the file data, then reload the preview.
+  const handleFileMutated = useCallback(async () => {
+    await refetchDraftFiles();
+    newVariant();
+  }, [refetchDraftFiles, newVariant]);
 
   return (
     <Tab.Content className="h-100">
@@ -265,6 +285,7 @@ export function QuestionAndFilePreview({
           pythonContents={b64DecodeUnicode(questionFilesData.files['server.py'] || '')}
           filesError={filesError}
           editorRef={internalCodeEditorsRef}
+          onFileMutated={handleFileMutated}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="all-files" className="h-100">
@@ -272,6 +293,7 @@ export function QuestionAndFilePreview({
           questionFilesData={questionFilesData}
           qid={qid}
           editorRef={selectedFileEditorRef}
+          onFileMutated={handleFileMutated}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="rich-text-editor" className="h-100">

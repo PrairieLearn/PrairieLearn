@@ -9,10 +9,12 @@ import {
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
 import type { SelectedQuestionFile } from '../../../../lib/draft-question-files/browser.js';
+import { getEditorUrlWithSelectedDirectory } from '../../../../lib/draft-question-files/urls.js';
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
-import { useTRPC } from './aiDraftFilesTrpc.js';
+import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
 import { useDraftFiles } from './draftFilesContext.js';
+import { useDraftFileNavigation } from './useDraftFileNavigation.js';
 
 export interface SelectedQuestionFileEditorHandle {
   discardChanges: () => void;
@@ -21,7 +23,13 @@ export interface SelectedQuestionFileEditorHandle {
 }
 
 export function SelectedQuestionFileBreadcrumb({ filePath }: { filePath: string }) {
-  const { allFilesHref, clearSelectedFile } = useDraftFiles();
+  const { search } = useDraftFiles();
+  const { selectedDirectory, clearSelectedFile } = useDraftFileNavigation();
+  const allFilesHref = getEditorUrlWithSelectedDirectory({
+    editorUrl: '',
+    directory: selectedDirectory,
+    search,
+  });
   return (
     <nav
       aria-label="Selected file breadcrumb"
@@ -32,7 +40,7 @@ export function SelectedQuestionFileBreadcrumb({ filePath }: { filePath: string 
         className="flex-shrink-0"
         onClick={(event) => {
           event.preventDefault();
-          clearSelectedFile();
+          void clearSelectedFile();
         }}
       >
         All files
@@ -60,15 +68,18 @@ function getSaveStatus({
 
 export function SelectedQuestionFileEditor({
   selectedFile,
+  onFileMutated,
   editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
+  onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating, onFilesMutated, refetchFiles } = useDraftFiles();
+  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
-    trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFilesMutated() }),
+    trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFileMutated() }),
   );
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
@@ -112,7 +123,7 @@ export function SelectedQuestionFileEditor({
     try {
       // On success the file refetches with a new content hash, remounting this
       // component with the disk contents; the `finally` only matters otherwise.
-      await refetchFiles();
+      await refetchDraftFiles();
     } finally {
       setIsReloading(false);
     }
