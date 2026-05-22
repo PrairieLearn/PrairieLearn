@@ -27,6 +27,20 @@ export const SHORT_NAME_PATTERN = SHORT_NAME_REGEX.source;
 export const FILE_NAME_PATTERN =
   /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
 
+/**
+ * Help text describing how to name a file, covering the common cases of
+ * {@link FILE_NAME_PATTERN}. Kept beside the pattern so the guidance and the
+ * validation rule stay in sync.
+ */
+export const FILE_NAME_PATTERN_DESCRIPTION =
+  'Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. To move the file to a different directory, specify a relative path delimited by forward slashes.';
+
+/**
+ * Used by the instructor file browser, where a rename
+ * can move a file anywhere in the course tree.
+ */
+export const FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR = `${FILE_NAME_PATTERN_DESCRIPTION} Use ".." to refer to the parent directory.`;
+
 interface ShortNameValidationSuccess {
   valid: true;
 }

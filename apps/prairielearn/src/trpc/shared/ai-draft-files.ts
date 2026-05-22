@@ -25,8 +25,6 @@ import {
 import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
 import { features } from '../../lib/features/index.js';
 import { appErrorFormatter, throwAppError } from '../app-errors.js';
-import type { createContext as createCourseContext } from '../course/init.js';
-import type { createContext as createCourseInstanceContext } from '../courseInstance/init.js';
 
 /** A draft file edit whose underlying server job failed to sync. */
 interface EditJobFailed {
@@ -42,12 +40,22 @@ interface StaleEdit {
   code: 'STALE_EDIT';
 }
 
+/**
+ * Typed errors for the draft-file operations the client invokes, keyed by
+ * operation so callers narrow with `getAppError<AiDraftFilesError['<Op>']>`.
+ * These are the `aiDraftFiles` tRPC procedures plus `Upload`, which is served by
+ * a multipart route rather than tRPC (tRPC has no multipart support) but shares
+ * the same `SYNC_JOB_FAILED` error contract. An operation with no typed errors
+ * is declared `never` (resolving client-side to just the `UNKNOWN` branch), so
+ * the map stays a complete picture of the surface.
+ */
 export interface AiDraftFilesError {
   List: never;
   Save: EditJobFailed | StaleEdit;
   SaveFiles: EditJobFailed;
   Rename: EditJobFailed;
   Delete: EditJobFailed;
+  Upload: EditJobFailed;
 }
 
 const ListInputSchema = z.object({
@@ -99,41 +107,21 @@ const DeleteInputSchema = z.object({
 /**
  * The `aiDraftFiles` router is mounted in both the `course` and `courseInstance`
  * tRPC trees. It only needs course-level context, so it defines its own tRPC
- * instance with a minimal context that both trees satisfy. Nesting this single
- * router into both trees guarantees the two mounts can never drift apart and
- * share one accurate client-side router type.
+ * instance with this minimal context that both trees satisfy. Nesting this
+ * single router into both trees guarantees the two mounts can never drift apart
+ * and share one accurate client-side router type.
+ *
+ * tRPC's router nesting does not check that the host trees actually provide this
+ * context, so `ai-draft-files.test.ts` asserts that compatibility at build time.
  */
-interface AiDraftFilesContext {
+export interface AiDraftFilesContext {
   locals: Omit<DraftQuestionFilesLocals, 'question'>;
 }
 
-/**
- * Resolves to `TContext`, but only if every type in `THostContexts` is
- * assignable to it. The `aiDraftFiles` router is nested into both the `course`
- * and `courseInstance` trees, which are built from separate tRPC instances with
- * their own context types. Threading the host context types through this
- * constraint fails the build if either host tree stops providing what
- * {@link AiDraftFilesContext} needs (e.g. a dropped `locals.course` /
- * `locals.authz_data`), instead of breaking only at runtime.
- */
-type ContextSatisfiedByHosts<TContext, THostContexts extends TContext> = [THostContexts] extends [
-  TContext,
-]
-  ? TContext
-  : never;
-
-const t = initTRPC
-  .context<
-    ContextSatisfiedByHosts<
-      AiDraftFilesContext,
-      | Awaited<ReturnType<typeof createCourseContext>>
-      | Awaited<ReturnType<typeof createCourseInstanceContext>>
-    >
-  >()
-  .create({
-    transformer: superjson,
-    errorFormatter: appErrorFormatter,
-  });
+const t = initTRPC.context<AiDraftFilesContext>().create({
+  transformer: superjson,
+  errorFormatter: appErrorFormatter,
+});
 
 const requireCoursePermissionEdit = t.middleware(async (opts) => {
   if (!opts.ctx.locals.authz_data.has_course_permission_edit) {

@@ -13,7 +13,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -357,7 +357,6 @@ function editPost(
   url: string,
   expectedToFindResults: boolean,
   expectedToFindChoice: boolean,
-  expectedDiskContents: string | null,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', async () => {
@@ -377,12 +376,7 @@ function editPost(
       locals.$ = cheerio.load(page);
     });
     if (action === 'save_and_sync') {
-      verifyEdit(
-        expectedToFindResults,
-        expectedToFindChoice,
-        fileEditContents,
-        expectedDiskContents,
-      );
+      verifyEdit(expectedToFindResults, expectedToFindChoice);
     }
   });
 }
@@ -411,12 +405,11 @@ function findEditUrl(name: string, selector: string, url: string, expectedEditUr
   });
 }
 
-function verifyEdit(
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
-) {
+// Verifies the structure of the editor page. The editor renders its file
+// contents client-side with ACE, which a cheerio test cannot see; on-disk
+// contents are asserted separately with `verifyFileOnLiveDisk`, and the
+/** client-side editor behavior is covered by `tests/e2e/fileEditor.spec.ts`. */
+function verifyEdit(expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
     assert.lengthOf(elemList, 1);
@@ -431,39 +424,16 @@ function verifyEdit(
     locals.file_edit_orig_hash = elemList[0].attribs.value;
     assert.isString(locals.file_edit_orig_hash);
   });
-  it('editor element should match expected draft file contents', function () {
-    const editor = locals.$('#file-editor-draft');
-    assert.lengthOf(editor, 1);
-    const fileContents = b64DecodeUnicode(editor.data('contents'));
-    assert.strictEqual(fileContents, expectedDraftContents);
-  });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
     elemList = locals.$('form[name="editor-form"] #job-sequence-results');
-    if (expectedToFindResults) {
-      assert.lengthOf(elemList, 1);
-    } else {
-      assert.lengthOf(elemList, 0);
-    }
+    assert.lengthOf(elemList, expectedToFindResults ? 1 : 0);
   });
-  it(`should ${expectedToFindChoice ? '' : 'not '}have an editor with disk file contents`, function () {
-    const editor = locals.$('#file-editor-disk');
-    if (expectedToFindChoice) {
-      assert.lengthOf(editor, 1);
-      const fileContents = b64DecodeUnicode(editor.data('contents'));
-      assert.strictEqual(fileContents, expectedDiskContents);
-    } else {
-      assert.lengthOf(editor, 0);
-    }
+  it(`should ${expectedToFindChoice ? '' : 'not '}show the version conflict chooser`, function () {
+    assert.lengthOf(locals.$('h4:contains("Their version")'), expectedToFindChoice ? 1 : 0);
   });
 }
 
-function editGet(
-  url: string,
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
-) {
+function editGet(url: string, expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   describe('GET to edit url', function () {
     it('should load successfully', async () => {
       const res = await fetch(url);
@@ -473,12 +443,7 @@ function editGet(
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    verifyEdit(
-      expectedToFindResults,
-      expectedToFindChoice,
-      expectedDraftContents,
-      expectedDiskContents,
-    );
+    verifyEdit(expectedToFindResults, expectedToFindChoice);
   });
 }
 
@@ -515,40 +480,50 @@ function doEdits(data: {
     // is used to detect concurrent modifications. `editGet` and `editPost`
     // store this hash in `locals` and include it in subsequent `POST` requests.
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, A, A)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, A, B)
 
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editGet(data.url, false, false, data.contentsB, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsA);
     // (B, A, B, B)
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsB);
     // (A, B, B, B)
 
-    editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
+    editPost('save_and_sync', data.contentsC, data.url, true, true);
     waitForJobSequence(locals, 'Error');
+    // The conflicting save is rejected: contents C live only in the editor's
+    // draft, so the live disk still holds their version (B). The draft contents
+    // are verified by `tests/e2e/fileEditor.spec.ts`.
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editGet(data.url, false, false, data.contentsB, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsA, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, B, A)
 
     pullAndVerifyFileInDev(data.path, data.contentsA);
@@ -557,11 +532,13 @@ function doEdits(data: {
     writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
     // (A, A, A*, A*)
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, A*, A*)
 
-    editPost('save_and_sync', data.contentsC, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsC, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsC);
     // (C, C, A*, C)
 
     pullAndVerifyFileInDev(data.path, data.contentsC);
@@ -570,31 +547,37 @@ function doEdits(data: {
     writeAndPushFileInDev('README.md', `Another new readme to test edit of ${data.path}`);
     // (C, C, C*, C*)
 
-    editGet(data.url, false, false, data.contentsC, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsC);
     // (C, C, C*, C*)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, C*, B)
 
-    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsA, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, C*, A)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, C*, B)
 
     if (data.isJson) {
-      editPost('save_and_sync', data.contentsX, data.url, true, false, null);
+      editPost('save_and_sync', data.contentsX, data.url, true, false);
       waitForJobSequence(locals, 'Error');
+      verifyFileOnLiveDisk(data.path, data.contentsX);
       // (X, X, C*, X) <- successful push but failed sync because of bad json
 
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
 
-      editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+      editPost('save_and_sync', data.contentsA, data.url, true, false);
       waitForJobSequence(locals, 'Success');
+      verifyFileOnLiveDisk(data.path, data.contentsA);
       // (A, A, X, A)
 
       pullAndVerifyFileInDev(data.path, data.contentsA);
@@ -619,6 +602,17 @@ function writeAndCommitFileInLive(fileName: string, fileContents: string) {
         cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
+    });
+  });
+}
+
+function verifyFileOnLiveDisk(fileName: string, fileContents: string) {
+  describe(`verify contents of ${fileName} on the live disk`, function () {
+    it('should match contents', function () {
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseLiveDir, fileName), 'utf-8'),
+        fileContents,
+      );
     });
   });
 }

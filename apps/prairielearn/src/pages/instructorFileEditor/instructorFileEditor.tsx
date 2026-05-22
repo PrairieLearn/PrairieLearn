@@ -35,7 +35,7 @@ import { StaffJobSequenceWithJobsSchema } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorFileEditorClient } from './InstructorFileEditorClient.js';
+import { FileEditor } from './FileEditor.js';
 import type { DraftEdit, FileEditorData } from './instructorFileEditor.types.js';
 
 const router = Router();
@@ -253,7 +253,7 @@ router.get(
 
             ${renderHtml(
               <Hydrate>
-                <InstructorFileEditorClient
+                <FileEditor
                   editorData={editorData}
                   draftContents={draftEdit?.contents}
                   versionChoice={

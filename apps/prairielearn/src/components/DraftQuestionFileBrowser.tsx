@@ -76,10 +76,11 @@ function DraftQuestionFileRow({
     filePath: file.selectedFilePath,
     search,
   });
-  const canEdit = file.canEdit && file.disabledReason == null;
-  const canUpload = file.canUpload && file.disabledReason == null;
-  const canRename = file.canRename && file.disabledReason == null;
-  const canDelete = file.canDelete && file.disabledReason == null;
+  const isDisabled = file.disabledReason != null;
+  const canEdit = file.canEdit && !isDisabled;
+  const canUpload = file.canUpload && !isDisabled;
+  const canRename = file.canRename && !isDisabled;
+  const canDelete = file.canDelete && !isDisabled;
 
   const selectFile = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -96,7 +97,7 @@ function DraftQuestionFileRow({
           ) : file.syncWarnings ? (
             <SyncProblemButton type="warning" output={file.syncWarnings} />
           ) : null}
-          {file.canView && file.disabledReason == null ? (
+          {file.canView && !isDisabled ? (
             <a href={fileUrl} onClick={selectFile}>
               {file.name}
             </a>

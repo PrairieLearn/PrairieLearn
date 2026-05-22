@@ -2,7 +2,10 @@ import { filesize } from 'filesize';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { FILE_NAME_PATTERN } from '../lib/short-name.js';
+import {
+  FILE_NAME_PATTERN,
+  FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR,
+} from '../lib/short-name.js';
 
 type FileUploadInfo = {
   id: string | number;
@@ -10,7 +13,7 @@ type FileUploadInfo = {
 } & (
   | {
       path: string;
-      working_path?: unknown;
+      working_path?: never;
     }
   | {
       path?: null | undefined;
@@ -114,12 +117,7 @@ export function FileRenameForm({
       <input type="hidden" name="working_path" value="${file.dir}" />
       ${isViewingFile ? html`<input type="hidden" name="was_viewing_file" value="true" />` : ''}
       <input type="hidden" name="old_file_name" value="${file.name}" />
-      <div class="container p-0 mb-4">
-        Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is
-        recommended, delimited by a period. If you want to move the file to a different directory,
-        you can specify a relative path that is delimited by a forward slash and that includes
-        "<code>..</code>".
-      </div>
+      <div class="container p-0 mb-4">${FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR}</div>
       <div class="mb-3">
         <label class="form-label" for="renameFileInput${file.id}">Path:</label>
         <input

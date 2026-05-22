@@ -251,10 +251,7 @@ router.get(
         resLocals: res.locals,
         question: res.locals.question,
         messages,
-        questionFiles: questionFilesData.files,
-        fileBrowser: questionFilesData.fileBrowser,
-        selectedFile: questionFilesData.selectedFile,
-        selectedFilePreview: questionFilesData.selectedFilePreview,
+        questionFilesData,
         richTextEditorEnabled,
         questionContainerHtml,
         search: getUrl(req).search,
@@ -450,11 +447,9 @@ router.post(
         // same shape the tRPC file mutations raise; other errors (e.g. an
         // invalid QID) propagate to the standard error handler.
         if (err instanceof EditJobFailedError) {
-          res
-            .status(400)
-            .json({
-              appError: editJobFailedAppError(err, 'Renaming the question failed to sync.'),
-            });
+          res.status(400).json({
+            appError: editJobFailedAppError(err, 'Renaming the question failed to sync.'),
+          });
           return;
         }
         throw err;
