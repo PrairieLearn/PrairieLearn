@@ -304,7 +304,28 @@ function renderPacketHtml({
       verdict_source: c.verdict_source,
     })),
   };
-  const unsureCases = cases.filter((c) => c.classification === 'unsure');
+  // Dedupe unsure cases by submission so the annotator sees one card per
+  // submission even when multiple models flagged it with different rubric
+  // selections. The first encountered case_id stays "primary" for display
+  // (its AI selection / explanation drive the card); every duplicate
+  // case_id is bundled so the exported CSV emits one row per case_id with
+  // the annotator's verdict applied uniformly.
+  const bundledBySubmission = new Map<string, RenderedCase & { bundled_case_ids: string[] }>();
+  for (const c of cases) {
+    if (c.classification !== 'unsure') continue;
+    const existing = bundledBySubmission.get(c.submission_identifier);
+    if (existing) {
+      if (!existing.bundled_case_ids.includes(c.case_id)) {
+        existing.bundled_case_ids.push(c.case_id);
+      }
+    } else {
+      bundledBySubmission.set(c.submission_identifier, {
+        ...c,
+        bundled_case_ids: [c.case_id],
+      });
+    }
+  }
+  const unsureCases = [...bundledBySubmission.values()];
 
   const document = html`<!doctype html>
     <html lang="en">
@@ -446,18 +467,20 @@ function renderPacketHtml({
 }
 
 function renderCaseCard(
-  c: RenderedCase,
+  c: RenderedCase & { bundled_case_ids?: string[] },
   idx: number,
   total: number,
   rubricItems: RubricItem[],
 ): ReturnType<typeof html> {
   const rubricEncoded = encodeDescriptions(c.ai_descriptions);
   const aiSelected = new Set(c.ai_descriptions);
+  const bundled = (c.bundled_case_ids ?? [c.case_id]).join(',');
   return html`
     <div
       class="card case-card mb-4"
       id="case-${c.case_id}"
       data-case-id="${c.case_id}"
+      data-bundled-case-ids="${bundled}"
       data-submission-identifier="${c.submission_identifier}"
       data-rubric-descriptions="${rubricEncoded}"
     >
@@ -632,23 +655,32 @@ function packetJs(): string {
         ]);
         const annotatorByCase = state || {};
         const exportedIds = new Set();
-        // Emit annotator-graded unsure cases first
+        // Emit annotator-graded unsure cases first. When a card bundles
+        // multiple case_ids (multiple models flagged the same submission
+        // with different selections), emit one CSV row per bundled case_id
+        // so the verdict applies to every grading variant.
         document.querySelectorAll('.case-card').forEach((card) => {
-          const caseId = card.dataset.caseId;
-          const entry = annotatorByCase[caseId];
+          const primaryCaseId = card.dataset.caseId;
+          const entry = annotatorByCase[primaryCaseId];
           if (!entry || !entry.verdict) return;
-          exportedIds.add(caseId);
-          rows.push([
-            meta.eval_id,
-            caseId,
-            entry.submission_identifier,
-            entry.rubric_descriptions,
-            entry.verdict,
-            'annotator',
-            '',
-            entry.updated_at,
-            entry.notes ?? '',
-          ]);
+          const bundled = (card.dataset.bundledCaseIds || primaryCaseId)
+            .split(',')
+            .filter((id) => id.length > 0);
+          for (const caseId of bundled) {
+            if (exportedIds.has(caseId)) continue;
+            exportedIds.add(caseId);
+            rows.push([
+              meta.eval_id,
+              caseId,
+              entry.submission_identifier,
+              entry.rubric_descriptions,
+              entry.verdict,
+              'annotator',
+              '',
+              entry.updated_at,
+              entry.notes ?? '',
+            ]);
+          }
         });
         // Then emit the auto-classified cases (correct / incorrect) embedded
         // in packet meta so the CSV is a complete record of this run.

@@ -4,19 +4,20 @@ import { config } from '../../../lib/config.js';
 import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
-import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
 import { deleteAiGradingJobs } from '../ai-grading/ai-grading-util.js';
 
 import { generateAnnotationPacket } from './annotation-packet.js';
 import { type ClassifiedCase, classifyRun, seedHumanGradingVerdicts } from './classify.js';
 import { EVAL_REPOS_ROOT, cloneEvalRepo, sanitizeRepoSlug } from './clone-eval-repo.js';
+import { commitAndPushEvalRepo } from './git-commit.js';
 import { loadManifest } from './manifest.js';
 import { resolveAssessmentQuestion } from './resolve-target.js';
 import { applyRubric } from './rubric.js';
 import { runGrading } from './run-grading.js';
 import { scaffoldCourse } from './scaffold-course.js';
 import { seedAiGradingCredits } from './seed-credits.js';
+import { writeRunSnapshot } from './snapshot.js';
 import { type ModelRunSummary, reportRunStats, snapshotModelRunStats } from './stats.js';
 import { importSubmissions } from './submissions.js';
 import { buildVerdictMap, loadVerdictsFromCsvs } from './verdicts.js';
@@ -36,14 +37,12 @@ export async function runAiGradingEval({
   branch,
   models,
   creditMilliDollars,
-  generateAnnotationPackets,
   user,
 }: {
   repository: string;
   branch?: string | null;
   models: AiGradingModelId[];
   creditMilliDollars: number;
-  generateAnnotationPackets: boolean;
   user: User;
 }): Promise<string> {
   if (!config.devMode) {
@@ -65,7 +64,6 @@ export async function runAiGradingEval({
     if (branch) job.info(`Branch: ${branch}`);
     job.info(`Models (${models.length}): ${models.join(', ')}`);
     job.info(`Seed credit: $${(creditMilliDollars / 1000).toFixed(2)}`);
-    job.info(`Generate annotation packets: ${generateAnnotationPackets ? 'yes' : 'no'}`);
 
     const evalsDir = await cloneEvalRepo({ repository, branch, job });
     job.info(`Eval repo ready at ${evalsDir}`);
@@ -93,6 +91,7 @@ export async function runAiGradingEval({
     const summaries: ModelRunSummary[] = [];
     const verdictFilesByEval = new Map<string, Map<string, number>>();
     const annotationPacketsByEval = new Map<string, string>();
+    const snapshotRelPaths: string[] = [];
 
     for (const loaded of evals) {
       const target = await resolveAssessmentQuestion({
@@ -118,8 +117,6 @@ export async function runAiGradingEval({
         job,
       });
 
-      const { rubric_items } = await selectCompleteRubric(target.assessment_question.id);
-
       const seedEntries = await seedHumanGradingVerdicts({
         assessment_question_id: target.assessment_question.id,
         eval_id: loaded.entry.id,
@@ -144,7 +141,7 @@ export async function runAiGradingEval({
         { case_data: ClassifiedCase; models: AiGradingModelId[] }
       >();
 
-      for (const model of models) {
+      for (const [modelIdx, model] of models.entries()) {
         const aiGradingJobSequenceId = await runGrading({
           course: scaffold.course,
           course_instance: target.course_instance,
@@ -172,56 +169,98 @@ export async function runAiGradingEval({
           }
         }
 
-        summaries.push(
-          await snapshotModelRunStats({
-            evalId: loaded.entry.id,
-            model,
-            target,
-            rubricItems: rubric_items,
-            aiGradingJobSequenceId,
-            classified,
-            job,
-          }),
-        );
-        // Wipe so the next model starts from a clean slate — otherwise IQs
-        // the next model fails to grade would inherit this model's grading
-        // as their "latest" job and skew its classification stats.
-        await deleteAiGradingJobs({
-          assessment_question_ids: [target.assessment_question.id],
-          authn_user_id: user.id,
+        const { summary, snapshot } = await snapshotModelRunStats({
+          evalId: loaded.entry.id,
+          model,
+          target,
+          aiGradingJobSequenceId,
+          classified,
+          seedVerdicts: seedEntries,
+          job,
         });
+        summaries.push(summary);
+
+        const snapshotPath = await writeRunSnapshot({
+          evalAbsoluteDir: loaded.absoluteDir,
+          snapshot,
+        });
+        const snapshotRel = path.relative(evalsDir, snapshotPath);
+        snapshotRelPaths.push(snapshotRel);
+        job.info(`  Wrote run snapshot: ${snapshotRel}`);
+        // Wipe AI grading jobs between models so the next model starts from a
+        // clean slate — otherwise IQs the next model fails to grade would
+        // inherit this model's grading as their "latest" job and skew its
+        // classification stats. We deliberately skip the wipe after the
+        // final model so the synthetic course retains its results for
+        // post-run investigation in the instructor UI.
+        const isLastModel = modelIdx === models.length - 1;
+        if (!isLastModel) {
+          await deleteAiGradingJobs({
+            assessment_question_ids: [target.assessment_question.id],
+            authn_user_id: user.id,
+          });
+        }
       }
 
-      if (generateAnnotationPackets) {
-        const allCases = [...casesById.values()];
-        const hasUnsure = allCases.some((c) => c.case_data.classification === 'unsure');
-        if (!hasUnsure) {
-          job.info(`No unsure cases for ${loaded.entry.id}; skipping annotation packet.`);
-        } else {
-          const packetDir = path.join(
-            EVAL_REPOS_ROOT,
-            '..',
-            'annotation-packets',
-            sanitizeRepoSlug(repository),
-          );
-          const packetPath = await generateAnnotationPacket({
-            loadedEval: loaded,
-            cases: allCases,
-            target,
-            course: scaffold.course,
-            user,
-            packetDir,
-            job,
-          });
-          annotationPacketsByEval.set(loaded.entry.id, packetPath);
-        }
+      const allCases = [...casesById.values()];
+      const hasUnsure = allCases.some((c) => c.case_data.classification === 'unsure');
+      if (!hasUnsure) {
+        job.info(`No unsure cases for ${loaded.entry.id}; skipping annotation packet.`);
+      } else {
+        const packetDir = path.join(
+          EVAL_REPOS_ROOT,
+          '..',
+          'annotation-packets',
+          sanitizeRepoSlug(repository),
+        );
+        const packetPath = await generateAnnotationPacket({
+          loadedEval: loaded,
+          cases: allCases,
+          target,
+          course: scaffold.course,
+          user,
+          packetDir,
+          job,
+        });
+        annotationPacketsByEval.set(loaded.entry.id, packetPath);
       }
     }
 
     reportRunStats({ summaries, verdictFilesByEval, annotationPacketsByEval, job });
 
-    job.info('');
-    job.info('All steps complete.');
+    if (snapshotRelPaths.length > 0) {
+      job.info('');
+      job.info(
+        `Committing ${snapshotRelPaths.length} run snapshot(s) to the eval repo so verdict re-uploads can re-render these stats:`,
+      );
+      for (const rel of snapshotRelPaths) {
+        job.info(`  ${rel}`);
+      }
+      await commitAndPushEvalRepo({
+        cwd: evalsDir,
+        branch,
+        message: `Add ${snapshotRelPaths.length} run snapshot(s)\n\n${snapshotRelPaths.join('\n')}`,
+        job,
+      });
+    }
+
+    if (annotationPacketsByEval.size > 0) {
+      job.info('');
+      job.info('Next steps:');
+      job.info(
+        '  1. Copy and paste the file URL(s) below into your browser to open the annotation form locally:',
+      );
+      for (const [evalId, packetPath] of annotationPacketsByEval) {
+        job.info('');
+        job.info(`       ${evalId}`);
+        job.info('');
+        job.info(`         file://${packetPath}`);
+        job.info('');
+      }
+      job.info('  2. You or another course staff member should complete the form.');
+      job.info('  3. Export the CSV.');
+      job.info('  4. Upload it under "Upload verdict CSVs" when you\'re done.');
+    }
   });
 
   return serverJob.jobSequenceId;

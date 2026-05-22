@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { config } from '../../../lib/config.js';
 import { type EnumJobStatus } from '../../../lib/db-types.js';
 import {
   type ServerJob,
@@ -24,10 +25,10 @@ export async function waitForJobSequence(jobSequenceId: string): Promise<EnumJob
 }
 
 /**
- * Dumps the full output of every job in a child job sequence into the parent
- * eval job's log, prefixed by job number. The orchestrator and its child
- * jobs (submissions upload, AI grading) live in separate `job_sequences`, so
- * without this their logs are invisible from the eval job sequence page.
+ * Logs a per-job status summary for a child job sequence plus a navigable
+ * link to the admin job-sequence page. We intentionally don't echo the
+ * child jobs' full output — it bloats the parent log. Use the link to
+ * drill in when debugging.
  */
 export async function forwardChildJobOutput({
   childJobSequenceId,
@@ -41,14 +42,11 @@ export async function forwardChildJobOutput({
   label: string;
 }): Promise<void> {
   const sequence = await getJobSequence(childJobSequenceId, courseId);
-  parentJob.info(`---- ${label} (job sequence ${childJobSequenceId}) output ----`);
+  const host = (config.serverCanonicalHost ?? '').replace(/\/$/, '');
+  const path = `/pl/administrator/jobSequence/${childJobSequenceId}`;
+  const link = host ? `${host}${path}` : path;
+  parentJob.info(`${label}: job sequence ${childJobSequenceId} → ${link}`);
   for (const job of sequence.jobs) {
-    parentJob.info(`-- job #${job.number_in_sequence} (status: ${job.status}) --`);
-    if (job.output) {
-      parentJob.info(job.output);
-    } else {
-      parentJob.info('(no output)');
-    }
+    parentJob.info(`  job #${job.number_in_sequence}: ${job.status}`);
   }
-  parentJob.info(`---- end of ${label} output ----`);
 }

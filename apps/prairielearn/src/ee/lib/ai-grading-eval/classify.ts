@@ -135,3 +135,40 @@ export async function classifyRun({
 
   return { cases, counts, lowerBoundScore };
 }
+
+/**
+ * Pure (no-DB) variant of `classifyRun` that re-classifies a snapshot's
+ * persisted AI cases against a new verdict map. Used by the verdict-upload
+ * recompute path so we don't need to re-run grading.
+ */
+export function classifyCasesAgainstVerdicts({
+  cases,
+  verdictMap,
+}: {
+  cases: {
+    case_id: string;
+    submission_identifier: string;
+    ai_descriptions: string[];
+    ai_explanation: string | null;
+  }[];
+  verdictMap: VerdictMap;
+}): ClassifiedRun {
+  const out: ClassifiedCase[] = [];
+  const counts: ClassificationCounts = { correct: 0, incorrect: 0, unsure: 0, total: 0 };
+  for (const c of cases) {
+    const verdict = verdictMap.get(c.case_id);
+    const classification: Classification = verdict ? verdict.verdict : 'unsure';
+    out.push({
+      case_id: c.case_id,
+      submission_identifier: c.submission_identifier,
+      ai_descriptions: [...c.ai_descriptions].sort(),
+      ai_explanation: c.ai_explanation,
+      classification,
+      verdict_source: verdict?.source ?? 'none',
+    });
+    counts[classification] += 1;
+    counts.total += 1;
+  }
+  const lowerBoundScore = counts.total === 0 ? 0 : counts.correct / counts.total;
+  return { cases: out, counts, lowerBoundScore };
+}

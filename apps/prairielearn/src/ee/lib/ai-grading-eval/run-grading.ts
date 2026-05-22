@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import { config } from '../../../lib/config.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -82,7 +83,11 @@ export async function runGrading({
   }
 
   const urlPrefix = `/pl/course_instance/${course_instance.id}/instructor`;
+  const aqPath = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}`;
+  const host = (config.serverCanonicalHost ?? '').replace(/\/$/, '');
+  const aqLink = host ? `${host}${aqPath}` : aqPath;
   job.info(`Starting AI grading on assessment_question_id=${assessment_question.id}`);
+  job.info(`  View live: ${aqLink}`);
 
   const aiGradingJobSequenceId = await aiGrade({
     course,

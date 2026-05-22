@@ -2,10 +2,10 @@ import { type ServerJob } from '../../../lib/server-jobs.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 
 /**
- * Tops up the synthetic course instance's AI grading credit pool so
+ * Tops up the eval course instance's AI grading credit pool so
  * `aiGrade` doesn't bail out on the `total_milli_dollars <= 0` precondition.
  * Without this, AI grading silently grades zero submissions because the
- * synthetic course was just created with an empty credit pool.
+ * eval course was just created with an empty credit pool.
  *
  * Non-transferable so the seed credits can't leak out of the eval course.
  */

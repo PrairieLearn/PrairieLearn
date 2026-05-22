@@ -4,16 +4,13 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { type RubricItem } from '../../../lib/db-types.js';
 import { type ServerJob } from '../../../lib/server-jobs.js';
 import { type AiGradingModelId } from '../ai-grading/ai-grading-models.shared.js';
-import {
-  calculateAiGradingStats,
-  generateAssessmentAiGradingStats,
-} from '../ai-grading/ai-grading-stats.js';
 
 import { type ClassifiedRun } from './classify.js';
 import { type ResolvedTarget } from './resolve-target.js';
+import { type RunSnapshot, SCHEMA_VERSION } from './snapshot.js';
+import { type VerdictEntry } from './verdicts.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -41,18 +38,15 @@ export interface ModelRunSummary {
   totalPromptTokens: number;
   totalCompletionTokens: number;
   durationSeconds: number | null;
-  accuracy: number | null;
-  precision: number | null;
-  recall: number | null;
-  f1: number | null;
-  truePositives: number;
-  trueNegatives: number;
-  falsePositives: number;
-  falseNegatives: number;
   correctCount: number;
   incorrectCount: number;
   unsureCount: number;
-  lowerBoundScore: number;
+  /**
+   * Percentage of submission gradings a human said were correct. Computed as
+   * correct / (correct + incorrect + unsure) — unsure cases count against
+   * the score until a reviewer resolves them.
+   */
+  score: number;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -153,49 +147,6 @@ function renderResourceBlock({
   return [header, timeRow, costRow, tokensRow].join('\n');
 }
 
-function renderConfusionMatrix({
-  tp,
-  fp,
-  fn,
-  tn,
-}: {
-  tp: number;
-  fp: number;
-  fn: number;
-  tn: number;
-}): string {
-  const rowLabelWidth = 18;
-  const colWidth = 17;
-  const header =
-    `${' '.repeat(rowLabelWidth + 2)}` +
-    `${'Human applied'.padEnd(colWidth)}` +
-    'Human did not apply';
-  const aiAppliedRow =
-    `  ${'AI applied'.padEnd(rowLabelWidth)}` + `${String(tp).padEnd(colWidth)}` + `${fp}`;
-  const aiDidNotApplyRow =
-    `  ${'AI did not apply'.padEnd(rowLabelWidth)}` + `${String(fn).padEnd(colWidth)}` + `${tn}`;
-  return [header, aiAppliedRow, aiDidNotApplyRow].join('\n');
-}
-
-function renderClassificationMetrics({
-  accuracy,
-  precision,
-  recall,
-  f1,
-}: {
-  accuracy: number | null;
-  precision: number | null;
-  recall: number | null;
-  f1: number | null;
-}): string {
-  const left = (label: string, value: number | null) =>
-    `${label.padEnd(11)}${formatPercent(value)}`;
-  return [
-    `    ${left('Accuracy', accuracy)}      ${left('Precision', precision)}`,
-    `    ${left('Recall', recall)}      ${left('F1 score', f1)}`,
-  ].join('\n');
-}
-
 function renderTable(headers: string[], rows: string[][], widths: number[]): string[] {
   const headerLine = headers.map((h, i) => h.padEnd(widths[i])).join('');
   const dividerLine = widths.map((w) => '─'.repeat(Math.max(1, w - 1))).join(' ');
@@ -204,43 +155,38 @@ function renderTable(headers: string[], rows: string[][], widths: number[]): str
 }
 
 /**
- * Snapshots stats for a single (eval × model) run. Must be called *before*
- * the next model overwrites the AI grading on each instance question, since
- * `calculateAiGradingStats` / `generateAssessmentAiGradingStats` read the
- * latest grading job per IQ.
+ * Inputs needed to render a single (eval × model) detail block + emit a
+ * `ModelRunSummary`. Decoupled from DB / snapshot loading so both the live
+ * grading path and the verdict-upload recompute path call the same renderer
+ * and produce byte-identical output.
  */
-export async function snapshotModelRunStats({
-  evalId,
-  model,
-  target,
-  rubricItems,
-  aiGradingJobSequenceId,
-  classified,
-  job,
-}: {
+interface ModelRunRenderInputs {
   evalId: string;
   model: AiGradingModelId;
-  target: ResolvedTarget;
-  rubricItems: RubricItem[];
-  aiGradingJobSequenceId: string;
+  deepLink: string | null;
+  cost: CostStats;
+  timing: { duration_seconds: number | null } | null;
   classified: ClassifiedRun;
-  job: ServerJob;
-}): Promise<ModelRunSummary> {
-  const [cost, timing, general, perf] = await Promise.all([
-    collectCostStats(aiGradingJobSequenceId),
-    collectTimingStats(aiGradingJobSequenceId),
-    calculateAiGradingStats(target.assessment_question),
-    generateAssessmentAiGradingStats(target.assessment),
-  ]);
+}
 
-  const total = perf.total;
+function renderModelRunStats({
+  inputs,
+  job,
+}: {
+  inputs: ModelRunRenderInputs;
+  job: ServerJob;
+}): ModelRunSummary {
+  const { evalId, model, deepLink, cost, timing, classified } = inputs;
+
   const submissions = cost.job_count;
   const durationSeconds = timing?.duration_seconds ?? null;
 
   job.info('');
   const header = `${evalId} / ${model}`;
   job.info(`─── ${header} ${'─'.repeat(Math.max(4, 70 - header.length))}`);
-  job.info(`  Question     ${aqDeepLink(target)}`);
+  if (deepLink) {
+    job.info(`  Question     ${deepLink}`);
+  }
   job.info(`  Submissions  ${submissions}`);
   job.info('');
   job.info(
@@ -254,45 +200,12 @@ export async function snapshotModelRunStats({
   );
 
   job.info('');
-  job.info("  Rubric-item agreement (AI matched the human's decision on each item)");
-  const denom = general.submission_rubric_count;
-  const descWidth =
-    rubricItems.length > 0 ? Math.max(...rubricItems.map((i) => i.description.length)) : 0;
-  for (const item of rubricItems) {
-    const disagree = general.rubric_stats[item.id] ?? 0;
-    const agree = denom - disagree;
-    const pct = denom === 0 ? '(n/a)' : `${Math.round((agree / denom) * 100)}% agree`;
-    const ratio = denom === 0 ? '(n/a)' : `${agree} / ${denom}`;
-    job.info(`    ${item.description.padEnd(descWidth)}   ${ratio.padStart(11)}    ${pct}`);
-  }
-
-  job.info('');
-  job.info('  Submission classification (correct = AI selection matches a known-good label)');
+  job.info('  Submission classification (correct = AI grading matched a human-confirmed grading)');
   job.info(
     `    Correct    ${classified.counts.correct}` +
       `    Incorrect  ${classified.counts.incorrect}` +
       `    Unsure     ${classified.counts.unsure}` +
-      `    Lower-bound score  ${formatPercent(classified.lowerBoundScore, 1)}`,
-  );
-
-  job.info('');
-  job.info('  Confusion matrix (rubric-item decisions across all submissions)');
-  job.info(
-    renderConfusionMatrix({
-      tp: total.truePositives,
-      fp: total.falsePositives,
-      fn: total.falseNegatives,
-      tn: total.trueNegatives,
-    }),
-  );
-  job.info('');
-  job.info(
-    renderClassificationMetrics({
-      accuracy: total.accuracy,
-      precision: total.precision,
-      recall: total.recall,
-      f1: total.f1score,
-    }),
+      `    Score  ${formatPercent(classified.lowerBoundScore, 1)}`,
   );
 
   return {
@@ -303,24 +216,107 @@ export async function snapshotModelRunStats({
     totalPromptTokens: cost.total_prompt_tokens,
     totalCompletionTokens: cost.total_completion_tokens,
     durationSeconds,
-    accuracy: total.accuracy,
-    precision: total.precision,
-    recall: total.recall,
-    f1: total.f1score,
-    truePositives: total.truePositives,
-    trueNegatives: total.trueNegatives,
-    falsePositives: total.falsePositives,
-    falseNegatives: total.falseNegatives,
     correctCount: classified.counts.correct,
     incorrectCount: classified.counts.incorrect,
     unsureCount: classified.counts.unsure,
-    lowerBoundScore: classified.lowerBoundScore,
+    score: classified.lowerBoundScore,
   };
 }
 
-function mean(vals: (number | null)[]): number | null {
-  const finite = vals.filter((v): v is number => v != null);
-  return finite.length === 0 ? null : finite.reduce((a, b) => a + b, 0) / finite.length;
+/**
+ * Snapshots stats for a single (eval × model) run. Must be called *before*
+ * the next model overwrites the AI grading on each instance question.
+ *
+ * Returns both the rendered `ModelRunSummary` (used to build the run-wide
+ * tables) and a serializable `RunSnapshot` (persisted to the eval repo so
+ * verdict re-uploads can re-render these stats without re-running grading).
+ */
+export async function snapshotModelRunStats({
+  evalId,
+  model,
+  target,
+  aiGradingJobSequenceId,
+  classified,
+  seedVerdicts,
+  job,
+}: {
+  evalId: string;
+  model: AiGradingModelId;
+  target: ResolvedTarget;
+  aiGradingJobSequenceId: string;
+  classified: ClassifiedRun;
+  seedVerdicts: VerdictEntry[];
+  job: ServerJob;
+}): Promise<{ summary: ModelRunSummary; snapshot: RunSnapshot }> {
+  const [cost, timing] = await Promise.all([
+    collectCostStats(aiGradingJobSequenceId),
+    collectTimingStats(aiGradingJobSequenceId),
+  ]);
+
+  const deepLink = aqDeepLink(target);
+
+  const summary = renderModelRunStats({
+    inputs: { evalId, model, deepLink, cost, timing, classified },
+    job,
+  });
+
+  const snapshot: RunSnapshot = {
+    schema_version: SCHEMA_VERSION,
+    eval_id: evalId,
+    model,
+    ai_job_sequence_id: aiGradingJobSequenceId,
+    timestamp: new Date().toISOString(),
+    deep_link: deepLink,
+    cases: classified.cases.map((c) => ({
+      case_id: c.case_id,
+      submission_identifier: c.submission_identifier,
+      ai_descriptions: c.ai_descriptions,
+      ai_explanation: c.ai_explanation,
+    })),
+    cost,
+    timing: timing
+      ? {
+          start_date: timing.start_date.toISOString(),
+          finish_date: timing.finish_date?.toISOString() ?? null,
+          duration_seconds: timing.duration_seconds,
+        }
+      : null,
+    seed_verdicts: seedVerdicts.map((v) => ({
+      case_id: v.case_id,
+      submission_identifier: v.submission_identifier,
+      rubric_descriptions: v.rubric_descriptions,
+    })),
+  };
+
+  return { summary, snapshot };
+}
+
+/**
+ * Re-renders stats from a persisted snapshot using a freshly-recomputed
+ * `ClassifiedRun` (with the latest verdict map applied). The output goes
+ * through the same renderer used during live grading, so the format is
+ * byte-identical.
+ */
+export function renderModelRunStatsFromSnapshot({
+  snapshot,
+  classified,
+  job,
+}: {
+  snapshot: RunSnapshot;
+  classified: ClassifiedRun;
+  job: ServerJob;
+}): ModelRunSummary {
+  return renderModelRunStats({
+    inputs: {
+      evalId: snapshot.eval_id,
+      model: snapshot.model as AiGradingModelId,
+      deepLink: snapshot.deep_link,
+      cost: snapshot.cost,
+      timing: snapshot.timing,
+      classified,
+    },
+    job,
+  });
 }
 
 function aggregateByModel(summaries: ModelRunSummary[]) {
@@ -334,14 +330,10 @@ function aggregateByModel(summaries: ModelRunSummary[]) {
       submissions: runs.reduce((a, r) => a + r.costJobs, 0),
       totalCost: runs.reduce((a, r) => a + r.totalCostDollars, 0),
       totalDuration: runs.reduce((a, r) => a + (r.durationSeconds ?? 0), 0),
-      accuracy: mean(runs.map((r) => r.accuracy)),
-      precision: mean(runs.map((r) => r.precision)),
-      recall: mean(runs.map((r) => r.recall)),
-      f1: mean(runs.map((r) => r.f1)),
       correctCount,
       incorrectCount,
       unsureCount,
-      lowerBoundScore: classifiedTotal === 0 ? 0 : correctCount / classifiedTotal,
+      score: classifiedTotal === 0 ? 0 : correctCount / classifiedTotal,
     };
   });
 }
@@ -355,23 +347,19 @@ function renderPerEvalModelTable(summaries: ModelRunSummary[]): string[] {
     'Correct',
     'Incorrect',
     'Score',
-    'Acc',
-    'F1',
     'Cost',
     'Cost/sub',
     'Time',
     'Time/sub',
   ];
-  const widths = [26, 9, 11, 9, 9, 9, 11, 11, 11, 11];
+  const widths = [26, 9, 11, 9, 11, 11, 11, 11];
   const rows = summaries.map((s) => {
     const perSubCost = s.costJobs > 0 ? s.totalCostDollars / s.costJobs : 0;
     return [
       s.model,
       String(s.correctCount),
       String(s.incorrectCount + s.unsureCount),
-      formatPercent(s.lowerBoundScore, 1),
-      formatPercent(s.accuracy, 1),
-      s.f1 != null ? s.f1.toFixed(2) : '(n/a)',
+      formatPercent(s.score, 1),
       formatCurrency(s.totalCostDollars),
       formatCurrency(perSubCost),
       formatDuration(s.durationSeconds),
@@ -390,23 +378,19 @@ function renderRunWideModelTable(aggregated: ReturnType<typeof aggregateByModel>
     'Correct',
     'Incorrect',
     'Score',
-    'Acc',
-    'F1',
     'Total cost',
     'Cost/sub',
     'Total time',
     'Time/sub',
   ];
-  const widths = [26, 9, 11, 9, 9, 9, 12, 11, 12, 11];
+  const widths = [26, 9, 11, 9, 12, 11, 12, 11];
   const rows = aggregated.map((a) => {
     const perSubCost = a.submissions > 0 ? a.totalCost / a.submissions : 0;
     return [
       a.model,
       String(a.correctCount),
       String(a.incorrectCount + a.unsureCount),
-      formatPercent(a.lowerBoundScore, 1),
-      formatPercent(a.accuracy, 1),
-      a.f1 != null ? a.f1.toFixed(2) : '(n/a)',
+      formatPercent(a.score, 1),
       formatCurrency(a.totalCost),
       formatCurrency(perSubCost),
       formatDuration(a.totalDuration),
@@ -441,10 +425,8 @@ export function reportRunStats({
 
   job.info('');
   job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
-  job.info('  Note: "Score" = % of gradings the LLM matched a known-correct rubric selection.');
-  job.info(
-    '        "Incorrect" includes unsure cases (treated as incorrect for the lower-bound score).',
-  );
+  job.info('  Note: "Score" = percentage of submission gradings a human said were correct');
+  job.info('        (unsure cases count as incorrect until a reviewer resolves them).');
   for (const [evalId, evalSummaries] of Object.entries(byEval)) {
     job.info('');
     job.info(`  ${evalId}`);

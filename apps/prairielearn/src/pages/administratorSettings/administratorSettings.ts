@@ -132,15 +132,12 @@ router.post(
       }
       const creditMilliDollars = Math.round(creditDollars.data * 1000);
 
-      const generateAnnotationPackets = req.body.generate_annotation_packets === 'on';
-
       const { runAiGradingEval } = await import('../../ee/lib/ai-grading-eval/ai-grading-eval.js');
       const jobSequenceId = await runAiGradingEval({
         repository: config.aiGradingEvalRepository,
         branch: config.aiGradingEvalBranch,
         models: models.data,
         creditMilliDollars,
-        generateAnnotationPackets,
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);

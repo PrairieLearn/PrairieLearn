@@ -229,20 +229,107 @@ export function AdministratorSettings({
                 <h2>AI grading evals</h2>
               </div>
               <div class="card-body">
-                <p>
-                  Sets up assessment questions in a temporary synthetic course and runs AI grading
-                  against them, then aggregates effectiveness, speed, and cost statistics so the
-                  results can be reviewed in the existing AI grading UI. Dev mode only.
+                <p class="mb-3">
+                  Measures, for each selected model, the
+                  <strong>percentage of submission gradings a human said were correct</strong>.
+                  Unsure cases count as incorrect until a reviewer resolves them.
                 </p>
-                <div class="alert alert-warning" role="alert">
-                  <strong>Do not run concurrently:</strong> runs against the same eval repository
-                  share a single local checkout and synthetic course, so overlapping runs will
-                  produce mixed or stale results.
+                <div class="accordion mb-3" id="ai-grading-eval-explanation">
+                  <div class="accordion-item">
+                    <h3 class="accordion-header">
+                      <button
+                        class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#ai-grading-eval-explanation-body"
+                        aria-expanded="false"
+                        aria-controls="ai-grading-eval-explanation-body"
+                      >
+                        More details
+                      </button>
+                    </h3>
+                    <div id="ai-grading-eval-explanation-body" class="accordion-collapse collapse">
+                      <div class="accordion-body">
+                        <p class="mb-1"><strong>Per-submission grading sets</strong></p>
+                        <ul class="mb-3">
+                          <li>
+                            Each submission has a <em>correct set</em> of rubric-item selections
+                            that are known to be valid gradings for it, and an
+                            <em>incorrect set</em> of selections known to be invalid.
+                          </li>
+                          <li>
+                            These sets are properties of the submission itself rather than of any
+                            particular grader, so all evaluated models are scored against the same
+                            sets.
+                          </li>
+                          <li>
+                            The sets are reconstructed at the start of every run by seeding from the
+                            TA grading in <code>submissions.csv</code> and replaying every CSV in
+                            <code>verdicts/</code>.
+                          </li>
+                        </ul>
+                        <p class="mb-1"><strong>Evaluation loop</strong></p>
+                        <ol class="mb-3">
+                          <li>Each selected model grades every submission.</li>
+                          <li>
+                            Each AI grading is compared to the submission's sets: a match in the
+                            correct set is labeled <em>correct</em>, a match in the incorrect set is
+                            labeled <em>incorrect</em>, and an unmatched grading is labeled
+                            <em>unsure</em>.
+                          </li>
+                          <li>
+                            Unsure gradings are written to an HTML form in your system temp
+                            directory. The form displays each question, submission, and AI grading,
+                            and asks the reviewer whether the grading is correct. Upon completing
+                            the form, the reviewer exports a CSV file with all their verdicts.
+                          </li>
+                          <li>
+                            Upload the verdicts CSV under <strong>Upload verdicts CSVs</strong>
+                            below. Statistics are recomputed immediately, and the new verdicts are
+                            folded into the correct and incorrect sets for every subsequent run.
+                          </li>
+                        </ol>
+                        <p class="mb-1"><strong>Repeating runs</strong></p>
+                        <ul class="mb-3">
+                          <li>
+                            Each additional run grows the shared sets, reducing the human annotation
+                            needed by future runs (regardless of which model produced the run).
+                          </li>
+                          <li>
+                            Re-running the same model also reveals its variability. A model whose
+                            unsure count shrinks across runs is producing the same rubric-item
+                            selections each time and is comparatively stable; one whose unsure count
+                            persists is producing new selections each time and is comparatively
+                            variable.
+                          </li>
+                        </ul>
+                        <div class="alert alert-warning mb-0" role="alert">
+                          <strong>Do not run concurrently:</strong> grading runs and verdict uploads
+                          share a single local checkout of the eval repository and a single eval
+                          course, so overlapping operations will fail or produce stale results.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p>Configure in <code>config.json</code>:</p>
-                <ul>
-                  <li><code>aiGradingEvalRepository</code></li>
-                  <li><code>aiGradingEvalBranch</code></li>
+                <p class="mb-1">
+                  <strong>Required in <code>config.json</code>:</strong>
+                </p>
+                <ul class="mb-3">
+                  <li>
+                    <code>aiGradingEvalRepository</code> —
+                    ${config.aiGradingEvalRepository
+                      ? html`<code>${config.aiGradingEvalRepository}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                  </li>
+                  <li>
+                    <code>aiGradingEvalBranch</code> —
+                    ${config.aiGradingEvalBranch
+                      ? html`<code>${config.aiGradingEvalBranch}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                  </li>
                 </ul>
                 ${config.aiGradingEvalRepository
                   ? html`
@@ -306,26 +393,7 @@ export function AdministratorSettings({
                             required
                           />
                           <div class="form-text">
-                            Non-transferable credit added to the synthetic course instance.
-                          </div>
-                        </div>
-                        <div class="form-check mb-3">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            name="generate_annotation_packets"
-                            id="ai-grading-eval-generate-packets"
-                            value="on"
-                            checked
-                          />
-                          <label class="form-check-label" for="ai-grading-eval-generate-packets">
-                            Generate annotation packets for unsure cases
-                          </label>
-                          <div class="form-text">
-                            Writes a self-contained HTML packet per eval into the system temp
-                            directory. Send it to annotators; commit the exported verdict CSVs to
-                            <code>&lt;eval&gt;/verdicts/*.csv</code> in the eval repo and rerun to
-                            fold them in.
+                            Non-transferable credit added to the eval course instance.
                           </div>
                         </div>
                         <button

@@ -9,7 +9,9 @@ import { type User } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 
 import { cloneEvalRepo } from './clone-eval-repo.js';
+import { commitAndPushEvalRepo } from './git-commit.js';
 import { loadManifest } from './manifest.js';
+import { recomputeStatsFromSnapshots } from './recompute-from-snapshots.js';
 
 interface UploadedFile {
   originalname: string;
@@ -73,13 +75,20 @@ export async function uploadVerdictCsvs({
       `Summary: ${writtenRelPaths.length} written, ${duplicates} duplicate(s) skipped, ${rejected} rejected.`,
     );
 
-    if (writtenRelPaths.length === 0) {
-      job.info('No new files to commit. Done.');
-      return;
+    if (writtenRelPaths.length > 0) {
+      await commitAndPushEvalRepo({
+        cwd: evalsDir,
+        branch,
+        message: `Add ${writtenRelPaths.length} verdicts file(s)\n\n${writtenRelPaths.join('\n')}`,
+        job,
+      });
+    } else {
+      job.info('No new verdict files to commit.');
     }
 
-    await commitAndPush({ evalsDir, branch, writtenRelPaths, job });
-    job.info('All steps complete.');
+    job.info('');
+    job.info('Recomputing stats from persisted run snapshots with the latest verdicts...');
+    await recomputeStatsFromSnapshots({ evals, job });
   });
 
   return serverJob.jobSequenceId;
@@ -151,57 +160,4 @@ async function processOneFile(
   await fs.writeFile(targetFile, file.buffer);
   job.info(`${file.originalname} → ${path.relative(evalsDir, targetFile)}`);
   return 'written';
-}
-
-async function commitAndPush({
-  evalsDir,
-  branch,
-  writtenRelPaths,
-  job,
-}: {
-  evalsDir: string;
-  branch?: string | null;
-  writtenRelPaths: string[];
-  job: {
-    info: (s: string) => void;
-    warn: (s: string) => void;
-    fail: (s: string) => never;
-    exec: (cmd: string, args: string[], options?: any) => Promise<unknown>;
-  };
-}): Promise<void> {
-  const gitEnv = { ...process.env };
-  if (config.gitSshCommand != null) {
-    gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-  }
-  const gitOptions = { cwd: evalsDir, env: gitEnv };
-
-  await job.exec(
-    'git',
-    [
-      '-c',
-      'user.email=ai-grading-eval@prairielearn.local',
-      '-c',
-      'user.name=AI Grading Eval',
-      'add',
-      '.',
-    ],
-    gitOptions,
-  );
-  await job.exec(
-    'git',
-    [
-      '-c',
-      'user.email=ai-grading-eval@prairielearn.local',
-      '-c',
-      'user.name=AI Grading Eval',
-      'commit',
-      '-m',
-      `Add ${writtenRelPaths.length} verdicts file(s)\n\n${writtenRelPaths.join('\n')}`,
-    ],
-    gitOptions,
-  );
-
-  const pushArgs = ['push'];
-  if (branch) pushArgs.push('origin', branch);
-  await job.exec('git', pushArgs, gitOptions);
 }
