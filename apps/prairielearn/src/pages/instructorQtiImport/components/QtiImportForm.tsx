@@ -570,6 +570,13 @@ export function QtiImportForm({
     labelParts.push(`${includedQuestionCount} question${includedQuestionCount !== 1 ? 's' : ''}`);
   }
   const importButtonLabel = `Import ${labelParts.join(' and ')}`;
+  const indexedResults = results.map((result, index) => ({ result, index }));
+  const assessmentResults = indexedResults.filter(
+    ({ result }) => result.sourceType !== 'question-bank',
+  );
+  const questionBankResults = indexedResults.filter(
+    ({ result }) => result.sourceType === 'question-bank',
+  );
 
   const resetAll = () => {
     setStep('upload');
@@ -589,6 +596,120 @@ export function QtiImportForm({
     setSupplementalSuccessMessage(null);
     setStep('review');
   };
+
+  const renderResultCard = ({
+    result,
+    index: i,
+  }: {
+    result: SerializedConversionResult;
+    index: number;
+  }) => (
+    <Card key={result.assessment.directoryName} className="mb-3">
+      <Card.Header className="d-flex align-items-center gap-2">
+        <Form.Check
+          id={`include-${i}`}
+          checked={overrides[i].included}
+          disabled={result.questions.length === 0}
+          label=""
+          aria-label={`Include ${result.assessmentTitle}`}
+          onChange={(e) => updateOverride(i, { included: e.target.checked })}
+        />
+        <div className="flex-grow-1">
+          <strong>{result.assessmentTitle}</strong>
+          <span className="text-muted ms-2">
+            ({result.questions.length} question{result.questions.length !== 1 ? 's' : ''})
+          </span>
+          {result.sourceType === 'question-bank' && (
+            <span className="badge color-blue3 ms-2">Question bank</span>
+          )}
+        </div>
+      </Card.Header>
+      {result.questions.length === 0 && (
+        <Card.Body>
+          <div className="text-muted d-flex align-items-center gap-2">
+            <i className="bi bi-info-circle" aria-hidden="true" />
+            This assessment doesn't contain any questions
+          </div>
+        </Card.Body>
+      )}
+      {overrides[i].included && result.questions.length > 0 && (
+        <Card.Body>
+          {result.sourceType !== 'question-bank' && (
+            <div className="row g-3 mb-3">
+              <div className="col-md-6">
+                <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
+                <Form.Control
+                  id={`title-${i}`}
+                  type="text"
+                  value={overrides[i].title}
+                  onChange={(e) => updateOverride(i, { title: e.target.value })}
+                />
+              </div>
+              <div className="col-md-2">
+                <Form.Label htmlFor={`type-${i}`}>Type</Form.Label>
+                <Form.Select
+                  id={`type-${i}`}
+                  value={overrides[i].type}
+                  onChange={(e) =>
+                    updateOverride(i, {
+                      type: e.target.value as 'Homework' | 'Exam',
+                    })
+                  }
+                >
+                  <option value="Homework">Homework</option>
+                  <option value="Exam">Exam</option>
+                </Form.Select>
+              </div>
+              <div className="col-md-2">
+                <Form.Label htmlFor={`set-${i}`}>Set</Form.Label>
+                <Form.Select
+                  id={`set-${i}`}
+                  value={overrides[i].set}
+                  onChange={(e) => updateOverride(i, { set: e.target.value })}
+                >
+                  {assessmentSetNames.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <div className="col-md-2">
+                <Form.Label htmlFor={`number-${i}`}>Number</Form.Label>
+                <Form.Control
+                  id={`number-${i}`}
+                  type="text"
+                  value={overrides[i].number}
+                  onChange={(e) => updateOverride(i, { number: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
+
+          <AssessmentQuestionsSection
+            questions={result.questions}
+            questionOverrides={questionOverrides}
+            existingDirs={existingDirs}
+            expandedQuestions={expandedQuestions}
+            onToggleExpand={toggleExpandedQuestion}
+            onExpandAll={(dirNames) =>
+              setExpandedQuestions((prev) => new Set([...prev, ...dirNames]))
+            }
+            onCollapseAll={(dirNames) =>
+              setExpandedQuestions((prev) => {
+                const next = new Set(prev);
+                for (const d of dirNames) next.delete(d);
+                return next;
+              })
+            }
+            onUpdateOverride={updateQuestionOverride}
+          />
+        </Card.Body>
+      )}
+    </Card>
+  );
 
   return (
     <Card className="mb-4">
@@ -648,114 +769,33 @@ export function QtiImportForm({
               PrairieLearn course.
             </p>
 
-            {results.map((result, i) => (
-              <Card key={result.assessment.directoryName} className="mb-3">
-                <Card.Header className="d-flex align-items-center gap-2">
-                  <Form.Check
-                    id={`include-${i}`}
-                    checked={overrides[i].included}
-                    disabled={result.questions.length === 0}
-                    label=""
-                    aria-label={`Include ${result.assessmentTitle}`}
-                    onChange={(e) => updateOverride(i, { included: e.target.checked })}
-                  />
-                  <div className="flex-grow-1">
-                    <strong>{result.assessmentTitle}</strong>
-                    <span className="text-muted ms-2">
-                      ({result.questions.length} question
-                      {result.questions.length !== 1 ? 's' : ''})
-                    </span>
-                    {result.sourceType === 'question-bank' && (
-                      <span className="badge color-blue3 ms-2">Question bank</span>
-                    )}
-                  </div>
-                </Card.Header>
-                {result.questions.length === 0 && (
-                  <Card.Body>
-                    <div className="text-muted d-flex align-items-center gap-2">
-                      <i className="bi bi-info-circle" aria-hidden="true" />
-                      This assessment doesn't contain any questions
-                    </div>
-                  </Card.Body>
-                )}
-                {overrides[i].included && result.questions.length > 0 && (
-                  <Card.Body>
-                    {result.sourceType !== 'question-bank' && (
-                      <div className="row g-3 mb-3">
-                        <div className="col-md-6">
-                          <Form.Label htmlFor={`title-${i}`}>Title</Form.Label>
-                          <Form.Control
-                            id={`title-${i}`}
-                            type="text"
-                            value={overrides[i].title}
-                            onChange={(e) => updateOverride(i, { title: e.target.value })}
-                          />
-                        </div>
-                        <div className="col-md-2">
-                          <Form.Label htmlFor={`type-${i}`}>Type</Form.Label>
-                          <Form.Select
-                            id={`type-${i}`}
-                            value={overrides[i].type}
-                            onChange={(e) =>
-                              updateOverride(i, {
-                                type: e.target.value as 'Homework' | 'Exam',
-                              })
-                            }
-                          >
-                            <option value="Homework">Homework</option>
-                            <option value="Exam">Exam</option>
-                          </Form.Select>
-                        </div>
-                        <div className="col-md-2">
-                          <Form.Label htmlFor={`set-${i}`}>Set</Form.Label>
-                          <Form.Select
-                            id={`set-${i}`}
-                            value={overrides[i].set}
-                            onChange={(e) => updateOverride(i, { set: e.target.value })}
-                          >
-                            {assessmentSetNames.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        </div>
-                        <div className="col-md-2">
-                          <Form.Label htmlFor={`number-${i}`}>Number</Form.Label>
-                          <Form.Control
-                            id={`number-${i}`}
-                            type="text"
-                            value={overrides[i].number}
-                            onChange={(e) => updateOverride(i, { number: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    )}
+            {assessmentResults.length > 0 && (
+              <section className="mb-4" aria-labelledby="qti-import-assessments-heading">
+                <h2 id="qti-import-assessments-heading" className="h5 mb-1">
+                  Assessments
+                </h2>
+                <p className="text-muted mb-3">
+                  Assessments are imported to PrairieLearn with their questions and basic quiz
+                  structure. After import, you can edit their settings, adjust question order and
+                  points, and assign them like any other assessment.
+                </p>
+                {assessmentResults.map(renderResultCard)}
+              </section>
+            )}
 
-                    <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
-
-                    <AssessmentQuestionsSection
-                      questions={result.questions}
-                      questionOverrides={questionOverrides}
-                      existingDirs={existingDirs}
-                      expandedQuestions={expandedQuestions}
-                      onToggleExpand={toggleExpandedQuestion}
-                      onExpandAll={(dirNames) =>
-                        setExpandedQuestions((prev) => new Set([...prev, ...dirNames]))
-                      }
-                      onCollapseAll={(dirNames) =>
-                        setExpandedQuestions((prev) => {
-                          const next = new Set(prev);
-                          for (const d of dirNames) next.delete(d);
-                          return next;
-                        })
-                      }
-                      onUpdateOverride={updateQuestionOverride}
-                    />
-                  </Card.Body>
-                )}
-              </Card>
-            ))}
+            {questionBankResults.length > 0 && (
+              <section className="mb-4" aria-labelledby="qti-import-question-banks-heading">
+                <h2 id="qti-import-question-banks-heading" className="h5 mb-1">
+                  Question banks
+                </h2>
+                <p className="text-muted mb-3">
+                  Question banks are imported as a set of PrairieLearn questions in your course. You
+                  can add them to existing assessments or use them in any new assessments you
+                  create.
+                </p>
+                {questionBankResults.map(renderResultCard)}
+              </section>
+            )}
 
             <div className="d-flex gap-2">
               <Button variant="outline-secondary" onClick={resetAll}>
