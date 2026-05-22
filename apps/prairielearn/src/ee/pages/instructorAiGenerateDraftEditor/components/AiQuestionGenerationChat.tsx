@@ -494,7 +494,7 @@ export function AiQuestionGenerationChat({
   refreshQuestionPreview,
   onGeneratingChange,
   onGenerationComplete,
-  hasUnsavedChanges,
+  getHasUnsavedChanges,
   discardUnsavedChanges,
   isQuestionEmpty,
 }: {
@@ -506,7 +506,7 @@ export function AiQuestionGenerationChat({
   refreshQuestionPreview: () => void;
   onGeneratingChange?: (isGenerating: boolean) => void;
   onGenerationComplete?: () => void;
-  hasUnsavedChanges: boolean;
+  getHasUnsavedChanges: () => boolean;
   discardUnsavedChanges: () => void;
   isQuestionEmpty: boolean;
 }) {
@@ -689,7 +689,7 @@ export function AiQuestionGenerationChat({
             }
             onChange={setPromptInput}
             onSubmit={(text) => {
-              if (hasUnsavedChanges) {
+              if (getHasUnsavedChanges()) {
                 setShowUnsavedChangesModal(true);
               } else {
                 void sendMessage({ text });
