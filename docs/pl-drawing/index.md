@@ -6,8 +6,6 @@ Note that this element does not support freehand drawings of lines/curves. For m
 
 ## Elements to set up a grading canvas
 
-### `pl-drawing-answer` element
-
 The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
 **Sample element**
