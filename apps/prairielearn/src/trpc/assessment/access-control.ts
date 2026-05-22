@@ -192,6 +192,8 @@ const saveAllRules = t.procedure
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
+      // Omitted enrollmentRules leave student-specific overrides unchanged;
+      // an empty array explicitly removes them.
       enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
       origHash: z.string().nullable(),
     }),

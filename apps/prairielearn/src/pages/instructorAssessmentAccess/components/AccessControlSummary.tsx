@@ -171,6 +171,7 @@ export function AccessControlSummary({
   ptHost,
   canEditAccessSettings,
   canEditEnrollmentRules,
+  canFetchPrairieTestMetadata,
   readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
@@ -193,6 +194,7 @@ export function AccessControlSummary({
   ptHost: string;
   canEditAccessSettings: boolean;
   canEditEnrollmentRules: boolean;
+  canFetchPrairieTestMetadata: boolean;
   readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }) {
@@ -283,7 +285,7 @@ export function AccessControlSummary({
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
-          canFetchPrairieTestMetadata={canEditAccessSettings}
+          canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
         />
       </section>
 

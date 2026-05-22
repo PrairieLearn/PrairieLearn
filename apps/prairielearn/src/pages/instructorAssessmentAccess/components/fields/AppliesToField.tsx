@@ -31,10 +31,12 @@ export function AppliesToField({
   const ruleEditable = useAccessControlRuleEditable();
   const showStudentLabelOnlyHint = canEditAccessSettings && !canEditEnrollmentRules;
 
-  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+  const { targetType, enrollments, studentLabels } = useWatch<
+    AccessControlFormData,
+    `overrides.${number}.appliesTo`
+  >({
     name: `${namePrefix}.appliesTo`,
   });
-  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const { data: allLabels } = useQuery({
     ...trpc.accessControl.studentLabels.queryOptions(),

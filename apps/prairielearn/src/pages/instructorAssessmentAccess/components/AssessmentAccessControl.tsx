@@ -54,6 +54,8 @@ function AssessmentAccessControlInner({
   const canEditAccessSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
   const canEditEnrollmentRules =
     canEditAccessSettings && permissions.hasCourseInstancePermissionEdit;
+  const canFetchPrairieTestMetadata =
+    permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionView;
   const readOnlyMessage = run(() => {
     if (permissions.isExampleCourse) {
       return 'Editing access settings is not available for the example course.';
@@ -139,6 +141,7 @@ function AssessmentAccessControlInner({
         alert={saveAlert}
         canEditAccessSettings={canEditAccessSettings}
         canEditEnrollmentRules={canEditEnrollmentRules}
+        canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
         readOnlyMessage={readOnlyMessage}
         hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         onSubmit={handleFormSubmit}

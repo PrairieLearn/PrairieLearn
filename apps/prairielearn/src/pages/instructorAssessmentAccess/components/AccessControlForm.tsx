@@ -47,6 +47,7 @@ export function AccessControlForm({
   alert,
   canEditAccessSettings,
   canEditEnrollmentRules,
+  canFetchPrairieTestMetadata,
   readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
@@ -60,6 +61,7 @@ export function AccessControlForm({
   alert?: StickySaveBarAlert | null;
   canEditAccessSettings: boolean;
   canEditEnrollmentRules: boolean;
+  canFetchPrairieTestMetadata: boolean;
   readOnlyMessage: string | null;
   hiddenEnrollmentRuleCount: number;
 }) {
@@ -366,6 +368,7 @@ export function AccessControlForm({
                     ptHost={ptHost}
                     canEditAccessSettings={canEditAccessSettings}
                     canEditEnrollmentRules={canEditEnrollmentRules}
+                    canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
                     readOnlyMessage={readOnlyMessage}
                     hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     onAddOverride={addOverride}

@@ -1252,7 +1252,6 @@ export function OverrideRuleSummaryCard({
   isActive?: boolean;
   canEdit?: boolean;
 }) {
-  const editLabel = canEdit ? 'Edit' : 'View';
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
   const studentLabels =
@@ -1298,12 +1297,12 @@ export function OverrideRuleSummaryCard({
             <Button
               variant="outline-primary"
               size="sm"
-              aria-label={editLabel}
+              aria-label={canEdit ? 'Edit' : 'View'}
               className="d-inline-flex align-items-center"
               onClick={onEdit}
             >
               <i className={canEdit ? 'bi bi-pencil' : 'bi bi-eye'} aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">{editLabel}</span>
+              <span className="toolbar-btn-label ms-1">{canEdit ? 'Edit' : 'View'}</span>
             </Button>
           )}
           {onRemove && (
