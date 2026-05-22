@@ -22,9 +22,11 @@ import { SyncProblemButton } from './SyncProblemButton.js';
 function DraftQuestionDirectoryActions({
   data,
   actions,
+  disableActions,
 }: {
   data: DraftQuestionFileBrowserData;
   actions: DraftQuestionFileBrowserActions;
+  disableActions: boolean;
 }) {
   return (
     <div className="d-flex flex-wrap gap-2">
@@ -35,6 +37,7 @@ function DraftQuestionDirectoryActions({
           label={`Add new ${d.label.toLowerCase()} file`}
           iconClass="fa fa-plus"
           className="btn btn-sm btn-light"
+          disabled={disableActions}
           infoDirectory={d.directory}
           maxFileSizeBytes={data.maxFileSizeBytes}
           targetFilePath={null}
@@ -48,6 +51,7 @@ function DraftQuestionDirectoryActions({
         label="Add new file"
         iconClass="fa fa-plus"
         className="btn btn-sm btn-light"
+        disabled={disableActions}
         maxFileSizeBytes={data.maxFileSizeBytes}
         targetFilePath={null}
         directory={data.selectedDirectory}
@@ -63,12 +67,14 @@ function DraftQuestionFileRow({
   file,
   actions,
   search,
+  disableActions,
   onSelectFile,
 }: {
   data: DraftQuestionFileBrowserData;
   file: DraftQuestionFileBrowserFile;
   actions: DraftQuestionFileBrowserActions;
   search: string;
+  disableActions: boolean;
   onSelectFile: (filePath: string) => void;
 }) {
   const fileUrl = getEditorUrlWithSelectedFile({
@@ -78,9 +84,9 @@ function DraftQuestionFileRow({
   });
   const isDisabled = file.disabledReason != null;
   const canEdit = file.canEdit && !isDisabled;
-  const canUpload = file.canUpload && !isDisabled;
-  const canRename = file.canRename && !isDisabled;
-  const canDelete = file.canDelete && !isDisabled;
+  const canUpload = file.canUpload && !isDisabled && !disableActions;
+  const canRename = file.canRename && !isDisabled && !disableActions;
+  const canDelete = file.canDelete && !isDisabled && !disableActions;
 
   const selectFile = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -204,6 +210,7 @@ export function DraftQuestionFileBrowser({
   data,
   actions,
   search,
+  disableActions = false,
   onSelectFile,
   onSelectDirectory,
 }: {
@@ -211,6 +218,8 @@ export function DraftQuestionFileBrowser({
   actions: DraftQuestionFileBrowserActions;
   /** Current page query string, whose unrelated params the file links preserve. */
   search: string;
+  /** Disables the upload/rename/delete actions (e.g. while a generation runs). */
+  disableActions?: boolean;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
 }) {
@@ -247,7 +256,11 @@ export function DraftQuestionFileBrowser({
       </nav>
       {data.hasEditPermission ? (
         <div className="d-flex justify-content-end mb-2">
-          <DraftQuestionDirectoryActions data={data} actions={actions} />
+          <DraftQuestionDirectoryActions
+            data={data}
+            actions={actions}
+            disableActions={disableActions}
+          />
         </div>
       ) : null}
       <div className="table-responsive">
@@ -266,6 +279,7 @@ export function DraftQuestionFileBrowser({
                 file={file}
                 actions={actions}
                 search={search}
+                disableActions={disableActions}
                 onSelectFile={onSelectFile}
               />
             ))}
