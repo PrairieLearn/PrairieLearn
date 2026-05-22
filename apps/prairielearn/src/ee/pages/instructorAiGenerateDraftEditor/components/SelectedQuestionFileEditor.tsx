@@ -5,7 +5,7 @@ import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import { getAppError } from '../../../../lib/client/errors.js';
 import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.js';
-import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
 

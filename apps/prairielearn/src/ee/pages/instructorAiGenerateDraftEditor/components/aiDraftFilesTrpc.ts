@@ -2,7 +2,7 @@ import { createTRPCClient, httpLink } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
 import superjson from 'superjson';
 
-import type { AiDraftFilesTrpcRouter } from '../../../../trpc/course/ai-draft-files.js';
+import type { AiDraftFilesTrpcRouter } from '../../../../trpc/shared/ai-draft-files.js';
 
 export function createAiDraftFilesTrpcClient({
   csrfToken,

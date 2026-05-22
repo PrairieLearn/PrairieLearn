@@ -20,6 +20,7 @@ import { config } from './config.js';
 import { getCourseFilesClient } from './course-files-api.js';
 import type { Course, Question, User } from './db-types.js';
 import { readEditableTextFile } from './editableFile.js';
+import { type Editor, FileDeleteEditor, FileRenameEditor, FileUploadEditor } from './editors.js';
 import { getPaths } from './instructorFiles.js';
 import { encodePath } from './uri-util.js';
 
@@ -396,4 +397,138 @@ export async function saveDraftQuestionFile({
   }
 
   return { status: 'ok' as const };
+}
+
+export type DraftQuestionFileEditResult =
+  | { status: 'ok' }
+  | { status: 'error'; editErrorUrl: string };
+
+interface DraftQuestionFileEditorLocals {
+  course: Course;
+  question: Question;
+  user: User;
+  authn_user: User;
+  authz_data: {
+    has_course_permission_edit: boolean;
+  };
+  urlPrefix: string;
+}
+
+function getQuestionRootPath(
+  course: Pick<Course, 'path'>,
+  question: Pick<Question, 'qid'>,
+): string {
+  if (!question.qid) {
+    throw new error.HttpStatusError(400, 'Question does not have a QID');
+  }
+  return path.resolve(course.path, 'questions', question.qid);
+}
+
+/**
+ * Runs a file `Editor` for a draft question and translates a failed server job
+ * into an `edit_error` URL, mirroring the result shape of `saveDraftQuestionFile`.
+ */
+async function runDraftQuestionFileEditor(
+  editor: Editor,
+  urlPrefix: string,
+): Promise<DraftQuestionFileEditResult> {
+  const serverJob = await editor.prepareServerJob();
+  try {
+    await editor.executeWithServerJob(serverJob);
+  } catch {
+    return {
+      status: 'error',
+      editErrorUrl: `${urlPrefix}/edit_error/${serverJob.jobSequenceId}`,
+    };
+  }
+  return { status: 'ok' };
+}
+
+export async function deleteDraftQuestionFile({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  filePath,
+}: DraftQuestionFileEditorLocals & {
+  /** Path of the file to delete, relative to the question root. */
+  filePath: string;
+}): Promise<DraftQuestionFileEditResult> {
+  const questionRootPath = getQuestionRootPath(course, question);
+  const fullPath = path.resolve(questionRootPath, normalizeQuestionFilePath(filePath));
+  assertCanModifyDraftQuestionFilePath({ course, question, fullPath });
+
+  return await runDraftQuestionFileEditor(
+    new FileDeleteEditor({
+      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      container: { rootPath: questionRootPath, invalidRootPaths: [] },
+      deletePath: fullPath,
+    }),
+    urlPrefix,
+  );
+}
+
+export async function renameDraftQuestionFile({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  oldFilePath,
+  newFilePath,
+}: DraftQuestionFileEditorLocals & {
+  /** Current path of the file, relative to the question root. */
+  oldFilePath: string;
+  /** Requested path of the file, relative to the question root. */
+  newFilePath: string;
+}): Promise<DraftQuestionFileEditResult> {
+  const questionRootPath = getQuestionRootPath(course, question);
+  const oldPath = path.resolve(questionRootPath, normalizeQuestionFilePath(oldFilePath));
+  const newPath = path.resolve(questionRootPath, normalizeQuestionFilePath(newFilePath));
+  assertCanModifyDraftQuestionFilePath({ course, question, fullPath: oldPath });
+  assertCanModifyDraftQuestionFilePath({ course, question, fullPath: newPath });
+
+  if (oldPath === newPath) return { status: 'ok' };
+
+  return await runDraftQuestionFileEditor(
+    new FileRenameEditor({
+      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      container: { rootPath: questionRootPath, invalidRootPaths: [] },
+      oldPath,
+      newPath,
+    }),
+    urlPrefix,
+  );
+}
+
+export async function uploadDraftQuestionFile({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  urlPrefix,
+  filePath,
+  fileContents,
+}: DraftQuestionFileEditorLocals & {
+  /** Path to write the uploaded file to, relative to the question root. */
+  filePath: string;
+  fileContents: Buffer;
+}): Promise<DraftQuestionFileEditResult> {
+  const questionRootPath = getQuestionRootPath(course, question);
+  const fullPath = path.resolve(questionRootPath, normalizeQuestionFilePath(filePath));
+  assertCanModifyDraftQuestionFilePath({ course, question, fullPath });
+
+  return await runDraftQuestionFileEditor(
+    new FileUploadEditor({
+      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      container: { rootPath: questionRootPath, invalidRootPaths: [] },
+      filePath: fullPath,
+      fileContents,
+    }),
+    urlPrefix,
+  );
 }
