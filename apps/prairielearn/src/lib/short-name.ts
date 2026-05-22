@@ -28,11 +28,11 @@ export const FILE_NAME_PATTERN =
   /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
 
 /**
- * Help text describing how to name a file, covering the common cases of
- * {@link FILE_NAME_PATTERN}. Kept beside the pattern so the guidance and the
- * validation rule stay in sync.
+ * Help text describing how to name a file. Internal building block for
+ * {@link FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR}; see
+ * {@link QUESTION_FILE_NAME_PATTERN_DESCRIPTION} for the question-scoped variant.
  */
-export const FILE_NAME_PATTERN_DESCRIPTION =
+const FILE_NAME_PATTERN_DESCRIPTION =
   'Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. To move the file to a different directory, specify a relative path delimited by forward slashes.';
 
 /**
@@ -40,6 +40,25 @@ export const FILE_NAME_PATTERN_DESCRIPTION =
  * can move a file anywhere in the course tree.
  */
 export const FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR = `${FILE_NAME_PATTERN_DESCRIPTION} Use ".." to refer to the parent directory.`;
+
+/**
+ * Like {@link FILE_NAME_PATTERN}, but without the `..` parent-directory segment.
+ * Used by the draft question file editor, where files must stay inside the
+ * question directory: the server's `ModifiableQuestionFilePathSchema` rejects a
+ * path containing `..`, so the client form must reject it too. Anchored for use
+ * with `.test()`.
+ */
+export const QUESTION_FILE_NAME_PATTERN =
+  /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*(?:\.[A-Za-z0-9_-]+)?$/;
+
+/**
+ * Help text for {@link QUESTION_FILE_NAME_PATTERN}. Unlike
+ * {@link FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR}, it describes placing a
+ * file in a subdirectory rather than moving it elsewhere, since a draft question
+ * file cannot escape the question directory.
+ */
+export const QUESTION_FILE_NAME_PATTERN_DESCRIPTION =
+  'Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. To place the file in a subdirectory, specify a relative path delimited by forward slashes.';
 
 interface ShortNameValidationSuccess {
   valid: true;

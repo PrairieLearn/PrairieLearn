@@ -113,16 +113,33 @@ test.describe('AI draft file editor', () => {
     ).toBeDisabled();
   });
 
-  // Runs last: it deletes the shared question's `server.py`.
+  test('falls back to the question root when the directory parameter is stale', async ({
+    page,
+  }) => {
+    // A `?dir=` pointing at a directory that no longer exists (e.g. a stale
+    // bookmark) loads the question root instead of failing the editor.
+    await page.goto(`${editorUrl}?tab=all-files&dir=does-not-exist`);
+    await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
+    await expect(page.getByRole('row', { name: /server\.py/ })).toBeVisible();
+
+    // A `?dir=` pointing at a file rather than a directory falls back the same way.
+    await page.goto(`${editorUrl}?tab=all-files&dir=server.py`);
+    await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
+    await expect(page.getByRole('row', { name: /server\.py/ })).toBeVisible();
+  });
+
+  // Runs last: it deletes and then recreates the shared question's `server.py`.
   test('reports a deleted file as a recoverable conflict, not a sync failure', async ({
     page,
     testCoursePath,
   }) => {
+    const serverPyPath = path.join(testCoursePath, 'questions', questionQid, 'server.py');
+
     await page.goto(`${editorUrl}?tab=all-files&file=server.py`);
     await setAceEditorContentAt(selectedFileEditor(page), '# edited after the file was deleted\n');
 
     // Another writer deletes the file after the editor was opened.
-    await fs.rm(path.join(testCoursePath, 'questions', questionQid, 'server.py'));
+    await fs.rm(serverPyPath);
 
     const editorStatus = page.getByTestId('selected-file-editor');
     await editorStatus.getByRole('button', { name: 'Save edits' }).click();
@@ -133,6 +150,10 @@ test.describe('AI draft file editor', () => {
       editorStatus.getByText('This file was deleted since you opened it.'),
     ).toBeVisible();
     await expect(editorStatus.getByRole('button', { name: 'Reload file' })).toBeVisible();
-    await expect(editorStatus.getByRole('button', { name: 'overwrite anyway' })).toBeVisible();
+
+    // Overwriting recreates the deleted file with the editor's contents.
+    await editorStatus.getByRole('button', { name: 'overwrite anyway' }).click();
+    await expect(editorStatus.getByText('Saved.')).toBeVisible();
+    expect(await fs.readFile(serverPyPath, 'utf8')).toBe('# edited after the file was deleted\n');
   });
 });

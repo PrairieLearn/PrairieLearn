@@ -137,9 +137,11 @@ test.describe('Instructor file editor', () => {
     await expect(dialog.getByText('UUID change')).toBeVisible();
     await dialog.getByRole('button', { name: 'Confirm save' }).click();
 
-    // Confirming saves the file with the original UUID restored.
     await expect(page.getByText('saved and synced successfully')).toBeVisible({ timeout: 15_000 });
-    const savedUuid = JSON.parse(await fs.readFile(filePath, 'utf8')).uuid;
-    expect(savedUuid).toBe(originalUuid);
+    const savedContent = await fs.readFile(filePath, 'utf8');
+    const savedJson = JSON.parse(savedContent);
+    expect(savedJson.uuid).toBe(originalUuid);
+    // The file is reformatted with Prettier, not minified onto a single line.
+    expect(savedContent).toContain('\n  "uuid": ');
   });
 });
