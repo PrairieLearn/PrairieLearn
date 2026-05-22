@@ -483,7 +483,7 @@ export function AssessmentQuestionsSection({
       )}
 
       <details>
-        <summary className="small text-muted mb-2">Questions ({questions.length})</summary>
+        <summary>Questions ({questions.length})</summary>
 
         <div className="d-flex gap-2 mb-2 mt-1 small">
           <button
