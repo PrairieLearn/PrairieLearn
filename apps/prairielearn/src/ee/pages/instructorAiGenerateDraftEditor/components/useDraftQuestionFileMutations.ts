@@ -5,6 +5,7 @@ import type { DraftQuestionFileBrowserActions } from '../../../../components/Dra
 import type { DraftQuestionFileEditResult } from '../../../../lib/draft-question-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
+import { applyDraftFileEditResult } from './draftFileEditResult.js';
 
 async function getResponseErrorMessage(response: Response): Promise<string> {
   try {
@@ -37,16 +38,8 @@ export function useDraftQuestionFileMutations({
   const { mutateAsync: renameFile } = useMutation(trpc.aiDraftFiles.rename.mutationOptions());
   const { mutateAsync: deleteFile } = useMutation(trpc.aiDraftFiles.delete.mutationOptions());
 
-  return useMemo(() => {
-    async function handleResult(result: DraftQuestionFileEditResult) {
-      if (result.status === 'error') {
-        window.location.href = result.editErrorUrl;
-        return;
-      }
-      await onMutated();
-    }
-
-    return {
+  return useMemo(
+    () => ({
       onUploadFile: async ({ file, targetFilePath, directory }) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -65,14 +58,21 @@ export function useDraftQuestionFileMutations({
         if (!response.ok) {
           throw new Error(await getResponseErrorMessage(response));
         }
-        await handleResult((await response.json()) as DraftQuestionFileEditResult);
+        await applyDraftFileEditResult(
+          (await response.json()) as DraftQuestionFileEditResult,
+          onMutated,
+        );
       },
       onRenameFile: async ({ oldFilePath, newFilePath }) => {
-        await handleResult(await renameFile({ questionId, oldFilePath, newFilePath }));
+        await applyDraftFileEditResult(
+          await renameFile({ questionId, oldFilePath, newFilePath }),
+          onMutated,
+        );
       },
       onDeleteFile: async ({ filePath }) => {
-        await handleResult(await deleteFile({ questionId, filePath }));
+        await applyDraftFileEditResult(await deleteFile({ questionId, filePath }), onMutated);
       },
-    };
-  }, [questionId, uploadUrl, uploadCsrfToken, onMutated, renameFile, deleteFile]);
+    }),
+    [questionId, uploadUrl, uploadCsrfToken, onMutated, renameFile, deleteFile],
+  );
 }

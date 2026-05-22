@@ -16,6 +16,7 @@ import {
   RenameFileButton,
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
+import { FileBrowserActionButton } from './FileBrowserActionButton.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 
 function DraftQuestionDirectoryActions({
@@ -108,23 +109,14 @@ function DraftQuestionFileRow({
         <div className="d-flex gap-2 file-browser-row-actions">
           {data.isReadOnly ? null : (
             <>
-              {canEdit ? (
-                <a
-                  className="btn btn-xs btn-secondary text-nowrap"
-                  href={fileUrl}
-                  onClick={selectFile}
-                >
-                  <i className="fa fa-edit" />
-                  <span>Edit</span>
-                </a>
-              ) : (
-                <span title={file.disabledReason ?? undefined}>
-                  <button type="button" className="btn btn-xs btn-secondary text-nowrap" disabled>
-                    <i className="fa fa-edit" />
-                    <span>Edit</span>
-                  </button>
-                </span>
-              )}
+              <FileBrowserActionButton
+                icon="fa fa-edit"
+                label="Edit"
+                href={fileUrl}
+                disabled={!canEdit}
+                disabledTitle={file.disabledReason ?? undefined}
+                onClick={selectFile}
+              />
               <UploadFileButton
                 id={`instructorFileUploadForm-${file.id}`}
                 label="Upload"
@@ -138,13 +130,12 @@ function DraftQuestionFileRow({
               />
             </>
           )}
-          <a
-            className={`btn btn-xs btn-secondary text-nowrap ${file.canDownload ? '' : 'disabled'}`}
+          <FileBrowserActionButton
+            icon="fa fa-arrow-down"
+            label="Download"
             href={file.downloadUrl}
-          >
-            <i className="fa fa-arrow-down" />
-            <span>Download</span>
-          </a>
+            disabled={!file.canDownload}
+          />
           {data.isReadOnly ? null : (
             <>
               <RenameFileButton

@@ -29,18 +29,18 @@ export interface FileInfo {
   contents?: string | null;
 }
 
-export interface DirectoryEntry {
+interface DirectoryEntry {
   id: string | number;
   name: string;
   path: string;
   canView: boolean;
 }
 
-export interface DirectoryEntryDirectory extends DirectoryEntry {
+interface DirectoryEntryDirectory extends DirectoryEntry {
   isFile: false;
 }
 
-export interface DirectoryEntryFile extends DirectoryEntry {
+interface DirectoryEntryFile extends DirectoryEntry {
   isFile: true;
   dir: string;
   canEdit: boolean;

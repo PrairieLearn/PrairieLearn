@@ -8,6 +8,7 @@ import type { SelectedQuestionFile } from '../../../../lib/draft-question-files.
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
+import { applyDraftFileEditResult } from './draftFileEditResult.js';
 
 const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
 
@@ -112,11 +113,7 @@ export function SelectedQuestionFileEditor({
         filePath: selectedFile.path,
         encodedContents: b64EncodeUnicode(contents),
       });
-      if (result.status === 'error') {
-        window.location.href = result.editErrorUrl;
-        return;
-      }
-      await onSaved();
+      await applyDraftFileEditResult(result, onSaved);
     } catch (err) {
       setSaveError(getAppError<AiDraftFilesError['Save']>(err)?.message ?? SAVE_ERROR_MESSAGE);
     } finally {
