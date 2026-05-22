@@ -200,6 +200,12 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
+    if (opts.ctx.course.example_course) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Editing access settings is not permitted for the example course.',
+      });
+    }
     if (enrollmentRules !== undefined && !opts.ctx.authz_data.has_course_instance_permission_edit) {
       throw new TRPCError({
         code: 'FORBIDDEN',

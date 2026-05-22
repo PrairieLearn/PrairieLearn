@@ -58,7 +58,7 @@ function AssessmentAccessControlInner({
     permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionView;
   const readOnlyMessage = run(() => {
     if (permissions.isExampleCourse) {
-      return 'Editing access settings is not available for the example course.';
+      return 'Editing access settings is not permitted for the example course.';
     }
     if (!permissions.hasCoursePermissionEdit) {
       return 'Editing access settings requires course editor permissions.';
