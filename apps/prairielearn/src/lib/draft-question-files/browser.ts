@@ -1,7 +1,6 @@
 import type { Stats } from 'node:fs';
 import * as path from 'node:path';
 
-import { fileTypeFromFile } from 'file-type';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -9,7 +8,7 @@ import { config } from '../config.js';
 import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import { readEditableTextFile } from '../editableFile.js';
-import { browseDirectory } from '../file-browser.js';
+import { browseDirectory, getBinaryFileKind } from '../file-browser.js';
 import { getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';
 
@@ -60,7 +59,6 @@ interface DraftQuestionFileBrowserSpecialDir {
 }
 
 export interface DraftQuestionFileBrowserData {
-  isReadOnly: boolean;
   hasEditPermission: boolean;
   /** Base editor URL used to build file and directory links. */
   editorUrl: string;
@@ -158,7 +156,7 @@ async function readSelectedQuestionFile({
     });
     const encodedPath = encodeCourseFilePath(paths.workingPathRelativeToCourse);
     const fileDownloadUrl = `${paths.urlPrefix}/file_download/${encodedPath}`;
-    const fileType = await fileTypeFromFile(fullPath);
+    const binaryFileKind = await getBinaryFileKind(fullPath);
 
     return {
       selectedFile: null,
@@ -166,11 +164,12 @@ async function readSelectedQuestionFile({
         path: filePath,
         fileViewUrl: `${paths.urlPrefix}/file_view/${encodedPath}`,
         downloadUrl: `${fileDownloadUrl}?attachment=${encodeURIComponent(path.basename(filePath))}`,
-        content: fileType?.mime.startsWith('image')
-          ? { kind: 'image', src: fileDownloadUrl }
-          : fileType?.mime === 'application/pdf'
-            ? { kind: 'pdf', src: `${fileDownloadUrl}?type=application/pdf#view=FitH` }
-            : { kind: 'none' },
+        content:
+          binaryFileKind === 'image'
+            ? { kind: 'image', src: fileDownloadUrl }
+            : binaryFileKind === 'pdf'
+              ? { kind: 'pdf', src: `${fileDownloadUrl}?type=application/pdf#view=FitH` }
+              : { kind: 'none' },
       },
     };
   }
@@ -272,7 +271,6 @@ async function buildDraftQuestionFileBrowserData({
   });
 
   return {
-    isReadOnly: false,
     hasEditPermission: paths.hasEditPermission,
     editorUrl,
     urlPrefix: paths.urlPrefix,

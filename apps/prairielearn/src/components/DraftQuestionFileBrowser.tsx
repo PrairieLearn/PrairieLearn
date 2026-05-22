@@ -62,16 +62,19 @@ function DraftQuestionFileRow({
   data,
   file,
   actions,
+  search,
   onSelectFile,
 }: {
   data: DraftQuestionFileBrowserData;
   file: DraftQuestionFileBrowserFile;
   actions: DraftQuestionFileBrowserActions;
+  search: string;
   onSelectFile: (filePath: string) => void;
 }) {
   const fileUrl = getEditorUrlWithSelectedFile({
     editorUrl: data.editorUrl,
     filePath: file.selectedFilePath,
+    search,
   });
   const canEdit = file.canEdit && file.disabledReason == null;
   const canUpload = file.canUpload && file.disabledReason == null;
@@ -109,56 +112,48 @@ function DraftQuestionFileRow({
       </td>
       <td className="align-middle">
         <div className="d-flex gap-2 file-browser-row-actions">
-          {data.isReadOnly ? null : (
-            <>
-              <FileBrowserActionButton
-                icon="fa fa-edit"
-                label="Edit"
-                href={fileUrl}
-                disabled={!canEdit}
-                disabledTitle={file.disabledReason ?? undefined}
-                onClick={selectFile}
-              />
-              <UploadFileButton
-                id={`instructorFileUploadForm-${file.id}`}
-                label="Upload"
-                iconClass="fa fa-arrow-up"
-                className="btn btn-xs btn-secondary text-nowrap"
-                disabled={!canUpload}
-                maxFileSizeBytes={data.maxFileSizeBytes}
-                targetFilePath={file.selectedFilePath}
-                directory={null}
-                urlPrefix={data.urlPrefix}
-                onUploadFile={actions.onUploadFile}
-              />
-            </>
-          )}
+          <FileBrowserActionButton
+            icon="fa fa-edit"
+            label="Edit"
+            href={fileUrl}
+            disabled={!canEdit}
+            disabledTitle={file.disabledReason ?? undefined}
+            onClick={selectFile}
+          />
+          <UploadFileButton
+            id={`instructorFileUploadForm-${file.id}`}
+            label="Upload"
+            iconClass="fa fa-arrow-up"
+            className="btn btn-xs btn-secondary text-nowrap"
+            disabled={!canUpload}
+            maxFileSizeBytes={data.maxFileSizeBytes}
+            targetFilePath={file.selectedFilePath}
+            directory={null}
+            urlPrefix={data.urlPrefix}
+            onUploadFile={actions.onUploadFile}
+          />
           <FileBrowserActionButton
             icon="fa fa-arrow-down"
             label="Download"
             href={file.downloadUrl}
             disabled={!file.canDownload}
           />
-          {data.isReadOnly ? null : (
-            <>
-              <RenameFileButton
-                id={`instructorFileRenameForm-${file.id}`}
-                fileName={file.name}
-                oldFilePath={file.selectedFilePath}
-                disabled={!canRename}
-                urlPrefix={data.urlPrefix}
-                onRenameFile={actions.onRenameFile}
-              />
-              <DeleteFileButton
-                id={`instructorFileDeleteForm-${file.id}`}
-                fileName={file.name}
-                filePath={file.selectedFilePath}
-                disabled={!canDelete}
-                urlPrefix={data.urlPrefix}
-                onDeleteFile={actions.onDeleteFile}
-              />
-            </>
-          )}
+          <RenameFileButton
+            id={`instructorFileRenameForm-${file.id}`}
+            fileName={file.name}
+            oldFilePath={file.selectedFilePath}
+            disabled={!canRename}
+            urlPrefix={data.urlPrefix}
+            onRenameFile={actions.onRenameFile}
+          />
+          <DeleteFileButton
+            id={`instructorFileDeleteForm-${file.id}`}
+            fileName={file.name}
+            filePath={file.selectedFilePath}
+            disabled={!canDelete}
+            urlPrefix={data.urlPrefix}
+            onDeleteFile={actions.onDeleteFile}
+          />
         </div>
       </td>
     </tr>
@@ -168,15 +163,18 @@ function DraftQuestionFileRow({
 function DraftQuestionDirectoryRow({
   directory,
   editorUrl,
+  search,
   onSelectDirectory,
 }: {
   directory: DraftQuestionFileBrowserDirectory;
   editorUrl: string;
+  search: string;
   onSelectDirectory: (directory: string | null) => void;
 }) {
   const directoryUrl = getEditorUrlWithSelectedDirectory({
     editorUrl,
     directory: directory.selectedDirectory,
+    search,
   });
 
   return (
@@ -204,11 +202,14 @@ function DraftQuestionDirectoryRow({
 export function DraftQuestionFileBrowser({
   data,
   actions,
+  search,
   onSelectFile,
   onSelectDirectory,
 }: {
   data: DraftQuestionFileBrowserData;
   actions: DraftQuestionFileBrowserActions;
+  /** Current page query string, whose unrelated params the file links preserve. */
+  search: string;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
 }) {
@@ -229,6 +230,7 @@ export function DraftQuestionFileBrowser({
                   href={getEditorUrlWithSelectedDirectory({
                     editorUrl: data.editorUrl,
                     directory: segment.directory,
+                    search,
                   })}
                   onClick={(event) => {
                     event.preventDefault();
@@ -242,7 +244,7 @@ export function DraftQuestionFileBrowser({
           ))}
         </ol>
       </nav>
-      {data.hasEditPermission && !data.isReadOnly ? (
+      {data.hasEditPermission ? (
         <div className="d-flex justify-content-end mb-2">
           <DraftQuestionDirectoryActions data={data} actions={actions} />
         </div>
@@ -262,6 +264,7 @@ export function DraftQuestionFileBrowser({
                 data={data}
                 file={file}
                 actions={actions}
+                search={search}
                 onSelectFile={onSelectFile}
               />
             ))}
@@ -270,6 +273,7 @@ export function DraftQuestionFileBrowser({
                 key={`dir-${directory.selectedDirectory ?? ''}`}
                 directory={directory}
                 editorUrl={data.editorUrl}
+                search={search}
                 onSelectDirectory={onSelectDirectory}
               />
             ))}
