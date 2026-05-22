@@ -161,7 +161,6 @@ router.post(
           parseWarnings.push(result.warning);
         }
       }
-      await addUnreferencedAssetWarnings(convertedEntries);
       const results = deduplicateIdenticalQuestions(convertedEntries.map((entry) => entry.result));
 
       // Strip access rules (time limits, passwords, dates) from imported assessments
@@ -235,7 +234,6 @@ type ConvertEntryResult =
 interface SerializedEntryResult {
   result: StoredSerializedConversionResult;
   webResourcesDir: string;
-  referencedAssetPaths: Set<string>;
 }
 
 async function findQtiEntries(contentDir: string): Promise<QtiFileEntry[]> {
@@ -336,7 +334,6 @@ async function serializeConversionResult(
   webResourcesDir: string,
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
-  const referencedAssetPaths = new Set<string>();
 
   const questions = await Promise.all(
     result.questions.map(async (q) => {
@@ -344,12 +341,7 @@ async function serializeConversionResult(
       // questions live under the prefix path (e.g. "imported/quiz-slug/q1").
       // This must match the IDs used in the assessment zones.
       const questionId = `${questionPrefix}/${q.directoryName}`;
-      const { files, missingFiles, referencedFiles } = await serializeClientFiles(
-        q.clientFiles,
-        webResourcesDir,
-      );
-      for (const file of referencedFiles) referencedAssetPaths.add(file);
-      for (const file of q.skippedFiles) referencedAssetPaths.add(file);
+      const { files, missingFiles } = await serializeClientFiles(q.clientFiles, webResourcesDir);
       if (missingFiles.length > 0) {
         extraWarnings.push({
           questionId,
@@ -389,7 +381,6 @@ async function serializeConversionResult(
       warnings: [...result.warnings, ...extraWarnings],
     },
     webResourcesDir,
-    referencedAssetPaths,
   };
 }
 
@@ -426,54 +417,13 @@ const VIDEO_EXTENSIONS = new Set([
   '.flv',
 ]);
 
-const BINARY_ASSET_EXTENSIONS = new Set([
-  '.aac',
-  '.avi',
-  '.bmp',
-  '.doc',
-  '.docx',
-  '.flac',
-  '.flv',
-  '.gif',
-  '.ico',
-  '.jpeg',
-  '.jpg',
-  '.m4a',
-  '.m4v',
-  '.mkv',
-  '.mov',
-  '.mp3',
-  '.mp4',
-  '.odp',
-  '.ods',
-  '.odt',
-  '.oga',
-  '.ogg',
-  '.ogv',
-  '.pdf',
-  '.png',
-  '.ppt',
-  '.pptx',
-  '.svg',
-  '.tif',
-  '.tiff',
-  '.wav',
-  '.webm',
-  '.webp',
-  '.wmv',
-  '.xls',
-  '.xlsx',
-  '.zip',
-]);
-
 /** Convert a Map<string, Buffer|string> to Record<string, string> (base64-encoded). */
 export async function serializeClientFiles(
   clientFiles: Map<string, Buffer | string>,
   webResourcesDir: string,
-): Promise<{ files: Record<string, string>; missingFiles: string[]; referencedFiles: string[] }> {
+): Promise<{ files: Record<string, string>; missingFiles: string[] }> {
   const files: Record<string, string> = {};
   const missingFiles: string[] = [];
-  const referencedFiles: string[] = [];
   for (const [name, content] of clientFiles) {
     if (Buffer.isBuffer(content)) {
       files[name] = content.toString('base64');
@@ -484,8 +434,6 @@ export async function serializeClientFiles(
         missingFiles.push(name);
         continue;
       }
-      const relativePath = normalizeArchivePath(path.relative(webResourcesDir, resolved));
-      referencedFiles.push(relativePath);
       try {
         const fileContent = await readFile(resolved);
         files[name] = fileContent.toString('base64');
@@ -494,7 +442,7 @@ export async function serializeClientFiles(
       }
     }
   }
-  return { files, missingFiles, referencedFiles };
+  return { files, missingFiles };
 }
 
 function questionFingerprint(question: StoredSerializedConversionResult['questions'][number]) {
@@ -578,71 +526,6 @@ export function deduplicateIdenticalQuestions(
       })),
     };
   });
-}
-
-async function addUnreferencedAssetWarnings(entries: SerializedEntryResult[]) {
-  const entriesByWebResourcesDir = new Map<string, SerializedEntryResult[]>();
-  for (const entry of entries) {
-    const grouped = entriesByWebResourcesDir.get(entry.webResourcesDir) ?? [];
-    grouped.push(entry);
-    entriesByWebResourcesDir.set(entry.webResourcesDir, grouped);
-  }
-
-  for (const [webResourcesDir, groupedEntries] of entriesByWebResourcesDir) {
-    const referencedAssetPaths = new Set(
-      groupedEntries.flatMap((entry) => [...entry.referencedAssetPaths]),
-    );
-    const unreferencedFiles = await findUnreferencedBinaryFiles(
-      webResourcesDir,
-      referencedAssetPaths,
-    );
-    if (unreferencedFiles.length === 0) continue;
-
-    groupedEntries[0].result.warnings.push({
-      questionId: groupedEntries[0].result.sourceId,
-      message: `Unreferenced asset file(s) will not be included because they are not referenced in the questions or assessments: ${unreferencedFiles.join(', ')}`,
-      level: 'warn',
-    });
-  }
-}
-
-async function findUnreferencedBinaryFiles(
-  webResourcesDir: string,
-  referencedAssetPaths: Set<string>,
-): Promise<string[]> {
-  let stat;
-  try {
-    stat = await fsStat(webResourcesDir);
-  } catch {
-    return [];
-  }
-  if (!stat.isDirectory()) return [];
-
-  const files: string[] = [];
-
-  async function visit(dir: string) {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const entryPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        await visit(entryPath);
-      } else if (
-        entry.isFile() &&
-        BINARY_ASSET_EXTENSIONS.has(path.extname(entry.name).toLowerCase())
-      ) {
-        const relativePath = normalizeArchivePath(path.relative(webResourcesDir, entryPath));
-        if (!referencedAssetPaths.has(relativePath)) {
-          files.push(relativePath);
-        }
-      }
-    }
-  }
-
-  await visit(webResourcesDir);
-  return files.sort();
-}
-
-function normalizeArchivePath(filePath: string): string {
-  return filePath.split(path.sep).join('/');
 }
 
 export default router;
