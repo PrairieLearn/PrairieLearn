@@ -6,11 +6,11 @@ import { Nav, Tab } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import type { DraftQuestionFileBrowserData } from '../../../../components/DraftQuestionFileBrowser.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type {
+  DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
 } from '../../../../lib/draft-question-files.js';

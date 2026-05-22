@@ -4,6 +4,11 @@ import {
   getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
 } from '../lib/draft-question-file-url.js';
+import type {
+  DraftQuestionFileBrowserData,
+  DraftQuestionFileBrowserDirectory,
+  DraftQuestionFileBrowserFile,
+} from '../lib/draft-question-files.js';
 
 import {
   DeleteFileButton,
@@ -12,59 +17,6 @@ import {
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
-
-export interface DraftQuestionFileBrowserBreadcrumbSegment {
-  name: string;
-  /** Path relative to the question root; `null` for the question root. */
-  directory: string | null;
-  isActive: boolean;
-}
-
-export interface DraftQuestionFileBrowserFile {
-  id: string | number;
-  name: string;
-  /** Path relative to the question root, identifying the file in the editor. */
-  selectedFilePath: string;
-  downloadUrl: string;
-  canView: boolean;
-  canEdit: boolean;
-  canUpload: boolean;
-  canDownload: boolean;
-  canRename: boolean;
-  canDelete: boolean;
-  syncErrors: string | null;
-  syncWarnings: string | null;
-  /** When set, the file is managed elsewhere (e.g. `info.json`) and cannot be edited. */
-  disabledReason: string | null;
-}
-
-export interface DraftQuestionFileBrowserDirectory {
-  name: string;
-  /** Path relative to the question root. */
-  selectedDirectory: string | null;
-  canView: boolean;
-}
-
-export interface DraftQuestionFileBrowserSpecialDir {
-  label: string;
-  /** Directory uploaded files are placed in, relative to the question root. */
-  directory: string;
-}
-
-export interface DraftQuestionFileBrowserData {
-  isReadOnly: boolean;
-  hasEditPermission: boolean;
-  /** Base editor URL used to build file and directory links. */
-  editorUrl: string;
-  /** Path of the directory being browsed, relative to the question root. */
-  selectedDirectory: string | null;
-  /** Maximum upload size in bytes. */
-  maxFileSizeBytes: number;
-  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
-  specialDirs: DraftQuestionFileBrowserSpecialDir[];
-  files: DraftQuestionFileBrowserFile[];
-  dirs: DraftQuestionFileBrowserDirectory[];
-}
 
 function DraftQuestionDirectoryActions({
   data,
