@@ -64,6 +64,10 @@ export function InstructorAiGenerateDraftEditor({
     url: variantUrl,
     authnUserId: resLocals.authn_user.id,
   });
+  const uploadCsrfToken = generateCsrfToken({
+    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/files`,
+    authnUserId: resLocals.authn_user.id,
+  });
   const trpcUrl =
     resLocals.course_instance == null
       ? getCourseTrpcUrl(resLocals.course.id)
@@ -97,7 +101,6 @@ export function InstructorAiGenerateDraftEditor({
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />`,
       compiledScriptTag('question.ts'),
-      compiledScriptTag('instructorFileBrowserClient.ts'),
       compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
       html`<script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>`,
       unsafeHtml(resLocals.extraHeadersHtml),
@@ -138,6 +141,7 @@ export function InstructorAiGenerateDraftEditor({
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
+          uploadCsrfToken={uploadCsrfToken}
           search={search}
         />
       </Hydrate>

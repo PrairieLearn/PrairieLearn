@@ -5,10 +5,10 @@ import { fileTypeFromFile } from 'file-type';
 import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
+import { Fragment } from 'react';
 
-import { escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
-import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
@@ -284,52 +284,59 @@ function FileBrowser({
         }
       </style>
     `,
-    content: html`
-      <h1 class="visually-hidden">Files</h1>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <div class="row align-items-center justify-content-between">
-            <div class="col-auto font-monospace d-flex">
-              ${joinHtml(
-                breadcrumbPaths.map(
-                  (dir) => html`
-                    ${dir.canView
-                      ? html`
-                          <a
-                            class="text-white"
-                            href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
-                          >
-                            ${dir.name}
-                          </a>
-                        `
-                      : html`<span>${dir.name}</span>`}
-                  `,
-                ),
-                html`<span class="mx-2">/</span>`,
-              )}
-            </div>
-            <div class="col-auto">
-              ${isFile
-                ? FileBrowserActions({ paths, fileInfo, isReadOnly, csrfToken })
-                : paths.hasEditPermission && !isReadOnly
-                  ? renderHtml(<DirectoryBrowserActions paths={paths} csrfToken={csrfToken} />)
-                  : ''}
+    content: (
+      <>
+        <h1 className="visually-hidden">Files</h1>
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white">
+            <div className="row align-items-center justify-content-between">
+              <div className="col-auto font-monospace d-flex">
+                {breadcrumbPaths.map((dir, index) => (
+                  <Fragment key={dir.path}>
+                    {dir.canView ? (
+                      <a
+                        className="text-white"
+                        href={`${paths.urlPrefix}/file_view/${encodePath(dir.path)}`}
+                      >
+                        {dir.name}
+                      </a>
+                    ) : (
+                      <span>{dir.name}</span>
+                    )}
+                    {index < breadcrumbPaths.length - 1 ? <span className="mx-2">/</span> : null}
+                  </Fragment>
+                ))}
+              </div>
+              <div className="col-auto">
+                {isFile ? (
+                  <FileBrowserActions
+                    paths={paths}
+                    fileInfo={fileInfo}
+                    isReadOnly={isReadOnly}
+                    csrfToken={csrfToken}
+                  />
+                ) : paths.hasEditPermission && !isReadOnly ? (
+                  <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} />
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
 
-        ${isFile
-          ? html`<div class="card-body">${FileContentPreview({ paths, fileInfo })}</div>`
-          : renderHtml(
-              <DirectoryBrowserTable
-                paths={paths}
-                directoryListings={directoryListings}
-                isReadOnly={isReadOnly}
-                csrfToken={csrfToken}
-              />,
-            )}
-      </div>
-    `,
+          {isFile ? (
+            <div className="card-body">
+              <FileContentPreview paths={paths} fileInfo={fileInfo} />
+            </div>
+          ) : (
+            <DirectoryBrowserTable
+              paths={paths}
+              directoryListings={directoryListings}
+              isReadOnly={isReadOnly}
+              csrfToken={csrfToken}
+            />
+          )}
+        </div>
+      </>
+    ),
   });
 }
 
@@ -345,85 +352,85 @@ function FileBrowserActions({
   csrfToken: string;
 }) {
   const encodedPath = encodePath(fileInfo.path);
-  return html`
-    <div class="d-flex flex-wrap gap-2">
-      ${isReadOnly
-        ? ''
-        : html`
-            <a
-              tabindex="0"
-              class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
-              href="${paths.urlPrefix}/file_edit/${encodedPath}"
-            >
-              <i class="fa fa-edit"></i>
-              <span>Edit</span>
-            </a>
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Upload file"
-              data-bs-content="${escapeHtml(
-                FileUploadForm({
-                  file: fileInfo,
-                  csrfToken,
-                  maxFileSizeBytes: config.fileUploadMaxBytes,
-                }),
-              )}"
-              ${fileInfo.canUpload ? '' : 'disabled'}
-            >
-              <i class="fa fa-arrow-up"></i>
-              <span>Upload</span>
-            </button>
-          `}
+  return (
+    <div className="d-flex flex-wrap gap-2">
+      {isReadOnly ? null : (
+        <>
+          <a
+            tabIndex={0}
+            className={`btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}`}
+            href={`${paths.urlPrefix}/file_edit/${encodedPath}`}
+          >
+            <i className="fa fa-edit" />
+            <span>Edit</span>
+          </a>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Upload file"
+            data-bs-content={FileUploadForm({
+              file: fileInfo,
+              csrfToken,
+              maxFileSizeBytes: config.fileUploadMaxBytes,
+            }).toString()}
+            disabled={!fileInfo.canUpload}
+          >
+            <i className="fa fa-arrow-up" />
+            <span>Upload</span>
+          </button>
+        </>
+      )}
       <a
-        class="btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}"
-        href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+        className={`btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}`}
+        href={`${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
           fileInfo.name,
-        )}"
+        )}`}
       >
-        <i class="fa fa-arrow-down"></i>
+        <i className="fa fa-arrow-down" />
         <span>Download</span>
       </a>
-      ${isReadOnly
-        ? ''
-        : html`
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Rename file"
-              data-bs-content="${escapeHtml(
-                FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
-              )}"
-              ${fileInfo.canRename ? '' : 'disabled'}
-            >
-              <i class="fa fa-i-cursor"></i>
-              <span>Rename</span>
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Confirm delete"
-              data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-              ${fileInfo.canDelete ? '' : 'disabled'}
-            >
-              <i class="far fa-trash-alt"></i>
-              <span>Delete</span>
-            </button>
-          `}
+      {isReadOnly ? null : (
+        <>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Rename file"
+            data-bs-content={FileRenameForm({
+              file: fileInfo,
+              csrfToken,
+              isViewingFile: true,
+            }).toString()}
+            disabled={!fileInfo.canRename}
+          >
+            <i className="fa fa-i-cursor" />
+            <span>Rename</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Confirm delete"
+            data-bs-content={FileDeleteForm({ file: fileInfo, csrfToken }).toString()}
+            disabled={!fileInfo.canDelete}
+          >
+            <i className="far fa-trash-alt" />
+            <span>Delete</span>
+          </button>
+        </>
+      )}
     </div>
-  `;
+  );
 }
 
 function DirectoryBrowserActions({
@@ -644,7 +651,7 @@ function DirectoryBrowserTable({
   );
 }
 
-export function FileContentPreview({
+function FileContentPreview({
   paths,
   fileInfo,
 }: {
@@ -652,28 +659,37 @@ export function FileContentPreview({
   fileInfo: FileInfo;
 }) {
   if (fileInfo.isImage) {
-    return html`
+    return (
       <img
-        src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}"
-        class="img-fluid"
-        alt="Preview of ${fileInfo.name}"
+        src={`${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}`}
+        className="img-fluid"
+        alt={`Preview of ${fileInfo.name}`}
       />
-    `;
+    );
   }
   if (fileInfo.isText) {
-    return html`<pre><code>${unsafeHtml(fileInfo.contents ?? '')}</code></pre>`;
+    return (
+      <pre>
+        {/* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */}
+        <code dangerouslySetInnerHTML={{ __html: fileInfo.contents ?? '' }} />
+      </pre>
+    );
   }
   if (fileInfo.isPDF) {
-    return html`
-      <div class="ratio ratio-4x3">
+    return (
+      <div className="ratio ratio-4x3">
         <iframe
-          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          title="PDF preview of ${fileInfo.name}"
+          src={`${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH`}
+          title={`PDF preview of ${fileInfo.name}`}
         >
           This PDF cannot be displayed.
         </iframe>
       </div>
-    `;
+    );
   }
-  return html`<div class="alert alert-warning" role="alert">No preview available.</div>`;
+  return (
+    <div className="alert alert-warning" role="alert">
+      No preview available.
+    </div>
+  );
 }
