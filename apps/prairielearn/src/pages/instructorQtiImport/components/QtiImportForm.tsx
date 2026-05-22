@@ -584,6 +584,12 @@ export function QtiImportForm({
     setUploadingBankKey(null);
   };
 
+  const skipMissingBanks = () => {
+    setError(null);
+    setSupplementalSuccessMessage(null);
+    setStep('review');
+  };
+
   return (
     <Card className="mb-4">
       <Card.Header className="bg-primary text-white">
@@ -622,7 +628,7 @@ export function QtiImportForm({
             uploadingBankKey={uploadingBankKey}
             successMessage={supplementalSuccessMessage}
             onSubmit={handleBankUpload}
-            onSkip={() => setStep('review')}
+            onSkip={skipMissingBanks}
             onStartOver={resetAll}
           />
         )}
