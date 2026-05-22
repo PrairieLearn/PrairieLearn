@@ -64,7 +64,7 @@ function AllQuestionFiles({
   onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
-  const { questionId, urlPrefix, uploadCsrfToken, search } = useDraftFiles();
+  const { questionId, urlPrefix, uploadCsrfToken, search, isGenerating } = useDraftFiles();
   const { selectFile, selectDirectory } = useDraftFileNavigation();
   const { fileBrowser, selectedFile, selectedFilePreview } = questionFilesData;
   const fileBrowserActions = useDraftQuestionFileMutations({
@@ -99,6 +99,8 @@ function AllQuestionFiles({
         data={fileBrowser}
         actions={fileBrowserActions}
         search={search}
+        // Don't let manual file edits race the agent's file writes.
+        disableActions={isGenerating}
         onSelectFile={selectFile}
         onSelectDirectory={selectDirectory}
       />

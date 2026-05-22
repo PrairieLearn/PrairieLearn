@@ -89,6 +89,30 @@ test.describe('AI draft file editor', () => {
     await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
   });
 
+  test('disables file mutations while a generation is in progress', async ({ page }) => {
+    await page.goto(`${editorUrl}?tab=all-files`);
+
+    const addFileButton = page.getByRole('button', { name: 'Add new file', exact: true });
+    await expect(addFileButton).toBeEnabled();
+
+    // Hold the chat request open so the editor stays in the generating state
+    // for the duration of the assertions.
+    await page.route(/\/ai_generate_editor\/\d+\/chat$/, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 20_000));
+      await route.abort();
+    });
+
+    await page.getByLabel('Modification instructions').fill('Add another part to this question.');
+    await page.getByRole('button', { name: 'Send prompt' }).click();
+
+    // The "Stop generation" control confirms the generation is in progress.
+    await expect(page.getByRole('button', { name: 'Stop generation' })).toBeVisible();
+    await expect(addFileButton).toBeDisabled();
+    await expect(
+      page.getByRole('row', { name: /server\.py/ }).getByTestId('delete-file-button'),
+    ).toBeDisabled();
+  });
+
   // Runs last: it deletes the shared question's `server.py`.
   test('reports a deleted file as a recoverable conflict, not a sync failure', async ({
     page,
