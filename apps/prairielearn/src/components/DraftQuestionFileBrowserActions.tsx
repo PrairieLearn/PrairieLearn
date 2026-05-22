@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -50,6 +50,30 @@ function resolveActionError(err: unknown, fallbackMessage: string): AppError<Dra
   return getAppError<DraftFileActionError>(err) ?? { code: 'UNKNOWN', message: fallbackMessage };
 }
 
+/**
+ * Shared submit-state machine for the draft file action forms. `submit` runs the
+ * action with `isSubmitting`/`error` bookkeeping; on failure it surfaces a typed
+ * error and clears `isSubmitting` so the user can retry. There is no success
+ * reset: a successful action closes the popover, which unmounts the form.
+ */
+function useActionSubmit(fallbackMessage: string) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
+
+  async function submit(action: () => Promise<void>) {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await action();
+    } catch (err) {
+      setError(resolveActionError(err, fallbackMessage));
+      setIsSubmitting(false);
+    }
+  }
+
+  return { isSubmitting, error, submit };
+}
+
 function DraftFileUploadForm({
   idPrefix,
   infoDirectory,
@@ -69,21 +93,12 @@ function DraftFileUploadForm({
   const inputId = `${idPrefix}-file`;
   const errorId = `${idPrefix}-error`;
   const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
+  const { isSubmitting, error, submit } = useActionSubmit('Failed to upload file.');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (file == null || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await onSubmit(file);
-    } catch (err) {
-      setError(resolveActionError(err, 'Failed to upload file.'));
-      setIsSubmitting(false);
-    }
+    await submit(() => onSubmit(file));
   }
 
   return (
@@ -154,8 +169,7 @@ function DraftFileRenameForm({
   const errorId = `${idPrefix}-error`;
   const [value, setValue] = useState(fileName);
   const [showValidation, setShowValidation] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<AppError<DraftFileActionError> | null>(null);
+  const { isSubmitting, error: submitError, submit } = useActionSubmit('Failed to rename file.');
 
   const validationError = run(() => {
     const trimmed = value.trim();
@@ -176,17 +190,12 @@ function DraftFileRenameForm({
     setShowValidation(true);
     if (validationError != null) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
+    await submit(async () => {
       const parentDirectory = getParentDirectory(oldFilePath);
       const trimmed = value.trim();
       const newFilePath = parentDirectory === '' ? trimmed : `${parentDirectory}/${trimmed}`;
       await onSubmit(newFilePath);
-    } catch (err) {
-      setSubmitError(resolveActionError(err, 'Failed to rename file.'));
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (
@@ -254,21 +263,12 @@ function DraftFileDeleteForm({
   onSubmit: () => Promise<void>;
 }) {
   const errorId = `${idPrefix}-error`;
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
+  const { isSubmitting, error, submit } = useActionSubmit('Failed to delete file.');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await onSubmit();
-    } catch (err) {
-      setError(resolveActionError(err, 'Failed to delete file.'));
-      setIsSubmitting(false);
-    }
+    await submit(onSubmit);
   }
 
   return (
@@ -301,6 +301,52 @@ function DraftFileDeleteForm({
   );
 }
 
+/**
+ * A file-browser row action whose click opens a popover form. Encapsulates the
+ * show/hide state shared by the upload, rename, and delete buttons; `renderBody`
+ * receives a `close` callback so the form can dismiss the popover.
+ */
+function PopoverActionButton({
+  id,
+  header,
+  iconClass,
+  label,
+  className,
+  disabled,
+  testId,
+  renderBody,
+}: {
+  id: string;
+  header: string;
+  iconClass: string;
+  label: string;
+  className: string;
+  disabled?: boolean;
+  testId?: string;
+  renderBody: (close: () => void) => ReactNode;
+}) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <OverlayTrigger
+      trigger="click"
+      placement="auto"
+      show={show}
+      popover={{
+        props: { id: `${id}-popover` },
+        header,
+        body: renderBody(() => setShow(false)),
+      }}
+      onToggle={setShow}
+    >
+      <button type="button" id={id} className={className} disabled={disabled} data-testid={testId}>
+        <i className={iconClass} aria-hidden="true" />
+        <span>{label}</span>
+      </button>
+    </OverlayTrigger>
+  );
+}
+
 export function UploadFileButton({
   id,
   label,
@@ -326,37 +372,28 @@ export function UploadFileButton({
   urlPrefix: string;
   onUploadFile: DraftQuestionFileBrowserActions['onUploadFile'];
 }) {
-  const [show, setShow] = useState(false);
-
   return (
-    <OverlayTrigger
-      trigger="click"
-      placement="auto"
-      show={show}
-      popover={{
-        props: { id: `${id}-popover` },
-        header: 'Upload file',
-        body: (
-          <DraftFileUploadForm
-            idPrefix={id}
-            infoDirectory={infoDirectory ?? null}
-            maxFileSizeBytes={maxFileSizeBytes}
-            urlPrefix={urlPrefix}
-            onCancel={() => setShow(false)}
-            onSubmit={async (file) => {
-              await onUploadFile({ file, targetFilePath, directory });
-              setShow(false);
-            }}
-          />
-        ),
-      }}
-      onToggle={(nextShow) => setShow(nextShow)}
-    >
-      <button type="button" id={id} className={className} disabled={disabled}>
-        <i className={iconClass} aria-hidden="true" />
-        <span>{label}</span>
-      </button>
-    </OverlayTrigger>
+    <PopoverActionButton
+      id={id}
+      header="Upload file"
+      iconClass={iconClass}
+      label={label}
+      className={className}
+      disabled={disabled}
+      renderBody={(close) => (
+        <DraftFileUploadForm
+          idPrefix={id}
+          infoDirectory={infoDirectory ?? null}
+          maxFileSizeBytes={maxFileSizeBytes}
+          urlPrefix={urlPrefix}
+          onCancel={close}
+          onSubmit={async (file) => {
+            await onUploadFile({ file, targetFilePath, directory });
+            close();
+          }}
+        />
+      )}
+    />
   );
 }
 
@@ -375,43 +412,29 @@ export function RenameFileButton({
   urlPrefix: string;
   onRenameFile: DraftQuestionFileBrowserActions['onRenameFile'];
 }) {
-  const [show, setShow] = useState(false);
-
   return (
-    <OverlayTrigger
-      trigger="click"
-      placement="auto"
-      show={show}
-      popover={{
-        props: { id: `${id}-popover` },
-        header: 'Rename file',
-        body: (
-          <DraftFileRenameForm
-            idPrefix={id}
-            fileName={fileName}
-            oldFilePath={oldFilePath}
-            urlPrefix={urlPrefix}
-            onCancel={() => setShow(false)}
-            onSubmit={async (newFilePath) => {
-              await onRenameFile({ oldFilePath, newFilePath });
-              setShow(false);
-            }}
-          />
-        ),
-      }}
-      onToggle={(nextShow) => setShow(nextShow)}
-    >
-      <button
-        type="button"
-        id={id}
-        className="btn btn-xs btn-secondary text-nowrap"
-        data-testid="rename-file-button"
-        disabled={disabled}
-      >
-        <i className="fa fa-i-cursor" aria-hidden="true" />
-        <span>Rename</span>
-      </button>
-    </OverlayTrigger>
+    <PopoverActionButton
+      id={id}
+      header="Rename file"
+      iconClass="fa fa-i-cursor"
+      label="Rename"
+      className="btn btn-xs btn-secondary text-nowrap"
+      disabled={disabled}
+      testId="rename-file-button"
+      renderBody={(close) => (
+        <DraftFileRenameForm
+          idPrefix={id}
+          fileName={fileName}
+          oldFilePath={oldFilePath}
+          urlPrefix={urlPrefix}
+          onCancel={close}
+          onSubmit={async (newFilePath) => {
+            await onRenameFile({ oldFilePath, newFilePath });
+            close();
+          }}
+        />
+      )}
+    />
   );
 }
 
@@ -430,41 +453,27 @@ export function DeleteFileButton({
   urlPrefix: string;
   onDeleteFile: DraftQuestionFileBrowserActions['onDeleteFile'];
 }) {
-  const [show, setShow] = useState(false);
-
   return (
-    <OverlayTrigger
-      trigger="click"
-      placement="auto"
-      show={show}
-      popover={{
-        props: { id: `${id}-popover` },
-        header: 'Confirm delete',
-        body: (
-          <DraftFileDeleteForm
-            idPrefix={id}
-            fileName={fileName}
-            urlPrefix={urlPrefix}
-            onCancel={() => setShow(false)}
-            onSubmit={async () => {
-              await onDeleteFile({ filePath });
-              setShow(false);
-            }}
-          />
-        ),
-      }}
-      onToggle={(nextShow) => setShow(nextShow)}
-    >
-      <button
-        type="button"
-        id={id}
-        className="btn btn-xs btn-secondary text-nowrap"
-        data-testid="delete-file-button"
-        disabled={disabled}
-      >
-        <i className="far fa-trash-alt" aria-hidden="true" />
-        <span>Delete</span>
-      </button>
-    </OverlayTrigger>
+    <PopoverActionButton
+      id={id}
+      header="Confirm delete"
+      iconClass="far fa-trash-alt"
+      label="Delete"
+      className="btn btn-xs btn-secondary text-nowrap"
+      disabled={disabled}
+      testId="delete-file-button"
+      renderBody={(close) => (
+        <DraftFileDeleteForm
+          idPrefix={id}
+          fileName={fileName}
+          urlPrefix={urlPrefix}
+          onCancel={close}
+          onSubmit={async () => {
+            await onDeleteFile({ filePath });
+            close();
+          }}
+        />
+      )}
+    />
   );
 }

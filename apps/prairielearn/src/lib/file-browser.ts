@@ -58,6 +58,18 @@ export interface DirectoryListings {
   files: DirectoryEntryFile[];
 }
 
+/**
+ * Classifies a binary file by its MIME type to decide how it should be
+ * previewed. Callers that have already established a file is binary use this to
+ * avoid re-running the binary-file check.
+ */
+export async function getBinaryFileKind(filePath: string): Promise<'image' | 'pdf' | 'other'> {
+  const type = await fileTypeFromFile(filePath);
+  if (type?.mime.startsWith('image')) return 'image';
+  if (type?.mime === 'application/pdf') return 'pdf';
+  return 'other';
+}
+
 export async function browseDirectory({
   paths,
 }: {
@@ -139,14 +151,9 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
   };
 
   if (file.isBinary) {
-    const type = await fileTypeFromFile(paths.workingPath);
-    if (type) {
-      if (type.mime.startsWith('image')) {
-        file.isImage = true;
-      } else if (type.mime === 'application/pdf') {
-        file.isPDF = true;
-      }
-    }
+    const kind = await getBinaryFileKind(paths.workingPath);
+    file.isImage = kind === 'image';
+    file.isPDF = kind === 'pdf';
   } else {
     // This is probably a text file. If it's is larger that 1MB, don't
     // attempt to read it; treat it like an opaque binary file.

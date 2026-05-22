@@ -22,6 +22,8 @@ import {
 import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
 import { features } from '../../lib/features/index.js';
 import { appErrorFormatter, throwAppError } from '../app-errors.js';
+import type { createContext as createCourseContext } from '../course/init.js';
+import type { createContext as createCourseInstanceContext } from '../courseInstance/init.js';
 
 /** A draft file edit whose underlying server job failed to sync. */
 interface EditJobFailed {
@@ -69,18 +71,39 @@ const DeleteInputSchema = z.object({
  * share one accurate client-side router type.
  */
 interface AiDraftFilesContext {
-  course: { id: string; example_course: boolean };
-  authz_data: { has_course_permission_edit: boolean };
   locals: Omit<DraftQuestionFilesLocals, 'question'>;
 }
 
-const t = initTRPC.context<AiDraftFilesContext>().create({
-  transformer: superjson,
-  errorFormatter: appErrorFormatter,
-});
+/**
+ * Resolves to `TContext`, but only if every type in `THostContexts` is
+ * assignable to it. The `aiDraftFiles` router is nested into both the `course`
+ * and `courseInstance` trees, which are built from separate tRPC instances with
+ * their own context types. Threading the host context types through this
+ * constraint fails the build if either host tree stops providing what
+ * {@link AiDraftFilesContext} needs (e.g. a dropped `locals.course` /
+ * `locals.authz_data`), instead of breaking only at runtime.
+ */
+type ContextSatisfiedByHosts<TContext, THostContexts extends TContext> = [THostContexts] extends [
+  TContext,
+]
+  ? TContext
+  : never;
+
+const t = initTRPC
+  .context<
+    ContextSatisfiedByHosts<
+      AiDraftFilesContext,
+      | Awaited<ReturnType<typeof createCourseContext>>
+      | Awaited<ReturnType<typeof createCourseInstanceContext>>
+    >
+  >()
+  .create({
+    transformer: superjson,
+    errorFormatter: appErrorFormatter,
+  });
 
 const requireCoursePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_permission_edit) {
+  if (!opts.ctx.locals.authz_data.has_course_permission_edit) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course editor)',
@@ -90,7 +113,7 @@ const requireCoursePermissionEdit = t.middleware(async (opts) => {
 });
 
 const requireNotExampleCourse = t.middleware(async (opts) => {
-  if (opts.ctx.course.example_course) {
+  if (opts.ctx.locals.course.example_course) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied. Cannot make changes to example course.',
@@ -130,7 +153,7 @@ const translateEditJobFailedError = t.middleware(async (opts) => {
 const resolveDraftQuestion = t.middleware(async (opts) => {
   const { questionId } = z.object({ questionId: IdSchema }).parse(await opts.getRawInput());
   const classified = await classifyDraftQuestion({
-    courseId: opts.ctx.course.id,
+    courseId: opts.ctx.locals.course.id,
     questionId,
   });
   if (classified.kind !== 'draft') {
@@ -161,7 +184,7 @@ export const aiDraftFilesRouter = t.router({
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
-      authz_data: ctx.authz_data,
+      authz_data: ctx.locals.authz_data,
       filePath: input.filePath,
       encodedContents: input.encodedContents,
       origHash: input.origHash,
@@ -174,7 +197,7 @@ export const aiDraftFilesRouter = t.router({
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
-      authz_data: ctx.authz_data,
+      authz_data: ctx.locals.authz_data,
       oldFilePath: input.oldFilePath,
       newFilePath: input.newFilePath,
     });
@@ -186,7 +209,7 @@ export const aiDraftFilesRouter = t.router({
       question: ctx.question,
       user: ctx.locals.user,
       authn_user: ctx.locals.authn_user,
-      authz_data: ctx.authz_data,
+      authz_data: ctx.locals.authz_data,
       filePath: input.filePath,
     });
     return null;

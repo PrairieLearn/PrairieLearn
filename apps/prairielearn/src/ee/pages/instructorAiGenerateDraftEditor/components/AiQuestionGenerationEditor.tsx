@@ -14,6 +14,7 @@ import type {
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
 } from '../../../../lib/draft-question-files/browser.js';
+import { getEditorUrlWithSelectedDirectory } from '../../../../lib/draft-question-files/urls.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -156,18 +157,11 @@ function AiQuestionGenerationEditorInner({
   );
   const activeTabKey =
     activeTab === 'rich-text-editor' && !richTextEditorEnabled ? 'preview' : activeTab;
-  const allFilesHref = useMemo(() => {
-    const params = new URLSearchParams(search);
-    params.delete('file');
-    params.set('tab', 'all-files');
-    if (selectedDirectory == null) {
-      params.delete('dir');
-    } else {
-      params.set('dir', selectedDirectory);
-    }
-
-    return `?${params.toString()}`;
-  }, [search, selectedDirectory]);
+  const allFilesHref = useMemo(
+    () =>
+      getEditorUrlWithSelectedDirectory({ editorUrl: '', directory: selectedDirectory, search }),
+    [search, selectedDirectory],
+  );
 
   const handleSelectTab = useCallback(
     (tab: string | null) => {
@@ -270,6 +264,7 @@ function AiQuestionGenerationEditorInner({
             selectedFile={currentSelectedFile}
             selectedFilePreview={currentSelectedFilePreview}
             allFilesHref={allFilesHref}
+            search={search}
             urlPrefix={urlPrefix}
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
@@ -281,6 +276,7 @@ function AiQuestionGenerationEditorInner({
             newVariantRef={newVariantRef}
             codeEditorsRef={codeEditorsRef}
             isGenerating={isGenerating}
+            isQuestionEmpty={isQuestionEmpty}
             filesError={filesError}
             fileBrowserActions={fileBrowserActions}
             onRetryFiles={() => refetchFiles()}
