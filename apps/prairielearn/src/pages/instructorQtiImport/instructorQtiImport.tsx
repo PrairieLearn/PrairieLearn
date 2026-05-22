@@ -174,7 +174,7 @@ router.post(
         }
       });
 
-      // Convert each QTI entry, deduplicating slugs so same-titled entries
+      // Convert each QTI entry, assigning unique slugs so same-titled entries
       // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
       const convertedEntries: SerializedEntryResult[] = [];
@@ -317,7 +317,7 @@ async function convertEntry(
     };
   }
 
-  // Deduplicate slugs so same-titled assessments don't collide.
+  // Assign a unique slug so same-titled item containers don't collide.
   let assessmentSlug = slugify(ir.title);
   if (usedSlugs.has(assessmentSlug)) {
     let suffix = 2;
