@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type {
@@ -428,23 +429,20 @@ export function AssessmentQuestionsSection({
   questions,
   questionOverrides,
   existingDirs,
-  expandedQuestions,
-  onToggleExpand,
-  onExpandAll,
-  onCollapseAll,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
   questionOverrides: Map<string, QuestionOverrides>;
   existingDirs: Set<string>;
-  expandedQuestions: Set<string>;
-  onToggleExpand: (dirName: string) => void;
-  onExpandAll: (dirNames: string[]) => void;
-  onCollapseAll: (dirNames: string[]) => void;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
 }) {
-  const conflictingQuestions = questions.filter(
-    (q) => questionOverrides.get(q.directoryName)?.collides,
+  const [expansionCommand, setExpansionCommand] = useState({
+    version: 0,
+    expanded: false,
+  });
+  const conflictingQuestions = useMemo(
+    () => questions.filter((q) => questionOverrides.get(q.directoryName)?.collides),
+    [questions, questionOverrides],
   );
   const conflictCount = conflictingQuestions.length;
 
@@ -453,8 +451,6 @@ export function AssessmentQuestionsSection({
       onUpdateOverride(q.directoryName, { collisionStrategy: strategy });
     }
   };
-
-  const allDirNames = questions.map((q) => q.directoryName);
 
   return (
     <>
@@ -489,14 +485,18 @@ export function AssessmentQuestionsSection({
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() => onExpandAll(allDirNames)}
+            onClick={() =>
+              setExpansionCommand(({ version }) => ({ version: version + 1, expanded: true }))
+            }
           >
             Expand all
           </button>
           <button
             type="button"
             className="btn btn-link btn-sm p-0"
-            onClick={() => onCollapseAll(allDirNames)}
+            onClick={() =>
+              setExpansionCommand(({ version }) => ({ version: version + 1, expanded: false }))
+            }
           >
             Collapse all
           </button>
@@ -510,9 +510,8 @@ export function AssessmentQuestionsSection({
               questionNumber={qi + 1}
               overrides={questionOverrides.get(q.directoryName)}
               existingDirs={existingDirs}
-              isExpanded={expandedQuestions.has(q.directoryName)}
-              onToggleExpand={() => onToggleExpand(q.directoryName)}
-              onUpdateOverride={(updates) => onUpdateOverride(q.directoryName, updates)}
+              expansionCommand={expansionCommand}
+              onUpdateOverride={onUpdateOverride}
             />
           ))}
         </div>

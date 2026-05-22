@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type { PLAssessmentQuestion } from '@prairielearn/question-conversion';
@@ -236,7 +236,6 @@ export function QtiImportForm({
     canRestart?: boolean;
   } | null>(null);
   const [supplementalSuccessMessage, setSupplementalSuccessMessage] = useState<string | null>(null);
-  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
     const formData = new FormData(form);
@@ -530,28 +529,19 @@ export function QtiImportForm({
     setOverrides((prev) => prev.map((o, i) => (i === index ? { ...o, ...updates } : o)));
   };
 
-  const updateQuestionOverride = (dirName: string, updates: Partial<QuestionOverrides>) => {
-    setQuestionOverrides((prev) => {
-      const next = new Map(prev);
-      const current = next.get(dirName);
-      if (current) {
-        next.set(dirName, { ...current, ...updates });
-      }
-      return next;
-    });
-  };
-
-  const toggleExpandedQuestion = (dirName: string) => {
-    setExpandedQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(dirName)) {
-        next.delete(dirName);
-      } else {
-        next.add(dirName);
-      }
-      return next;
-    });
-  };
+  const updateQuestionOverride = useCallback(
+    (dirName: string, updates: Partial<QuestionOverrides>) => {
+      setQuestionOverrides((prev) => {
+        const next = new Map(prev);
+        const current = next.get(dirName);
+        if (current) {
+          next.set(dirName, { ...current, ...updates });
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const includedAssessmentCount = results.filter(
     (result, i) =>
@@ -597,7 +587,6 @@ export function QtiImportForm({
     setStrippedRules(null);
     setParseWarnings([]);
     setQuestionOverrides(new Map());
-    setExpandedQuestions(new Set());
     setSupplementalSuccessMessage(null);
     setUploadingBankKey(null);
   };
@@ -703,18 +692,6 @@ export function QtiImportForm({
             questions={result.questions}
             questionOverrides={questionOverrides}
             existingDirs={existingDirs}
-            expandedQuestions={expandedQuestions}
-            onToggleExpand={toggleExpandedQuestion}
-            onExpandAll={(dirNames) =>
-              setExpandedQuestions((prev) => new Set([...prev, ...dirNames]))
-            }
-            onCollapseAll={(dirNames) =>
-              setExpandedQuestions((prev) => {
-                const next = new Set(prev);
-                for (const d of dirNames) next.delete(d);
-                return next;
-              })
-            }
             onUpdateOverride={updateQuestionOverride}
           />
         </Card.Body>
