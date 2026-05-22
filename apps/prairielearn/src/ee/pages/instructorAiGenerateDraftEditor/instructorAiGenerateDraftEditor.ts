@@ -1,8 +1,10 @@
+import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { type Response, Router } from 'express';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -25,6 +27,7 @@ import {
   getQuestionFilesData,
   getSelectedQuestionDirectory,
   getSelectedQuestionFilePath,
+  uploadDraftQuestionFile,
 } from '../../../lib/draft-question-files.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -380,6 +383,40 @@ router.post(
     });
 
     res.status(200).json({ success: true });
+  }),
+);
+
+const UploadDraftFileBodySchema = z.object({
+  /** When set, replace this exact file (relative to the question root). */
+  file_path: z.string().min(1).optional(),
+  /** When `file_path` is not set, upload into this directory (relative to the question root). */
+  directory: z.string().optional(),
+});
+
+router.post(
+  '/files',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    assertCanCreateQuestion(res.locals);
+
+    if (!req.file) {
+      throw new error.HttpStatusError(400, 'No file uploaded');
+    }
+
+    const body = UploadDraftFileBodySchema.parse(req.body);
+    const filePath = body.file_path ?? path.posix.join(body.directory ?? '', req.file.originalname);
+
+    const result = await uploadDraftQuestionFile({
+      course: res.locals.course,
+      question: res.locals.question,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      authz_data: res.locals.authz_data,
+      urlPrefix: res.locals.urlPrefix,
+      filePath,
+      fileContents: req.file.buffer,
+    });
+
+    res.json(result);
   }),
 );
 

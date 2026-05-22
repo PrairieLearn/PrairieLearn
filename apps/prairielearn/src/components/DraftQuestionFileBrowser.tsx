@@ -1,14 +1,19 @@
 import { type MouseEvent } from 'react';
 
-import { unsafeHtml } from '@prairielearn/html';
-
 import {
   getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
 } from '../lib/draft-question-file-url.js';
 
-import { FileDeleteForm, FileRenameForm, FileUploadForm } from './FileBrowserForms.js';
+import {
+  type DraftQuestionFileBrowserActions,
+  DeleteFileButton,
+  RenameFileButton,
+  UploadFileButton,
+} from './DraftQuestionFileBrowserActions.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
+
+export type { DraftQuestionFileBrowserActions };
 
 export interface DraftQuestionFileBrowserBreadcrumbSegment {
   name: string;
@@ -22,10 +27,6 @@ export interface DraftQuestionFileBrowserFile {
   name: string;
   /** Path relative to the question root, identifying the file in the editor. */
   selectedFilePath: string;
-  /** Path relative to the course root, used by the upload and delete forms. */
-  coursePath: string;
-  /** Absolute working directory, used by the rename form. */
-  workingDirectory: string;
   downloadUrl: string;
   canView: boolean;
   canEdit: boolean;
@@ -48,8 +49,8 @@ export interface DraftQuestionFileBrowserDirectory {
 
 export interface DraftQuestionFileBrowserSpecialDir {
   label: string;
-  /** Absolute path used as the upload target. */
-  path: string;
+  /** Directory uploaded files are placed in, relative to the question root. */
+  directory: string;
   /** Safe HTML describing where uploaded files are placed. */
   infoHtml: string;
 }
@@ -57,13 +58,8 @@ export interface DraftQuestionFileBrowserSpecialDir {
 export interface DraftQuestionFileBrowserData {
   isReadOnly: boolean;
   hasEditPermission: boolean;
-  csrfToken: string;
-  /** URL the popover forms POST to. */
-  fileActionUrl: string;
   /** Base editor URL used to build file and directory links. */
   editorUrl: string;
-  /** Absolute path of the directory being browsed; the default upload target. */
-  workingPath: string;
   /** Path of the directory being browsed, relative to the question root. */
   selectedDirectory: string | null;
   /** Maximum upload size in bytes. */
@@ -76,56 +72,37 @@ export interface DraftQuestionFileBrowserData {
 
 function DraftQuestionDirectoryActions({
   data,
-  redirectUrl,
+  actions,
 }: {
   data: DraftQuestionFileBrowserData;
-  redirectUrl: string;
+  actions: DraftQuestionFileBrowserActions;
 }) {
   return (
     <div className="d-flex flex-wrap gap-2">
       {data.specialDirs.map((d) => (
-        <button
+        <UploadFileButton
           key={d.label}
-          type="button"
           id={`instructorFileUploadForm-New${d.label}`}
+          label={`Add new ${d.label.toLowerCase()} file`}
+          iconClass="fa fa-plus"
           className="btn btn-sm btn-light"
-          data-bs-toggle="popover"
-          data-bs-container="body"
-          data-bs-html="true"
-          data-bs-placement="auto"
-          data-bs-title="Upload file"
-          data-bs-content={FileUploadForm({
-            file: { id: `New${d.label}`, info: unsafeHtml(d.infoHtml), working_path: d.path },
-            csrfToken: data.csrfToken,
-            maxFileSizeBytes: data.maxFileSizeBytes,
-            action: data.fileActionUrl,
-            redirectUrl,
-          }).toString()}
-        >
-          <i className="fa fa-plus" />
-          <span>Add new {d.label.toLowerCase()} file</span>
-        </button>
+          infoHtml={d.infoHtml}
+          maxFileSizeBytes={data.maxFileSizeBytes}
+          targetFilePath={null}
+          directory={d.directory}
+          onUploadFile={actions.onUploadFile}
+        />
       ))}
-      <button
-        type="button"
+      <UploadFileButton
         id="instructorFileUploadForm-New"
+        label="Add new file"
+        iconClass="fa fa-plus"
         className="btn btn-sm btn-light"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-placement="auto"
-        data-bs-title="Upload file"
-        data-bs-content={FileUploadForm({
-          file: { id: 'New', working_path: data.workingPath },
-          csrfToken: data.csrfToken,
-          maxFileSizeBytes: data.maxFileSizeBytes,
-          action: data.fileActionUrl,
-          redirectUrl,
-        }).toString()}
-      >
-        <i className="fa fa-plus" />
-        <span>Add new file</span>
-      </button>
+        maxFileSizeBytes={data.maxFileSizeBytes}
+        targetFilePath={null}
+        directory={data.selectedDirectory}
+        onUploadFile={actions.onUploadFile}
+      />
     </div>
   );
 }
@@ -133,12 +110,12 @@ function DraftQuestionDirectoryActions({
 function DraftQuestionFileRow({
   data,
   file,
-  redirectUrl,
+  actions,
   onSelectFile,
 }: {
   data: DraftQuestionFileBrowserData;
   file: DraftQuestionFileBrowserFile;
-  redirectUrl: string;
+  actions: DraftQuestionFileBrowserActions;
   onSelectFile: (filePath: string) => void;
 }) {
   const fileUrl = getEditorUrlWithSelectedFile({
@@ -200,27 +177,17 @@ function DraftQuestionFileRow({
                   </button>
                 </span>
               )}
-              <button
-                type="button"
+              <UploadFileButton
                 id={`instructorFileUploadForm-${file.id}`}
+                label="Upload"
+                iconClass="fa fa-arrow-up"
                 className="btn btn-xs btn-secondary text-nowrap"
-                data-bs-toggle="popover"
-                data-bs-container="body"
-                data-bs-html="true"
-                data-bs-placement="auto"
-                data-bs-title="Upload file"
-                data-bs-content={FileUploadForm({
-                  file: { id: file.id, path: file.coursePath },
-                  csrfToken: data.csrfToken,
-                  maxFileSizeBytes: data.maxFileSizeBytes,
-                  action: data.fileActionUrl,
-                  redirectUrl,
-                }).toString()}
                 disabled={!canUpload}
-              >
-                <i className="fa fa-arrow-up" />
-                <span>Upload</span>
-              </button>
+                maxFileSizeBytes={data.maxFileSizeBytes}
+                targetFilePath={file.selectedFilePath}
+                directory={null}
+                onUploadFile={actions.onUploadFile}
+              />
             </>
           )}
           <a
@@ -232,47 +199,20 @@ function DraftQuestionFileRow({
           </a>
           {data.isReadOnly ? null : (
             <>
-              <button
-                type="button"
-                className="btn btn-xs btn-secondary text-nowrap"
-                data-bs-toggle="popover"
-                data-bs-container="body"
-                data-bs-html="true"
-                data-bs-placement="auto"
-                data-bs-title="Rename file"
-                data-bs-content={FileRenameForm({
-                  file: { id: file.id, name: file.name, dir: file.workingDirectory },
-                  csrfToken: data.csrfToken,
-                  isViewingFile: false,
-                  action: data.fileActionUrl,
-                  redirectUrl,
-                }).toString()}
-                data-testid="rename-file-button"
+              <RenameFileButton
+                id={`instructorFileRenameForm-${file.id}`}
+                fileName={file.name}
+                oldFilePath={file.selectedFilePath}
                 disabled={!canRename}
-              >
-                <i className="fa fa-i-cursor" />
-                <span>Rename</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-xs btn-secondary text-nowrap"
-                data-bs-toggle="popover"
-                data-bs-container="body"
-                data-bs-html="true"
-                data-bs-placement="auto"
-                data-bs-title="Confirm delete"
-                data-bs-content={FileDeleteForm({
-                  file: { id: file.id, name: file.name, path: file.coursePath },
-                  csrfToken: data.csrfToken,
-                  action: data.fileActionUrl,
-                  redirectUrl,
-                }).toString()}
-                data-testid="delete-file-button"
+                onRenameFile={actions.onRenameFile}
+              />
+              <DeleteFileButton
+                id={`instructorFileDeleteForm-${file.id}`}
+                fileName={file.name}
+                filePath={file.selectedFilePath}
                 disabled={!canDelete}
-              >
-                <i className="far fa-trash-alt" />
-                <span>Delete</span>
-              </button>
+                onDeleteFile={actions.onDeleteFile}
+              />
             </>
           )}
         </div>
@@ -319,18 +259,15 @@ function DraftQuestionDirectoryRow({
 
 export function DraftQuestionFileBrowser({
   data,
+  actions,
   onSelectFile,
   onSelectDirectory,
 }: {
   data: DraftQuestionFileBrowserData;
+  actions: DraftQuestionFileBrowserActions;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
 }) {
-  const redirectUrl = getEditorUrlWithSelectedDirectory({
-    editorUrl: data.editorUrl,
-    directory: data.selectedDirectory,
-  });
-
   return (
     <>
       <nav aria-label="File browser breadcrumb" className="mb-2">
@@ -363,7 +300,7 @@ export function DraftQuestionFileBrowser({
       </nav>
       {data.hasEditPermission && !data.isReadOnly ? (
         <div className="d-flex justify-content-end mb-2">
-          <DraftQuestionDirectoryActions data={data} redirectUrl={redirectUrl} />
+          <DraftQuestionDirectoryActions data={data} actions={actions} />
         </div>
       ) : null}
       <div className="table-responsive">
@@ -380,7 +317,7 @@ export function DraftQuestionFileBrowser({
                 key={`file-${file.selectedFilePath}`}
                 data={data}
                 file={file}
-                redirectUrl={redirectUrl}
+                actions={actions}
                 onSelectFile={onSelectFile}
               />
             ))}
