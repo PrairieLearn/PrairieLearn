@@ -59,7 +59,8 @@ SELECT
         ri.id IS NOT NULL
     ),
     ARRAY[]::text[]
-  ) AS ai_descriptions
+  ) AS ai_descriptions,
+  ai_gj.ai_completion
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
@@ -68,7 +69,8 @@ FROM
   JOIN LATERAL (
     SELECT
       gj.id,
-      gj.manual_rubric_grading_id
+      gj.manual_rubric_grading_id,
+      agj.completion AS ai_completion
     FROM
       grading_jobs AS gj
       JOIN submissions AS s ON s.id = gj.submission_id
@@ -92,4 +94,5 @@ WHERE
 GROUP BY
   iq.id,
   t.name,
-  u.uid;
+  u.uid,
+  ai_gj.ai_completion;

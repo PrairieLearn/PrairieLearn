@@ -139,7 +139,7 @@ export async function runAiGradingEval({
         verdictFilesByEval.set(loaded.entry.id, filenames);
       }
 
-      const unsureByCase = new Map<
+      const casesById = new Map<
         string,
         { case_data: ClassifiedCase; models: AiGradingModelId[] }
       >();
@@ -164,12 +164,11 @@ export async function runAiGradingEval({
         });
 
         for (const c of classified.cases) {
-          if (c.classification !== 'unsure') continue;
-          const existing = unsureByCase.get(c.case_id);
+          const existing = casesById.get(c.case_id);
           if (existing) {
             existing.models.push(model);
           } else {
-            unsureByCase.set(c.case_id, { case_data: c, models: [model] });
+            casesById.set(c.case_id, { case_data: c, models: [model] });
           }
         }
 
@@ -194,8 +193,9 @@ export async function runAiGradingEval({
       }
 
       if (generateAnnotationPackets) {
-        const unsureCases = [...unsureByCase.values()];
-        if (unsureCases.length === 0) {
+        const allCases = [...casesById.values()];
+        const hasUnsure = allCases.some((c) => c.case_data.classification === 'unsure');
+        if (!hasUnsure) {
           job.info(`No unsure cases for ${loaded.entry.id}; skipping annotation packet.`);
         } else {
           const packetDir = path.join(
@@ -206,7 +206,7 @@ export async function runAiGradingEval({
           );
           const packetPath = await generateAnnotationPacket({
             loadedEval: loaded,
-            unsureCases,
+            cases: allCases,
             target,
             course: scaffold.course,
             user,

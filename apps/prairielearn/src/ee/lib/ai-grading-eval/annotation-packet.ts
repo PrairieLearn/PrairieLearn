@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { type Course, InstanceQuestionSchema, type User } from '../../../lib/db-types.js';
@@ -28,7 +29,7 @@ const InstanceQuestionRowSchema = z.object({
   submission_identifier: z.string(),
 });
 
-interface UnsureCaseInput {
+interface ClassifiedCaseInput {
   case_data: ClassifiedCase;
   models: AiGradingModelId[];
 }
@@ -38,13 +39,16 @@ interface RenderedCase {
   submission_id: string;
   submission_identifier: string;
   ai_descriptions: string[];
+  ai_explanation: string | null;
+  classification: 'correct' | 'incorrect' | 'unsure';
+  verdict_source: string;
   question_html: string;
   answer_html: string;
 }
 
 export async function generateAnnotationPacket({
   loadedEval,
-  unsureCases,
+  cases,
   target,
   course,
   user,
@@ -52,13 +56,17 @@ export async function generateAnnotationPacket({
   job,
 }: {
   loadedEval: LoadedEval;
-  unsureCases: UnsureCaseInput[];
+  cases: ClassifiedCaseInput[];
   target: ResolvedTarget;
   course: Course;
   user: User;
   packetDir: string;
   job: ServerJob;
 }): Promise<string> {
+  // Only render question HTML for the unsure cases (the only ones the annotator
+  // sees in the UI). Auto-classified cases are still embedded so the exported
+  // CSV groups them, but they don't need rendered prose.
+  const unsureCases = cases.filter((c) => c.case_data.classification === 'unsure');
   const identifiers = [...new Set(unsureCases.map((c) => c.case_data.submission_identifier))];
   const rows = await queryRows(
     sql.select_instance_questions_for_identifiers,
@@ -75,53 +83,68 @@ export async function generateAnnotationPacket({
   const urlPrefix = `/pl/course_instance/${target.course_instance.id}/instructor`;
 
   const renderedCases: RenderedCase[] = [];
-  for (const unsure of unsureCases) {
-    const row = rowByIdentifier.get(unsure.case_data.submission_identifier);
-    if (!row) {
+  for (const entry of cases) {
+    const c = entry.case_data;
+    const row = rowByIdentifier.get(c.submission_identifier);
+    let submission_id = '';
+    let questionHtml = '';
+    let answerHtml = '';
+
+    // Only the unsure cases get rendered question/answer/image HTML — that's
+    // what the annotator sees. Auto-classified cases are recorded so they
+    // make it into the CSV but don't need rendered prose.
+    if (c.classification === 'unsure' && row) {
+      const { variant, submission } = await selectLastVariantAndSubmission(
+        row.instance_question.id,
+      );
+      submission_id = submission.id;
+
+      const locals = {
+        ...buildQuestionUrls(urlPrefix, variant, target.question, row.instance_question),
+        urlPrefix,
+        showCorrectAnswer: true,
+        allowAnswerEditing: false,
+        questionRenderContext: 'manual_grading' as const,
+      };
+
+      const renderQuestion = await questionModule.render({
+        renderSelection: { question: true, submissions: false, answer: true },
+        variant,
+        question: target.question,
+        submission: null,
+        submissions: [],
+        course: question_course,
+        locals,
+      });
+      if (renderQuestion.courseIssues.length > 0) {
+        logger.error(
+          `Annotation packet render issues for ${c.submission_identifier}: ` +
+            renderQuestion.courseIssues.toString(),
+        );
+      }
+
+      questionHtml = inlineImageCaptures(
+        renderQuestion.data.questionHtml,
+        submission.submitted_answer,
+      );
+      answerHtml = renderQuestion.data.answerHtml;
+    } else if (c.classification === 'unsure' && !row) {
       job.warn(
-        `Annotation packet: could not resolve instance question for ${unsure.case_data.submission_identifier}; skipping.`,
+        `Annotation packet: could not resolve instance question for ${c.submission_identifier}; skipping.`,
       );
       continue;
     }
 
-    const { variant, submission } = await selectLastVariantAndSubmission(row.instance_question.id);
-
-    const locals = {
-      ...buildQuestionUrls(urlPrefix, variant, target.question, row.instance_question),
-      urlPrefix,
-      showCorrectAnswer: true,
-      allowAnswerEditing: false,
-      questionRenderContext: 'manual_grading' as const,
-    };
-
-    const renderQuestion = await questionModule.render({
-      renderSelection: { question: true, submissions: false, answer: true },
-      variant,
-      question: target.question,
-      submission: null,
-      submissions: [],
-      course: question_course,
-      locals,
-    });
-    if (renderQuestion.courseIssues.length > 0) {
-      logger.error(
-        `Annotation packet render issues for ${unsure.case_data.submission_identifier}: ` +
-          renderQuestion.courseIssues.toString(),
-      );
-    }
-
-    const questionHtml = inlineImageCaptures(
-      renderQuestion.data.questionHtml,
-      submission.submitted_answer,
-    );
-
     renderedCases.push({
-      case_id: unsure.case_data.case_id,
-      submission_id: submission.id,
-      submission_identifier: unsure.case_data.submission_identifier,
-      ai_descriptions: unsure.case_data.ai_descriptions,
+      case_id: c.case_id,
+      submission_id,
+      submission_identifier: c.submission_identifier,
+      ai_descriptions: c.ai_descriptions,
+      ai_explanation: c.ai_explanation,
+      classification: c.classification,
+      verdict_source: c.verdict_source,
       question_html: questionHtml,
-      answer_html: renderQuestion.data.answerHtml,
+      answer_html: answerHtml,
     });
   }
 
@@ -225,17 +248,19 @@ function renderRubricTable(
                   : ''}
               </td>
               <td>
-                <div class="fw-medium">${item.description}</div>
-                ${item.explanation
-                  ? html`<div class="rubric-detail">
-                      <span class="rubric-detail-label">Explanation</span>
-                      <span class="rubric-detail-body">${item.explanation}</span>
-                    </div>`
-                  : ''}
+                <div class="fw-medium rubric-description">
+                  ${unsafeHtml(markdownToHtml(item.description, { inline: true }))}
+                </div>
                 ${item.grader_note
                   ? html`<div class="rubric-detail">
                       <span class="rubric-detail-label">Grader note</span>
-                      <span class="rubric-detail-body">${item.grader_note}</span>
+                      <div class="rubric-md">${unsafeHtml(markdownToHtml(item.grader_note))}</div>
+                    </div>`
+                  : ''}
+                ${item.explanation
+                  ? html`<div class="rubric-detail">
+                      <span class="rubric-detail-label">Explanation</span>
+                      <div class="rubric-md">${unsafeHtml(markdownToHtml(item.explanation))}</div>
                     </div>`
                   : ''}
               </td>
@@ -263,12 +288,23 @@ function renderPacketHtml({
   rubricItems: RubricItem[];
   cases: RenderedCase[];
 }): string {
+  // Embed every classified case (correct + incorrect + unsure) so the exported
+  // CSV groups everything by classification source. The UI only renders unsure
+  // cases (filtered below in renderCaseCard mapping) — annotator-graded results
+  // are still written to localStorage / CSV under the same case_id.
   const packetMeta = {
     eval_id: evalId,
     timestamp,
     generated_by: user.uid,
-    case_ids: cases.map((c) => c.case_id),
+    cases: cases.map((c) => ({
+      case_id: c.case_id,
+      submission_identifier: c.submission_identifier,
+      rubric_descriptions: c.ai_descriptions.join('|'),
+      classification: c.classification,
+      verdict_source: c.verdict_source,
+    })),
   };
+  const unsureCases = cases.filter((c) => c.classification === 'unsure');
 
   const document = html`<!doctype html>
     <html lang="en">
@@ -277,14 +313,19 @@ function renderPacketHtml({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>AI grading verdicts — ${evalId}</title>
         <script>
+          // Mirrors PL's runtime MathJax config (apps/prairielearn/src/lib/client/mathjax.ts).
           window.MathJax = {
+            options: {
+              ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore',
+              processHtmlClass: 'mathjax_process',
+            },
             tex: {
               inlineMath: [
                 ['$', '$'],
                 ['\\(', '\\)'],
               ],
             },
-            svg: { linebreaks: { inline: false } },
+            svg: { blacker: 13, linebreaks: { inline: false } },
             loader: { load: ['input/tex', 'ui/menu', 'output/svg'] },
           };
         </script>
@@ -319,18 +360,21 @@ function renderPacketHtml({
           .verdict-card .btn {
             min-width: 6rem;
           }
-          .grading-panel {
-            position: sticky;
-            top: 1rem;
+          pre.ai-explanation {
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: inherit;
           }
           .rubric-detail {
-            margin-top: 0.35rem;
+            margin-top: 0.5rem;
             font-size: 0.85rem;
-            line-height: 1.35;
+            line-height: 1.4;
+            color: #495057;
           }
           .rubric-detail-label {
             display: inline-block;
             margin-right: 0.4rem;
+            margin-bottom: 0.2rem;
             padding: 0.05rem 0.4rem;
             background: #e9ecef;
             color: #495057;
@@ -341,18 +385,33 @@ function renderPacketHtml({
             font-weight: 600;
             vertical-align: middle;
           }
-          .rubric-detail-body {
-            white-space: pre-wrap;
+          .rubric-md {
             color: #495057;
           }
+          .rubric-md > :first-child {
+            margin-top: 0;
+          }
+          .rubric-md > :last-child {
+            margin-bottom: 0;
+          }
+          .rubric-md p,
+          .rubric-md ul,
+          .rubric-md ol {
+            margin-bottom: 0.4rem;
+          }
+          .rubric-description p {
+            display: inline;
+            margin: 0;
+          }
           .table > tbody > tr > td {
-            padding-top: 0.4rem;
-            padding-bottom: 0.4rem;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            vertical-align: top;
           }
         </style>
-        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@4.1.2/tex-svg.js" defer></script>
       </head>
-      <body>
+      <body class="mathjax_process">
         <div class="container-fluid py-3" style="max-width: 1400px;">
           <h1 class="h4 mb-2">${evalId}</h1>
           <p class="mb-1"><strong>Select whether or not each grading is correct.</strong></p>
@@ -361,7 +420,7 @@ function renderPacketHtml({
             When done, click <strong>Export CSV</strong> at the bottom of the page.
           </p>
 
-          ${cases.map((c, idx) => renderCaseCard(c, idx, cases.length, rubricItems))}
+          ${unsureCases.map((c, idx) => renderCaseCard(c, idx, unsureCases.length, rubricItems))}
 
           <div class="text-center py-4">
             <p class="text-muted mb-3">
@@ -402,9 +461,17 @@ function renderCaseCard(
       data-submission-identifier="${c.submission_identifier}"
       data-rubric-descriptions="${rubricEncoded}"
     >
-      <div class="card-header d-flex align-items-center gap-2">
+      <div class="card-header d-flex align-items-center gap-2 flex-wrap">
         <span class="badge bg-secondary">${idx + 1}/${total}</span>
-        <code>Submission #${c.submission_id}</code>
+        <code title="Submission identifier from submissions.csv (stable across runs)"
+          >${c.submission_identifier}</code
+        >
+        <span
+          class="text-muted small"
+          title="Stable case id = hash(eval_id + submission + AI selection)"
+        >
+          case ${c.case_id.slice(0, 10)}
+        </span>
       </div>
       <div class="card-body">
         <div class="row g-3">
@@ -418,6 +485,19 @@ function renderCaseCard(
                   <div class="panel-heading mt-3 mb-1">Solution</div>
                   <div class="rich-content border rounded p-2 bg-light">
                     ${unsafeHtml(c.answer_html)}
+                  </div>
+                `
+              : ''}
+            ${c.ai_explanation
+              ? html`
+                  <div class="panel-heading mt-3 mb-1">AI explanation</div>
+                  <div class="border rounded p-2 bg-light">
+                    <pre
+                      class="ai-explanation mb-0 overflow-visible mathjax_process"
+                      style="white-space: pre-wrap;"
+                    >
+${c.ai_explanation}</pre
+                    >
                   </div>
                 `
               : ''}
@@ -539,20 +619,52 @@ function packetJs(): string {
 
       function exportCsv() {
         const rows = [];
-        rows.push(['eval_id', 'case_id', 'submission_identifier', 'rubric_descriptions', 'verdict', 'annotator', 'timestamp', 'notes']);
+        rows.push([
+          'eval_id',
+          'case_id',
+          'submission_identifier',
+          'rubric_descriptions',
+          'verdict',
+          'classification_source',
+          'annotator',
+          'timestamp',
+          'notes',
+        ]);
+        const annotatorByCase = state || {};
+        const exportedIds = new Set();
+        // Emit annotator-graded unsure cases first
         document.querySelectorAll('.case-card').forEach((card) => {
           const caseId = card.dataset.caseId;
-          const entry = state[caseId];
+          const entry = annotatorByCase[caseId];
           if (!entry || !entry.verdict) return;
+          exportedIds.add(caseId);
           rows.push([
             meta.eval_id,
             caseId,
             entry.submission_identifier,
             entry.rubric_descriptions,
             entry.verdict,
+            'annotator',
             '',
             entry.updated_at,
             entry.notes ?? '',
+          ]);
+        });
+        // Then emit the auto-classified cases (correct / incorrect) embedded
+        // in packet meta so the CSV is a complete record of this run.
+        (meta.cases || []).forEach((c) => {
+          if (c.classification !== 'correct' && c.classification !== 'incorrect') return;
+          if (exportedIds.has(c.case_id)) return;
+          rows.push([
+            meta.eval_id,
+            c.case_id,
+            c.submission_identifier,
+            c.rubric_descriptions,
+            c.classification,
+            'auto:' + (c.verdict_source || 'unknown'),
+            '',
+            meta.timestamp,
+            '',
           ]);
         });
         const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\\n');

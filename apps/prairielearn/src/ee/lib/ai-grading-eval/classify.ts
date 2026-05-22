@@ -11,6 +11,7 @@ const RowSchema = z.object({
   submission_identifier: z.string().nullable(),
   human_descriptions: z.array(z.string()).optional(),
   ai_descriptions: z.array(z.string()).optional(),
+  ai_completion: z.unknown().nullable().optional(),
 });
 
 type Classification = 'correct' | 'incorrect' | 'unsure';
@@ -19,8 +20,31 @@ export interface ClassifiedCase {
   case_id: string;
   submission_identifier: string;
   ai_descriptions: string[];
+  ai_explanation: string | null;
   classification: Classification;
   verdict_source: string;
+}
+
+/**
+ * Pulls the LLM's free-text explanation out of an `ai_grading_jobs.completion`
+ * blob. Mirrors the multi-format extraction in
+ * `apps/prairielearn/src/ee/lib/ai-grading/ai-grading-util.ts` (chat / response
+ * / `ai` package formats). Returns null when no usable explanation is present.
+ */
+function extractAiExplanation(completion: unknown): string | null {
+  if (!completion || typeof completion !== 'object') return null;
+  const c = completion as Record<string, any>;
+  const trimmed = (s: unknown) => (typeof s === 'string' ? s.trim() || null : null);
+  if (Array.isArray(c.choices)) {
+    return trimmed(c.choices[0]?.message?.parsed?.explanation);
+  }
+  if (c.output_parsed) {
+    return trimmed(c.output_parsed.explanation);
+  }
+  if (c.object) {
+    return trimmed(c.object.explanation);
+  }
+  return null;
 }
 
 interface ClassificationCounts {
@@ -99,6 +123,7 @@ export async function classifyRun({
       case_id,
       submission_identifier: row.submission_identifier,
       ai_descriptions: [...descriptions].sort(),
+      ai_explanation: extractAiExplanation(row.ai_completion),
       classification,
       verdict_source: verdict?.source ?? 'none',
     });
