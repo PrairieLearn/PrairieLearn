@@ -29,7 +29,7 @@ import {
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
 import {
-  AssessmentAccessRulesSchema,
+  AssessmentAccessRuleRowSchema,
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
@@ -104,7 +104,7 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      AssessmentAccessRulesSchema,
+      AssessmentAccessRuleRowSchema,
     );
 
     const assessmentPath = getAssessmentPath(res.locals);
@@ -217,7 +217,7 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,

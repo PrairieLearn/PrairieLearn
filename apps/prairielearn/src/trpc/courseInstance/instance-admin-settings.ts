@@ -6,7 +6,9 @@ import { analyzeCourseInstanceAssessments } from '../../lib/assessment-access-co
 
 import { requireCoursePermissionEdit, requireEnhancedAccessControl, t } from './init.js';
 
-export interface InstanceAdminSettingsError {}
+export interface InstanceAdminSettingsError {
+  AnalyzeAccessControl: never;
+}
 
 const analyzeAccessControl = t.procedure
   .use(requireEnhancedAccessControl)

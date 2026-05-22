@@ -461,11 +461,11 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Used to sign JWTs that PrairieLearn provides to PrairieTest for authentication.
-   * PrairieTest should be configured with the same value for
-   * `prairieLearnAuthSecret`.
+   * Shared secret used to sign and verify auth JWTs exchanged between
+   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
+   * configured with the same value under the same key.
    */
-  prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -680,6 +680,7 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
       'gpt-5.4-2026-03-05': TokenPricingSchema,
+      'gemini-3.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
@@ -696,9 +697,10 @@ export const ConfigSchema = z.object({
       'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
       'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
 
-      // Prices current as of 2026-04-16. Values obtained from
+      // Prices current as of 2026-05-19. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
+      'gemini-3.5-flash': { input: 1.5, cachedInput: 0.15, cacheWrite: 0, output: 9 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 

@@ -70,6 +70,7 @@ export function AdministratorCourseFormFields({
   emailDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
+  repositoryRequired,
 }: {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
@@ -78,6 +79,7 @@ export function AdministratorCourseFormFields({
   emailDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
+  repositoryRequired: boolean;
 }) {
   const trpc = useTRPC();
   const {
@@ -311,7 +313,9 @@ export function AdministratorCourseFormFields({
             aria-errormessage={
               errors.repository_short_name ? 'courseFormRepositoryName-error' : undefined
             }
-            {...register('repository_short_name', { required: 'Enter a repository name' })}
+            {...register('repository_short_name', {
+              required: repositoryRequired && 'Enter a repository name',
+            })}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger

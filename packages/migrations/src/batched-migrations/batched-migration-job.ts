@@ -4,7 +4,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
-export const BatchedMigrationJobStatusSchema = z.enum(['pending', 'failed', 'succeeded']);
+const BatchedMigrationJobStatusSchema = z.enum(['pending', 'failed', 'succeeded']);
 export type BatchedMigrationJobStatus = z.infer<typeof BatchedMigrationJobStatusSchema>;
 
 export const BatchedMigrationJobRowSchema = z.object({

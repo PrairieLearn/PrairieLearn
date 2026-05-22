@@ -1,7 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -49,17 +48,6 @@ router.get(
     );
     res.locals.assessment = assessment;
 
-    // Fetch assessments.stats_last_updated (the time when we last updated
-    // the _question_ statistics for this assessment). Note that this is
-    // different to assessments.statistics_last_updated_at (the time we last
-    // updated the assessment instance statistics stored in the assessments
-    // row itself).
-    const statsLastUpdated = await sqldb.queryScalar(
-      sql.assessment_stats_last_updated,
-      { assessment_id: res.locals.assessment.id },
-      z.string(),
-    );
-
     const rows = await sqldb.queryRows(
       sql.questions,
       { assessment_id: res.locals.assessment.id },
@@ -69,7 +57,6 @@ router.get(
     res.send(
       InstructorAssessmentQuestionStatistics({
         questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
-        statsLastUpdated,
         rows,
         resLocals: res.locals,
       }),

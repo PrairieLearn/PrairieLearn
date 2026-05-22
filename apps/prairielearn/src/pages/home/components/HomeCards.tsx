@@ -3,9 +3,10 @@ import { parseAsBoolean, useQueryState } from 'nuqs';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
+import type { StudentHomePageCourse } from '../home.types.js';
 
 import { EmptyStateCards } from './EmptyStateCards.js';
-import { StudentCoursesCard, type StudentHomePageCourse } from './StudentCoursesCard.js';
+import { StudentCoursesCard } from './StudentCoursesCard.js';
 
 interface HomeCardsProps {
   studentCourses: StudentHomePageCourse[];

@@ -19,19 +19,19 @@ export interface Student {
   uin: string | null;
 }
 
-export interface MatchStrategy {
+interface MatchStrategy {
   name: string;
   label: string;
   prairielearnKey: (student: Student) => string;
   canvasKey: (student: CanvasStudent) => string;
 }
 
-export interface MatchedPair {
+interface MatchedPair {
   plStudent: Student;
   canvasStudent: CanvasStudent;
 }
 
-export interface MatchResult {
+interface MatchResult {
   matched: MatchedPair[];
   ambiguousPl: Student[];
   ambiguousCanvas: CanvasStudent[];

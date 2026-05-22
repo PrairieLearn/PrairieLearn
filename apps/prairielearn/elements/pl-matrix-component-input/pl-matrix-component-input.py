@@ -19,6 +19,7 @@ class ComparisonMode(Enum):
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
+SUFFIX_DEFAULT = None
 ARIA_LABEL_DEFAULT = None
 COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
@@ -36,6 +37,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "label",
+        "suffix",
         "comparison",
         "rtol",
         "atol",
@@ -78,6 +80,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
@@ -116,6 +119,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             n,
             name,
             label=label,
+            suffix=suffix,
             aria_label=aria_label,
             label_uuid=uuid,
             data=data,
@@ -174,6 +178,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "suffix": suffix,
             "editable": editable,
             "info": info,
             "shortinfo": shortinfo,
@@ -201,6 +206,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
+            html_params["suffix"] = suffix
+
             if (
                 a_submitted is not None
                 and isinstance(a_submitted, np.ndarray)
@@ -246,6 +253,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -268,6 +276,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -322,6 +331,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params = {
                 "answer": True,
                 "label": label,
+                "suffix": suffix,
                 "latex_data": latex_data,
             }
 
@@ -551,6 +561,7 @@ def create_table_for_html_display(
     n: int,
     name: str,
     label: str | None,
+    suffix: str | None,
     aria_label: str | None,
     label_uuid: str,
     data: pl.QuestionData,
@@ -666,6 +677,8 @@ def create_table_for_html_display(
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
+        if suffix is not None:
+            display_array += f'<td rowspan="0">&nbsp;{escape(suffix)}</td>'
         if score_message:
             display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
         display_array += "</tr>"
@@ -698,6 +711,12 @@ def create_table_for_html_display(
         display_array += "</table>"
 
     elif format_type == "input":
+        described_by_attr = ""
+        if suffix is not None:
+            described_by_attr = (
+                f'aria-describedby="pl-matrix-component-input-{label_uuid}-suffix"'
+            )
+
         display_array = f'<table role="grid" {label_attr}>'
         display_array += "<tr>"
         # Add first row
@@ -714,7 +733,7 @@ def create_table_for_html_display(
             value = ""
             if raw_submitted_answer is not None:
                 value = f'value="{escape(raw_submitted_answer)}"'
-            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {disabled} {value}/></td>'
+            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {described_by_attr} {disabled} {value}/></td>'
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
@@ -732,7 +751,7 @@ def create_table_for_html_display(
                 value = ""
                 if raw_submitted_answer is not None:
                     value = f'value="{escape(raw_submitted_answer)}"'
-                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {disabled} {value}/></td>'
+                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {described_by_attr} {disabled} {value}/></td>'
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"
