@@ -424,13 +424,11 @@ export function FileEditor({
                   </div>
                   {draftEditResult.jobSequence != null ? (
                     <Collapse in={detailExpanded}>
-                      <div id="job-sequence-results" className="row mt-4">
-                        <div className="card card-body">
-                          <JobSequenceResults
-                            jobSequence={draftEditResult.jobSequence}
-                            timeZone={timeZone}
-                          />
-                        </div>
+                      <div id="job-sequence-results" className="mt-4">
+                        <JobSequenceResults
+                          jobSequence={draftEditResult.jobSequence}
+                          timeZone={timeZone}
+                        />
                       </div>
                     </Collapse>
                   ) : null}
