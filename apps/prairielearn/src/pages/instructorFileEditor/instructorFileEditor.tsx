@@ -292,6 +292,18 @@ router.get(
   ),
 );
 
+// TODO: This page is a hydrated React component, but it still saves via a
+// full-page form POST + Post/Redirect/Get. The `file_edits` table and the
+// `readDraftEdit`/`writeDraftEdit`/`updateJobSequenceId` helpers below exist
+// only to carry the editor's contents and the sync job's result across that
+// redirect — `instructorFileEditor` is the sole consumer of `file_edits`.
+//
+// Converting this save to a tRPC mutation that stays on the
+// page would let the client keep its contents in React state and receive the
+// job result as a return value, retiring the `file_edits` mechanism, the
+// `DraftEdit` type, and the `versionChoice`/`alertChoice` UI. The concurrent-
+// edit case is already handled cleanly by the `STALE_EDIT` flow in
+// `trpc/shared/ai-draft-files.ts`.
 router.post(
   '/*',
   typedAsyncHandler<'course' | 'course-instance' | 'assessment'>(async (req, res) => {
