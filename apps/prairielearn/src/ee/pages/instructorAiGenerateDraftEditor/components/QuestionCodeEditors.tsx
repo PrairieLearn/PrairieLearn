@@ -1,7 +1,19 @@
+import { useMutation } from '@tanstack/react-query';
 import { type Ref, useImperativeHandle, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import {
+  type AppError,
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../../../lib/client/errors.js';
+import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+
+import { useTRPC } from './aiDraftFilesTrpc.js';
+
+const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
 
 export interface QuestionCodeEditorsHandle {
   /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */
@@ -13,25 +25,34 @@ export interface QuestionCodeEditorsHandle {
 export function QuestionCodeEditors({
   htmlContents,
   pythonContents,
-  csrfToken,
+  questionId,
+  urlPrefix,
   isGenerating,
   filesError,
   onRetryFiles,
+  onSaved,
   editorRef,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
-  csrfToken: string;
+  questionId: string;
+  urlPrefix: string;
   isGenerating: boolean;
   filesError?: { message: string } | null;
   onRetryFiles?: () => void;
+  onSaved: () => Promise<unknown>;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
+  const trpc = useTRPC();
+  const saveMutation = useMutation(trpc.aiDraftFiles.saveFiles.mutationOptions());
+
   const savedHtml = htmlContents ?? '';
   const savedPython = pythonContents ?? '';
 
   const [htmlValue, setHtmlValue] = useState(savedHtml);
   const [pythonValue, setPythonValue] = useState(savedPython);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<AppError<AiDraftFilesError['SaveFiles']> | null>(null);
 
   // Reset the editors to match the saved files when they change externally (e.g.
   // after AI updates or saves), discarding any local edits. This adjusts state
@@ -55,9 +76,48 @@ export function QuestionCodeEditors({
     discardChanges: () => {
       setHtmlValue(savedHtml);
       setPythonValue(savedPython);
+      setSaveError(null);
     },
     getHasChanges: () => hasChanges,
   }));
+
+  async function save() {
+    if (isSaving || isGenerating || !hasChanges) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await saveMutation.mutateAsync({
+        questionId,
+        files: [
+          { path: 'question.html', encodedContents: b64EncodeUnicode(htmlValue) },
+          // Clearing `server.py` deletes it: a question with no server-side code
+          // shouldn't keep an empty file around.
+          {
+            path: 'server.py',
+            encodedContents: pythonValue.trim() === '' ? null : b64EncodeUnicode(pythonValue),
+          },
+        ],
+      });
+      await onSaved();
+    } catch (err) {
+      setSaveError(
+        getAppError<AiDraftFilesError['SaveFiles']>(err) ?? {
+          code: 'UNKNOWN',
+          message: SAVE_ERROR_MESSAGE,
+        },
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const statusText = isSaving
+    ? 'Saving...'
+    : hasChanges
+      ? 'Unsaved changes.'
+      : 'No unsaved changes.';
 
   return (
     <div className="editor-panes p-2 gap-2">
@@ -89,17 +149,23 @@ export function QuestionCodeEditors({
             Editors are read-only while generation is in progress
           </div>
         ) : (
-          <div className="d-flex flex-row align-items-center justify-content-between ps-2">
-            <span>{hasChanges ? 'Unsaved changes.' : 'No unsaved changes.'}</span>
-            <form method="post">
-              <input type="hidden" name="__action" value="submit_manual_revision" />
-              <input type="hidden" name="__csrf_token" value={csrfToken} />
-              <button type="submit" className="btn btn-sm btn-primary" disabled={!hasChanges}>
-                Save edits
-              </button>
-              <input type="hidden" name="html" value={b64EncodeUnicode(htmlValue)} />
-              <input type="hidden" name="python" value={b64EncodeUnicode(pythonValue)} />
-            </form>
+          <div className="d-flex flex-row align-items-center justify-content-between gap-2 ps-2">
+            <span className={saveError ? 'text-danger' : undefined}>
+              {saveError != null
+                ? renderAppError(saveError, {
+                    SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                    UNKNOWN: ({ message }) => message,
+                  })
+                : statusText}
+            </span>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              disabled={!hasChanges || isSaving}
+              onClick={() => void save()}
+            >
+              {isSaving ? 'Saving...' : 'Save edits'}
+            </button>
           </div>
         )}
       </div>

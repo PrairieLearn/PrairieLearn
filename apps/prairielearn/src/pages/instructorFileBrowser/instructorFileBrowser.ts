@@ -15,9 +15,9 @@ import {
   FileUploadEditor,
   runEditorJob,
 } from '../../lib/editors.js';
-import { FILE_NAME_PATTERN } from '../../lib/file-names.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { FILE_NAME_PATTERN } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 

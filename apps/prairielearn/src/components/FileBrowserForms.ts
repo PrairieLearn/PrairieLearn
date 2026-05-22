@@ -2,7 +2,7 @@ import { filesize } from 'filesize';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { FILE_NAME_PATTERN } from '../lib/file-names.js';
+import { FILE_NAME_PATTERN } from '../lib/short-name.js';
 
 type FileUploadInfo = {
   id: string | number;

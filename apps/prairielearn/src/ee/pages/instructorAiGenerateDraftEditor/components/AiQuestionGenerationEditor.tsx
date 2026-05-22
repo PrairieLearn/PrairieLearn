@@ -221,6 +221,7 @@ function AiQuestionGenerationEditorInner({
             currentQid={currentQid}
             currentTitle={currentTitle}
             csrfToken={csrfToken}
+            urlPrefix={urlPrefix}
             onSaved={handleTitleAndQidSaved}
           />
           <div className="d-flex flex-row align-items-stretch bg-light">
@@ -284,7 +285,9 @@ function AiQuestionGenerationEditorInner({
             onSelectFile={(filePath) => void handleSelectFile(filePath)}
             onSelectDirectory={(directory) => void handleSelectDirectory(directory)}
             onClearSelectedFile={() => void handleClearSelectedFile()}
+            onCodeSaved={handleFilesMutated}
             onSelectedFileSaved={handleFilesMutated}
+            onReloadSelectedFile={() => refetchFiles()}
           />
         </div>
         <FinalizeModal

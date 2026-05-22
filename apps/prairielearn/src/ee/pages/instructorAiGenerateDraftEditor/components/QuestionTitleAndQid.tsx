@@ -1,7 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { z } from 'zod';
 
+import {
+  getAppError,
+  readAppErrorResponse,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../../../lib/client/errors.js';
 import { validateShortName } from '../../../../lib/short-name.js';
 
 export const DRAFT_QID_PREFIX = '__drafts__/';
@@ -9,6 +16,17 @@ export const DRAFT_QID_PREFIX = '__drafts__/';
 function isDraftQid(qid: string): boolean {
   return qid.startsWith(DRAFT_QID_PREFIX);
 }
+
+/** A draft question rename whose underlying server job failed to sync. */
+interface RenameDraftQuestionError {
+  code: 'SYNC_JOB_FAILED';
+  jobSequenceId: string;
+}
+
+const RenameDraftQuestionResponseSchema = z.object({
+  qid: z.string(),
+  title: z.string().nullable(),
+});
 
 async function renameDraftQuestion({
   csrfToken,
@@ -18,7 +36,7 @@ async function renameDraftQuestion({
   csrfToken: string;
   qid?: string;
   title?: string;
-}): Promise<{ qid: string; title: string | null }> {
+}): Promise<z.infer<typeof RenameDraftQuestionResponseSchema>> {
   const response = await fetch(window.location.href, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -29,11 +47,7 @@ async function renameDraftQuestion({
       ...(title != null ? { title } : {}),
     }),
   });
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error ?? 'Failed to rename question');
-  }
-  return response.json();
+  return await readAppErrorResponse(response, RenameDraftQuestionResponseSchema);
 }
 
 function InlineEditableField({
@@ -62,7 +76,7 @@ function InlineEditableField({
   displayValue?: string;
   placeholder: string;
   isPending: boolean;
-  serverError: string | null;
+  serverError: ReactNode;
   onSave: (newValue: string) => void;
   onResetServerError: () => void;
   /** Accessible label for both the edit trigger and the input field. */
@@ -224,11 +238,13 @@ export function QuestionTitleAndQid({
   currentQid,
   currentTitle,
   csrfToken,
+  urlPrefix,
   onSaved,
 }: {
   currentQid: string | null;
   currentTitle: string | null;
   csrfToken: string;
+  urlPrefix: string;
   onSaved: (update: { qid: string | null; title: string | null }) => void;
 }) {
   const [editingField, setEditingField] = useState<'title' | 'qid' | null>(null);
@@ -245,7 +261,15 @@ export function QuestionTitleAndQid({
     },
   });
 
-  const serverError = renameMutation.isError ? renameMutation.error.message : null;
+  const renameError = renameMutation.isError
+    ? getAppError<RenameDraftQuestionError>(renameMutation.error)
+    : null;
+  const serverError: ReactNode = renameError
+    ? renderAppError(renameError, {
+        SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+        UNKNOWN: ({ message }) => message,
+      })
+    : null;
 
   function handleSaveTitle(newTitle: string) {
     renameMutation.mutate({ csrfToken, title: newTitle || undefined });

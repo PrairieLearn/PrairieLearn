@@ -75,6 +75,7 @@ export function SelectedQuestionFileEditor({
   urlPrefix,
   onShowAllFiles,
   onSaved,
+  onReloadFile,
   editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
@@ -84,6 +85,8 @@ export function SelectedQuestionFileEditor({
   urlPrefix: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
+  /** Re-reads the file from disk, replacing the editor's contents. */
+  onReloadFile: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
@@ -91,8 +94,10 @@ export function SelectedQuestionFileEditor({
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
   const [saveError, setSaveError] = useState<AppError<AiDraftFilesError['Save']> | null>(null);
   const hasChanges = contents !== savedContents;
+  const hasConflict = saveError?.code === 'STALE_EDIT';
   const saveStatus = getSaveStatus({ hasChanges, isSaving, isGenerating });
 
   useImperativeHandle(editorRef, () => ({
@@ -103,9 +108,9 @@ export function SelectedQuestionFileEditor({
     getHasChanges: () => hasChanges,
   }));
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!hasChanges || isSaving || isGenerating) return;
+  /** `force` overwrites a concurrent change after a `STALE_EDIT` conflict. */
+  async function save(force: boolean) {
+    if (isSaving || isGenerating) return;
 
     setIsSaving(true);
     setSaveError(null);
@@ -116,8 +121,8 @@ export function SelectedQuestionFileEditor({
         filePath: selectedFile.path,
         encodedContents: b64EncodeUnicode(contents),
         origHash: selectedFile.contentHash,
+        force,
       });
-      setSaveError(null);
       await onSaved();
     } catch (err) {
       setSaveError(
@@ -128,6 +133,24 @@ export function SelectedQuestionFileEditor({
       );
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!hasChanges) return;
+    void save(false);
+  }
+
+  async function handleReload() {
+    if (isReloading) return;
+    setIsReloading(true);
+    try {
+      // On success the file refetches with a new content hash, remounting this
+      // component with the disk contents; the `finally` only matters otherwise.
+      await onReloadFile();
+    } finally {
+      setIsReloading(false);
     }
   }
 
@@ -144,6 +167,29 @@ export function SelectedQuestionFileEditor({
             {saveError != null
               ? renderAppError(saveError, {
                   SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                  STALE_EDIT: ({ message }) => (
+                    <>
+                      {message} Your edits are kept.{' '}
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 align-baseline"
+                        disabled={isSaving || isReloading}
+                        onClick={() => void handleReload()}
+                      >
+                        Reload file
+                      </button>{' '}
+                      or{' '}
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 align-baseline"
+                        disabled={isSaving || isReloading}
+                        onClick={() => void save(true)}
+                      >
+                        overwrite anyway
+                      </button>
+                      .
+                    </>
+                  ),
                   UNKNOWN: ({ message }) => message,
                 })
               : saveStatus}
@@ -154,7 +200,7 @@ export function SelectedQuestionFileEditor({
             <button
               type="submit"
               className="btn btn-sm btn-primary"
-              disabled={!hasChanges || isSaving || isGenerating}
+              disabled={!hasChanges || isSaving || isGenerating || hasConflict}
             >
               {isSaving ? 'Saving...' : 'Save edits'}
             </button>

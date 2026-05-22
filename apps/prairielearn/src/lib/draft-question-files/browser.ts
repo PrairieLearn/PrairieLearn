@@ -7,7 +7,7 @@ import { isBinaryFile } from 'isbinaryfile';
 import { config } from '../config.js';
 import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
-import { readEditableTextFile } from '../editableFile.js';
+import { readEditableTextFile } from '../editorUtil.js';
 import { browseDirectory, getBinaryFileKind } from '../file-browser.js';
 import { getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';

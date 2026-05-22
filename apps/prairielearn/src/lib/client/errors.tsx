@@ -1,6 +1,7 @@
 import { TRPCClientError } from '@trpc/client';
 import type { ReactNode } from 'react';
 import { Alert, type AlertProps } from 'react-bootstrap';
+import { type z } from 'zod';
 
 /**
  * Resolves the error type for client-side use:
@@ -63,6 +64,35 @@ export function getAppError<T>(error: unknown): AppError<T> | null {
   }
   if (error instanceof Error) return { code: 'UNKNOWN', message: error.message };
   return null;
+}
+
+/**
+ * Reads a `fetch` Response from a non-tRPC route that mirrors the app-error
+ * convention: a non-OK response whose JSON body carries an `appError` is
+ * rethrown as an {@link AppErrorException}, so callers narrow it with
+ * {@link getAppError} exactly like a tRPC app error. Any other non-OK response
+ * throws a plain `Error` (carrying the body's `error` message when present).
+ *
+ * On success the parsed JSON body is returned. Pass `schema` to validate it at
+ * runtime — without one, a 2xx response that isn't the expected JSON (e.g. an
+ * HTML login page from an expired session) would be returned as a bare cast.
+ */
+export async function readAppErrorResponse<T = unknown>(
+  response: Response,
+  schema?: z.ZodType<T>,
+): Promise<T> {
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const appError = (body as { appError?: { code: string; message: string } } | null)?.appError;
+    if (appError) throw new AppErrorException(appError);
+    const message = (body as { error?: unknown } | null)?.error;
+    throw new Error(
+      typeof message === 'string' && message !== ''
+        ? message
+        : `Request failed with status ${response.status}`,
+    );
+  }
+  return schema ? schema.parse(body) : (body as T);
 }
 
 /**

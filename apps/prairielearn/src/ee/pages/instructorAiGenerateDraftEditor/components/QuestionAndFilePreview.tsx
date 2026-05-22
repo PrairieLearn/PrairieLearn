@@ -1,5 +1,5 @@
 import { type Ref, useEffect, useImperativeHandle, useRef } from 'react';
-import { Tab } from 'react-bootstrap';
+import { Alert, Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
@@ -62,6 +62,7 @@ function AllQuestionFiles({
   onSelectDirectory,
   onClearSelectedFile,
   onSelectedFileSaved,
+  onReloadSelectedFile,
   editorRef,
 }: {
   fileBrowser: DraftQuestionFileBrowserData;
@@ -78,6 +79,7 @@ function AllQuestionFiles({
   onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
   onSelectedFileSaved: () => Promise<unknown>;
+  onReloadSelectedFile: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   if (!qid) return null;
@@ -94,6 +96,7 @@ function AllQuestionFiles({
         editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
+        onReloadFile={onReloadSelectedFile}
       />
     );
   }
@@ -212,7 +215,9 @@ export function QuestionAndFilePreview({
   onSelectFile,
   onSelectDirectory,
   onClearSelectedFile,
+  onCodeSaved,
   onSelectedFileSaved,
+  onReloadSelectedFile,
 }: {
   questionFiles: Record<string, string>;
   fileBrowser: DraftQuestionFileBrowserData;
@@ -239,9 +244,12 @@ export function QuestionAndFilePreview({
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
   onClearSelectedFile: () => void;
+  onCodeSaved: () => Promise<unknown>;
   onSelectedFileSaved: () => Promise<unknown>;
+  onReloadSelectedFile: () => Promise<unknown>;
 }) {
-  const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
+  const { wrapperRef, newVariant, previewError, retryPreview, dismissPreviewError } =
+    useQuestionHtml({ variantUrl, variantCsrfToken });
   const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
   const selectedFileEditorRef = useRef<SelectedQuestionFileEditorHandle>(null);
 
@@ -262,6 +270,15 @@ export function QuestionAndFilePreview({
   return (
     <Tab.Content className="h-100">
       <Tab.Pane eventKey="preview" className="h-100">
+        {previewError && (
+          <Alert variant="danger" className="m-3 mb-0" dismissible onClose={dismissPreviewError}>
+            <span className="me-2">{previewError}</span>
+            <button type="button" className="btn btn-sm btn-outline-danger" onClick={retryPreview}>
+              <i className="fa fa-refresh me-1" aria-hidden="true" />
+              Retry
+            </button>
+          </Alert>
+        )}
         {isQuestionEmpty && (
           <div className="d-flex align-items-center justify-content-center h-100">
             {isGenerating ? (
@@ -308,11 +325,13 @@ export function QuestionAndFilePreview({
         <QuestionCodeEditors
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
-          csrfToken={csrfToken}
+          questionId={questionId}
+          urlPrefix={urlPrefix}
           isGenerating={isGenerating}
           filesError={filesError}
           editorRef={internalCodeEditorsRef}
           onRetryFiles={onRetryFiles}
+          onSaved={onCodeSaved}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="all-files" className="h-100">
@@ -332,6 +351,7 @@ export function QuestionAndFilePreview({
           onSelectDirectory={onSelectDirectory}
           onClearSelectedFile={onClearSelectedFile}
           onSelectedFileSaved={onSelectedFileSaved}
+          onReloadSelectedFile={onReloadSelectedFile}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="rich-text-editor" className="h-100">

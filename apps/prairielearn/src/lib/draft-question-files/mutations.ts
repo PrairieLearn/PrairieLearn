@@ -1,10 +1,12 @@
 import type { Course, Question, User } from '../db-types.js';
+import { getOriginalHash } from '../editorUtil.js';
 import {
   type Editor,
   FileDeleteEditor,
   FileModifyEditor,
   FileRenameEditor,
   FileUploadEditor,
+  QuestionModifyEditor,
   runEditorJob,
 } from '../editors.js';
 
@@ -21,6 +23,25 @@ export class EditJobFailedError extends Error {
     super('The file edit failed to sync.');
     this.name = 'EditJobFailedError';
   }
+}
+
+/**
+ * Returns the content hash of a draft question file as it currently exists on
+ * disk, or `null` if the file is missing. Callers compare this against the hash
+ * the editor was opened with to detect a stale edit before saving.
+ */
+export async function getDraftQuestionFileHash({
+  course,
+  question,
+  filePath,
+}: {
+  course: Course;
+  question: Question;
+  filePath: string;
+}): Promise<string | null> {
+  const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
+  const fullPath = resolveWithinQuestionRoot(questionRootPath, filePath);
+  return await getOriginalHash(fullPath);
 }
 
 interface DraftQuestionFileMutationContext {
@@ -52,7 +73,8 @@ async function runDraftEditorJob(editor: Editor): Promise<void> {
  * `origHash` is the hash of the contents the editor was opened with (from
  * `readEditableTextFile`). `FileModifyEditor` rejects the save if the file on
  * disk no longer matches it, so a stale tab can't silently clobber another
- * writer's changes.
+ * writer's changes; callers that want to surface that as a typed conflict
+ * should pre-check with {@link getDraftQuestionFileHash}.
  *
  * `filePath` is relative to the question root; callers validate it (e.g. via
  * `ModifiableQuestionFilePathSchema`) before calling. `encodedContents` is the
@@ -82,6 +104,39 @@ export async function saveDraftQuestionFile({
       filePath: fullPath,
       editContents: encodedContents,
       origHash,
+    }),
+  );
+}
+
+/**
+ * Saves edits to one or more draft question files in a single atomic
+ * `QuestionModifyEditor` job: every file is written — or deleted, when its
+ * contents are `null` — in one git commit. This backs the question-code editor,
+ * which edits `question.html` and `server.py` together and deletes `server.py`
+ * when the user clears it.
+ *
+ * Unlike {@link saveDraftQuestionFile}, this has no stale-edit guard: the
+ * question-code editor always holds the freshly-listed file contents, and
+ * `QuestionModifyEditor` writes the whole question atomically.
+ *
+ * `files` maps question-relative paths to base64-encoded contents, or `null` to
+ * delete the file. Callers validate the paths (e.g. via
+ * `ModifiableQuestionFilePathSchema`) before calling.
+ */
+export async function saveDraftQuestionFiles({
+  course,
+  question,
+  user,
+  authn_user,
+  authz_data,
+  files,
+}: DraftQuestionFileMutationContext & {
+  files: Record<string, string | null>;
+}): Promise<void> {
+  await runDraftEditorJob(
+    new QuestionModifyEditor({
+      locals: { authz_data: { ...authz_data, authn_user }, course, user, question },
+      files,
     }),
   );
 }
