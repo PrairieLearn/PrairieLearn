@@ -15,6 +15,7 @@ import {
   DraftQuestionFileBrowser,
   type DraftQuestionFileBrowserData,
 } from '../../../../components/DraftQuestionFileBrowser.js';
+import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type {
@@ -305,6 +306,7 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
 
 function AllQuestionFiles({
   fileBrowser,
+  fileBrowserActions,
   selectedFile,
   selectedFilePreview,
   allFilesHref,
@@ -319,6 +321,7 @@ function AllQuestionFiles({
   editorRef,
 }: {
   fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowserActions: DraftQuestionFileBrowserActions;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
@@ -369,6 +372,7 @@ function AllQuestionFiles({
       {fileBrowser != null && (
         <DraftQuestionFileBrowser
           data={fileBrowser}
+          actions={fileBrowserActions}
           onSelectFile={onSelectFile}
           onSelectDirectory={onSelectDirectory}
         />
@@ -445,6 +449,7 @@ function SelectedQuestionFilePreviewPanel({
 export function QuestionAndFilePreview({
   questionFiles,
   fileBrowser,
+  fileBrowserActions,
   selectedFile,
   selectedFilePreview,
   allFilesHref,
@@ -469,6 +474,7 @@ export function QuestionAndFilePreview({
 }: {
   questionFiles: Record<string, string>;
   fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowserActions: DraftQuestionFileBrowserActions;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
@@ -578,6 +584,7 @@ export function QuestionAndFilePreview({
       <Tab.Pane eventKey="all-files" className="h-100">
         <AllQuestionFiles
           fileBrowser={fileBrowser}
+          fileBrowserActions={fileBrowserActions}
           selectedFile={selectedFile}
           selectedFilePreview={selectedFilePreview}
           allFilesHref={allFilesHref}

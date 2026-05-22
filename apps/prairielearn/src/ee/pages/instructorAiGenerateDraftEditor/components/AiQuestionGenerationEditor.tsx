@@ -25,6 +25,7 @@ import {
 } from './QuestionAndFilePreview.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import { TRPCProvider, createAiDraftFilesTrpcClient, useTRPC } from './aiDraftFilesTrpc.js';
+import { useDraftQuestionFileMutations } from './useDraftQuestionFileMutations.js';
 
 const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor'] as const;
 
@@ -34,6 +35,7 @@ interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   trpcCsrfToken: string;
   trpcUrl: string;
+  uploadCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -61,6 +63,7 @@ function AiQuestionGenerationEditorInner({
   richTextEditorEnabled,
   urlPrefix,
   csrfToken,
+  uploadCsrfToken,
   questionContainerHtml,
   showJobLogsLink,
   variantUrl,
@@ -132,6 +135,18 @@ function AiQuestionGenerationEditorInner({
     },
     [refetchFiles],
   );
+
+  const handleFilesMutated = useCallback(async () => {
+    await refetchFiles();
+    newVariantRef.current?.newVariant();
+  }, [refetchFiles]);
+
+  const fileBrowserActions = useDraftQuestionFileMutations({
+    questionId: question.id,
+    uploadUrl: `${urlPrefix}/ai_generate_editor/${question.id}/files`,
+    uploadCsrfToken,
+    onMutated: handleFilesMutated,
+  });
   const [activeTab, setActiveTab] = useQueryState(
     'tab',
     parseAsStringLiteral(AI_DRAFT_EDITOR_TABS)
@@ -267,16 +282,14 @@ function AiQuestionGenerationEditorInner({
             codeEditorsRef={codeEditorsRef}
             isGenerating={isGenerating}
             filesError={filesError}
+            fileBrowserActions={fileBrowserActions}
             onHasUnsavedChanges={setHasUnsavedChanges}
             onRetryFiles={() => refetchFiles()}
             onSelectTab={(tab) => void setActiveTab(tab)}
             onSelectFile={(filePath) => void handleSelectFile(filePath)}
             onSelectDirectory={(directory) => void handleSelectDirectory(directory)}
             onClearSelectedFile={() => void handleClearSelectedFile()}
-            onSelectedFileSaved={async () => {
-              await refetchFiles();
-              newVariantRef.current?.newVariant();
-            }}
+            onSelectedFileSaved={handleFilesMutated}
           />
         </div>
         <FinalizeModal

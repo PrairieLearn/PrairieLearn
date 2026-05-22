@@ -302,7 +302,6 @@ async function buildDraftQuestionFileBrowserData({
     specialDirs: paths.specialDirs.map((d) => ({
       label: d.label,
       directory: toQuestionRelativePath(path.relative(resLocals.course.path, d.path)),
-      infoHtml: d.info.toString(),
     })),
     files,
     dirs,

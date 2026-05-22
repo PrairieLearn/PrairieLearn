@@ -76,13 +76,7 @@ export function FileUploadForm({
   `;
 }
 
-export function FileDeleteForm({
-  file,
-  csrfToken,
-}: {
-  file: FileDeleteInfo;
-  csrfToken: string;
-}) {
+export function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: string }) {
   return html`
     <form name="instructor-file-delete-form-${file.id}" method="POST">
       <p>Are you sure you want to delete <strong>${file.name}</strong>?</p>

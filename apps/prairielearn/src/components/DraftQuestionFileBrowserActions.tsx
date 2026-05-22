@@ -26,7 +26,8 @@ export interface DraftQuestionFileBrowserActions {
   onDeleteFile: (args: { filePath: string }) => Promise<void>;
 }
 
-const FILE_NAME_PATTERN = /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
+const FILE_NAME_PATTERN =
+  /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
 
 /** Returns the directory portion of a POSIX path relative to the question root. */
 function getParentDirectory(filePath: string): string {
@@ -40,13 +41,14 @@ function getErrorMessage(err: unknown, fallback: string): string {
 
 function DraftFileUploadForm({
   idPrefix,
-  infoHtml,
+  infoDirectory,
   maxFileSizeBytes,
   onCancel,
   onSubmit,
 }: {
   idPrefix: string;
-  infoHtml: string | null;
+  /** When set, a note tells the user the file will be placed in this directory. */
+  infoDirectory: string | null;
   maxFileSizeBytes: number;
   onCancel: () => void;
   onSubmit: (file: File) => Promise<void>;
@@ -73,10 +75,10 @@ function DraftFileUploadForm({
 
   return (
     <form className="mb-0" onSubmit={handleSubmit}>
-      {infoHtml ? (
-        // The info text is built server-side from trusted path names; it only
-        // contains static markup like `<code>` and a documentation link.
-        <div className="mb-3" dangerouslySetInnerHTML={{ __html: infoHtml }} />
+      {infoDirectory != null ? (
+        <div className="mb-3">
+          This file will be placed in the <code>{infoDirectory}</code> directory.
+        </div>
       ) : null}
       <div className="mb-3">
         <label className="form-label" htmlFor={inputId}>
@@ -86,9 +88,9 @@ function DraftFileUploadForm({
           type="file"
           id={inputId}
           className="form-control"
-          required
           aria-invalid={error != null}
           aria-errormessage={error != null ? errorId : undefined}
+          required
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
         <small className="form-text text-muted">
@@ -104,8 +106,8 @@ function DraftFileUploadForm({
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={onCancel}
           disabled={isSubmitting}
+          onClick={onCancel}
         >
           Cancel
         </button>
@@ -173,8 +175,8 @@ function DraftFileRenameForm({
       <div className="mb-3">
         Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is
         recommended, delimited by a period. If you want to move the file to a different directory,
-        you can specify a relative path that is delimited by a forward slash and that includes
-        "<code>..</code>".
+        you can specify a relative path that is delimited by a forward slash and that includes "
+        <code>..</code>".
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor={inputId}>
@@ -199,8 +201,8 @@ function DraftFileRenameForm({
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={onCancel}
           disabled={isSubmitting}
+          onClick={onCancel}
         >
           Cancel
         </button>
@@ -255,8 +257,8 @@ function DraftFileDeleteForm({
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={onCancel}
           disabled={isSubmitting}
+          onClick={onCancel}
         >
           Cancel
         </button>
@@ -274,7 +276,7 @@ export function UploadFileButton({
   iconClass,
   className,
   disabled,
-  infoHtml,
+  infoDirectory,
   maxFileSizeBytes,
   targetFilePath,
   directory,
@@ -285,7 +287,7 @@ export function UploadFileButton({
   iconClass: string;
   className: string;
   disabled?: boolean;
-  infoHtml?: string | null;
+  infoDirectory?: string | null;
   maxFileSizeBytes: number;
   targetFilePath: string | null;
   directory: string | null;
@@ -298,14 +300,13 @@ export function UploadFileButton({
       trigger="click"
       placement="auto"
       show={show}
-      onToggle={(nextShow) => setShow(nextShow)}
       popover={{
         props: { id: `${id}-popover` },
         header: 'Upload file',
         body: (
           <DraftFileUploadForm
             idPrefix={id}
-            infoHtml={infoHtml ?? null}
+            infoDirectory={infoDirectory ?? null}
             maxFileSizeBytes={maxFileSizeBytes}
             onCancel={() => setShow(false)}
             onSubmit={async (file) => {
@@ -315,6 +316,7 @@ export function UploadFileButton({
           />
         ),
       }}
+      onToggle={(nextShow) => setShow(nextShow)}
     >
       <button type="button" id={id} className={className} disabled={disabled}>
         <i className={iconClass} aria-hidden="true" />
@@ -344,7 +346,6 @@ export function RenameFileButton({
       trigger="click"
       placement="auto"
       show={show}
-      onToggle={(nextShow) => setShow(nextShow)}
       popover={{
         props: { id: `${id}-popover` },
         header: 'Rename file',
@@ -361,6 +362,7 @@ export function RenameFileButton({
           />
         ),
       }}
+      onToggle={(nextShow) => setShow(nextShow)}
     >
       <button
         type="button"
@@ -396,7 +398,6 @@ export function DeleteFileButton({
       trigger="click"
       placement="auto"
       show={show}
-      onToggle={(nextShow) => setShow(nextShow)}
       popover={{
         props: { id: `${id}-popover` },
         header: 'Confirm delete',
@@ -412,6 +413,7 @@ export function DeleteFileButton({
           />
         ),
       }}
+      onToggle={(nextShow) => setShow(nextShow)}
     >
       <button
         type="button"

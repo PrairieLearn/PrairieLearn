@@ -6,14 +6,12 @@ import {
 } from '../lib/draft-question-file-url.js';
 
 import {
-  type DraftQuestionFileBrowserActions,
   DeleteFileButton,
+  type DraftQuestionFileBrowserActions,
   RenameFileButton,
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
-
-export type { DraftQuestionFileBrowserActions };
 
 export interface DraftQuestionFileBrowserBreadcrumbSegment {
   name: string;
@@ -51,8 +49,6 @@ export interface DraftQuestionFileBrowserSpecialDir {
   label: string;
   /** Directory uploaded files are placed in, relative to the question root. */
   directory: string;
-  /** Safe HTML describing where uploaded files are placed. */
-  infoHtml: string;
 }
 
 export interface DraftQuestionFileBrowserData {
@@ -86,7 +82,7 @@ function DraftQuestionDirectoryActions({
           label={`Add new ${d.label.toLowerCase()} file`}
           iconClass="fa fa-plus"
           className="btn btn-sm btn-light"
-          infoHtml={d.infoHtml}
+          infoDirectory={d.directory}
           maxFileSizeBytes={data.maxFileSizeBytes}
           targetFilePath={null}
           directory={d.directory}
