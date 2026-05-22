@@ -192,7 +192,7 @@ function InlineEditableField({
           disabled={isPending}
           aria-label={fieldLabel}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
+          aria-errormessage={error ? errorId : undefined}
           onChange={(e) => {
             setLocalValue(e.target.value);
             setValidationError(null);

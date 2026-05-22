@@ -21,7 +21,7 @@ function selectedFileEditor(page: Page) {
 async function syncCourses(page: Page) {
   await page.goto('/pl/loadFromDisk');
   await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
+  await expect(page.getByText('Success', { exact: true })).toBeVisible();
 }
 
 // The tests share a single draft question, so they must run serially. Loading

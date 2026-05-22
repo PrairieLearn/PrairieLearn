@@ -224,9 +224,14 @@ export function useQuestionHtml({
       const submitEvent = e as SubmitEvent;
       const formData = new FormData(form);
 
-      // Copy over the submitter button's name/value if present.
+      // Copy over the submitter's name/value if present. The submitter may be a
+      // `<button>` or an `<input type="submit">`.
       const submitter = submitEvent.submitter;
-      if (submitter instanceof HTMLButtonElement && submitter.name && submitter.value) {
+      if (
+        (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) &&
+        submitter.name &&
+        submitter.value
+      ) {
         formData.append(submitter.name, submitter.value);
       }
 
@@ -252,7 +257,8 @@ export function useQuestionHtml({
 
   const handleNewVariantButtonClick = useCallback(
     (e: Event) => {
-      if (e.target instanceof HTMLElement && e.target.classList.contains('js-new-variant-button')) {
+      // Use `closest()` so clicks on elements nested inside the button still match.
+      if (e.target instanceof HTMLElement && e.target.closest('.js-new-variant-button') != null) {
         e.preventDefault();
         newVariant();
       }

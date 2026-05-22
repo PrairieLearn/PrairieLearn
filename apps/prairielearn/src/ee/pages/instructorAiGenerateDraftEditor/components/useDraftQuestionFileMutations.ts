@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { useMemo } from 'react';
 
 import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
 import { unwrapAppResponse } from '../../../../lib/client/errors.js';
@@ -62,21 +61,18 @@ export function useDraftQuestionFileMutations({
   const { mutateAsync: deleteFile } = useMutation(trpc.aiDraftFiles.delete.mutationOptions());
   const uploadUrl = `${urlPrefix}/ai_generate_editor/${questionId}/files`;
 
-  return useMemo(
-    () => ({
-      onUploadFile: async ({ file, targetFilePath, directory }) => {
-        await uploadDraftFile({ uploadUrl, uploadCsrfToken, file, targetFilePath, directory });
-        await onMutated();
-      },
-      onRenameFile: async ({ oldFilePath, newFilePath }) => {
-        await renameFile({ questionId, oldFilePath, newFilePath });
-        await onMutated();
-      },
-      onDeleteFile: async ({ filePath }) => {
-        await deleteFile({ questionId, filePath });
-        await onMutated();
-      },
-    }),
-    [questionId, uploadUrl, uploadCsrfToken, onMutated, renameFile, deleteFile],
-  );
+  return {
+    onUploadFile: async ({ file, targetFilePath, directory }) => {
+      await uploadDraftFile({ uploadUrl, uploadCsrfToken, file, targetFilePath, directory });
+      await onMutated();
+    },
+    onRenameFile: async ({ oldFilePath, newFilePath }) => {
+      await renameFile({ questionId, oldFilePath, newFilePath });
+      await onMutated();
+    },
+    onDeleteFile: async ({ filePath }) => {
+      await deleteFile({ questionId, filePath });
+      await onMutated();
+    },
+  };
 }
