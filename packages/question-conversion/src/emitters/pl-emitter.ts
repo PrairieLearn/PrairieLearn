@@ -29,15 +29,15 @@ export class PLEmitter implements OutputEmitter {
     this.registry = registry ?? createPLBodyRegistry();
   }
 
-  emit(assessment: IRItemContainer, options?: EmitOptions): ConversionResult {
+  emit(itemContainer: IRItemContainer, options?: EmitOptions): ConversionResult {
     const questions: PLQuestionOutput[] = [];
-    const warnings: ConversionWarning[] = [...(assessment.parseWarnings ?? [])];
+    const warnings: ConversionWarning[] = [...(itemContainer.parseWarnings ?? [])];
     const usedDirNames = new Map<string, number>();
 
-    for (let i = 0; i < assessment.questions.length; i++) {
-      const question = assessment.questions[i];
+    for (let i = 0; i < itemContainer.questions.length; i++) {
+      const question = itemContainer.questions[i];
       try {
-        questions.push(this.emitQuestion(question, i, assessment, usedDirNames, options));
+        questions.push(this.emitQuestion(question, i, itemContainer, usedDirNames, options));
       } catch (err) {
         warnings.push({
           questionId: question.sourceId,
@@ -46,20 +46,20 @@ export class PLEmitter implements OutputEmitter {
       }
     }
 
-    if ('rubric' in assessment && assessment.rubric) {
+    if ('rubric' in itemContainer && itemContainer.rubric) {
       warnings.push({
-        questionId: assessment.rubric.id,
-        message: `Rubric "${assessment.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
+        questionId: itemContainer.rubric.id,
+        message: `Rubric "${itemContainer.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
         level: 'info',
       });
     }
 
-    const assessmentOutput = this.emitAssessment(assessment, questions, options);
+    const assessmentOutput = this.emitAssessment(itemContainer, questions, options);
 
-    if (assessment.sourceType === 'question-bank') {
+    if (itemContainer.sourceType === 'question-bank') {
       return {
-        sourceId: assessment.sourceId,
-        assessmentTitle: assessment.title,
+        sourceId: itemContainer.sourceId,
+        assessmentTitle: itemContainer.title,
         sourceType: 'question-bank',
         assessment: assessmentOutput,
         questions,
@@ -68,11 +68,13 @@ export class PLEmitter implements OutputEmitter {
     }
 
     return {
-      sourceId: assessment.sourceId,
-      assessmentTitle: assessment.title,
+      sourceId: itemContainer.sourceId,
+      assessmentTitle: itemContainer.title,
       sourceType: 'assessment',
       unresolvedSourceBankRefs:
-        'unresolvedSourceBankRefs' in assessment ? assessment.unresolvedSourceBankRefs : undefined,
+        'unresolvedSourceBankRefs' in itemContainer
+          ? itemContainer.unresolvedSourceBankRefs
+          : undefined,
       assessment: assessmentOutput,
       questions,
       warnings,
@@ -80,16 +82,16 @@ export class PLEmitter implements OutputEmitter {
   }
 
   private emitAssessment(
-    assessment: IRItemContainer,
+    itemContainer: IRItemContainer,
     questions: PLQuestionOutput[],
     options?: EmitOptions,
   ): PLAssessmentOutput {
-    const meta = 'meta' in assessment ? assessment.meta : undefined;
+    const meta = 'meta' in itemContainer ? itemContainer.meta : undefined;
     const assessmentType = meta?.assessmentType ?? 'Homework';
-    const directoryName = slugify(assessment.title);
+    const directoryName = slugify(itemContainer.title);
     const prefix = options?.questionIdPrefix ?? '';
 
-    const uuid = stableUuid(assessment.sourceId, 'assessment');
+    const uuid = stableUuid(itemContainer.sourceId, 'assessment');
 
     // Build lookups keyed by sourceId from the actually-emitted questions.
     // Using sourceId (not index) avoids misalignment when some questions fail to emit.
@@ -97,12 +99,12 @@ export class PLEmitter implements OutputEmitter {
       questions.map((q) => [q.sourceId, q.directoryName]),
     );
     const questionBySourceId = new Map<string, IRQuestion>(
-      assessment.questions.map((q) => [q.sourceId, q]),
+      itemContainer.questions.map((q) => [q.sourceId, q]),
     );
 
     // Build zones
     const zones: PLAssessmentZone[] = [];
-    const assessmentZones = 'zones' in assessment ? assessment.zones : undefined;
+    const assessmentZones = 'zones' in itemContainer ? itemContainer.zones : undefined;
     if (assessmentZones && assessmentZones.length > 0) {
       for (const zone of assessmentZones) {
         const zoneQuestions = this.buildZoneQuestions(zone, questionDirBySourceId, prefix);
@@ -133,12 +135,12 @@ export class PLEmitter implements OutputEmitter {
     const allowAccess = this.buildAllowAccess(meta, assessmentType);
 
     // Determine set and number from title
-    const { set, number } = this.inferSetAndNumber(assessment.title, assessmentType);
+    const { set, number } = this.inferSetAndNumber(itemContainer.title, assessmentType);
 
     const infoJson: PLAssessmentInfoJson = {
       uuid,
       type: assessmentType,
-      title: assessment.title,
+      title: itemContainer.title,
       set,
       number,
       allowAccess,
@@ -233,15 +235,16 @@ export class PLEmitter implements OutputEmitter {
   private emitQuestion(
     question: IRQuestion,
     index: number,
-    assessment: IRItemContainer,
+    itemContainer: IRItemContainer,
     usedDirNames: Map<string, number>,
     options?: EmitOptions,
   ): PLQuestionOutput {
     const directoryName = this.makeDirectoryName(question.title, index, usedDirNames);
-    const topic = options?.topic ?? question.metadata?.['topic'] ?? assessment.title ?? 'Imported';
+    const topic =
+      options?.topic ?? question.metadata?.['topic'] ?? itemContainer.title ?? 'Imported';
     const tags = options?.tags ?? ['imported', 'qti'];
 
-    const uuid = stableUuid(options?.uuidNamespace ?? assessment.sourceId, question.sourceId);
+    const uuid = stableUuid(options?.uuidNamespace ?? itemContainer.sourceId, question.sourceId);
 
     const infoJson: PLQuestionInfoJson = {
       uuid,
