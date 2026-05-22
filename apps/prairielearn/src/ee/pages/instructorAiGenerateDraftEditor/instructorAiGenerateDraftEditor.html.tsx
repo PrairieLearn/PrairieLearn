@@ -2,7 +2,6 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import type { DraftQuestionFileBrowserData } from '../../../components/DraftQuestionFileBrowser.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
   compiledScriptTag,
@@ -18,6 +17,7 @@ import {
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type {
+  DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
 } from '../../../lib/draft-question-files.js';

@@ -6,22 +6,68 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
 
-import type {
-  DraftQuestionFileBrowserBreadcrumbSegment,
-  DraftQuestionFileBrowserData,
-  DraftQuestionFileBrowserDirectory,
-  DraftQuestionFileBrowserFile,
-} from '../components/DraftQuestionFileBrowser.js';
-import { browseDirectory, browseFile } from '../components/FileBrowser.js';
-
 import { b64EncodeUnicode } from './base64-util.js';
 import { config } from './config.js';
 import { getCourseFilesClient } from './course-files-api.js';
 import type { Course, Question, User } from './db-types.js';
 import { readEditableTextFile } from './editableFile.js';
 import { type Editor, FileDeleteEditor, FileRenameEditor, FileUploadEditor } from './editors.js';
+import { browseDirectory, browseFile } from './file-browser.js';
 import { getPaths } from './instructorFiles.js';
 import { encodePath } from './uri-util.js';
+
+export interface DraftQuestionFileBrowserBreadcrumbSegment {
+  name: string;
+  /** Path relative to the question root; `null` for the question root. */
+  directory: string | null;
+  isActive: boolean;
+}
+
+export interface DraftQuestionFileBrowserFile {
+  id: string | number;
+  name: string;
+  /** Path relative to the question root, identifying the file in the editor. */
+  selectedFilePath: string;
+  downloadUrl: string;
+  canView: boolean;
+  canEdit: boolean;
+  canUpload: boolean;
+  canDownload: boolean;
+  canRename: boolean;
+  canDelete: boolean;
+  syncErrors: string | null;
+  syncWarnings: string | null;
+  /** When set, the file is managed elsewhere (e.g. `info.json`) and cannot be edited. */
+  disabledReason: string | null;
+}
+
+export interface DraftQuestionFileBrowserDirectory {
+  name: string;
+  /** Path relative to the question root. */
+  selectedDirectory: string | null;
+  canView: boolean;
+}
+
+export interface DraftQuestionFileBrowserSpecialDir {
+  label: string;
+  /** Directory uploaded files are placed in, relative to the question root. */
+  directory: string;
+}
+
+export interface DraftQuestionFileBrowserData {
+  isReadOnly: boolean;
+  hasEditPermission: boolean;
+  /** Base editor URL used to build file and directory links. */
+  editorUrl: string;
+  /** Path of the directory being browsed, relative to the question root. */
+  selectedDirectory: string | null;
+  /** Maximum upload size in bytes. */
+  maxFileSizeBytes: number;
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
+  specialDirs: DraftQuestionFileBrowserSpecialDir[];
+  files: DraftQuestionFileBrowserFile[];
+  dirs: DraftQuestionFileBrowserDirectory[];
+}
 
 export interface SelectedQuestionFile {
   path: string;

@@ -3,14 +3,12 @@ import { Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
-import {
-  DraftQuestionFileBrowser,
-  type DraftQuestionFileBrowserData,
-} from '../../../../components/DraftQuestionFileBrowser.js';
+import { DraftQuestionFileBrowser } from '../../../../components/DraftQuestionFileBrowser.js';
 import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type {
+  DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
 } from '../../../../lib/draft-question-files.js';
