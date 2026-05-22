@@ -13,6 +13,7 @@ export function FileBrowserActionButton({
   onClick,
   disabled = false,
   disabledTitle,
+  className = 'btn btn-xs btn-secondary text-nowrap',
 }: {
   /** Font Awesome icon class, e.g. `fa fa-edit`. */
   icon: string;
@@ -22,9 +23,9 @@ export function FileBrowserActionButton({
   disabled?: boolean;
   /** Tooltip explaining why the action is unavailable. */
   disabledTitle?: string;
+  /** Bootstrap button classes; defaults to the file-browser row-action style. */
+  className?: string;
 }) {
-  const className = 'btn btn-xs btn-secondary text-nowrap';
-
   if (disabled) {
     return (
       <span title={disabledTitle}>

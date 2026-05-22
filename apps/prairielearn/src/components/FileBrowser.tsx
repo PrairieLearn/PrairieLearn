@@ -177,14 +177,13 @@ function FileBrowserActions({
     <div className="d-flex flex-wrap gap-2">
       {isReadOnly ? null : (
         <>
-          <a
-            tabIndex={0}
-            className={`btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}`}
+          <FileBrowserActionButton
+            icon="fa fa-edit"
+            label="Edit"
             href={`${paths.urlPrefix}/file_edit/${encodedPath}`}
-          >
-            <i className="fa fa-edit" />
-            <span>Edit</span>
-          </a>
+            className="btn btn-sm btn-light"
+            disabled={!fileInfo.canEdit}
+          />
           <button
             type="button"
             className="btn btn-sm btn-light"
@@ -205,15 +204,15 @@ function FileBrowserActions({
           </button>
         </>
       )}
-      <a
-        className={`btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}`}
+      <FileBrowserActionButton
+        icon="fa fa-arrow-down"
+        label="Download"
         href={`${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
           fileInfo.name,
         )}`}
-      >
-        <i className="fa fa-arrow-down" />
-        <span>Download</span>
-      </a>
+        className="btn btn-sm btn-light"
+        disabled={!fileInfo.canDownload}
+      />
       {isReadOnly ? null : (
         <>
           <button

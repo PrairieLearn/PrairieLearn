@@ -24,7 +24,7 @@ function questionFilePath(testCoursePath: string, fileName: string) {
 async function syncCourses(page: Page) {
   await page.goto('/pl/loadFromDisk');
   await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
+  await expect(page.getByText('Success', { exact: true })).toBeVisible();
 }
 
 // These tests edit shared question files, so they must run serially.
