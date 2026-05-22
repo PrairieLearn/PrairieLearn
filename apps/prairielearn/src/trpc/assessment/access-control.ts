@@ -101,7 +101,7 @@ const prairieTestExamMetadata = t.procedure
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
 
-function formJsonToEnrollmentRuleData(
+export function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;

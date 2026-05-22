@@ -12,10 +12,7 @@ import { config } from '../lib/config.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import {
-  type EnrollmentAccessControlRuleData,
-  syncEnrollmentAccessControl,
-} from '../models/assessment-access-control-rules.js';
+import { syncEnrollmentAccessControl } from '../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -28,6 +25,7 @@ import {
 } from '../models/enrollment.js';
 import type { AccessControlJsonInput } from '../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import { formJsonToEnrollmentRuleData } from '../trpc/assessment/access-control.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -51,35 +49,6 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
     },
     overrides,
   );
-}
-
-function makeEnrollmentRuleData(
-  overrides: Partial<EnrollmentAccessControlRuleData> = {},
-): EnrollmentAccessControlRuleData {
-  return {
-    beforeReleaseListed: null,
-    releaseDate: null,
-    dueOverridden: false,
-    dueDate: null,
-    dueCredit: null,
-    earlyDeadlinesOverridden: false,
-    lateDeadlinesOverridden: false,
-    afterLastDeadlineOverridden: false,
-    afterLastDeadlineAllowSubmissions: null,
-    afterLastDeadlineCredit: null,
-    durationMinutesOverridden: false,
-    durationMinutes: null,
-    passwordOverridden: false,
-    password: null,
-    questionsHidden: null,
-    questionsVisibleFromDate: null,
-    questionsVisibleUntilDate: null,
-    scoreHidden: null,
-    scoreVisibleFromDate: null,
-    earlyDeadlines: [],
-    lateDeadlines: [],
-    ...overrides,
-  };
 }
 
 describe('Access control save via tRPC', () => {
@@ -130,9 +99,8 @@ describe('Access control save via tRPC', () => {
     });
     await syncEnrollmentAccessControl(
       assessment,
-      makeEnrollmentRuleData({
-        dueOverridden: true,
-        dueDate: '2024-04-18T23:59:00',
+      formJsonToEnrollmentRuleData({
+        dateControl: { due: { date: '2024-04-18T23:59:00' } },
       }),
       [enrollment.id],
     );
