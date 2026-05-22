@@ -44,7 +44,7 @@ export interface SelectedQuestionFilePreview {
 const DRAFT_INFO_JSON_DISABLED_REASON =
   'Draft question metadata is managed by the draft editor. Only finalized questions can edit info.json directly.';
 
-interface DraftQuestionFilesLocals {
+export interface DraftQuestionFilesLocals {
   __csrf_token: string;
   authn_user: User;
   authz_data: {
@@ -53,6 +53,7 @@ interface DraftQuestionFilesLocals {
   course: Course;
   question: Question;
   urlPrefix: string;
+  user: User;
 }
 type QuestionPathType = 'file' | 'directory';
 
@@ -64,25 +65,12 @@ function isDraftQuestionInfoFile(filePath: string) {
   return path.posix.normalize(filePath) === 'info.json';
 }
 
-export function assertCanModifyDraftQuestionFilePath({
-  course,
-  question,
-  fullPath,
-}: {
-  course: Pick<Course, 'path'>;
-  question: Pick<Question, 'draft' | 'qid'> | null | undefined;
-  fullPath: string;
-}) {
-  if (!question?.draft || !question.qid) return;
-
-  const questionPath = path.resolve(course.path, 'questions', question.qid);
-  const resolvedFullPath = path.resolve(fullPath);
-  if (!resolvedFullPath.startsWith(`${questionPath}${path.sep}`)) return;
-
-  const questionRelativePath = path
-    .relative(questionPath, resolvedFullPath)
-    .split(path.sep)
-    .join('/');
+/**
+ * Draft question metadata (`info.json`) is managed by the draft editor and
+ * cannot be edited through the generic file operations. Throws if the given
+ * question-relative path targets it.
+ */
+export function assertCanModifyDraftQuestionFile(questionRelativePath: string) {
   if (isDraftQuestionInfoFile(questionRelativePath)) {
     throw new error.HttpStatusError(400, DRAFT_INFO_JSON_DISABLED_REASON);
   }
@@ -359,9 +347,7 @@ export async function saveDraftQuestionFile({
   filePath: string;
   contents: string;
 }) {
-  if (isDraftQuestionInfoFile(filePath)) {
-    throw new error.HttpStatusError(400, DRAFT_INFO_JSON_DISABLED_REASON);
-  }
+  assertCanModifyDraftQuestionFile(filePath);
 
   const client = getCourseFilesClient();
 
@@ -444,8 +430,9 @@ export async function deleteDraftQuestionFile({
   filePath: string;
 }): Promise<DraftQuestionFileEditResult> {
   const questionRootPath = getQuestionRootPath(course, question);
-  const fullPath = path.resolve(questionRootPath, normalizeQuestionFilePath(filePath));
-  assertCanModifyDraftQuestionFilePath({ course, question, fullPath });
+  const relativePath = normalizeQuestionFilePath(filePath);
+  assertCanModifyDraftQuestionFile(relativePath);
+  const fullPath = path.resolve(questionRootPath, relativePath);
 
   return await runDraftQuestionFileEditor(
     new FileDeleteEditor({
@@ -473,10 +460,12 @@ export async function renameDraftQuestionFile({
   newFilePath: string;
 }): Promise<DraftQuestionFileEditResult> {
   const questionRootPath = getQuestionRootPath(course, question);
-  const oldPath = path.resolve(questionRootPath, normalizeQuestionFilePath(oldFilePath));
-  const newPath = path.resolve(questionRootPath, normalizeQuestionFilePath(newFilePath));
-  assertCanModifyDraftQuestionFilePath({ course, question, fullPath: oldPath });
-  assertCanModifyDraftQuestionFilePath({ course, question, fullPath: newPath });
+  const oldRelativePath = normalizeQuestionFilePath(oldFilePath);
+  const newRelativePath = normalizeQuestionFilePath(newFilePath);
+  assertCanModifyDraftQuestionFile(oldRelativePath);
+  assertCanModifyDraftQuestionFile(newRelativePath);
+  const oldPath = path.resolve(questionRootPath, oldRelativePath);
+  const newPath = path.resolve(questionRootPath, newRelativePath);
 
   if (oldPath === newPath) return { status: 'ok' };
 
@@ -506,8 +495,9 @@ export async function uploadDraftQuestionFile({
   fileContents: Buffer;
 }): Promise<DraftQuestionFileEditResult> {
   const questionRootPath = getQuestionRootPath(course, question);
-  const fullPath = path.resolve(questionRootPath, normalizeQuestionFilePath(filePath));
-  assertCanModifyDraftQuestionFilePath({ course, question, fullPath });
+  const relativePath = normalizeQuestionFilePath(filePath);
+  assertCanModifyDraftQuestionFile(relativePath);
+  const fullPath = path.resolve(questionRootPath, relativePath);
 
   return await runDraftQuestionFileEditor(
     new FileUploadEditor({

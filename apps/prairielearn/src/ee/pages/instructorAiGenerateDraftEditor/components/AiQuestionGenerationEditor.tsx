@@ -73,7 +73,6 @@ function AiQuestionGenerationEditorInner({
   const trpc = useTRPC();
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(question.title);
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
@@ -216,7 +215,7 @@ function AiQuestionGenerationEditorInner({
           showJobLogsLink={showJobLogsLink}
           urlPrefix={urlPrefix}
           refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
-          hasUnsavedChanges={hasUnsavedChanges}
+          getHasUnsavedChanges={() => codeEditorsRef.current?.getHasUnsavedChanges() ?? false}
           discardUnsavedChanges={() => codeEditorsRef.current?.discardChanges()}
           isQuestionEmpty={isQuestionEmpty}
           onGeneratingChange={setIsGenerating}
@@ -283,7 +282,6 @@ function AiQuestionGenerationEditorInner({
             isGenerating={isGenerating}
             filesError={filesError}
             fileBrowserActions={fileBrowserActions}
-            onHasUnsavedChanges={setHasUnsavedChanges}
             onRetryFiles={() => refetchFiles()}
             onSelectTab={(tab) => void setActiveTab(tab)}
             onSelectFile={(filePath) => void handleSelectFile(filePath)}

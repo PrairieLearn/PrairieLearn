@@ -15,6 +15,7 @@ import {
   FileRenameEditor,
   FileUploadEditor,
 } from '../../lib/editors.js';
+import { FILE_NAME_PATTERN } from '../../lib/file-names.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import type { ServerJobExecutor } from '../../lib/server-jobs.js';
@@ -171,11 +172,7 @@ router.post(
         } catch {
           throw new Error(`Invalid old file path: ${body.working_path} / ${body.old_file_name}`);
         }
-        if (
-          !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
-            body.new_file_name,
-          )
-        ) {
+        if (!FILE_NAME_PATTERN.test(body.new_file_name)) {
           throw new Error(
             `Invalid new file name (did not match required pattern): ${body.new_file_name}`,
           );

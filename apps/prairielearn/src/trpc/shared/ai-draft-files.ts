@@ -6,8 +6,8 @@ import * as error from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
-import type { Course, Question, User } from '../../lib/db-types.js';
 import {
+  type DraftQuestionFilesLocals,
   deleteDraftQuestionFile,
   getQuestionFilesData,
   getSelectedQuestionDirectory,
@@ -51,18 +51,6 @@ const DeleteInputSchema = z.object({
   filePath: z.string(),
 });
 
-interface DraftQuestionFilesLocals {
-  __csrf_token: string;
-  authn_user: User;
-  authz_data: {
-    has_course_permission_edit: boolean;
-  };
-  course: Course;
-  question: Question;
-  urlPrefix: string;
-  user: User;
-}
-
 async function selectDraftQuestionOrThrow({
   courseId,
   questionId,
@@ -83,140 +71,6 @@ async function selectDraftQuestionOrThrow({
     });
   }
   return question;
-}
-
-function throwTrpcError(err: unknown): never {
-  if (err instanceof error.HttpStatusError) {
-    throw new TRPCError({
-      code: err.status === 404 ? 'NOT_FOUND' : err.status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST',
-      message: err.message,
-    });
-  }
-  throw err;
-}
-
-async function listDraftQuestionFiles({
-  courseId,
-  locals,
-  input,
-}: {
-  courseId: string;
-  locals: Omit<DraftQuestionFilesLocals, 'question'>;
-  input: z.infer<typeof ListInputSchema>;
-}) {
-  const question = await selectDraftQuestionOrThrow({
-    courseId,
-    questionId: input.questionId,
-  });
-
-  try {
-    return await getQuestionFilesData({
-      resLocals: {
-        ...locals,
-        question,
-      },
-      editorUrl: `${locals.urlPrefix}/ai_generate_editor/${question.id}`,
-      selectedFilePath: getSelectedQuestionFilePath(input.selectedFilePath),
-      selectedDirectory: getSelectedQuestionDirectory(input.selectedDirectory),
-    });
-  } catch (err) {
-    throwTrpcError(err);
-  }
-}
-
-async function saveDraftQuestion({
-  courseId,
-  locals,
-  authzData,
-  input,
-}: {
-  courseId: string;
-  locals: Omit<DraftQuestionFilesLocals, 'question'>;
-  authzData: DraftQuestionFilesLocals['authz_data'];
-  input: z.infer<typeof SaveInputSchema>;
-}) {
-  const question = await selectDraftQuestionOrThrow({
-    courseId,
-    questionId: input.questionId,
-  });
-
-  try {
-    return await saveDraftQuestionFile({
-      course: locals.course,
-      question,
-      user: locals.user,
-      authn_user: locals.authn_user,
-      authz_data: authzData,
-      urlPrefix: locals.urlPrefix,
-      filePath: normalizeQuestionFilePath(input.filePath),
-      contents: b64DecodeUnicode(input.encodedContents),
-    });
-  } catch (err) {
-    throwTrpcError(err);
-  }
-}
-
-async function renameDraftQuestion({
-  courseId,
-  locals,
-  authzData,
-  input,
-}: {
-  courseId: string;
-  locals: Omit<DraftQuestionFilesLocals, 'question'>;
-  authzData: DraftQuestionFilesLocals['authz_data'];
-  input: z.infer<typeof RenameInputSchema>;
-}) {
-  const question = await selectDraftQuestionOrThrow({
-    courseId,
-    questionId: input.questionId,
-  });
-
-  try {
-    return await renameDraftQuestionFile({
-      course: locals.course,
-      question,
-      user: locals.user,
-      authn_user: locals.authn_user,
-      authz_data: authzData,
-      urlPrefix: locals.urlPrefix,
-      oldFilePath: input.oldFilePath,
-      newFilePath: input.newFilePath,
-    });
-  } catch (err) {
-    throwTrpcError(err);
-  }
-}
-
-async function deleteDraftQuestion({
-  courseId,
-  locals,
-  authzData,
-  input,
-}: {
-  courseId: string;
-  locals: Omit<DraftQuestionFilesLocals, 'question'>;
-  authzData: DraftQuestionFilesLocals['authz_data'];
-  input: z.infer<typeof DeleteInputSchema>;
-}) {
-  const question = await selectDraftQuestionOrThrow({
-    courseId,
-    questionId: input.questionId,
-  });
-
-  try {
-    return await deleteDraftQuestionFile({
-      course: locals.course,
-      question,
-      user: locals.user,
-      authn_user: locals.authn_user,
-      authz_data: authzData,
-      urlPrefix: locals.urlPrefix,
-      filePath: input.filePath,
-    });
-  } catch (err) {
-    throwTrpcError(err);
-  }
 }
 
 /**
@@ -267,41 +121,87 @@ const requireAiQuestionGenerationEnabled = t.middleware(async (opts) => {
   return opts.next();
 });
 
+/**
+ * Translates `HttpStatusError`s thrown by the shared draft-question-files lib
+ * into `TRPCError`s. Without this, a raw `HttpStatusError` would surface as a
+ * generic 500, since `appErrorFormatter` only understands tRPC's own errors.
+ */
+const translateHttpStatusErrors = t.middleware(async (opts) => {
+  const result = await opts.next();
+  if (!result.ok && result.error.cause instanceof error.HttpStatusError) {
+    const httpError = result.error.cause;
+    throw new TRPCError({
+      code:
+        httpError.status === 404
+          ? 'NOT_FOUND'
+          : httpError.status === 403
+            ? 'FORBIDDEN'
+            : 'BAD_REQUEST',
+      message: httpError.message,
+    });
+  }
+  return result;
+});
+
+/** Resolves the draft question named by the request's `questionId` onto `ctx`. */
+const resolveDraftQuestion = t.middleware(async (opts) => {
+  const { questionId } = z.object({ questionId: IdSchema }).parse(await opts.getRawInput());
+  const question = await selectDraftQuestionOrThrow({
+    courseId: opts.ctx.course.id,
+    questionId,
+  });
+  return opts.next({ ctx: { question } });
+});
+
 const aiDraftFilesProcedure = t.procedure
   .use(requireCoursePermissionEdit)
   .use(requireNotExampleCourse)
-  .use(requireAiQuestionGenerationEnabled);
+  .use(requireAiQuestionGenerationEnabled)
+  .use(translateHttpStatusErrors)
+  .use(resolveDraftQuestion);
 
 export const aiDraftFilesRouter = t.router({
   list: aiDraftFilesProcedure.input(ListInputSchema).query(async ({ ctx, input }) => {
-    return await listDraftQuestionFiles({
-      courseId: ctx.course.id,
-      locals: ctx.locals,
-      input,
+    return await getQuestionFilesData({
+      resLocals: { ...ctx.locals, question: ctx.question },
+      editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${ctx.question.id}`,
+      selectedFilePath: getSelectedQuestionFilePath(input.selectedFilePath),
+      selectedDirectory: getSelectedQuestionDirectory(input.selectedDirectory),
     });
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
-    return await saveDraftQuestion({
-      courseId: ctx.course.id,
-      locals: ctx.locals,
-      authzData: ctx.authz_data,
-      input,
+    return await saveDraftQuestionFile({
+      course: ctx.locals.course,
+      question: ctx.question,
+      user: ctx.locals.user,
+      authn_user: ctx.locals.authn_user,
+      authz_data: ctx.authz_data,
+      urlPrefix: ctx.locals.urlPrefix,
+      filePath: normalizeQuestionFilePath(input.filePath),
+      contents: b64DecodeUnicode(input.encodedContents),
     });
   }),
   rename: aiDraftFilesProcedure.input(RenameInputSchema).mutation(async ({ ctx, input }) => {
-    return await renameDraftQuestion({
-      courseId: ctx.course.id,
-      locals: ctx.locals,
-      authzData: ctx.authz_data,
-      input,
+    return await renameDraftQuestionFile({
+      course: ctx.locals.course,
+      question: ctx.question,
+      user: ctx.locals.user,
+      authn_user: ctx.locals.authn_user,
+      authz_data: ctx.authz_data,
+      urlPrefix: ctx.locals.urlPrefix,
+      oldFilePath: input.oldFilePath,
+      newFilePath: input.newFilePath,
     });
   }),
   delete: aiDraftFilesProcedure.input(DeleteInputSchema).mutation(async ({ ctx, input }) => {
-    return await deleteDraftQuestion({
-      courseId: ctx.course.id,
-      locals: ctx.locals,
-      authzData: ctx.authz_data,
-      input,
+    return await deleteDraftQuestionFile({
+      course: ctx.locals.course,
+      question: ctx.question,
+      user: ctx.locals.user,
+      authn_user: ctx.locals.authn_user,
+      authz_data: ctx.authz_data,
+      urlPrefix: ctx.locals.urlPrefix,
+      filePath: input.filePath,
     });
   }),
 });

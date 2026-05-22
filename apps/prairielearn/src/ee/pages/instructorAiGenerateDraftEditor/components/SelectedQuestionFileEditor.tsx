@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { type FormEvent, type Ref, useEffect, useImperativeHandle, useState } from 'react';
+import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
@@ -13,6 +13,8 @@ const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
 
 export interface SelectedQuestionFileEditorHandle {
   discardChanges: () => void;
+  /** Returns whether the editor currently holds unsaved changes. */
+  getHasChanges: () => boolean;
 }
 
 export function SelectedQuestionFileBreadcrumb({
@@ -70,7 +72,6 @@ export function SelectedQuestionFileEditor({
   allFilesHref,
   onShowAllFiles,
   onSaved,
-  onHasChangesChange,
   editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
@@ -79,7 +80,6 @@ export function SelectedQuestionFileEditor({
   allFilesHref: string;
   onShowAllFiles: () => void;
   onSaved: () => Promise<unknown>;
-  onHasChangesChange?: (hasChanges: boolean) => void;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
@@ -91,16 +91,12 @@ export function SelectedQuestionFileEditor({
   const hasChanges = contents !== savedContents;
   const saveStatus = getSaveStatus({ hasChanges, isSaving, saveError, isGenerating });
 
-  useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
-    onHasChangesChange?.(hasChanges);
-  }, [hasChanges, onHasChangesChange]);
-
   useImperativeHandle(editorRef, () => ({
     discardChanges: () => {
       setContents(savedContents);
       setSaveError(null);
     },
+    getHasChanges: () => hasChanges,
   }));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

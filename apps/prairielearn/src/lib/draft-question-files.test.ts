@@ -7,7 +7,7 @@ import {
   getEditorUrlWithSelectedFile,
 } from './draft-question-file-url.js';
 import {
-  assertCanModifyDraftQuestionFilePath,
+  assertCanModifyDraftQuestionFile,
   getSelectedQuestionDirectory,
   getSelectedQuestionFilePath,
   normalizeQuestionFilePath,
@@ -92,36 +92,14 @@ describe('selected question file helpers', () => {
     });
   });
 
-  describe('assertCanModifyDraftQuestionFilePath', () => {
-    const course = { path: '/course' };
-
-    it('rejects direct modifications to draft question info.json', () => {
-      assert.throws(
-        () =>
-          assertCanModifyDraftQuestionFilePath({
-            course,
-            question: { draft: true, qid: 'draft-question' },
-            fullPath: '/course/questions/draft-question/info.json',
-          }),
-        error.HttpStatusError,
-      );
+  describe('assertCanModifyDraftQuestionFile', () => {
+    it('rejects modifications to draft question info.json', () => {
+      assert.throws(() => assertCanModifyDraftQuestionFile('info.json'), error.HttpStatusError);
     });
 
-    it('allows non-metadata files and finalized question metadata', () => {
-      assert.doesNotThrow(() =>
-        assertCanModifyDraftQuestionFilePath({
-          course,
-          question: { draft: true, qid: 'draft-question' },
-          fullPath: '/course/questions/draft-question/question.html',
-        }),
-      );
-      assert.doesNotThrow(() =>
-        assertCanModifyDraftQuestionFilePath({
-          course,
-          question: { draft: false, qid: 'final-question' },
-          fullPath: '/course/questions/final-question/info.json',
-        }),
-      );
+    it('allows non-metadata files', () => {
+      assert.doesNotThrow(() => assertCanModifyDraftQuestionFile('question.html'));
+      assert.doesNotThrow(() => assertCanModifyDraftQuestionFile('clientFilesQuestion/info.json'));
     });
   });
 });

@@ -5,6 +5,8 @@ import { type FormEvent, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { FILE_NAME_PATTERN } from '../lib/file-names.js';
+
 /**
  * Callbacks that perform draft question file mutations. Each resolves on success
  * and rejects with an `Error` whose message should be shown to the user. A
@@ -25,9 +27,6 @@ export interface DraftQuestionFileBrowserActions {
   onRenameFile: (args: { oldFilePath: string; newFilePath: string }) => Promise<void>;
   onDeleteFile: (args: { filePath: string }) => Promise<void>;
 }
-
-const FILE_NAME_PATTERN =
-  /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
 
 /** Returns the directory portion of a POSIX path relative to the question root. */
 function getParentDirectory(filePath: string): string {

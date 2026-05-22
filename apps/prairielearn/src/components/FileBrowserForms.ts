@@ -2,6 +2,8 @@ import { filesize } from 'filesize';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
+import { FILE_NAME_PATTERN } from '../lib/file-names.js';
+
 type FileUploadInfo = {
   id: string | number;
   info?: HtmlValue;
@@ -100,8 +102,6 @@ export function FileRenameForm({
   csrfToken: string;
   isViewingFile: boolean;
 }) {
-  const FILE_NAME_PATTERN =
-    /(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?/;
   return html`
     <form
       name="instructor-file-rename-form-${file.id}"

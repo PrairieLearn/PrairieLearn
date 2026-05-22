@@ -6,6 +6,8 @@ import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
 export interface QuestionCodeEditorsHandle {
   /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */
   discardChanges: () => void;
+  /** Returns whether the editors currently hold unsaved changes. */
+  getHasChanges: () => boolean;
 }
 
 export function QuestionCodeEditors({
@@ -13,7 +15,6 @@ export function QuestionCodeEditors({
   pythonContents,
   csrfToken,
   isGenerating,
-  onHasChangesChange,
   filesError,
   onRetryFiles,
   editorRef,
@@ -22,7 +23,6 @@ export function QuestionCodeEditors({
   pythonContents: string | null;
   csrfToken: string;
   isGenerating: boolean;
-  onHasChangesChange?: (hasChanges: boolean) => void;
   filesError?: { message: string } | null;
   onRetryFiles?: () => void;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
@@ -41,12 +41,6 @@ export function QuestionCodeEditors({
 
   // Derive hasChanges by comparing current editor state to props.
   const hasChanges = htmlValue !== (htmlContents ?? '') || pythonValue !== (pythonContents ?? '');
-
-  // Notify parent when hasChanges changes.
-  useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
-    onHasChangesChange?.(hasChanges);
-  }, [hasChanges, onHasChangesChange]);
 
   // Initialize ACE editors once on mount.
   useEffect(() => {
@@ -128,6 +122,7 @@ export function QuestionCodeEditors({
       htmlEditor.gotoLine(1, 0, false);
       pythonEditor.gotoLine(1, 0, false);
     },
+    getHasChanges: () => hasChanges,
   }));
 
   // Forbid manual edits while the agent is working.
