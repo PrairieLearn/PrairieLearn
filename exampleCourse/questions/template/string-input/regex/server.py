@@ -10,6 +10,7 @@ def test(data: pl.ElementTestData) -> None:
     result = data["test_type"]
     if result == "correct":
         data["raw_submitted_answers"][name] = "nitrogen"
+        data["score"] = 1
         data["partial_scores"][name] = {"score": 1, "weight": 1}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = "carbon"
