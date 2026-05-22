@@ -548,7 +548,9 @@ export function QtiImportForm({
       } else if (appError?.code === 'QTI_IMPORT_DRAFT_UNAVAILABLE') {
         setError({ message: appError.message, canRestart: true });
       } else {
-        setError({ message: err instanceof Error ? err.message : 'Failed to create QTI content' });
+        setError({
+          message: err instanceof Error ? err.message : `Failed to create ${createContentLabel}`,
+        });
       }
       setStep('review');
     }
@@ -600,6 +602,8 @@ export function QtiImportForm({
     labelParts.push(`${includedQuestionCount} question${includedQuestionCount !== 1 ? 's' : ''}`);
   }
   const importButtonLabel = `Import ${labelParts.join(' and ')}`;
+  const createContentLabel =
+    includedAssessmentCount > 0 ? 'assessments and questions' : 'questions';
   const indexedResults = results.map((result, index) => ({ result, index }));
   const assessmentResults = indexedResults.filter(
     ({ result }) => result.sourceType === 'assessment',
@@ -834,7 +838,7 @@ export function QtiImportForm({
         {step === 'creating' && (
           <div className="text-center py-4">
             <Spinner className="mb-3" />
-            <p>Creating QTI content...</p>
+            <p>Creating {createContentLabel}...</p>
           </div>
         )}
       </Card.Body>
