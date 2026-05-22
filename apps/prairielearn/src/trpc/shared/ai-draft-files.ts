@@ -25,7 +25,10 @@ import { features } from '../../lib/features/index.js';
 import { appErrorFormatter, throwAppError } from '../app-errors.js';
 
 /** A draft file edit whose underlying server job failed to sync. */
-type EditJobFailed = { code: 'EDIT_JOB_FAILED'; jobSequenceId: string };
+interface EditJobFailed {
+  code: 'SYNC_JOB_FAILED';
+  jobSequenceId: string;
+}
 
 export interface AiDraftFilesError {
   List: never;
@@ -107,14 +110,14 @@ const requireAiQuestionGenerationEnabled = t.middleware(async (opts) => {
 
 /**
  * Translates an {@link EditJobFailedError} raised by a file mutation into a
- * typed `EDIT_JOB_FAILED` app error, so the client can render a link to the
+ * typed `SYNC_JOB_FAILED` app error, so the client can render a link to the
  * job's logs. Other errors propagate unchanged.
  */
 const translateEditJobFailedError = t.middleware(async (opts) => {
   const result = await opts.next();
   if (!result.ok && result.error.cause instanceof EditJobFailedError) {
     throwAppError<AiDraftFilesError['Save']>({
-      code: 'EDIT_JOB_FAILED',
+      code: 'SYNC_JOB_FAILED',
       message: 'The file edit failed to sync.',
       jobSequenceId: result.error.cause.jobSequenceId,
     });

@@ -84,8 +84,10 @@ export const QuestionRelativeDirectorySchema = z
  */
 export const OptionalSelectedFilePathSchema = QuestionRelativeFilePathSchema.nullable().catch(null);
 
-/** A selected-directory request value, with the same lenient handling as
- * {@link OptionalSelectedFilePathSchema}. */
+/**
+ * A selected-directory request value, with the same lenient handling as
+ * {@link OptionalSelectedFilePathSchema}.
+ */
 export const OptionalSelectedDirectorySchema =
   QuestionRelativeDirectorySchema.nullable().catch(null);
 

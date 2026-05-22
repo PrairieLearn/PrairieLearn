@@ -409,7 +409,7 @@ router.post(
     }
 
     // A failed sync job is reported as a normal response carrying the job id,
-    // not an HTTP error — it mirrors the `EDIT_JOB_FAILED` app error the tRPC
+    // not an HTTP error — it mirrors the `SYNC_JOB_FAILED` app error the tRPC
     // mutations raise. The client surfaces both the same way.
     try {
       await uploadDraftQuestionFile({

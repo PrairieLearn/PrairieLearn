@@ -40,25 +40,14 @@ function getParentDirectory(filePath: string): string {
 }
 
 /** A draft file mutation whose underlying server job failed to sync. */
-type DraftFileActionError = { code: 'EDIT_JOB_FAILED'; jobSequenceId: string };
+interface DraftFileActionError {
+  code: 'SYNC_JOB_FAILED';
+  jobSequenceId: string;
+}
 
 /** Extracts a typed action error, falling back to `fallbackMessage`. */
 function resolveActionError(err: unknown, fallbackMessage: string): AppError<DraftFileActionError> {
   return getAppError<DraftFileActionError>(err) ?? { code: 'UNKNOWN', message: fallbackMessage };
-}
-
-/** Renders a draft file action error, linking to the job logs on a sync failure. */
-function ActionError({
-  error,
-  urlPrefix,
-}: {
-  error: AppError<DraftFileActionError>;
-  urlPrefix: string;
-}) {
-  return renderAppError(error, {
-    EDIT_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
-    UNKNOWN: ({ message }) => message,
-  });
 }
 
 function DraftFileUploadForm({
@@ -123,7 +112,10 @@ function DraftFileUploadForm({
       </div>
       {error ? (
         <div id={errorId} className="text-danger small mb-3" role="alert">
-          <ActionError error={error} urlPrefix={urlPrefix} />
+          {renderAppError(error, {
+            SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+            UNKNOWN: ({ message }) => message,
+          })}
         </div>
       ) : null}
       <div className="text-end justify-content-end gap-2 d-flex flex-wrap">
@@ -220,7 +212,10 @@ function DraftFileRenameForm({
         />
         {submitError != null ? (
           <div id={errorId} className="invalid-feedback d-block" role="alert">
-            <ActionError error={submitError} urlPrefix={urlPrefix} />
+            {renderAppError(submitError, {
+              SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+              UNKNOWN: ({ message }) => message,
+            })}
           </div>
         ) : showValidationError ? (
           <div id={errorId} className="invalid-feedback d-block" role="alert">
@@ -283,7 +278,10 @@ function DraftFileDeleteForm({
       </p>
       {error ? (
         <div id={errorId} className="text-danger small mb-2" role="alert">
-          <ActionError error={error} urlPrefix={urlPrefix} />
+          {renderAppError(error, {
+            SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+            UNKNOWN: ({ message }) => message,
+          })}
         </div>
       ) : null}
       <div className="text-end justify-content-end gap-2 d-flex flex-wrap">

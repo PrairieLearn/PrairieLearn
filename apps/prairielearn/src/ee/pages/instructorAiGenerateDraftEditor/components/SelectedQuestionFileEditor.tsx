@@ -142,7 +142,7 @@ export function SelectedQuestionFileEditor({
           <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
             {saveError != null
               ? renderAppError(saveError, {
-                  EDIT_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                  SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
                   UNKNOWN: ({ message }) => message,
                 })
               : saveStatus}
