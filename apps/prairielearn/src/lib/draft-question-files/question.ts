@@ -1,10 +1,9 @@
+import { selectOptionalQuestionById } from '../../models/question.js';
 import type { Question } from '../db-types.js';
 import { idsEqual } from '../id.js';
 
-import { selectOptionalQuestionById } from '../../models/question.js';
-
 /** A draft question, guaranteed to have a QID. */
-export type DraftQuestion = Question & { qid: string };
+type DraftQuestion = Question & { qid: string };
 
 /**
  * The result of resolving a question id for the draft editor:
@@ -13,7 +12,7 @@ export type DraftQuestion = Question & { qid: string };
  *   most likely navigated back after finalizing it.
  * - `not-found`: anything else (missing, deleted, in another course).
  */
-export type ClassifiedDraftQuestion =
+type ClassifiedDraftQuestion =
   | { kind: 'draft'; question: DraftQuestion }
   | { kind: 'finalized'; question: Question }
   | { kind: 'not-found' };

@@ -20,7 +20,7 @@ import type {
   DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
-} from '../../../lib/draft-question-files.js';
+} from '../../../lib/draft-question-files/browser.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -44,7 +44,7 @@ export function InstructorAiGenerateDraftEditor({
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowser: DraftQuestionFileBrowserData;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;

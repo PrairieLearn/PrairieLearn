@@ -13,7 +13,7 @@ import type {
   DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
-} from '../../../../lib/draft-question-files.js';
+} from '../../../../lib/draft-question-files/browser.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -39,7 +39,7 @@ interface AiQuestionGenerationEditorProps {
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowser: DraftQuestionFileBrowserData;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;
@@ -270,6 +270,7 @@ function AiQuestionGenerationEditorInner({
             selectedFile={currentSelectedFile}
             selectedFilePreview={currentSelectedFilePreview}
             allFilesHref={allFilesHref}
+            urlPrefix={urlPrefix}
             richTextEditorEnabled={richTextEditorEnabled}
             questionContainerHtml={questionContainerHtml}
             csrfToken={csrfToken}

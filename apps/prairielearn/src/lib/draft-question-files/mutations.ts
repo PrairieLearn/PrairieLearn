@@ -56,8 +56,8 @@ async function runDraftEditorJob(editor: Editor): Promise<void> {
  * `updateQuestionFiles`; a file rename does not, so the two mechanisms can't be
  * collapsed into one.
  *
- * @param filePath Path of the file, relative to the question root. Callers must
- * validate it (e.g. via `ModifiableQuestionFilePathSchema`) before calling.
+ * `filePath` is relative to the question root; callers validate it (e.g. via
+ * `ModifiableQuestionFilePathSchema`) before calling.
  */
 export async function saveDraftQuestionFile({
   course,
@@ -112,8 +112,10 @@ export async function deleteDraftQuestionFile({
   );
 }
 
-/** Renames (or moves) a draft question file. Both paths are relative to the
- * question root. */
+/**
+ * Renames (or moves) a draft question file. Both paths are relative to the
+ * question root.
+ */
 export async function renameDraftQuestionFile({
   course,
   question,

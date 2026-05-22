@@ -11,7 +11,7 @@ import type {
   DraftQuestionFileBrowserData,
   SelectedQuestionFile,
   SelectedQuestionFilePreview,
-} from '../../../../lib/draft-question-files.js';
+} from '../../../../lib/draft-question-files/browser.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
@@ -302,6 +302,7 @@ function AllQuestionFiles({
   selectedFile,
   selectedFilePreview,
   allFilesHref,
+  urlPrefix,
   qid,
   questionId,
   isGenerating,
@@ -311,11 +312,12 @@ function AllQuestionFiles({
   onSelectedFileSaved,
   editorRef,
 }: {
-  fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowser: DraftQuestionFileBrowserData;
   fileBrowserActions: DraftQuestionFileBrowserActions;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
+  urlPrefix: string;
   qid: string | null;
   questionId: string;
   isGenerating: boolean;
@@ -335,6 +337,7 @@ function AllQuestionFiles({
         questionId={questionId}
         isGenerating={isGenerating}
         allFilesHref={allFilesHref}
+        urlPrefix={urlPrefix}
         editorRef={editorRef}
         onShowAllFiles={onClearSelectedFile}
         onSaved={onSelectedFileSaved}
@@ -354,14 +357,12 @@ function AllQuestionFiles({
 
   return (
     <div className="p-3">
-      {fileBrowser != null && (
-        <DraftQuestionFileBrowser
-          data={fileBrowser}
-          actions={fileBrowserActions}
-          onSelectFile={onSelectFile}
-          onSelectDirectory={onSelectDirectory}
-        />
-      )}
+      <DraftQuestionFileBrowser
+        data={fileBrowser}
+        actions={fileBrowserActions}
+        onSelectFile={onSelectFile}
+        onSelectDirectory={onSelectDirectory}
+      />
     </div>
   );
 }
@@ -438,6 +439,7 @@ export function QuestionAndFilePreview({
   selectedFile,
   selectedFilePreview,
   allFilesHref,
+  urlPrefix,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
@@ -457,11 +459,12 @@ export function QuestionAndFilePreview({
   onSelectedFileSaved,
 }: {
   questionFiles: Record<string, string>;
-  fileBrowser: DraftQuestionFileBrowserData | null;
+  fileBrowser: DraftQuestionFileBrowserData;
   fileBrowserActions: DraftQuestionFileBrowserActions;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   allFilesHref: string;
+  urlPrefix: string;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
@@ -566,6 +569,7 @@ export function QuestionAndFilePreview({
           selectedFile={selectedFile}
           selectedFilePreview={selectedFilePreview}
           allFilesHref={allFilesHref}
+          urlPrefix={urlPrefix}
           qid={qid}
           questionId={questionId}
           isGenerating={isGenerating}

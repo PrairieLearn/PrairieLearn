@@ -60,7 +60,7 @@ async function uploadDraftFile({
     // Surface a failed sync job as the same typed error the tRPC mutations
     // raise, so the file browser renders it identically.
     throw new AppErrorException({
-      code: 'EDIT_JOB_FAILED',
+      code: 'SYNC_JOB_FAILED',
       message: 'The file upload failed to sync.',
       jobSequenceId,
     });

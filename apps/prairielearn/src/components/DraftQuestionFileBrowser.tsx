@@ -39,6 +39,7 @@ function DraftQuestionDirectoryActions({
           maxFileSizeBytes={data.maxFileSizeBytes}
           targetFilePath={null}
           directory={d.directory}
+          urlPrefix={data.urlPrefix}
           onUploadFile={actions.onUploadFile}
         />
       ))}
@@ -50,6 +51,7 @@ function DraftQuestionDirectoryActions({
         maxFileSizeBytes={data.maxFileSizeBytes}
         targetFilePath={null}
         directory={data.selectedDirectory}
+        urlPrefix={data.urlPrefix}
         onUploadFile={actions.onUploadFile}
       />
     </div>
@@ -126,6 +128,7 @@ function DraftQuestionFileRow({
                 maxFileSizeBytes={data.maxFileSizeBytes}
                 targetFilePath={file.selectedFilePath}
                 directory={null}
+                urlPrefix={data.urlPrefix}
                 onUploadFile={actions.onUploadFile}
               />
             </>
@@ -143,6 +146,7 @@ function DraftQuestionFileRow({
                 fileName={file.name}
                 oldFilePath={file.selectedFilePath}
                 disabled={!canRename}
+                urlPrefix={data.urlPrefix}
                 onRenameFile={actions.onRenameFile}
               />
               <DeleteFileButton
@@ -150,6 +154,7 @@ function DraftQuestionFileRow({
                 fileName={file.name}
                 filePath={file.selectedFilePath}
                 disabled={!canDelete}
+                urlPrefix={data.urlPrefix}
                 onDeleteFile={actions.onDeleteFile}
               />
             </>
