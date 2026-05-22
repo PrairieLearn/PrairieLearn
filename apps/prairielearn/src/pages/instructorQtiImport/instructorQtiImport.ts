@@ -200,7 +200,7 @@ router.post(
         selectAssessments({ course_instance_id: res.locals.course_instance.id }),
       ]);
 
-      const draftId = await createQtiImportDraft<StoredSerializedConversionResult>({
+      const draftId = await createQtiImportDraft({
         courseId: res.locals.course.id,
         courseInstanceId: res.locals.course_instance.id,
         userId: res.locals.authn_user.id,

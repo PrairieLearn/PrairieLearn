@@ -14,7 +14,6 @@ import {
 import { features } from '../../lib/features/index.js';
 import { deleteQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
-import type { StoredSerializedConversionResult } from '../../pages/instructorQtiImport/instructorQtiImport.types.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
 import { throwAppError } from '../app-errors.js';
@@ -50,6 +49,23 @@ const AssessmentDataSchema = z.object({
   questions: z.array(QuestionDataSchema),
 });
 
+const StoredSerializedQuestionOutputSchema = z.object({
+  directoryName: SafeDirectoryName,
+  sourceId: z.string(),
+  infoJson: QuestionInfoJsonSchema,
+  questionHtml: z.string(),
+  serverPy: z.string().optional(),
+  clientFiles: z.record(z.string()),
+  skippedVideos: z.array(z.string()),
+});
+
+const StoredSerializedConversionResultForHydrationSchema = z.object({
+  questions: z.array(StoredSerializedQuestionOutputSchema),
+});
+type StoredSerializedConversionResultForHydration = z.infer<
+  typeof StoredSerializedConversionResultForHydrationSchema
+>;
+
 const requireQtiImportEnabled = t.middleware(async (opts) => {
   const enabled = await features.enabledFromLocals('qti-content-import', opts.ctx.locals);
   if (!enabled) {
@@ -81,17 +97,19 @@ const create = t.procedure
       }),
   )
   .mutation(async ({ input, ctx }) => {
-    const draftCache = new Map<string, Promise<StoredSerializedConversionResult[]>>();
+    const draftCache = new Map<string, Promise<StoredSerializedConversionResultForHydration[]>>();
     const loadDraft = (draftId: string) => {
       let promise = draftCache.get(draftId);
       if (!promise) {
-        promise = readQtiImportDraft<StoredSerializedConversionResult>({
+        promise = readQtiImportDraft({
           draftId,
           courseId: ctx.course.id,
           courseInstanceId: ctx.course_instance.id,
           userId: ctx.locals.authn_user.id,
         })
-          .then((draft) => draft.results)
+          .then((draft) =>
+            z.array(StoredSerializedConversionResultForHydrationSchema).parse(draft.results),
+          )
           .catch(() => {
             throwAppError<QtiImportError['Create']>({
               code: 'QTI_IMPORT_DRAFT_UNAVAILABLE',

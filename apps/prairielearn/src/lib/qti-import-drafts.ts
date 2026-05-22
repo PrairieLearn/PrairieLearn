@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 
+import { z } from 'zod';
+
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 
@@ -7,18 +9,27 @@ import { config } from './config.js';
 // Successful imports still delete their draft immediately; lifecycle handles abandoned drafts.
 const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
 
-interface QtiImportDraftData<T> {
+const QtiImportDraftDataSchema = z.object({
+  courseId: z.string(),
+  courseInstanceId: z.string(),
+  userId: z.string(),
+  results: z.array(z.unknown()),
+});
+
+type QtiImportDraftData = z.infer<typeof QtiImportDraftDataSchema>;
+
+interface CreateQtiImportDraftData {
   courseId: string;
   courseInstanceId: string;
   userId: string;
-  results: T[];
+  results: unknown[];
 }
 
 function draftKey(draftId: string) {
   return `${DRAFT_KEY_PREFIX}${draftId}.json`;
 }
 
-export async function createQtiImportDraft<T>(data: QtiImportDraftData<T>): Promise<string> {
+export async function createQtiImportDraft(data: CreateQtiImportDraftData): Promise<string> {
   const draftId = crypto.randomUUID();
   await uploadToS3(
     config.fileStoreS3Bucket,
@@ -30,7 +41,7 @@ export async function createQtiImportDraft<T>(data: QtiImportDraftData<T>): Prom
   return draftId;
 }
 
-export async function readQtiImportDraft<T>({
+export async function readQtiImportDraft({
   draftId,
   courseId,
   courseInstanceId,
@@ -40,9 +51,9 @@ export async function readQtiImportDraft<T>({
   courseId: string;
   courseInstanceId: string;
   userId: string;
-}): Promise<QtiImportDraftData<T>> {
+}): Promise<QtiImportDraftData> {
   const buffer = await getFromS3(config.fileStoreS3Bucket, draftKey(draftId), true);
-  const data = JSON.parse(buffer.toString('utf8')) as QtiImportDraftData<T>;
+  const data = QtiImportDraftDataSchema.parse(JSON.parse(buffer.toString('utf8')));
   if (
     data.courseId !== courseId ||
     data.courseInstanceId !== courseInstanceId ||
