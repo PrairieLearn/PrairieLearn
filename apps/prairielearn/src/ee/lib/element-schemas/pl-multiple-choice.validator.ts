@@ -2,20 +2,21 @@ import {
   type TagElement,
   type TagValidator,
   type ValidatorContext,
+  attr,
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
 import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
 
 function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   return value !== undefined && isFalseValue(value);
 }
 
 function requireDropdownDisplay(element: TagElement, context: ValidatorContext, attribute: string) {
-  if (!element.hasAttribute(attribute)) return;
-  const display = element.getLiteralAttribute('display');
-  if (!element.hasAttribute('display') || (display !== undefined && display !== 'dropdown')) {
+  if (!attr(element, attribute).present()) return;
+  const display = attr(element, 'display').literal();
+  if (!attr(element, 'display').present() || (display !== undefined && display !== 'dropdown')) {
     context.reportAttribute(
       element,
       attribute,
@@ -30,10 +31,10 @@ function requireEnabledAotaNota(
   feedbackAttribute: string,
   matchingAttribute: string,
 ) {
-  if (!element.hasAttribute(feedbackAttribute)) return;
-  const matchingValue = element.getLiteralAttribute(matchingAttribute);
+  if (!attr(element, feedbackAttribute).present()) return;
+  const matchingValue = attr(element, matchingAttribute).literal();
   if (
-    !element.hasAttribute(matchingAttribute) ||
+    !attr(element, matchingAttribute).present() ||
     (matchingValue !== undefined && isFalseValue(matchingValue))
   ) {
     context.reportAttribute(
@@ -45,7 +46,7 @@ function requireEnabledAotaNota(
 }
 
 function validateAnswerScoreRange(element: TagElement, context: ValidatorContext) {
-  const score = element.getLiteralAttribute('score');
+  const score = attr(element, 'score').literal();
   if (typeof score !== 'string') return;
 
   const parsedScore = Number(score);
@@ -61,7 +62,7 @@ function validateAnswerScoreRange(element: TagElement, context: ValidatorContext
 export const validators: TagValidator[] = defineTagValidators('pl-multiple-choice', {
   'pl/multiple-choice-requires-answer'(element, context) {
     if (
-      !element.hasAttribute('external-json') &&
+      !attr(element, 'external-json').present() &&
       element.childrenWithTag('pl-answer').length === 0
     ) {
       context.reportElement(
@@ -72,7 +73,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
   },
 
   'pl/multiple-choice-order'(element, context) {
-    if (element.hasAttribute('fixed-order') && element.hasAttribute('order')) {
+    if (attr(element, 'fixed-order').present() && attr(element, 'order').present()) {
       context.reportAttribute(
         element,
         'fixed-order',
@@ -82,7 +83,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
   },
 
   'pl/multiple-choice-display'(element, context) {
-    if (element.hasAttribute('inline') && element.hasAttribute('display')) {
+    if (attr(element, 'inline').present() && attr(element, 'display').present()) {
       context.reportAttribute(
         element,
         'inline',
@@ -101,14 +102,14 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
 
   'pl/multiple-choice-builtin-grading'(element, context) {
     if (hasLiteralFalseAttribute(element, 'builtin-grading')) {
-      if (element.hasAttribute('weight')) {
+      if (attr(element, 'weight').present()) {
         context.reportAttribute(
           element,
           'weight',
           '"weight" should not be set when builtin-grading is false.',
         );
       }
-      if (element.hasAttribute('hide-score-badge')) {
+      if (attr(element, 'hide-score-badge').present()) {
         context.reportAttribute(
           element,
           'hide-score-badge',
@@ -116,7 +117,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
         );
       }
       for (const attribute of ['all-of-the-above', 'none-of-the-above']) {
-        const value = element.getLiteralAttribute(attribute);
+        const value = attr(element, attribute).literal();
         if (value !== undefined && !isBooleanValue(value)) {
           context.reportAttribute(
             element,
@@ -134,14 +135,14 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
     }
 
     for (const child of element.childrenWithTag('pl-answer')) {
-      if (child.hasAttribute('score')) {
+      if (attr(child, 'score').present()) {
         context.reportAttribute(
           child,
           'score',
           '"score" on pl-answer should not be set when builtin-grading is false.',
         );
       }
-      if (child.hasAttribute('feedback')) {
+      if (attr(child, 'feedback').present()) {
         context.reportAttribute(
           child,
           'feedback',
