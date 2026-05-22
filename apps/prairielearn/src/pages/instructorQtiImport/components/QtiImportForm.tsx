@@ -395,7 +395,7 @@ export function QtiImportForm({
       const includedAssessments = includedResults.filter(
         ({ result }) => result.sourceType === 'assessment',
       );
-      const includedQuestionCollections = includedResults.filter(
+      const includedQuestionBankResults = includedResults.filter(
         ({ result }) => result.sourceType === 'question-bank',
       );
 
@@ -433,7 +433,7 @@ export function QtiImportForm({
         }
       }
 
-      const questionPayloads = includedQuestionCollections.flatMap(({ result }) =>
+      const questionPayloads = includedQuestionBankResults.flatMap(({ result }) =>
         result.questions
           .filter((q) => questionOverrides.get(q.directoryName)?.included !== false)
           .map((q) => {
