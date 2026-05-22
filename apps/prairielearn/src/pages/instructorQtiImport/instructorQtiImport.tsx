@@ -232,7 +232,7 @@ router.post(
         userId: res.locals.authn_user.id,
         results,
       });
-      const clientResults = results.map((result) => stripDraftResultForClient(result, draftId));
+      const clientResults = results.map((result) => prepareDraftResultForClient(result, draftId));
 
       const response: UploadResponse = {
         results: clientResults,
@@ -424,7 +424,7 @@ async function serializeConversionResult(
   };
 }
 
-function stripDraftResultForClient(
+function prepareDraftResultForClient(
   result: StoredSerializedConversionResult,
   draftId: string,
 ): SerializedConversionResult {
