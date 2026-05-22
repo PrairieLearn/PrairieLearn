@@ -1,49 +1,89 @@
-import * as path from 'node:path';
+import { type MouseEvent } from 'react';
 
-import { type HtmlSafeString } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
+import { unsafeHtml } from '@prairielearn/html';
 
 import {
   getEditorUrlWithSelectedDirectory,
   getEditorUrlWithSelectedFile,
 } from '../lib/draft-question-file-url.js';
-import type { InstructorFilePaths } from '../lib/instructorFiles.js';
-import { encodePath } from '../lib/uri-util.js';
 
-import {
-  type DirectoryEntryDirectory,
-  type DirectoryEntryFile,
-  type DirectoryListings,
-  FileDeleteForm,
-  FileRenameForm,
-  FileUploadForm,
-  browseDirectory,
-} from './FileBrowser.js';
+import { FileDeleteForm, FileRenameForm, FileUploadForm } from './FileBrowserForms.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 
-function getQuestionRelativePath(questionRootPath: string, courseRelativePath: string) {
-  return path.posix.relative(questionRootPath, courseRelativePath.split(path.sep).join('/'));
+export interface DraftQuestionFileBrowserBreadcrumbSegment {
+  name: string;
+  /** Path relative to the question root; `null` for the question root. */
+  directory: string | null;
+  isActive: boolean;
 }
 
-function getSelectedDirectory(questionRootPath: string, courseRelativePath: string) {
-  const relativePath = getQuestionRelativePath(questionRootPath, courseRelativePath);
-  return relativePath === '' ? null : relativePath;
+export interface DraftQuestionFileBrowserFile {
+  id: string | number;
+  name: string;
+  /** Path relative to the question root, identifying the file in the editor. */
+  selectedFilePath: string;
+  /** Path relative to the course root, used by the upload and delete forms. */
+  coursePath: string;
+  /** Absolute working directory, used by the rename form. */
+  workingDirectory: string;
+  downloadUrl: string;
+  canView: boolean;
+  canEdit: boolean;
+  canUpload: boolean;
+  canDownload: boolean;
+  canRename: boolean;
+  canDelete: boolean;
+  syncErrors: string | null;
+  syncWarnings: string | null;
+  /** When set, the file is managed elsewhere (e.g. `info.json`) and cannot be edited. */
+  disabledReason: string | null;
+}
+
+export interface DraftQuestionFileBrowserDirectory {
+  name: string;
+  /** Path relative to the question root. */
+  selectedDirectory: string | null;
+  canView: boolean;
+}
+
+export interface DraftQuestionFileBrowserSpecialDir {
+  label: string;
+  /** Absolute path used as the upload target. */
+  path: string;
+  /** Safe HTML describing where uploaded files are placed. */
+  infoHtml: string;
+}
+
+export interface DraftQuestionFileBrowserData {
+  isReadOnly: boolean;
+  hasEditPermission: boolean;
+  csrfToken: string;
+  /** URL the popover forms POST to. */
+  fileActionUrl: string;
+  /** Base editor URL used to build file and directory links. */
+  editorUrl: string;
+  /** Absolute path of the directory being browsed; the default upload target. */
+  workingPath: string;
+  /** Path of the directory being browsed, relative to the question root. */
+  selectedDirectory: string | null;
+  /** Maximum upload size in bytes. */
+  maxFileSizeBytes: number;
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
+  specialDirs: DraftQuestionFileBrowserSpecialDir[];
+  files: DraftQuestionFileBrowserFile[];
+  dirs: DraftQuestionFileBrowserDirectory[];
 }
 
 function DraftQuestionDirectoryActions({
-  paths,
-  csrfToken,
-  fileActionUrl,
+  data,
   redirectUrl,
 }: {
-  paths: InstructorFilePaths;
-  csrfToken: string;
-  fileActionUrl: string;
+  data: DraftQuestionFileBrowserData;
   redirectUrl: string;
 }) {
   return (
     <div className="d-flex flex-wrap gap-2">
-      {paths.specialDirs.map((d) => (
+      {data.specialDirs.map((d) => (
         <button
           key={d.label}
           type="button"
@@ -55,9 +95,10 @@ function DraftQuestionDirectoryActions({
           data-bs-placement="auto"
           data-bs-title="Upload file"
           data-bs-content={FileUploadForm({
-            file: { id: `New${d.label}`, info: d.info, working_path: d.path },
-            csrfToken,
-            action: fileActionUrl,
+            file: { id: `New${d.label}`, info: unsafeHtml(d.infoHtml), working_path: d.path },
+            csrfToken: data.csrfToken,
+            maxFileSizeBytes: data.maxFileSizeBytes,
+            action: data.fileActionUrl,
             redirectUrl,
           }).toString()}
         >
@@ -75,9 +116,10 @@ function DraftQuestionDirectoryActions({
         data-bs-placement="auto"
         data-bs-title="Upload file"
         data-bs-content={FileUploadForm({
-          file: { id: 'New', working_path: paths.workingPath },
-          csrfToken,
-          action: fileActionUrl,
+          file: { id: 'New', working_path: data.workingPath },
+          csrfToken: data.csrfToken,
+          maxFileSizeBytes: data.maxFileSizeBytes,
+          action: data.fileActionUrl,
           redirectUrl,
         }).toString()}
       >
@@ -89,53 +131,48 @@ function DraftQuestionDirectoryActions({
 }
 
 function DraftQuestionFileRow({
-  paths,
+  data,
   file,
-  csrfToken,
-  editorUrl,
-  fileActionUrl,
   redirectUrl,
-  questionRootPath,
-  disabledInfoJsonReason,
-  isReadOnly,
+  onSelectFile,
 }: {
-  paths: InstructorFilePaths;
-  file: DirectoryEntryFile;
-  csrfToken: string;
-  editorUrl: string;
-  fileActionUrl: string;
+  data: DraftQuestionFileBrowserData;
+  file: DraftQuestionFileBrowserFile;
   redirectUrl: string;
-  questionRootPath: string;
-  disabledInfoJsonReason: string;
-  isReadOnly: boolean;
+  onSelectFile: (filePath: string) => void;
 }) {
-  const selectedFilePath = getQuestionRelativePath(questionRootPath, file.path);
-  const fileDisabledReason =
-    path.posix.normalize(selectedFilePath) === 'info.json' ? disabledInfoJsonReason : null;
-  const fileUrl = getEditorUrlWithSelectedFile({ editorUrl, filePath: selectedFilePath });
-  const canEdit = file.canEdit && fileDisabledReason == null;
-  const canUpload = file.canUpload && fileDisabledReason == null;
-  const canRename = file.canRename && fileDisabledReason == null;
-  const canDelete = file.canDelete && fileDisabledReason == null;
+  const fileUrl = getEditorUrlWithSelectedFile({
+    editorUrl: data.editorUrl,
+    filePath: file.selectedFilePath,
+  });
+  const canEdit = file.canEdit && file.disabledReason == null;
+  const canUpload = file.canUpload && file.disabledReason == null;
+  const canRename = file.canRename && file.disabledReason == null;
+  const canDelete = file.canDelete && file.disabledReason == null;
+
+  const selectFile = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    onSelectFile(file.selectedFilePath);
+  };
 
   return (
     <tr>
       <td className="align-middle">
         <div className="d-flex align-items-center">
           <i className="far fa-file-alt" />
-          {file.sync_errors ? (
-            <SyncProblemButton type="error" output={file.sync_errors} />
-          ) : file.sync_warnings ? (
-            <SyncProblemButton type="warning" output={file.sync_warnings} />
+          {file.syncErrors ? (
+            <SyncProblemButton type="error" output={file.syncErrors} />
+          ) : file.syncWarnings ? (
+            <SyncProblemButton type="warning" output={file.syncWarnings} />
           ) : null}
-          {file.canView && fileDisabledReason == null ? (
-            <a href={fileUrl} data-selected-file-path={selectedFilePath}>
+          {file.canView && file.disabledReason == null ? (
+            <a href={fileUrl} onClick={selectFile}>
               {file.name}
             </a>
           ) : (
             <span
-              className={fileDisabledReason ? 'text-muted' : undefined}
-              title={fileDisabledReason ?? undefined}
+              className={file.disabledReason ? 'text-muted' : undefined}
+              title={file.disabledReason ?? undefined}
             >
               {file.name}
             </span>
@@ -144,19 +181,19 @@ function DraftQuestionFileRow({
       </td>
       <td className="align-middle">
         <div className="d-flex gap-2 file-browser-row-actions">
-          {isReadOnly ? null : (
+          {data.isReadOnly ? null : (
             <>
               {canEdit ? (
                 <a
                   className="btn btn-xs btn-secondary text-nowrap"
                   href={fileUrl}
-                  data-selected-file-path={selectedFilePath}
+                  onClick={selectFile}
                 >
                   <i className="fa fa-edit" />
                   <span>Edit</span>
                 </a>
               ) : (
-                <span title={fileDisabledReason ?? undefined}>
+                <span title={file.disabledReason ?? undefined}>
                   <button type="button" className="btn btn-xs btn-secondary text-nowrap" disabled>
                     <i className="fa fa-edit" />
                     <span>Edit</span>
@@ -173,9 +210,10 @@ function DraftQuestionFileRow({
                 data-bs-placement="auto"
                 data-bs-title="Upload file"
                 data-bs-content={FileUploadForm({
-                  file,
-                  csrfToken,
-                  action: fileActionUrl,
+                  file: { id: file.id, path: file.coursePath },
+                  csrfToken: data.csrfToken,
+                  maxFileSizeBytes: data.maxFileSizeBytes,
+                  action: data.fileActionUrl,
                   redirectUrl,
                 }).toString()}
                 disabled={!canUpload}
@@ -187,14 +225,12 @@ function DraftQuestionFileRow({
           )}
           <a
             className={`btn btn-xs btn-secondary text-nowrap ${file.canDownload ? '' : 'disabled'}`}
-            href={`${paths.urlPrefix}/file_download/${encodePath(file.path)}?attachment=${encodeURIComponent(
-              file.name,
-            )}`}
+            href={file.downloadUrl}
           >
             <i className="fa fa-arrow-down" />
             <span>Download</span>
           </a>
-          {isReadOnly ? null : (
+          {data.isReadOnly ? null : (
             <>
               <button
                 type="button"
@@ -205,10 +241,10 @@ function DraftQuestionFileRow({
                 data-bs-placement="auto"
                 data-bs-title="Rename file"
                 data-bs-content={FileRenameForm({
-                  file,
-                  csrfToken,
+                  file: { id: file.id, name: file.name, dir: file.workingDirectory },
+                  csrfToken: data.csrfToken,
                   isViewingFile: false,
-                  action: fileActionUrl,
+                  action: data.fileActionUrl,
                   redirectUrl,
                 }).toString()}
                 data-testid="rename-file-button"
@@ -226,9 +262,9 @@ function DraftQuestionFileRow({
                 data-bs-placement="auto"
                 data-bs-title="Confirm delete"
                 data-bs-content={FileDeleteForm({
-                  file,
-                  csrfToken,
-                  action: fileActionUrl,
+                  file: { id: file.id, name: file.name, path: file.coursePath },
+                  csrfToken: data.csrfToken,
+                  action: data.fileActionUrl,
                   redirectUrl,
                 }).toString()}
                 data-testid="delete-file-button"
@@ -248,16 +284,15 @@ function DraftQuestionFileRow({
 function DraftQuestionDirectoryRow({
   directory,
   editorUrl,
-  questionRootPath,
+  onSelectDirectory,
 }: {
-  directory: DirectoryEntryDirectory;
+  directory: DraftQuestionFileBrowserDirectory;
   editorUrl: string;
-  questionRootPath: string;
+  onSelectDirectory: (directory: string | null) => void;
 }) {
-  const selectedDirectory = getSelectedDirectory(questionRootPath, directory.path);
   const directoryUrl = getEditorUrlWithSelectedDirectory({
     editorUrl,
-    directory: selectedDirectory,
+    directory: directory.selectedDirectory,
   });
 
   return (
@@ -265,7 +300,13 @@ function DraftQuestionDirectoryRow({
       <td colSpan={2}>
         <i className="fa fa-folder" />{' '}
         {directory.canView ? (
-          <a href={directoryUrl} data-selected-directory-path={selectedDirectory ?? undefined}>
+          <a
+            href={directoryUrl}
+            onClick={(event) => {
+              event.preventDefault();
+              onSelectDirectory(directory.selectedDirectory);
+            }}
+          >
             {directory.name}
           </a>
         ) : (
@@ -276,71 +317,53 @@ function DraftQuestionDirectoryRow({
   );
 }
 
-function DraftQuestionFileBrowser({
-  paths,
-  directoryListings,
-  isReadOnly,
-  csrfToken,
-  editorUrl,
-  fileActionUrl,
-  questionRootPath,
-  selectedDirectory,
-  disabledInfoJsonReason,
+export function DraftQuestionFileBrowser({
+  data,
+  onSelectFile,
+  onSelectDirectory,
 }: {
-  paths: InstructorFilePaths;
-  directoryListings: DirectoryListings;
-  isReadOnly: boolean;
-  csrfToken: string;
-  editorUrl: string;
-  fileActionUrl: string;
-  questionRootPath: string;
-  selectedDirectory: string | null;
-  disabledInfoJsonReason: string;
+  data: DraftQuestionFileBrowserData;
+  onSelectFile: (filePath: string) => void;
+  onSelectDirectory: (directory: string | null) => void;
 }) {
   const redirectUrl = getEditorUrlWithSelectedDirectory({
-    editorUrl,
-    directory: selectedDirectory,
+    editorUrl: data.editorUrl,
+    directory: data.selectedDirectory,
   });
 
   return (
     <>
       <nav aria-label="File browser breadcrumb" className="mb-2">
         <ol className="breadcrumb mb-0">
-          {paths.branch
-            .filter((dir) => dir.canView)
-            .map((dir, index, dirs) => {
-              const breadcrumbDirectory = getSelectedDirectory(questionRootPath, dir.path);
-              const directoryUrl = getEditorUrlWithSelectedDirectory({
-                editorUrl,
-                directory: breadcrumbDirectory,
-              });
-
-              return (
-                <li
-                  key={dir.path}
-                  className={`breadcrumb-item ${index === dirs.length - 1 ? 'active' : ''}`}
-                  aria-current={index === dirs.length - 1 ? 'page' : undefined}
+          {data.breadcrumb.map((segment) => (
+            <li
+              key={segment.directory ?? ''}
+              className={`breadcrumb-item ${segment.isActive ? 'active' : ''}`}
+              aria-current={segment.isActive ? 'page' : undefined}
+            >
+              {segment.isActive ? (
+                segment.name
+              ) : (
+                <a
+                  href={getEditorUrlWithSelectedDirectory({
+                    editorUrl: data.editorUrl,
+                    directory: segment.directory,
+                  })}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onSelectDirectory(segment.directory);
+                  }}
                 >
-                  {index === dirs.length - 1 ? (
-                    dir.name
-                  ) : (
-                    <a href={directoryUrl} data-selected-directory-path={breadcrumbDirectory ?? ''}>
-                      {dir.name}
-                    </a>
-                  )}
-                </li>
-              );
-            })}
+                  {segment.name}
+                </a>
+              )}
+            </li>
+          ))}
         </ol>
       </nav>
-      {paths.hasEditPermission && !isReadOnly ? (
+      {data.hasEditPermission && !data.isReadOnly ? (
         <div className="d-flex justify-content-end mb-2">
-          <DraftQuestionDirectoryActions
-            paths={paths}
-            csrfToken={csrfToken}
-            fileActionUrl={fileActionUrl}
-            redirectUrl={redirectUrl}
-          />
+          <DraftQuestionDirectoryActions data={data} redirectUrl={redirectUrl} />
         </div>
       ) : null}
       <div className="table-responsive">
@@ -352,65 +375,26 @@ function DraftQuestionFileBrowser({
             </tr>
           </thead>
           <tbody>
-            {directoryListings.files.map((file) => (
+            {data.files.map((file) => (
               <DraftQuestionFileRow
-                key={`file-${file.path}`}
-                paths={paths}
+                key={`file-${file.selectedFilePath}`}
+                data={data}
                 file={file}
-                csrfToken={csrfToken}
-                editorUrl={editorUrl}
-                fileActionUrl={fileActionUrl}
                 redirectUrl={redirectUrl}
-                questionRootPath={questionRootPath}
-                disabledInfoJsonReason={disabledInfoJsonReason}
-                isReadOnly={isReadOnly}
+                onSelectFile={onSelectFile}
               />
             ))}
-            {directoryListings.dirs.map((directory) => (
+            {data.dirs.map((directory) => (
               <DraftQuestionDirectoryRow
-                key={`dir-${directory.path}`}
+                key={`dir-${directory.selectedDirectory ?? ''}`}
                 directory={directory}
-                editorUrl={editorUrl}
-                questionRootPath={questionRootPath}
+                editorUrl={data.editorUrl}
+                onSelectDirectory={onSelectDirectory}
               />
             ))}
           </tbody>
         </table>
       </div>
     </>
-  );
-}
-
-export async function createDraftQuestionFileBrowserHtml({
-  paths,
-  isReadOnly,
-  csrfToken,
-  editorUrl,
-  fileActionUrl,
-  questionRootPath,
-  selectedDirectory,
-  disabledInfoJsonReason,
-}: {
-  paths: InstructorFilePaths;
-  isReadOnly: boolean;
-  csrfToken: string;
-  editorUrl: string;
-  fileActionUrl: string;
-  questionRootPath: string;
-  selectedDirectory: string | null;
-  disabledInfoJsonReason: string;
-}): Promise<HtmlSafeString> {
-  return renderHtml(
-    <DraftQuestionFileBrowser
-      paths={paths}
-      directoryListings={await browseDirectory({ paths })}
-      isReadOnly={isReadOnly}
-      csrfToken={csrfToken}
-      editorUrl={editorUrl}
-      fileActionUrl={fileActionUrl}
-      questionRootPath={questionRootPath}
-      selectedDirectory={selectedDirectory}
-      disabledInfoJsonReason={disabledInfoJsonReason}
-    />,
   );
 }

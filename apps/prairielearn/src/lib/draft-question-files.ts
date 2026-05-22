@@ -6,15 +6,22 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
 
-import { createDraftQuestionFileBrowserHtml } from '../components/DraftQuestionFileBrowser.js';
-import { createFilePreviewHtml } from '../components/FileBrowser.js';
+import type {
+  DraftQuestionFileBrowserBreadcrumbSegment,
+  DraftQuestionFileBrowserData,
+  DraftQuestionFileBrowserDirectory,
+  DraftQuestionFileBrowserFile,
+} from '../components/DraftQuestionFileBrowser.js';
+import { browseDirectory, browseFile } from '../components/FileBrowser.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { b64EncodeUnicode } from './base64-util.js';
+import { config } from './config.js';
 import { getCourseFilesClient } from './course-files-api.js';
 import type { Course, Question, User } from './db-types.js';
 import { readEditableTextFile } from './editableFile.js';
 import { getPaths } from './instructorFiles.js';
+import { encodePath } from './uri-util.js';
 
 export interface SelectedQuestionFile {
   path: string;
@@ -25,9 +32,13 @@ export interface SelectedQuestionFile {
 
 export interface SelectedQuestionFilePreview {
   path: string;
-  html: string;
   fileViewUrl: string;
   downloadUrl: string;
+  /**
+   * How to render the preview. Only binary files reach this path, so the
+   * content is an image, a PDF, or unpreviewable.
+   */
+  content: { kind: 'image'; src: string } | { kind: 'pdf'; src: string } | { kind: 'none' };
 }
 
 const DRAFT_INFO_JSON_DISABLED_REASON =
@@ -167,16 +178,20 @@ async function readSelectedQuestionFile({
       navPage: 'question',
     });
     const encodedPath = encodeCourseFilePath(paths.workingPathRelativeToCourse);
+    const fileDownloadUrl = `${paths.urlPrefix}/file_download/${encodedPath}`;
+    const fileInfo = await browseFile({ paths });
 
     return {
       selectedFile: null,
       selectedFilePreview: {
         path: filePath,
-        html: (await createFilePreviewHtml({ paths })).toString(),
         fileViewUrl: `${paths.urlPrefix}/file_view/${encodedPath}`,
-        downloadUrl: `${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
-          path.basename(filePath),
-        )}`,
+        downloadUrl: `${fileDownloadUrl}?attachment=${encodeURIComponent(path.basename(filePath))}`,
+        content: fileInfo.isImage
+          ? { kind: 'image', src: fileDownloadUrl }
+          : fileInfo.isPDF
+            ? { kind: 'pdf', src: `${fileDownloadUrl}?type=application/pdf#view=FitH` }
+            : { kind: 'none' },
       },
     };
   }
@@ -199,7 +214,12 @@ async function readSelectedQuestionFile({
   };
 }
 
-async function renderAllQuestionFilesHtml({
+/**
+ * Builds the serializable data describing the draft question's file browser.
+ * This is the data layer for the `DraftQuestionFileBrowser` component: it reads
+ * the filesystem and resolves paths/URLs so the component only renders.
+ */
+async function buildDraftQuestionFileBrowserData({
   resLocals,
   editorUrl,
   selectedDirectory,
@@ -207,8 +227,8 @@ async function renderAllQuestionFilesHtml({
   resLocals: DraftQuestionFilesLocals;
   editorUrl: string;
   selectedDirectory: string | null;
-}) {
-  if (!resLocals.question.qid) return '';
+}): Promise<DraftQuestionFileBrowserData | null> {
+  if (!resLocals.question.qid) return null;
 
   const questionRootPath = `questions/${resLocals.question.qid}`;
   const requestedPath =
@@ -219,24 +239,85 @@ async function renderAllQuestionFilesHtml({
     ...resLocals,
     navPage: 'question',
   });
-  const fileViewBaseUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view`;
-  const fileActionUrl = `${fileViewBaseUrl}/${encodeCourseFilePath(questionRootPath)}`;
+  const fileActionUrl = `${resLocals.urlPrefix}/question/${resLocals.question.id}/file_view/${encodeCourseFilePath(
+    questionRootPath,
+  )}`;
 
-  return (
-    await createDraftQuestionFileBrowserHtml({
-      paths,
-      isReadOnly: false,
-      csrfToken: generateCsrfToken({
-        url: fileActionUrl,
-        authnUserId: resLocals.authn_user.id,
-      }),
-      editorUrl,
-      fileActionUrl,
-      questionRootPath,
-      selectedDirectory,
-      disabledInfoJsonReason: DRAFT_INFO_JSON_DISABLED_REASON,
-    })
-  ).toString();
+  /**
+   * Resolves a course-root-relative path (with OS separators) to a path
+   * relative to the question root (with POSIX separators).
+   */
+  function toQuestionRelativePath(courseRelativePath: string) {
+    return path.posix.relative(questionRootPath, courseRelativePath.split(path.sep).join('/'));
+  }
+
+  const directoryListings = await browseDirectory({ paths });
+
+  const files = directoryListings.files.map((file): DraftQuestionFileBrowserFile => {
+    const selectedFilePath = toQuestionRelativePath(file.path);
+    return {
+      id: file.id,
+      name: file.name,
+      selectedFilePath,
+      coursePath: file.path,
+      workingDirectory: file.dir,
+      downloadUrl: `${paths.urlPrefix}/file_download/${encodePath(file.path)}?attachment=${encodeURIComponent(
+        file.name,
+      )}`,
+      canView: file.canView,
+      canEdit: file.canEdit,
+      canUpload: file.canUpload,
+      canDownload: file.canDownload,
+      canRename: file.canRename,
+      canDelete: file.canDelete,
+      syncErrors: file.sync_errors,
+      syncWarnings: file.sync_warnings,
+      disabledReason: isDraftQuestionInfoFile(selectedFilePath)
+        ? DRAFT_INFO_JSON_DISABLED_REASON
+        : null,
+    };
+  });
+
+  const dirs = directoryListings.dirs.map((dir): DraftQuestionFileBrowserDirectory => {
+    const relativePath = toQuestionRelativePath(dir.path);
+    return {
+      name: dir.name,
+      selectedDirectory: relativePath === '' ? null : relativePath,
+      canView: dir.canView,
+    };
+  });
+
+  const viewableBranch = paths.branch.filter((dir) => dir.canView);
+  const breadcrumb = viewableBranch.map((dir, index): DraftQuestionFileBrowserBreadcrumbSegment => {
+    const relativePath = toQuestionRelativePath(dir.path);
+    return {
+      name: dir.name,
+      directory: relativePath === '' ? null : relativePath,
+      isActive: index === viewableBranch.length - 1,
+    };
+  });
+
+  return {
+    isReadOnly: false,
+    hasEditPermission: paths.hasEditPermission,
+    csrfToken: generateCsrfToken({
+      url: fileActionUrl,
+      authnUserId: resLocals.authn_user.id,
+    }),
+    fileActionUrl,
+    editorUrl,
+    workingPath: paths.workingPath,
+    selectedDirectory,
+    maxFileSizeBytes: config.fileUploadMaxBytes,
+    breadcrumb,
+    specialDirs: paths.specialDirs.map((d) => ({
+      label: d.label,
+      path: d.path,
+      infoHtml: d.info.toString(),
+    })),
+    files,
+    dirs,
+  };
 }
 
 export async function getQuestionFilesData({
@@ -251,12 +332,12 @@ export async function getQuestionFilesData({
   selectedDirectory: string | null;
 }) {
   const courseFilesClient = getCourseFilesClient();
-  const [{ files }, allFilesHtml, selectedQuestionFile] = await Promise.all([
+  const [{ files }, fileBrowser, selectedQuestionFile] = await Promise.all([
     courseFilesClient.getQuestionFiles.query({
       course_id: resLocals.course.id,
       question_id: resLocals.question.id,
     }),
-    renderAllQuestionFilesHtml({ resLocals, editorUrl, selectedDirectory }),
+    buildDraftQuestionFileBrowserData({ resLocals, editorUrl, selectedDirectory }),
     readSelectedQuestionFile({
       resLocals,
       filePath:
@@ -266,7 +347,7 @@ export async function getQuestionFilesData({
     }),
   ]);
 
-  return { files, allFilesHtml, ...selectedQuestionFile };
+  return { files, fileBrowser, ...selectedQuestionFile };
 }
 
 export async function saveDraftQuestionFile({

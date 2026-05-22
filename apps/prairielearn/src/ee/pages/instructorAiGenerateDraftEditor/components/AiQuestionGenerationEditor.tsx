@@ -6,6 +6,7 @@ import { Nav, Tab } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import type { DraftQuestionFileBrowserData } from '../../../../components/DraftQuestionFileBrowser.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
@@ -36,7 +37,7 @@ interface AiQuestionGenerationEditorProps {
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
-  allQuestionFilesHtml: string;
+  fileBrowser: DraftQuestionFileBrowserData | null;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
   richTextEditorEnabled: boolean;
@@ -54,7 +55,7 @@ function AiQuestionGenerationEditorInner({
   question,
   initialMessages,
   questionFiles: initialQuestionFiles,
-  allQuestionFilesHtml,
+  fileBrowser,
   selectedFile,
   selectedFilePreview,
   richTextEditorEnabled,
@@ -86,11 +87,11 @@ function AiQuestionGenerationEditorInner({
   const initialQuestionFilesData = useMemo(
     () => ({
       files: initialQuestionFiles,
-      allFilesHtml: allQuestionFilesHtml,
+      fileBrowser,
       selectedFile,
       selectedFilePreview,
     }),
-    [allQuestionFilesHtml, initialQuestionFiles, selectedFile, selectedFilePreview],
+    [fileBrowser, initialQuestionFiles, selectedFile, selectedFilePreview],
   );
   const selectedFilesMatchInitialQuery =
     selectedFilePath === initialFileQuery.file && selectedDirectory === initialFileQuery.dir;
@@ -118,7 +119,7 @@ function AiQuestionGenerationEditorInner({
 
   const {
     files: questionFiles,
-    allFilesHtml,
+    fileBrowser: currentFileBrowser,
     selectedFile: currentSelectedFile,
     selectedFilePreview: currentSelectedFilePreview,
   } = questionFilesData ?? initialQuestionFilesData;
@@ -251,7 +252,7 @@ function AiQuestionGenerationEditorInner({
         <div className="app-preview">
           <QuestionAndFilePreview
             questionFiles={questionFiles}
-            allQuestionFilesHtml={allFilesHtml}
+            fileBrowser={currentFileBrowser}
             selectedFile={currentSelectedFile}
             selectedFilePreview={currentSelectedFilePreview}
             allFilesHref={allFilesHref}
