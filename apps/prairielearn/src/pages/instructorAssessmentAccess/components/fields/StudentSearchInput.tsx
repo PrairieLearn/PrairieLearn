@@ -12,13 +12,17 @@ interface Student {
 export function StudentSearchInput({
   allStudents,
   selectedUids,
+  maxSelected,
   onSelectedUidsChange,
 }: {
   allStudents: Student[];
   selectedUids: Set<string>;
+  maxSelected: number;
   onSelectedUidsChange: (uids: Set<string>) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const limitReached = selectedUids.size >= maxSelected;
+  const limitReason = `A rule can target at most ${maxSelected} students.`;
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return allStudents;
@@ -33,13 +37,14 @@ export function StudentSearchInput({
   const handleToggleStudent = (uid: string) => {
     const newSet = new Set(selectedUids);
     if (newSet.has(uid)) newSet.delete(uid);
-    else newSet.add(uid);
+    else if (newSet.size < maxSelected) newSet.add(uid);
     onSelectedUidsChange(newSet);
   };
 
   const handleSelectAll = () => {
     const newSet = new Set(selectedUids);
     for (const student of filteredStudents) {
+      if (newSet.size >= maxSelected) break;
       newSet.add(student.uid);
     }
     onSelectedUidsChange(newSet);
@@ -68,11 +73,17 @@ export function StudentSearchInput({
           label="Student selection"
           checkboxIdPrefix="student-select"
           maxHeight="300px"
+          selectAllDisabledReason={limitReached ? limitReason : undefined}
+          isItemDisabled={(student) => !selectedUids.has(student.uid) && limitReached}
+          getItemDisabledReason={(student) =>
+            !selectedUids.has(student.uid) && limitReached ? limitReason : undefined
+          }
           onToggle={handleToggleStudent}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleClearAll}
         />
       )}
+      {limitReached && <Form.Text className="text-muted">{limitReason}</Form.Text>}
     </div>
   );
 }

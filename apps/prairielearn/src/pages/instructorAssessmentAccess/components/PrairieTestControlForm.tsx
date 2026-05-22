@@ -11,6 +11,8 @@ import {
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
+import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../../schemas/limits.js';
+
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
@@ -124,6 +126,10 @@ export function PrairieTestControlForm() {
   examsRef.current = watchedExams;
 
   const watchedExamUuids = watchedExams.map((exam) => exam.examUuid).join('\0');
+  const addExamDisabled = examFields.length >= MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS;
+  const addExamDisabledTitle = addExamDisabled
+    ? `A rule can have at most ${MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS} PrairieTest exams.`
+    : undefined;
 
   // Validate when the number of exams changes, any UUID is edited, or on mount
   // so empty exam UUIDs (added by the PrairieTest checkbox in
@@ -236,6 +242,8 @@ export function PrairieTestControlForm() {
       <Button
         size="sm"
         variant="outline-primary"
+        disabled={addExamDisabled}
+        title={addExamDisabledTitle}
         onClick={() => {
           appendExam({
             examUuid: '',
@@ -250,6 +258,9 @@ export function PrairieTestControlForm() {
         <i className="bi bi-plus-circle me-1" aria-hidden="true" />
         Add exam
       </Button>
+      {addExamDisabledTitle && (
+        <Form.Text className="text-muted d-block mt-2">{addExamDisabledTitle}</Form.Text>
+      )}
     </div>
   );
 }

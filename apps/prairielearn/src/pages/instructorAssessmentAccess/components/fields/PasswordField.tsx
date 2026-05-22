@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { MAX_ACCESS_CONTROL_PASSWORD_LENGTH } from '../../../../schemas/limits.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -30,13 +31,15 @@ function PasswordDetails({
   value,
   onChange,
   idPrefix,
+  error,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   idPrefix: string;
+  error?: string;
 }) {
   const [showPassword, setShowPassword] = useState(false);
-  const isInvalid = value !== null && value === '';
+  const isInvalid = error !== undefined;
   const errorId = `${idPrefix}-password-error`;
 
   return (
@@ -54,6 +57,7 @@ function PasswordDetails({
               aria-errormessage={isInvalid ? errorId : undefined}
               placeholder="Password"
               value={value}
+              maxLength={MAX_ACCESS_CONTROL_PASSWORD_LENGTH}
               isInvalid={isInvalid}
               data-1p-ignore
               onChange={({ currentTarget }) => onChange(currentTarget.value)}
@@ -66,9 +70,9 @@ function PasswordDetails({
               <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
             </Button>
           </InputGroup>
-          {isInvalid && (
+          {error && (
             <Form.Control.Feedback type="invalid" id={errorId} className="d-block">
-              Password is required
+              {error}
             </Form.Control.Feedback>
           )}
         </>
@@ -82,16 +86,32 @@ function PasswordDetails({
   );
 }
 
+function validatePassword(value: string | null): string | true {
+  if (value === '') return 'Password is required';
+  if (value !== null && value.length > MAX_ACCESS_CONTROL_PASSWORD_LENGTH) {
+    return `Password must be at most ${MAX_ACCESS_CONTROL_PASSWORD_LENGTH} characters`;
+  }
+  return true;
+}
+
 export function DefaultPasswordField() {
-  const { field } = useController<AccessControlFormData, 'defaultRule.password'>({
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, 'defaultRule.password'>({
     name: 'defaultRule.password',
-    rules: { validate: (v) => v !== '' || 'Password is required' },
+    rules: { validate: validatePassword },
   });
 
   return (
     <Form.Group>
       <PasswordToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
-      <PasswordDetails value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
+      <PasswordDetails
+        value={field.value}
+        idPrefix="defaultRule"
+        error={error?.message}
+        onChange={field.onChange}
+      />
     </Form.Group>
   );
 }
@@ -101,9 +121,12 @@ export function OverridePasswordField({ index }: { index: number }) {
     name: 'defaultRule.password',
   });
 
-  const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
-    rules: { validate: (v) => v !== '' || 'Password is required' },
+    rules: { validate: validatePassword },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');
@@ -128,6 +151,7 @@ export function OverridePasswordField({ index }: { index: number }) {
       <PasswordDetails
         value={field.value}
         idPrefix={`overrides-${index}`}
+        error={error?.message}
         onChange={field.onChange}
       />
     </FieldWrapper>

@@ -4,6 +4,7 @@ import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
 } from '../../schemas/accessControl.js';
+import { MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT } from '../../schemas/limits.js';
 
 import {
   type AccessControlValidationRule,
@@ -426,6 +427,27 @@ describe('Exam UUID validation', () => {
     });
 
     assert.isTrue(result.success);
+  });
+});
+
+describe('Access control enrollment target limits', () => {
+  it('validates total enrollment rule target counts', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: { release: { date: '2024-03-01T00:00:00' } },
+    });
+    const enrollmentRule = AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 60 } });
+
+    const tooManyTargetsTotal = validateAccessControlRules({
+      rules: [defaultRule],
+      enrollmentRules: Array.from({ length: 6 }, () => enrollmentRule),
+      enrollmentRuleTargetCounts: [50, 50, 50, 50, 50, 1],
+    });
+    assert.include(
+      tooManyTargetsTotal.errors,
+      `Too many student targets across enrollment overrides: ${
+        MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT + 1
+      }. Maximum allowed is ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT}.`,
+    );
   });
 });
 

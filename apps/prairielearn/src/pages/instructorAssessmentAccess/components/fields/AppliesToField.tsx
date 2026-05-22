@@ -6,6 +6,10 @@ import { useFieldArray, useWatch } from 'react-hook-form';
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
+import {
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
+  MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
+} from '../../../../schemas/limits.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
@@ -14,10 +18,12 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  targetTypeDisabledReasons,
   onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  targetTypeDisabledReasons?: Partial<Record<TargetType, string | null>>;
   onTargetTypeChange: (targetType: TargetType) => void;
 }) {
   const trpc = useTRPC();
@@ -53,6 +59,11 @@ export function AppliesToField({
 
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(enrollments.map((i) => i.uid));
+  const studentLabelLimitReached =
+    studentLabels.length >= MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE;
+  const studentLabelOptionLimitReason = `A rule can target at most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels.`;
+  const targetTypeLimitReason =
+    targetTypeDisabledReasons?.student_label ?? targetTypeDisabledReasons?.enrollment ?? null;
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
 
@@ -69,6 +80,8 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
+          disabled={targetTypeDisabledReasons?.enrollment != null}
+          title={targetTypeDisabledReasons?.enrollment ?? undefined}
           onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
@@ -77,8 +90,13 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
+          disabled={targetTypeDisabledReasons?.student_label != null}
+          title={targetTypeDisabledReasons?.student_label ?? undefined}
           onChange={() => onTargetTypeChange('student_label')}
         />
+        {targetTypeLimitReason && (
+          <Form.Text className="text-muted d-block mt-2">{targetTypeLimitReason}</Form.Text>
+        )}
       </fieldset>
 
       <div>
@@ -96,6 +114,7 @@ export function AppliesToField({
               <div className="ms-auto">
                 <AddStudentsModal
                   selectedUids={excludedUids}
+                  maxStudents={MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE}
                   renderTrigger={({ onClick }) => (
                     <Button
                       variant="link"
@@ -145,6 +164,14 @@ export function AppliesToField({
                 labels={allLabels ?? []}
                 selectedIds={excludedStudentLabelIds}
                 buttonLabel="Select labels"
+                isOptionDisabled={(label) =>
+                  !excludedStudentLabelIds.has(label.id) && studentLabelLimitReached
+                }
+                getOptionDisabledReason={(label) =>
+                  !excludedStudentLabelIds.has(label.id) && studentLabelLimitReached
+                    ? studentLabelOptionLimitReason
+                    : undefined
+                }
                 onToggle={(label) => {
                   if (excludedStudentLabelIds.has(label.id)) {
                     handleRemoveStudentLabelById(label.id);
@@ -178,7 +205,9 @@ export function AppliesToField({
               )}
             </div>
             <div className="form-text mt-2">
-              Applies to students with any of the selected labels.
+              {studentLabelLimitReached
+                ? studentLabelOptionLimitReason
+                : 'Applies to students with any of the selected labels.'}
             </div>
           </div>
         )}

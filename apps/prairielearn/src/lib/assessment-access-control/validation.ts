@@ -1,16 +1,5 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
-
-/**
- * Maximum number of access control rules (default + overrides) per assessment.
- * Enforced during both JSON sync and tRPC input validation.
- */
-export const MAX_ACCESS_CONTROL_RULES = 50;
-
-/**
- * Maximum number of enrollment-targeted access control rules per assessment.
- * Enrollment rules are per-student overrides, so a lower limit is appropriate.
- */
-export const MAX_ENROLLMENT_RULES = 100;
+import { MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT } from '../../schemas/limits.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
@@ -1056,16 +1045,20 @@ function formatValues(values: Set<string> | string[]) {
  * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
+ * @param params.enrollmentRuleTargetCounts Optional enrollment target counts,
+ * one per enrollment rule, for per-rule and per-assessment target limits.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
   enrollmentRules,
+  enrollmentRuleTargetCounts,
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
   enrollmentRules?: AccessControlJson[];
+  enrollmentRuleTargetCounts?: number[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
@@ -1078,10 +1071,16 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    errors.push(
-      `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
+  if (enrollmentRuleTargetCounts !== undefined) {
+    const totalEnrollmentTargets = enrollmentRuleTargetCounts.reduce(
+      (sum, count) => sum + count,
+      0,
     );
+    if (totalEnrollmentTargets > MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT) {
+      errors.push(
+        `Too many student targets across enrollment overrides: ${totalEnrollmentTargets}. Maximum allowed is ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT}.`,
+      );
+    }
   }
 
   // A default rule is identified by the absence of a `labels` key.

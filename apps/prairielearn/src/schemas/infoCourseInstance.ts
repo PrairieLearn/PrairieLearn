@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 import { ColorJsonSchema } from './infoCourse.js';
+import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from './limits.js';
 
 const AccessRuleJsonSchema = z
   .object({
@@ -131,7 +132,11 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
-    studentLabels: z.array(StudentLabelJsonSchema).describe('Student labels.').optional(),
+    studentLabels: z
+      .array(StudentLabelJsonSchema)
+      .max(MAX_STUDENT_LABELS_PER_COURSE_INSTANCE)
+      .describe('Student labels.')
+      .optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');

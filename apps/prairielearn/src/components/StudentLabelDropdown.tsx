@@ -8,6 +8,8 @@ export function StudentLabelDropdown({
   selectedIds,
   onToggle,
   disabled,
+  isOptionDisabled,
+  getOptionDisabledReason,
   footer,
   buttonLabel = 'Edit labels',
 }: {
@@ -15,6 +17,8 @@ export function StudentLabelDropdown({
   selectedIds: Set<string>;
   onToggle: (label: StaffStudentLabel) => void;
   disabled?: boolean;
+  isOptionDisabled?: (label: StaffStudentLabel) => boolean;
+  getOptionDisabledReason?: (label: StaffStudentLabel) => string | undefined;
   footer?: ReactNode;
   buttonLabel?: string;
 }) {
@@ -30,20 +34,22 @@ export function StudentLabelDropdown({
         ) : (
           labels.map((label) => {
             const isSelected = selectedIds.has(label.id);
+            const optionDisabled = disabled || (isOptionDisabled?.(label) ?? false);
             return (
               <Dropdown.Item
                 key={label.id}
                 as="label"
                 htmlFor={`student-label-${label.id}`}
                 className="d-flex align-items-center gap-2"
-                disabled={disabled}
+                disabled={optionDisabled}
+                title={getOptionDisabledReason?.(label)}
               >
                 <input
                   type="checkbox"
                   id={`student-label-${label.id}`}
                   className="form-check-input mt-0 flex-shrink-0"
                   checked={isSelected}
-                  disabled={disabled}
+                  disabled={optionDisabled}
                   onChange={() => onToggle(label)}
                 />
                 {label.color && (

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { EnrollmentTarget } from '../types.js';
@@ -9,10 +9,12 @@ import { StudentSearchInput } from './StudentSearchInput.js';
 
 export function AddStudentsModal({
   selectedUids: initialSelectedUids,
+  maxStudents,
   onSaveStudents,
   renderTrigger,
 }: {
   selectedUids: Set<string>;
+  maxStudents: number;
   onSaveStudents: (students: EnrollmentTarget[]) => void;
   renderTrigger?: (props: { onClick: () => void }) => ReactNode;
 }) {
@@ -56,6 +58,11 @@ export function AddStudentsModal({
           <Modal.Title>Select students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {selectedUids.size >= maxStudents && (
+            <Alert variant="secondary" className="py-2">
+              A rule can target at most {maxStudents} students.
+            </Alert>
+          )}
           {isLoading ? (
             <div className="text-center py-3">
               <Spinner animation="border" size="sm" />
@@ -66,6 +73,7 @@ export function AddStudentsModal({
             <StudentSearchInput
               allStudents={allStudents}
               selectedUids={selectedUids}
+              maxSelected={maxStudents}
               onSelectedUidsChange={setSelectedUids}
             />
           )}
@@ -74,7 +82,11 @@ export function AddStudentsModal({
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={isLoading} onClick={handleSave}>
+          <Button
+            variant="primary"
+            disabled={isLoading || selectedUids.size > maxStudents}
+            onClick={handleSave}
+          >
             Done{selectedUids.size > 0 ? ` (${selectedUids.size} selected)` : ''}
           </Button>
         </Modal.Footer>

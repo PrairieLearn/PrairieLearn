@@ -9,6 +9,10 @@ import type {
   AccessControlJsonWithId,
   PrairieTestExamMetadata,
 } from '../../../models/assessment-access-control-rules.js';
+import {
+  MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+} from '../../../schemas/limits.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { DefaultRuleForm } from './DefaultRuleForm.js';
@@ -93,6 +97,11 @@ export function AccessControlForm({
 
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
+  const enrollmentOverrideCount = watchedData.overrides.filter(
+    (override) => override.appliesTo.targetType === 'enrollment',
+  ).length;
+  const studentLabelOverrideCount = watchedData.overrides.length - enrollmentOverrideCount;
+  const maxStudentLabelOverrideCount = MAX_ACCESS_CONTROL_RULES - 1;
 
   // Sync cross-field date validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
@@ -133,6 +142,9 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
+    if (enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
+      newOverride.appliesTo.targetType = 'student_label';
+    }
     appendOverride(newOverride);
     setSelectedRule({ type: 'override', index: watchedData.overrides.length });
   };
@@ -222,6 +234,11 @@ export function AccessControlForm({
   };
 
   const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
+  const addOverrideDisabledReason =
+    enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES &&
+    studentLabelOverrideCount >= maxStudentLabelOverrideCount
+      ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides and ${maxStudentLabelOverrideCount} student-label overrides.`
+      : null;
 
   const saveDisabledReason = !isDirty
     ? 'No changes to save'
@@ -262,6 +279,18 @@ export function AccessControlForm({
             <AppliesToField
               namePrefix={`overrides.${selectedRule.index}`}
               courseInstanceId={courseInstance.id}
+              targetTypeDisabledReasons={{
+                enrollment:
+                  watchedData.overrides[selectedRule.index].appliesTo.targetType !== 'enrollment' &&
+                  enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES
+                    ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides.`
+                    : null,
+                student_label:
+                  watchedData.overrides[selectedRule.index].appliesTo.targetType !==
+                    'student_label' && studentLabelOverrideCount >= maxStudentLabelOverrideCount
+                    ? `An assessment can have at most ${maxStudentLabelOverrideCount} student-label overrides.`
+                    : null,
+              }}
               onTargetTypeChange={(targetType) =>
                 handleOverrideTargetTypeChange(selectedRule.index, targetType)
               }
@@ -319,6 +348,7 @@ export function AccessControlForm({
                     }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
+                    addOverrideDisabledReason={addOverrideDisabledReason}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={handleMoveOverride}

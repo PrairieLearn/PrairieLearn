@@ -4,12 +4,9 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import {
-  MAX_ACCESS_CONTROL_RULES,
-  MAX_ENROLLMENT_RULES,
-  validateAccessControlRules,
-} from '../../lib/assessment-access-control/validation.js';
+import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
@@ -28,6 +25,13 @@ import {
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
+import {
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
+  MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
+  MAX_ACCESS_CONTROL_RULES,
+  MAX_ACCESS_CONTROL_UID_VALIDATION_BATCH_SIZE,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+} from '../../schemas/limits.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -58,7 +62,7 @@ const students = t.procedure
 const validateUids = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
-  .input(z.object({ uids: z.array(z.string()) }))
+  .input(z.object({ uids: z.array(z.string()).max(MAX_ACCESS_CONTROL_UID_VALIDATION_BATCH_SIZE) }))
   .query(async (opts) => {
     const results = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids: opts.input.uids,
@@ -95,7 +99,9 @@ const studentLabels = t.procedure
 const prairieTestExamMetadata = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCourseInstancePermissionView)
-  .input(z.object({ examUuids: z.array(z.string().uuid()) }))
+  .input(
+    z.object({ examUuids: z.array(z.string().uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }),
+  )
   .query(async (opts) => {
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
@@ -135,12 +141,12 @@ function formJsonToEnrollmentRuleData(
 }
 
 const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
-  id: z.string().optional(),
+  id: IdSchema.optional(),
 }).strip();
 
 const EnrollmentRuleInputSchema = z.object({
-  id: z.string().optional(),
-  enrollmentIds: z.array(z.string()),
+  id: IdSchema.optional(),
+  enrollmentIds: z.array(IdSchema).max(MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE),
   ruleJson: AccessControlJsonInputSchema,
 });
 
@@ -191,7 +197,10 @@ const saveAllRules = t.procedure
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
+      enrollmentRules: z
+        .array(EnrollmentRuleInputSchema)
+        .max(MAX_ENROLLMENT_ACCESS_CONTROL_RULES)
+        .optional(),
       origHash: z.string().nullable(),
     }),
   )
@@ -199,6 +208,15 @@ const saveAllRules = t.procedure
     const { rules, enrollmentRules, origHash } = opts.input;
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+
+    const { errors: validationErrors } = validateAccessControlRules({
+      rules: rulesToSync,
+      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
+      enrollmentRuleTargetCounts: enrollmentRules?.map((r) => r.enrollmentIds.length),
+    });
+    if (validationErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
+    }
 
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
@@ -214,14 +232,6 @@ const saveAllRules = t.procedure
           });
         }
       }
-    }
-
-    const { errors: validationErrors } = validateAccessControlRules({
-      rules: rulesToSync,
-      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
-    });
-    if (validationErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
     const assessmentDir = path.join(

@@ -58,7 +58,8 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/AccessControlJsonSchema"
-      }
+      },
+      "maxItems": 20
     },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
@@ -741,8 +742,11 @@
           "description": "Array of student label names this set targets",
           "type": "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "maxItems": 10
         },
         "beforeRelease": {
           "description": "Only valid on the first entry (defaults). Controls assessment visibility before the release date.",
@@ -804,7 +808,8 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/definitions/DeadlineEntryJsonSchema"
-                  }
+                  },
+                  "maxItems": 3
                 },
                 {
                   "type": "null"
@@ -818,7 +823,8 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/definitions/DeadlineEntryJsonSchema"
-                  }
+                  },
+                  "maxItems": 3
                 },
                 {
                   "type": "null"
@@ -853,7 +859,8 @@
               "anyOf": [
                 {
                   "type": "integer",
-                  "exclusiveMinimum": 0
+                  "exclusiveMinimum": 0,
+                  "maximum": 2880
                 },
                 {
                   "type": "null"
@@ -865,7 +872,8 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "minLength": 1
+                  "minLength": 1,
+                  "maxLength": 128
                 },
                 {
                   "type": "null"
@@ -927,7 +935,8 @@
                         }
                       }
                     }
-                  }
+                  },
+                  "maxItems": 50
                 }
               }
             }

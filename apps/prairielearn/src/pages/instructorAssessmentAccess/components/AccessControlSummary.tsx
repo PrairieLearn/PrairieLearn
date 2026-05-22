@@ -150,6 +150,7 @@ export function AccessControlSummary({
   selectedOverrideIndex,
   getOverrideName,
   onAddOverride,
+  addOverrideDisabledReason,
   onRemoveOverride,
   onMoveOverride,
   onEditDefaultRule,
@@ -165,6 +166,7 @@ export function AccessControlSummary({
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
+  addOverrideDisabledReason?: string | null;
   onRemoveOverride: (index: number) => void;
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
   /** Callback when default rule edit is requested */
@@ -261,14 +263,21 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button
-            variant="primary"
-            size="sm"
-            className="d-inline-flex align-items-center"
-            onClick={onAddOverride}
-          >
-            <i className="bi bi-plus-lg me-1" /> Add override
-          </Button>
+          <div className="d-flex flex-column align-items-end">
+            <Button
+              variant="primary"
+              size="sm"
+              className="d-inline-flex align-items-center"
+              disabled={addOverrideDisabledReason != null}
+              title={addOverrideDisabledReason ?? undefined}
+              onClick={onAddOverride}
+            >
+              <i className="bi bi-plus-lg me-1" /> Add override
+            </Button>
+            {addOverrideDisabledReason && (
+              <small className="text-muted mt-1 text-end">{addOverrideDisabledReason}</small>
+            )}
+          </div>
         </div>
         <small className="text-body-secondary d-block mb-3">
           Customize settings for specific students or groups. Fields not overridden are inherited

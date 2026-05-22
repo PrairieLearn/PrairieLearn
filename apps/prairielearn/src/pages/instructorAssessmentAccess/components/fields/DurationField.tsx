@@ -1,6 +1,7 @@
 import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { MAX_ACCESS_CONTROL_DURATION_MINUTES } from '../../../../schemas/limits.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -28,6 +29,8 @@ function DurationDetails({
               aria-invalid={!!error}
               placeholder="Duration in minutes"
               value={value || ''}
+              min={1}
+              max={MAX_ACCESS_CONTROL_DURATION_MINUTES}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
               onChange={({ currentTarget }) => {
@@ -65,6 +68,9 @@ function DurationDetails({
 
 function validateDuration(value: number | null): string | true {
   if (value !== null && value < 1) return 'Duration must be at least 1 minute';
+  if (value !== null && value > MAX_ACCESS_CONTROL_DURATION_MINUTES) {
+    return `Duration must be at most ${MAX_ACCESS_CONTROL_DURATION_MINUTES} minutes`;
+  }
   return true;
 }
 

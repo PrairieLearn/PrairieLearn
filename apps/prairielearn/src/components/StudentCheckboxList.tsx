@@ -21,6 +21,9 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg,
   description,
   renderItemExtra,
+  isItemDisabled,
+  getItemDisabledReason,
+  selectAllDisabledReason,
 }: {
   items: T[];
   selectedUids: Set<string>;
@@ -35,6 +38,9 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg?: string;
   description?: string;
   renderItemExtra?: (item: T) => ReactNode;
+  isItemDisabled?: (item: T) => boolean;
+  getItemDisabledReason?: (item: T) => string | undefined;
+  selectAllDisabledReason?: string;
 }) {
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
 
@@ -73,6 +79,8 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
               size="sm"
               className="text-decoration-none"
               aria-label={`Select all ${label.toLowerCase()}`}
+              disabled={selectAllDisabledReason !== undefined}
+              title={selectAllDisabledReason}
               onClick={onSelectAll}
             >
               Select all
@@ -89,32 +97,39 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
           </div>
         </div>
         <div style={{ maxHeight, overflowY: 'auto' }}>
-          {items.map((item, index) => (
-            <div
-              key={item.uid}
-              className={clsx('px-3 py-2', index !== items.length - 1 && 'border-bottom')}
-            >
-              <Form.Check
-                type="checkbox"
-                id={`${checkboxIdPrefix}-${item.uid}`}
-                className="d-flex gap-2 align-items-center mb-0"
+          {items.map((item, index) => {
+            const disabled = isItemDisabled?.(item) ?? false;
+            const disabledReason = getItemDisabledReason?.(item);
+
+            return (
+              <div
+                key={item.uid}
+                className={clsx('px-3 py-2', index !== items.length - 1 && 'border-bottom')}
+                title={disabledReason}
               >
-                <Form.Check.Input
+                <Form.Check
                   type="checkbox"
-                  className="mt-0"
-                  checked={selectedUids.has(item.uid)}
-                  onChange={() => onToggle(item.uid)}
-                />
-                <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
-                  <span className="d-flex flex-column">
-                    <span>{item.uid}</span>
-                    {item.name && <span className="text-muted small">{item.name}</span>}
-                  </span>
-                  {renderItemExtra && <span className="ms-auto">{renderItemExtra(item)}</span>}
-                </Form.Check.Label>
-              </Form.Check>
-            </div>
-          ))}
+                  id={`${checkboxIdPrefix}-${item.uid}`}
+                  className="d-flex gap-2 align-items-center mb-0"
+                >
+                  <Form.Check.Input
+                    type="checkbox"
+                    className="mt-0"
+                    checked={selectedUids.has(item.uid)}
+                    disabled={disabled}
+                    onChange={() => onToggle(item.uid)}
+                  />
+                  <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
+                    <span className="d-flex flex-column">
+                      <span>{item.uid}</span>
+                      {item.name && <span className="text-muted small">{item.name}</span>}
+                    </span>
+                    {renderItemExtra && <span className="ms-auto">{renderItemExtra(item)}</span>}
+                  </Form.Check.Label>
+                </Form.Check>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { assert, describe, it } from 'vitest';
 
 import { AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
+import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../schemas/limits.js';
 
 import {
   type Migration,
@@ -1082,6 +1083,29 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'duplicate prairietest exam rules are collapsed',
+      rules: [
+        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+      ],
+      expected: {
+        accessControl: {
+          integrations: {
+            prairieTest: {
+              exams: [
+                { examUuid: '11111111-1111-1111-1111-111111111111' },
+                { examUuid: '22222222-2222-2222-2222-222222222222' },
+              ],
+            },
+          },
+        },
+        errors: [],
+        notes: ['1 duplicate PrairieTest exam rule collapsed during migration.'],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'prairietest rule with password emits a warning note',
       rules: [
         { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100, password: 'discarded' },
@@ -1540,6 +1564,23 @@ describe('migrateAllowAccess', () => {
 
     const { errors } = validateAccessControlRules({ rules: [result.accessControl] });
     assert.deepEqual(errors, []);
+  });
+
+  it('rejects migrated PrairieTest configs that exceed the modern exam limit', () => {
+    const result = migrateAllowAccess(
+      Array.from({ length: MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS + 1 }, (_, i) => ({
+        examUuid: `${i.toString().padStart(8, '0')}-0000-0000-0000-${i
+          .toString()
+          .padStart(12, '0')}`,
+        credit: 100,
+      })),
+      FALLBACK_RELEASE,
+    );
+
+    assert.deepEqual(result.accessControl, {});
+    assert.isNotEmpty(result.errors);
+    assert.match(result.errors[0], /integrations\.prairieTest\.exams/);
+    assert.match(result.errors[0], new RegExp(String(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)));
   });
 });
 
