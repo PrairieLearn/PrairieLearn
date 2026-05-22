@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 interface AceEditor {
   setValue: (val: string, pos: number) => void;
@@ -38,6 +38,20 @@ export async function setAceEditorContent(page: Page, content: string, index = 0
     },
     { newContent: content, editorIndex: index },
   );
+}
+
+/**
+ * Sets the contents of the ACE editor at `editor` (its `.ace_editor` element).
+ * Use this to target one editor on a page that has several.
+ */
+export async function setAceEditorContentAt(editor: Locator, content: string): Promise<void> {
+  await editor.waitFor();
+  await editor
+    .page()
+    .waitForFunction(() => Boolean((window as unknown as Partial<AceWindow>).ace?.edit));
+  await editor.evaluate((el, newContent) => {
+    (window as unknown as AceWindow).ace.edit(el as HTMLElement).setValue(newContent, -1);
+  }, content);
 }
 
 /** Returns the contents of the `index`-th ACE editor on the page (0-based). */

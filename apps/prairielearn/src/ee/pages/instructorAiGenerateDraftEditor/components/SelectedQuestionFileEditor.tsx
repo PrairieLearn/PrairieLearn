@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
+import { Modal } from 'react-bootstrap';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
@@ -22,7 +23,18 @@ export interface SelectedQuestionFileEditorHandle {
   getHasChanges: () => boolean;
 }
 
-export function SelectedQuestionFileBreadcrumb({ filePath }: { filePath: string }) {
+export function SelectedQuestionFileBreadcrumb({
+  filePath,
+  onAllFilesClick,
+}: {
+  filePath: string;
+  /**
+   * Overrides the default "All files" navigation. Used to confirm unsaved edits
+   * before this breadcrumb unmounts the editor — switching the top tabs keeps
+   * the editor mounted, so only this path needs the guard.
+   */
+  onAllFilesClick?: () => void;
+}) {
   const { search } = useDraftFiles();
   const { selectedDirectory, clearSelectedFile } = useDraftFileNavigation();
   const allFilesHref = getEditorUrlWithSelectedDirectory({
@@ -40,7 +52,11 @@ export function SelectedQuestionFileBreadcrumb({ filePath }: { filePath: string 
         className="flex-shrink-0"
         onClick={(event) => {
           event.preventDefault();
-          void clearSelectedFile();
+          if (onAllFilesClick) {
+            onAllFilesClick();
+          } else {
+            void clearSelectedFile();
+          }
         }}
       >
         All files
@@ -77,6 +93,7 @@ export function SelectedQuestionFileEditor({
 }) {
   const trpc = useTRPC();
   const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const { clearSelectedFile } = useDraftFileNavigation();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
     trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFileMutated() }),
@@ -84,6 +101,7 @@ export function SelectedQuestionFileEditor({
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
   const [isReloading, setIsReloading] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const isSaving = saveMutation.isPending;
   const saveError = getAppError<AiDraftFilesError['Save']>(saveMutation.error);
   const hasChanges = contents !== savedContents;
@@ -117,6 +135,15 @@ export function SelectedQuestionFileEditor({
     save(false);
   }
 
+  /** Leaving unmounts the editor and drops unsaved edits, so confirm first. */
+  function handleAllFilesClick() {
+    if (hasChanges) {
+      setShowLeaveModal(true);
+    } else {
+      void clearSelectedFile();
+    }
+  }
+
   async function handleReload() {
     if (isReloading) return;
     setIsReloading(true);
@@ -130,10 +157,16 @@ export function SelectedQuestionFileEditor({
   }
 
   return (
-    <div className="selected-file-editor h-100 d-flex flex-column">
+    <div
+      className="selected-file-editor h-100 d-flex flex-column"
+      data-testid="selected-file-editor"
+    >
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <SelectedQuestionFileBreadcrumb filePath={selectedFile.path} />
+          <SelectedQuestionFileBreadcrumb
+            filePath={selectedFile.path}
+            onAllFilesClick={handleAllFilesClick}
+          />
           <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
             {saveError != null
               ? renderAppError(saveError, {
@@ -195,6 +228,35 @@ export function SelectedQuestionFileEditor({
           }
         }}
       />
+      <Modal show={showLeaveModal} onHide={() => setShowLeaveModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Unsaved changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">
+            You have unsaved changes to this file. If you leave, your changes will be discarded.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setShowLeaveModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => {
+              setShowLeaveModal(false);
+              void clearSelectedFile();
+            }}
+          >
+            Discard changes
+          </button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
