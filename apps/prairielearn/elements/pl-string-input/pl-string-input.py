@@ -223,17 +223,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
+        correct_answer_format = pl.get_enum_attrib(
+            element,
+            "correct-answer-format",
+            CorrectAnswerFormat,
+            CORRECT_ANSWER_FORMAT_DEFAULT,
+        )
+        is_regex = correct_answer_format is CorrectAnswerFormat.REGEX
+
+        if is_regex:
+            # Fold the ignore-case setting into a visible (?i) flag, since it is
+            # otherwise not represented in the pattern shown to the student.
+            ignore_case = pl.get_boolean_attrib(
+                element, "ignore-case", IGNORE_CASE_DEFAULT
+            )
+            display_answer = f"(?i){a_tru}" if ignore_case else str(a_tru)
+        else:
+            display_answer = a_tru
+
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": a_tru,
+            "a_tru": display_answer,
+            "is_regex": is_regex,
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
             display.value: True,
             # Some users were putting numbers into the correct answer. For
             # backwards compatibility, always convert the answer to a string.
-            "escaped_correct_answer": html.escape(pl.escape_unicode_string(str(a_tru))),
+            "escaped_correct_answer": html.escape(
+                pl.escape_unicode_string(str(display_answer))
+            ),
         }
 
         return chevron.render(template, html_params).strip()

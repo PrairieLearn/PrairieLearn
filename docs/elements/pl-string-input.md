@@ -59,7 +59,7 @@ For example, this question accepts `N` or `nitrogen` in any combination of upper
 
 Inline flags at the start of the pattern control matching behavior, such as `(?s)` so that `.` also matches newlines, or `(?x)` to ignore whitespace in the pattern and allow `#` comments. No Python `re` flags other than `re.IGNORECASE` (set by `ignore-case`) are available.
 
-The answer panel displays `correct-answer` verbatim, so a regular expression is shown to students as-is. To display a human-readable answer instead, add a [`pl-answer-panel`](pl-answer-panel.md) element with the text to show.
+In the answer panel, the correct answer is shown as the regular expression it matches against. When `ignore-case` is set, the pattern is displayed with a leading `(?i)` flag so the case-insensitive matching is visible. Because a pattern is not always a friendly answer to show students, you can add a [`pl-answer-panel`](pl-answer-panel.md) element with a more readable description.
 
 If `correct-answer` is not a valid regular expression, the question fails to generate and reports an error to the question author.
 
