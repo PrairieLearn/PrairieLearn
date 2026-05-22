@@ -16,6 +16,7 @@ import {
   renameDraftQuestionFile,
   saveDraftQuestionFile,
   saveDraftQuestionFiles,
+  uploadDraftQuestionFile,
 } from '../../lib/draft-question-files/mutations.js';
 import {
   ModifiableQuestionFilePathSchema,
@@ -230,11 +231,24 @@ export const aiDraftFilesRouter = t.router({
       });
     }
 
+    if (diskHash == null) {
+      // The file was deleted since the editor opened it and the user chose to
+      // overwrite anyway. `FileModifyEditor` can't recreate it — it reads the
+      // now-missing file to re-check the disk hash — so re-create the file from
+      // the editor's contents instead.
+      await uploadDraftQuestionFile({
+        ...mutationContext(ctx),
+        filePath: input.filePath,
+        fileContents: Buffer.from(input.encodedContents, 'base64'),
+      });
+      return null;
+    }
+
     await saveDraftQuestionFile({
       ...mutationContext(ctx),
       filePath: input.filePath,
       encodedContents: input.encodedContents,
-      origHash: input.force && diskHash != null ? diskHash : input.origHash,
+      origHash: input.force ? diskHash : input.origHash,
     });
     return null;
   }),

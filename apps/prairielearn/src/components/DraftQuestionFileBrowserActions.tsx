@@ -7,7 +7,10 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { getAppError, renderAppError, syncJobFailedRenderer } from '../lib/client/errors.js';
-import { FILE_NAME_PATTERN, FILE_NAME_PATTERN_DESCRIPTION } from '../lib/short-name.js';
+import {
+  QUESTION_FILE_NAME_PATTERN,
+  QUESTION_FILE_NAME_PATTERN_DESCRIPTION,
+} from '../lib/short-name.js';
 import type { AiDraftFilesError } from '../trpc/shared/ai-draft-files.js';
 
 /**
@@ -143,7 +146,7 @@ function DraftFileRenameForm({
     const trimmed = value.trim();
     if (trimmed === '') return 'A file name is required.';
     if (trimmed === fileName) return 'The file name must be changed.';
-    if (!FILE_NAME_PATTERN.test(trimmed)) {
+    if (!QUESTION_FILE_NAME_PATTERN.test(trimmed)) {
       return 'Use only letters, numbers, dashes, underscores, slashes, and periods.';
     }
     return null;
@@ -166,7 +169,7 @@ function DraftFileRenameForm({
 
   return (
     <form className="mb-0" onSubmit={handleSubmit}>
-      <div className="mb-3">{FILE_NAME_PATTERN_DESCRIPTION}</div>
+      <div className="mb-3">{QUESTION_FILE_NAME_PATTERN_DESCRIPTION}</div>
       <div className="mb-3">
         <label className="form-label" htmlFor={inputId}>
           Path:
@@ -288,6 +291,14 @@ function PopoverActionButton({
   renderBody: (close: () => void) => ReactNode;
 }) {
   const [show, setShow] = useState(false);
+  const [wasDisabled, setWasDisabled] = useState(disabled);
+
+  // Close the popover if the action becomes disabled while it's open (e.g. an
+  // AI generation starts)
+  if (disabled !== wasDisabled) {
+    setWasDisabled(disabled);
+    if (disabled) setShow(false);
+  }
 
   return (
     <OverlayTrigger

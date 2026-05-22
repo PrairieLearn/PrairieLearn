@@ -100,58 +100,65 @@ function getCursorPositionFromCursorOffset(cursorOffset: number, lines: string[]
   return { row, column };
 }
 
-function getSaveIssue(contents: string, editorData: FileEditorData) {
+type SaveIssue =
+  | { errorCode: SaveErrorCode.INVALID_JSON }
+  | {
+      errorCode: SaveErrorCode.UUID_CHANGED | SaveErrorCode.UUID_REMOVED;
+      originalUuid: string;
+      newUuid?: string;
+      /** The parsed file, reused to rebuild it with the original UUID restored. */
+      parsedContent: Record<string, unknown>;
+    };
+
+function getSaveIssue(contents: string, editorData: FileEditorData): SaveIssue | null {
   if (!editorData.fileMetadata || editorData.fileMetadata.type === FileType.File) return null;
 
+  let parsedContent: unknown;
   try {
-    const parsedContent: unknown = JSON.parse(contents);
-
-    if (
-      typeof parsedContent !== 'object' ||
-      parsedContent == null ||
-      Array.isArray(parsedContent)
-    ) {
-      return { errorCode: SaveErrorCode.INVALID_JSON };
-    } else if (editorData.fileMetadata.uuid) {
-      if ('uuid' in parsedContent) {
-        if (typeof parsedContent.uuid !== 'string') {
-          return {
-            errorCode: SaveErrorCode.UUID_CHANGED,
-            originalUuid: editorData.fileMetadata.uuid,
-          };
-        }
-        if (parsedContent.uuid.toLowerCase() !== editorData.fileMetadata.uuid.toLowerCase()) {
-          return {
-            errorCode: SaveErrorCode.UUID_CHANGED,
-            originalUuid: editorData.fileMetadata.uuid,
-            newUuid: parsedContent.uuid,
-          };
-        }
-      } else {
-        return {
-          errorCode: SaveErrorCode.UUID_REMOVED,
-          originalUuid: editorData.fileMetadata.uuid,
-        };
-      }
-    }
+    parsedContent = JSON.parse(contents);
   } catch {
     return { errorCode: SaveErrorCode.INVALID_JSON };
   }
+  if (typeof parsedContent !== 'object' || parsedContent == null || Array.isArray(parsedContent)) {
+    return { errorCode: SaveErrorCode.INVALID_JSON };
+  }
 
+  const originalUuid = editorData.fileMetadata.uuid;
+  if (!originalUuid) return null;
+
+  const content = parsedContent as Record<string, unknown>;
+  if (!('uuid' in content)) {
+    return { errorCode: SaveErrorCode.UUID_REMOVED, originalUuid, parsedContent: content };
+  }
+  if (typeof content.uuid !== 'string') {
+    return { errorCode: SaveErrorCode.UUID_CHANGED, originalUuid, parsedContent: content };
+  }
+  if (content.uuid.toLowerCase() !== originalUuid.toLowerCase()) {
+    return {
+      errorCode: SaveErrorCode.UUID_CHANGED,
+      originalUuid,
+      newUuid: content.uuid,
+      parsedContent: content,
+    };
+  }
   return null;
 }
 
-function getContentsWithRestoredUuid(contents: string, editorData: FileEditorData) {
-  if (!editorData.fileMetadata?.uuid) return contents;
-
-  const parsedContent: unknown = JSON.parse(contents);
-  if (typeof parsedContent !== 'object' || parsedContent == null || Array.isArray(parsedContent)) {
-    return contents;
-  }
-
-  const parsedObject = parsedContent as Record<string, unknown>;
-  const { uuid: _uuid, ...rest } = parsedObject;
-  return JSON.stringify({ uuid: editorData.fileMetadata.uuid, ...rest });
+/**
+ * Rebuilds a metadata file with its original UUID restored, reformatted with
+ * Prettier so a confirmed UUID-restore save keeps the file's formatting instead
+ * of collapsing it onto a single line.
+ */
+async function contentsWithRestoredUuid(
+  parsedContent: Record<string, unknown>,
+  originalUuid: string,
+): Promise<string> {
+  // Drop the existing `uuid` so the restored value is re-added as the first key.
+  const { uuid: _uuid, ...rest } = parsedContent;
+  return await prettier.format(JSON.stringify({ uuid: originalUuid, ...rest }), {
+    parser: 'json',
+    plugins: [prettierBabelPlugin, prettierEstreePlugin],
+  });
 }
 
 export function FileEditor({
@@ -185,7 +192,10 @@ export function FileEditor({
   const [readOnly, setReadOnly] = useState(hasVersionChoice);
   const [showVersionChoice, setShowVersionChoice] = useState(hasVersionChoice);
   const [showVersionChoiceAlert, setShowVersionChoiceAlert] = useState(hasVersionChoice);
-  const [saveIssue, setSaveIssue] = useState<ReturnType<typeof getSaveIssue>>(null);
+  const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
+  // The reformatted, UUID-restored contents for a confirmed save; `null` until
+  // it has been computed for the current UUID issue.
+  const [restoredContents, setRestoredContents] = useState<string | null>(null);
   const [saveModalShown, setSaveModalShown] = useState(false);
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [buttonsExpanded, setButtonsExpanded] = useState(!hasVersionChoice);
@@ -267,29 +277,35 @@ export function FileEditor({
     }
 
     const issue = getSaveIssue(contents, editorData);
-    if (issue) {
-      event.preventDefault();
-      setSaveIssue(issue);
-      setSaveModalShown(true);
+    if (!issue) return;
+
+    event.preventDefault();
+    setSaveIssue(issue);
+    setSaveModalShown(true);
+
+    // Format the UUID-restored contents while the user reads the modal so they
+    // are ready by the time "Confirm save" is clicked.
+    if (issue.errorCode !== SaveErrorCode.INVALID_JSON) {
+      void contentsWithRestoredUuid(issue.parsedContent, issue.originalUuid).then(
+        setRestoredContents,
+      );
     }
   };
 
   const confirmSave = () => {
-    // While the UUID modal is open, the hidden `file_edit_contents` input is
-    // already rendered with the restored contents, so confirming just needs to
-    // bypass re-validation and submit the form.
+    // "Confirm save" is enabled only once the UUID-restored contents are ready,
+    // so the hidden `file_edit_contents` input already carries them — confirming
+    // just needs to bypass re-validation and submit the form.
     bypassSaveCheckRef.current = true;
     formRef.current?.requestSubmit();
   };
 
   const cancelSave = () => setSaveModalShown(false);
 
-  const hasUuidIssue = saveIssue != null && saveIssue.errorCode !== SaveErrorCode.INVALID_JSON;
-  // When the UUID modal is open, the form submits with the original UUID
-  // restored; otherwise it submits exactly what the editor contains.
-  const contentsToSubmit = hasUuidIssue
-    ? getContentsWithRestoredUuid(contents, editorData)
-    : contents;
+  // The hidden field normally carries the editor contents; for a confirmed
+  // UUID-restore save it carries the contents with the original UUID re-inserted
+  // and reformatted.
+  const contentsToSubmit = restoredContents ?? contents;
   const saveDisabled = readOnly || contents === diskContents;
 
   return (
@@ -558,7 +574,10 @@ export function FileEditor({
         show={saveModalShown}
         aria-labelledby="save-confirmation-modal-title"
         onHide={cancelSave}
-        onExited={() => setSaveIssue(null)}
+        onExited={() => {
+          setSaveIssue(null);
+          setRestoredContents(null);
+        }}
       >
         <Modal.Header closeButton>
           <Modal.Title as="h2" className="h4" id="save-confirmation-modal-title">
@@ -589,7 +608,12 @@ export function FileEditor({
             {saveIssue?.errorCode === SaveErrorCode.INVALID_JSON ? 'OK' : 'Cancel'}
           </button>
           {saveIssue?.errorCode === SaveErrorCode.INVALID_JSON ? null : (
-            <button type="button" className="btn btn-primary" onClick={confirmSave}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={restoredContents == null}
+              onClick={confirmSave}
+            >
               Confirm save
             </button>
           )}

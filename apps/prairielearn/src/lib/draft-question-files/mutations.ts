@@ -158,6 +158,13 @@ export async function saveDraftQuestionFile({
  * question-code editor always holds the freshly-listed file contents, and
  * `QuestionModifyEditor` writes the whole question atomically.
  *
+ * TODO: this leaves the code-editor surface with no conflict contract. The
+ * "freshly-listed contents" assumption holds within a single tab, but a
+ * concurrent writer — another tab, or the agent racing a manual save — is
+ * silently clobbered, and the payload rewrites both files even when only one
+ * changed. {@link saveDraftQuestionFile} guards against this with `origHash`;
+ * closing the gap would mean threading per-file content hashes through here.
+ *
  * `files` maps question-relative paths to base64-encoded contents, or `null` to
  * delete the file. Callers validate the paths (e.g. via
  * `ModifiableQuestionFilePathSchema`) before calling.

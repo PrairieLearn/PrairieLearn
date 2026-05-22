@@ -202,6 +202,35 @@ async function readSelectedQuestionFile({
 }
 
 /**
+ * Resolves the directory the file browser should list. A `null` value, a
+ * missing directory, or a path that is not a directory all resolve to the
+ * question root — a stale `?dir=` query parameter should not break the page,
+ * mirroring how {@link readSelectedQuestionFile} treats a stale `?file=`.
+ */
+async function resolveSelectedDirectory({
+  resLocals,
+  selectedDirectory,
+}: {
+  resLocals: DraftQuestionFilesLocals;
+  selectedDirectory: string | null;
+}): Promise<string | null> {
+  if (selectedDirectory == null) return null;
+
+  const { course, question } = resLocals;
+  const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
+  const fullPath = resolveWithinQuestionRoot(questionRootPath, selectedDirectory);
+
+  let stat: Stats;
+  try {
+    stat = await fs.stat(fullPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw err;
+  }
+  return stat.isDirectory() ? selectedDirectory : null;
+}
+
+/**
  * Builds the serializable data describing the draft question's file browser.
  * This is the data layer for the `DraftQuestionFileBrowser` component: it reads
  * the filesystem and resolves paths/URLs so the component only renders.
@@ -217,10 +246,14 @@ async function buildDraftQuestionFileBrowserData({
 }): Promise<DraftQuestionFileBrowserData> {
   const qid = requireQuestionQid(resLocals.question);
   const questionRootPath = `questions/${qid}`;
+  const effectiveSelectedDirectory = await resolveSelectedDirectory({
+    resLocals,
+    selectedDirectory,
+  });
   const requestedPath =
-    selectedDirectory == null
+    effectiveSelectedDirectory == null
       ? questionRootPath
-      : path.posix.join(questionRootPath, selectedDirectory);
+      : path.posix.join(questionRootPath, effectiveSelectedDirectory);
   const paths = getPaths(requestedPath, {
     ...resLocals,
     navPage: 'question',
@@ -282,7 +315,7 @@ async function buildDraftQuestionFileBrowserData({
     hasEditPermission: paths.hasEditPermission,
     editorUrl,
     urlPrefix: paths.urlPrefix,
-    selectedDirectory,
+    selectedDirectory: effectiveSelectedDirectory,
     maxFileSizeBytes: config.fileUploadMaxBytes,
     breadcrumb,
     specialDirs: paths.specialDirs.map((d) => ({
