@@ -90,6 +90,8 @@ const addGroup = t.procedure
       throw err;
     }
 
+    // TODO: Drop this compatibility payload once old Groups UI bundles no
+    // longer consume it; new clients refetch `membership` after this mutation.
     const [group, notAssigned] = await Promise.all([
       selectGroupById({ group_id: createdGroupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
@@ -158,6 +160,8 @@ const editGroup = t.procedure
       }
     });
 
+    // TODO: Return only `failures` once old Groups UI bundles no longer consume
+    // `group` and `notAssigned`.
     const [group, notAssigned] = await Promise.all([
       selectGroupById({ group_id: input.groupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
@@ -187,6 +191,8 @@ const deleteGroupProcedure = t.procedure
       throw err;
     }
 
+    // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
+    // consume it; new clients refetch `membership` after this mutation.
     const notAssigned = await selectNotAssignedForAssessment({
       assessment_id: assessment.id,
       course_instance_id: course_instance.id,
@@ -199,6 +205,8 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 
   await deleteAllGroups(assessment.id, authn_user.id);
 
+  // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
+  // consume it; new clients refetch `membership` after this mutation.
   const notAssigned = await selectNotAssignedForAssessment({
     assessment_id: assessment.id,
     course_instance_id: course_instance.id,
@@ -476,9 +484,8 @@ const membership = t.procedure
   .use(requireCourseInstancePermissionView)
   .query(async ({ ctx }) => await selectGroupMembership(ctx));
 
-// Deploy-window compatibility shim: in-flight browser tabs loaded against the
-// previous bundle still call `refreshGroups`. Keep through one release cycle,
-// then delete in a follow-up PR once the new bundle has fully rolled out.
+// TODO: Delete `refreshGroups` after one release cycle; it only supports
+// in-flight browser tabs loaded against the previous bundle.
 const refreshGroups = t.procedure
   .use(requireCourseInstancePermissionView)
   .mutation(async ({ ctx }) => await selectGroupMembership(ctx));
