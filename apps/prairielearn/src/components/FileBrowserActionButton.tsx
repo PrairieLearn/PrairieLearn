@@ -1,0 +1,45 @@
+import { type MouseEvent } from 'react';
+
+/**
+ * A file-browser row action rendered as a link (e.g. Edit, Download), used by
+ * both the server-rendered `FileBrowser` and the hydrated
+ * `DraftQuestionFileBrowser`. When `disabled`, it renders as a disabled button
+ * instead, since a link cannot be disabled.
+ */
+export function FileBrowserActionButton({
+  icon,
+  label,
+  href,
+  onClick,
+  disabled = false,
+  disabledTitle,
+}: {
+  /** Font Awesome icon class, e.g. `fa fa-edit`. */
+  icon: string;
+  label: string;
+  href: string;
+  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+  disabled?: boolean;
+  /** Tooltip explaining why the action is unavailable. */
+  disabledTitle?: string;
+}) {
+  const className = 'btn btn-xs btn-secondary text-nowrap';
+
+  if (disabled) {
+    return (
+      <span title={disabledTitle}>
+        <button type="button" className={className} disabled>
+          <i className={icon} aria-hidden="true" />
+          <span>{label}</span>
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <a className={className} href={href} onClick={onClick}>
+      <i className={icon} aria-hidden="true" />
+      <span>{label}</span>
+    </a>
+  );
+}

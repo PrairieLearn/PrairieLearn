@@ -11,12 +11,18 @@ import { config } from './config.js';
 import { getCourseFilesClient } from './course-files-api.js';
 import type { Course, Question, User } from './db-types.js';
 import { readEditableTextFile } from './editableFile.js';
-import { type Editor, FileDeleteEditor, FileRenameEditor, FileUploadEditor } from './editors.js';
+import {
+  type Editor,
+  FileDeleteEditor,
+  FileRenameEditor,
+  FileUploadEditor,
+  runEditorJob,
+} from './editors.js';
 import { browseDirectory, browseFile } from './file-browser.js';
 import { getPaths } from './instructorFiles.js';
 import { encodePath } from './uri-util.js';
 
-export interface DraftQuestionFileBrowserBreadcrumbSegment {
+interface DraftQuestionFileBrowserBreadcrumbSegment {
   name: string;
   /** Path relative to the question root; `null` for the question root. */
   directory: string | null;
@@ -48,7 +54,7 @@ export interface DraftQuestionFileBrowserDirectory {
   canView: boolean;
 }
 
-export interface DraftQuestionFileBrowserSpecialDir {
+interface DraftQuestionFileBrowserSpecialDir {
   label: string;
   /** Directory uploaded files are placed in, relative to the question root. */
   directory: string;
@@ -372,6 +378,25 @@ export async function getQuestionFilesData({
   return { files, fileBrowser, ...selectedQuestionFile };
 }
 
+/** Builds the URL of the `edit_error` page for a failed file-editing server job. */
+function getEditErrorUrl(urlPrefix: string, jobSequenceId: string): string {
+  return `${urlPrefix}/edit_error/${jobSequenceId}`;
+}
+
+export type DraftQuestionFileEditResult =
+  | { status: 'ok' }
+  | { status: 'error'; editErrorUrl: string };
+
+/**
+ * Saves edits to a single draft question file.
+ *
+ * Unlike {@link deleteDraftQuestionFile}, {@link renameDraftQuestionFile}, and
+ * {@link uploadDraftQuestionFile}, which run inline `File*Editor` jobs, this
+ * routes through the `course-files-api` service — the same path the AI agent
+ * uses to write question files. A content update maps cleanly onto
+ * `updateQuestionFiles`; a file rename does not, so the two mechanisms can't be
+ * collapsed into one.
+ */
 export async function saveDraftQuestionFile({
   course,
   question,
@@ -392,7 +417,7 @@ export async function saveDraftQuestionFile({
   urlPrefix: string;
   filePath: string;
   contents: string;
-}) {
+}): Promise<DraftQuestionFileEditResult> {
   assertCanModifyDraftQuestionFile(filePath);
 
   const client = getCourseFilesClient();
@@ -410,17 +435,13 @@ export async function saveDraftQuestionFile({
 
   if (result.status === 'error') {
     return {
-      status: 'error' as const,
-      editErrorUrl: urlPrefix + '/edit_error/' + result.job_sequence_id,
+      status: 'error',
+      editErrorUrl: getEditErrorUrl(urlPrefix, result.job_sequence_id),
     };
   }
 
-  return { status: 'ok' as const };
+  return { status: 'ok' };
 }
-
-export type DraftQuestionFileEditResult =
-  | { status: 'ok' }
-  | { status: 'error'; editErrorUrl: string };
 
 interface DraftQuestionFileEditorLocals {
   course: Course;
@@ -451,14 +472,9 @@ async function runDraftQuestionFileEditor(
   editor: Editor,
   urlPrefix: string,
 ): Promise<DraftQuestionFileEditResult> {
-  const serverJob = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    return {
-      status: 'error',
-      editErrorUrl: `${urlPrefix}/edit_error/${serverJob.jobSequenceId}`,
-    };
+  const result = await runEditorJob(editor);
+  if (result.status === 'error') {
+    return { status: 'error', editErrorUrl: getEditErrorUrl(urlPrefix, result.jobSequenceId) };
   }
   return { status: 'ok' };
 }

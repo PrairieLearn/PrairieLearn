@@ -16,6 +16,7 @@ import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { encodePath } from '../lib/uri-util.js';
 
+import { FileBrowserActionButton } from './FileBrowserActionButton.js';
 import { FileDeleteForm, FileRenameForm, FileUploadForm } from './FileBrowserForms.js';
 import { PageLayout } from './PageLayout.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
@@ -360,23 +361,12 @@ function DirectoryBrowserTable({
                   <div className="d-flex gap-2 file-browser-row-actions">
                     {isReadOnly ? null : (
                       <>
-                        {f.canEdit ? (
-                          <a className="btn btn-xs btn-secondary text-nowrap" href={editFileUrl}>
-                            <i className="fa fa-edit" />
-                            <span>Edit</span>
-                          </a>
-                        ) : (
-                          <span>
-                            <button
-                              type="button"
-                              className="btn btn-xs btn-secondary text-nowrap"
-                              disabled
-                            >
-                              <i className="fa fa-edit" />
-                              <span>Edit</span>
-                            </button>
-                          </span>
-                        )}
+                        <FileBrowserActionButton
+                          icon="fa fa-edit"
+                          label="Edit"
+                          href={editFileUrl}
+                          disabled={!f.canEdit}
+                        />
                         <button
                           type="button"
                           id={`instructorFileUploadForm-${f.id}`}
@@ -398,15 +388,14 @@ function DirectoryBrowserTable({
                         </button>
                       </>
                     )}
-                    <a
-                      className={`btn btn-xs btn-secondary text-nowrap ${f.canDownload ? '' : 'disabled'}`}
+                    <FileBrowserActionButton
+                      icon="fa fa-arrow-down"
+                      label="Download"
                       href={`${paths.urlPrefix}/file_download/${encodePath(f.path)}?attachment=${encodeURIComponent(
                         f.name,
                       )}`}
-                    >
-                      <i className="fa fa-arrow-down" />
-                      <span>Download</span>
-                    </a>
+                      disabled={!f.canDownload}
+                    />
                     {isReadOnly ? null : (
                       <>
                         <button

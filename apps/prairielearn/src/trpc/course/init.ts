@@ -37,16 +37,6 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
   return opts.next();
 });
 
-export const requireCoursePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_permission_edit) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must be a course editor)',
-    });
-  }
-  return opts.next();
-});
-
 export const requireCoursePermissionPreview = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_permission_preview) {
     throw new TRPCError({

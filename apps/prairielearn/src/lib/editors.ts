@@ -424,6 +424,27 @@ export abstract class Editor {
   }
 }
 
+interface EditorJobResult {
+  status: 'ok' | 'error';
+  /** Identifies the server job, e.g. to build an `edit_error` link on failure. */
+  jobSequenceId: string;
+}
+
+/**
+ * Runs an editor's server job to completion and reports whether it succeeded.
+ * Editor failures are expected (e.g. a failed sync); they are surfaced via the
+ * returned status rather than thrown.
+ */
+export async function runEditorJob(editor: Editor): Promise<EditorJobResult> {
+  const serverJob = await editor.prepareServerJob();
+  try {
+    await editor.executeWithServerJob(serverJob);
+  } catch {
+    return { status: 'error', jobSequenceId: serverJob.jobSequenceId };
+  }
+  return { status: 'ok', jobSequenceId: serverJob.jobSequenceId };
+}
+
 /**
  * Validates that a new QID does not conflict with any existing question QIDs
  * by being a subdirectory or parent directory of an existing question. The sync

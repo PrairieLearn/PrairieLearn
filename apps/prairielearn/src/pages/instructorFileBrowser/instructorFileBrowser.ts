@@ -10,15 +10,14 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import type { NavPage } from '../../components/Navbar.types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import {
-  type Editor,
   FileDeleteEditor,
   FileRenameEditor,
   FileUploadEditor,
+  runEditorJob,
 } from '../../lib/editors.js';
 import { FILE_NAME_PATTERN } from '../../lib/file-names.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import type { ServerJobExecutor } from '../../lib/server-jobs.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -53,27 +52,6 @@ const UploadFileActionSchema = z.union([
     working_path: z.string().min(1),
   }),
 ]);
-
-type FileActionResult =
-  | { status: 'success'; jobSequenceId: string }
-  | { status: 'error'; jobSequenceId: string };
-
-async function executeFileAction(editor: Editor): Promise<FileActionResult> {
-  const serverJob: ServerJobExecutor = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    return {
-      status: 'error',
-      jobSequenceId: serverJob.jobSequenceId,
-    };
-  }
-
-  return {
-    status: 'success',
-    jobSequenceId: serverJob.jobSequenceId,
-  };
-}
 
 router.get(
   '/*',
@@ -152,7 +130,7 @@ router.post(
           throw new Error(`Invalid file path: ${body.file_path}`);
         }
 
-        const result = await executeFileAction(
+        const result = await runEditorJob(
           new FileDeleteEditor({
             locals: res.locals,
             container,
@@ -190,7 +168,7 @@ router.post(
           return;
         }
 
-        const result = await executeFileAction(
+        const result = await runEditorJob(
           new FileRenameEditor({
             locals: res.locals,
             container,
@@ -229,7 +207,7 @@ router.post(
           }
         }
 
-        const result = await executeFileAction(
+        const result = await runEditorJob(
           new FileUploadEditor({
             locals: res.locals,
             container,
