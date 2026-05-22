@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import {
   type DraftQuestionFilesLocals,
   getQuestionFilesData,
@@ -47,6 +46,8 @@ const SaveInputSchema = z.object({
   questionId: IdSchema,
   filePath: ModifiableQuestionFilePathSchema,
   encodedContents: z.string(),
+  /** Hash of the contents the editor was opened with, for the stale-edit guard. */
+  origHash: z.string(),
 });
 
 const RenameInputSchema = z.object({
@@ -162,7 +163,8 @@ export const aiDraftFilesRouter = t.router({
       authn_user: ctx.locals.authn_user,
       authz_data: ctx.authz_data,
       filePath: input.filePath,
-      contents: b64DecodeUnicode(input.encodedContents),
+      encodedContents: input.encodedContents,
+      origHash: input.origHash,
     });
     return null;
   }),

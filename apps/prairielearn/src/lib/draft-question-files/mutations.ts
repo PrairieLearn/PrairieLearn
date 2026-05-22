@@ -1,9 +1,8 @@
-import { b64EncodeUnicode } from '../base64-util.js';
-import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import {
   type Editor,
   FileDeleteEditor,
+  FileModifyEditor,
   FileRenameEditor,
   FileUploadEditor,
   runEditorJob,
@@ -47,17 +46,17 @@ async function runDraftEditorJob(editor: Editor): Promise<void> {
 }
 
 /**
- * Saves edits to a single draft question file.
+ * Saves edits to a single draft question file via a `FileModifyEditor` job —
+ * the same editor `instructorFileEditor` and the JSON settings editors use.
  *
- * Unlike {@link deleteDraftQuestionFile}, {@link renameDraftQuestionFile}, and
- * {@link uploadDraftQuestionFile}, which run inline `File*Editor` jobs, this
- * routes through the `course-files-api` service — the same path the AI agent
- * uses to write question files. A content update maps cleanly onto
- * `updateQuestionFiles`; a file rename does not, so the two mechanisms can't be
- * collapsed into one.
+ * `origHash` is the hash of the contents the editor was opened with (from
+ * `readEditableTextFile`). `FileModifyEditor` rejects the save if the file on
+ * disk no longer matches it, so a stale tab can't silently clobber another
+ * writer's changes.
  *
  * `filePath` is relative to the question root; callers validate it (e.g. via
- * `ModifiableQuestionFilePathSchema`) before calling.
+ * `ModifiableQuestionFilePathSchema`) before calling. `encodedContents` is the
+ * base64-encoded new file contents.
  */
 export async function saveDraftQuestionFile({
   course,
@@ -66,27 +65,25 @@ export async function saveDraftQuestionFile({
   authn_user,
   authz_data,
   filePath,
-  contents,
+  encodedContents,
+  origHash,
 }: DraftQuestionFileMutationContext & {
   filePath: string;
-  contents: string;
+  encodedContents: string;
+  origHash: string;
 }): Promise<void> {
-  const client = getCourseFilesClient();
+  const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
+  const fullPath = resolveWithinQuestionRoot(questionRootPath, filePath);
 
-  const result = await client.updateQuestionFiles.mutate({
-    course_id: course.id,
-    user_id: user.id,
-    authn_user_id: authn_user.id,
-    question_id: question.id,
-    has_course_permission_edit: authz_data.has_course_permission_edit,
-    files: {
-      [filePath]: b64EncodeUnicode(contents),
-    },
-  });
-
-  if (result.status === 'error') {
-    throw new EditJobFailedError(result.job_sequence_id);
-  }
+  await runDraftEditorJob(
+    new FileModifyEditor({
+      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      container: { rootPath: questionRootPath, invalidRootPaths: [] },
+      filePath: fullPath,
+      editContents: encodedContents,
+      origHash,
+    }),
+  );
 }
 
 /** Deletes a draft question file. `filePath` is relative to the question root. */

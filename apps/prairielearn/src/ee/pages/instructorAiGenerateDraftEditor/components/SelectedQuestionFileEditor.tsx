@@ -115,6 +115,7 @@ export function SelectedQuestionFileEditor({
         questionId,
         filePath: selectedFile.path,
         encodedContents: b64EncodeUnicode(contents),
+        origHash: selectedFile.contentHash,
       });
       setSaveError(null);
       await onSaved();
