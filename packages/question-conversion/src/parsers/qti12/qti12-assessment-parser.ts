@@ -22,7 +22,6 @@ import type {
 } from '../../types/ir.js';
 import type {
   QTI12CorrectCondition,
-  QTI12ParsedAssessment,
   QTI12ParsedItem,
   QTI12ResponseLabel,
   QTI12ResponseLid,
@@ -63,17 +62,43 @@ const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
 
 const MANUAL_GRADING_QUESTION_TYPES = new Set(['rich-text', 'file-upload']);
 
-type QTI12ItemContainer =
-  | {
-      kind: 'assessment';
-      element: Record<string, unknown>;
-      parsed: QTI12ParsedAssessment;
-    }
-  | {
-      kind: 'question-bank';
-      element: Record<string, unknown>;
-      parsed: QTI12ParsedAssessment;
+function parseItemContainer(xmlContent: string) {
+  const parsed = parseXml(xmlContent);
+  const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
+  if (!root) {
+    throw new Error('Invalid QTI 1.2 XML: missing <questestinterop> root element');
+  }
+
+  const assessment = root['assessment'] as Record<string, unknown> | undefined;
+  if (assessment) {
+    return {
+      kind: 'assessment' as const,
+      element: assessment,
+      parsed: buildParsedAssessment(assessment),
     };
+  }
+
+  const objectBank = root['objectbank'] as Record<string, unknown> | undefined;
+  if (objectBank) {
+    return {
+      kind: 'question-bank' as const,
+      element: objectBank,
+      parsed: buildParsedAssessment(objectBank),
+    };
+  }
+
+  throw new Error('Invalid QTI 1.2 XML: missing <assessment> or <objectbank> element');
+}
+
+type QTI12ItemContainer = ReturnType<typeof parseItemContainer>;
+
+function buildParsedAssessment(assessment: Record<string, unknown>) {
+  const ident = attr(assessment, 'ident');
+  const qtimetadata = assessment['qtimetadata'];
+  const metadata = parseMetadata(qtimetadata);
+  const title = he.decode(attr(assessment, 'title') || metadata['bank_title'] || ident);
+  return { ident, title, metadata };
+}
 
 /**
  * Parser for QTI 1.2 item container XML (Canvas quiz/course exports).
@@ -100,38 +125,10 @@ export class QTI12ItemContainerParser implements InputParser {
   }
 
   async parse(xmlContent: string, options?: ParseOptions): Promise<IRItemContainer> {
-    const container = this.parseItemContainer(xmlContent);
+    const container = parseItemContainer(xmlContent);
     return container.kind === 'assessment'
       ? await this.parseAssessmentContainer(container, options)
       : await this.parseQuestionBankContainer(container, options);
-  }
-
-  private parseItemContainer(xmlContent: string): QTI12ItemContainer {
-    const parsed = parseXml(xmlContent);
-    const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
-    if (!root) {
-      throw new Error('Invalid QTI 1.2 XML: missing <questestinterop> root element');
-    }
-
-    const assessment = root['assessment'] as Record<string, unknown> | undefined;
-    if (assessment) {
-      return {
-        kind: 'assessment',
-        element: assessment,
-        parsed: this.buildParsedAssessment(assessment),
-      };
-    }
-
-    const objectBank = root['objectbank'] as Record<string, unknown> | undefined;
-    if (objectBank) {
-      return {
-        kind: 'question-bank',
-        element: objectBank,
-        parsed: this.buildParsedAssessment(objectBank),
-      };
-    }
-
-    throw new Error('Invalid QTI 1.2 XML: missing <assessment> or <objectbank> element');
   }
 
   private async parseAssessmentContainer(
@@ -184,14 +181,6 @@ export class QTI12ItemContainerParser implements InputParser {
       questions,
       parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
     };
-  }
-
-  private buildParsedAssessment(assessment: Record<string, unknown>): QTI12ParsedAssessment {
-    const ident = attr(assessment, 'ident');
-    const qtimetadata = assessment['qtimetadata'];
-    const metadata = parseMetadata(qtimetadata);
-    const title = he.decode(attr(assessment, 'title') || metadata['bank_title'] || ident);
-    return { ident, title, metadata };
   }
 
   private parseAssessmentMeta(

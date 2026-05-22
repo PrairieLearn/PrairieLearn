@@ -37,11 +37,3 @@ export interface QTI12ParsedItem {
   /** Parsed <resprocessing> element — populated for numerical_question items and others that need it. */
   resprocessing?: Record<string, unknown>;
 }
-
-/** A parsed QTI 1.2 assessment or object bank. */
-export interface QTI12ParsedAssessment {
-  ident: string;
-  title: string;
-  metadata: Record<string, string>;
-  sourcePath?: string;
-}
