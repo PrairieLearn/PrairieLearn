@@ -10,8 +10,10 @@ import type {
   IRAssessment,
   IRAssessmentMeta,
   IRFeedback,
+  IRItemContainer,
   IRParseWarning,
   IRQuestion,
+  IRQuestionBank,
   IRRubric,
   IRRubricCriterion,
   IRRubricRating,
@@ -61,13 +63,25 @@ const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
 
 const MANUAL_GRADING_QUESTION_TYPES = new Set(['rich-text', 'file-upload']);
 
+type QTI12ItemContainer =
+  | {
+      kind: 'assessment';
+      element: Record<string, unknown>;
+      parsed: QTI12ParsedAssessment;
+    }
+  | {
+      kind: 'question-bank';
+      element: Record<string, unknown>;
+      parsed: QTI12ParsedAssessment;
+    };
+
 /**
- * Parser for QTI 1.2 assessment profile XML (Canvas quiz/course exports).
+ * Parser for QTI 1.2 item container XML (Canvas quiz/course exports).
  *
- * Structure: <questestinterop> → <assessment> → <section> → <item>
+ * Structure: <questestinterop> → <assessment|objectbank> → <section> → <item>
  * Items use response_lid with render_choice.
  */
-export class QTI12AssessmentParser implements InputParser {
+export class QTI12ItemContainerParser implements InputParser {
   readonly formatId = 'qti12-assessment';
   private registry: TransformRegistry<QTI12ParsedItem>;
 
@@ -85,26 +99,49 @@ export class QTI12AssessmentParser implements InputParser {
     );
   }
 
-  async parse(xmlContent: string, options?: ParseOptions): Promise<IRAssessment> {
+  async parse(xmlContent: string, options?: ParseOptions): Promise<IRItemContainer> {
+    const container = this.parseItemContainer(xmlContent);
+    return container.kind === 'assessment'
+      ? await this.parseAssessmentContainer(container, options)
+      : await this.parseQuestionBankContainer(container, options);
+  }
+
+  private parseItemContainer(xmlContent: string): QTI12ItemContainer {
     const parsed = parseXml(xmlContent);
     const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
     if (!root) {
       throw new Error('Invalid QTI 1.2 XML: missing <questestinterop> root element');
     }
 
-    const isObjectBank = root['assessment'] == null && root['objectbank'] != null;
-    const assessment = (root['assessment'] ?? root['objectbank']) as
-      | Record<string, unknown>
-      | undefined;
-    if (!assessment) {
-      throw new Error('Invalid QTI 1.2 XML: missing <assessment> or <objectbank> element');
+    const assessment = root['assessment'] as Record<string, unknown> | undefined;
+    if (assessment) {
+      return {
+        kind: 'assessment',
+        element: assessment,
+        parsed: this.buildParsedAssessment(assessment),
+      };
     }
 
-    const parsedAssessment = this.buildParsedAssessment(assessment);
-    const meta = this.parseAssessmentMeta(assessment, options);
+    const objectBank = root['objectbank'] as Record<string, unknown> | undefined;
+    if (objectBank) {
+      return {
+        kind: 'question-bank',
+        element: objectBank,
+        parsed: this.buildParsedAssessment(objectBank),
+      };
+    }
+
+    throw new Error('Invalid QTI 1.2 XML: missing <assessment> or <objectbank> element');
+  }
+
+  private async parseAssessmentContainer(
+    container: Extract<QTI12ItemContainer, { kind: 'assessment' }>,
+    options?: ParseOptions,
+  ): Promise<IRAssessment> {
+    const meta = this.parseAssessmentMeta(container.element, options);
     const allowedExtensions = this.parseAllowedExtensions(options?.assessmentMetaXml);
     const { questions, zones, sourceBankRefs, parseWarnings } = await this.buildQuestionsAndZones(
-      assessment,
+      container.element,
       {
         parseOptions: options,
         shuffleAnswers: meta.shuffleAnswers,
@@ -116,14 +153,36 @@ export class QTI12AssessmentParser implements InputParser {
     if (rubricWarning) parseWarnings.push(rubricWarning);
 
     return {
-      sourceId: parsedAssessment.ident,
-      title: parsedAssessment.title,
-      sourceType: isObjectBank ? 'question-bank' : 'assessment',
+      kind: 'assessment',
+      sourceId: container.parsed.ident,
+      title: container.parsed.title,
+      sourceType: 'assessment',
       questions,
       zones: zones.length > 0 ? zones : undefined,
       sourceBankRefs: sourceBankRefs.length > 0 ? sourceBankRefs : undefined,
       meta,
       rubric,
+      parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
+    };
+  }
+
+  private async parseQuestionBankContainer(
+    container: Extract<QTI12ItemContainer, { kind: 'question-bank' }>,
+    options?: ParseOptions,
+  ): Promise<IRQuestionBank> {
+    const parseWarnings: IRParseWarning[] = [];
+    const questions = await this.transformItems(
+      this.collectItems(container.element),
+      { parseOptions: options },
+      parseWarnings,
+    );
+
+    return {
+      kind: 'question-bank',
+      sourceId: container.parsed.ident,
+      title: container.parsed.title,
+      sourceType: 'question-bank',
+      questions,
       parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
     };
   }
@@ -1052,3 +1111,5 @@ function formatDateInTimezone(date: Date, timezone: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
 }
+
+export class QTI12AssessmentParser extends QTI12ItemContainerParser {}

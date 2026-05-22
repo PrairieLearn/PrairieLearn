@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { assert, describe, it } from 'vitest';
 
-import { QTI12AssessmentParser } from './qti12-assessment-parser.js';
+import { QTI12AssessmentParser, QTI12ItemContainerParser } from './qti12-assessment-parser.js';
 
 const FIXTURES = path.join(import.meta.dirname, '../../test-fixtures/qti12');
 
@@ -146,6 +146,25 @@ describe('QTI12AssessmentParser', async () => {
     assert.equal(result.sourceType, 'question-bank');
     assert.lengthOf(result.questions, 1);
     assert.equal(result.questions[0].title, '1');
+  });
+
+  it('does not apply assessment-only metadata to object banks', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank">
+    <section ident="root_section"/>
+  </objectbank>
+</questestinterop>`;
+    const itemContainerParser = new QTI12ItemContainerParser();
+    const result = await itemContainerParser.parse(xml, {
+      assessmentMetaXml: '<quiz><time_limit>30</time_limit></quiz>',
+    });
+
+    assert.equal(result.kind, 'question-bank');
+    assert.equal(result.sourceType, 'question-bank');
+    assert.isFalse('meta' in result);
+    assert.isFalse('zones' in result);
+    assert.isFalse('sourceBankRefs' in result);
   });
 
   describe('correct condition parsing', async () => {

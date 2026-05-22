@@ -152,7 +152,7 @@ export interface IRZoneQuestion {
 /** A group of questions within an assessment (maps to a PL zone). */
 export interface IRZone {
   title: string;
-  /** Question references; full question data lives in IRAssessment.questions. */
+  /** Question references; full question data lives in the parent item container's questions. */
   questions: IRZoneQuestion[];
   /** If set, only this many questions are randomly chosen from the zone. */
   numberChoose?: number;
@@ -212,13 +212,19 @@ export interface IRParseWarning {
   externalCourseId?: string;
 }
 
-/** A collection of questions from one source (e.g., one assessment). */
-export interface IRAssessment {
+/** Common fields for one parsed collection of questions. */
+interface IRItemContainerBase {
   sourceId: string;
   title: string;
-  sourceType?: 'assessment' | 'question-bank';
-  /** Flat list of all questions (for backward compat / simple use). */
   questions: IRQuestion[];
+  /** Warnings produced during parsing (e.g., unsupported question types). */
+  parseWarnings?: IRParseWarning[];
+}
+
+/** An assessment with questions and assessment-level metadata. */
+export interface IRAssessment extends IRItemContainerBase {
+  kind?: 'assessment';
+  sourceType?: 'assessment';
   /** Questions organized by sections/zones. If present, preferred over flat `questions`. */
   zones?: IRZone[];
   sourceBankRefs?: IRSourceBankRef[];
@@ -226,6 +232,16 @@ export interface IRAssessment {
   meta?: IRAssessmentMeta;
   /** Assessment-level rubric (resolved from course_settings/rubrics.xml when provided). */
   rubric?: IRRubric;
-  /** Warnings produced during parsing (e.g., unsupported question types). */
-  parseWarnings?: IRParseWarning[];
 }
+
+/** A question bank/object bank with questions but no assessment-level metadata. */
+export interface IRQuestionBank extends IRItemContainerBase {
+  kind: 'question-bank';
+  sourceType: 'question-bank';
+  zones?: undefined;
+  sourceBankRefs?: undefined;
+  meta?: undefined;
+  rubric?: undefined;
+}
+
+export type IRItemContainer = IRAssessment | IRQuestionBank;

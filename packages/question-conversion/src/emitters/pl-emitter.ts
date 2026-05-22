@@ -1,7 +1,7 @@
 import type {
-  IRAssessment,
   IRAssessmentMeta,
   IRFeedback,
+  IRItemContainer,
   IRQuestion,
   IRZone,
 } from '../types/ir.js';
@@ -29,7 +29,7 @@ export class PLEmitter implements OutputEmitter {
     this.registry = registry ?? createPLBodyRegistry();
   }
 
-  emit(assessment: IRAssessment, options?: EmitOptions): ConversionResult {
+  emit(assessment: IRItemContainer, options?: EmitOptions): ConversionResult {
     const questions: PLQuestionOutput[] = [];
     const warnings: ConversionWarning[] = [...(assessment.parseWarnings ?? [])];
     const usedDirNames = new Map<string, number>();
@@ -46,7 +46,7 @@ export class PLEmitter implements OutputEmitter {
       }
     }
 
-    if (assessment.rubric) {
+    if ('rubric' in assessment && assessment.rubric) {
       warnings.push({
         questionId: assessment.rubric.id,
         message: `Rubric "${assessment.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
@@ -60,7 +60,7 @@ export class PLEmitter implements OutputEmitter {
       sourceId: assessment.sourceId,
       assessmentTitle: assessment.title,
       sourceType: assessment.sourceType,
-      sourceBankRefs: assessment.sourceBankRefs,
+      sourceBankRefs: 'sourceBankRefs' in assessment ? assessment.sourceBankRefs : undefined,
       assessment: assessmentOutput,
       questions,
       warnings,
@@ -68,11 +68,11 @@ export class PLEmitter implements OutputEmitter {
   }
 
   private emitAssessment(
-    assessment: IRAssessment,
+    assessment: IRItemContainer,
     questions: PLQuestionOutput[],
     options?: EmitOptions,
   ): PLAssessmentOutput {
-    const meta = assessment.meta;
+    const meta = 'meta' in assessment ? assessment.meta : undefined;
     const assessmentType = meta?.assessmentType ?? 'Homework';
     const directoryName = slugify(assessment.title);
     const prefix = options?.questionIdPrefix ?? '';
@@ -90,8 +90,9 @@ export class PLEmitter implements OutputEmitter {
 
     // Build zones
     const zones: PLAssessmentZone[] = [];
-    if (assessment.zones && assessment.zones.length > 0) {
-      for (const zone of assessment.zones) {
+    const assessmentZones = 'zones' in assessment ? assessment.zones : undefined;
+    if (assessmentZones && assessmentZones.length > 0) {
+      for (const zone of assessmentZones) {
         const zoneQuestions = this.buildZoneQuestions(zone, questionDirBySourceId, prefix);
         if (zoneQuestions.length > 0) {
           zones.push({
@@ -220,7 +221,7 @@ export class PLEmitter implements OutputEmitter {
   private emitQuestion(
     question: IRQuestion,
     index: number,
-    assessment: IRAssessment,
+    assessment: IRItemContainer,
     usedDirNames: Map<string, number>,
     options?: EmitOptions,
   ): PLQuestionOutput {

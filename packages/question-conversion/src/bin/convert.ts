@@ -12,7 +12,7 @@ import { PLEmitter } from '../emitters/pl-emitter.js';
 import type { ParseOptions } from '../parsers/parser.js';
 import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
-import type { IRAssessment } from '../types/ir.js';
+import type { IRItemContainer } from '../types/ir.js';
 import {
   type CourseExportInfo,
   type QtiFileEntry,
@@ -233,7 +233,7 @@ async function findQtiXmlFiles(dir: string): Promise<string[]> {
 }
 
 interface ParsedInput {
-  ir: IRAssessment;
+  ir: IRItemContainer;
   parseOptions: ParseOptions;
   webResourcesDir: string;
 }

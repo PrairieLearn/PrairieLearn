@@ -1,4 +1,4 @@
-import type { IRAssessment, IRSourceBankRef } from '../types/ir.js';
+import type { IRItemContainer, IRSourceBankRef } from '../types/ir.js';
 import type { PLAssessmentOutput, PLQuestionOutput } from '../types/pl-output.js';
 
 /** A warning produced during conversion. */
@@ -32,5 +32,5 @@ export interface ConversionResult {
 
 /** Interface for format-specific output emitters. */
 export interface OutputEmitter {
-  emit(assessment: IRAssessment, options?: EmitOptions): ConversionResult;
+  emit(assessment: IRItemContainer, options?: EmitOptions): ConversionResult;
 }

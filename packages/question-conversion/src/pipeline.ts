@@ -2,7 +2,7 @@ import type { ConversionResult, EmitOptions, OutputEmitter } from './emitters/em
 import { PLEmitter } from './emitters/pl-emitter.js';
 import type { InputParser, ParseOptions } from './parsers/parser.js';
 import { QTI12AssessmentParser } from './parsers/qti12/index.js';
-import type { IRAssessment } from './types/ir.js';
+import type { IRItemContainer } from './types/ir.js';
 
 /** Options for the conversion pipeline. */
 export interface ConvertOptions extends ParseOptions, EmitOptions {}
@@ -17,7 +17,7 @@ export async function parseAssessment(
   xmlContent: string,
   parsers: InputParser[],
   options?: ParseOptions,
-): Promise<IRAssessment> {
+): Promise<IRItemContainer> {
   const parser = parsers.find((p) => p.canParse(xmlContent));
   if (!parser) {
     throw new Error(
