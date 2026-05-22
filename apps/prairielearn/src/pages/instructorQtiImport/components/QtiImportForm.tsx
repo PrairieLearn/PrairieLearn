@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type { PLAssessmentQuestion } from '@prairielearn/question-conversion';
@@ -295,7 +295,7 @@ export function QtiImportForm({
     return response.json() as Promise<UploadResponse>;
   };
 
-  const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     setError(null);
@@ -336,7 +336,7 @@ export function QtiImportForm({
     }
   };
 
-  const handleBankUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleBankUpload = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     setError(null);

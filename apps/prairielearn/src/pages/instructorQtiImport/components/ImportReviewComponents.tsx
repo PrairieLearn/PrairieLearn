@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import {
@@ -238,7 +238,7 @@ export function UploadStep({
   onSubmit,
 }: {
   uploading: boolean;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <form encType="multipart/form-data" onSubmit={onSubmit}>
@@ -291,7 +291,7 @@ export function MissingBanksStep({
   uploading: boolean;
   uploadingBankKey: string | null;
   successMessage: string | null;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onSkip: () => void;
   onStartOver: () => void;
 }) {
