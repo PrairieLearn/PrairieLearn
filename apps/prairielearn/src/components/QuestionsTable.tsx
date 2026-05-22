@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -275,26 +275,26 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         }}
         headerButtons={
           addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton ? (
-            <>
-              {importQuestionsUrl && (
-                <a className="btn btn-light btn-sm" href={importQuestionsUrl}>
-                  <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
-                  Import questions
-                </a>
-              )}
+            <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
               {addQuestionUrl && (
-                <a className="btn btn-light btn-sm" href={addQuestionUrl}>
+                <Dropdown.Item as="a" href={addQuestionUrl}>
                   <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                  Add question
-                </a>
+                  Create new question
+                </Dropdown.Item>
               )}
               {showAiGenerateQuestionButton && (
-                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
+                <Dropdown.Item as="a" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
-                  Generate with AI
-                </a>
+                  Generate question with AI
+                </Dropdown.Item>
               )}
-            </>
+              {importQuestionsUrl && (
+                <Dropdown.Item as="a" href={importQuestionsUrl}>
+                  <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                  Import content
+                </Dropdown.Item>
+              )}
+            </DropdownButton>
           ) : undefined
         }
         globalFilter={{
