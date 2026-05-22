@@ -48,18 +48,19 @@ async function uploadDraftFile({
  */
 export function useDraftQuestionFileMutations({
   questionId,
-  uploadUrl,
+  urlPrefix,
   uploadCsrfToken,
   onMutated,
 }: {
   questionId: string;
-  uploadUrl: string;
+  urlPrefix: string;
   uploadCsrfToken: string;
   onMutated: () => Promise<unknown>;
 }): DraftQuestionFileBrowserActions {
   const trpc = useTRPC();
   const { mutateAsync: renameFile } = useMutation(trpc.aiDraftFiles.rename.mutationOptions());
   const { mutateAsync: deleteFile } = useMutation(trpc.aiDraftFiles.delete.mutationOptions());
+  const uploadUrl = `${urlPrefix}/ai_generate_editor/${questionId}/files`;
 
   return useMemo(
     () => ({

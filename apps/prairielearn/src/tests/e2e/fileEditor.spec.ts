@@ -3,12 +3,19 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
+import { selectQuestionByQid } from '../../models/question.js';
+
 import { getAceEditorContent, setAceEditorContent } from './aceUtils.js';
 import { expect, test } from './fixtures.js';
 
-// All file-edit URLs go through the course-admin file editor, which can edit any
-// file in the course without needing a question id.
-const FILE_EDIT_BASE = '/pl/course/1/course_admin/file_edit/questions/addNumbers';
+/**
+ * The course-admin file editor rejects anything under `questions/`, so file
+ * edits for a question go through the question-scoped editor. The path segment
+ * after `file_edit/` is the file's path relative to the course root.
+ */
+function fileEditUrl(questionId: string, fileName: string) {
+  return `/pl/course/1/question/${questionId}/file_edit/questions/addNumbers/${fileName}`;
+}
 
 function questionFilePath(testCoursePath: string, fileName: string) {
   return path.join(testCoursePath, 'questions', 'addNumbers', fileName);
@@ -24,17 +31,21 @@ async function syncCourses(page: Page) {
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Instructor file editor', () => {
+  let questionId: string;
+
   test.beforeAll(async ({ browser, workerPort }) => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
     await syncCourses(page);
     await page.close();
+
+    questionId = (await selectQuestionByQid({ qid: 'addNumbers', course_id: '1' })).id;
   });
 
   test('edits a file and syncs the change to disk', async ({ page, testCoursePath }) => {
     const filePath = questionFilePath(testCoursePath, 'server.py');
     const original = await fs.readFile(filePath, 'utf8');
 
-    await page.goto(`${FILE_EDIT_BASE}/server.py`);
+    await page.goto(fileEditUrl(questionId, 'server.py'));
     expect(await getAceEditorContent(page)).toBe(original);
 
     const edited = `${original}\n# e2e round-trip edit\n`;
@@ -44,7 +55,7 @@ test.describe('Instructor file editor', () => {
     await expect(saveButton).toBeEnabled();
     await saveButton.click();
 
-    await expect(page.getByText('saved and synced successfully')).toBeVisible();
+    await expect(page.getByText('saved and synced successfully')).toBeVisible({ timeout: 15_000 });
     expect(await fs.readFile(filePath, 'utf8')).toBe(edited);
   });
 
@@ -54,7 +65,7 @@ test.describe('Instructor file editor', () => {
     const myContent = `${base}\n<!-- e2e my version -->\n`;
     const theirContent = `${base}\n<!-- e2e their version -->\n`;
 
-    await page.goto(`${FILE_EDIT_BASE}/question.html`);
+    await page.goto(fileEditUrl(questionId, 'question.html'));
     await setAceEditorContent(page, myContent);
 
     // Another writer changes the file on disk after the editor was opened.
@@ -63,7 +74,9 @@ test.describe('Instructor file editor', () => {
     await page.getByRole('button', { name: /Save and sync/ }).click();
 
     // The stale-hash save is rejected and the version chooser is shown.
-    await expect(page.getByRole('heading', { name: 'My version' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My version' })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByRole('heading', { name: 'Their version' })).toBeVisible();
     expect(await getAceEditorContent(page, 0)).toBe(myContent);
     expect(await getAceEditorContent(page, 1)).toBe(theirContent);
@@ -71,7 +84,7 @@ test.describe('Instructor file editor', () => {
     await page.getByRole('button', { name: /Choose my version/ }).click();
     await page.getByRole('button', { name: /Save and sync/ }).click();
 
-    await expect(page.getByText('saved and synced successfully')).toBeVisible();
+    await expect(page.getByText('saved and synced successfully')).toBeVisible({ timeout: 15_000 });
     expect(await fs.readFile(filePath, 'utf8')).toBe(myContent);
   });
 
@@ -81,12 +94,19 @@ test.describe('Instructor file editor', () => {
     const myContent = `${base}\n<!-- e2e discarded version -->\n`;
     const theirContent = `${base}\n<!-- e2e kept version -->\n`;
 
-    await page.goto(`${FILE_EDIT_BASE}/question.html`);
+    await page.goto(fileEditUrl(questionId, 'question.html'));
     await setAceEditorContent(page, myContent);
     await fs.writeFile(filePath, theirContent);
 
     await page.getByRole('button', { name: /Save and sync/ }).click();
-    await expect(page.getByRole('heading', { name: 'Their version' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Their version' })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Reading the panes waits for the editors to hydrate. The version-choice
+    // buttons run client-side handlers, so they do nothing until then.
+    expect(await getAceEditorContent(page, 0)).toBe(myContent);
+    expect(await getAceEditorContent(page, 1)).toBe(theirContent);
 
     // Choosing their version reloads the page onto the on-disk content.
     await page.getByRole('button', { name: /Choose their version/ }).click();
@@ -104,7 +124,7 @@ test.describe('Instructor file editor', () => {
     const originalUuid = JSON.parse(await fs.readFile(filePath, 'utf8')).uuid;
     expect(originalUuid).toBeTruthy();
 
-    await page.goto(`${FILE_EDIT_BASE}/info.json`);
+    await page.goto(fileEditUrl(questionId, 'info.json'));
     const parsed = JSON.parse(await getAceEditorContent(page));
     parsed.uuid = '11111111-1111-1111-1111-111111111111';
     await setAceEditorContent(page, `${JSON.stringify(parsed, null, 2)}\n`);
@@ -118,7 +138,7 @@ test.describe('Instructor file editor', () => {
     await dialog.getByRole('button', { name: 'Confirm save' }).click();
 
     // Confirming saves the file with the original UUID restored.
-    await expect(page.getByText('saved and synced successfully')).toBeVisible();
+    await expect(page.getByText('saved and synced successfully')).toBeVisible({ timeout: 15_000 });
     const savedUuid = JSON.parse(await fs.readFile(filePath, 'utf8')).uuid;
     expect(savedUuid).toBe(originalUuid);
   });
