@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
-import type {
-  CollisionStrategy,
-  ParseWarning,
-  QuestionOverrides,
-  SerializedConversionResult,
-  SerializedQuestionOutput,
-  StrippedAccessRules,
+import {
+  type CollisionStrategy,
+  type ParseWarning,
+  type QuestionOverrides,
+  type SerializedConversionResult,
+  type SerializedQuestionOutput,
+  type StrippedAccessRules,
+  hasCanvasSourceBankRefs,
 } from '../instructorQtiImport.types.js';
 
 import { QuestionReviewPanel } from './QuestionReviewPanel.js';
@@ -64,6 +65,7 @@ export function UnresolvedBankWarnings({ results }: { results: SerializedConvers
   if (refs.length === 0) return null;
 
   const courseIds = uniqueCanvasCourseIds(refs);
+  const isCanvasExport = hasCanvasSourceBankRefs(refs);
 
   return (
     <Alert variant="warning" className="mb-3">
@@ -74,7 +76,8 @@ export function UnresolvedBankWarnings({ results }: { results: SerializedConvers
           <p className="mb-2 mt-1">
             {refs.length} question bank reference{refs.length !== 1 ? 's' : ''} could not be matched
             to uploaded bank content. Those questions will not be imported unless you start over and
-            upload a course export that contains the referenced banks.
+            upload {isCanvasExport ? 'a Canvas course export' : 'an export'} that contains the
+            referenced banks.
           </p>
           {courseIds.length > 0 && (
             <>
@@ -298,6 +301,7 @@ export function MissingBanksStep({
   const totalQuestionCount = importedQuestionCount + missingQuestionCount;
   const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
   const countPrefix = hasUnknownCounts ? 'At least ' : '';
+  const isCanvasExport = hasCanvasSourceBankRefs(refs);
 
   return (
     <>
@@ -314,14 +318,14 @@ export function MissingBanksStep({
         <div className="d-flex align-items-start gap-2">
           <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
           <div>
-            <strong>Some questions are in Canvas question banks</strong>
+            <strong>Some questions are in question banks</strong>
             <p className="mb-2 mt-1">
               This export references {refs.length} question bank{refs.length !== 1 ? 's' : ''} that
-              Canvas did not include. Use the file inputs below to upload exported content for each
-              missing bank, and PrairieLearn will add matching bank questions to the original
-              assessment review.
+              {isCanvasExport ? ' Canvas did not include' : ' were not included'}. Use the file
+              inputs below to upload exported content for each missing bank, and PrairieLearn will
+              add matching bank questions to the original assessment review.
             </p>
-            {courseIds.length > 1 && (
+            {isCanvasExport && courseIds.length > 1 && (
               <p className="mb-2">
                 Each input identifies the Canvas course that should contain that bank when Canvas
                 provided a course ID.
@@ -346,6 +350,7 @@ export function MissingBanksStep({
           const label = ref.externalCourseId
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
+          const hasCanvasRef = ref.sourceBankExportId != null || ref.externalCourseId != null;
 
           return (
             <form
@@ -365,8 +370,10 @@ export function MissingBanksStep({
                       instance)
                     </span>
                   </>
-                ) : (
+                ) : hasCanvasRef ? (
                   'Canvas did not identify the source course ID for this bank.'
+                ) : (
+                  'Upload an export that contains this bank.'
                 )}
               </div>
               <Form.Label htmlFor={inputId}>{label}</Form.Label>
@@ -380,7 +387,10 @@ export function MissingBanksStep({
                     disabled={uploading}
                     required
                   />
-                  <Form.Text>Upload the Canvas course export that contains this bank.</Form.Text>
+                  <Form.Text>
+                    Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
+                    this bank.
+                  </Form.Text>
                 </div>
                 <Button
                   type="submit"

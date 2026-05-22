@@ -124,14 +124,11 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
 }
 
 const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-const qtiImportUploadDirs = new WeakMap<Request, string>();
 
-async function cleanupQtiUpload(req: Request) {
-  const destination = qtiImportUploadDirs.get(req) ?? req.file?.destination;
+async function cleanupQtiUpload(destination: string | undefined) {
   if (!destination) return;
   try {
     await fs.promises.rm(destination, { recursive: true, force: true });
-    qtiImportUploadDirs.delete(req);
   } catch (err) {
     logger.warn(
       `Failed to remove temporary QTI import upload directory: ${(err as Error).message}`,
@@ -234,27 +231,29 @@ export async function initExpress(): Promise<Express> {
       parts: config.fileUploadMaxParts,
     },
   });
-  const qtiImportUpload = multer({
-    storage: multer.diskStorage({
-      destination(req, _file, callback) {
-        fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
-          if (!err) {
-            qtiImportUploadDirs.set(req, folder);
-          }
-          callback(err, folder);
-        });
-      },
-    }),
-    limits: {
-      fieldSize: config.fileUploadMaxBytes,
-      fileSize: QTI_IMPORT_MAX_UPLOAD_BYTES,
-      parts: config.fileUploadMaxParts,
-    },
-  });
   const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
+    let uploadDir: string | undefined;
+    const qtiImportUpload = multer({
+      storage: multer.diskStorage({
+        destination(_req, _file, callback) {
+          fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
+            if (!err) {
+              uploadDir = folder;
+            }
+            callback(err, folder);
+          });
+        },
+      }),
+      limits: {
+        fieldSize: config.fileUploadMaxBytes,
+        fileSize: QTI_IMPORT_MAX_UPLOAD_BYTES,
+        parts: config.fileUploadMaxParts,
+      },
+    });
+
     qtiImportUpload.single('file')(req, res, (err) => {
       onFinished(res, () => {
-        void cleanupQtiUpload(req);
+        void cleanupQtiUpload(uploadDir ?? req.file?.destination);
       });
       next(err);
     });

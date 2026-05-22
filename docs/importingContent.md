@@ -12,7 +12,7 @@ The importer is a review-and-confirm workflow:
 
 1. Export quiz or course content from Canvas or another LMS.
 2. Upload the exported `.zip` or `.imscc` file to PrairieLearn.
-3. If the upload references Canvas question banks that were not included in the file, PrairieLearn asks for supplemental course exports that contain those banks. You can also continue without the missing bank content.
+3. If the upload references question banks that were not included in the file, PrairieLearn asks for supplemental exports that contain those banks. You can also continue without the missing bank content.
 4. Review what PrairieLearn found. The review page separates **Assessments** from **Question banks**:
    - Assessments are imported to PrairieLearn with their questions and basic quiz structure. After import, you can edit their settings, adjust question order and points, and assign them like any other assessment.
    - Question banks are imported as a set of PrairieLearn questions in your course. You can add them to existing assessments or use them in any new assessments you create.
@@ -56,7 +56,7 @@ Referenced images and other non-video media files are imported into each questio
 - **Access rules**: Time limits, passwords, and start/end dates are stripped during import. Configure these after import with PrairieLearn's [access control](assessment/accessControl.md) system.
 - **Rubrics**: Rubric definitions are not imported from QTI exports.
 - **Video files**: Video content (`.mp4`, `.webm`, `.mov`, etc.) is excluded due to file size. The review page lists skipped video files on the affected questions so you can re-host or replace them separately.
-- **Missing Canvas question bank content**: Your exports may reference question banks without including the actual bank questions. PrairieLearn can only import those questions if you provide a course export that contains the matching bank content, or if the original upload already includes it.
+- **Missing question bank content**: Your exports may reference question banks without including the actual bank questions. PrairieLearn can only import those questions if you provide an export that contains the matching bank content, or if the original upload already includes it.
 - **Student data**: Submissions, grades, and enrollment data are not part of QTI exports and are not imported.
 
 The review page summarizes what can be imported and what known content was skipped or stripped.
@@ -66,7 +66,7 @@ The review page summarizes what can be imported and what known content was skipp
 Canvas exports can represent question banks in several ways:
 
 - A full course export may include the question bank content directly. PrairieLearn imports those banks as standalone PrairieLearn questions and can attach matching bank questions to assessments that reference them.
-- A quiz export may only contain a reference to a question bank. When that happens, PrairieLearn pauses on a **Some questions are in Canvas question banks** step and asks you to upload supplemental exported content for each missing bank.
+- A quiz export may only contain a reference to a question bank. When that happens, PrairieLearn pauses on a **Some questions are in question banks** step and asks you to upload supplemental exported content for each missing bank.
 - If Canvas identifies the source course for a missing bank, PrairieLearn shows the Canvas course ID to help you find the right course export. You can find that ID in Canvas URLs such as `/courses/12345`.
 - If you upload supplemental content that does not contain the referenced bank, PrairieLearn shows an alert and lets you try another file.
 - If you continue without additional content, the unresolved bank questions are omitted from the imported assessment. PrairieLearn shows a warning on the review page for any bank references that remain unresolved.

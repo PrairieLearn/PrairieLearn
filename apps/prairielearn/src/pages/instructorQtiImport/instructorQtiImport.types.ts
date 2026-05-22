@@ -90,6 +90,10 @@ export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>
   return candidate;
 }
 
+export function hasCanvasSourceBankRefs(refs: IRSourceBankRef[]): boolean {
+  return refs.some((ref) => ref.sourceBankExportId != null || ref.externalCourseId != null);
+}
+
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
   results: SerializedConversionResult[];

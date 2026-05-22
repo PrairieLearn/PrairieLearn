@@ -16,6 +16,7 @@ import {
   type SerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  hasCanvasSourceBankRefs,
   resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
 
@@ -350,9 +351,10 @@ export function QtiImportForm({
       setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, existingDirs));
       setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
       if (unresolvedCount >= previousUnresolvedCount) {
+        const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+        const exportType = hasCanvasSourceBankRefs(refs) ? 'Canvas course export' : 'export';
         setError({
-          message:
-            'No matching question banks were found in that upload. Try another Canvas course export, or continue without the missing bank questions.',
+          message: `No matching question banks were found in that upload. Try another ${exportType}, or continue without the missing bank questions.`,
         });
       } else if (unresolvedCount > 0) {
         const matchedCount = previousUnresolvedCount - unresolvedCount;

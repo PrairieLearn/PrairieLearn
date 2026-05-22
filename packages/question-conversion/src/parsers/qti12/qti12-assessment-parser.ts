@@ -582,7 +582,7 @@ export class QTI12ItemContainerParser implements InputParser {
       } else {
         warnings.push({
           questionId: ref,
-          message: `Question bank reference "${ref}" in ${location} cannot be resolved — the bank content was not included in this export. Re-export from Canvas as a full course export (not a quiz export) to include question bank items.`,
+          message: `Question bank reference "${ref}" in ${location} cannot be resolved — the bank content was not included in this export. Re-export from the source LMS as a full course export (not a quiz-only export) to include question bank items.`,
         });
       }
       return;
