@@ -262,9 +262,10 @@ export function FileEditor({
   const takeOverDraft = () => {
     setShowVersionChoice(false);
     setShowVersionChoiceAlert(false);
+    // Clearing `readOnly` re-renders and the `AceFileEditor` prop-sync effect
+    // propagates it to Ace; only the resize needs to be imperative.
     setReadOnly(false);
     setButtonsExpanded(true);
-    editorRef.current?.setReadOnly(false);
     editorRef.current?.resize();
   };
 
