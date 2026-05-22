@@ -2,6 +2,7 @@ import {
   type TagElement,
   type TagValidator,
   type ValidatorContext,
+  attr,
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
@@ -42,23 +43,23 @@ const FEEDBACK_METHODS = new Set(['dag', 'ranking']);
 const TAG_SPECIAL_CHARACTERS = new Set('*&^$@!~[]{}()|:@?/\\'.split(''));
 
 function isLiteralTrueAttribute(element: TagElement, attribute: string): boolean {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   return typeof value === 'string' && BOOLEAN_TRUE_VALUES.includes(value);
 }
 
 function isLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   return value !== undefined && isFalseValue(value);
 }
 
 function literalIntAttribute(element: TagElement, attribute: string): number | undefined {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   if (typeof value !== 'string' || !/^-?\d+$/.test(value)) return undefined;
   return Number(value);
 }
 
 function literalStringAttribute(element: TagElement, attribute: string, fallback: string): string {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   return typeof value === 'string' ? value : fallback;
 }
 
@@ -66,7 +67,7 @@ function optionalLiteralStringAttribute(
   element: TagElement,
   attribute: string,
 ): string | undefined {
-  const value = element.getLiteralAttribute(attribute);
+  const value = attr(element, attribute).literal();
   return typeof value === 'string' ? value : undefined;
 }
 
@@ -76,10 +77,8 @@ function allAnswers(element: TagElement): TagElement[] {
 
 function hasOptionalBlocks(element: TagElement): boolean {
   return [
-    ...allAnswers(element).map((answer) => answer.getLiteralAttribute('depends')),
-    ...element
-      .childrenWithTag('pl-block-group')
-      .map((group) => group.getLiteralAttribute('depends')),
+    ...allAnswers(element).map((answer) => attr(answer, 'depends').literal()),
+    ...element.childrenWithTag('pl-block-group').map((group) => attr(group, 'depends').literal()),
   ].some((depends) => typeof depends === 'string' && depends.includes('|'));
 }
 
@@ -104,7 +103,7 @@ function validateAnswerAttributes(
 function validateTagCharacters(element: TagElement, context: ValidatorContext) {
   const taggedElements = [...allAnswers(element), ...element.childrenWithTag('pl-block-group')];
   for (const child of taggedElements) {
-    const tag = child.getLiteralAttribute('tag');
+    const tag = attr(child, 'tag').literal();
     if (typeof tag !== 'string') continue;
     if ([...tag].some((char) => TAG_SPECIAL_CHARACTERS.has(char))) {
       context.reportAttribute(
@@ -149,7 +148,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
     );
     const distractorOrder = literalStringAttribute(element, 'distractor-order', 'inherit');
 
-    if (format !== 'code' && element.hasAttribute('code-language')) {
+    if (format !== 'code' && attr(element, 'code-language').present()) {
       context.reportAttribute(
         element,
         'code-language',
@@ -196,7 +195,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
   'pl/order-blocks-answer-options'(element, context) {
     if (!isLiteralTrueAttribute(element, 'indentation')) {
       for (const answer of allAnswers(element)) {
-        if (answer.hasAttribute('indent')) {
+        if (attr(answer, 'indent').present()) {
           context.reportAttribute(
             answer,
             'indent',
@@ -207,7 +206,10 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
     }
 
     for (const answer of allAnswers(element)) {
-      if (answer.hasAttribute('ordering-feedback') && isLiteralFalseAttribute(answer, 'correct')) {
+      if (
+        attr(answer, 'ordering-feedback').present() &&
+        isLiteralFalseAttribute(answer, 'correct')
+      ) {
         context.reportAttribute(
           answer,
           'ordering-feedback',
