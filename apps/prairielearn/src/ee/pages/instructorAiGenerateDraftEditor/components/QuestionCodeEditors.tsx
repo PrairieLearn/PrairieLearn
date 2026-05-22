@@ -4,7 +4,6 @@ import { type Ref, useImperativeHandle, useState } from 'react';
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
-  type AppError,
   getAppError,
   renderAppError,
   syncJobFailedRenderer,
@@ -12,8 +11,7 @@ import {
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
-
-const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
+import { useDraftFiles } from './draftFilesContext.js';
 
 export interface QuestionCodeEditorsHandle {
   /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */
@@ -25,39 +23,36 @@ export interface QuestionCodeEditorsHandle {
 export function QuestionCodeEditors({
   htmlContents,
   pythonContents,
-  questionId,
-  urlPrefix,
-  isGenerating,
   filesError,
-  onRetryFiles,
-  onSaved,
   editorRef,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
-  questionId: string;
-  urlPrefix: string;
-  isGenerating: boolean;
   filesError?: { message: string } | null;
-  onRetryFiles?: () => void;
-  onSaved: () => Promise<unknown>;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
   const trpc = useTRPC();
-  const saveMutation = useMutation(trpc.aiDraftFiles.saveFiles.mutationOptions());
+  const { questionId, urlPrefix, isGenerating, onFilesMutated, refetchFiles } = useDraftFiles();
+  const saveMutation = useMutation(
+    trpc.aiDraftFiles.saveFiles.mutationOptions({ onSuccess: () => onFilesMutated() }),
+  );
 
   const savedHtml = htmlContents ?? '';
   const savedPython = pythonContents ?? '';
 
   const [htmlValue, setHtmlValue] = useState(savedHtml);
   const [pythonValue, setPythonValue] = useState(savedPython);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<AppError<AiDraftFilesError['SaveFiles']> | null>(null);
+  const isSaving = saveMutation.isPending;
+  const saveError = getAppError<AiDraftFilesError['SaveFiles']>(saveMutation.error);
 
-  // Reset the editors to match the saved files when they change externally (e.g.
-  // after AI updates or saves), discarding any local edits. This adjusts state
-  // during render rather than in an effect; see
+  // Reset the editors to match the saved files when they change externally
+  // (after AI updates or a save), discarding any local edits. This adjusts
+  // state during render rather than in an effect; see
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  //
+  // The sibling SelectedQuestionFileEditor instead resets via a remount `key`:
+  // it must also clear its save-mutation state (e.g. a STALE_EDIT conflict) on
+  // reload, whereas these editors only need to re-sync two text values.
   const [syncedHtml, setSyncedHtml] = useState(savedHtml);
   if (syncedHtml !== savedHtml) {
     setSyncedHtml(savedHtml);
@@ -76,41 +71,26 @@ export function QuestionCodeEditors({
     discardChanges: () => {
       setHtmlValue(savedHtml);
       setPythonValue(savedPython);
-      setSaveError(null);
+      saveMutation.reset();
     },
     getHasChanges: () => hasChanges,
   }));
 
-  async function save() {
+  function save() {
     if (isSaving || isGenerating || !hasChanges) return;
 
-    setIsSaving(true);
-    setSaveError(null);
-
-    try {
-      await saveMutation.mutateAsync({
-        questionId,
-        files: [
-          { path: 'question.html', encodedContents: b64EncodeUnicode(htmlValue) },
-          // Clearing `server.py` deletes it: a question with no server-side code
-          // shouldn't keep an empty file around.
-          {
-            path: 'server.py',
-            encodedContents: pythonValue.trim() === '' ? null : b64EncodeUnicode(pythonValue),
-          },
-        ],
-      });
-      await onSaved();
-    } catch (err) {
-      setSaveError(
-        getAppError<AiDraftFilesError['SaveFiles']>(err) ?? {
-          code: 'UNKNOWN',
-          message: SAVE_ERROR_MESSAGE,
+    saveMutation.mutate({
+      questionId,
+      files: [
+        { path: 'question.html', encodedContents: b64EncodeUnicode(htmlValue) },
+        // Clearing `server.py` deletes it: a question with no server-side code
+        // shouldn't keep an empty file around.
+        {
+          path: 'server.py',
+          encodedContents: pythonValue.trim() === '' ? null : b64EncodeUnicode(pythonValue),
         },
-      );
-    } finally {
-      setIsSaving(false);
-    }
+      ],
+    });
   }
 
   const statusText = isSaving
@@ -130,16 +110,14 @@ export function QuestionCodeEditors({
             <span>
               <strong>Error loading files:</strong> {filesError.message}
             </span>
-            {onRetryFiles && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger"
-                onClick={onRetryFiles}
-              >
-                <i className="fa fa-refresh me-1" aria-hidden="true" />
-                Retry
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              onClick={() => void refetchFiles()}
+            >
+              <i className="fa fa-refresh me-1" aria-hidden="true" />
+              Retry
+            </button>
           </div>
         ) : isGenerating ? (
           <div className="alert alert-info mb-0 py-2 d-flex align-items-center" role="alert">
@@ -162,7 +140,7 @@ export function QuestionCodeEditors({
               type="button"
               className="btn btn-sm btn-primary"
               disabled={!hasChanges || isSaving}
-              onClick={() => void save()}
+              onClick={() => save()}
             >
               {isSaving ? 'Saving...' : 'Save edits'}
             </button>

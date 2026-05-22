@@ -154,7 +154,7 @@ function getContentsWithRestoredUuid(contents: string, editorData: FileEditorDat
   return JSON.stringify({ uuid: editorData.fileMetadata.uuid, ...rest });
 }
 
-export function InstructorFileEditorClient({
+export function FileEditor({
   editorData,
   draftContents,
   versionChoice,
@@ -439,13 +439,7 @@ export function InstructorFileEditorClient({
               ) : null}
             </div>
             <div className="row">
-              <div
-                id="file-editor-draft"
-                className="col"
-                // `data-contents` is read by `fileEditor.test.ts` to assert the
-                // editor's draft contents; it is not consumed at runtime.
-                data-contents={draftContents ?? editorData.diskContents}
-              >
+              <div id="file-editor-draft" className="col">
                 <div className="card p-0">
                   {showVersionChoice ? (
                     <div className="card-header text-center">
@@ -530,13 +524,7 @@ export function InstructorFileEditorClient({
                 </div>
               </div>
               {showVersionChoice ? (
-                <div
-                  id="file-editor-disk"
-                  className="col"
-                  // `data-contents` is read by `fileEditor.test.ts` to assert the
-                  // disk file contents; it is not consumed at runtime.
-                  data-contents={editorData.diskContents}
-                >
+                <div className="col">
                   <div className="card p-0">
                     <div className="card-header text-center">
                       <h4 className="mb-4">Their version</h4>
@@ -611,4 +599,4 @@ export function InstructorFileEditorClient({
   );
 }
 
-InstructorFileEditorClient.displayName = 'InstructorFileEditorClient';
+FileEditor.displayName = 'FileEditor';

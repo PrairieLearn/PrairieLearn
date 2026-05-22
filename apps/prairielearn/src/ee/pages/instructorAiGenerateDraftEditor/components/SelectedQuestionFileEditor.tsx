@@ -4,7 +4,6 @@ import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
-  type AppError,
   getAppError,
   renderAppError,
   syncJobFailedRenderer,
@@ -13,8 +12,7 @@ import type { SelectedQuestionFile } from '../../../../lib/draft-question-files/
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
-
-const SAVE_ERROR_MESSAGE = 'Failed to save edits.';
+import { useDraftFiles } from './draftFilesContext.js';
 
 export interface SelectedQuestionFileEditorHandle {
   discardChanges: () => void;
@@ -22,15 +20,8 @@ export interface SelectedQuestionFileEditorHandle {
   getHasChanges: () => boolean;
 }
 
-export function SelectedQuestionFileBreadcrumb({
-  filePath,
-  allFilesHref,
-  onShowAllFiles,
-}: {
-  filePath: string;
-  allFilesHref: string;
-  onShowAllFiles: () => void;
-}) {
+export function SelectedQuestionFileBreadcrumb({ filePath }: { filePath: string }) {
+  const { allFilesHref, clearSelectedFile } = useDraftFiles();
   return (
     <nav
       aria-label="Selected file breadcrumb"
@@ -41,7 +32,7 @@ export function SelectedQuestionFileBreadcrumb({
         className="flex-shrink-0"
         onClick={(event) => {
           event.preventDefault();
-          onShowAllFiles();
+          clearSelectedFile();
         }}
       >
         All files
@@ -69,33 +60,21 @@ function getSaveStatus({
 
 export function SelectedQuestionFileEditor({
   selectedFile,
-  questionId,
-  isGenerating,
-  allFilesHref,
-  urlPrefix,
-  onShowAllFiles,
-  onSaved,
-  onReloadFile,
   editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
-  questionId: string;
-  isGenerating: boolean;
-  allFilesHref: string;
-  urlPrefix: string;
-  onShowAllFiles: () => void;
-  onSaved: () => Promise<unknown>;
-  /** Re-reads the file from disk, replacing the editor's contents. */
-  onReloadFile: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
-  const saveMutation = useMutation(trpc.aiDraftFiles.save.mutationOptions());
+  const { questionId, urlPrefix, isGenerating, onFilesMutated, refetchFiles } = useDraftFiles();
+  const saveMutation = useMutation(
+    trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFilesMutated() }),
+  );
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
-  const [isSaving, setIsSaving] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
-  const [saveError, setSaveError] = useState<AppError<AiDraftFilesError['Save']> | null>(null);
+  const isSaving = saveMutation.isPending;
+  const saveError = getAppError<AiDraftFilesError['Save']>(saveMutation.error);
   const hasChanges = contents !== savedContents;
   const hasConflict = saveError?.code === 'STALE_EDIT';
   const saveStatus = getSaveStatus({ hasChanges, isSaving, isGenerating });
@@ -103,43 +82,28 @@ export function SelectedQuestionFileEditor({
   useImperativeHandle(editorRef, () => ({
     discardChanges: () => {
       setContents(savedContents);
-      setSaveError(null);
+      saveMutation.reset();
     },
     getHasChanges: () => hasChanges,
   }));
 
   /** `force` overwrites a concurrent change after a `STALE_EDIT` conflict. */
-  async function save(force: boolean) {
+  function save(force: boolean) {
     if (isSaving || isGenerating) return;
 
-    setIsSaving(true);
-    setSaveError(null);
-
-    try {
-      await saveMutation.mutateAsync({
-        questionId,
-        filePath: selectedFile.path,
-        encodedContents: b64EncodeUnicode(contents),
-        origHash: selectedFile.contentHash,
-        force,
-      });
-      await onSaved();
-    } catch (err) {
-      setSaveError(
-        getAppError<AiDraftFilesError['Save']>(err) ?? {
-          code: 'UNKNOWN',
-          message: SAVE_ERROR_MESSAGE,
-        },
-      );
-    } finally {
-      setIsSaving(false);
-    }
+    saveMutation.mutate({
+      questionId,
+      filePath: selectedFile.path,
+      encodedContents: b64EncodeUnicode(contents),
+      origHash: selectedFile.contentHash,
+      force,
+    });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!hasChanges) return;
-    void save(false);
+    save(false);
   }
 
   async function handleReload() {
@@ -148,7 +112,7 @@ export function SelectedQuestionFileEditor({
     try {
       // On success the file refetches with a new content hash, remounting this
       // component with the disk contents; the `finally` only matters otherwise.
-      await onReloadFile();
+      await refetchFiles();
     } finally {
       setIsReloading(false);
     }
@@ -158,11 +122,7 @@ export function SelectedQuestionFileEditor({
     <div className="selected-file-editor h-100 d-flex flex-column">
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <SelectedQuestionFileBreadcrumb
-            filePath={selectedFile.path}
-            allFilesHref={allFilesHref}
-            onShowAllFiles={onShowAllFiles}
-          />
+          <SelectedQuestionFileBreadcrumb filePath={selectedFile.path} />
           <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
             {saveError != null
               ? renderAppError(saveError, {
@@ -183,7 +143,7 @@ export function SelectedQuestionFileEditor({
                         type="button"
                         className="btn btn-link btn-sm p-0 align-baseline"
                         disabled={isSaving || isReloading}
-                        onClick={() => void save(true)}
+                        onClick={() => save(true)}
                       >
                         overwrite anyway
                       </button>

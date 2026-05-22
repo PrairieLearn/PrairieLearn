@@ -98,6 +98,20 @@ export interface SelectedQuestionFilePreview {
 }
 
 /**
+ * Everything the draft editor needs to render its file panels: the question's
+ * file contents (for the code editors), the file browser listing, and the
+ * currently selected file as editable text or a binary preview. Travels from
+ * the page through the editor components as a single unit.
+ */
+export interface QuestionFilesData {
+  /** Base64-encoded file contents, keyed by question-relative path. */
+  files: Record<string, string>;
+  fileBrowser: DraftQuestionFileBrowserData;
+  selectedFile: SelectedQuestionFile | null;
+  selectedFilePreview: SelectedQuestionFilePreview | null;
+}
+
+/**
  * The `res.locals` slice the draft file panel needs. Also serves as the
  * `aiDraftFiles` tRPC context's `locals` contract, so it carries the `user` /
  * `authn_user` the file mutation procedures forward to
@@ -300,8 +314,12 @@ export async function getQuestionFilesData({
   editorUrl: string;
   selectedFilePath: string | null;
   selectedDirectory: string | null;
-}) {
+}): Promise<QuestionFilesData> {
   const courseFilesClient = getCourseFilesClient();
+  // `getQuestionFiles` already goes through the course-files API, while the
+  // browser listing and the selected-file read still touch the filesystem
+  // directly (see the co-location note in `./mutations.ts`). The two paths will
+  // converge on the API once file storage is split off the main server.
   const [{ files }, fileBrowser, selectedQuestionFile] = await Promise.all([
     courseFilesClient.getQuestionFiles.query({
       course_id: resLocals.course.id,

@@ -16,11 +16,7 @@ import {
 } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
-import type {
-  DraftQuestionFileBrowserData,
-  SelectedQuestionFile,
-  SelectedQuestionFilePreview,
-} from '../../../lib/draft-question-files/browser.js';
+import type { QuestionFilesData } from '../../../lib/draft-question-files/browser.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -32,10 +28,7 @@ export function InstructorAiGenerateDraftEditor({
   resLocals,
   question,
   messages,
-  questionFiles,
-  fileBrowser,
-  selectedFile,
-  selectedFilePreview,
+  questionFilesData,
   richTextEditorEnabled,
   questionContainerHtml,
   search,
@@ -43,10 +36,7 @@ export function InstructorAiGenerateDraftEditor({
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
-  questionFiles: Record<string, string>;
-  fileBrowser: DraftQuestionFileBrowserData;
-  selectedFile: SelectedQuestionFile | null;
-  selectedFilePreview: SelectedQuestionFilePreview | null;
+  questionFilesData: QuestionFilesData;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   search: string;
@@ -130,10 +120,7 @@ export function InstructorAiGenerateDraftEditor({
           trpcUrl={trpcUrl}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
-          questionFiles={questionFiles}
-          fileBrowser={fileBrowser}
-          selectedFile={selectedFile}
-          selectedFilePreview={selectedFilePreview}
+          questionFilesData={questionFilesData}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}

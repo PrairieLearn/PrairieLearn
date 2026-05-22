@@ -19,6 +19,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
+import { getAceEditorContent, setAceEditorContent } from './aceUtils.js';
 import { test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -42,14 +43,6 @@ const QUESTION_HTML = `<pl-question-panel>
   <pl-answer correct="false">40</pl-answer>
 </pl-multiple-choice>
 `;
-
-interface AceEditor {
-  setValue: (val: string, pos: number) => void;
-  getValue: () => string;
-}
-interface AceWindow {
-  ace: { edit: (el: HTMLElement) => AceEditor };
-}
 
 let shotCount = 0;
 interface ShootOpts {
@@ -137,33 +130,6 @@ async function waitForModalShown(page: Page): Promise<Locator> {
     return m !== null && getComputedStyle(m).opacity === '1';
   });
   return dialog;
-}
-
-async function waitForAceReady(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.locator('.ace_editor').first().waitFor({ timeout: 60_000 });
-  await page.waitForFunction(() => {
-    const w = window as unknown as Partial<AceWindow>;
-    return Boolean(w.ace?.edit && document.querySelector('.ace_editor'));
-  });
-}
-
-async function setAceEditorContent(page: Page, content: string) {
-  await waitForAceReady(page);
-  await page.evaluate((newContent) => {
-    const el = document.querySelector<HTMLElement>('.ace_editor');
-    if (!el) throw new Error('Ace editor element not found');
-    (window as unknown as AceWindow).ace.edit(el).setValue(newContent, -1);
-  }, content);
-}
-
-async function getAceEditorContent(page: Page): Promise<string> {
-  await waitForAceReady(page);
-  return page.evaluate(() => {
-    const el = document.querySelector<HTMLElement>('.ace_editor');
-    if (!el) throw new Error('Ace editor element not found');
-    return (window as unknown as AceWindow).ace.edit(el).getValue();
-  });
 }
 
 async function captureHome(page: Page) {

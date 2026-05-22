@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { type FormEvent, type ReactNode, useState } from 'react';
@@ -5,13 +6,9 @@ import { type FormEvent, type ReactNode, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import {
-  type AppError,
-  getAppError,
-  renderAppError,
-  syncJobFailedRenderer,
-} from '../lib/client/errors.js';
-import { FILE_NAME_PATTERN } from '../lib/short-name.js';
+import { getAppError, renderAppError, syncJobFailedRenderer } from '../lib/client/errors.js';
+import { FILE_NAME_PATTERN, FILE_NAME_PATTERN_DESCRIPTION } from '../lib/short-name.js';
+import type { AiDraftFilesError } from '../trpc/shared/ai-draft-files.js';
 
 /**
  * Callbacks that perform draft question file mutations. Each resolves on
@@ -39,41 +36,6 @@ function getParentDirectory(filePath: string): string {
   return lastSlash === -1 ? '' : filePath.slice(0, lastSlash);
 }
 
-/** A draft file mutation whose underlying server job failed to sync. */
-interface DraftFileActionError {
-  code: 'SYNC_JOB_FAILED';
-  jobSequenceId: string;
-}
-
-/** Extracts a typed action error, falling back to `fallbackMessage`. */
-function resolveActionError(err: unknown, fallbackMessage: string): AppError<DraftFileActionError> {
-  return getAppError<DraftFileActionError>(err) ?? { code: 'UNKNOWN', message: fallbackMessage };
-}
-
-/**
- * Shared submit-state machine for the draft file action forms. `submit` runs the
- * action with `isSubmitting`/`error` bookkeeping; on failure it surfaces a typed
- * error and clears `isSubmitting` so the user can retry. There is no success
- * reset: a successful action closes the popover, which unmounts the form.
- */
-function useActionSubmit(fallbackMessage: string) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<AppError<DraftFileActionError> | null>(null);
-
-  async function submit(action: () => Promise<void>) {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await action();
-    } catch (err) {
-      setError(resolveActionError(err, fallbackMessage));
-      setIsSubmitting(false);
-    }
-  }
-
-  return { isSubmitting, error, submit };
-}
-
 function DraftFileUploadForm({
   idPrefix,
   infoDirectory,
@@ -93,12 +55,13 @@ function DraftFileUploadForm({
   const inputId = `${idPrefix}-file`;
   const errorId = `${idPrefix}-error`;
   const [file, setFile] = useState<File | null>(null);
-  const { isSubmitting, error, submit } = useActionSubmit('Failed to upload file.');
+  const uploadMutation = useMutation({ mutationFn: onSubmit });
+  const error = getAppError<AiDraftFilesError['Upload']>(uploadMutation.error);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (file == null || isSubmitting) return;
-    await submit(() => onSubmit(file));
+    if (file == null || uploadMutation.isPending) return;
+    uploadMutation.mutate(file);
   }
 
   return (
@@ -137,13 +100,17 @@ function DraftFileUploadForm({
         <button
           type="button"
           className="btn btn-secondary"
-          disabled={isSubmitting}
+          disabled={uploadMutation.isPending}
           onClick={onCancel}
         >
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" disabled={file == null || isSubmitting}>
-          {isSubmitting ? 'Uploading...' : 'Upload file'}
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={file == null || uploadMutation.isPending}
+        >
+          {uploadMutation.isPending ? 'Uploading...' : 'Upload file'}
         </button>
       </div>
     </form>
@@ -169,7 +136,8 @@ function DraftFileRenameForm({
   const errorId = `${idPrefix}-error`;
   const [value, setValue] = useState(fileName);
   const [showValidation, setShowValidation] = useState(false);
-  const { isSubmitting, error: submitError, submit } = useActionSubmit('Failed to rename file.');
+  const renameMutation = useMutation({ mutationFn: onSubmit });
+  const submitError = getAppError<AiDraftFilesError['Rename']>(renameMutation.error);
 
   const validationError = run(() => {
     const trimmed = value.trim();
@@ -183,29 +151,22 @@ function DraftFileRenameForm({
   const showValidationError = showValidation && validationError != null;
   const hasError = submitError != null || showValidationError;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (renameMutation.isPending) return;
 
     setShowValidation(true);
     if (validationError != null) return;
 
-    await submit(async () => {
-      const parentDirectory = getParentDirectory(oldFilePath);
-      const trimmed = value.trim();
-      const newFilePath = parentDirectory === '' ? trimmed : `${parentDirectory}/${trimmed}`;
-      await onSubmit(newFilePath);
-    });
+    const parentDirectory = getParentDirectory(oldFilePath);
+    const trimmed = value.trim();
+    const newFilePath = parentDirectory === '' ? trimmed : `${parentDirectory}/${trimmed}`;
+    renameMutation.mutate(newFilePath);
   }
 
   return (
     <form className="mb-0" onSubmit={handleSubmit}>
-      <div className="mb-3">
-        Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is
-        recommended, delimited by a period. If you want to move the file to a different directory,
-        you can specify a relative path that is delimited by a forward slash and that includes "
-        <code>..</code>".
-      </div>
+      <div className="mb-3">{FILE_NAME_PATTERN_DESCRIPTION}</div>
       <div className="mb-3">
         <label className="form-label" htmlFor={inputId}>
           Path:
@@ -236,13 +197,13 @@ function DraftFileRenameForm({
         <button
           type="button"
           className="btn btn-secondary"
-          disabled={isSubmitting}
+          disabled={renameMutation.isPending}
           onClick={onCancel}
         >
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Changing...' : 'Change'}
+        <button type="submit" className="btn btn-primary" disabled={renameMutation.isPending}>
+          {renameMutation.isPending ? 'Changing...' : 'Change'}
         </button>
       </div>
     </form>
@@ -263,12 +224,13 @@ function DraftFileDeleteForm({
   onSubmit: () => Promise<void>;
 }) {
   const errorId = `${idPrefix}-error`;
-  const { isSubmitting, error, submit } = useActionSubmit('Failed to delete file.');
+  const deleteMutation = useMutation({ mutationFn: onSubmit });
+  const error = getAppError<AiDraftFilesError['Delete']>(deleteMutation.error);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting) return;
-    await submit(onSubmit);
+    if (deleteMutation.isPending) return;
+    deleteMutation.mutate();
   }
 
   return (
@@ -288,13 +250,13 @@ function DraftFileDeleteForm({
         <button
           type="button"
           className="btn btn-secondary"
-          disabled={isSubmitting}
+          disabled={deleteMutation.isPending}
           onClick={onCancel}
         >
           Cancel
         </button>
-        <button type="submit" className="btn btn-danger" disabled={isSubmitting}>
-          {isSubmitting ? 'Deleting...' : 'Delete'}
+        <button type="submit" className="btn btn-danger" disabled={deleteMutation.isPending}>
+          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
         </button>
       </div>
     </form>
