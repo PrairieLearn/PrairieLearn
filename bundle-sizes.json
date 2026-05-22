@@ -135,9 +135,9 @@
     "brotli": 587
   },
   "scripts/navbarClient.ts": {
-    "raw": 69544,
-    "gzip": 20202,
-    "brotli": 18026
+    "raw": 69573,
+    "gzip": 20219,
+    "brotli": 18049
   },
   "scripts/pageLayoutClient.ts": {
     "raw": 3060,
@@ -295,9 +295,9 @@
     "brotli": 267364
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1335334,
-    "gzip": 396409,
-    "brotli": 324247
+    "raw": 1335363,
+    "gzip": 396427,
+    "brotli": 324264
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
     "raw": 1232617,
@@ -355,9 +355,9 @@
     "brotli": 245135
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
-    "raw": 259902,
-    "gzip": 81855,
-    "brotli": 70764
+    "raw": 259931,
+    "gzip": 81872,
+    "brotli": 70778
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
     "raw": 743090,
