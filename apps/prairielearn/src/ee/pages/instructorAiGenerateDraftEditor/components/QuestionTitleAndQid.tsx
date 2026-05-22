@@ -5,9 +5,9 @@ import { z } from 'zod';
 
 import {
   getAppError,
-  readAppErrorResponse,
   renderAppError,
   syncJobFailedRenderer,
+  unwrapAppResponse,
 } from '../../../../lib/client/errors.js';
 import { validateShortName } from '../../../../lib/short-name.js';
 
@@ -47,7 +47,7 @@ async function renameDraftQuestion({
       ...(title != null ? { title } : {}),
     }),
   });
-  return await readAppErrorResponse(response, RenameDraftQuestionResponseSchema);
+  return await unwrapAppResponse(response, RenameDraftQuestionResponseSchema);
 }
 
 function InlineEditableField({

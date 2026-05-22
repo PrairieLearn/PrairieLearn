@@ -1,3 +1,6 @@
+// This module reads the course's git repository directly from the local
+// filesystem; it shares the co-location assumption documented in the
+// architecture note in `./mutations.ts` (PrairieLearnInc/sysconf#1487).
 import type { Stats } from 'node:fs';
 import * as path from 'node:path';
 
@@ -111,10 +114,6 @@ export interface DraftQuestionFilesLocals {
   user: User;
 }
 
-function encodeCourseFilePath(filePath: string) {
-  return filePath.split('/').map(encodeURIComponent).join('/');
-}
-
 /**
  * Reads the file selected in the editor. A `null` path, a missing file, or a
  * path that is not a file all resolve to "no selection" — a stale `?file=`
@@ -154,7 +153,7 @@ async function readSelectedQuestionFile({
       ...resLocals,
       navPage: 'question',
     });
-    const encodedPath = encodeCourseFilePath(paths.workingPathRelativeToCourse);
+    const encodedPath = encodePath(paths.workingPathRelativeToCourse);
     const fileDownloadUrl = `${paths.urlPrefix}/file_download/${encodedPath}`;
     const binaryFileKind = await getBinaryFileKind(fullPath);
 

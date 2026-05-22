@@ -30,7 +30,7 @@ export type AppError<T> =
  * paths (e.g. a `fetch`-based file upload) so {@link getAppError} can surface it
  * the same way as a tRPC `AppError`.
  */
-export class AppErrorException extends Error {
+class AppErrorException extends Error {
   constructor(readonly appError: { code: string; message: string } & Record<string, unknown>) {
     super(appError.message);
     this.name = 'AppErrorException';
@@ -77,7 +77,7 @@ export function getAppError<T>(error: unknown): AppError<T> | null {
  * runtime — without one, a 2xx response that isn't the expected JSON (e.g. an
  * HTML login page from an expired session) would be returned as a bare cast.
  */
-export async function readAppErrorResponse<T = unknown>(
+export async function unwrapAppResponse<T = unknown>(
   response: Response,
   schema?: z.ZodType<T>,
 ): Promise<T> {

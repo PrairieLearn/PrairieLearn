@@ -1,4 +1,5 @@
 import type ace from 'ace-builds';
+import type * as bootstrap from 'bootstrap';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -8,19 +9,17 @@ import { Alert, Collapse, Modal } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 
 import { AceFileEditor, type AceFileEditorHandle } from '../../components/AceFileEditor.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileType } from '../../lib/editorUtil.shared.js';
+import type { StaffJobSequenceWithJobs } from '../../lib/server-jobs.types.js';
 
 import type { FileEditorData } from './instructorFileEditor.types.js';
 
-interface BootstrapApi {
-  Toast: {
-    getOrCreateInstance: (target: Element | string) => { show: () => void };
-  };
-}
-
-function getBootstrap() {
-  return (window as typeof window & { bootstrap: BootstrapApi }).bootstrap;
+declare global {
+  interface Window {
+    bootstrap: typeof bootstrap;
+  }
 }
 
 enum SaveErrorCode {
@@ -159,6 +158,8 @@ export function InstructorFileEditorClient({
   editorData,
   draftContents,
   versionChoice,
+  draftEditResult,
+  timeZone,
   csrfToken,
   fileEditorUseGit,
   branch,
@@ -166,6 +167,12 @@ export function InstructorFileEditorClient({
   editorData: FileEditorData;
   draftContents?: string;
   versionChoice: { hasRemoteChanges: boolean } | null;
+  draftEditResult: {
+    didSave: boolean;
+    didSync: boolean;
+    jobSequence: StaffJobSequenceWithJobs | null;
+  } | null;
+  timeZone: string;
   csrfToken: string;
   fileEditorUseGit: boolean;
   branch: { name: string; path: string; href: string | null }[];
@@ -182,6 +189,8 @@ export function InstructorFileEditorClient({
   const [saveModalShown, setSaveModalShown] = useState(false);
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [buttonsExpanded, setButtonsExpanded] = useState(!hasVersionChoice);
+  const [showStatusAlert, setShowStatusAlert] = useState(draftEditResult != null);
+  const [detailExpanded, setDetailExpanded] = useState(false);
   const editorRef = useRef<AceFileEditorHandle>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
@@ -213,7 +222,7 @@ export function InstructorFileEditorClient({
       editor.focus();
     } catch (err) {
       console.error(err);
-      getBootstrap().Toast.getOrCreateInstance('#js-json-reformat-error').show();
+      window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error').show();
     }
   }, []);
 
@@ -285,21 +294,6 @@ export function InstructorFileEditorClient({
 
   return (
     <>
-      <Alert
-        variant="danger"
-        show={showVersionChoiceAlert}
-        dismissible
-        onClose={() => setShowVersionChoiceAlert(false)}
-      >
-        {versionChoice?.hasRemoteChanges
-          ? 'Both you and another user made changes to this file.'
-          : 'You were editing this file and made changes.'}{' '}
-        You may choose either to continue editing your draft or to discard your changes. In
-        particular, if you click <strong>Choose my version</strong> and then click{' '}
-        <strong>Save and sync</strong>, you will overwrite the version of this file that is on disk.
-        If you instead click <strong>Choose their version</strong>, any changes you have made to
-        this file will be lost.
-      </Alert>
       <form ref={formRef} name="editor-form" method="POST" onSubmit={handleSubmit}>
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <input type="hidden" name="__action" value="save_and_sync" />
@@ -323,7 +317,7 @@ export function InstructorFileEditorClient({
                 </span>
               </div>
               <Collapse in={buttonsExpanded}>
-                <div className="d-flex flex-wrap gap-2 col-auto" id="buttons">
+                <div className="d-flex flex-wrap gap-2 col-auto">
                   <button
                     type="button"
                     id="help-button"
@@ -378,17 +372,79 @@ export function InstructorFileEditorClient({
             </div>
           </Collapse>
           <div className="card-body p-0">
+            <div className="container-fluid">
+              {draftEditResult != null ? (
+                <Alert
+                  variant={
+                    draftEditResult.didSave && draftEditResult.didSync ? 'success' : 'danger'
+                  }
+                  className="m-2"
+                  show={showStatusAlert}
+                  dismissible
+                  onClose={() => setShowStatusAlert(false)}
+                >
+                  <div className="row align-items-center">
+                    <div className="col-auto">
+                      {!draftEditResult.didSave
+                        ? 'Failed to save and sync file.'
+                        : draftEditResult.didSync
+                          ? 'File was both saved and synced successfully.'
+                          : 'File was saved, but failed to sync.'}
+                    </div>
+                    {draftEditResult.jobSequence != null ? (
+                      <div className="col-auto">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          aria-expanded={detailExpanded}
+                          aria-controls="job-sequence-results"
+                          onClick={() => setDetailExpanded((expanded) => !expanded)}
+                        >
+                          {detailExpanded ? 'Hide detail' : 'Show detail'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  {draftEditResult.jobSequence != null ? (
+                    <Collapse in={detailExpanded}>
+                      <div id="job-sequence-results" className="row mt-4">
+                        <div className="card card-body">
+                          <JobSequenceResults
+                            jobSequence={draftEditResult.jobSequence}
+                            timeZone={timeZone}
+                          />
+                        </div>
+                      </div>
+                    </Collapse>
+                  ) : null}
+                </Alert>
+              ) : null}
+              {versionChoice != null ? (
+                <Alert
+                  variant="danger"
+                  className="m-2"
+                  show={showVersionChoiceAlert}
+                  dismissible
+                  onClose={() => setShowVersionChoiceAlert(false)}
+                >
+                  {versionChoice.hasRemoteChanges
+                    ? 'Both you and another user made changes to this file.'
+                    : 'You were editing this file and made changes.'}{' '}
+                  You may choose either to continue editing your draft or to discard your changes.
+                  In particular, if you click <strong>Choose my version</strong> and then click{' '}
+                  <strong>Save and sync</strong>, you will overwrite the version of this file that
+                  is on disk. If you instead click <strong>Choose their version</strong>, any
+                  changes you have made to this file will be lost.
+                </Alert>
+              ) : null}
+            </div>
             <div className="row">
               <div
                 id="file-editor-draft"
                 className="col"
+                // `data-contents` is read by `fileEditor.test.ts` to assert the
+                // editor's draft contents; it is not consumed at runtime.
                 data-contents={draftContents ?? editorData.diskContents}
-                data-ace-mode={editorData.aceMode}
-                data-read-only={hasVersionChoice}
-                data-file-metadata={
-                  editorData.fileMetadata ? JSON.stringify(editorData.fileMetadata) : ''
-                }
-                data-lint-html-mustache={editorData.lintHtmlMustache}
               >
                 <div className="card p-0">
                   {showVersionChoice ? (
@@ -477,11 +533,9 @@ export function InstructorFileEditorClient({
                 <div
                   id="file-editor-disk"
                   className="col"
+                  // `data-contents` is read by `fileEditor.test.ts` to assert the
+                  // disk file contents; it is not consumed at runtime.
                   data-contents={editorData.diskContents}
-                  data-ace-mode={editorData.aceMode}
-                  data-file-metadata={
-                    editorData.fileMetadata ? JSON.stringify(editorData.fileMetadata) : ''
-                  }
                 >
                   <div className="card p-0">
                     <div className="card-header text-center">

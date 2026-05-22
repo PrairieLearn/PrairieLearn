@@ -438,7 +438,7 @@ function verifyEdit(
     assert.strictEqual(fileContents, expectedDraftContents);
   });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
-    elemList = locals.$('#job-sequence-results');
+    elemList = locals.$('form[name="editor-form"] #job-sequence-results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);
     } else {

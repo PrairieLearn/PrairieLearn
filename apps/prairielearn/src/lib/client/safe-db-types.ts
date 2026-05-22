@@ -36,6 +36,8 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
+  JobSchema as RawJobSchema,
+  JobSequenceSchema as RawJobSequenceSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -425,6 +427,33 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 });
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
+
+/** Jobs */
+export const RawStaffJobSchema = RawJobSchema.pick({
+  arguments: true,
+  command: true,
+  description: true,
+  error_message: true,
+  exit_code: true,
+  exit_signal: true,
+  finish_date: true,
+  id: true,
+  number_in_sequence: true,
+  output: true,
+  start_date: true,
+  status: true,
+  working_directory: true,
+});
+export const StaffJobSchema = RawStaffJobSchema.brand<'StaffJob'>();
+export type StaffJob = z.infer<typeof StaffJobSchema>;
+
+export const RawStaffJobSequenceSchema = RawJobSequenceSchema.pick({
+  description: true,
+  legacy: true,
+  number: true,
+});
+export const StaffJobSequenceSchema = RawStaffJobSequenceSchema.brand<'StaffJobSequence'>();
+export type StaffJobSequence = z.infer<typeof StaffJobSequenceSchema>;
 
 /** Publishing Extensions */
 export const StaffCourseInstancePublishingExtensionSchema =

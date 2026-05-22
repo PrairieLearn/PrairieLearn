@@ -1,3 +1,15 @@
+/**
+ * Draft question file mutations.
+ *
+ * Architecture note: every mutation here runs an `Editor` in-process, writing
+ * directly to the course's git repository on the local filesystem — and the
+ * file reads in `./browser.ts` assume the same. This is correct only while the
+ * chunk server and the file storage server are co-located on the "main" server,
+ * and it matches the in-process editor pattern of `instructorFileEditor` and
+ * `instructorFileBrowser`. When file storage is split out, these (and those
+ * sibling pages) must move behind the course-files API. See
+ * PrairieLearnInc/sysconf#1487.
+ */
 import type { Course, Question, User } from '../db-types.js';
 import { getOriginalHash } from '../editorUtil.js';
 import {
@@ -23,6 +35,20 @@ export class EditJobFailedError extends Error {
     super('The file edit failed to sync.');
     this.name = 'EditJobFailedError';
   }
+}
+
+/**
+ * The typed `SYNC_JOB_FAILED` app-error payload for a failed edit job. The
+ * `aiDraftFiles` tRPC error formatter and the multipart upload route both build
+ * their error responses from this, so the wire shape stays defined in one place.
+ * `message` defaults to the generic edit-failure message; pass an
+ * operation-specific one (e.g. for an upload or a rename) when it helps the user.
+ */
+export function editJobFailedAppError(
+  err: EditJobFailedError,
+  message: string = err.message,
+): { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string } {
+  return { code: 'SYNC_JOB_FAILED', message, jobSequenceId: err.jobSequenceId };
 }
 
 /**
@@ -67,6 +93,19 @@ async function runDraftEditorJob(editor: Editor): Promise<void> {
 }
 
 /**
+ * Builds the `locals` slice the file `Editor` classes require, threading
+ * `authn_user` into `authz_data` the way the editors expect.
+ */
+function editorLocals({
+  course,
+  user,
+  authn_user,
+  authz_data,
+}: Pick<DraftQuestionFileMutationContext, 'course' | 'user' | 'authn_user' | 'authz_data'>) {
+  return { authz_data: { ...authz_data, authn_user }, course, user };
+}
+
+/**
  * Saves edits to a single draft question file via a `FileModifyEditor` job —
  * the same editor `instructorFileEditor` and the JSON settings editors use.
  *
@@ -99,7 +138,7 @@ export async function saveDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileModifyEditor({
-      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      locals: editorLocals({ course, user, authn_user, authz_data }),
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       filePath: fullPath,
       editContents: encodedContents,
@@ -135,7 +174,7 @@ export async function saveDraftQuestionFiles({
 }): Promise<void> {
   await runDraftEditorJob(
     new QuestionModifyEditor({
-      locals: { authz_data: { ...authz_data, authn_user }, course, user, question },
+      locals: { ...editorLocals({ course, user, authn_user, authz_data }), question },
       files,
     }),
   );
@@ -157,7 +196,7 @@ export async function deleteDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileDeleteEditor({
-      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      locals: editorLocals({ course, user, authn_user, authz_data }),
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       deletePath: fullPath,
     }),
@@ -188,7 +227,7 @@ export async function renameDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileRenameEditor({
-      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      locals: editorLocals({ course, user, authn_user, authz_data }),
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       oldPath,
       newPath,
@@ -214,7 +253,7 @@ export async function uploadDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileUploadEditor({
-      locals: { authz_data: { ...authz_data, authn_user }, course, user },
+      locals: editorLocals({ course, user, authn_user, authz_data }),
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       filePath: fullPath,
       fileContents,

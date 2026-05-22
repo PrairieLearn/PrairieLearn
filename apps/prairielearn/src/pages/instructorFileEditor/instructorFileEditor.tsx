@@ -16,14 +16,9 @@ import { Hydrate } from '@prairielearn/react/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import {
-  compiledScriptTag,
-  compiledStylesheetTag,
-  nodeModulesAssetPath,
-} from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
@@ -36,6 +31,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
+import { StaffJobSequenceWithJobsSchema } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -200,7 +196,6 @@ router.get(
               name="ace-base-path"
               content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
             />
-            ${compiledStylesheetTag('instructorFileEditor.css')}
             ${editorData.lintHtmlMustache
               ? html`
                   <meta
@@ -256,58 +251,6 @@ router.get(
               : ''}
             <h1 class="visually-hidden">File editor</h1>
 
-            ${draftEdit != null
-              ? html`
-                  <div
-                    class="alert ${draftEdit.didSave && draftEdit.didSync
-                      ? 'alert-success'
-                      : 'alert-danger'} alert-dismissible fade show"
-                    role="alert"
-                  >
-                    <div class="row align-items-center">
-                      <div class="col-auto">
-                        ${draftEdit.didSave
-                          ? draftEdit.didSync
-                            ? 'File was both saved and synced successfully.'
-                            : 'File was saved, but failed to sync.'
-                          : 'Failed to save and sync file.'}
-                      </div>
-                      ${draftEdit.jobSequence != null
-                        ? html`
-                            <div class="col-auto">
-                              <button
-                                type="button"
-                                class="btn btn-secondary btn-sm"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#job-sequence-results"
-                                id="job-sequence-results-button"
-                                aria-expanded="false"
-                              >
-                                <span class="collapse-toggle-show-label">Show detail</span>
-                                <span class="collapse-toggle-hide-label">Hide detail</span>
-                              </button>
-                            </div>
-                          `
-                        : ''}
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    ${draftEdit.jobSequence != null
-                      ? html`
-                          <div class="row collapse mt-4" id="job-sequence-results">
-                            <div class="card card-body">
-                              ${JobSequenceResults({ course, jobSequence: draftEdit.jobSequence })}
-                            </div>
-                          </div>
-                        `
-                      : ''}
-                  </div>
-                `
-              : ''}
             ${renderHtml(
               <Hydrate>
                 <InstructorFileEditorClient
@@ -318,6 +261,18 @@ router.get(
                       ? { hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash }
                       : null
                   }
+                  draftEditResult={
+                    draftEdit != null
+                      ? {
+                          didSave: draftEdit.didSave ?? false,
+                          didSync: draftEdit.didSync ?? false,
+                          jobSequence: draftEdit.jobSequence
+                            ? StaffJobSequenceWithJobsSchema.parse(draftEdit.jobSequence)
+                            : null,
+                        }
+                      : null
+                  }
+                  timeZone={course.display_timezone}
                   csrfToken={__csrf_token}
                   fileEditorUseGit={config.fileEditorUseGit}
                   branch={paths.branch.map((dir) => ({

@@ -11,6 +11,7 @@ import {
 import {
   EditJobFailedError,
   deleteDraftQuestionFile,
+  editJobFailedAppError,
   getDraftQuestionFileHash,
   renameDraftQuestionFile,
   saveDraftQuestionFile,
@@ -172,11 +173,7 @@ const requireAiQuestionGenerationEnabled = t.middleware(async (opts) => {
 const translateEditJobFailedError = t.middleware(async (opts) => {
   const result = await opts.next();
   if (!result.ok && result.error.cause instanceof EditJobFailedError) {
-    throwAppError<AiDraftFilesError['Save']>({
-      code: 'SYNC_JOB_FAILED',
-      message: 'The file edit failed to sync.',
-      jobSequenceId: result.error.cause.jobSequenceId,
-    });
+    throwAppError<AiDraftFilesError['Save']>(editJobFailedAppError(result.error.cause));
   }
   return result;
 });
@@ -200,6 +197,20 @@ const aiDraftFilesProcedure = t.procedure
   .use(requireAiQuestionGenerationEnabled)
   .use(translateEditJobFailedError)
   .use(resolveDraftQuestion);
+
+/** The context fields the `mutations.ts` file mutations expect, drawn from `ctx`. */
+function mutationContext(ctx: {
+  locals: AiDraftFilesContext['locals'];
+  question: DraftQuestionFilesLocals['question'];
+}) {
+  return {
+    course: ctx.locals.course,
+    question: ctx.question,
+    user: ctx.locals.user,
+    authn_user: ctx.locals.authn_user,
+    authz_data: ctx.locals.authz_data,
+  };
+}
 
 export const aiDraftFilesRouter = t.router({
   list: aiDraftFilesProcedure.input(ListInputSchema).query(async ({ ctx, input }) => {
@@ -230,11 +241,7 @@ export const aiDraftFilesRouter = t.router({
     }
 
     await saveDraftQuestionFile({
-      course: ctx.locals.course,
-      question: ctx.question,
-      user: ctx.locals.user,
-      authn_user: ctx.locals.authn_user,
-      authz_data: ctx.locals.authz_data,
+      ...mutationContext(ctx),
       filePath: input.filePath,
       encodedContents: input.encodedContents,
       origHash: input.force && diskHash != null ? diskHash : input.origHash,
@@ -243,22 +250,14 @@ export const aiDraftFilesRouter = t.router({
   }),
   saveFiles: aiDraftFilesProcedure.input(SaveFilesInputSchema).mutation(async ({ ctx, input }) => {
     await saveDraftQuestionFiles({
-      course: ctx.locals.course,
-      question: ctx.question,
-      user: ctx.locals.user,
-      authn_user: ctx.locals.authn_user,
-      authz_data: ctx.locals.authz_data,
+      ...mutationContext(ctx),
       files: Object.fromEntries(input.files.map((file) => [file.path, file.encodedContents])),
     });
     return null;
   }),
   rename: aiDraftFilesProcedure.input(RenameInputSchema).mutation(async ({ ctx, input }) => {
     await renameDraftQuestionFile({
-      course: ctx.locals.course,
-      question: ctx.question,
-      user: ctx.locals.user,
-      authn_user: ctx.locals.authn_user,
-      authz_data: ctx.locals.authz_data,
+      ...mutationContext(ctx),
       oldFilePath: input.oldFilePath,
       newFilePath: input.newFilePath,
     });
@@ -266,11 +265,7 @@ export const aiDraftFilesRouter = t.router({
   }),
   delete: aiDraftFilesProcedure.input(DeleteInputSchema).mutation(async ({ ctx, input }) => {
     await deleteDraftQuestionFile({
-      course: ctx.locals.course,
-      question: ctx.question,
-      user: ctx.locals.user,
-      authn_user: ctx.locals.authn_user,
-      authz_data: ctx.locals.authz_data,
+      ...mutationContext(ctx),
       filePath: input.filePath,
     });
     return null;
