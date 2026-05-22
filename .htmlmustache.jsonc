@@ -823,6 +823,6 @@
     { "name": "clickable-image" },
     { "name": "course-element" },
     { "name": "extendable-element" },
-    { "name": "math-field" }
+    { "name": "math-field", "allowBooleanAttributes": true }
   ]
 }
