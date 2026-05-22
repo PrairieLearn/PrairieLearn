@@ -133,13 +133,19 @@ export async function loadUser(
   // fixation. The authn middleware re-enters this function on every request
   // with the existing session's user_id, so the guard keeps it a no-op there.
   if (req.session.user_id !== user_id) {
-    // Session keys that are populated before authentication completes and consumed
-    // afterward by later requests (e.g. the LTI 1.3 launch flow). These must be
-    // carried forward across the session regeneration triggered by an identity
-    // transition; everything else is intentionally dropped.
-    const preservedSessionData = ['lti13_claims', 'authn_lti13_instance_id']
-      .map((key) => [key, req.session[key]] as const)
-      .filter(([_, v]) => v !== undefined);
+    // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
+    // in the session before authentication completes and consumes them afterward.
+    // These must be carried forward across the session regeneration triggered by an identity transition.
+
+    const inLti13Launch =
+      authnParams.provider === 'LTI 1.3' ||
+      Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
+
+    const preservedSessionData = inLti13Launch
+      ? ['lti13_claims', 'authn_lti13_instance_id']
+          .map((key) => [key, req.session[key]] as const)
+          .filter(([_, v]) => v !== undefined)
+      : [];
 
     await req.session.regenerate();
 
