@@ -23,14 +23,18 @@ import {
   type Question,
   type User,
 } from '../../../lib/db-types.js';
+import { getQuestionFilesData } from '../../../lib/draft-question-files/browser.js';
 import {
-  getQuestionFilesData,
-  getSelectedQuestionDirectory,
-  getSelectedQuestionFilePath,
+  EditJobFailedError,
   uploadDraftQuestionFile,
-} from '../../../lib/draft-question-files.js';
+} from '../../../lib/draft-question-files/mutations.js';
+import {
+  ModifiableQuestionFilePathSchema,
+  OptionalSelectedDirectorySchema,
+  OptionalSelectedFilePathSchema,
+} from '../../../lib/draft-question-files/paths.js';
+import { classifyDraftQuestion } from '../../../lib/draft-question-files/question.js';
 import { features } from '../../../lib/features/index.js';
-import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
@@ -40,7 +44,7 @@ import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
+import { selectQuestionById } from '../../../models/question.js';
 import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
@@ -222,34 +226,25 @@ router.use(
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
-    const question = await selectOptionalQuestionById(req.params.question_id);
 
-    if (
-      question == null ||
-      !idsEqual(question.course_id, res.locals.course.id) ||
-      question.deleted_at != null ||
-      !question.draft
-    ) {
-      // If the question exists, belongs to this course, is non-deleted, but
-      // is no longer a draft (i.e. it was finalized), redirect to the question
-      // preview. This handles the common case of a user pressing the browser
-      // back button after finalizing a question.
-      if (
-        question != null &&
-        idsEqual(question.course_id, res.locals.course.id) &&
-        question.deleted_at == null &&
-        !question.draft
-      ) {
-        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
-        return;
-      }
+    const classified = await classifyDraftQuestion({
+      courseId: res.locals.course.id,
+      questionId: req.params.question_id,
+    });
 
-      // Otherwise, show an informational page.
+    if (classified.kind === 'finalized') {
+      // The question was finalized; this commonly happens when a user presses
+      // the browser back button after finalizing. Send them to the preview.
+      res.redirect(`${res.locals.urlPrefix}/question/${classified.question.id}/preview`);
+      return;
+    }
+
+    if (classified.kind === 'not-found') {
       res.status(404).send(DraftNotFound({ resLocals: res.locals }));
       return;
     }
 
-    res.locals.question = question;
+    res.locals.question = classified.question;
 
     assertCanCreateQuestion(res.locals);
 
@@ -267,8 +262,8 @@ router.get(
       getQuestionFilesData({
         resLocals: res.locals,
         editorUrl,
-        selectedFilePath: getSelectedQuestionFilePath(req.query.file),
-        selectedDirectory: getSelectedQuestionDirectory(req.query.dir),
+        selectedFilePath: OptionalSelectedFilePathSchema.parse(req.query.file),
+        selectedDirectory: OptionalSelectedDirectorySchema.parse(req.query.dir),
       }),
     ]);
 
@@ -403,20 +398,38 @@ router.post(
     }
 
     const body = UploadDraftFileBodySchema.parse(req.body);
-    const filePath = body.file_path ?? path.posix.join(body.directory ?? '', req.file.originalname);
+    const requestedPath =
+      body.file_path ?? path.posix.join(body.directory ?? '', req.file.originalname);
+    const filePath = ModifiableQuestionFilePathSchema.safeParse(requestedPath);
+    if (!filePath.success) {
+      throw new error.HttpStatusError(
+        400,
+        filePath.error.issues[0]?.message ?? 'Invalid file path',
+      );
+    }
 
-    const result = await uploadDraftQuestionFile({
-      course: res.locals.course,
-      question: res.locals.question,
-      user: res.locals.user,
-      authn_user: res.locals.authn_user,
-      authz_data: res.locals.authz_data,
-      urlPrefix: res.locals.urlPrefix,
-      filePath,
-      fileContents: req.file.buffer,
-    });
+    // A failed sync job is reported as a normal response carrying the job id,
+    // not an HTTP error — it mirrors the `EDIT_JOB_FAILED` app error the tRPC
+    // mutations raise. The client surfaces both the same way.
+    try {
+      await uploadDraftQuestionFile({
+        course: res.locals.course,
+        question: res.locals.question,
+        user: res.locals.user,
+        authn_user: res.locals.authn_user,
+        authz_data: res.locals.authz_data,
+        filePath: filePath.data,
+        fileContents: req.file.buffer,
+      });
+    } catch (err) {
+      if (err instanceof EditJobFailedError) {
+        res.json({ jobSequenceId: err.jobSequenceId });
+        return;
+      }
+      throw err;
+    }
 
-    res.json(result);
+    res.json({ jobSequenceId: null });
   }),
 );
 

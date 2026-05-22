@@ -1,14 +1,14 @@
 import { type MouseEvent } from 'react';
 
-import {
-  getEditorUrlWithSelectedDirectory,
-  getEditorUrlWithSelectedFile,
-} from '../lib/draft-question-file-url.js';
 import type {
   DraftQuestionFileBrowserData,
   DraftQuestionFileBrowserDirectory,
   DraftQuestionFileBrowserFile,
-} from '../lib/draft-question-files.js';
+} from '../lib/draft-question-files/browser.js';
+import {
+  getEditorUrlWithSelectedDirectory,
+  getEditorUrlWithSelectedFile,
+} from '../lib/draft-question-files/urls.js';
 
 import {
   DeleteFileButton,
