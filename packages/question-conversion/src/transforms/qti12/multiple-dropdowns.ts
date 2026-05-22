@@ -28,7 +28,7 @@ export const multipleDropdownsHandler: TransformHandler<QTI12ParsedItem> = {
       const blankId = lid.materialText ?? lid.ident;
       if (!correctLabelIdent) {
         warnings.push(
-          `multiple_dropdowns_question "${item.ident}": blank "${blankId}" has no correct answer marked. Review and edit info.json.`,
+          `Blank "${blankId}" has no correct answer marked. Review and edit question.html.`,
         );
       }
       const choices = lid.labels.map((label) => ({
@@ -43,7 +43,7 @@ export const multipleDropdownsHandler: TransformHandler<QTI12ParsedItem> = {
     const gradingMethod = correctMap.size === 0 ? ('Manual' as const) : undefined;
     if (gradingMethod === 'Manual') {
       warnings.push(
-        `multiple_dropdowns_question "${item.ident}" has no correct answers for any blank; emitting as a manually-graded question.`,
+        'No correct answers found. Set the correct answers in question.html, or leave as manually graded.',
       );
     }
 

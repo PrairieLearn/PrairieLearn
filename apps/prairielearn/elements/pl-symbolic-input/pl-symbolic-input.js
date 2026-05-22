@@ -780,7 +780,7 @@
           '[separator]',
           allowSets ? '[' : 'x',
           allowSets ? ']' : 'y',
-          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', insert: '{#?} \\cup {#?}' }, mf)),
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],
         [
@@ -802,7 +802,7 @@
           '[separator]',
           '(',
           ')',
-          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', insert: '{#?} \\cap {#?}' }, mf)),
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', key: '&' }, mf)),
           allowSets ? 'x' : signKey,
         ],
         [

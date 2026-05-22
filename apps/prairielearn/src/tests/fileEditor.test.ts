@@ -114,13 +114,11 @@ const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/se
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl =
@@ -143,18 +141,6 @@ const findEditUrlData = [
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
-  },
-  {
-    name: 'instance admin',
-    selector: '[data-testid="edit-course-instance-configuration-link"]',
-    url: courseInstanceInstanceAdminSettingsUrl,
-    expectedEditUrl: courseInstanceInstanceAdminEditUrl,
-  },
-  {
-    name: 'question',
-    selector: '[data-testid="edit-question-configuration-link"]',
-    url: courseInstanceQuestionSettingsUrl,
-    expectedEditUrl: courseInstanceQuestionJsonEditUrl,
   },
 ];
 

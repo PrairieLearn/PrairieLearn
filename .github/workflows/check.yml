@@ -107,6 +107,7 @@ jobs:
           key: >-
             lint-${{ runner.os }}-${{ hashFiles(
               'yarn.lock',
+              'Makefile',
               'eslint.config.mjs',
               'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
@@ -115,6 +116,10 @@ jobs:
             ) }}
 
       - name: Run the JavaScript linter
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
         run: make lint-js-cached
       - name: Run the Mustache linter
         run: make lint-mustache
@@ -122,7 +127,7 @@ jobs:
         run: make lint-links
 
       - name: Check dependency structure
-        run: make check-dependencies
+        run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
       - name: Check that all packages exist on npm

@@ -31,7 +31,8 @@ import {
   selectUnreadNewsItemsForUser,
 } from '../../models/news-items.js';
 
-import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
+import { Home } from './home.html.js';
+import { InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();

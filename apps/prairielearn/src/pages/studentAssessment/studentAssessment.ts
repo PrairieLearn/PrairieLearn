@@ -139,6 +139,9 @@ router.post(
     // permission required to create an assessment for the effective user.
 
     if (req.body.__action === 'new_instance') {
+      if (!res.locals.authz_result.active) {
+        throw new HttpStatusError(403, 'Assessment is not currently active.');
+      }
       // Before allowing the user to create a new assessment instance, we need
       // to check if the current access rules require a password. If they do,
       // we'll ensure that the password has already been entered before allowing

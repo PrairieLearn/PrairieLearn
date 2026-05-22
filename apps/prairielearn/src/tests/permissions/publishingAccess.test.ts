@@ -267,7 +267,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         assert.isTrue(response.ok);
         assert.lengthOf(
           response.$(
-            '.alert:contains("You must have student data permission to view and edit extensions.")',
+            '.alert:contains("You must have student data viewer permissions to view extensions.")',
           ),
           1,
         );
@@ -285,7 +285,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         assert.isTrue(response.ok);
         assert.lengthOf(
           response.$(
-            '.alert:contains("You must have student data permission to view and edit extensions.")',
+            '.alert:contains("You must have student data viewer permissions to view extensions.")',
           ),
           0,
         );
