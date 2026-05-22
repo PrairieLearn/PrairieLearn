@@ -3,6 +3,7 @@ import * as path from 'path';
 import { Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { html, unsafeHtml } from '@prairielearn/html';
 import {
   execute,
   loadSqlEquiv,
@@ -10,24 +11,35 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import type { NavPage } from '../../components/Navbar.types.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import {
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../../lib/assets.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
+import { ansiToHtml } from '../../lib/chalk.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { readEditableTextFile } from '../../lib/editableFile.js';
-import { computeFileContentHash } from '../../lib/editorUtil.js';
+import { computeFileContentHash, readEditableTextFile } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
+import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorFileEditor } from './instructorFileEditor.html.js';
+import { InstructorFileEditorClient } from './InstructorFileEditorClient.js';
 import type { DraftEdit, FileEditorData } from './instructorFileEditor.types.js';
 
 const router = Router();
@@ -169,7 +181,158 @@ router.get(
         }
       }
 
-      res.send(InstructorFileEditor({ resLocals: res.locals, editorData, paths, draftEdit }));
+      const { course, __csrf_token } = res.locals;
+
+      res.send(
+        PageLayout({
+          resLocals: res.locals,
+          pageTitle: `Edit ${editorData.fileName}`,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
+          options: {
+            fullWidth: true,
+          },
+          headContent: html`
+            <meta
+              name="ace-base-path"
+              content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+            />
+            ${compiledStylesheetTag('instructorFileEditor.css')}
+            ${editorData.lintHtmlMustache
+              ? html`
+                  <meta
+                    name="htmlmustache-runtime-wasm"
+                    content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+                  />
+                  <meta
+                    name="htmlmustache-grammar-wasm"
+                    content="${nodeModulesAssetPath(
+                      '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+                    )}"
+                  />
+                  ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+                `
+              : ''}
+          `,
+          content: html`
+            ${editorData.fileMetadata?.syncErrors
+              ? html`
+                  <div class="alert alert-danger" role="alert">
+                    <h2 class="h5 alert-heading">Sync error</h2>
+                    <p>
+                      There were one or more errors in this file the last time you tried to sync.
+                      This file will not be able to be synced until the errors are corrected. The
+                      errors are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
+                      ansiToHtml(editorData.fileMetadata.syncErrors),
+                    )}</code></pre>
+                  </div>
+                `
+              : ''}
+            ${editorData.fileMetadata?.syncWarnings
+              ? html`
+                  <div class="alert alert-warning" role="alert">
+                    <h2 class="h5 alert-heading">Sync warning</h2>
+                    <p>
+                      There were one or more warnings in this file the last time you tried to sync.
+                      These warnings do not prevent this file from being synced, but they should
+                      still be fixed. The warnings are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
+                      ansiToHtml(editorData.fileMetadata.syncWarnings),
+                    )}</code></pre>
+                  </div>
+                `
+              : ''}
+            <h1 class="visually-hidden">File editor</h1>
+
+            ${draftEdit != null
+              ? html`
+                  <div
+                    class="alert ${draftEdit.didSave && draftEdit.didSync
+                      ? 'alert-success'
+                      : 'alert-danger'} alert-dismissible fade show"
+                    role="alert"
+                  >
+                    <div class="row align-items-center">
+                      <div class="col-auto">
+                        ${draftEdit.didSave
+                          ? draftEdit.didSync
+                            ? 'File was both saved and synced successfully.'
+                            : 'File was saved, but failed to sync.'
+                          : 'Failed to save and sync file.'}
+                      </div>
+                      ${draftEdit.jobSequence != null
+                        ? html`
+                            <div class="col-auto">
+                              <button
+                                type="button"
+                                class="btn btn-secondary btn-sm"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#job-sequence-results"
+                                id="job-sequence-results-button"
+                                aria-expanded="false"
+                              >
+                                <span class="collapse-toggle-show-label">Show detail</span>
+                                <span class="collapse-toggle-hide-label">Hide detail</span>
+                              </button>
+                            </div>
+                          `
+                        : ''}
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                      ></button>
+                    </div>
+                    ${draftEdit.jobSequence != null
+                      ? html`
+                          <div class="row collapse mt-4" id="job-sequence-results">
+                            <div class="card card-body">
+                              ${JobSequenceResults({ course, jobSequence: draftEdit.jobSequence })}
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                  </div>
+                `
+              : ''}
+            ${renderHtml(
+              <Hydrate>
+                <InstructorFileEditorClient
+                  editorData={editorData}
+                  draftContents={draftEdit?.contents}
+                  versionChoice={
+                    draftEdit?.alertChoice
+                      ? { hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash }
+                      : null
+                  }
+                  csrfToken={__csrf_token}
+                  fileEditorUseGit={config.fileEditorUseGit}
+                  branch={paths.branch.map((dir) => ({
+                    name: dir.name,
+                    path: dir.path,
+                    href: dir.canView
+                      ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}`
+                      : null,
+                  }))}
+                />
+              </Hydrate>,
+            )}
+          `,
+        }),
+      );
     },
   ),
 );

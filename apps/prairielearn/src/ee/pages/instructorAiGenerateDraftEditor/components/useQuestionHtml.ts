@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { executeScripts } from '@prairielearn/browser-utils';
 
 interface VariantResponse {
   questionContainerHtml: string;
   extraHeadersHtml: string;
+  variantId: string;
 }
 
 function assertOkResponse(response: Response) {
@@ -155,7 +157,9 @@ function formDataToJson(
  * Manages the question preview rendered as non-React markup: fetches new
  * variants, swaps the `.question-container`, and re-injects question assets
  * (stylesheets, scripts, importmaps) into the document head. Returns the
- * wrapper ref to attach to the preview container and a `newVariant` callback.
+ * wrapper ref to attach to the preview container, a `newVariant` callback, and
+ * `previewError` / `retryPreview` / `dismissPreviewError` for surfacing and
+ * recovering from a failed refresh.
  */
 export function useQuestionHtml({
   variantUrl,
@@ -165,6 +169,13 @@ export function useQuestionHtml({
   variantCsrfToken: string;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const lastRequestRef = useRef<{ init?: RequestInit; errorMessage: string } | null>(null);
+
+  // Records the rendered variant in the URL so a reload restores it. nuqs keeps
+  // this consistent with the `file` / `dir` / `tab` params and replaces (rather
+  // than pushes) the history entry by default.
+  const [, setVariantId] = useQueryState('variant_id', parseAsString);
 
   const refreshPreview = useCallback(
     async (init?: RequestInit) => {
@@ -174,8 +185,27 @@ export function useQuestionHtml({
       if (wrapperRef.current) {
         await updateQuestionPreview(wrapperRef.current, variantResponse);
       }
+      await setVariantId(variantResponse.variantId);
     },
-    [variantUrl],
+    [variantUrl, setVariantId],
+  );
+
+  /**
+   * Runs a preview refresh, recording it so `retryPreview` can replay it and
+   * surfacing a user-visible message on failure instead of failing silently.
+   */
+  const runPreviewRequest = useCallback(
+    async (init: RequestInit | undefined, errorMessage: string) => {
+      lastRequestRef.current = { init, errorMessage };
+      try {
+        await refreshPreview(init);
+        setPreviewError(null);
+      } catch (err) {
+        console.error(errorMessage, err);
+        setPreviewError(errorMessage);
+      }
+    },
+    [refreshPreview],
   );
 
   const handleSubmit = useCallback(
@@ -202,34 +232,31 @@ export function useQuestionHtml({
 
       formData.set('__csrf_token', variantCsrfToken);
 
-      // TODO: It's kind of wasteful to render the entire page, including fetching all
-      // past AI chat messages, just to get the updated question HTML. We should consider
-      // building a special dedicated route for this.
-
-      refreshPreview({
-        method: form.method,
-        headers: {
-          'Content-Type': 'application/json',
+      void runPreviewRequest(
+        {
+          method: form.method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formDataToJson(formData)),
         },
-        body: JSON.stringify(formDataToJson(formData)),
-      })
-        .then(() => {
-          // TODO: we should update the URL with the new variant ID.
-        })
-        .catch((err) => {
-          console.error('Error submitting question', err);
-          // TODO: error handling, prompt the user to refresh the page?
-        });
+        'Failed to update the question preview.',
+      );
     },
-    [refreshPreview, variantCsrfToken],
+    [runPreviewRequest, variantCsrfToken],
   );
 
   const newVariant = useCallback(() => {
-    void refreshPreview().catch((err) => {
-      // TODO: better error handling?
-      console.error('Error loading new variant', err);
-    });
-  }, [refreshPreview]);
+    void runPreviewRequest(undefined, 'Failed to load a new question variant.');
+  }, [runPreviewRequest]);
+
+  const retryPreview = useCallback(() => {
+    const lastRequest = lastRequestRef.current;
+    if (lastRequest == null) return;
+    void runPreviewRequest(lastRequest.init, lastRequest.errorMessage);
+  }, [runPreviewRequest]);
+
+  const dismissPreviewError = useCallback(() => setPreviewError(null), []);
 
   const handleNewVariantButtonClick = useCallback(
     (e: Event) => {
@@ -255,5 +282,5 @@ export function useQuestionHtml({
     };
   }, [handleSubmit, handleNewVariantButtonClick]);
 
-  return { wrapperRef, newVariant };
+  return { wrapperRef, newVariant, previewError, retryPreview, dismissPreviewError };
 }

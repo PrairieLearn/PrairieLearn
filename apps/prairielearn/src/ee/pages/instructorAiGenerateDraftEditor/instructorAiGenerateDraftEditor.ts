@@ -13,15 +13,12 @@ import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
-import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
-  type Course,
   type EnumAiQuestionGenerationMessageStatus,
   type Question,
-  type User,
 } from '../../../lib/db-types.js';
 import { getQuestionFilesData } from '../../../lib/draft-question-files/browser.js';
 import {
@@ -38,7 +35,6 @@ import { features } from '../../../lib/features/index.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
-import { HttpRedirect } from '../../../lib/redirect.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
@@ -128,74 +124,50 @@ async function renderQuestionPreview(
       questionContext: 'instructor',
     }).toString(),
     extraHeadersHtml: resLocals.extraHeadersHtml,
+    variantId: resLocals.variant.id,
   };
 }
 
-async function saveRevisedQuestion({
-  course,
-  question,
-  user,
-  authn_user,
-  authz_data,
-  urlPrefix,
-  html,
-  python,
-  prompt,
-  promptType,
+/**
+ * Renames a draft question's QID and/or title via the course-files API and
+ * returns the updated question. The QID is validated as a short name here so
+ * the finalize (`save_question`) and inline-rename (`rename_draft_question`)
+ * flows reject malformed QIDs identically.
+ *
+ * Throws {@link EditJobFailedError} if the rename's sync job fails, so callers
+ * can translate it into a `SYNC_JOB_FAILED` app error (or let it surface as a
+ * standard error page for the full-page finalize flow).
+ */
+async function renameDraftQuestion({
+  resLocals,
+  qid,
+  title,
 }: {
-  course: Course;
-  question: Question;
-  user: User;
-  authn_user: User;
-  authz_data: {
-    has_course_permission_edit: boolean;
-  };
-  urlPrefix: string;
-  html: string;
-  python?: string;
-  prompt: string;
-  promptType: 'manual_change' | 'manual_revert';
-}) {
-  const client = getCourseFilesClient();
-
-  const files: Record<string, string | null> = {
-    'question.html': b64EncodeUnicode(html),
-  };
-
-  // We'll delete the `server.py` file if the Python code is empty. Setting
-  // it to `null` instructs the editor to delete the file.
-  const trimmedPython = python?.trim() ?? '';
-  if (trimmedPython !== '') {
-    files['server.py'] = b64EncodeUnicode(trimmedPython);
-  } else {
-    files['server.py'] = null;
+  resLocals: InstructorQuestionLocals;
+  qid: string;
+  title: string;
+}): Promise<Question> {
+  const validation = validateShortName(qid);
+  if (!validation.valid) {
+    throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
   }
 
-  const result = await client.updateQuestionFiles.mutate({
-    course_id: course.id,
-    user_id: user.id,
-    authn_user_id: authn_user.id,
-    question_id: question.id,
-    has_course_permission_edit: authz_data.has_course_permission_edit,
-    files,
+  const result = await getCourseFilesClient().renameQuestion.mutate({
+    course_id: resLocals.course.id,
+    user_id: resLocals.user.id,
+    authn_user_id: resLocals.authn_user.id,
+    has_course_permission_edit: resLocals.authz_data.has_course_permission_edit,
+    question_id: resLocals.question.id,
+    qid,
+    title,
   });
 
   if (result.status === 'error') {
-    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
+    throw new EditJobFailedError(result.job_sequence_id);
   }
 
-  const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
-
-  await execute(sql.insert_ai_question_generation_prompt, {
-    question_id: question.id,
-    prompting_user_id: authn_user.id,
-    prompt_type: promptType,
-    user_prompt: prompt,
-    system_prompt: prompt,
-    response,
-    html,
-    python,
-  });
+  // Re-fetch the question in case the QID was changed to avoid conflicts.
+  return await selectQuestionById(resLocals.question.id);
 }
 
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
@@ -408,9 +380,10 @@ router.post(
       );
     }
 
-    // A failed sync job is reported as a normal response carrying the job id,
-    // not an HTTP error — it mirrors the `SYNC_JOB_FAILED` app error the tRPC
-    // mutations raise. The client surfaces both the same way.
+    // A failed sync job is an expected outcome rather than a crash: report it
+    // as an HTTP 400 carrying a `SYNC_JOB_FAILED` app error — the same shape the
+    // tRPC file mutations raise via `throwAppError` — so the client narrows on
+    // it identically (see `readAppErrorResponse`).
     try {
       await uploadDraftQuestionFile({
         course: res.locals.course,
@@ -423,13 +396,19 @@ router.post(
       });
     } catch (err) {
       if (err instanceof EditJobFailedError) {
-        res.json({ jobSequenceId: err.jobSequenceId });
+        res.status(400).json({
+          appError: {
+            code: 'SYNC_JOB_FAILED',
+            message: 'The file upload failed to sync.',
+            jobSequenceId: err.jobSequenceId,
+          },
+        });
         return;
       }
       throw err;
     }
 
-    res.json({ jobSequenceId: null });
+    res.json({});
   }),
 );
 
@@ -437,33 +416,22 @@ router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {
-      const client = getCourseFilesClient();
-
-      const result = await client.renameQuestion.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_id: res.locals.question.id,
+      const updatedQuestion = await renameDraftQuestion({
+        resLocals: res.locals,
         qid: req.body.qid,
         title: req.body.title,
       });
 
-      if (result.status === 'error') {
-        throw new Error('Renaming question failed.');
-      }
-
-      // Re-fetch the question in case the QID was changed to avoid conflicts.
-      const updatedQuestion = await selectQuestionById(res.locals.question.id);
-
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
+      res.redirect(`${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`);
     } else if (req.body.__action === 'rename_draft_question') {
       if (req.accepts('html')) {
         throw new error.HttpStatusError(406, 'Not Acceptable');
       }
 
+      // An empty QID or title field leaves that value unchanged, so the inline
+      // editor can update the QID and title independently.
       const qid =
         typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
           ? req.body.qid
@@ -473,44 +441,29 @@ router.post(
           ? req.body.title
           : res.locals.question.title;
 
-      const validation = validateShortName(qid);
-      if (!validation.valid) {
-        throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
+      try {
+        const updatedQuestion = await renameDraftQuestion({
+          resLocals: res.locals,
+          qid,
+          title,
+        });
+        res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
+      } catch (err) {
+        // A failed sync job is reported as a `SYNC_JOB_FAILED` app error, the
+        // same shape the tRPC file mutations raise; other errors (e.g. an
+        // invalid QID) propagate to the standard error handler.
+        if (err instanceof EditJobFailedError) {
+          res.status(400).json({
+            appError: {
+              code: 'SYNC_JOB_FAILED',
+              message: 'Renaming the question failed to sync.',
+              jobSequenceId: err.jobSequenceId,
+            },
+          });
+          return;
+        }
+        throw err;
       }
-
-      const client = getCourseFilesClient();
-
-      const result = await client.renameQuestion.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_id: res.locals.question.id,
-        qid,
-        title,
-      });
-
-      if (result.status === 'error') {
-        throw new Error('Renaming question failed.');
-      }
-
-      const updatedQuestion = await selectQuestionById(res.locals.question.id);
-      res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
-    } else if (req.body.__action === 'submit_manual_revision') {
-      await saveRevisedQuestion({
-        course: res.locals.course,
-        question: res.locals.question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        urlPrefix: res.locals.urlPrefix,
-        html: b64DecodeUnicode(req.body.html),
-        python: b64DecodeUnicode(req.body.python),
-        prompt: 'Manually update question.',
-        promptType: 'manual_change',
-      });
-
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(

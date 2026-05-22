@@ -11,8 +11,10 @@ import {
 import {
   EditJobFailedError,
   deleteDraftQuestionFile,
+  getDraftQuestionFileHash,
   renameDraftQuestionFile,
   saveDraftQuestionFile,
+  saveDraftQuestionFiles,
 } from '../../lib/draft-question-files/mutations.js';
 import {
   ModifiableQuestionFilePathSchema,
@@ -31,9 +33,18 @@ interface EditJobFailed {
   jobSequenceId: string;
 }
 
+/**
+ * A save rejected because the file on disk changed since the editor was opened.
+ * The client offers a reload or a forced overwrite (re-saving with `force`).
+ */
+interface StaleEdit {
+  code: 'STALE_EDIT';
+}
+
 export interface AiDraftFilesError {
   List: never;
-  Save: EditJobFailed;
+  Save: EditJobFailed | StaleEdit;
+  SaveFiles: EditJobFailed;
   Rename: EditJobFailed;
   Delete: EditJobFailed;
 }
@@ -50,6 +61,27 @@ const SaveInputSchema = z.object({
   encodedContents: z.string(),
   /** Hash of the contents the editor was opened with, for the stale-edit guard. */
   origHash: z.string(),
+  /**
+   * When true, save even if the file on disk no longer matches `origHash` —
+   * the user chose to overwrite a concurrent change after a `STALE_EDIT`.
+   */
+  force: z.boolean().optional(),
+});
+
+const SaveFilesInputSchema = z.object({
+  questionId: IdSchema,
+  /**
+   * The files to write, each as a question-relative path and its base64-encoded
+   * contents — or `null` contents to delete the file. Applied as one atomic job.
+   */
+  files: z
+    .array(
+      z.object({
+        path: ModifiableQuestionFilePathSchema,
+        encodedContents: z.string().nullable(),
+      }),
+    )
+    .min(1),
 });
 
 const RenameInputSchema = z.object({
@@ -179,6 +211,24 @@ export const aiDraftFilesRouter = t.router({
     });
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
+    // Pre-flight stale-edit check: if the file on disk no longer matches the
+    // hash the editor was opened with, surface a typed `STALE_EDIT` rather than
+    // letting the edit run and fail as a generic sync error. `FileModifyEditor`
+    // re-checks the hash and is the race-proof guard; this just produces a
+    // clean, typed conflict in the common case. A `force` save (the user chose
+    // to overwrite) saves against the current disk hash instead.
+    const diskHash = await getDraftQuestionFileHash({
+      course: ctx.locals.course,
+      question: ctx.question,
+      filePath: input.filePath,
+    });
+    if (!input.force && diskHash != null && diskHash !== input.origHash) {
+      throwAppError<AiDraftFilesError['Save']>({
+        code: 'STALE_EDIT',
+        message: 'This file changed since you opened it.',
+      });
+    }
+
     await saveDraftQuestionFile({
       course: ctx.locals.course,
       question: ctx.question,
@@ -187,7 +237,18 @@ export const aiDraftFilesRouter = t.router({
       authz_data: ctx.locals.authz_data,
       filePath: input.filePath,
       encodedContents: input.encodedContents,
-      origHash: input.origHash,
+      origHash: input.force && diskHash != null ? diskHash : input.origHash,
+    });
+    return null;
+  }),
+  saveFiles: aiDraftFilesProcedure.input(SaveFilesInputSchema).mutation(async ({ ctx, input }) => {
+    await saveDraftQuestionFiles({
+      course: ctx.locals.course,
+      question: ctx.question,
+      user: ctx.locals.user,
+      authn_user: ctx.locals.authn_user,
+      authz_data: ctx.locals.authz_data,
+      files: Object.fromEntries(input.files.map((file) => [file.path, file.encodedContents])),
     });
     return null;
   }),

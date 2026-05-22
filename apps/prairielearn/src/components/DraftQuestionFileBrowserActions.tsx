@@ -11,7 +11,7 @@ import {
   renderAppError,
   syncJobFailedRenderer,
 } from '../lib/client/errors.js';
-import { FILE_NAME_PATTERN } from '../lib/file-names.js';
+import { FILE_NAME_PATTERN } from '../lib/short-name.js';
 
 /**
  * Callbacks that perform draft question file mutations. Each resolves on

@@ -2,27 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
-import { AppErrorException } from '../../../../lib/client/errors.js';
+import { readAppErrorResponse } from '../../../../lib/client/errors.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
-
-/**
- * The draft file upload route's response: a job sequence id when the edit
- * failed to sync, or `null` on success.
- */
-interface UploadResponse {
-  jobSequenceId: string | null;
-}
-
-async function getResponseErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: unknown };
-    if (typeof body.error === 'string' && body.error !== '') return body.error;
-  } catch {
-    // Fall through to the generic message below.
-  }
-  return 'Failed to upload file.';
-}
 
 async function uploadDraftFile({
   uploadUrl,
@@ -51,20 +33,11 @@ async function uploadDraftFile({
     body: formData,
     headers: { Accept: 'application/json' },
   });
-  if (!response.ok) {
-    throw new Error(await getResponseErrorMessage(response));
-  }
 
-  const { jobSequenceId } = (await response.json()) as UploadResponse;
-  if (jobSequenceId != null) {
-    // Surface a failed sync job as the same typed error the tRPC mutations
-    // raise, so the file browser renders it identically.
-    throw new AppErrorException({
-      code: 'SYNC_JOB_FAILED',
-      message: 'The file upload failed to sync.',
-      jobSequenceId,
-    });
-  }
+  // A failed sync job comes back as a `SYNC_JOB_FAILED` app error, surfaced the
+  // same way the tRPC mutations' errors are so the file browser renders it
+  // identically.
+  await readAppErrorResponse(response);
 }
 
 /**
