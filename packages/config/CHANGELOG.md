@@ -1,5 +1,29 @@
 # @prairielearn/config
 
+## 4.2.2
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.2.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.2.0
+
+### Minor Changes
+
+- 7a9cda5: Add a KMS config source that decrypts encrypted config value objects.
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/aws-imds@3.0.3
+
 ## 4.1.1
 
 ### Patch Changes

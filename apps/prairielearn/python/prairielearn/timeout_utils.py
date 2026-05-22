@@ -16,8 +16,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from types import FrameType, TracebackType
-
-    from typing_extensions import Self
+    from typing import Self
 
 
 class TimeoutState(IntEnum):

@@ -1,6 +1,7 @@
 import random
 from enum import Enum
 from sys import get_int_max_str_digits
+from typing import assert_never
 
 import big_o_utils as bou
 import chevron
@@ -8,7 +9,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from typing_extensions import assert_never
 
 
 class BigOType(Enum):

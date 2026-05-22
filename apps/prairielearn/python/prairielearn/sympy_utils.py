@@ -19,13 +19,20 @@ from functools import wraps
 from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
 from types import MappingProxyType as FrozenDict
-from typing import Any, Final, Literal, TypeAlias, TypedDict, TypeGuard, cast
+from typing import (
+    Any,
+    Final,
+    Literal,
+    NotRequired,
+    TypedDict,
+    TypeGuard,
+    cast,
+)
 
 import sympy
 from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
-from typing_extensions import NotRequired
 
 from prairielearn.misc_utils import full_unidecode
 
@@ -67,7 +74,7 @@ class SympyParseFailure:
     error: str
 
 
-SympyParseResult: TypeAlias = SympyParseSuccess | SympyParseFailure
+type SympyParseResult = SympyParseSuccess | SympyParseFailure
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -189,7 +196,7 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
-    def _print_EmptySet(self, expr: sympy.Set) -> str:  # type: ignore[reportIncompatibleMethodOverride] # noqa: ARG002, N802
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # noqa: ARG002, N802
         return "{}"
 
     def _print_Interval(self, i: sympy.Interval) -> str:  # noqa: N802

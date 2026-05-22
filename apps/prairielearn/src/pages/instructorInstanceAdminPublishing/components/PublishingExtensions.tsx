@@ -106,7 +106,7 @@ export function PublishingExtensions({
 
       {!canView ? (
         <div className="alert alert-info" role="alert">
-          You must have student data permission to view and edit extensions.
+          You must have student data viewer permissions to view extensions.
         </div>
       ) : extensionsQuery.isError ? (
         <Alert variant="danger" dismissible onClose={() => void extensionsQuery.refetch()}>

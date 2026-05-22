@@ -60,11 +60,13 @@ describe('multipleChoiceHandler', () => {
     const result = multipleChoiceHandler.transform(makeItem({ correctConditions: [] }));
     assert.equal(result.gradingMethod, 'Manual');
     assert.isArray(result.warnings);
-    assert.match(result.warnings![0], /manually-graded/);
+    assert.match(result.warnings![0], /No correct answer found/);
     if (result.body.type !== 'multiple-choice') {
       assert.fail(`Expected multiple-choice body, got ${result.body.type}`);
     }
     assert.equal(result.body.choices.length, 3);
-    assert.isFalse(result.body.choices.some((c) => c.correct));
+    // First choice is marked correct so the element passes validation;
+    // grading is Manual so this doesn't affect scoring.
+    assert.isTrue(result.body.choices[0].correct);
   });
 });

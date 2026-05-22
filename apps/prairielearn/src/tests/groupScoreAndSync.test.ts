@@ -89,7 +89,7 @@ describe('assessment instance group synchronization test', function () {
         urlBase: locals.siteUrl,
       });
       await trpcClient.assessmentGroups.addGroup.mutate({
-        group_name: 'testgroup',
+        groupName: 'testgroup',
         uids: locals.studentUsers.map((u: { uid: string }) => u.uid).join(','),
       });
     });

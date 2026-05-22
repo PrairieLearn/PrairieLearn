@@ -2,6 +2,8 @@
  * Migration harness: scans all infoAssessment.json files, runs each through
  * migrateAllowAccess(), normalizes shapes and error signatures, and generates
  * an HTML report comparing old vs new for each unique (shape, outcome) pair.
+ *
+ * Run from the root of the repository with `./node_modules/.bin/tsx scripts/migration-harness.mts`
  */
 
 import * as fs from 'fs/promises';
@@ -15,6 +17,8 @@ import type { AssessmentAccessRuleJson } from '../apps/prairielearn/src/schemas/
 
 const REPOS_DIR = path.resolve(process.env.HOME!, 'git/python-upgrade-exploration/repos');
 const OUTPUT_FILE = path.resolve(new URL('.', import.meta.url).pathname, 'migration-report.html');
+
+const FALLBACK_RELEASE = '1900-01-01T00:00:00';
 
 // ---------------------------------------------------------------------------
 // 1. Scan all infoAssessment.json files
@@ -208,7 +212,7 @@ function generateHtml(
           </details>
         </td>
         <td class="old"><pre>${escapeHtml(JSON.stringify(r.representative, null, 2))}</pre></td>
-        <td class="new"><pre>${escapeHtml(JSON.stringify(r.migrationResult.result, null, 2))}</pre></td>
+        <td class="new"><pre>${escapeHtml(JSON.stringify(r.migrationResult.accessControl, null, 2))}</pre></td>
       </tr>`;
     })
     .join('\n');
@@ -324,17 +328,7 @@ async function main() {
     const { shape, normalized } = normalizeRulesForHarness(allowAccess);
 
     // Pass raw allowAccess — migrateAllowAccess handles normalization internally.
-    let migrationResult;
-    try {
-      migrationResult = migrateAllowAccess(allowAccess);
-    } catch (err: any) {
-      migrationResult = {
-        result: {} as any,
-        errors: [`Exception: ${err.message}`],
-        notes: [] as string[],
-        hasUidRules: false,
-      };
-    }
+    const migrationResult = migrateAllowAccess(allowAccess, FALLBACK_RELEASE);
 
     // Build outcome key from normalized error/note signatures
     const errorSig = normalizeMessages(migrationResult.errors);

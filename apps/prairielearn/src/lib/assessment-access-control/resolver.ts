@@ -1,13 +1,9 @@
-import assert from 'node:assert';
-
-import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 import {
   type AccessTimelineEntry,
   type RuntimeDateControl,
   buildAccessTimeline,
-  buildDeadlines,
 } from './timeline.js';
 
 export interface RuntimeAfterComplete {
@@ -22,29 +18,56 @@ export interface RuntimeAfterComplete {
   };
 }
 
+export interface PrairieTestExam {
+  uuid: string;
+  readOnly: boolean;
+  questionsHidden: boolean;
+  scoreHidden: boolean;
+}
+
 /**
- * Runtime representation of an access control rule, used by the data layer
- * and resolver. Mirrors `AccessControlJson` but uses `Date` objects for
- * top-level date fields instead of ISO strings.
+ * Fields that override-targeted rules can set. Mirrors the JSON shape with
+ * dates parsed to `Date`. `DefaultRuleBody` extends this with default-rule-only
+ * fields, so an override can't statically declare flags the resolver only
+ * honors on the default rule.
  */
-export type RuntimeAccessControl = Omit<AccessControlJson, 'dateControl' | 'afterComplete'> & {
+interface OverrideRuleBody {
   dateControl?: RuntimeDateControl;
   afterComplete?: RuntimeAfterComplete;
-};
-
-export interface AccessControlRuleInput {
-  rule: RuntimeAccessControl;
-  number: number;
-  targetType: 'none' | 'enrollment' | 'student_label';
-  enrollmentIds: string[];
-  studentLabelIds: string[];
-  prairietestExams: {
-    uuid: string;
-    readOnly: boolean;
-    questionsHidden: boolean;
-    scoreHidden: boolean;
-  }[];
 }
+
+export interface DefaultRuleBody extends OverrideRuleBody {
+  beforeRelease?: { listed?: boolean };
+  prairieTestExams: PrairieTestExam[];
+}
+
+/**
+ * The default rule (`'none'`, always `number: 0`) carries the full rule body.
+ */
+export interface DefaultRule {
+  targetType: 'none';
+  number: 0;
+  rule: DefaultRuleBody;
+}
+
+/**
+ * Override variants carry the narrower `OverrideRuleBody` plus their targeting ids.
+ */
+export type OverrideRule =
+  | {
+      targetType: 'enrollment';
+      number: number;
+      rule: OverrideRuleBody;
+      enrollmentIds: string[];
+    }
+  | {
+      targetType: 'student_label';
+      number: number;
+      rule: OverrideRuleBody;
+      studentLabelIds: string[];
+    };
+
+export type AccessControlRuleInput = DefaultRule | OverrideRule;
 
 export interface EnrollmentContext {
   enrollmentId: string;
@@ -68,14 +91,40 @@ export interface AccessControlResolverInput {
 }
 
 export interface AccessControlResolverResult {
+  /** Whether the student is authorized to access the assessment. */
   authorized: boolean;
   credit: number | null;
   creditDateString: string | null;
   timeLimitMin: number | null;
   password: string | null;
-  active: boolean;
-  showClosedAssessment: boolean;
-  showClosedAssessmentScore: boolean;
+  /**
+   * Whether the student can currently submit work.
+   * `authorized: true, submittable: false` is the review-only state.
+   * Translates to the legacy `authz_result.active` field.
+   */
+  submittable: boolean;
+  /**
+   * Effective visibility for this assessment-level result. Instance-specific
+   * completion may replace this before converting to assessment-instance authz.
+   */
+  visibility: Visibility;
+  /**
+   * Top-level after-complete visibility policy, evaluated against the current
+   * date. This is applied only once the assessment is complete.
+   */
+  afterCompleteVisibility: Visibility;
+  /**
+   * Explains which policy produced the effective `visibility`.
+   */
+  visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
+  /**
+   * True when the assessment has reached a "complete" phase from the
+   * resolver's perspective: a non-submittable after-last-deadline segment
+   * under date control, or a read-only PrairieTest reservation. Instance-
+   * specific completion (closed instance or expired time limit) is applied
+   * separately in the modern authz layer.
+   */
+  complete: boolean;
   /**
    * When the assessment is gated behind a PrairieTest reservation, this is
    * the reservation's `accessEnd` timestamp. Used to determine whether the
@@ -89,16 +138,13 @@ export interface AccessControlResolverResult {
    * or there is no release date configured. The second case is intentional —
    * an instructor can set `beforeRelease.listed: true` without any dateControl
    * to list every assessment a student will take over the term, perpetually
-   * "coming soon" until the instructor later adds dates. Distinct from the
-   * raw `beforeRelease.listed` config input.
+   * "coming soon" until the instructor later adds dates.
    */
   showBeforeRelease: boolean;
   /**
-   * Timeline of credit segments for display. Each entry represents a
-   * contiguous period where a specific credit percentage applies.
-   * Raw data — formatting is a UI concern.
+   * Timeline of credit segments for display. Raw data — formatting is a UI concern.
    */
-  accessTimeline: AccessTimelineEntry[];
+  accessTimeline: readonly Readonly<AccessTimelineEntry>[];
   /**
    * The next date when the assessment becomes active (e.g. the release date
    * when before release). Null when already active or no future open date.
@@ -106,20 +152,51 @@ export interface AccessControlResolverResult {
   nextActiveDate: Date | null;
 }
 
-const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
+interface Visibility {
+  showQuestions: boolean;
+  showScore: boolean;
+}
+
+const VISIBLE = Object.freeze({
+  showQuestions: true,
+  showScore: true,
+} satisfies Readonly<Visibility>);
+
+const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
+
+const UNAUTHORIZED_RESULT = Object.freeze({
   authorized: false,
   credit: 0,
   creditDateString: 'None',
   timeLimitMin: null,
   password: null,
-  active: false,
-  showClosedAssessment: true,
-  showClosedAssessmentScore: true,
+  submittable: false,
+  visibility: VISIBLE,
+  afterCompleteVisibility: VISIBLE,
+  visibilitySource: 'default',
+  complete: false,
   examAccessEnd: null,
   showBeforeRelease: false,
-  accessTimeline: [],
+  accessTimeline: EMPTY_ACCESS_TIMELINE,
   nextActiveDate: null,
-};
+} satisfies Readonly<AccessControlResolverResult>);
+
+const STAFF_OVERRIDE_RESULT = Object.freeze({
+  authorized: true,
+  credit: 100,
+  creditDateString: '100% (Staff override)',
+  timeLimitMin: null,
+  password: null,
+  submittable: true,
+  visibility: VISIBLE,
+  afterCompleteVisibility: VISIBLE,
+  visibilitySource: 'default',
+  complete: false,
+  examAccessEnd: null,
+  showBeforeRelease: false,
+  accessTimeline: EMPTY_ACCESS_TIMELINE,
+  nextActiveDate: null,
+} satisfies Readonly<AccessControlResolverResult>);
 
 const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
   None: 0,
@@ -134,246 +211,121 @@ const COURSE_INSTANCE_ROLE_RANK: Record<EnumCourseInstanceRole, number> = {
   'Student Data Editor': 2,
 };
 
-function roleAtLeast(actual: EnumCourseRole, minimum: EnumCourseRole): boolean {
-  return COURSE_ROLE_RANK[actual] >= COURSE_ROLE_RANK[minimum];
+function isStaff(courseRole: EnumCourseRole, courseInstanceRole: EnumCourseInstanceRole): boolean {
+  return (
+    COURSE_ROLE_RANK[courseRole] >= COURSE_ROLE_RANK.Previewer ||
+    COURSE_INSTANCE_ROLE_RANK[courseInstanceRole] >=
+      COURSE_INSTANCE_ROLE_RANK['Student Data Viewer']
+  );
 }
 
-function instanceRoleAtLeast(
-  actual: EnumCourseInstanceRole,
-  minimum: EnumCourseInstanceRole,
-): boolean {
-  return COURSE_INSTANCE_ROLE_RANK[actual] >= COURSE_INSTANCE_ROLE_RANK[minimum];
-}
-
-function mergeDateControl(
-  base: RuntimeDateControl | undefined,
-  override: RuntimeDateControl | undefined,
-): RuntimeDateControl | undefined {
-  if (!base && !override) return undefined;
+/** Defined keys on `override` replace `base`; undefined keys preserve `base`. */
+function mergeDefined<T extends object>(
+  base: T | undefined,
+  override: T | undefined,
+): T | undefined {
   if (!base) return override;
-  if (!override) return { ...base };
-
-  const merged: RuntimeDateControl = { ...base };
-  const ov = override;
-  if (ov.release !== undefined) merged.release = ov.release;
-  // `due` replaces atomically: an override either inherits the entire object or
-  // supplies its own. We never merge `date` and `credit` independently because
-  // a custom-credit override with an unset date (or vice versa) is incoherent.
-  if (ov.due !== undefined) merged.due = ov.due;
-  if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
-  if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
-  if (ov.afterLastDeadline !== undefined) {
-    merged.afterLastDeadline = ov.afterLastDeadline;
+  if (!override) return base;
+  const result: T = { ...base };
+  for (const key of Object.keys(override) as (keyof T)[]) {
+    if (override[key] !== undefined) result[key] = override[key];
   }
-  if (ov.durationMinutes !== undefined) merged.durationMinutes = ov.durationMinutes;
-  if (ov.password !== undefined) merged.password = ov.password;
-  return merged;
-}
-
-function mergeAfterComplete(
-  base: RuntimeAfterComplete | undefined,
-  override: RuntimeAfterComplete | undefined,
-): RuntimeAfterComplete | undefined {
-  if (!base && !override) return undefined;
-  if (!base) return override;
-  if (!override) return { ...base };
-
-  const merged: RuntimeAfterComplete = {
-    questions: override.questions !== undefined ? override.questions : base.questions,
-    score: override.score !== undefined ? override.score : base.score,
-  };
-
-  return merged;
-}
-
-export function mergeRules(
-  main: RuntimeAccessControl,
-  override: RuntimeAccessControl | null,
-): RuntimeAccessControl {
-  if (!override) return main;
-
-  const merged: RuntimeAccessControl = {};
-
-  // beforeRelease is only configurable on the main rule.
-  if (main.beforeRelease !== undefined) merged.beforeRelease = main.beforeRelease;
-
-  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl);
-  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
-
-  return merged;
+  return result;
 }
 
 /**
- * Cascades two override JSONs where the second wins.
+ * Folds an override body onto a base. `dateControl` and `afterComplete` merge
+ * per top-level key. `due` replaces as a unit (date + credit move together)
+ * since a custom-credit override with an unset date — or vice versa — is
+ * incoherent. Default-rule-only fields (`beforeRelease`, `prairieTestExams`)
+ * carry through from `a`: `OverrideRuleBody` strips them at the type level so
+ * `b` cannot declare them.
  */
-export function cascadeOverrides(
-  base: RuntimeAccessControl,
-  next: RuntimeAccessControl,
-): RuntimeAccessControl {
+export function mergeRules<T extends OverrideRuleBody>(a: T, b: OverrideRuleBody | null): T {
+  if (!b) return a;
   return {
-    dateControl: mergeDateControl(base.dateControl, next.dateControl),
-    afterComplete: mergeAfterComplete(base.afterComplete, next.afterComplete),
+    ...a,
+    dateControl: mergeDefined(a.dateControl, b.dateControl),
+    afterComplete: mergeDefined(a.afterComplete, b.afterComplete),
   };
 }
 
-interface CreditResult {
-  credit: number;
-  active: boolean;
-  beforeRelease: boolean;
-  nextDeadlineDate: Date | null;
-  password: string | null;
-  timeLimitMin: number | null;
+function matchesOverride(override: OverrideRule, enrollment: EnrollmentContext): boolean {
+  if (override.targetType === 'enrollment') {
+    return override.enrollmentIds.includes(enrollment.enrollmentId);
+  }
+  return override.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id));
 }
 
 /**
- * Outcome of PrairieTest access resolution. Used as a discriminated union so
- * the main resolver can handle each case linearly without nested control flow.
+ * Picks and merges the effective rule for a student: the default rule with all
+ * matching overrides cascaded on top. Without an enrollment, no override matches.
+ *
+ * Cascade order: `student_label` overrides apply first (broader), then
+ * `enrollment` overrides (more specific, win); within each type, lower `number`
+ * applies first.
  */
-type PrairieTestOutcome =
-  | { action: 'deny'; result: AccessControlResolverResult }
-  | {
-      action: 'grant';
-      examAccessEnd: Date;
-      credit: number;
-      active: boolean;
-      showClosedAssessment: boolean;
-      showClosedAssessmentScore: boolean;
-    }
-  | { action: 'continue' };
+function pickEffectiveRule(
+  rules: AccessControlRuleInput[],
+  enrollment: EnrollmentContext | null,
+): DefaultRuleBody | null {
+  const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+  if (!defaultRule) return null;
+  if (!enrollment) return defaultRule.rule;
 
-function computeCredit(
-  dateControl: RuntimeDateControl | undefined,
-  date: Date,
-  authzMode: EnumMode,
-): CreditResult {
-  if (!dateControl?.release) {
-    return {
-      credit: 0,
-      active: false,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
-    };
-  }
+  const overrides = rules.filter((r): r is OverrideRule => r.targetType !== 'none');
+  const matching = overrides.filter((r) => matchesOverride(r, enrollment));
+  matching.sort((a, b) => {
+    if (a.targetType !== b.targetType) return a.targetType === 'student_label' ? -1 : 1;
+    return a.number - b.number;
+  });
 
-  const releaseDate = dateControl.release.date;
-  const dueDate = dateControl.due?.date ?? null;
-  const dueCredit = dateControl.due?.credit ?? 100;
-
-  if (date < releaseDate) {
-    return {
-      credit: 0,
-      active: false,
-      beforeRelease: true,
-      nextDeadlineDate: releaseDate,
-      password: null,
-      timeLimitMin: null,
-    };
-  }
-
-  // If due date is before release date, access is blocked.
-  if (dueDate && dueDate <= releaseDate) {
-    return {
-      credit: 0,
-      active: false,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
-    };
-  }
-
-  const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
-
-  // No due date or deadlines means 100% credit anytime after the release date.
-  // When `due` is configured with no date, the due-date credit applies indefinitely
-  // after release (and, when early deadlines exist, after the last early deadline).
-  if (deadlines.length === 0) {
-    if (dateControl.due && dueDate === null) {
-      return {
-        credit: dueCredit,
-        active: true,
-        beforeRelease: false,
-        nextDeadlineDate: null,
-        password: dateControl.password ?? null,
-        timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-      };
-    }
-    return {
-      credit: 100,
-      active: true,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: dateControl.password ?? null,
-      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    };
-  }
-
-  for (const entry of deadlines) {
-    if (date < entry.date) {
-      const credit = entry.credit;
-      const nextDeadline = entry.date;
-      return {
-        credit,
-        active: true,
-        beforeRelease: false,
-        nextDeadlineDate: nextDeadline,
-        password: dateControl.password ?? null,
-        timeLimitMin: computeTimeLimitMin(
-          dateControl.durationMinutes,
-          nextDeadline,
-          date,
-          authzMode,
-        ),
-      };
-    }
-  }
-
-  // We are past the last deadline.
-  // When `due` is configured with no date, the due-date credit applies indefinitely
-  // after release (and, when early deadlines exist, after the last early deadline).
-  // This shadows afterLastDeadline — an explicit `due` with null date is the
-  // author's way of saying "this credit applies forever after all deadlines".
-  if (dateControl.due && dueDate === null) {
-    return {
-      credit: dueCredit,
-      active: true,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: dateControl.password ?? null,
-      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    };
-  }
-
-  const afterLast = dateControl.afterLastDeadline;
-  const credit = afterLast?.credit ?? 0;
-  assert(!afterLast || afterLast.allowSubmissions !== undefined);
-  const active = afterLast?.allowSubmissions === true;
-  return {
-    credit,
-    active,
-    beforeRelease: false,
-    nextDeadlineDate: null,
-    password: dateControl.password ?? null,
-    timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-  };
+  return matching.reduce<DefaultRuleBody>(
+    (acc, override) => mergeRules(acc, override.rule),
+    defaultRule.rule,
+  );
 }
 
-function computeTimeLimitMin(
-  durationMinutes: number | null | undefined,
-  nextDeadline: Date | null,
+/**
+ * `questions.hidden` defaults to `true` for exam security (an async exam over
+ * several days breaks if early students see answers immediately on leaving
+ * Exam mode).
+ *
+ * Per-rule validation forbids `questions.hidden: false` + `score.hidden: true`,
+ * but merging picks `questions` and `score` independently and can produce that
+ * pair from valid inputs. Clamp here so downstream sees a consistent state.
+ */
+function computeTopLevelVisibility(
+  afterComplete: RuntimeAfterComplete | undefined,
   date: Date,
-  authzMode: EnumMode,
-): number | null {
-  if (!durationMinutes) return null;
-  if (authzMode === 'Exam') return null;
+): Visibility {
+  let showQuestions = resolveVisibility(
+    afterComplete?.questions?.hidden ?? true,
+    afterComplete?.questions?.visibleFromDate,
+    afterComplete?.questions?.visibleUntilDate,
+    date,
+  );
+  const showScore = resolveVisibility(
+    afterComplete?.score?.hidden,
+    afterComplete?.score?.visibleFromDate,
+    undefined,
+    date,
+  );
+  if (!showScore) showQuestions = false;
+  return { showQuestions, showScore };
+}
 
-  if (!nextDeadline) return durationMinutes;
-
-  // Cap time limit by seconds until next deadline, minus 31 seconds (legacy behavior).
-  const secondsUntilDeadline = (nextDeadline.getTime() - date.getTime()) / 1000 - 31;
-  return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
+/**
+ * Visibility while a PrairieTest reservation is active. `readOnly` reservations
+ * represent review sessions, so everything is visible. Otherwise, the per-exam
+ * `questionsHidden` / `scoreHidden` flags decide. The schema enforces that
+ * `scoreHidden: true` + `questionsHidden: false` cannot occur.
+ */
+function computePrairieTestVisibility(exam: PrairieTestExam): Visibility {
+  return {
+    showQuestions: exam.readOnly || !exam.questionsHidden,
+    showScore: exam.readOnly || !exam.scoreHidden,
+  };
 }
 
 export function resolveVisibility(
@@ -383,18 +335,9 @@ export function resolveVisibility(
   date: Date,
 ): boolean {
   if (!hide) return true;
-
-  let visible = false;
-
-  if (visibleFromDate && date >= visibleFromDate) {
-    visible = true;
-  }
-
-  if (visible && visibleUntilDate && date >= visibleUntilDate) {
-    visible = false;
-  }
-
-  return visible;
+  if (!visibleFromDate || date < visibleFromDate) return false;
+  if (visibleUntilDate && date >= visibleUntilDate) return false;
+  return true;
 }
 
 export function formatDateShort(date: Date, timezone: string): string {
@@ -414,93 +357,71 @@ export function formatDateShort(date: Date, timezone: string): string {
   const get = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? '';
 
-  const hour = get('hour');
-  const minute = get('minute');
-  const weekday = get('weekday');
-  const month = get('month');
-  const day = get('day');
-
-  return `${hour}:${minute}, ${weekday}, ${month} ${day}`;
+  return `${get('hour')}:${get('minute')}, ${get('weekday')}, ${get('month')} ${get('day')}`;
 }
 
 function formatCreditDateString(
   credit: number,
-  active: boolean,
+  submittable: boolean,
   nextDeadlineDate: Date | null,
   displayTimezone: string,
 ): string {
-  if (credit > 0 && active) {
-    const creditStr = `${credit}%`;
-    if (nextDeadlineDate) {
-      return `${creditStr} until ${formatDateShort(nextDeadlineDate, displayTimezone)}`;
-    }
-    return creditStr;
+  if (credit <= 0 || !submittable) return 'None';
+  if (nextDeadlineDate) {
+    return `${credit}% until ${formatDateShort(nextDeadlineDate, displayTimezone)}`;
   }
-  return 'None';
+  return `${credit}%`;
+}
+
+function computeTimeLimitMin(
+  durationMinutes: number | null | undefined,
+  lastSubmittableEnd: Date | null,
+  date: Date,
+  authzMode: EnumMode,
+): number | null {
+  if (!durationMinutes) return null;
+  if (authzMode === 'Exam') return null;
+  if (!lastSubmittableEnd) return durationMinutes;
+
+  // Cap time limit by the time remaining until the last reachable submittable
+  // deadline. If the timer hits 0:00 exactly at the deadline, the exam might
+  // end fractionally after the deadline (overdue submission), so we subtract
+  // 31 seconds to avoid that race. 31 (rather than 30) forces the final value
+  // to round down when the cap falls on a half-minute boundary (time limits
+  // are stored in whole minutes).
+  const secondsUntilDeadline = (lastSubmittableEnd.getTime() - date.getTime()) / 1000 - 31;
+  return Math.max(0, Math.round(Math.min(durationMinutes, secondsUntilDeadline / 60)));
 }
 
 /**
- * PrairieTest access control.
- *
- * The resolver treats PT and dateControl as mutually exclusive access paths:
- *
- * - **Exam mode** (student has an active checked-in PrairieTest reservation,
- *   whether at a CBTF or a course-run session): PT is the only path. Access
- *   requires a matching reservation; otherwise deny. dateControl is ignored
- *   entirely — being in Exam mode without a matching reservation shouldn't
- *   grant access regardless of date windows.
- *
- * - **Public mode** (student is not in an active PT session): PT gating
- *   doesn't apply here. Access is governed by dateControl, `afterComplete`,
- *   and `beforeRelease`. This supports the cheat sheet workflow (discussion
- *   #11308) where students submit at home during the dateControl active
- *   window, then review in Exam mode with a readOnly PT reservation. Course
- *   authors are responsible for configuring readOnly appropriately — a
- *   non-readOnly PT exam with an active dateControl window effectively
- *   permits at-home takes, which is usually not the intent. A PT-gated rule
- *   with no dateControl has no at-home access path; `resolveAccessControl`
- *   handles that case by denying authorization after this returns `continue`.
+ * Returns the latest endDate the student can still submit at, walking forward
+ * from `current` through contiguous submittable timeline entries. The time
+ * limit caps here so duration can span access windows (e.g. 100% credit
+ * window → 80% late window) without truncating at the credit drop. Returns
+ * `null` if a submittable entry has no end (afterLastDeadline allowing
+ * submissions, or an indefinite due date).
  */
-function resolvePrairieTestAccess({
-  prairieTestExams,
-  prairieTestReservations,
-  authzMode,
-}: {
-  prairieTestExams: AccessControlRuleInput['prairietestExams'];
-  prairieTestReservations: PrairieTestReservation[];
-  authzMode: EnumMode;
-}): PrairieTestOutcome {
-  // Outside of Exam mode, PT gating does not apply. Let the main flow
-  // (dateControl, afterComplete, beforeRelease) govern access.
-  if (authzMode !== 'Exam') return { action: 'continue' };
-
-  const matchedExam = prairieTestExams.find((exam) =>
-    prairieTestReservations.some((r) => r.examUuid === exam.uuid),
-  );
-  if (!matchedExam) {
-    return { action: 'deny', result: { ...UNAUTHORIZED_RESULT } };
+function findLastSubmittableEnd(
+  accessTimeline: readonly Readonly<AccessTimelineEntry>[],
+  currentIdx: number,
+): Date | null {
+  let end: Date | null = null;
+  for (let i = currentIdx; i < accessTimeline.length; i++) {
+    const entry = accessTimeline[i];
+    if (!entry.submittable) break;
+    if (entry.endDate === null) return null;
+    end = entry.endDate;
   }
-
-  const matchingReservation = prairieTestReservations.find((r) => r.examUuid === matchedExam.uuid)!;
-
-  // PT-level visibility. `readOnly` reservations represent review sessions,
-  // so everything is visible. Otherwise, the per-exam `questionsHidden` /
-  // `scoreHidden` flags decide visibility after the student finishes during
-  // a PT reservation. The schema enforces that `scoreHidden: true` +
-  // `questionsHidden: false` cannot occur.
-  const showClosedAssessment = matchedExam.readOnly || !matchedExam.questionsHidden;
-  const showClosedAssessmentScore = matchedExam.readOnly || !matchedExam.scoreHidden;
-
-  return {
-    action: 'grant',
-    examAccessEnd: matchingReservation.accessEnd,
-    credit: 100,
-    active: !matchedExam.readOnly,
-    showClosedAssessment,
-    showClosedAssessmentScore,
-  };
+  return end;
 }
 
+/**
+ * This function is the core of the modern access control system.
+ *
+ * Given a set of rules, an enrollment, and a date, it returns the access control result.
+ *
+ * Returns an object that roughly corresponds to the legacy `authz_assessment` sproc.
+ */
 export function resolveAccessControl(
   input: AccessControlResolverInput,
 ): AccessControlResolverResult {
@@ -515,229 +436,153 @@ export function resolveAccessControl(
     prairieTestReservations,
   } = input;
 
-  if (
-    roleAtLeast(courseRole, 'Previewer') ||
-    instanceRoleAtLeast(courseInstanceRole, 'Student Data Viewer')
-  ) {
+  if (isStaff(courseRole, courseInstanceRole)) return STAFF_OVERRIDE_RESULT;
+
+  const rule = pickEffectiveRule(rules, enrollment);
+  if (!rule) return UNAUTHORIZED_RESULT;
+
+  const afterCompleteVisibility = computeTopLevelVisibility(rule.afterComplete, date);
+  const accessTimeline = buildAccessTimeline(rule.dateControl, date);
+
+  // In Exam mode, the only access path is a matching PrairieTest reservation;
+  // `dateControl` is intentionally ignored for the access decision (still
+  // consulted for the timeline). Without a match, we deny but propagate
+  // top-level visibility so the gradebook renders correctly during the post-
+  // reservation grace period (issue #12579).
+  if (authzMode === 'Exam') {
+    const matched = rule.prairieTestExams.find((exam) =>
+      prairieTestReservations.some((r) => r.examUuid === exam.uuid),
+    );
+    if (!matched) {
+      return {
+        ...UNAUTHORIZED_RESULT,
+        visibility: afterCompleteVisibility,
+        afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
+        complete: true,
+        accessTimeline,
+      };
+    }
+
+    const reservations = prairieTestReservations.filter((r) => r.examUuid === matched.uuid);
+    // Sanity check, this should never happen.
+    if (reservations.length !== 1) {
+      throw new Error(
+        `Expected exactly 1 PrairieTest reservation for exam ${matched.uuid}, found ${reservations.length}`,
+      );
+    }
+    const reservation = reservations[0];
+    const examVisibility = computePrairieTestVisibility(matched);
+    const submittable = !matched.readOnly;
     return {
       authorized: true,
       credit: 100,
-      creditDateString: '100% (Staff override)',
+      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
       timeLimitMin: null,
       password: null,
-      active: true,
-      showClosedAssessment: true,
-      showClosedAssessmentScore: true,
-      examAccessEnd: null,
+      submittable,
+      visibility: examVisibility,
+      afterCompleteVisibility,
+      visibilitySource: 'prairieTest',
+      complete: matched.readOnly,
+      examAccessEnd: reservation.accessEnd,
       showBeforeRelease: false,
+      // The PT reservation governs access; the date-control timeline is
+      // irrelevant under a PT grant, so omit it from the student popover.
       accessTimeline: [],
       nextActiveDate: null,
     };
   }
 
-  const mainRuleInput = rules.find((r) => r.number === 0 && r.targetType === 'none');
-  if (!mainRuleInput) {
-    return { ...UNAUTHORIZED_RESULT };
-  }
+  const hasRelease = !!rule.dateControl?.release;
+  const shouldShowBeforeRelease = rule.beforeRelease?.listed ?? false;
 
-  // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
-  const overrides = rules
-    .filter((r) => r.number !== 0)
-    .sort((a, b) => {
-      const typeOrder = (t: string) => (t === 'student_label' ? 0 : 1);
-      const diff = typeOrder(a.targetType) - typeOrder(b.targetType);
-      if (diff !== 0) return diff;
-      return a.number - b.number;
-    });
-
-  // Collect all matching overrides. If the user has no enrollment, no
-  // overrides can match (they target enrollments or student labels).
-  const matchedOverrides: AccessControlRuleInput[] = [];
-  if (enrollment) {
-    for (const rule of overrides) {
-      if (rule.targetType === 'enrollment') {
-        if (rule.enrollmentIds.includes(enrollment.enrollmentId)) {
-          matchedOverrides.push(rule);
-        }
-      } else if (rule.targetType === 'student_label') {
-        if (rule.studentLabelIds.some((id) => enrollment.studentLabelIds.includes(id))) {
-          matchedOverrides.push(rule);
-        }
-      }
-    }
-  }
-
-  // Cascade all matched overrides, then merge with main rule.
-  let cascadedOverride: RuntimeAccessControl | null = null;
-  for (const override of matchedOverrides) {
-    cascadedOverride = cascadedOverride
-      ? cascadeOverrides(cascadedOverride, override.rule)
-      : override.rule;
-  }
-  const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
-
-  let creditResult = computeCredit(effectiveRule.dateControl, date, authzMode);
-
-  // Compute visibility up-front so deny results can still honor the course
-  // author's `afterComplete` configuration. The student gradebook displays
-  // rows even when access is denied, and relies on `showClosedAssessmentScore`
-  // to decide whether to show prior scores.
-  //
-  // `questions.hidden` defaults to `true` (hidden) in Public mode. This is
-  // intentional for exam security: an async exam run over several days would
-  // be compromised if first-session students saw questions and answers
-  // immediately on leaving Exam mode.
-  let showClosedAssessment = resolveVisibility(
-    effectiveRule.afterComplete?.questions?.hidden ?? true,
-    effectiveRule.afterComplete?.questions?.visibleFromDate,
-    effectiveRule.afterComplete?.questions?.visibleUntilDate,
-    date,
-  );
-
-  let showClosedAssessmentScore = resolveVisibility(
-    effectiveRule.afterComplete?.score?.hidden,
-    effectiveRule.afterComplete?.score?.visibleFromDate,
-    undefined,
-    date,
-  );
-
-  // Enforce the cross-field invariant after merging: we don't support
-  // showing questions (with their submitted answers) while hiding the
-  // score. Per-rule validation catches this within a single rule, but
-  // `mergeAfterComplete` picks `questions` and `score` sub-objects
-  // independently, so a main rule with `questions.hidden: false` merged
-  // with an override that sets `score.hidden: true` can produce the
-  // invalid combination. Clamp here so every downstream return carries a
-  // consistent state.
-  if (!showClosedAssessmentScore) {
-    showClosedAssessment = false;
-  }
-
-  // Resolve PrairieTest access. This is separated from the main flow to keep
-  // the resolver linear: it either denies early, grants PT credit overrides,
-  // or continues with the normal date-control-based result.
-  const ptOutcome = resolvePrairieTestAccess({
-    prairieTestExams: mainRuleInput.prairietestExams,
-    prairieTestReservations,
-    authzMode,
-  });
-  if (ptOutcome.action === 'deny') {
-    return { ...ptOutcome.result, showClosedAssessment, showClosedAssessmentScore };
-  }
-
-  let examAccessEnd: Date | null = null;
-  if (ptOutcome.action === 'grant') {
-    creditResult = {
-      credit: ptOutcome.credit,
-      active: ptOutcome.active,
-      beforeRelease: false,
-      nextDeadlineDate: null,
-      password: null,
-      timeLimitMin: null,
-    };
-    examAccessEnd = ptOutcome.examAccessEnd;
-    showClosedAssessment = ptOutcome.showClosedAssessment;
-    showClosedAssessmentScore = ptOutcome.showClosedAssessmentScore;
-  }
-
-  const timeLimitMin = creditResult.timeLimitMin;
-
-  // Resolve the raw `beforeRelease.listed` config flag into a concrete
-  // `showBeforeRelease` boolean: true when the flag is set AND either we're
-  // before the release date or there is no release date configured. An
-  // active PT grant always zeroes this — a granted student has real access
-  // and shouldn't see the "coming soon" listing regardless of other config.
-  const showBeforeRelease =
-    (effectiveRule.beforeRelease?.listed ?? false) &&
-    ptOutcome.action !== 'grant' &&
-    (creditResult.beforeRelease || !effectiveRule.dateControl?.release);
-
-  // If the assessment is before its release date and showBeforeRelease is false,
-  // the student should not see or access it at all.
-  if (creditResult.beforeRelease && !showBeforeRelease) {
-    return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
-  }
-
-  // A "coming soon" listing is a visibility signal only — the student can see
-  // the assessment in the list but cannot open it. `authorized` gates real URL
-  // access, so anything that produces `showBeforeRelease: true` must also set
-  // `authorized: false`. This covers pre-release (`creditResult.beforeRelease`)
-  // as well as the perpetually-listed case (`beforeRelease.listed` with no
-  // release configured).
-  if (showBeforeRelease) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      showClosedAssessment,
-      showClosedAssessmentScore,
-      showBeforeRelease: true,
-      nextActiveDate: creditResult.nextDeadlineDate,
-    };
-  }
-
-  // A PT-gated rule has no at-home submission path unless dateControl
-  // provides one. When PT continue'd (Public mode) and there is no
-  // dateControl release, the student can't take the assessment at home,
-  // but they may still have a legitimate review-only path if top-level
-  // `afterComplete` visibility has been unlocked (e.g., a scheduled at-home
-  // release via `questions.visibleFromDate`). In that case, grant
-  // `authorized: true, active: false` so the middleware can serve the
-  // review-only page. Otherwise deny outright.
-  if (
-    ptOutcome.action === 'continue' &&
-    mainRuleInput.prairietestExams.length > 0 &&
-    !effectiveRule.dateControl?.release
-  ) {
-    if (!showClosedAssessment) {
+  // No DC release configured: either PT-gated (review-only once visibility
+  // unlocks; `beforeRelease.listed` is ignored) or a date-less rule (deny).
+  if (!hasRelease) {
+    if (rule.prairieTestExams.length > 0) {
+      const reviewMode = afterCompleteVisibility.showQuestions;
       return {
         ...UNAUTHORIZED_RESULT,
-        showClosedAssessment,
-        showClosedAssessmentScore,
+        authorized: reviewMode,
+        visibility: afterCompleteVisibility,
+        afterCompleteVisibility,
+        visibilitySource: 'afterComplete',
+        complete: true,
+        accessTimeline,
+        showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
       };
     }
     return {
-      authorized: true,
-      credit: 0,
-      creditDateString: 'None',
-      timeLimitMin: null,
-      password: null,
-      active: false,
-      showClosedAssessment,
-      showClosedAssessmentScore,
-      examAccessEnd: null,
-      showBeforeRelease: false,
-      accessTimeline: [],
+      ...UNAUTHORIZED_RESULT,
+      afterCompleteVisibility,
+      accessTimeline,
+      showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: null,
     };
   }
-
-  // No access path: no release date and no PT exams configured. The
-  // listed-only and PT review-only paths above have already returned for the
-  // cases where they apply, so reaching here means the rule has no way to
-  // grant access.
-  if (!effectiveRule.dateControl?.release && mainRuleInput.prairietestExams.length === 0) {
-    return { ...UNAUTHORIZED_RESULT, showClosedAssessment, showClosedAssessmentScore };
+  // `hasRelease` is true, so `current` is defined unless we have a degenerate window where due ≤ release.
+  // Treat degenerate windows as fully unauthorized.
+  const currentIdx = accessTimeline.findIndex((e) => e.current);
+  const current = currentIdx !== -1 ? accessTimeline[currentIdx] : undefined;
+  if (!current) {
+    return { ...UNAUTHORIZED_RESULT, afterCompleteVisibility, accessTimeline };
   }
 
-  const creditDateString = formatCreditDateString(
-    creditResult.credit,
-    creditResult.active,
-    creditResult.nextDeadlineDate,
-    displayTimezone,
-  );
+  if (current.startDate === null) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      afterCompleteVisibility,
+      accessTimeline,
+      showBeforeRelease: shouldShowBeforeRelease,
+      nextActiveDate: current.endDate,
+    };
+  }
 
-  const accessTimeline = buildAccessTimeline(effectiveRule.dateControl, date);
+  // afterLastDeadline omitted = no access at all (distinct from
+  // allowSubmissions: false which is view-only).
+  if (!current.accessible) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      visibility: afterCompleteVisibility,
+      afterCompleteVisibility,
+      visibilitySource: 'afterComplete',
+      complete: true,
+      accessTimeline,
+    };
+  }
+
+  const complete = current.kind === 'afterLastDeadline' && !current.submittable;
+  const visibility = complete ? afterCompleteVisibility : VISIBLE;
+  const visibilitySource = complete ? 'afterComplete' : 'default';
 
   return {
     authorized: true,
-    credit: creditResult.credit,
-    creditDateString,
-    timeLimitMin,
-    password: creditResult.password,
-    active: creditResult.active,
-    showClosedAssessment,
-    showClosedAssessmentScore,
-    examAccessEnd,
-    showBeforeRelease,
+    credit: current.credit,
+    creditDateString: formatCreditDateString(
+      current.credit,
+      current.submittable,
+      current.endDate,
+      displayTimezone,
+    ),
+    timeLimitMin: computeTimeLimitMin(
+      rule.dateControl?.durationMinutes,
+      findLastSubmittableEnd(accessTimeline, currentIdx),
+      date,
+      authzMode,
+    ),
+    // Password gates active participation only; once the student is in a
+    // view-only segment (e.g. afterLastDeadline.allowSubmissions: false),
+    // re-prompting for the password would gate review without protecting
+    // anything submittable.
+    password: current.submittable ? (rule.dateControl?.password ?? null) : null,
+    submittable: current.submittable,
+    visibility,
+    afterCompleteVisibility,
+    visibilitySource,
+    complete,
+    examAccessEnd: null,
+    showBeforeRelease: false,
     accessTimeline,
     nextActiveDate: null,
   };

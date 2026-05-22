@@ -28,7 +28,15 @@ import {
 
 import { type createContext, requireCoursePermissionOwn, t } from './init.js';
 
-export interface CourseStaffError {}
+export interface CourseStaffError {
+  List: never;
+  UpdateCourseRole: never;
+  DeleteUser: never;
+  UpdateInstanceRole: never;
+  InsertByUserUids: never;
+  BulkDelete: never;
+  BulkEditAccess: never;
+}
 
 const MAX_UIDS = 100;
 

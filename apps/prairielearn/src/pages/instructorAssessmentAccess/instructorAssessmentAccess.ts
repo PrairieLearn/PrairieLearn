@@ -22,11 +22,14 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
-import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
+import {
+  selectAccessControlRules,
+  selectPrairieTestExamMetadataByUuids,
+} from '../../models/assessment-access-control-rules.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
 import {
-  AssessmentAccessRulesSchema,
+  AssessmentAccessRuleRowSchema,
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
@@ -62,6 +65,14 @@ router.get(
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
       const jsonRules = await selectAccessControlRules(res.locals.assessment);
+      const initialExamUuids = Array.from(
+        new Set(
+          jsonRules.flatMap(
+            (r) => r.integrations?.prairieTest?.exams?.map((e) => e.examUuid) ?? [],
+          ),
+        ),
+      );
+      const prairieTestExamMetadata = await selectPrairieTestExamMetadataByUuids(initialExamUuids);
       const assessmentPath = getAssessmentPath(res.locals);
       const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
         assessmentPath,
@@ -83,6 +94,8 @@ router.get(
           origHash,
           trpcCsrfToken,
           initialData: jsonRules,
+          prairieTestExamMetadata,
+          ptHost: config.ptHost,
         }),
       );
       return;
@@ -91,7 +104,7 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      AssessmentAccessRulesSchema,
+      AssessmentAccessRuleRowSchema,
     );
 
     const assessmentPath = getAssessmentPath(res.locals);
@@ -204,7 +217,7 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,

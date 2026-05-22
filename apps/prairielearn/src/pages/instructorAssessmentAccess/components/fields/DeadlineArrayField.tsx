@@ -13,6 +13,8 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
+
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -21,10 +23,14 @@ import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { endOfDayDatetime } from '../utils/dateUtils.js';
 
 type DeadlineArrayFieldName =
-  | 'mainRule.earlyDeadlines'
-  | 'mainRule.lateDeadlines'
+  | 'defaultRule.earlyDeadlines'
+  | 'defaultRule.lateDeadlines'
   | `overrides.${number}.earlyDeadlines`
   | `overrides.${number}.lateDeadlines`;
+
+function clampCredit(value: number, type: 'early' | 'late'): number {
+  return Math.max(0, Math.min(type === 'early' ? 200 : 99, value));
+}
 
 function computeNextDeadline({
   type,
@@ -83,11 +89,29 @@ function computeNextDeadline({
 
   const defaultDate = candidateDate ? endOfDayDatetime(candidateDate) : '';
   const previousCredit = deadlines.at(-1)?.credit;
-  // Early deadlines are disallowed when a custom due credit is set, so the
-  // early branch can assume dueCredit is the default 100 and start at 110.
-  const defaultCredit =
-    previousCredit !== undefined ? previousCredit - 1 : isEarly ? 110 : Math.max(0, dueCredit - 10);
+  const defaultCredit = run(() => {
+    if (isEarly) {
+      return clampCredit(
+        previousCredit !== undefined ? previousCredit - 1 : dueCredit + 10,
+        'early',
+      );
+    }
+    // Anchor at min(dueCredit, 100) so dueCredit > 100 still lands on a clean
+    // 90 instead of clamping to 99.
+    const anchor = previousCredit ?? Math.min(dueCredit, 100);
+    return clampCredit(anchor - 10, 'late');
+  });
   return { date: defaultDate, credit: defaultCredit };
+}
+
+function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
+  if (dueCredit < 100) {
+    return 'Early deadlines are not allowed when due date credit is below 100%.';
+  }
+  if (dueCredit >= 200) {
+    return 'Early deadlines require credit above due credit, but due date credit is already 200%.';
+  }
+  return undefined;
 }
 
 function DeadlineArrayInput({
@@ -97,7 +121,6 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   dueCredit,
-  customDueCreditSet,
   validationReleaseDate,
   validationDueDate,
   deadlines,
@@ -112,10 +135,8 @@ function DeadlineArrayInput({
   idPrefix: string;
   releaseDate: string | null | undefined;
   dueDate: string | null | undefined;
-  /** Effective due-date credit (with default 100). Caps late-deadline credits. */
+  /** Effective due-date credit (with default 100). */
   dueCredit: number;
-  /** Effective `customCredit` flag on the due date. Used to block adding early deadlines. */
-  customDueCreditSet: boolean;
   validationReleaseDate?: string | null | undefined;
   validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
@@ -127,10 +148,8 @@ function DeadlineArrayInput({
 }) {
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
-  const addEarlyDisabled = isEarly && customDueCreditSet;
-  const addEarlyDisabledTitle = addEarlyDisabled
-    ? 'Early deadlines are not allowed when custom due credit is set.'
-    : undefined;
+  const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
+  const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
 
   const { errors } = useFormState();
 
@@ -264,24 +283,21 @@ function DeadlineArrayInput({
   };
 
   const validateCredit = (value: number, index: number) => {
-    if (!Number.isFinite(value)) return 'Credit is required';
+    if (Number.isNaN(value)) return 'Credit is required';
+    if (!Number.isFinite(value)) return 'Credit must be a finite number';
+    if (!Number.isInteger(value)) return 'Credit must be an integer';
     if (isEarly) {
-      if (value < 101 || value > 200) return 'Credit must be 101-200%';
-    } else if (dueCreditRef.current !== 0) {
-      // Late credit must be < 100 AND < dueCredit. When dueCredit >= 100 the
-      // tighter bound is 100; when dueCredit < 100 it's dueCredit itself.
-      // Skip when dueCredit === 0 — the validator forbids late deadlines
-      // entirely at 0% due credit, so a per-field error would be noise.
-      const cap = Math.min(100, dueCreditRef.current);
-      if (value < 0 || value >= cap) {
-        return cap === 100
-          ? 'Credit must be 0-99%'
-          : `Credit must be less than ${cap}% (due credit)`;
-      }
+      if (value < 0 || value > 200) return 'Credit must be 0-200%';
+      if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
+    } else if (value < 0 || value >= 100) {
+      return 'Credit after the due date must be 0-99%';
     }
     const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && value >= (currentDeadlines.at(index - 1)?.credit ?? 0)) {
+    if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {
       return 'Credit must be less than previous deadline';
+    }
+    if (!isEarly && index === 0 && value >= dueCreditRef.current) {
+      return 'Credit must be less than due credit';
     }
     return true;
   };
@@ -326,7 +342,7 @@ function DeadlineArrayInput({
 
       {addEarlyDisabled && (
         <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          Clear the custom value on due date credit to allow an early deadline.
+          {addEarlyDisabledTitle}
         </Alert>
       )}
 
@@ -363,7 +379,7 @@ function DeadlineArrayInput({
                   id={`${idPrefix}-${type}-deadline-${index}-credit`}
                   type="number"
                   defaultValue={deadlineField.credit}
-                  style={{ width: '5rem' }}
+                  style={{ width: '6rem' }}
                   aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
                   aria-invalid={!!getCreditError(index)}
                   aria-errormessage={
@@ -371,9 +387,16 @@ function DeadlineArrayInput({
                       ? `${idPrefix}-${type}-deadline-${index}-credit-error`
                       : undefined
                   }
-                  placeholder="100"
-                  min={isEarly ? '101' : '0'}
-                  max={isEarly ? '200' : Math.min(99, dueCredit - 1)}
+                  placeholder={isEarly ? '120' : '80'}
+                  min={isEarly ? clampCredit(dueCredit + 1, 'early') : '0'}
+                  max={run(() => {
+                    const previousCredit = index > 0 ? deadlines[index - 1]?.credit : undefined;
+                    if (previousCredit != null && Number.isFinite(previousCredit)) {
+                      return clampCredit(previousCredit - 1, type);
+                    }
+                    return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
+                  })}
+                  step={1}
                   onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
@@ -417,7 +440,7 @@ function DeadlineArrayInput({
   );
 }
 
-export function MainDeadlineArrayField({
+export function DefaultDeadlineArrayField({
   type,
   displayTimezone,
 }: {
@@ -425,14 +448,14 @@ export function MainDeadlineArrayField({
   displayTimezone: string;
 }) {
   const isEarly = type === 'early';
-  const fieldName = isEarly ? 'mainRule.earlyDeadlines' : 'mainRule.lateDeadlines';
+  const fieldName = isEarly ? 'defaultRule.earlyDeadlines' : 'defaultRule.lateDeadlines';
 
-  const releaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
 
-  const due = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const due = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
 
   const deadlines = useWatch<AccessControlFormData, typeof fieldName>({
@@ -455,11 +478,10 @@ export function MainDeadlineArrayField({
     <DeadlineArrayInput
       type={type}
       fieldArrayName={fieldName}
-      idPrefix="mainRule"
+      idPrefix="defaultRule"
       releaseDate={releaseDate}
       dueDate={dueDate}
       dueCredit={dueCredit}
-      customDueCreditSet={due.customCredit}
       validationReleaseDate={releaseDate}
       validationDueDate={dueDate}
       deadlines={deadlines}
@@ -488,19 +510,19 @@ export function OverrideDeadlineArrayField({
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
 
-  const mainDeadlines = useWatch<AccessControlFormData, `mainRule.${typeof fieldPath}`>({
-    name: `mainRule.${fieldPath}`,
+  const defaultRuleDeadlines = useWatch<AccessControlFormData, `defaultRule.${typeof fieldPath}`>({
+    name: `defaultRule.${fieldPath}`,
   });
 
   const deadlines = useWatch<AccessControlFormData, typeof fieldArrayName>({
     name: fieldArrayName,
   });
 
-  const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.release.date'>({
-    name: 'mainRule.release.date',
+  const defaultRuleReleaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
+    name: 'defaultRule.release.date',
   });
-  const mainDue = useWatch<AccessControlFormData, 'mainRule.due'>({
-    name: 'mainRule.due',
+  const defaultRuleDue = useWatch<AccessControlFormData, 'defaultRule.due'>({
+    name: 'defaultRule.due',
   });
 
   const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'release');
@@ -512,8 +534,8 @@ export function OverrideDeadlineArrayField({
     name: `overrides.${index}.due`,
   });
 
-  const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
-  const effectiveDue = dueOverridden ? overrideDue : mainDue;
+  const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : defaultRuleReleaseDate;
+  const effectiveDue = dueOverridden ? overrideDue : defaultRuleDue;
   const effectiveDueDate = effectiveDue.date;
   const effectiveDueCredit = effectiveDue.credit ?? 100;
   const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
@@ -526,7 +548,7 @@ export function OverrideDeadlineArrayField({
     name: fieldArrayName,
   });
 
-  // See MainDeadlineArrayField: late deadlines need a due date to anchor.
+  // See DefaultDeadlineArrayField: late deadlines need a due date to anchor.
   if (!isEarly && !isOverridden && deadlines.length === 0 && !effectiveDueDate) return null;
 
   const nextDeadline = () =>
@@ -539,10 +561,8 @@ export function OverrideDeadlineArrayField({
       displayTimezone,
     });
 
-  const addEarlyDisabled = isEarly && effectiveDue.customCredit;
-  const addEarlyDisabledTitle = addEarlyDisabled
-    ? 'Early deadlines are not allowed when custom due credit is set.'
-    : undefined;
+  const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(effectiveDueCredit) : undefined;
+  const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
 
   return (
     <FieldWrapper
@@ -553,7 +573,6 @@ export function OverrideDeadlineArrayField({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={label}
           checked={fields.length > 0}
-          showLabel={false}
           disabled={addEarlyDisabled && fields.length === 0}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
           onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
@@ -571,12 +590,18 @@ export function OverrideDeadlineArrayField({
         </Button>
       }
       onOverride={() => {
-        const copied = mainDeadlines.map((d) => ({ ...d }));
+        const copied = defaultRuleDeadlines.map((d) => ({ ...d }));
         replace(copied);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
+      {fields.length === 0 && (
+        <Alert variant="info" className="py-2 mb-0">
+          With no {type} deadlines set, this override clears any {type} deadlines inherited from the
+          defaults or earlier overrides. Click "Remove override" to inherit them instead.
+        </Alert>
+      )}
       <DeadlineArrayInput
         type={type}
         fieldArrayName={fieldArrayName}
@@ -584,7 +609,6 @@ export function OverrideDeadlineArrayField({
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         dueCredit={effectiveDueCredit}
-        customDueCreditSet={effectiveDue.customCredit}
         validationReleaseDate={validationReleaseDate}
         validationDueDate={validationDueDate}
         deadlines={deadlines}

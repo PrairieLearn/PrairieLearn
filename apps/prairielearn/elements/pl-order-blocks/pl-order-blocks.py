@@ -5,7 +5,7 @@ import os
 import random
 from collections import defaultdict
 from copy import deepcopy
-from typing import TypedDict
+from typing import NotRequired, TypedDict, assert_never
 
 import chevron
 import lxml.html
@@ -34,7 +34,6 @@ from order_blocks_options_parsing import (
     SolutionPlacementType,
     SourceBlocksOrderType,
 )
-from typing_extensions import NotRequired, assert_never
 
 
 class OrderBlocksAnswerData(TypedDict):

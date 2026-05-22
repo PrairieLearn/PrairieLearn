@@ -9,14 +9,13 @@ import json
 import numbers
 import re
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, assert_never, cast, overload
 
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import sympy
-from typing_extensions import assert_never
 
 from prairielearn.html_utils import escape_invalid_string
 from prairielearn.misc_utils import full_unidecode

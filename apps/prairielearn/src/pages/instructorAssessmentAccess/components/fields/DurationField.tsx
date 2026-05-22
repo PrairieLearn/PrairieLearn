@@ -72,39 +72,36 @@ function DurationToggle({
   value,
   onChange,
   idPrefix,
-  showLabel,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
   idPrefix: string;
-  showLabel?: boolean;
 }) {
   return (
     <ToggleTitle
       id={`${idPrefix}-time-limit-enabled`}
       label="Time limit"
       checked={value !== null}
-      showLabel={showLabel}
       onChange={(checked) => onChange(checked ? 60 : null)}
     />
   );
 }
 
-export function MainDurationField() {
+export function DefaultDurationField() {
   const {
     field,
     fieldState: { error },
-  } = useController<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  } = useController<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
     rules: { validate: validateDuration },
   });
 
   return (
     <Form.Group>
-      <DurationToggle value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+      <DurationToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
       <DurationDetails
         value={field.value}
-        idPrefix="mainRule"
+        idPrefix="defaultRule"
         error={error?.message}
         onChange={field.onChange}
       />
@@ -113,8 +110,8 @@ export function MainDurationField() {
 }
 
 export function OverrideDurationField({ index }: { index: number }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
   });
 
   const {
@@ -135,12 +132,11 @@ export function OverrideDurationField({ index }: { index: number }) {
         <DurationToggle
           value={field.value}
           idPrefix={`overrides-${index}`}
-          showLabel={false}
           onChange={field.onChange}
         />
       }
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}

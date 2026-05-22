@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { logger } from '@prairielearn/logger';
@@ -77,7 +77,8 @@ export interface QtiFileEntry {
 /**
  * Find QTI assessment XML files by parsing the resource list in `imsmanifest.xml`.
  *
- * Canvas QTI resources have type imsqti_xmlv1p2/imscc_xmlv1pN/assessment.
+ * Canvas QTI resources have type `imsqti_xmlv1p2` (quiz exports) or
+ * `imsqti_xmlv1p2/imscc_xmlv1pN/assessment` (course exports).
  * Each assessment resource has a paired `associatedcontent` dependency that
  * lists both `assessment_meta.xml` and a `non_cc_assessments/<id>.xml.qti`
  * file. The non-CC QTI contains the full question content (including Canvas-
@@ -206,4 +207,34 @@ function parseManifestTitle(xml: string): CourseExportInfo | null {
   const match = /<(?:\w+:)?string(?:\s[^>]*)?>([^<]+)<\/(?:\w+:)?string>/i.exec(xml);
   const title = match?.[1]?.trim();
   return title ? { title } : null;
+}
+
+const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
+
+/**
+ * Heuristic fallback for finding QTI XML files when no manifest is present.
+ * Scans the directory and one level of subdirectories for XML files that
+ * aren't known non-QTI files.
+ */
+export async function findQtiXmlFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir);
+
+  const directXmls = entries.filter((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+  if (directXmls.length > 0) {
+    return directXmls.map((f) => path.join(dir, f));
+  }
+
+  const xmlFiles: string[] = [];
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry);
+    const entryStat = await stat(entryPath);
+    if (entryStat.isDirectory()) {
+      const subEntries = await readdir(entryPath);
+      const xml = subEntries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+      if (xml) {
+        xmlFiles.push(path.join(entryPath, xml));
+      }
+    }
+  }
+  return xmlFiles;
 }
