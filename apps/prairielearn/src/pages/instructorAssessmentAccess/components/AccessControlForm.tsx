@@ -22,7 +22,10 @@ import {
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
-import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
+import {
+  type AccessControlFormFieldPath,
+  getAccessControlFormValidationErrors,
+} from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -94,12 +97,12 @@ export function AccessControlForm({
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
-  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // Sync form-level validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
+    for (const error of getAccessControlFormValidationErrors(watchedData, displayTimezone)) {
       nextManualErrors.set(error.path, error.message);
     }
 
@@ -221,7 +224,8 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
+  const hasManualErrors =
+    getAccessControlFormValidationErrors(watchedData, displayTimezone).length > 0;
 
   const saveDisabledReason = !isDirty
     ? 'No changes to save'

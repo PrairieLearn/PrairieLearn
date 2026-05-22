@@ -882,6 +882,25 @@ describe('Empty accessControl array', () => {
       ),
     );
   });
+
+  it('rejects student-label overrides with no labels', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: [],
+          dateControl: {
+            durationMinutes: 90,
+          },
+        }),
+      ],
+    });
+
+    assert.include(
+      result.errors,
+      'Student-label access control overrides must target at least one student label.',
+    );
+  });
 });
 
 describe('Global temporal validation', () => {

@@ -10,6 +10,7 @@ import {
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   defaultRuleHasCompletionMechanism,
+  isOverrideFieldActive,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -545,14 +546,24 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: { validate: validateQuestionVisibility },
+    rules: {
+      validate: (value, formValues) => {
+        if (!isOverrideFieldActive(formValues, index, 'questionVisibility')) return true;
+        return validateQuestionVisibility(value);
+      },
+    },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: {
+      validate: (value, formValues) => {
+        if (!isOverrideFieldActive(formValues, index, 'scoreVisibility')) return true;
+        return validateScoreVisibility(value);
+      },
+    },
   });
 
   return (

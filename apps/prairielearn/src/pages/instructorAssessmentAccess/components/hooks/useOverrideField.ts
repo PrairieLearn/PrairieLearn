@@ -1,7 +1,39 @@
 import { useCallback } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { type FieldPath, useFormContext, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData, OverridableFieldName } from '../types.js';
+
+function getOverrideFieldErrorPaths(
+  index: number,
+  fieldName: OverridableFieldName,
+): FieldPath<AccessControlFormData>[] {
+  const prefix = `overrides.${index}` as const;
+
+  switch (fieldName) {
+    case 'release':
+      return [`${prefix}.release`, `${prefix}.release.date`, `${prefix}.release.released`];
+    case 'due':
+      return [`${prefix}.due`, `${prefix}.due.date`, `${prefix}.due.credit`];
+    case 'earlyDeadlines':
+      return [`${prefix}.earlyDeadlines`];
+    case 'lateDeadlines':
+      return [`${prefix}.lateDeadlines`];
+    case 'afterLastDeadline':
+      return [`${prefix}.afterLastDeadline`, `${prefix}.afterLastDeadline.credit`];
+    case 'durationMinutes':
+      return [`${prefix}.durationMinutes`];
+    case 'password':
+      return [`${prefix}.password`];
+    case 'questionVisibility':
+      return [
+        `${prefix}.questionVisibility`,
+        `${prefix}.questionVisibility.visibleFromDate`,
+        `${prefix}.questionVisibility.visibleUntilDate`,
+      ];
+    case 'scoreVisibility':
+      return [`${prefix}.scoreVisibility`, `${prefix}.scoreVisibility.visibleFromDate`];
+  }
+}
 
 /**
  * Hook that manages whether a single override field is active (overridden) or
@@ -10,7 +42,7 @@ import type { AccessControlFormData, OverridableFieldName } from '../types.js';
  * to `undefined`, which react-hook-form does not support.
  */
 export function useOverrideField(index: number, fieldName: OverridableFieldName) {
-  const { setValue, getValues, clearErrors } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues, clearErrors, trigger } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
@@ -23,23 +55,23 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
     if (!current.includes(fieldName)) {
       setValue(`overrides.${index}.overriddenFields`, [...current, fieldName], {
         shouldDirty: true,
+        shouldValidate: true,
       });
+      void trigger(getOverrideFieldErrorPaths(index, fieldName));
     }
-  }, [index, fieldName, setValue, getValues]);
+  }, [index, fieldName, setValue, getValues, trigger]);
 
   const removeOverride = useCallback(() => {
     const current = getValues(`overrides.${index}.overriddenFields`);
     setValue(
       `overrides.${index}.overriddenFields`,
       current.filter((f) => f !== fieldName),
-      { shouldDirty: true },
+      { shouldDirty: true, shouldValidate: true },
     );
-    // Clear stale errors on the field being un-overridden. Manual cross-field
-    // errors may not clear on their own because watch() can return a
-    // reference-stable proxy, preventing the validation useEffect from re-running.
-    // See https://github.com/PrairieLearn/PrairieLearn/issues/14702
-    clearErrors(`overrides.${index}.${fieldName}`);
-  }, [index, fieldName, setValue, getValues, clearErrors]);
+    const paths = getOverrideFieldErrorPaths(index, fieldName);
+    clearErrors(paths);
+    void trigger(paths);
+  }, [index, fieldName, setValue, getValues, clearErrors, trigger]);
 
   return { isOverridden, addOverride, removeOverride };
 }

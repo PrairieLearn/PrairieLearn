@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { useFieldArray, useWatch } from 'react-hook-form';
+import { get, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -27,6 +27,8 @@ export function AppliesToField({
   const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
     name: `${namePrefix}.appliesTo`,
   });
+  const { errors } = useFormState<AccessControlFormData>();
+  const targetError: string | undefined = get(errors, `${namePrefix}.appliesTo`)?.message;
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
     name: `${namePrefix}.appliesTo.enrollments`,
@@ -184,9 +186,9 @@ export function AppliesToField({
         )}
       </div>
       {hasNoTargets && (
-        <Alert variant="warning" className="mt-3 mb-0">
-          This override has no targets. Add at least one{' '}
-          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
+        <Alert variant={targetError ? 'danger' : 'warning'} className="mt-3 mb-0" role="alert">
+          {targetError ??
+            `This override has no targets. Add at least one ${targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.`}
         </Alert>
       )}
     </div>

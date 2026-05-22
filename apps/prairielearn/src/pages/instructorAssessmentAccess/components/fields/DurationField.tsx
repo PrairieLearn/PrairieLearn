@@ -4,7 +4,7 @@ import { useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import type { AccessControlFormData } from '../types.js';
+import { type AccessControlFormData, isOverrideFieldActive } from '../types.js';
 
 function DurationDetails({
   value,
@@ -27,7 +27,7 @@ function DurationDetails({
               aria-label="Duration in minutes"
               aria-invalid={!!error}
               placeholder="Duration in minutes"
-              value={value || ''}
+              value={value}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
               onChange={({ currentTarget }) => {
@@ -119,7 +119,12 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: { validate: validateDuration },
+    rules: {
+      validate: (value, formValues) => {
+        if (!isOverrideFieldActive(formValues, index, 'durationMinutes')) return true;
+        return validateDuration(value);
+      },
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

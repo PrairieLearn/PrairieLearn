@@ -140,7 +140,9 @@ const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
 
 const EnrollmentRuleInputSchema = z.object({
   id: z.string().optional(),
-  enrollmentIds: z.array(z.string()),
+  enrollmentIds: z
+    .array(z.string())
+    .min(1, 'Enrollment access control overrides must target at least one student.'),
   ruleJson: AccessControlJsonInputSchema,
 });
 

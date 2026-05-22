@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Form } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -90,9 +91,12 @@ function ReleaseDateInput({
 }
 
 export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
   });
+  const dateControlEnabledRef = useRef(dateControlEnabled);
+  dateControlEnabledRef.current = dateControlEnabled;
 
   const {
     field: dateField,
@@ -101,12 +105,16 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     name: 'defaultRule.release.date',
     rules: {
       validate: (value) => {
-        if (!dateControlEnabled) return true;
+        if (!dateControlEnabledRef.current) return true;
         if (!value) return 'Release date is required';
         return true;
       },
     },
   });
+
+  useEffect(() => {
+    void trigger('defaultRule.release.date');
+  }, [dateControlEnabled, trigger]);
 
   const { field: releasedField } = useController<
     AccessControlFormData,
