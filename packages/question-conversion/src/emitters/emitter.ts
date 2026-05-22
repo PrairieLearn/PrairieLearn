@@ -24,7 +24,8 @@ export interface ConversionResult {
   sourceId: string;
   assessmentTitle: string;
   sourceType?: 'assessment' | 'question-bank';
-  sourceBankRefs?: IRSourceBankRef[];
+  /** Bank references that still need supplemental content to become importable questions. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
   assessment: PLAssessmentOutput;
   questions: PLQuestionOutput[];
   warnings: ConversionWarning[];

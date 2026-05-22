@@ -140,14 +140,12 @@ export class QTI12ItemContainerParser implements InputParser {
   ): Promise<IRAssessment> {
     const meta = this.parseAssessmentMeta(container.element, options);
     const allowedExtensions = this.parseAllowedExtensions(options?.assessmentMetaXml);
-    const { questions, zones, sourceBankRefs, parseWarnings } = await this.buildQuestionsAndZones(
-      container.element,
-      {
+    const { questions, zones, unresolvedSourceBankRefs, parseWarnings } =
+      await this.buildQuestionsAndZones(container.element, {
         parseOptions: options,
         shuffleAnswers: meta.shuffleAnswers,
         allowedExtensions,
-      },
-    );
+      });
 
     const { rubric, warning: rubricWarning } = this.parseRubric(options);
     if (rubricWarning) parseWarnings.push(rubricWarning);
@@ -159,7 +157,8 @@ export class QTI12ItemContainerParser implements InputParser {
       sourceType: 'assessment',
       questions,
       zones: zones.length > 0 ? zones : undefined,
-      sourceBankRefs: sourceBankRefs.length > 0 ? sourceBankRefs : undefined,
+      unresolvedSourceBankRefs:
+        unresolvedSourceBankRefs.length > 0 ? unresolvedSourceBankRefs : undefined,
       meta,
       rubric,
       parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
@@ -378,12 +377,12 @@ export class QTI12ItemContainerParser implements InputParser {
   ): Promise<{
     questions: IRQuestion[];
     zones: IRZone[];
-    sourceBankRefs: IRSourceBankRef[];
+    unresolvedSourceBankRefs: IRSourceBankRef[];
     parseWarnings: IRParseWarning[];
   }> {
     const allQuestions: IRQuestion[] = [];
     const zones: IRZone[] = [];
-    const sourceBankRefs: IRSourceBankRef[] = [];
+    const unresolvedSourceBankRefs: IRSourceBankRef[] = [];
     const parseWarnings: IRParseWarning[] = [];
 
     const rootSections = ensureArray(assessment['section'] as unknown);
@@ -393,7 +392,7 @@ export class QTI12ItemContainerParser implements InputParser {
         { parseOptions, shuffleAnswers, allowedExtensions },
         parseWarnings,
       );
-      return { questions, zones, sourceBankRefs, parseWarnings };
+      return { questions, zones, unresolvedSourceBankRefs, parseWarnings };
     }
 
     for (const rootSection of rootSections) {
@@ -421,7 +420,7 @@ export class QTI12ItemContainerParser implements InputParser {
             numberChoose: selectionNumber,
             points: sectionPoints,
           });
-          if (sourceBankRef) sourceBankRefs.push(sourceBankRef);
+          if (sourceBankRef) unresolvedSourceBankRefs.push(sourceBankRef);
           this.warnSourcebankRefs(subRec, zoneTitle, parseWarnings);
           const questions = await this.transformItems(
             items,
@@ -476,7 +475,7 @@ export class QTI12ItemContainerParser implements InputParser {
           numberChoose: selectionNumber,
           points: sectionPoints,
         });
-        if (sourceBankRef) sourceBankRefs.push(sourceBankRef);
+        if (sourceBankRef) unresolvedSourceBankRefs.push(sourceBankRef);
         const items = this.collectItems(rootRec);
         this.warnSourcebankRefs(rootRec, undefined, parseWarnings);
         const questions = await this.transformItems(
@@ -488,7 +487,7 @@ export class QTI12ItemContainerParser implements InputParser {
       }
     }
 
-    return { questions: allQuestions, zones, sourceBankRefs, parseWarnings };
+    return { questions: allQuestions, zones, unresolvedSourceBankRefs, parseWarnings };
   }
 
   private readSourceBankRef(

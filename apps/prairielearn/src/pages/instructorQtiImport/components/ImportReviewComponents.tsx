@@ -8,7 +8,7 @@ import {
   type SerializedConversionResult,
   type SerializedQuestionOutput,
   type StrippedAccessRules,
-  hasCanvasSourceBankRefs,
+  hasCanvasUnresolvedSourceBankRefs,
 } from '../instructorQtiImport.types.js';
 
 import { QuestionReviewPanel } from './QuestionReviewPanel.js';
@@ -18,7 +18,7 @@ function isRubricWarning(message: string): boolean {
 }
 
 function uniqueCanvasCourseIds(
-  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
+  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
 ): string[] {
   return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
 }
@@ -39,18 +39,20 @@ function CanvasCourseIdList({ courseIds }: { courseIds: string[] }) {
 }
 
 function countReferencedBankQuestions(
-  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
+  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
 ) {
   return refs.reduce((sum, ref) => sum + (ref.numberChoose ?? 1), 0);
 }
 
-function sourceBankRefKey(ref: NonNullable<SerializedConversionResult['sourceBankRefs']>[number]) {
+function sourceBankRefKey(
+  ref: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>[number],
+) {
   return ref.sourceBankExportId ?? ref.sourceBankRef;
 }
 
 function uniqueSourceBankRefs(
-  refs: NonNullable<SerializedConversionResult['sourceBankRefs']>,
-): NonNullable<SerializedConversionResult['sourceBankRefs']> {
+  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
+): NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']> {
   const seen = new Set<string>();
   return refs.filter((ref) => {
     const key = sourceBankRefKey(ref);
@@ -61,11 +63,11 @@ function uniqueSourceBankRefs(
 }
 
 export function UnresolvedBankWarnings({ results }: { results: SerializedConversionResult[] }) {
-  const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+  const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
   if (refs.length === 0) return null;
 
   const courseIds = uniqueCanvasCourseIds(refs);
-  const isCanvasExport = hasCanvasSourceBankRefs(refs);
+  const isCanvasExport = hasCanvasUnresolvedSourceBankRefs(refs);
 
   return (
     <Alert variant="warning" className="mb-3">
@@ -293,7 +295,7 @@ export function MissingBanksStep({
   onSkip: () => void;
   onStartOver: () => void;
 }) {
-  const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
+  const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
   const uniqueRefs = uniqueSourceBankRefs(refs);
   const courseIds = uniqueCanvasCourseIds(refs);
   const importedQuestionCount = results.reduce((sum, result) => sum + result.questions.length, 0);
@@ -301,7 +303,7 @@ export function MissingBanksStep({
   const totalQuestionCount = importedQuestionCount + missingQuestionCount;
   const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
   const countPrefix = hasUnknownCounts ? 'At least ' : '';
-  const isCanvasExport = hasCanvasSourceBankRefs(refs);
+  const isCanvasExport = hasCanvasUnresolvedSourceBankRefs(refs);
 
   return (
     <>

@@ -40,7 +40,8 @@ export interface SerializedConversionResult {
   sourceId: string;
   assessmentTitle: string;
   sourceType?: 'assessment' | 'question-bank';
-  sourceBankRefs?: IRSourceBankRef[];
+  /** Question bank references that still need supplemental content before import. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
   assessment: {
     directoryName: string;
     infoJson: PLAssessmentInfoJson;
@@ -90,7 +91,7 @@ export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>
   return candidate;
 }
 
-export function hasCanvasSourceBankRefs(refs: IRSourceBankRef[]): boolean {
+export function hasCanvasUnresolvedSourceBankRefs(refs: IRSourceBankRef[]): boolean {
   return refs.some((ref) => ref.sourceBankExportId != null || ref.externalCourseId != null);
 }
 

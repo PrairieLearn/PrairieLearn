@@ -16,7 +16,7 @@ import {
   type SerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
-  hasCanvasSourceBankRefs,
+  hasCanvasUnresolvedSourceBankRefs,
   resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
 
@@ -131,11 +131,14 @@ function buildInitialQuestionOverrides(
 }
 
 function countUnresolvedSourceBankRefs(results: SerializedConversionResult[]): number {
-  return results.reduce((count, result) => count + (result.sourceBankRefs ?? []).length, 0);
+  return results.reduce(
+    (count, result) => count + (result.unresolvedSourceBankRefs ?? []).length,
+    0,
+  );
 }
 
 function hasUnresolvedSourceBankRefs(results: SerializedConversionResult[]): boolean {
-  return results.some((result) => (result.sourceBankRefs ?? []).length > 0);
+  return results.some((result) => (result.unresolvedSourceBankRefs ?? []).length > 0);
 }
 
 function mergeSourceBankResults(
@@ -148,7 +151,7 @@ function mergeSourceBankResults(
   const usedBankSourceIds = new Set<string>();
 
   const mergedPrimary = primaryResults.map((result) => {
-    const refs = result.sourceBankRefs ?? [];
+    const refs = result.unresolvedSourceBankRefs ?? [];
     if (refs.length === 0) return result;
 
     let changed = false;
@@ -156,7 +159,7 @@ function mergeSourceBankResults(
       result.questions.map((question) => [question.directoryName, question]),
     );
     const zones = [...result.assessment.infoJson.zones];
-    const remainingRefs: NonNullable<SerializedConversionResult['sourceBankRefs']> = [];
+    const remainingRefs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']> = [];
     const removedWarningQuestionIds = new Set<string>();
 
     for (const ref of refs) {
@@ -196,7 +199,7 @@ function mergeSourceBankResults(
 
     return {
       ...result,
-      sourceBankRefs: remainingRefs.length > 0 ? remainingRefs : undefined,
+      unresolvedSourceBankRefs: remainingRefs.length > 0 ? remainingRefs : undefined,
       assessment: {
         ...result.assessment,
         infoJson: {
@@ -351,8 +354,10 @@ export function QtiImportForm({
       setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, existingDirs));
       setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
       if (unresolvedCount >= previousUnresolvedCount) {
-        const refs = results.flatMap((result) => result.sourceBankRefs ?? []);
-        const exportType = hasCanvasSourceBankRefs(refs) ? 'Canvas course export' : 'export';
+        const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
+        const exportType = hasCanvasUnresolvedSourceBankRefs(refs)
+          ? 'Canvas course export'
+          : 'export';
         setError({
           message: `No matching question banks were found in that upload. Try another ${exportType}, or continue without the missing bank questions.`,
         });

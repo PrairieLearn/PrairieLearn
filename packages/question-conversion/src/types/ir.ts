@@ -159,11 +159,14 @@ export interface IRZone {
 }
 
 export interface IRSourceBankRef {
+  /** Source-system identifier for the unresolved bank reference. */
   sourceBankRef: string;
+  /** Source-system export identifier, when the LMS provides a separate export ID. */
   sourceBankExportId?: string;
   title: string;
   numberChoose?: number;
   points?: number;
+  /** Source course identifier, when the LMS provides one for the missing bank. */
   externalCourseId?: string;
 }
 
@@ -227,7 +230,8 @@ export interface IRAssessment extends IRItemContainerBase {
   sourceType?: 'assessment';
   /** Questions organized by sections/zones. If present, preferred over flat `questions`. */
   zones?: IRZone[];
-  sourceBankRefs?: IRSourceBankRef[];
+  /** Bank references that could not be resolved from the item content in this export. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
   /** Assessment-level metadata. */
   meta?: IRAssessmentMeta;
   /** Assessment-level rubric (resolved from course_settings/rubrics.xml when provided). */
@@ -239,7 +243,7 @@ export interface IRQuestionBank extends IRItemContainerBase {
   kind: 'question-bank';
   sourceType: 'question-bank';
   zones?: undefined;
-  sourceBankRefs?: undefined;
+  unresolvedSourceBankRefs?: undefined;
   meta?: undefined;
   rubric?: undefined;
 }

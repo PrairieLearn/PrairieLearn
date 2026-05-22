@@ -60,7 +60,8 @@ export class PLEmitter implements OutputEmitter {
       sourceId: assessment.sourceId,
       assessmentTitle: assessment.title,
       sourceType: assessment.sourceType,
-      sourceBankRefs: 'sourceBankRefs' in assessment ? assessment.sourceBankRefs : undefined,
+      unresolvedSourceBankRefs:
+        'unresolvedSourceBankRefs' in assessment ? assessment.unresolvedSourceBankRefs : undefined,
       assessment: assessmentOutput,
       questions,
       warnings,

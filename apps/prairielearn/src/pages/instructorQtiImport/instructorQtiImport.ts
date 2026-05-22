@@ -372,7 +372,7 @@ async function serializeConversionResult(
       sourceId: result.sourceId,
       assessmentTitle: result.assessmentTitle,
       sourceType: result.sourceType,
-      sourceBankRefs: result.sourceBankRefs,
+      unresolvedSourceBankRefs: result.unresolvedSourceBankRefs,
       assessment: {
         directoryName: result.assessment.directoryName,
         infoJson: result.assessment.infoJson,

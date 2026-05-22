@@ -164,7 +164,7 @@ describe('QTI12AssessmentParser', async () => {
     assert.equal(result.sourceType, 'question-bank');
     assert.isFalse('meta' in result);
     assert.isFalse('zones' in result);
-    assert.isFalse('sourceBankRefs' in result);
+    assert.isFalse('unresolvedSourceBankRefs' in result);
   });
 
   describe('correct condition parsing', async () => {
@@ -897,7 +897,7 @@ describe('QTI12AssessmentParser', async () => {
       </assessment>
 </questestinterop>`;
       const result = await parser.parse(xml);
-      assert.deepEqual(result.sourceBankRefs, [
+      assert.deepEqual(result.unresolvedSourceBankRefs, [
         {
           sourceBankRef: '105415',
           sourceBankExportId: 'g664f76fdc719931d67b65146ba8654ee',
