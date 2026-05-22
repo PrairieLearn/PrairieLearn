@@ -6,6 +6,7 @@ import * as tmp from 'tmp-promise';
 import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 import {
   type ConversionResult,
@@ -18,9 +19,12 @@ import {
   parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
@@ -31,7 +35,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
 
-import { InstructorQtiImport } from './instructorQtiImport.html.js';
+import { QtiImportForm } from './components/QtiImportForm.js';
 import type {
   ParseWarning,
   SerializedConversionResult,
@@ -62,6 +66,7 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const returnTo = req.query.return_to === 'questions' ? 'questions' : 'assessments';
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getCourseInstanceTrpcUrl(res.locals.course_instance.id),
@@ -81,11 +86,32 @@ router.get(
     );
 
     res.send(
-      InstructorQtiImport({
+      PageLayout({
         resLocals: res.locals,
-        csrfToken: uploadCsrfToken,
-        trpcCsrfToken,
-        returnTo: req.query.return_to === 'questions' ? 'questions' : 'assessments',
+        pageTitle: 'Import QTI content',
+        navContext: {
+          type: 'instructor',
+          ...(returnTo === 'questions'
+            ? { page: 'course_admin', subPage: 'questions' }
+            : { page: 'instance_admin', subPage: 'assessments' }),
+        },
+        options: {},
+        headContent: html`
+          <link
+            href="${nodeModulesAssetPath('highlight.js/styles/default.css')}"
+            rel="stylesheet"
+          />
+        `,
+        content: (
+          <Hydrate>
+            <QtiImportForm
+              courseInstanceId={res.locals.course_instance.id}
+              csrfToken={uploadCsrfToken}
+              trpcCsrfToken={trpcCsrfToken}
+              returnTo={returnTo}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),
