@@ -94,6 +94,22 @@ const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
 const IMS_REF_OR_TAG_RE =
   /<(\w[\w-]*)\b[^>]*\$IMS-CC-FILEBASE\$[^>]*>[\s\S]*?<\/\1>|<\w[\w-]*\b[^>]*\$IMS-CC-FILEBASE\$[^>]*\/?>|\$IMS-CC-FILEBASE\$\/[^"'\s]+/gi;
 
+interface ResolveImsFileRefsResult {
+  /** Rewritten HTML with IMS file references changed to PrairieLearn clientFilesQuestion URLs. */
+  html: string;
+  /**
+   * Files to copy into clientFilesQuestion, keyed by generated filename.
+   * Values are decoded source paths from the QTI export, relative to the export's web_resources
+   * directory.
+   */
+  fileRefs: Map<string, string>;
+  /**
+   * Decoded source paths that matched an excluded extension and were intentionally omitted from
+   * `fileRefs`.
+   */
+  skippedFiles: string[];
+}
+
 /**
  * Resolve $IMS-CC-FILEBASE$ references in HTML for PrairieLearn output.
  *
@@ -103,25 +119,16 @@ const IMS_REF_OR_TAG_RE =
  *
  * When `excludeExtensions` is provided, a tag that references a file with an excluded
  * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
- * the path is readable), and the file is omitted from `fileRefs`. Excluded source paths are
- * returned in `skippedFiles`.
- *
- * Returns the rewritten HTML, a map of `{ filename → original decoded relative path }`
- * for files that should be copied to clientFilesQuestion, and the list of skipped source paths.
+ * the path is readable), and the file is omitted from `fileRefs`.
  */
 export function resolveImsFileRefs(
   html: string,
   excludeExtensions?: Set<string>,
-): {
-  html: string;
-  fileRefs: Map<string, string>;
-  skippedFiles: string[];
-} {
+): ResolveImsFileRefsResult {
   // Dedup index over all references (including excluded ones) so two files with the same basename
   // resolve to the same generated filename whether or not they're skipped.
   const pathByFilename = new Map<string, string>();
-  const skipped = new Set<string>();
-  const skippedPaths = new Set<string>();
+  const skippedSourcePaths = new Set<string>();
 
   function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
     const decodedPath = decodeURIComponent(rawPath);
@@ -137,10 +144,7 @@ export function resolveImsFileRefs(
     }
     pathByFilename.set(filename, decodedPath);
     const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
-    if (excluded) {
-      skipped.add(filename);
-      skippedPaths.add(decodedPath);
-    }
+    if (excluded) skippedSourcePaths.add(decodedPath);
     return { filename, excluded };
   }
 
@@ -174,10 +178,10 @@ export function resolveImsFileRefs(
 
   const fileRefs = new Map<string, string>();
   for (const [filename, path] of pathByFilename) {
-    if (!skipped.has(filename)) fileRefs.set(filename, path);
+    if (!skippedSourcePaths.has(path)) fileRefs.set(filename, path);
   }
 
-  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedPaths] };
+  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
