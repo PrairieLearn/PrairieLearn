@@ -33,8 +33,9 @@ interface EditJobFailed {
 }
 
 /**
- * A save rejected because the file on disk changed since the editor was opened.
- * The client offers a reload or a forced overwrite (re-saving with `force`).
+ * A save rejected because the file on disk changed or was deleted since the
+ * editor was opened. The client offers a reload or a forced overwrite (re-saving
+ * with `force`).
  */
 interface StaleEdit {
   code: 'STALE_EDIT';
@@ -211,20 +212,21 @@ export const aiDraftFilesRouter = t.router({
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
     // Pre-flight stale-edit check: if the file on disk no longer matches the
-    // hash the editor was opened with, surface a typed `STALE_EDIT` rather than
-    // letting the edit run and fail as a generic sync error. `FileModifyEditor`
-    // re-checks the hash and is the race-proof guard; this just produces a
-    // clean, typed conflict in the common case. A `force` save (the user chose
-    // to overwrite) saves against the current disk hash instead.
+    // hash the editor was opened with — including when it was deleted — surface
+    // a typed `STALE_EDIT` rather than letting the edit run and fail as a
+    // generic sync error.
     const diskHash = await getDraftQuestionFileHash({
       course: ctx.locals.course,
       question: ctx.question,
       filePath: input.filePath,
     });
-    if (!input.force && diskHash != null && diskHash !== input.origHash) {
+    if (!input.force && diskHash !== input.origHash) {
       throwAppError<AiDraftFilesError['Save']>({
         code: 'STALE_EDIT',
-        message: 'This file changed since you opened it.',
+        message:
+          diskHash == null
+            ? 'This file was deleted since you opened it.'
+            : 'This file changed since you opened it.',
       });
     }
 

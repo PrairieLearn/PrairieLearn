@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import type { Page } from '@playwright/test';
 
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
@@ -27,6 +30,7 @@ test.describe.configure({ mode: 'serial', timeout: 60_000 });
 
 test.describe('AI draft file editor', () => {
   let editorUrl: string;
+  let questionQid: string;
 
   test.beforeAll(async ({ browser, workerPort }) => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
@@ -48,6 +52,7 @@ test.describe('AI draft file editor', () => {
       throw new Error('Failed to create draft question fixture');
     }
     editorUrl = `/pl/course/1/ai_generate_editor/${result.question_id}`;
+    questionQid = result.question_qid;
   });
 
   test('confirms before leaving a file with unsaved edits', async ({ page }) => {
@@ -82,5 +87,28 @@ test.describe('AI draft file editor', () => {
 
     await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
+  });
+
+  // Runs last: it deletes the shared question's `server.py`.
+  test('reports a deleted file as a recoverable conflict, not a sync failure', async ({
+    page,
+    testCoursePath,
+  }) => {
+    await page.goto(`${editorUrl}?tab=all-files&file=server.py`);
+    await setAceEditorContentAt(selectedFileEditor(page), '# edited after the file was deleted\n');
+
+    // Another writer deletes the file after the editor was opened.
+    await fs.rm(path.join(testCoursePath, 'questions', questionQid, 'server.py'));
+
+    const editorStatus = page.getByTestId('selected-file-editor');
+    await editorStatus.getByRole('button', { name: 'Save edits' }).click();
+
+    // The deleted file surfaces as a stale-edit conflict with recovery options,
+    // not an opaque sync-job failure.
+    await expect(
+      editorStatus.getByText('This file was deleted since you opened it.'),
+    ).toBeVisible();
+    await expect(editorStatus.getByRole('button', { name: 'Reload file' })).toBeVisible();
+    await expect(editorStatus.getByRole('button', { name: 'overwrite anyway' })).toBeVisible();
   });
 });
