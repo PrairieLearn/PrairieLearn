@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type { PLAssessmentQuestion } from '@prairielearn/question-conversion';
@@ -40,6 +40,27 @@ const FALLBACK_ASSESSMENT_SETS = [
   'Machine Problem',
   'Worksheet',
 ];
+
+function useBeforeUnload(enabled: boolean): () => void {
+  const disabledRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handler = (event: BeforeUnloadEvent) => {
+      if (disabledRef.current) return;
+      event.preventDefault();
+      event.returnValue = 'prompt';
+      return 'prompt';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [enabled]);
+
+  return () => {
+    disabledRef.current = true;
+  };
+}
 
 interface AssessmentOverrides {
   title: string;
@@ -236,6 +257,9 @@ export function QtiImportForm({
     canRestart?: boolean;
   } | null>(null);
   const [supplementalSuccessMessage, setSupplementalSuccessMessage] = useState<string | null>(null);
+  const hasUnsavedImportWork =
+    results.length > 0 && (step === 'missing-banks' || step === 'review');
+  const disableBeforeUnload = useBeforeUnload(hasUnsavedImportWork);
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
     const formData = new FormData(form);
@@ -508,6 +532,7 @@ export function QtiImportForm({
       }
 
       const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+      disableBeforeUnload();
       window.location.href =
         returnTo === 'questions'
           ? `${baseUrl}/instructor/course_admin/questions`
