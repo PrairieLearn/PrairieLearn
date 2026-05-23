@@ -78,9 +78,7 @@ router.get(
     const showAddQuestionButton =
       authzData.has_course_permission_edit && !course.example_course && courseDirExists;
     const showImportQuestionsButton =
-      showAddQuestionButton &&
-      res.locals.course_instance != null &&
-      (await features.enabledFromLocals('qti-content-import', res.locals));
+      showAddQuestionButton && (await features.enabledFromLocals('qti-content-import', res.locals));
     const showAiGenerateQuestionButton =
       authzData.has_course_permission_edit &&
       !course.example_course &&

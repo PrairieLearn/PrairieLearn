@@ -33,6 +33,7 @@ import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
   getAiQuestionGenerationDraftsUrl,
+  getCourseInstanceBaseUrl,
 } from '../lib/client/url.js';
 
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
@@ -68,7 +69,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   courseId: string;
   currentCourseInstanceId?: string;
   addQuestionUrl?: string;
-  importQuestionsUrl?: string;
+  showImportQuestionsButton?: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -86,7 +87,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   courseId,
   currentCourseInstanceId,
   addQuestionUrl,
-  importQuestionsUrl,
+  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -229,6 +230,16 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   });
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
+  const canImportQuestions = showImportQuestionsButton && courseInstances.length > 0;
+  const getImportQuestionsUrl = (courseInstanceId: string) =>
+    `${getCourseInstanceBaseUrl(courseInstanceId)}/instructor/instance_admin/qti_import?return_to=questions`;
+  const renderImportQuestionsMenuItems = () =>
+    courseInstances.map((courseInstance) => (
+      <Dropdown.Item key={courseInstance.id} as="a" href={getImportQuestionsUrl(courseInstance.id)}>
+        <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+        {courseInstance.short_name}
+      </Dropdown.Item>
+    ));
 
   return (
     <>
@@ -274,7 +285,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           }),
         }}
         headerButtons={
-          addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton ? (
+          addQuestionUrl || canImportQuestions || showAiGenerateQuestionButton ? (
             <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
               {addQuestionUrl && (
                 <Dropdown.Item as="a" href={addQuestionUrl}>
@@ -288,11 +299,12 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                   Generate question with AI
                 </Dropdown.Item>
               )}
-              {importQuestionsUrl && (
-                <Dropdown.Item as="a" href={importQuestionsUrl}>
-                  <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
-                  Import content
-                </Dropdown.Item>
+              {canImportQuestions && (
+                <>
+                  {(addQuestionUrl || showAiGenerateQuestionButton) && <Dropdown.Divider />}
+                  <Dropdown.Header>Import content into</Dropdown.Header>
+                  {renderImportQuestionsMenuItems()}
+                </>
               )}
             </DropdownButton>
           ) : undefined
@@ -323,18 +335,18 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                     .
                   </p>
                 </div>
-                {(addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton) && (
+                {(addQuestionUrl || canImportQuestions || showAiGenerateQuestionButton) && (
                   <div className="d-flex gap-2">
-                    {importQuestionsUrl && (
-                      <a className="btn btn-primary" href={importQuestionsUrl}>
-                        <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
-                        Import questions
-                      </a>
+                    {canImportQuestions && (
+                      <DropdownButton as={ButtonGroup} title="Import questions" variant="primary">
+                        <Dropdown.Header>Import into course instance</Dropdown.Header>
+                        {renderImportQuestionsMenuItems()}
+                      </DropdownButton>
                     )}
                     {addQuestionUrl && (
                       <a
                         className={
-                          importQuestionsUrl ? 'btn btn-outline-primary' : 'btn btn-primary'
+                          canImportQuestions ? 'btn btn-outline-primary' : 'btn btn-primary'
                         }
                         href={addQuestionUrl}
                       >

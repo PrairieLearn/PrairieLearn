@@ -59,11 +59,7 @@ function InstructorQuestionsTableInner({
       addQuestionUrl={
         showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
       }
-      importQuestionsUrl={
-        showImportQuestionsButton
-          ? `${urlPrefix}/instance_admin/qti_import?return_to=questions`
-          : undefined
-      }
+      showImportQuestionsButton={showImportQuestionsButton}
     />
   );
 }
