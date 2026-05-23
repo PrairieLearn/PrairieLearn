@@ -330,8 +330,31 @@ export function AdministratorSettings({
                           <span class="text-success small ms-1">Provided</span>`
                       : html`<span class="text-danger fw-bold">Missing</span>`}
                   </li>
+                  <li>
+                    <code>serverCanonicalHost</code> (required) —
+                    ${config.serverCanonicalHost
+                      ? html`<code>${config.serverCanonicalHost}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                    <div class="text-muted small">
+                      Must be reachable from the annotation packet HTML files, which are opened
+                      directly off disk by reviewers — so a bare <code>localhost</code> won't work.
+                      Follow
+                      <a
+                        href="https://docs.prairielearn.com/dev-guide/configJson/#setting-up-external-image-capture-locally"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        these instructions
+                      </a>
+                      to find your local IPv4 address and set
+                      <code>serverCanonicalHost</code> to <code>http://&lt;your-ip&gt;:3000</code>.
+                      The linked guide is written for external image capture, but the host setup it
+                      walks through is the same one we need here.
+                    </div>
+                  </li>
                 </ul>
-                ${config.aiGradingEvalRepository
+                ${config.aiGradingEvalRepository && config.serverCanonicalHost
                   ? html`
                       <form method="POST" class="mb-3">
                         <input
@@ -408,11 +431,12 @@ export function AdministratorSettings({
                     `
                   : html`
                       <p class="text-muted">
-                        Set <code>aiGradingEvalRepository</code> in <code>config.json</code> to
-                        enable the run action.
+                        Set <code>aiGradingEvalRepository</code> and
+                        <code>serverCanonicalHost</code> in <code>config.json</code> to enable the
+                        run action.
                       </p>
                     `}
-                ${config.aiGradingEvalRepository
+                ${config.aiGradingEvalRepository && config.serverCanonicalHost
                   ? html`
                       <hr />
                       <h3 class="h6">Upload verdicts CSVs</h3>

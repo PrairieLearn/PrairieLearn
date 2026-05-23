@@ -38,6 +38,11 @@ export async function uploadVerdictCsvs({
   if (!config.devMode) {
     throw new Error('AI grading eval verdicts upload is only available in dev mode');
   }
+  if (!config.serverCanonicalHost) {
+    throw new Error(
+      'serverCanonicalHost is not configured. Set it in config.json so eval output can include working deep links to the synthetic course.',
+    );
+  }
   if (files.length === 0) {
     throw new Error('At least one verdicts CSV must be uploaded');
   }

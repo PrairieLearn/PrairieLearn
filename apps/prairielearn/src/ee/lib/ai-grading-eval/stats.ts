@@ -103,8 +103,10 @@ function aqDeepLink(target: ResolvedTarget): string {
     `/pl/course_instance/${target.course_instance.id}/instructor` +
     `/assessment/${target.assessment.id}` +
     `/manual_grading/assessment_question/${target.assessment_question.id}`;
-  const host = (config.serverCanonicalHost ?? '').replace(/\/$/, '');
-  return host ? `${host}${path}` : path;
+  // serverCanonicalHost is required by the upstream check in
+  // `runAiGradingEval`, so it's guaranteed to be set here.
+  const host = config.serverCanonicalHost!.replace(/\/$/, '');
+  return `${host}${path}`;
 }
 
 /**
@@ -324,7 +326,10 @@ function aggregateByModel(summaries: ModelRunSummary[]) {
     const correctCount = runs.reduce((a, r) => a + r.correctCount, 0);
     const incorrectCount = runs.reduce((a, r) => a + r.incorrectCount, 0);
     const unsureCount = runs.reduce((a, r) => a + r.unsureCount, 0);
-    const classifiedTotal = correctCount + incorrectCount + unsureCount;
+    // Macro-average: every eval contributes equally to the score, regardless
+    // of how many submissions it has. Per-eval (eval × model) score is
+    // `r.score = correct / (correct + incorrect + unsure)` for that eval.
+    const score = runs.length === 0 ? 0 : runs.reduce((a, r) => a + r.score, 0) / runs.length;
     return {
       model: model as AiGradingModelId,
       submissions: runs.reduce((a, r) => a + r.costJobs, 0),
@@ -333,7 +338,7 @@ function aggregateByModel(summaries: ModelRunSummary[]) {
       correctCount,
       incorrectCount,
       unsureCount,
-      score: classifiedTotal === 0 ? 0 : correctCount / classifiedTotal,
+      score,
     };
   });
 }
@@ -423,28 +428,6 @@ export function reportRunStats({
 
   const byEval = groupBy(summaries, (s) => s.evalId);
 
-  job.info('');
-  job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
-  job.info('  Note: "Score" = percentage of submission gradings a human said were correct');
-  job.info('        (unsure cases count as incorrect until a reviewer resolves them).');
-  for (const [evalId, evalSummaries] of Object.entries(byEval)) {
-    job.info('');
-    job.info(`  ${evalId}`);
-    for (const line of renderPerEvalModelTable(evalSummaries)) {
-      job.info(line);
-    }
-  }
-
-  if (annotationPacketsByEval && annotationPacketsByEval.size > 0) {
-    job.info('');
-    job.info(`═══ Annotation packets ${'═'.repeat(57)}`);
-    for (const [evalId, packetPath] of annotationPacketsByEval) {
-      job.info('');
-      job.info(`  ${evalId}`);
-      job.info(`    ${packetPath}`);
-    }
-  }
-
   if (verdictFilesByEval && verdictFilesByEval.size > 0) {
     job.info('');
     job.info(`═══ Verdicts loaded ${'═'.repeat(60)}`);
@@ -457,14 +440,38 @@ export function reportRunStats({
     }
   }
 
+  job.info('');
+  job.info(`═══ Per-eval cross-model comparison ${'═'.repeat(45)}`);
+  job.info('  Note: "Score" = percentage of submission gradings a human said were correct');
+  job.info('        (unsure cases count as incorrect until a reviewer resolves them).');
+  for (const [evalId, evalSummaries] of Object.entries(byEval)) {
+    job.info('');
+    job.info(`  ${evalId}`);
+    for (const line of renderPerEvalModelTable(evalSummaries)) {
+      job.info(line);
+    }
+  }
+
   const aggregated = aggregateByModel(summaries);
 
   job.info('');
   job.info(`═══ Run-wide totals ${'═'.repeat(60)}`);
   job.info(`  Evals    ${Object.keys(byEval).length}`);
   job.info(`  Models   ${aggregated.length}`);
+  job.info('  Note: "Score" here is the macro-average of per-eval scores (every eval');
+  job.info('        contributes equally regardless of submission count).');
   job.info('');
   for (const line of renderRunWideModelTable(aggregated)) {
     job.info(line);
+  }
+
+  if (annotationPacketsByEval && annotationPacketsByEval.size > 0) {
+    job.info('');
+    job.info(`═══ Annotation packets ${'═'.repeat(57)}`);
+    for (const [evalId, packetPath] of annotationPacketsByEval) {
+      job.info('');
+      job.info(`  ${evalId}`);
+      job.info(`    ${packetPath}`);
+    }
   }
 }

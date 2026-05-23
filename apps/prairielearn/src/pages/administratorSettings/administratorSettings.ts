@@ -109,6 +109,12 @@ router.post(
           'aiGradingEvalRepository is not configured. Set it in config.json.',
         );
       }
+      if (!config.serverCanonicalHost) {
+        throw new error.HttpStatusError(
+          400,
+          'serverCanonicalHost is not configured. Set it in config.json so AI grading eval output can include working deep links to the synthetic course.',
+        );
+      }
 
       const rawModels = req.body.models;
       const modelInput = Array.isArray(rawModels) ? rawModels : rawModels ? [rawModels] : [];
@@ -149,6 +155,12 @@ router.post(
         throw new error.HttpStatusError(
           400,
           'aiGradingEvalRepository is not configured. Set it in config.json.',
+        );
+      }
+      if (!config.serverCanonicalHost) {
+        throw new error.HttpStatusError(
+          400,
+          'serverCanonicalHost is not configured. Set it in config.json so AI grading eval output can include working deep links to the synthetic course.',
         );
       }
       const uploaded = (req.files ?? []) as Express.Multer.File[];

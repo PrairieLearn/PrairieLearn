@@ -22,7 +22,6 @@ const SnapshotCaseSchema = z.object({
   ai_descriptions: z.array(z.string()),
   ai_explanation: z.string().nullable(),
 });
-export type SnapshotCase = z.infer<typeof SnapshotCaseSchema>;
 
 const SnapshotCostSchema = z.object({
   job_count: z.number(),
@@ -31,21 +30,18 @@ const SnapshotCostSchema = z.object({
   total_completion_tokens: z.number(),
   dominant_model: z.string().nullable(),
 });
-export type SnapshotCost = z.infer<typeof SnapshotCostSchema>;
 
 const SnapshotTimingSchema = z.object({
   start_date: z.string().nullable(),
   finish_date: z.string().nullable(),
   duration_seconds: z.number().nullable(),
 });
-export type SnapshotTiming = z.infer<typeof SnapshotTimingSchema>;
 
 const SnapshotSeedVerdictSchema = z.object({
   case_id: z.string(),
   submission_identifier: z.string(),
   rubric_descriptions: z.array(z.string()),
 });
-export type SnapshotSeedVerdict = z.infer<typeof SnapshotSeedVerdictSchema>;
 
 const RunSnapshotSchema = z.object({
   schema_version: z.literal(SCHEMA_VERSION),
@@ -69,7 +65,7 @@ function safeTimestampSlug(iso: string): string {
   return iso.replaceAll(/[:.]/g, '-');
 }
 
-export function runsDirForEval(evalAbsoluteDir: string): string {
+function runsDirForEval(evalAbsoluteDir: string): string {
   return path.join(evalAbsoluteDir, 'runs');
 }
 

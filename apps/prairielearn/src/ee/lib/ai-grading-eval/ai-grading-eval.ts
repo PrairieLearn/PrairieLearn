@@ -48,6 +48,11 @@ export async function runAiGradingEval({
   if (!config.devMode) {
     throw new Error('AI grading evals are only available in dev mode');
   }
+  if (!config.serverCanonicalHost) {
+    throw new Error(
+      'serverCanonicalHost is not configured. Set it in config.json so eval output can include working deep links to the synthetic course.',
+    );
+  }
   if (models.length === 0) {
     throw new Error('At least one model is required to run AI grading evals');
   }
@@ -246,7 +251,8 @@ export async function runAiGradingEval({
 
     if (annotationPacketsByEval.size > 0) {
       job.info('');
-      job.info('Next steps:');
+      job.info(`▶▶▶ Next steps — review the annotation packets ${'◀'.repeat(34)}`);
+      job.info('');
       job.info(
         '  1. Copy and paste the file URL(s) below into your browser to open the annotation form locally:',
       );
