@@ -1,12 +1,17 @@
+import * as fs from 'node:fs';
 import { stat as fsStat, readFile, readdir } from 'node:fs/promises';
+import * as os from 'node:os';
 import path from 'node:path';
 
-import { Router } from 'express';
+import { type RequestHandler, Router } from 'express';
+import multer from 'multer';
+import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
 import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 import {
   type ConversionResult,
@@ -45,6 +50,38 @@ import type {
 } from './instructorQtiImport.types.js';
 
 const router = Router();
+
+const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
+  let uploadDir: string | undefined;
+  const qtiImportUpload = multer({
+    storage: multer.diskStorage({
+      destination(_req, _file, callback) {
+        fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
+          if (!err) {
+            uploadDir = folder;
+          }
+          callback(err, folder);
+        });
+      },
+    }),
+    limits: {
+      fieldSize: config.fileUploadMaxBytes,
+      fileSize: 100 * 1024 * 1024,
+      parts: config.fileUploadMaxParts,
+    },
+  });
+
+  qtiImportUpload.single('file')(req, res, (err) => {
+    onFinished(res, () => {
+      const destination = uploadDir ?? req.file?.destination;
+      if (!destination) return;
+      fs.promises.rm(destination, { recursive: true, force: true }).catch((err: Error) => {
+        logger.warn(`Failed to remove temporary QTI import upload directory: ${err.message}`);
+      });
+    });
+    next(err);
+  });
+};
 
 // Gate all routes behind the feature flag and require edit permissions.
 router.use(
@@ -119,6 +156,7 @@ router.get(
 
 router.post(
   '/upload',
+  qtiImportUploadSingle,
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     const file = req.file;
     if (!file) {

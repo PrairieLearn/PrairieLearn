@@ -123,8 +123,6 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
   };
 }
 
-const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @returns The express "app" object that was created.
@@ -220,37 +218,6 @@ export async function initExpress(): Promise<Express> {
       parts: config.fileUploadMaxParts,
     },
   });
-  const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
-    let uploadDir: string | undefined;
-    const qtiImportUpload = multer({
-      storage: multer.diskStorage({
-        destination(_req, _file, callback) {
-          fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
-            if (!err) {
-              uploadDir = folder;
-            }
-            callback(err, folder);
-          });
-        },
-      }),
-      limits: {
-        fieldSize: config.fileUploadMaxBytes,
-        fileSize: QTI_IMPORT_MAX_UPLOAD_BYTES,
-        parts: config.fileUploadMaxParts,
-      },
-    });
-
-    qtiImportUpload.single('file')(req, res, (err) => {
-      onFinished(res, () => {
-        const destination = uploadDir ?? req.file?.destination;
-        if (!destination) return;
-        fs.promises.rm(destination, { recursive: true, force: true }).catch((err: Error) => {
-          logger.warn(`Failed to remove temporary QTI import upload directory: ${err.message}`);
-        });
-      });
-      next(err);
-    });
-  };
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
     upload.single('file'),
@@ -345,11 +312,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
-  app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
-    qtiImportUploadSingle,
-  );
-
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
   // globally for the entire server.
