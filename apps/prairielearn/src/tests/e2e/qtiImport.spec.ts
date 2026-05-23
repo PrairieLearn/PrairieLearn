@@ -453,15 +453,15 @@ test.describe('QTI Import', () => {
     await page.getByLabel('Export file').setInputFiles(zipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
 
+    // The review step summarizes the importable assessment and its contained question.
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
-
     const importableSummary = page.locator('ul').filter({ hasText: 'assessment' });
     await expect(importableSummary.getByText('1 assessment', { exact: true })).toBeVisible();
     await expect(importableSummary.getByText('1 question', { exact: true })).toBeVisible();
 
+    // The assessment starts included, so the importer is ready to create content.
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
     await expect(page.getByLabel('Include E2E Import Quiz')).toBeChecked();
-
     await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
   });
 
@@ -721,6 +721,8 @@ test.describe('QTI Import', () => {
     await expect(firstBankUploadButton).toContainText('Upload export');
     await expect(firstBankUploadButton).not.toContainText('Processing...');
 
+    // Hold the first supplemental upload open so we can verify that only its button shows
+    // the processing state while other bank uploads are temporarily disabled.
     let continueBankUpload: () => void;
     const continueBankUploadPromise = new Promise<void>((resolve) => {
       continueBankUpload = resolve;
@@ -781,13 +783,14 @@ test.describe('QTI Import', () => {
     );
     await page.waitForSelector('.js-hydrated-component');
 
+    // Upload and review the export before creating the PrairieLearn assessment.
     await page.getByLabel('Export file').setInputFiles(zipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
-
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
 
+    // Creating content should return to the assessments page with a success flash.
     await page.getByRole('button', { name: 'Import 1 assessment' }).click();
     await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
@@ -852,11 +855,13 @@ test.describe('QTI Import', () => {
     await page.getByRole('button', { name: 'Import content' }).click();
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
 
+    // Assessments are selected by default, so the importer is ready to create content.
     await expect(page.getByLabel('Include E2E Import Quiz')).toBeChecked();
     await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
 
     await page.getByLabel('Include E2E Import Quiz').uncheck();
 
+    // Excluding the only assessment leaves nothing importable.
     await expect(page.getByRole('button', { name: 'Import 0 assessments' })).toBeDisabled();
   });
 
@@ -871,6 +876,7 @@ test.describe('QTI Import', () => {
     const zipPath = path.join(testCoursePath, 'qti-conflict-fixture.zip');
     await buildQtiZip(zipPath);
 
+    // Seed the course with the imported question.
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
     );
@@ -881,6 +887,7 @@ test.describe('QTI Import', () => {
     await page.getByRole('button', { name: 'Import 1 assessment' }).click();
     await page.waitForURL(/\/instance_admin\/assessments/, { timeout: 30000 });
 
+    // Uploading the same export again should surface conflict controls.
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
     );
@@ -890,7 +897,6 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
 
     await expect(page.getByText(/conflicts? with existing questions/)).toBeVisible();
-
     await expect(page.getByRole('button', { name: 'Overwrite all' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Rename all' })).toBeVisible();
   });
@@ -915,8 +921,8 @@ test.describe('QTI Import', () => {
     await page.getByRole('button', { name: 'Import content' }).click();
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
 
+    // Start over should discard the review state and return to the upload form.
     await page.getByRole('button', { name: 'Start over' }).click();
-
     await expect(page.getByLabel('Export file')).toBeVisible();
   });
 });
