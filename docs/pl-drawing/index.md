@@ -1804,7 +1804,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing-initial>
 ```
 
-### Example implementations
+**Example implementations**
 
 - [demo/drawing/graphs]: Example that highlights graph sketching
 
