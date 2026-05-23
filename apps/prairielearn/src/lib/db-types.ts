@@ -336,6 +336,9 @@ export const AiGradingCreditPoolChangeSchema = z.object({
 });
 export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
+export const EnumAiGradingMessagePhaseSchema = z.enum(['generate', 'edit']);
+export type EnumAiGradingMessagePhase = z.infer<typeof EnumAiGradingMessagePhaseSchema>;
+
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
   completion_tokens: z.number(),
@@ -351,6 +354,29 @@ export const AiGradingJobSchema = z.object({
   rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
+export const AiGradingMessageSchema = z.object({
+  assessment_question_id: IdSchema,
+  authn_user_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  id: IdSchema,
+  include_in_context: z.boolean(),
+  job_sequence_id: IdSchema.nullable(),
+  model: z.string().nullable(),
+  parts: z.array(z.any()),
+  phase: EnumAiGradingMessagePhaseSchema,
+  role: EnumAiQuestionGenerationMessageRoleSchema,
+  rubric_snapshot: z.any().nullable(),
+  status: EnumAiQuestionGenerationMessageStatusSchema,
+  updated_at: DateFromISOString,
+  usage_input_tokens: z.number(),
+  usage_input_tokens_cache_read: z.number(),
+  usage_input_tokens_cache_write: z.number(),
+  usage_output_tokens: z.number(),
+  usage_output_tokens_reasoning: z.number(),
+  workflow_run_id: z.string().nullable(),
+});
+export type AiGradingMessage = z.infer<typeof AiGradingMessageSchema>;
 
 export const AiQuestionGenerationMessageSchema = z.object({
   authn_user_id: IdSchema.nullable(),
@@ -1770,6 +1796,7 @@ export const TableNames = [
   'ai_grading_credit_checkout_sessions',
   'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
+  'ai_grading_messages',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',
   'assessment_access_control_early_deadlines',

@@ -16,12 +16,12 @@ import { run } from '@prairielearn/run';
 import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
+import { MemoizedMarkdown } from '../../../../components/MemoizedMarkdown.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {

@@ -2390,20 +2390,14 @@ if (shouldStartServer) {
     });
 
     if (config.workflowsActive) {
-      // Workflows execute question code (e.g. AI grading renders the
-      // question to feed it to the LLM), which only works on chunk
-      // consumers. Fail fast on non-chunk fleets so a misconfigured
-      // deployment doesn't silently start the engine on a server that
-      // can't actually run workflows.
-      if (!config.chunksConsumer) {
-        throw new Error(
-          'config.workflowsActive is true but config.chunksConsumer is false; workflows must run on chunk servers because they execute question code',
-        );
-      }
       // Workflow engine uses its own connection pool to isolate workflow
       // traffic from request-serving queries on the main pool.
       await workflows.init(pgConfig, idleErrorHandler);
     }
+
+    const { registerAiGradingWorkflow } =
+      await import('./ee/lib/ai-grading/ai-grading-workflow.js');
+    registerAiGradingWorkflow();
 
     logger.verbose('Successfully connected to database');
 

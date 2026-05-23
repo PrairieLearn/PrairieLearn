@@ -215,6 +215,15 @@ WHERE
   id = $assessment_question_id
 FOR NO KEY UPDATE;
 
+-- BLOCK select_rubric_modified_at
+SELECT
+  modified_at
+FROM
+  rubrics
+WHERE
+  id = $rubric_id
+  AND deleted_at IS NULL;
+
 -- BLOCK insert_rubric
 INSERT INTO
   rubrics (

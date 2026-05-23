@@ -444,6 +444,7 @@ const PostBodySchema = z.union([
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
     grader_guidelines: z.string().nullable(),
+    modified_at: z.string().optional(),
     rubric_items: z
       .array(
         z.object({
@@ -685,10 +686,15 @@ router.post(
           tag_for_manual_grading: body.tag_for_manual_grading,
           grader_guidelines: body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
+          check_modified_at: body.modified_at ? new Date(body.modified_at) : null,
         });
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
-        res.status(500).send({ err: String(err) });
+        if (err instanceof manualGrading.RubricModifiedAtConflictError) {
+          res.status(409).send({ err: err.message });
+        } else {
+          res.status(500).send({ err: String(err) });
+        }
       }
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);

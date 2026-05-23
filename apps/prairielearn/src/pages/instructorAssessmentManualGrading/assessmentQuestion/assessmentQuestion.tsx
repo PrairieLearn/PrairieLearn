@@ -1,13 +1,27 @@
+import { Readable } from 'node:stream';
+
+import { JsonToSseTransformStream, UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import {
+  WorkflowConflictError,
+  cancelWorkflow,
+  continueWorkflow,
+  getActiveWorkflowRun,
+  getWorkflowRun,
+  resumeWorkflow,
+  startWorkflow,
+} from '@prairielearn/workflows';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { prepareAgentMessages } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
@@ -15,11 +29,25 @@ import {
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  getAiGradingStreamContext,
+  registerSseStream,
+  takeSseStream,
+} from '../../../ee/lib/ai-grading/redis.js';
+import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import {
+  cancelLatestStreamingAiGradingMessage,
+  deleteAiGradingMessages,
+  deleteAiGradingMessagesByIds,
+  selectAiGradingMessages,
+  selectLatestStreamingAiGradingMessage,
+} from '../../../ee/models/ai-grading-message.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
+  StaffAiGradingMessageSchema,
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
@@ -39,6 +67,8 @@ import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGradi
 import { selectInstanceQuestionsForManualGrading } from './queries.js';
 
 const router = Router();
+const CHAT_STREAM_RETRY_INTERVAL_MS = 100;
+const CHAT_STREAM_RETRY_TIMEOUT_MS = 3000;
 
 router.get(
   '/',
@@ -59,6 +89,9 @@ router.get(
       'ai-submission-grouping',
       res.locals,
     );
+    const aiRubricAgentEnabled =
+      config.workflowsActive &&
+      (await features.enabledFromLocals('ai-rubric-grading-agent', res.locals));
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -133,9 +166,37 @@ router.get(
       config.secretKey,
     );
 
+    const chatCsrfToken = aiRubricAgentEnabled
+      ? generatePrefixCsrfToken(
+          {
+            url: req.originalUrl.split('?')[0] + '/chat',
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
+        )
+      : '';
+
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
+
+    const initialChatMessages = aiRubricAgentEnabled
+      ? z
+          .array(StaffAiGradingMessageSchema)
+          .parse(await selectAiGradingMessages(assessment_question.id))
+      : [];
+
+    const initialWorkflowSync = await run(async () => {
+      if (!aiRubricAgentEnabled) return null;
+      const wf = await getActiveWorkflowRun('ai_grading', {
+        assessment_question_id: assessment_question.id,
+      });
+      if (!wf) return { workflowRunId: null, version: 0 };
+      return {
+        workflowRunId: wf.id,
+        version: (wf.state as { version?: number }).version ?? 0,
+      };
+    });
 
     const aiGradingRelativeCosts = aiGradingEnabled
       ? computeAiGradingRelativeCosts(config.costPerMillionTokens)
@@ -154,6 +215,16 @@ router.get(
           fullWidth: true,
           pageNote: `Question ${number_in_alternative_group}`,
         },
+        headContent: aiRubricAgentEnabled
+          ? html`
+              <meta
+                name="mathjax-fonts-path"
+                content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+              />
+              ${compiledScriptTag('mathjaxSetup.ts')}
+              <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
+            `
+          : undefined,
         content: (
           <>
             <AssessmentOpenInstancesAlert
@@ -190,13 +261,17 @@ router.get(
                     ? await calculateAiGradingStats(assessment_question)
                     : null
                 }
-                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                aiRubricAgentEnabled={aiRubricAgentEnabled}
+                chatCsrfToken={chatCsrfToken}
+                initialChatMessages={initialChatMessages}
+                initialWorkflowSync={initialWorkflowSync}
                 aiGradingRelativeCosts={aiGradingRelativeCosts}
+                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
               />
             </Hydrate>
           </>
@@ -251,6 +326,354 @@ router.get(
 );
 
 router.post(
+  '/chat',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment, assessment_question, question, urlPrefix, authz_data } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'assessmentQuestion',
+        accessType: 'instructor',
+      },
+    );
+
+    const phase = req.body.phase as 'generate' | 'edit' | undefined;
+    if (!phase || !['generate', 'edit'].includes(phase)) {
+      throw new error.HttpStatusError(400, 'Invalid or missing phase');
+    }
+
+    const userMessage =
+      phase === 'generate'
+        ? 'Generate a new rubric.'
+        : typeof req.body.message === 'string'
+          ? req.body.message.trim()
+          : '';
+    if (phase === 'edit' && userMessage.length === 0) {
+      throw new error.HttpStatusError(400, 'No message provided');
+    }
+
+    // Get or create workflow
+    let workflowRun = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: assessment_question.id,
+    });
+
+    let isNewWorkflow = false;
+    if (!workflowRun) {
+      workflowRun = await startWorkflow('ai_grading', {
+        context: {
+          assessment_question_id: assessment_question.id,
+          assessment_id: assessment.id,
+          course_id: res.locals.course.id,
+          course_instance_id: res.locals.course_instance.id,
+          question_id: question.id,
+          url_prefix: urlPrefix,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          has_course_instance_permission_edit: String(
+            authz_data.has_course_instance_permission_edit,
+          ),
+        },
+        initialState: { step: 'awaiting_input' },
+      });
+      isNewWorkflow = true;
+
+      // startWorkflow returns with status 'running'. The first takeStep
+      // transitions it to 'waiting' asynchronously (a single DB round-trip).
+      // Wait for that before calling continueWorkflow.
+      const deadline = Date.now() + 5000;
+      let ready = false;
+      while (Date.now() < deadline) {
+        const freshRun = await getWorkflowRun(workflowRun.id);
+        if (freshRun.status === 'waiting') {
+          workflowRun = freshRun;
+          ready = true;
+          break;
+        }
+        if (freshRun.status !== 'running') {
+          throw new Error(
+            `Workflow ${workflowRun.id} entered unexpected status: ${freshRun.status}`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      if (!ready) {
+        throw new Error(`Workflow ${workflowRun.id} did not reach 'waiting' within timeout`);
+      }
+    }
+
+    // The rubric assistant is designed for single-user use. We use the workflow's
+    // atomic state transition as a concurrency lock: continueWorkflow fails if the
+    // workflow isn't in 'waiting' (i.e., another user already started the agent).
+    // We also check a version counter so that stale clients (whose page loaded
+    // before another user made changes) are rejected before inserting messages.
+    // The second user's chat may be briefly inconsistent — this is acceptable since
+    // multi-user simultaneous editing is not the current intended use case.
+    if (!isNewWorkflow) {
+      // If the run is stuck in 'running' (server crashed between startWorkflow
+      // and executeWorkflow, leaving the row unlocked), the periodic recovery
+      // loop would eventually pick it up — but the user shouldn't have to wait
+      // a minute. Trigger resumeWorkflow inline; if the lock is stale/missing,
+      // it transitions to 'waiting' on the first step. If another server holds
+      // a fresh lock, acquire_lock no-ops and we fall through to the 409 below.
+      if (workflowRun.status === 'running') {
+        void resumeWorkflow(workflowRun.id).catch(() => {});
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          workflowRun = await getWorkflowRun(workflowRun.id);
+          if (workflowRun.status !== 'running') break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+      }
+
+      if (workflowRun.status !== 'waiting') {
+        res.status(409).json({
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
+
+      // Version/workflow-run consistency check: the client sends the workflow run ID
+      // and version it knows about. If they don't match, the client is stale.
+      const clientWorkflowRunId =
+        typeof req.body.workflow_run_id === 'string' ? req.body.workflow_run_id : null;
+      const clientVersion =
+        typeof req.body.workflow_version === 'number' ? req.body.workflow_version : null;
+      const serverVersion = (workflowRun.state as { version?: number }).version ?? 0;
+
+      if (
+        (clientWorkflowRunId !== null && clientWorkflowRunId !== workflowRun.id) ||
+        (clientVersion !== null && clientVersion !== serverVersion)
+      ) {
+        res.status(409).json({
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
+    }
+
+    // Insert messages into DB to get message_id (needed as Redis stream key)
+    const { messageRow, userMessageId } = await prepareAgentMessages({
+      phase,
+      userMessage,
+      assessmentQuestionId: assessment_question.id,
+      authnUserId: res.locals.authn_user.id,
+      workflowRunId: workflowRun.id,
+    });
+
+    // Create SSE stream and register with Redis BEFORE continuing the workflow.
+    // This avoids a race condition: continueWorkflow starts takeStep async,
+    // so the stream must exist before we try to resume it.
+    const sseStream = new JsonToSseTransformStream();
+    registerSseStream(messageRow.id, sseStream);
+    const streamContext = await getAiGradingStreamContext();
+    await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
+
+    const currentVersion = (workflowRun.state as { version?: number }).version ?? 0;
+    const nextVersion = currentVersion + 1;
+
+    try {
+      await continueWorkflow(workflowRun.id, {
+        step: 'agent_running',
+        phase,
+        user_message: userMessage,
+        message_id: messageRow.id,
+        version: nextVersion,
+      });
+    } catch (err) {
+      // Clean up the pre-registered SSE stream so the Redis resumable stream
+      // doesn't sit orphaned until TTL expiry.
+      const orphanedStream = takeSseStream(messageRow.id);
+      if (orphanedStream) {
+        orphanedStream.writable.close().catch(() => {});
+      }
+      // Roll back the just-inserted user + assistant messages so they don't
+      // pollute history when the workflow couldn't actually be continued.
+      await deleteAiGradingMessagesByIds(assessment_question.id, [userMessageId, messageRow.id]);
+      if (err instanceof WorkflowConflictError) {
+        res.status(409).json({
+          error: 'The rubric assistant is out of sync. Please reload to continue.',
+        });
+        return;
+      }
+      throw err;
+    }
+
+    // Resume the Redis stream (already registered above, so this won't be null)
+    const stream = await streamContext.resumeExistingStream(messageRow.id);
+
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
+
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as never).pipe(res);
+  }),
+);
+
+router.get(
+  '/chat/stream',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const streamContext = await getAiGradingStreamContext();
+    const startTime = Date.now();
+    while (true) {
+      const latestMessage = await selectLatestStreamingAiGradingMessage(assessment_question.id);
+
+      if (!latestMessage) {
+        res.status(204).send();
+        return;
+      }
+
+      const stream = await streamContext.resumeExistingStream(latestMessage.id);
+      if (stream === null) {
+        res.status(204).send();
+        return;
+      }
+      if (stream !== undefined) {
+        Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+          res.setHeader(key, value);
+        });
+        Readable.fromWeb(stream as never).pipe(res);
+        return;
+      }
+
+      if (Date.now() - startTime >= CHAT_STREAM_RETRY_TIMEOUT_MS) {
+        res.status(204).send();
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, CHAT_STREAM_RETRY_INTERVAL_MS));
+    }
+  }),
+);
+
+router.get(
+  '/chat/messages',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const messages = z
+      .array(StaffAiGradingMessageSchema)
+      .parse(await selectAiGradingMessages(assessment_question.id));
+    res.json({ messages });
+  }),
+);
+
+router.post(
+  '/chat/cancel',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    await cancelLatestStreamingAiGradingMessage(assessment_question.id);
+    res.status(200).json({ success: true });
+  }),
+);
+
+router.post(
+  '/chat/clear',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!(await features.enabledFromLocals('ai-rubric-grading-agent', res.locals))) {
+      throw new error.HttpStatusError(403, 'AI rubric grading agent is not enabled');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const activeWorkflow = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: assessment_question.id,
+    });
+    if (activeWorkflow) {
+      // If the workflow is actively running (agent is executing), reject the
+      // clear. Cooperative cancellation means a running step could still mutate
+      // rubric state after we delete messages, leaving an inconsistent state.
+      if (activeWorkflow.status === 'running') {
+        res.status(409).json({
+          error:
+            'Cannot reset while the rubric assistant is running. Please cancel or wait for it to finish first.',
+        });
+        return;
+      }
+      await cancelWorkflow(activeWorkflow.id);
+    }
+
+    await deleteAiGradingMessages(assessment_question.id);
+    res.sendStatus(200);
+  }),
+);
+
+router.get(
+  '/chat/rubric_data',
+  typedAsyncHandler<'instructor-assessment-question'>(async (_req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question,
+    });
+
+    res.json({
+      rubric_data,
+      aiGradingStats:
+        aiGradingEnabled && assessment_question.ai_grading_mode
+          ? await calculateAiGradingStats(assessment_question)
+          : null,
+    });
+  }),
+);
+
+router.post(
   '/',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
@@ -297,6 +720,7 @@ router.post(
           tag_for_manual_grading: req.body.tag_for_manual_grading,
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
+          check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
         });
         const updatedAssessmentQuestion = await selectAssessmentQuestionById(
           res.locals.assessment_question.id,
@@ -311,7 +735,11 @@ router.post(
             : null;
         res.json({ rubric_data, aiGradingStats });
       } catch (err) {
-        res.status(500).send({ err: String(err) });
+        if (err instanceof manualGrading.RubricModifiedAtConflictError) {
+          res.status(409).send({ err: err.message });
+        } else {
+          res.status(500).send({ err: String(err) });
+        }
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

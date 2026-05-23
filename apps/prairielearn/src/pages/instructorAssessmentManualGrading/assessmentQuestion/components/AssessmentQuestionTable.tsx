@@ -99,6 +99,7 @@ interface AssessmentQuestionTableProps {
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  rubricEditingDisabled?: boolean;
   aiGradingRelativeCosts: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
@@ -153,6 +154,7 @@ export function AssessmentQuestionTable({
   aiGradingStats,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
+  rubricEditingDisabled,
   aiGradingRelativeCosts,
   onSetGroupInfoModalState,
   onSetConflictModalState,
@@ -590,11 +592,13 @@ export function AssessmentQuestionTable({
     <>
       <div className="mb-3">
         <RubricSettings
+          key={rubricData?.rubric.id ?? 'no-rubric'}
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
+          rubricEditingDisabled={rubricEditingDisabled}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
