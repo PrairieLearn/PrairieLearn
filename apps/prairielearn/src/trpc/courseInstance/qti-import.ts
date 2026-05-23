@@ -32,16 +32,25 @@ const SafeDirectoryName = z
 const QuestionInfoJsonSchema = QuestionJsonSchema.passthrough();
 const AssessmentInfoJsonSchema = AssessmentJsonSchema.passthrough();
 
-const QuestionDataSchema = z.object({
+const BaseQuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
-  originalDirectoryName: SafeDirectoryName.optional(),
-  draftId: z.string().uuid().optional(),
   infoJson: QuestionInfoJsonSchema,
-  questionHtml: z.string().optional(),
-  serverPy: z.string().optional(),
-  clientFiles: z.record(z.string()).optional(),
   overwrite: z.boolean().optional(),
 });
+
+const InlineQuestionDataSchema = BaseQuestionDataSchema.extend({
+  questionHtml: z.string(),
+  serverPy: z.string().optional(),
+  clientFiles: z.record(z.string()),
+});
+
+const DraftQuestionDataSchema = BaseQuestionDataSchema.extend({
+  originalDirectoryName: SafeDirectoryName.optional(),
+  draftId: z.string().uuid(),
+});
+
+const QuestionDataSchema = z.union([InlineQuestionDataSchema, DraftQuestionDataSchema]);
+type QuestionData = z.infer<typeof QuestionDataSchema>;
 
 const AssessmentDataSchema = z.object({
   directoryName: SafeDirectoryName,
@@ -121,16 +130,8 @@ const create = t.procedure
       return promise;
     };
 
-    const hydrateQuestion = async (
-      question: z.infer<typeof QuestionDataSchema>,
-    ): Promise<QtiImportQuestionData> => {
-      if (!question.draftId) {
-        if (!question.questionHtml || !question.clientFiles) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Question import data is missing generated files',
-          });
-        }
+    const hydrateQuestion = async (question: QuestionData): Promise<QtiImportQuestionData> => {
+      if (!('draftId' in question)) {
         return {
           directoryName: question.directoryName,
           infoJson: question.infoJson,
