@@ -47,6 +47,7 @@ MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
+SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
@@ -633,6 +634,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
+        blank_submission = False
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
@@ -640,6 +642,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score = partial_score.get("score", None)
 
             answers = []
+            if not submitted_keys:
+                answer_item = {
+                    "key": None,
+                    "html": SUBMITTED_ANSWER_BLANK["html"],
+                    "display_score_badge": score is not None and show_answer_feedback,
+                }
+                blank_submission = True
+                answers.append(answer_item)
             for submitted_key in submitted_keys:
                 submitted_answer = next(
                     filter(lambda a: a["key"] == submitted_key, display_answers), None
@@ -671,6 +681,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "hide_letter_keys": pl.get_boolean_attrib(
                     element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                 ),
+                "blank_submission": blank_submission,
             }
 
             # Add parameter for displaying overall score badge

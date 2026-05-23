@@ -108,7 +108,7 @@ Otherwise, you will receive a score of 0%.
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
-        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+        <span>{{^blank_submission}}{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{/blank_submission}}{{{html}}}</span>
         {{#display_feedback}}
             <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
                 {{{feedback}}}
