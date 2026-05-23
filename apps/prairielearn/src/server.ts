@@ -125,17 +125,6 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
 
 const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-async function cleanupQtiUpload(destination: string | undefined) {
-  if (!destination) return;
-  try {
-    await fs.promises.rm(destination, { recursive: true, force: true });
-  } catch (err) {
-    logger.warn(
-      `Failed to remove temporary QTI import upload directory: ${(err as Error).message}`,
-    );
-  }
-}
-
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @returns The express "app" object that was created.
@@ -253,7 +242,11 @@ export async function initExpress(): Promise<Express> {
 
     qtiImportUpload.single('file')(req, res, (err) => {
       onFinished(res, () => {
-        void cleanupQtiUpload(uploadDir ?? req.file?.destination);
+        const destination = uploadDir ?? req.file?.destination;
+        if (!destination) return;
+        fs.promises.rm(destination, { recursive: true, force: true }).catch((err: Error) => {
+          logger.warn(`Failed to remove temporary QTI import upload directory: ${err.message}`);
+        });
       });
       next(err);
     });
