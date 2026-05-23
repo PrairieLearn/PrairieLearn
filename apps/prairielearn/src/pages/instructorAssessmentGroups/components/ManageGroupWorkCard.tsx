@@ -2,7 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { getAppError } from '../../../lib/client/errors.js';
+import { type AppError, AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { ActionAccess } from '../types.js';
@@ -17,6 +18,8 @@ function DisableGroupWorkModal({
   hasAssessmentInstances,
   courseInstanceId,
   assessmentId,
+  error,
+  onDismissError,
 }: {
   show: boolean;
   onHide: () => void;
@@ -25,6 +28,8 @@ function DisableGroupWorkModal({
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessmentId: string;
+  error: AppError<AssessmentGroupsError['DisableGroupWork']> | null;
+  onDismissError: () => void;
 }) {
   return (
     <Modal show={show} onHide={onHide}>
@@ -32,6 +37,22 @@ function DisableGroupWorkModal({
         <Modal.Title>Disable group work</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        <AppErrorAlert
+          error={error}
+          className="mb-3"
+          render={{
+            SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+              <>
+                {message}{' '}
+                <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}>
+                  View job logs
+                </a>
+              </>
+            ),
+            UNKNOWN: ({ message }) => message,
+          }}
+          onDismiss={onDismissError}
+        />
         <p className="mb-2">
           All group configuration for this assessment, including groups and their memberships, will
           be permanently removed.
@@ -82,6 +103,10 @@ export function ManageGroupWorkCard({
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.disableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['DisableGroupWork']>(mutation.error);
+  const hideDisableModal = () => {
+    mutation.reset();
+    setShowDisableModal(false);
+  };
 
   return (
     <div className="card">
@@ -91,13 +116,15 @@ export function ManageGroupWorkCard({
         hasAssessmentInstances={hasAssessmentInstances}
         courseInstanceId={courseInstanceId}
         assessmentId={assessmentId}
-        onHide={() => setShowDisableModal(false)}
+        error={appError}
+        onDismissError={() => mutation.reset()}
+        onHide={hideDisableModal}
         onConfirm={() =>
           mutation.mutate(
             { origHash },
             {
               onSuccess: (result) => {
-                setShowDisableModal(false);
+                hideDisableModal();
                 onDisable(result);
               },
             },
@@ -105,11 +132,6 @@ export function ManageGroupWorkCard({
         }
       />
       <div className="card-body py-2">
-        {appError && (
-          <Alert variant="danger" className="mb-2" dismissible onClose={() => mutation.reset()}>
-            {appError.message}
-          </Alert>
-        )}
         {disableAccess.status === 'denied' && (
           <Alert variant="info" className="mb-2">
             {disableAccess.reason}

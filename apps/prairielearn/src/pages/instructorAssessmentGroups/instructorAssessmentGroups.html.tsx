@@ -215,8 +215,7 @@ function InstructorAssessmentGroupsInner({
   });
 
   const refreshGroupMembership = () => {
-    // Refetch errors surface via the membership query's `error` state; swallow here.
-    void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey }).catch(() => {});
+    void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey });
   };
 
   if (!groupConfigInfo) {
@@ -379,7 +378,6 @@ function InstructorAssessmentGroupsInner({
             isRefreshingGroups={groupMembershipQuery.isFetching}
             membershipErrorMessage={groupMembershipError}
             onRefreshGroups={refreshGroupMembership}
-            onGroupMembershipChanged={refreshGroupMembership}
           />
         ) : (
           <div className="card">

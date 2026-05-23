@@ -682,7 +682,6 @@ export function GroupsCard({
   isRefreshingGroups,
   membershipErrorMessage,
   onRefreshGroups,
-  onGroupMembershipChanged,
 }: {
   groupsCsvFilename: string;
   groups: GroupUsersRow[];
@@ -698,7 +697,6 @@ export function GroupsCard({
   isRefreshingGroups: boolean;
   membershipErrorMessage: string | null;
   onRefreshGroups: () => void;
-  onGroupMembershipChanged: () => void;
 }) {
   const [now, setNow] = useState(() => Date.now());
   const canEdit = editAccess.status === 'allowed';
@@ -747,14 +745,14 @@ export function GroupsCard({
           <AddGroupModal
             show={addModal.show}
             onHide={addModal.hide}
-            onGroupMembershipChanged={onGroupMembershipChanged}
+            onGroupMembershipChanged={onRefreshGroups}
           />
           <DeleteAllGroupsModal
             assessmentSetName={assessmentSet.name}
             assessmentNumber={assessment.number}
             show={deleteAllModal.show}
             onHide={deleteAllModal.hide}
-            onGroupMembershipChanged={onGroupMembershipChanged}
+            onGroupMembershipChanged={onRefreshGroups}
           />
           {editModal.data && (
             <EditGroupModal
@@ -762,7 +760,7 @@ export function GroupsCard({
               row={editModal.data}
               show={editModal.show}
               onHide={editModal.hide}
-              onGroupMembershipChanged={onGroupMembershipChanged}
+              onGroupMembershipChanged={onRefreshGroups}
             />
           )}
           {deleteModal.data && (
@@ -771,7 +769,7 @@ export function GroupsCard({
               row={deleteModal.data}
               show={deleteModal.show}
               onHide={deleteModal.hide}
-              onGroupMembershipChanged={onGroupMembershipChanged}
+              onGroupMembershipChanged={onRefreshGroups}
             />
           )}
         </>
