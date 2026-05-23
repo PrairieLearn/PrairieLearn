@@ -522,18 +522,7 @@ export function QtiImportForm({
         );
       }
 
-      const { jobSequenceId, assessmentIds } = await trpcClient.qtiImport.create.mutate(payload);
-      const expected = payload.assessments.length;
-
-      if (assessmentIds.length < expected) {
-        const failed = expected - assessmentIds.length;
-        setError({
-          message: `${assessmentIds.length} of ${expected} assessment${expected !== 1 ? 's' : ''} imported successfully (${failed} failed to sync).`,
-          jobSequenceId,
-        });
-        setStep('review');
-        return;
-      }
+      await trpcClient.qtiImport.create.mutate(payload);
 
       const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
       disableBeforeUnload();

@@ -2,8 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryScalars } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import {
   type QtiImportAssessmentData,
@@ -19,7 +17,6 @@ import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const QTI_IMPORT_DRAFT_UNAVAILABLE_MESSAGE =
   'The uploaded course content files are no longer available. Restart the import process and upload the export again.';
 
@@ -189,18 +186,7 @@ const create = t.procedure
       });
     }
 
-    // Look up the created assessment IDs by their UUIDs.
-    const uuids = assessments.map((a) => a.infoJson.uuid);
-    const assessmentIds = await queryScalars(
-      sql.select_assessment_ids_from_uuids,
-      {
-        uuids,
-        course_instance_id: ctx.course_instance.id,
-      },
-      IdSchema,
-    );
-
-    const assessmentCount = assessmentIds.length;
+    const assessmentCount = assessments.length;
     const questionCount = questions.length;
     const parts: string[] = [];
     if (assessmentCount > 0) {
@@ -210,14 +196,10 @@ const create = t.procedure
       parts.push(`${questionCount} question${questionCount !== 1 ? 's' : ''}`);
     }
     if (parts.length > 0) {
+      // The client unconditionally leaves the import flow after a successful mutation, so this
+      // message is intended for the page it redirects to.
       flash('success', `${parts.join(' and ')} imported successfully.`);
     }
-
-    return {
-      jobSequenceId: serverJob.jobSequenceId,
-      assessmentIds,
-      questionCount: questions.length,
-    };
   });
 
 export const qtiImportRouter = t.router({
