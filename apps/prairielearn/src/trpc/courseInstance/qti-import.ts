@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryScalars } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -12,7 +11,7 @@ import {
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { deleteQtiImportDraft, readQtiImportDraft } from '../../lib/qti-import-drafts.js';
+import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../../schemas/infoQuestion.js';
@@ -189,19 +188,6 @@ const create = t.procedure
         jobSequenceId: serverJob.jobSequenceId,
       });
     }
-
-    await Promise.all(
-      [...draftCache.keys()].map(async (draftId) => {
-        try {
-          await deleteQtiImportDraft(draftId);
-        } catch (err) {
-          logger.warn('Failed to delete QTI import draft after successful import', {
-            draftId,
-            err,
-          });
-        }
-      }),
-    );
 
     // Look up the created assessment IDs by their UUIDs.
     const uuids = assessments.map((a) => a.infoJson.uuid);

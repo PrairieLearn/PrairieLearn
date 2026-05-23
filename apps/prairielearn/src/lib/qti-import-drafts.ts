@@ -8,7 +8,6 @@ import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 
 // The file-store bucket lifecycle policy must expire this prefix after 24 hours.
-// Successful imports still delete their draft immediately; lifecycle handles abandoned S3 drafts.
 const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
 
 const DraftIdSchema = z.string().uuid();
