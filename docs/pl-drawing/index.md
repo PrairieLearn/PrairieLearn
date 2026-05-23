@@ -238,7 +238,7 @@ And `pl-drawing-initial` can also be used to display initial objects in a canvas
 ```html
 <pl-drawing gradable="true" answers-name="add-objects">
   <pl-drawing-initial>
-    <!-- objects that define the correct answer are placed here -->
+    <!-- objects that define the initial state are placed here -->
   </pl-drawing-initial>
   <pl-drawing-answer>
     <!-- objects that define the correct answer are placed here -->
@@ -834,7 +834,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## Vectors & Loads
+## Vectors & loads
 
 ### `pl-vector` element
 
@@ -1109,7 +1109,7 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## Mechanics & Structures
+## Mechanics & structures
 
 ### `pl-rod` element
 
@@ -1181,11 +1181,11 @@ More information about the grading attributes in the Grading section below.
 | `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
 | `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                       |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                         |
 | `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                       |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                         |
 | `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
@@ -1228,11 +1228,11 @@ More information about the grading attributes in the Grading section below.
 | `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
 | `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                       |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                         |
 | `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                       |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                         |
 | `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                              |
 | `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the first end of the rod.                                                                                       |
 | `offsety4`     | float   | -20     | Vertical distance of `label4` from the first end of the rod.                                                                                         |
@@ -1517,7 +1517,7 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## Circuit Components
+## Circuit components
 
 ### `pl-capacitor` element
 
