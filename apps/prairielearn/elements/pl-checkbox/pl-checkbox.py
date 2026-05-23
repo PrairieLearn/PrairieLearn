@@ -101,6 +101,27 @@ def generate_grading_text(
         return chevron.render(f, grading_text_params).strip()
 
 
+def generate_options_range_text(
+    *,
+    min_options_to_select: int,
+    max_options_to_select: int,
+    allow_blank: bool,
+) -> str:
+    """Generate text for the allowable number of selections."""
+    if min_options_to_select != max_options_to_select:
+        options_range_text = f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
+    else:
+        options_range_text = (
+            f"You must select exactly <b>{min_options_to_select}</b> options"
+        )
+    if allow_blank:
+        options_range_text += " (or skip this question by leaving it blank)."
+    else:
+        options_range_text += "."
+
+    return options_range_text
+
+
 def generate_insert_text(
     *,
     num_correct: int,
@@ -733,13 +754,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
 
-    # Check that at least one option was selected
+    # Ensure that submitted_key can be converted to a set
     if submitted_key is None:
-        if not allow_blank:
-            data["format_errors"][name] = "You must select at least one option."
-            return
-        else:
-            submitted_key = []
+        submitted_key = []
 
     # Check that the selected options are a subset of the valid options
     submitted_key_set = set(submitted_key)
@@ -762,14 +779,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         (allow_blank and len(submitted_key) == 0)
         or min_options_to_select <= len(submitted_key) <= max_options_to_select
     ):
-        if min_options_to_select != max_options_to_select:
-            data["format_errors"][name] = (
-                f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
-            )
-        else:
-            data["format_errors"][name] = (
-                f"You must select exactly <b>{min_options_to_select}</b> options."
-            )
+        data["format_errors"][name] = generate_options_range_text(
+            min_options_to_select=min_options_to_select,
+            max_options_to_select=max_options_to_select,
+            allow_blank=allow_blank,
+        )
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -837,6 +851,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     min_options_to_select = get_min_options_to_select(element, MIN_SELECT_DEFAULT)
     max_options_to_select = get_max_options_to_select(element, number_answers)
 
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+
     result = data["test_type"]
 
     if result == "correct":
@@ -883,9 +899,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             )
             score = 1 - 1.0 * number_wrong / number_answers
         elif partial_credit_mode is PartialCreditType.COVERAGE:
-            allow_blank = pl.get_boolean_attrib(
-                element, "allow-blank", ALLOW_BLANK_DEFAULT
-            )
             if allow_blank and len(ans) == 0:
                 score = 0
             else:
@@ -910,7 +923,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
         # This mimics what a browser does when no checkbox is selected: we simply get no value
         # for that form field.
-        data["format_errors"][name] = "You must select at least one option."
+        data["format_errors"][name] = generate_options_range_text(
+            min_options_to_select=min_options_to_select,
+            max_options_to_select=max_options_to_select,
+            allow_blank=allow_blank,
+        )
     else:
         assert_never(result)
 
