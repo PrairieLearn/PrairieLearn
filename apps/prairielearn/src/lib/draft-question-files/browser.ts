@@ -12,7 +12,7 @@ import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import { readEditableTextFile } from '../editorUtil.js';
 import { browseDirectory, getBinaryFileKind } from '../file-browser.js';
-import { getPaths } from '../instructorFiles.js';
+import { type InstructorFilePaths, getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';
 
 import {
@@ -22,10 +22,16 @@ import {
   requireQuestionQid,
   resolveWithinQuestionRoot,
 } from './paths.js';
+import type { DraftEditorSelection } from './selection.js';
+import { CODE_EDITOR_TAB_FILES } from './urls.js';
 
-interface DraftQuestionFileBrowserBreadcrumbSegment {
+export interface DraftQuestionFileBrowserBreadcrumbSegment {
   name: string;
-  /** Path relative to the question root; `null` for the question root. */
+  /**
+   * Path relative to the question root that this segment navigates to.
+   * `null` means the segment is not a directory link — either the question
+   * root or a leaf file.
+   */
   directory: string | null;
   isActive: boolean;
 }
@@ -71,7 +77,6 @@ export interface DraftQuestionFileBrowserData {
   selectedDirectory: string | null;
   /** Maximum upload size in bytes. */
   maxFileSizeBytes: number;
-  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
   specialDirs: DraftQuestionFileBrowserSpecialDir[];
   files: DraftQuestionFileBrowserFile[];
   dirs: DraftQuestionFileBrowserDirectory[];
@@ -104,6 +109,12 @@ export interface QuestionFilesData {
   fileBrowser: DraftQuestionFileBrowserData;
   selectedFile: SelectedQuestionFile | null;
   selectedFilePreview: SelectedQuestionFilePreview | null;
+  /**
+   * Breadcrumb describing the currently displayed location. When a file is
+   * shown, the file is the active leaf; otherwise the deepest visible
+   * directory is active. Rendered by `FileBrowserBreadcrumb` in every view.
+   */
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
 }
 
 /**
@@ -231,6 +242,81 @@ async function resolveSelectedDirectory({
 }
 
 /**
+ * Resolves a course-root-relative path (OS separators) to a path relative to
+ * the question root (POSIX separators). Used to translate `paths.branch` /
+ * directory listing paths into the form the editor URLs expect.
+ */
+function buildToQuestionRelativePath(questionRootPath: string) {
+  return (courseRelativePath: string) =>
+    path.posix.relative(questionRootPath, courseRelativePath.split(path.sep).join('/'));
+}
+
+/**
+ * Builds breadcrumb segments for a directory by walking `paths.branch` and
+ * keeping only directories the user can view. The deepest viewable directory
+ * is the active segment unless `leafActive` is false (e.g. when a file leaf
+ * will be appended).
+ */
+function buildDirectoryBreadcrumb({
+  paths,
+  questionRootPath,
+  leafActive,
+}: {
+  paths: InstructorFilePaths;
+  questionRootPath: string;
+  leafActive: boolean;
+}): DraftQuestionFileBrowserBreadcrumbSegment[] {
+  const toQuestionRelativePath = buildToQuestionRelativePath(questionRootPath);
+  const viewableBranch = paths.branch.filter((dir) => dir.canView);
+  return viewableBranch.map((dir, index): DraftQuestionFileBrowserBreadcrumbSegment => {
+    const relativePath = toQuestionRelativePath(dir.path);
+    return {
+      name: dir.name,
+      directory: relativePath === '' ? null : relativePath,
+      isActive: leafActive && index === viewableBranch.length - 1,
+    };
+  });
+}
+
+/**
+ * Builds the breadcrumb the editor shows above whichever view is active. A
+ * selected file is the active leaf (its parent dirs are linkable); otherwise
+ * the deepest viewable directory is the active leaf.
+ */
+function buildBreadcrumb({
+  resLocals,
+  questionRootPath,
+  selectedFilePath,
+  selectedDirectory,
+}: {
+  resLocals: DraftQuestionFilesLocals;
+  questionRootPath: string;
+  selectedFilePath: string | null;
+  selectedDirectory: string | null;
+}): DraftQuestionFileBrowserBreadcrumbSegment[] {
+  const fileParentDir =
+    selectedFilePath != null
+      ? (() => {
+          const parent = path.posix.dirname(selectedFilePath);
+          return parent === '.' ? null : parent;
+        })()
+      : selectedDirectory;
+  const requestedPath =
+    fileParentDir == null ? questionRootPath : path.posix.join(questionRootPath, fileParentDir);
+  const paths = getPaths(requestedPath, { ...resLocals, navPage: 'question' });
+  const dirSegments = buildDirectoryBreadcrumb({
+    paths,
+    questionRootPath,
+    leafActive: selectedFilePath == null,
+  });
+  if (selectedFilePath == null) return dirSegments;
+  return [
+    ...dirSegments,
+    { name: path.posix.basename(selectedFilePath), directory: null, isActive: true },
+  ];
+}
+
+/**
  * Builds the serializable data describing the draft question's file browser.
  * This is the data layer for the `DraftQuestionFileBrowser` component: it reads
  * the filesystem and resolves paths/URLs so the component only renders.
@@ -258,14 +344,7 @@ async function buildDraftQuestionFileBrowserData({
     ...resLocals,
     navPage: 'question',
   });
-
-  /**
-   * Resolves a course-root-relative path (with OS separators) to a path
-   * relative to the question root (with POSIX separators).
-   */
-  function toQuestionRelativePath(courseRelativePath: string) {
-    return path.posix.relative(questionRootPath, courseRelativePath.split(path.sep).join('/'));
-  }
+  const toQuestionRelativePath = buildToQuestionRelativePath(questionRootPath);
 
   const directoryListings = await browseDirectory({ paths });
 
@@ -301,23 +380,12 @@ async function buildDraftQuestionFileBrowserData({
     };
   });
 
-  const viewableBranch = paths.branch.filter((dir) => dir.canView);
-  const breadcrumb = viewableBranch.map((dir, index): DraftQuestionFileBrowserBreadcrumbSegment => {
-    const relativePath = toQuestionRelativePath(dir.path);
-    return {
-      name: dir.name,
-      directory: relativePath === '' ? null : relativePath,
-      isActive: index === viewableBranch.length - 1,
-    };
-  });
-
   return {
     hasEditPermission: paths.hasEditPermission,
     editorUrl,
     urlPrefix: paths.urlPrefix,
     selectedDirectory: effectiveSelectedDirectory,
     maxFileSizeBytes: config.fileUploadMaxBytes,
-    breadcrumb,
     specialDirs: paths.specialDirs.map((d) => ({
       label: d.label,
       directory: toQuestionRelativePath(path.relative(resLocals.course.path, d.path)),
@@ -335,14 +403,23 @@ async function buildDraftQuestionFileBrowserData({
 export async function getQuestionFilesData({
   resLocals,
   editorUrl,
-  selectedFilePath,
-  selectedDirectory,
+  selection,
 }: {
   resLocals: DraftQuestionFilesLocals;
   editorUrl: string;
-  selectedFilePath: string | null;
-  selectedDirectory: string | null;
+  selection: DraftEditorSelection;
 }): Promise<QuestionFilesData> {
+  // A file selection that's handled elsewhere (the `info.json` editor or the
+  // dedicated Files tab for `question.html` / `server.py`) resolves to no
+  // selected file; the browser falls back to the root.
+  const filePathToRead =
+    selection.kind === 'file' &&
+    !isDraftQuestionInfoFile(selection.path) &&
+    !CODE_EDITOR_TAB_FILES.has(selection.path)
+      ? selection.path
+      : null;
+  const browserDirectory = selection.kind === 'dir' ? selection.path : null;
+
   const courseFilesClient = getCourseFilesClient();
   // `getQuestionFiles` already goes through the course-files API, while the
   // browser listing and the selected-file read still touch the filesystem
@@ -353,15 +430,27 @@ export async function getQuestionFilesData({
       course_id: resLocals.course.id,
       question_id: resLocals.question.id,
     }),
-    buildDraftQuestionFileBrowserData({ resLocals, editorUrl, selectedDirectory }),
-    readSelectedQuestionFile({
+    buildDraftQuestionFileBrowserData({
       resLocals,
-      filePath:
-        selectedFilePath == null || isDraftQuestionInfoFile(selectedFilePath)
-          ? null
-          : selectedFilePath,
+      editorUrl,
+      selectedDirectory: browserDirectory,
     }),
+    readSelectedQuestionFile({ resLocals, filePath: filePathToRead }),
   ]);
 
-  return { files, fileBrowser, ...selectedQuestionFile };
+  // The breadcrumb tracks what the user actually sees. If a `?file=` param
+  // failed to resolve to a viewable file, fall back to the directory chain so
+  // the breadcrumb matches the file-browser view that ends up rendered.
+  const resolvedFilePath =
+    selectedQuestionFile.selectedFile?.path ??
+    selectedQuestionFile.selectedFilePreview?.path ??
+    null;
+  const breadcrumb = buildBreadcrumb({
+    resLocals,
+    questionRootPath: `questions/${requireQuestionQid(resLocals.question)}`,
+    selectedFilePath: resolvedFilePath,
+    selectedDirectory: fileBrowser.selectedDirectory,
+  });
+
+  return { files, fileBrowser, ...selectedQuestionFile, breadcrumb };
 }

@@ -432,7 +432,7 @@ export function DeleteFileButton({
       header="Confirm delete"
       iconClass="far fa-trash-alt"
       label="Delete"
-      className="btn btn-xs btn-secondary text-nowrap"
+      className="btn btn-xs btn-danger text-nowrap"
       disabled={disabled}
       testId="delete-file-button"
       renderBody={(close) => (

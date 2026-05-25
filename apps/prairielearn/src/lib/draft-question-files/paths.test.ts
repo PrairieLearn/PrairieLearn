@@ -2,8 +2,6 @@ import { assert, describe, it } from 'vitest';
 
 import {
   ModifiableQuestionFilePathSchema,
-  OptionalSelectedDirectorySchema,
-  OptionalSelectedFilePathSchema,
   QuestionRelativeDirectorySchema,
   QuestionRelativeFilePathSchema,
 } from './paths.js';
@@ -42,30 +40,6 @@ describe('draft question file path schemas', () => {
 
     it('normalizes selected directories', () => {
       assert.equal(QuestionRelativeDirectorySchema.parse('clientFilesQuestion/../tests'), 'tests');
-    });
-  });
-
-  describe('OptionalSelectedFilePathSchema', () => {
-    it('returns null when no file is selected', () => {
-      assert.isNull(OptionalSelectedFilePathSchema.parse(undefined));
-      assert.isNull(OptionalSelectedFilePathSchema.parse(null));
-    });
-
-    it('returns null for malformed input rather than throwing', () => {
-      assert.isNull(OptionalSelectedFilePathSchema.parse(['question.html']));
-      assert.isNull(OptionalSelectedFilePathSchema.parse('../escape.txt'));
-    });
-
-    it('normalizes a valid selected file path', () => {
-      assert.equal(OptionalSelectedFilePathSchema.parse('tests/../question.html'), 'question.html');
-    });
-  });
-
-  describe('OptionalSelectedDirectorySchema', () => {
-    it('returns null for the question root or malformed input', () => {
-      assert.isNull(OptionalSelectedDirectorySchema.parse(undefined));
-      assert.isNull(OptionalSelectedDirectorySchema.parse(''));
-      assert.isNull(OptionalSelectedDirectorySchema.parse(['tests']));
     });
   });
 

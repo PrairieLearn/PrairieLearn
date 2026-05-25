@@ -28,12 +28,10 @@ export function FileBrowserActionButton({
 }) {
   if (disabled) {
     return (
-      <span title={disabledTitle}>
-        <button type="button" className={className} disabled>
-          <i className={icon} aria-hidden="true" />
-          <span>{label}</span>
-        </button>
-      </span>
+      <button type="button" className={className} disabled title={disabledTitle}>
+        <i className={icon} aria-hidden="true" />
+        <span>{label}</span>
+      </button>
     );
   }
 

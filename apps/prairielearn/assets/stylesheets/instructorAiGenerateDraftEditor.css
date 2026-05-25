@@ -149,15 +149,6 @@
   min-height: 0;
 }
 
-.file-browser-row-actions .btn {
-  align-items: center;
-  display: inline-flex;
-  gap: 0.25rem;
-  height: 1.625rem;
-  justify-content: center;
-  width: 5.75rem;
-}
-
 .min-width-0 {
   min-width: 0;
 }

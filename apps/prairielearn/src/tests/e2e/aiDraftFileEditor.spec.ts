@@ -46,7 +46,14 @@ test.describe('AI draft file editor', () => {
       authn_user_id: user.id,
       has_course_permission_edit: true,
       is_draft: true,
-      files: { 'question.html': '<p>e2e draft question</p>\n', 'server.py': '# e2e\n' },
+      // `notes.txt` is the fixture for the per-file editor tests:
+      // `question.html` and `server.py` route to the dedicated "Files" tab
+      // rather than the per-file editor on "All files".
+      files: {
+        'question.html': '<p>e2e draft question</p>\n',
+        'server.py': '# e2e\n',
+        'notes.txt': 'e2e notes\n',
+      },
     });
     if (result.status !== 'success') {
       throw new Error('Failed to create draft question fixture');
@@ -56,10 +63,10 @@ test.describe('AI draft file editor', () => {
   });
 
   test('confirms before leaving a file with unsaved edits', async ({ page }) => {
-    await page.goto(`${editorUrl}?tab=all-files&file=server.py`);
+    await page.goto(`${editorUrl}?tab=all-files&selection=file%3Anotes.txt`);
 
     const editorStatus = page.getByTestId('selected-file-editor');
-    await setAceEditorContentAt(selectedFileEditor(page), '# edited but not saved\n');
+    await setAceEditorContentAt(selectedFileEditor(page), 'edited but not saved\n');
     await expect(editorStatus.getByText('Unsaved changes.')).toBeVisible();
 
     await page.getByRole('link', { name: 'All files' }).click();
@@ -80,7 +87,7 @@ test.describe('AI draft file editor', () => {
   });
 
   test('leaves immediately when the file has no unsaved edits', async ({ page }) => {
-    await page.goto(`${editorUrl}?tab=all-files&file=server.py`);
+    await page.goto(`${editorUrl}?tab=all-files&selection=file%3Anotes.txt`);
     await expect(page.getByTestId('selected-file-editor').getByText('Saved.')).toBeVisible();
 
     await page.getByRole('link', { name: 'All files' }).click();
@@ -116,30 +123,30 @@ test.describe('AI draft file editor', () => {
   test('falls back to the question root when the directory parameter is stale', async ({
     page,
   }) => {
-    // A `?dir=` pointing at a directory that no longer exists (e.g. a stale
-    // bookmark) loads the question root instead of failing the editor.
-    await page.goto(`${editorUrl}?tab=all-files&dir=does-not-exist`);
+    // A directory selection pointing at a directory that no longer exists (e.g.
+    // a stale bookmark) loads the question root instead of failing the editor.
+    await page.goto(`${editorUrl}?tab=all-files&selection=dir%3Adoes-not-exist`);
     await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
     await expect(page.getByRole('row', { name: /server\.py/ })).toBeVisible();
 
-    // A `?dir=` pointing at a file rather than a directory falls back the same way.
-    await page.goto(`${editorUrl}?tab=all-files&dir=server.py`);
+    // A directory selection pointing at a file rather than a directory falls back the same way.
+    await page.goto(`${editorUrl}?tab=all-files&selection=dir%3Aserver.py`);
     await expect(page.getByRole('table', { name: 'Directories and files' })).toBeVisible();
     await expect(page.getByRole('row', { name: /server\.py/ })).toBeVisible();
   });
 
-  // Runs last: it deletes and then recreates the shared question's `server.py`.
+  // Runs last: it deletes and then recreates the shared question's `notes.txt`.
   test('reports a deleted file as a recoverable conflict, not a sync failure', async ({
     page,
     testCoursePath,
   }) => {
-    const serverPyPath = path.join(testCoursePath, 'questions', questionQid, 'server.py');
+    const notesPath = path.join(testCoursePath, 'questions', questionQid, 'notes.txt');
 
-    await page.goto(`${editorUrl}?tab=all-files&file=server.py`);
-    await setAceEditorContentAt(selectedFileEditor(page), '# edited after the file was deleted\n');
+    await page.goto(`${editorUrl}?tab=all-files&selection=file%3Anotes.txt`);
+    await setAceEditorContentAt(selectedFileEditor(page), 'edited after the file was deleted\n');
 
     // Another writer deletes the file after the editor was opened.
-    await fs.rm(serverPyPath);
+    await fs.rm(notesPath);
 
     const editorStatus = page.getByTestId('selected-file-editor');
     await editorStatus.getByRole('button', { name: 'Save edits' }).click();
@@ -154,6 +161,6 @@ test.describe('AI draft file editor', () => {
     // Overwriting recreates the deleted file with the editor's contents.
     await editorStatus.getByRole('button', { name: 'overwrite anyway' }).click();
     await expect(editorStatus.getByText('Saved.')).toBeVisible();
-    expect(await fs.readFile(serverPyPath, 'utf8')).toBe('# edited after the file was deleted\n');
+    expect(await fs.readFile(notesPath, 'utf8')).toBe('edited after the file was deleted\n');
   });
 });

@@ -1,40 +1,43 @@
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback } from 'react';
+
+import {
+  type DraftEditorSelection,
+  ROOT_SELECTION,
+  selectionParser,
+} from '../../../../lib/draft-question-files/selection.js';
 
 /** The AI draft editor's tabs, in display order. */
 export const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor'] as const;
 export type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
 
 /**
- * File-browser navigation for the AI draft editor, backed by the `file` / `dir`
- * / `tab` URL params. Opening a file or directory switches to the "All files" tab.
+ * File-browser navigation for the AI draft editor, backed by the `selection` /
+ * `tab` URL params. Opening a file or directory switches to the "All files" tab.
  */
 export function useDraftFileNavigation() {
-  const [selectedFilePath, setSelectedFilePath] = useQueryState('file', parseAsString);
-  const [selectedDirectory, setSelectedDirectory] = useQueryState('dir', parseAsString);
+  const [selection, setSelection] = useQueryState('selection', selectionParser);
   const [, setActiveTab] = useQueryState('tab', parseAsStringLiteral(AI_DRAFT_EDITOR_TABS));
 
-  const selectFile = useCallback(
-    async (filePath: string) => {
-      await setSelectedFilePath(filePath);
+  const navigateTo = useCallback(
+    async (next: DraftEditorSelection) => {
+      await setSelection(next);
       await setActiveTab('all-files', { clearOnDefault: false });
     },
-    [setSelectedFilePath, setActiveTab],
+    [setSelection, setActiveTab],
+  );
+
+  const selectFile = useCallback(
+    (filePath: string) => navigateTo({ kind: 'file', path: filePath }),
+    [navigateTo],
   );
 
   const selectDirectory = useCallback(
-    async (directory: string | null) => {
-      await setSelectedFilePath(null);
-      await setSelectedDirectory(directory);
-      await setActiveTab('all-files', { clearOnDefault: false });
-    },
-    [setSelectedFilePath, setSelectedDirectory, setActiveTab],
+    (directory: string | null) => navigateTo({ kind: 'dir', path: directory }),
+    [navigateTo],
   );
 
-  const clearSelectedFile = useCallback(async () => {
-    await setActiveTab('all-files', { clearOnDefault: false });
-    await setSelectedFilePath(null);
-  }, [setSelectedFilePath, setActiveTab]);
+  const clearSelection = useCallback(() => navigateTo(ROOT_SELECTION), [navigateTo]);
 
-  return { selectedFilePath, selectedDirectory, selectFile, selectDirectory, clearSelectedFile };
+  return { selection, selectFile, selectDirectory, clearSelection };
 }

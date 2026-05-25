@@ -26,12 +26,9 @@ import {
   editJobFailedAppError,
   uploadDraftQuestionFile,
 } from '../../../lib/draft-question-files/mutations.js';
-import {
-  ModifiableQuestionFilePathSchema,
-  OptionalSelectedDirectorySchema,
-  OptionalSelectedFilePathSchema,
-} from '../../../lib/draft-question-files/paths.js';
+import { ModifiableQuestionFilePathSchema } from '../../../lib/draft-question-files/paths.js';
 import { classifyDraftQuestion } from '../../../lib/draft-question-files/question.js';
+import { parseSelectionQueryParam } from '../../../lib/draft-question-files/selection.js';
 import { features } from '../../../lib/features/index.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
@@ -235,8 +232,7 @@ router.get(
       getQuestionFilesData({
         resLocals: res.locals,
         editorUrl,
-        selectedFilePath: OptionalSelectedFilePathSchema.parse(req.query.file),
-        selectedDirectory: OptionalSelectedDirectorySchema.parse(req.query.dir),
+        selection: parseSelectionQueryParam(req.query.selection),
       }),
     ]);
 

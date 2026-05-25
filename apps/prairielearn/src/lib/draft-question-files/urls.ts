@@ -1,46 +1,47 @@
-/**
- * Builds the draft editor URL that opens a specific file. `editorUrl` is the
- * base editor URL (e.g. `/pl/course/1/ai_generate_editor/2`). `search` is the
- * current page query string; params unrelated to file navigation (e.g.
- * `variant_id`) are carried over.
- */
-export function getEditorUrlWithSelectedFile({
-  editorUrl,
-  filePath,
-  search,
-}: {
-  editorUrl: string;
-  filePath: string;
-  search: string;
-}) {
-  const params = new URLSearchParams(search);
-  params.set('file', filePath);
-  params.set('tab', 'all-files');
-  return `${editorUrl}?${params.toString()}`;
-}
+import {
+  type DraftEditorSelection,
+  ROOT_SELECTION,
+  selectionEquals,
+  selectionParser,
+} from './selection.js';
 
 /**
- * Builds the draft editor URL that opens a specific directory. A `null`
- * directory targets the question root. `search` is the current page query
- * string; params unrelated to file navigation (e.g. `variant_id`) are carried
- * over.
+ * Files edited through the dedicated "Files" tab rather than the per-file
+ * editor on the "All files" tab. Clicking these files from the file browser
+ * routes to the "Files" tab to avoid having two editor surfaces for the same
+ * file (which could desync via independent local edits).
  */
-export function getEditorUrlWithSelectedDirectory({
+export const CODE_EDITOR_TAB_FILES = new Set(['question.html', 'server.py']);
+
+/**
+ * Builds the draft editor URL that opens `selection`. `editorUrl` is the base
+ * editor URL (e.g. `/pl/course/1/ai_generate_editor/2`). `search` is the
+ * current page query string; params unrelated to the selection / tab (e.g.
+ * `variant_id`) are carried over.
+ *
+ * Files in {@link CODE_EDITOR_TAB_FILES} resolve to the "Files" tab with no
+ * `selection` param, since that tab is the dedicated editor for them.
+ */
+export function getEditorUrlForSelection({
   editorUrl,
-  directory,
+  selection,
   search,
 }: {
   editorUrl: string;
-  directory: string | null;
+  selection: DraftEditorSelection;
   search: string;
 }) {
   const params = new URLSearchParams(search);
-  params.delete('file');
-  params.set('tab', 'all-files');
-  if (directory == null) {
-    params.delete('dir');
+  params.delete('selection');
+
+  if (selection.kind === 'file' && CODE_EDITOR_TAB_FILES.has(selection.path)) {
+    params.set('tab', 'files');
   } else {
-    params.set('dir', directory);
+    params.set('tab', 'all-files');
+    if (!selectionEquals(selection, ROOT_SELECTION)) {
+      params.set('selection', selectionParser.serialize(selection));
+    }
   }
-  return `${editorUrl}?${params.toString()}`;
+  const queryString = params.toString();
+  return queryString === '' ? editorUrl : `${editorUrl}?${queryString}`;
 }
