@@ -7,6 +7,7 @@ import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
+import { getAppError } from '../../../../lib/client/errors.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { QuestionFilesData } from '../../../../lib/draft-question-files/browser.js';
@@ -14,6 +15,7 @@ import {
   parseSelectionQueryParam,
   selectionEquals,
 } from '../../../../lib/draft-question-files/selection.js';
+import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -78,7 +80,7 @@ function AiQuestionGenerationEditorInner({
 
   const {
     data: questionFilesData,
-    error: filesError,
+    error: rawFilesError,
     refetch: refetchFiles,
   } = useQuery({
     ...trpc.aiDraftFiles.list.queryOptions(
@@ -96,6 +98,7 @@ function AiQuestionGenerationEditorInner({
     ),
   });
 
+  const filesError = getAppError<AiDraftFilesError['List']>(rawFilesError);
   const currentQuestionFilesData = questionFilesData ?? initialQuestionFilesData;
 
   const handleTitleAndQidSaved = useCallback(

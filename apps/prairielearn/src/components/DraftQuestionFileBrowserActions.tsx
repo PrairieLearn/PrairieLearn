@@ -7,6 +7,7 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { getAppError, renderAppError, syncJobFailedRenderer } from '../lib/client/errors.js';
+import { getReservedDraftUploadReason } from '../lib/draft-question-files/paths.shared.js';
 import {
   QUESTION_FILE_NAME_PATTERN,
   QUESTION_FILE_NAME_PATTERN_DESCRIPTION,
@@ -18,17 +19,17 @@ import type { AiDraftFilesError } from '../trpc/shared/ai-draft-files.js';
  * success and rejects on failure; the rejection is rendered in the action's
  * popover via {@link getAppError}.
  */
+/**
+ * Where a draft file upload lands: either replacing an exact existing file, or
+ * creating a new file under its original name in `directory` (or the question
+ * root, when `directory` is `null`).
+ */
+export type DraftUploadTarget =
+  | { kind: 'replace'; filePath: string }
+  | { kind: 'new'; directory: string | null };
+
 export interface DraftQuestionFileBrowserActions {
-  /**
-   * Uploads a file. When `targetFilePath` is set, the uploaded file replaces
-   * that exact file; otherwise it is created in `directory` (or the question
-   * root when `directory` is `null`) under its original name.
-   */
-  onUploadFile: (args: {
-    file: File;
-    targetFilePath: string | null;
-    directory: string | null;
-  }) => Promise<void>;
+  onUploadFile: (args: { file: File; target: DraftUploadTarget }) => Promise<void>;
   onRenameFile: (args: { oldFilePath: string; newFilePath: string }) => Promise<void>;
   onDeleteFile: (args: { filePath: string }) => Promise<void>;
 }
@@ -43,6 +44,7 @@ function DraftFileUploadForm({
   idPrefix,
   infoDirectory,
   maxFileSizeBytes,
+  target,
   urlPrefix,
   onCancel,
   onSubmit,
@@ -51,6 +53,7 @@ function DraftFileUploadForm({
   /** When set, a note tells the user the file will be placed in this directory. */
   infoDirectory: string | null;
   maxFileSizeBytes: number;
+  target: DraftUploadTarget;
   urlPrefix: string;
   onCancel: () => void;
   onSubmit: (file: File) => Promise<void>;
@@ -59,11 +62,22 @@ function DraftFileUploadForm({
   const errorId = `${idPrefix}-error`;
   const [file, setFile] = useState<File | null>(null);
   const uploadMutation = useMutation({ mutationFn: onSubmit });
-  const error = getAppError<AiDraftFilesError['Upload']>(uploadMutation.error);
+  const submitError = getAppError<AiDraftFilesError['Upload']>(uploadMutation.error);
+
+  const reservedReason = run(() => {
+    if (file == null) return null;
+    const effectivePath = run(() => {
+      if (target.kind === 'replace') return target.filePath;
+      const dir = target.directory ?? '';
+      return dir === '' ? file.name : `${dir}/${file.name}`;
+    });
+    return getReservedDraftUploadReason(effectivePath);
+  });
+  const hasError = submitError != null || reservedReason != null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (file == null || uploadMutation.isPending) return;
+    if (file == null || uploadMutation.isPending || reservedReason != null) return;
     uploadMutation.mutate(file);
   }
 
@@ -82,8 +96,8 @@ function DraftFileUploadForm({
           type="file"
           id={inputId}
           className="form-control"
-          aria-invalid={error != null}
-          aria-errormessage={error != null ? errorId : undefined}
+          aria-invalid={hasError}
+          aria-errormessage={hasError ? errorId : undefined}
           required
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
@@ -91,12 +105,16 @@ function DraftFileUploadForm({
           Max file size: {filesize(maxFileSizeBytes, { base: 10, round: 0 })}
         </small>
       </div>
-      {error ? (
+      {submitError ? (
         <div id={errorId} className="text-danger small mb-3" role="alert">
-          {renderAppError(error, {
+          {renderAppError(submitError, {
             SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
             UNKNOWN: ({ message }) => message,
           })}
+        </div>
+      ) : reservedReason != null ? (
+        <div id={errorId} className="text-danger small mb-3" role="alert">
+          {reservedReason}
         </div>
       ) : null}
       <div className="text-end justify-content-end gap-2 d-flex flex-wrap">
@@ -111,7 +129,7 @@ function DraftFileUploadForm({
         <button
           type="submit"
           className="btn btn-primary"
-          disabled={file == null || uploadMutation.isPending}
+          disabled={file == null || uploadMutation.isPending || reservedReason != null}
         >
           {uploadMutation.isPending ? 'Uploading...' : 'Upload file'}
         </button>
@@ -328,8 +346,7 @@ export function UploadFileButton({
   disabled,
   infoDirectory,
   maxFileSizeBytes,
-  targetFilePath,
-  directory,
+  target,
   urlPrefix,
   onUploadFile,
 }: {
@@ -340,8 +357,7 @@ export function UploadFileButton({
   disabled?: boolean;
   infoDirectory?: string | null;
   maxFileSizeBytes: number;
-  targetFilePath: string | null;
-  directory: string | null;
+  target: DraftUploadTarget;
   urlPrefix: string;
   onUploadFile: DraftQuestionFileBrowserActions['onUploadFile'];
 }) {
@@ -358,10 +374,11 @@ export function UploadFileButton({
           idPrefix={id}
           infoDirectory={infoDirectory ?? null}
           maxFileSizeBytes={maxFileSizeBytes}
+          target={target}
           urlPrefix={urlPrefix}
           onCancel={close}
           onSubmit={async (file) => {
-            await onUploadFile({ file, targetFilePath, directory });
+            await onUploadFile({ file, target });
             close();
           }}
         />

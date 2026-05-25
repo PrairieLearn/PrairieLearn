@@ -514,6 +514,7 @@ export function AiQuestionGenerationChat({
     useState(true);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const prevIsGeneratingRef = useRef<boolean | null>(null);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
@@ -678,6 +679,11 @@ export function AiQuestionGenerationChat({
               })}
             </div>
           )}
+          {cancelError && (
+            <div className="alert alert-danger mb-2" role="alert">
+              {cancelError}
+            </div>
+          )}
           <PromptInput
             value={promptInput}
             disabled={status !== 'ready' && status !== 'error'}
@@ -698,10 +704,22 @@ export function AiQuestionGenerationChat({
               }
             }}
             onStop={async () => {
-              await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`, {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': chatCsrfToken },
-              });
+              setCancelError(null);
+              try {
+                const res = await fetch(
+                  `${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`,
+                  {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': chatCsrfToken },
+                  },
+                );
+                if (!res.ok) {
+                  throw new Error(`Server returned status ${res.status}`);
+                }
+              } catch (err) {
+                console.error('Failed to cancel generation:', err);
+                setCancelError('Failed to stop generation. Please try again.');
+              }
             }}
           />
         </div>

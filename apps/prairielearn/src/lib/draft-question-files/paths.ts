@@ -4,13 +4,7 @@ import { z } from 'zod';
 
 import type { Question } from '../db-types.js';
 
-/**
- * Reason shown when a draft question's `info.json` is targeted by a file
- * operation. Draft metadata is managed by the draft editor, so `info.json` can
- * only be edited directly once the question is finalized.
- */
-export const DRAFT_INFO_JSON_DISABLED_REASON =
-  'Draft question metadata is managed by the draft editor. Only finalized questions can edit info.json directly.';
+import { DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
 
 /** Whether a question-relative path targets the draft question's `info.json`. */
 export function isDraftQuestionInfoFile(filePath: string): boolean {
