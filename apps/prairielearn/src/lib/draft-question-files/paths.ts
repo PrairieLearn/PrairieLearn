@@ -78,20 +78,6 @@ export const QuestionRelativeDirectorySchema = z
   });
 
 /**
- * A selected-file request value: a question-relative file path, or `null` when
- * absent or malformed. Malformed input is treated as "no selection" rather than
- * an error, since it usually comes from a stale or hand-edited URL.
- */
-export const OptionalSelectedFilePathSchema = QuestionRelativeFilePathSchema.nullable().catch(null);
-
-/**
- * A selected-directory request value, with the same lenient handling as
- * {@link OptionalSelectedFilePathSchema}.
- */
-export const OptionalSelectedDirectorySchema =
-  QuestionRelativeDirectorySchema.nullable().catch(null);
-
-/**
  * Returns a draft question's QID. Drafts always have one; a missing QID is an
  * invariant violation, not a user-facing error.
  */

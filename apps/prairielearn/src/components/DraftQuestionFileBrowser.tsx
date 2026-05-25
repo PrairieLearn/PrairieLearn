@@ -1,13 +1,14 @@
 import { type MouseEvent } from 'react';
 
 import type {
+  DraftQuestionFileBrowserBreadcrumbSegment,
   DraftQuestionFileBrowserData,
   DraftQuestionFileBrowserDirectory,
   DraftQuestionFileBrowserFile,
 } from '../lib/draft-question-files/browser.js';
 import {
-  getEditorUrlWithSelectedDirectory,
-  getEditorUrlWithSelectedFile,
+  CODE_EDITOR_TAB_FILES,
+  getEditorUrlForSelection,
 } from '../lib/draft-question-files/urls.js';
 
 import {
@@ -16,6 +17,7 @@ import {
   RenameFileButton,
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
+import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
 import { FileBrowserActionButton } from './FileBrowserActionButton.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 
@@ -36,7 +38,7 @@ function DraftQuestionDirectoryActions({
           id={`instructorFileUploadForm-New${d.label}`}
           label={`Add new ${d.label.toLowerCase()} file`}
           iconClass="fa fa-plus"
-          className="btn btn-sm btn-light"
+          className="btn btn-sm btn-outline-secondary"
           disabled={disableActions}
           infoDirectory={d.directory}
           maxFileSizeBytes={data.maxFileSizeBytes}
@@ -50,7 +52,7 @@ function DraftQuestionDirectoryActions({
         id="instructorFileUploadForm-New"
         label="Add new file"
         iconClass="fa fa-plus"
-        className="btn btn-sm btn-light"
+        className="btn btn-sm btn-outline-secondary"
         disabled={disableActions}
         maxFileSizeBytes={data.maxFileSizeBytes}
         targetFilePath={null}
@@ -77,16 +79,20 @@ function DraftQuestionFileRow({
   disableActions: boolean;
   onSelectFile: (filePath: string) => void;
 }) {
-  const fileUrl = getEditorUrlWithSelectedFile({
+  const fileUrl = getEditorUrlForSelection({
     editorUrl: data.editorUrl,
-    filePath: file.selectedFilePath,
+    selection: { kind: 'file', path: file.selectedFilePath },
     search,
   });
   const isDisabled = file.disabledReason != null;
+  // `question.html` and `server.py` are edited via the dedicated "Files" tab,
+  // so the per-file editor / upload / rename / delete don't apply here. The
+  // "Edit" link's URL routes to that tab; download is still allowed.
+  const isManagedByCodeEditorTab = CODE_EDITOR_TAB_FILES.has(file.selectedFilePath);
   const canEdit = file.canEdit && !isDisabled;
-  const canUpload = file.canUpload && !isDisabled && !disableActions;
-  const canRename = file.canRename && !isDisabled && !disableActions;
-  const canDelete = file.canDelete && !isDisabled && !disableActions;
+  const canUpload = file.canUpload && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
+  const canRename = file.canRename && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
+  const canDelete = file.canDelete && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
 
   const selectFile = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -178,9 +184,9 @@ function DraftQuestionDirectoryRow({
   search: string;
   onSelectDirectory: (directory: string | null) => void;
 }) {
-  const directoryUrl = getEditorUrlWithSelectedDirectory({
+  const directoryUrl = getEditorUrlForSelection({
     editorUrl,
-    directory: directory.selectedDirectory,
+    selection: { kind: 'dir', path: directory.selectedDirectory },
     search,
   });
 
@@ -208,6 +214,7 @@ function DraftQuestionDirectoryRow({
 
 export function DraftQuestionFileBrowser({
   data,
+  breadcrumb,
   actions,
   search,
   disableActions = false,
@@ -215,6 +222,7 @@ export function DraftQuestionFileBrowser({
   onSelectDirectory,
 }: {
   data: DraftQuestionFileBrowserData;
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
   actions: DraftQuestionFileBrowserActions;
   /** Current page query string, whose unrelated params the file links preserve. */
   search: string;
@@ -224,47 +232,25 @@ export function DraftQuestionFileBrowser({
   onSelectDirectory: (directory: string | null) => void;
 }) {
   return (
-    <>
-      <nav aria-label="File browser breadcrumb" className="mb-2">
-        <ol className="breadcrumb mb-0">
-          {data.breadcrumb.map((segment) => (
-            <li
-              key={segment.directory ?? ''}
-              className={`breadcrumb-item ${segment.isActive ? 'active' : ''}`}
-              aria-current={segment.isActive ? 'page' : undefined}
-            >
-              {segment.isActive ? (
-                segment.name
-              ) : (
-                <a
-                  href={getEditorUrlWithSelectedDirectory({
-                    editorUrl: data.editorUrl,
-                    directory: segment.directory,
-                    search,
-                  })}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onSelectDirectory(segment.directory);
-                  }}
-                >
-                  {segment.name}
-                </a>
-              )}
-            </li>
-          ))}
-        </ol>
-      </nav>
-      {data.hasEditPermission ? (
-        <div className="d-flex justify-content-end mb-2">
+    <div className="h-100 d-flex flex-column">
+      <div className="d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
+        <DraftQuestionFileBrowserBreadcrumb
+          segments={breadcrumb}
+          editorUrl={data.editorUrl}
+          search={search}
+          ariaLabel="File browser breadcrumb"
+          onSelectDirectory={onSelectDirectory}
+        />
+        {data.hasEditPermission ? (
           <DraftQuestionDirectoryActions
             data={data}
             actions={actions}
             disableActions={disableActions}
           />
-        </div>
-      ) : null}
-      <div className="table-responsive">
-        <table className="table table-sm table-hover" aria-label="Directories and files">
+        ) : null}
+      </div>
+      <div className="flex-grow-1 overflow-auto table-responsive">
+        <table className="table table-sm table-hover mb-0" aria-label="Directories and files">
           <thead className="visually-hidden">
             <tr>
               <th>File</th>
@@ -295,6 +281,6 @@ export function DraftQuestionFileBrowser({
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

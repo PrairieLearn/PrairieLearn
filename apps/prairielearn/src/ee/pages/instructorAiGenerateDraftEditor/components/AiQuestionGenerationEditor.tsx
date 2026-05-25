@@ -10,6 +10,10 @@ import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { QuestionFilesData } from '../../../../lib/draft-question-files/browser.js';
+import {
+  parseSelectionQueryParam,
+  selectionEquals,
+} from '../../../../lib/draft-question-files/selection.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -68,16 +72,9 @@ function AiQuestionGenerationEditorInner({
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
   const unsavedChangesRef = useRef<UnsavedChangesHandle>(null);
-  const { selectedFilePath, selectedDirectory } = useDraftFileNavigation();
-  const initialFileQuery = useMemo(() => {
-    const params = new URLSearchParams(search);
-    return {
-      file: params.get('file'),
-      dir: params.get('dir'),
-    };
-  }, [search]);
-  const selectedFilesMatchInitialQuery =
-    selectedFilePath === initialFileQuery.file && selectedDirectory === initialFileQuery.dir;
+  const { selection } = useDraftFileNavigation();
+  const initialSelection = parseSelectionQueryParam(new URLSearchParams(search).get('selection'));
+  const selectionMatchesInitial = selectionEquals(selection, initialSelection);
 
   const {
     data: questionFilesData,
@@ -87,12 +84,11 @@ function AiQuestionGenerationEditorInner({
     ...trpc.aiDraftFiles.list.queryOptions(
       {
         questionId: question.id,
-        selectedFilePath,
-        selectedDirectory,
+        selection,
       },
       {
         staleTime: Infinity,
-        initialData: selectedFilesMatchInitialQuery ? initialQuestionFilesData : undefined,
+        initialData: selectionMatchesInitial ? initialQuestionFilesData : undefined,
         placeholderData: (previousData) => previousData ?? initialQuestionFilesData,
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),

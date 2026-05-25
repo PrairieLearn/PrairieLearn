@@ -20,10 +20,11 @@ import {
 } from '../../lib/draft-question-files/mutations.js';
 import {
   ModifiableQuestionFilePathSchema,
-  OptionalSelectedDirectorySchema,
-  OptionalSelectedFilePathSchema,
+  QuestionRelativeDirectorySchema,
+  QuestionRelativeFilePathSchema,
 } from '../../lib/draft-question-files/paths.js';
 import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
+import { ROOT_SELECTION } from '../../lib/draft-question-files/selection.js';
 import { features } from '../../lib/features/index.js';
 import { appErrorFormatter, throwAppError } from '../app-errors.js';
 
@@ -60,10 +61,21 @@ export interface AiDraftFilesError {
   Upload: EditJobFailed;
 }
 
+/**
+ * Server-side validation for the URL `selection` state. Falls back to the
+ * root for any malformed input so a stale client-side selection cannot break
+ * the load.
+ */
+const DraftEditorSelectionSchema = z
+  .discriminatedUnion('kind', [
+    z.object({ kind: z.literal('file'), path: QuestionRelativeFilePathSchema }),
+    z.object({ kind: z.literal('dir'), path: QuestionRelativeDirectorySchema }),
+  ])
+  .catch(ROOT_SELECTION);
+
 const ListInputSchema = z.object({
   questionId: IdSchema,
-  selectedFilePath: OptionalSelectedFilePathSchema,
-  selectedDirectory: OptionalSelectedDirectorySchema,
+  selection: DraftEditorSelectionSchema,
 });
 
 const SaveInputSchema = z.object({
@@ -207,8 +219,7 @@ export const aiDraftFilesRouter = t.router({
     return await getQuestionFilesData({
       resLocals: { ...ctx.locals, question: ctx.question },
       editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${ctx.question.id}`,
-      selectedFilePath: input.selectedFilePath,
-      selectedDirectory: input.selectedDirectory,
+      selection: input.selection,
     });
   }),
   save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {

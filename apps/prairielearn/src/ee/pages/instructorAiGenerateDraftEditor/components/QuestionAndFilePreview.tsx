@@ -4,9 +4,11 @@ import { Alert, Tab } from 'react-bootstrap';
 import { executeScripts } from '@prairielearn/browser-utils';
 
 import { DraftQuestionFileBrowser } from '../../../../components/DraftQuestionFileBrowser.js';
+import { DraftQuestionFileBrowserBreadcrumb } from '../../../../components/DraftQuestionFileBrowserBreadcrumb.js';
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type {
+  DraftQuestionFileBrowserBreadcrumbSegment,
   QuestionFilesData,
   SelectedQuestionFilePreview,
 } from '../../../../lib/draft-question-files/browser.js';
@@ -14,7 +16,6 @@ import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
 import {
-  SelectedQuestionFileBreadcrumb,
   SelectedQuestionFileEditor,
   type SelectedQuestionFileEditorHandle,
 } from './SelectedQuestionFileEditor.js';
@@ -66,7 +67,7 @@ function AllQuestionFiles({
 }) {
   const { questionId, urlPrefix, uploadCsrfToken, search, isGenerating } = useDraftFiles();
   const { selectFile, selectDirectory } = useDraftFileNavigation();
-  const { fileBrowser, selectedFile, selectedFilePreview } = questionFilesData;
+  const { fileBrowser, selectedFile, selectedFilePreview, breadcrumb } = questionFilesData;
   const fileBrowserActions = useDraftQuestionFileMutations({
     questionId,
     urlPrefix,
@@ -83,6 +84,8 @@ function AllQuestionFiles({
       <SelectedQuestionFileEditor
         key={`${selectedFile.path}:${selectedFile.contentHash}`}
         selectedFile={selectedFile}
+        breadcrumb={breadcrumb}
+        editorUrl={fileBrowser.editorUrl}
         editorRef={editorRef}
         onFileMutated={onFileMutated}
       />
@@ -90,21 +93,26 @@ function AllQuestionFiles({
   }
 
   if (selectedFilePreview != null) {
-    return <SelectedQuestionFilePreviewPanel selectedFilePreview={selectedFilePreview} />;
+    return (
+      <SelectedQuestionFilePreviewPanel
+        selectedFilePreview={selectedFilePreview}
+        breadcrumb={breadcrumb}
+        editorUrl={fileBrowser.editorUrl}
+      />
+    );
   }
 
   return (
-    <div className="p-3">
-      <DraftQuestionFileBrowser
-        data={fileBrowser}
-        actions={fileBrowserActions}
-        search={search}
-        // Don't let manual file edits race the agent's file writes.
-        disableActions={isGenerating}
-        onSelectFile={selectFile}
-        onSelectDirectory={selectDirectory}
-      />
-    </div>
+    <DraftQuestionFileBrowser
+      data={fileBrowser}
+      breadcrumb={breadcrumb}
+      actions={fileBrowserActions}
+      search={search}
+      // Don't let manual file edits race the agent's file writes.
+      disableActions={isGenerating}
+      onSelectFile={selectFile}
+      onSelectDirectory={selectDirectory}
+    />
   );
 }
 
@@ -136,14 +144,27 @@ function FilePreviewContent({
 
 function SelectedQuestionFilePreviewPanel({
   selectedFilePreview,
+  breadcrumb,
+  editorUrl,
 }: {
   selectedFilePreview: SelectedQuestionFilePreview;
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
+  editorUrl: string;
 }) {
+  const { search } = useDraftFiles();
+  const { selectDirectory } = useDraftFileNavigation();
+
   return (
     <div className="selected-file-editor h-100 d-flex flex-column">
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <SelectedQuestionFileBreadcrumb filePath={selectedFilePreview.path} />
+          <DraftQuestionFileBrowserBreadcrumb
+            segments={breadcrumb}
+            editorUrl={editorUrl}
+            search={search}
+            ariaLabel="Selected file breadcrumb"
+            onSelectDirectory={(directory) => void selectDirectory(directory)}
+          />
           <div className="small text-muted">Preview</div>
         </div>
         <div className="d-flex align-items-center gap-2">

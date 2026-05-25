@@ -3,14 +3,17 @@ import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
+import { DraftQuestionFileBrowserBreadcrumb } from '../../../../components/DraftQuestionFileBrowserBreadcrumb.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
   getAppError,
   renderAppError,
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
-import type { SelectedQuestionFile } from '../../../../lib/draft-question-files/browser.js';
-import { getEditorUrlWithSelectedDirectory } from '../../../../lib/draft-question-files/urls.js';
+import type {
+  DraftQuestionFileBrowserBreadcrumbSegment,
+  SelectedQuestionFile,
+} from '../../../../lib/draft-question-files/browser.js';
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
@@ -21,50 +24,6 @@ export interface SelectedQuestionFileEditorHandle {
   discardChanges: () => void;
   /** Returns whether the editor currently holds unsaved changes. */
   getHasChanges: () => boolean;
-}
-
-export function SelectedQuestionFileBreadcrumb({
-  filePath,
-  onAllFilesClick,
-}: {
-  filePath: string;
-  /**
-   * Overrides the default "All files" navigation. Used to confirm unsaved edits
-   * before this breadcrumb unmounts the editor — switching the top tabs keeps
-   * the editor mounted, so only this path needs the guard.
-   */
-  onAllFilesClick?: () => void;
-}) {
-  const { search } = useDraftFiles();
-  const { selectedDirectory, clearSelectedFile } = useDraftFileNavigation();
-  const allFilesHref = getEditorUrlWithSelectedDirectory({
-    editorUrl: '',
-    directory: selectedDirectory,
-    search,
-  });
-  return (
-    <nav
-      aria-label="Selected file breadcrumb"
-      className="d-flex align-items-baseline min-width-0 font-monospace"
-    >
-      <a
-        href={allFilesHref}
-        className="flex-shrink-0"
-        onClick={(event) => {
-          event.preventDefault();
-          if (onAllFilesClick) {
-            onAllFilesClick();
-          } else {
-            void clearSelectedFile();
-          }
-        }}
-      >
-        All files
-      </a>
-      <span className="mx-1 text-muted">/</span>
-      <span className="text-truncate">{filePath}</span>
-    </nav>
-  );
 }
 
 function getSaveStatus({
@@ -84,16 +43,21 @@ function getSaveStatus({
 
 export function SelectedQuestionFileEditor({
   selectedFile,
+  breadcrumb,
+  editorUrl,
   onFileMutated,
   editorRef,
 }: {
   selectedFile: SelectedQuestionFile;
+  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
+  /** Base editor URL used to build directory links from the breadcrumb. */
+  editorUrl: string;
   onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
-  const { clearSelectedFile } = useDraftFileNavigation();
+  const { questionId, urlPrefix, isGenerating, search } = useDraftFiles();
+  const { selectDirectory } = useDraftFileNavigation();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
     trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFileMutated() }),
@@ -101,7 +65,9 @@ export function SelectedQuestionFileEditor({
   const savedContents = b64DecodeUnicode(selectedFile.encodedContents);
   const [contents, setContents] = useState(savedContents);
   const [isReloading, setIsReloading] = useState(false);
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingDirectory, setPendingDirectory] = useState<{
+    directory: string | null;
+  } | null>(null);
   const isSaving = saveMutation.isPending;
   const saveError = getAppError<AiDraftFilesError['Save']>(saveMutation.error);
   const hasChanges = contents !== savedContents;
@@ -115,6 +81,21 @@ export function SelectedQuestionFileEditor({
     },
     getHasChanges: () => hasChanges,
   }));
+
+  /** Leaving unmounts the editor and drops unsaved edits, so confirm first. */
+  function handleSelectDirectory(directory: string | null) {
+    if (hasChanges) {
+      setPendingDirectory({ directory });
+    } else {
+      void selectDirectory(directory);
+    }
+  }
+
+  function confirmDiscard() {
+    const target = pendingDirectory;
+    setPendingDirectory(null);
+    if (target) void selectDirectory(target.directory);
+  }
 
   /** `force` overwrites a concurrent change after a `STALE_EDIT` conflict. */
   function save(force: boolean) {
@@ -133,15 +114,6 @@ export function SelectedQuestionFileEditor({
     event.preventDefault();
     if (!hasChanges) return;
     save(false);
-  }
-
-  /** Leaving unmounts the editor and drops unsaved edits, so confirm first. */
-  function handleAllFilesClick() {
-    if (hasChanges) {
-      setShowLeaveModal(true);
-    } else {
-      void clearSelectedFile();
-    }
   }
 
   async function handleReload() {
@@ -163,9 +135,12 @@ export function SelectedQuestionFileEditor({
     >
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
-          <SelectedQuestionFileBreadcrumb
-            filePath={selectedFile.path}
-            onAllFilesClick={handleAllFilesClick}
+          <DraftQuestionFileBrowserBreadcrumb
+            segments={breadcrumb}
+            editorUrl={editorUrl}
+            search={search}
+            ariaLabel="Selected file breadcrumb"
+            onSelectDirectory={handleSelectDirectory}
           />
           <div className={`small ${saveError ? 'text-danger' : 'text-muted'}`}>
             {saveError != null
@@ -228,7 +203,7 @@ export function SelectedQuestionFileEditor({
           }
         }}
       />
-      <Modal show={showLeaveModal} onHide={() => setShowLeaveModal(false)}>
+      <Modal show={pendingDirectory != null} onHide={() => setPendingDirectory(null)}>
         <Modal.Header closeButton>
           <Modal.Title>Unsaved changes</Modal.Title>
         </Modal.Header>
@@ -241,18 +216,11 @@ export function SelectedQuestionFileEditor({
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => setShowLeaveModal(false)}
+            onClick={() => setPendingDirectory(null)}
           >
             Cancel
           </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => {
-              setShowLeaveModal(false);
-              void clearSelectedFile();
-            }}
-          >
+          <button type="button" className="btn btn-danger" onClick={confirmDiscard}>
             Discard changes
           </button>
         </Modal.Footer>

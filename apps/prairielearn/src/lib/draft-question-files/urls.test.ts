@@ -1,35 +1,35 @@
 import { assert, describe, it } from 'vitest';
 
-import { getEditorUrlWithSelectedDirectory, getEditorUrlWithSelectedFile } from './urls.js';
+import { getEditorUrlForSelection } from './urls.js';
 
-describe('draft editor URLs', () => {
-  it('builds selected file URLs', () => {
+describe('getEditorUrlForSelection', () => {
+  it('builds file URLs', () => {
     assert.equal(
-      getEditorUrlWithSelectedFile({
+      getEditorUrlForSelection({
         editorUrl: '/pl/course/1/ai_generate_editor/2',
-        filePath: 'clientFilesQuestion/data set.csv',
+        selection: { kind: 'file', path: 'clientFilesQuestion/data set.csv' },
         search: '',
       }),
-      '/pl/course/1/ai_generate_editor/2?file=clientFilesQuestion%2Fdata+set.csv&tab=all-files',
+      '/pl/course/1/ai_generate_editor/2?tab=all-files&selection=file%3AclientFilesQuestion%2Fdata+set.csv',
     );
   });
 
-  it('builds selected directory URLs', () => {
+  it('builds directory URLs', () => {
     assert.equal(
-      getEditorUrlWithSelectedDirectory({
+      getEditorUrlForSelection({
         editorUrl: '/pl/course/1/ai_generate_editor/2',
-        directory: 'clientFilesQuestion/assets',
+        selection: { kind: 'dir', path: 'clientFilesQuestion/assets' },
         search: '',
       }),
-      '/pl/course/1/ai_generate_editor/2?tab=all-files&dir=clientFilesQuestion%2Fassets',
+      '/pl/course/1/ai_generate_editor/2?tab=all-files&selection=dir%3AclientFilesQuestion%2Fassets',
     );
   });
 
-  it('omits the directory parameter for the question root', () => {
+  it('omits the selection parameter for the question root', () => {
     assert.equal(
-      getEditorUrlWithSelectedDirectory({
+      getEditorUrlForSelection({
         editorUrl: '/pl/course/1/ai_generate_editor/2',
-        directory: null,
+        selection: { kind: 'dir', path: null },
         search: '',
       }),
       '/pl/course/1/ai_generate_editor/2?tab=all-files',
@@ -38,23 +38,42 @@ describe('draft editor URLs', () => {
 
   it('preserves unrelated query params when selecting a file', () => {
     assert.equal(
-      getEditorUrlWithSelectedFile({
+      getEditorUrlForSelection({
         editorUrl: '/pl/course/1/ai_generate_editor/2',
-        filePath: 'server.py',
+        selection: { kind: 'file', path: 'clientFilesQuestion/data.csv' },
         search: '?variant_id=5&tab=preview',
       }),
-      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&file=server.py',
+      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&selection=file%3AclientFilesQuestion%2Fdata.csv',
     );
   });
 
-  it('preserves unrelated query params and drops the file param when selecting a directory', () => {
+  it('routes question.html and server.py to the Files tab with no selection', () => {
     assert.equal(
-      getEditorUrlWithSelectedDirectory({
+      getEditorUrlForSelection({
         editorUrl: '/pl/course/1/ai_generate_editor/2',
-        directory: 'tests',
-        search: '?variant_id=5&file=server.py',
+        selection: { kind: 'file', path: 'question.html' },
+        search: '?variant_id=5&selection=file%3Atests%2Ffoo.html&tab=all-files',
       }),
-      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&dir=tests',
+      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=files',
+    );
+    assert.equal(
+      getEditorUrlForSelection({
+        editorUrl: '/pl/course/1/ai_generate_editor/2',
+        selection: { kind: 'file', path: 'server.py' },
+        search: '',
+      }),
+      '/pl/course/1/ai_generate_editor/2?tab=files',
+    );
+  });
+
+  it('replaces a stale selection param when selecting a directory', () => {
+    assert.equal(
+      getEditorUrlForSelection({
+        editorUrl: '/pl/course/1/ai_generate_editor/2',
+        selection: { kind: 'dir', path: 'tests' },
+        search: '?variant_id=5&selection=file%3Aserver.py',
+      }),
+      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&selection=dir%3Atests',
     );
   });
 });
