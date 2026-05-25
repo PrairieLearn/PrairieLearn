@@ -32,7 +32,8 @@
    LANDLOCK_ACCESS_FS_MAKE_CHAR | LANDLOCK_ACCESS_FS_MAKE_DIR |     \
    LANDLOCK_ACCESS_FS_MAKE_REG | LANDLOCK_ACCESS_FS_MAKE_SOCK |     \
    LANDLOCK_ACCESS_FS_MAKE_FIFO | LANDLOCK_ACCESS_FS_MAKE_BLOCK |   \
-   LANDLOCK_ACCESS_FS_TRUNCATE)
+   LANDLOCK_ACCESS_FS_TRUNCATE | LANDLOCK_ACCESS_FS_REFER |         \
+   LANDLOCK_ACCESS_FS_MAKE_SYM)
 
 void add_path_rule(int ruleset_fd, const char *path, __u64 access_mask) {
   int fd = open(path, O_PATH | O_CLOEXEC);
@@ -63,8 +64,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   __u64 access_mask = ACCESS_ALL;
-  // Landlock ABI before v3 does not support the TRUNCATE access, so we remove
-  // it from the mask for older kernels.
+  // Landlock ABI before v2 does not support REFER access, so we remove it from
+  // the mask for older kernels.
+  if (abi < 2) access_mask &= ~LANDLOCK_ACCESS_FS_REFER;
+  // Landlock ABI before v3 does not support TRUNCATE access, so we remove it
+  // from the mask for older kernels.
   if (abi < 3) access_mask &= ~LANDLOCK_ACCESS_FS_TRUNCATE;
   // Add similar guards for any future ABI-gated bits as needed.
 
