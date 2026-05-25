@@ -28,7 +28,7 @@ export function FileBrowserActionButton({
 }) {
   if (disabled) {
     return (
-      <button type="button" className={className} disabled title={disabledTitle}>
+      <button type="button" className={className} title={disabledTitle} disabled>
         <i className={icon} aria-hidden="true" />
         <span>{label}</span>
       </button>
