@@ -66,14 +66,12 @@ router.post(
       );
     }
 
-    // Escalate LockDown Browser to medium-high security on the assessment
-    // page. The PT->PL handoff runs at low security so the cross-domain
-    // navigation lands in the main window; medium-high is switched on only
-    // once the student reaches the fully-rendered assessment page. Non-LDB
-    // browsers ignore the rldbsp query parameter.
+    // LockDown Browser's security level and child-window navigation stem
+    // are set by PrairieTest on the first page of the LDB session, so the
+    // assessment redirect needs no LDB query parameters here.
     const redirectUrl =
       course_instance_id !== undefined && assessment_id !== undefined
-        ? `${getStudentAssessmentUrl(course_instance_id, assessment_id)}?rldbsp=1`
+        ? getStudentAssessmentUrl(course_instance_id, assessment_id)
         : undefined;
 
     // Record whether the student authenticated through the LockDown Browser
