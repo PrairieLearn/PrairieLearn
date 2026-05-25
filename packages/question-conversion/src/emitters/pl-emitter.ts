@@ -46,7 +46,7 @@ export class PLEmitter implements OutputEmitter {
       }
     }
 
-    if ('rubric' in itemContainer && itemContainer.rubric) {
+    if (itemContainer.rubric) {
       warnings.push({
         questionId: itemContainer.rubric.id,
         message: `Rubric "${itemContainer.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
@@ -71,10 +71,7 @@ export class PLEmitter implements OutputEmitter {
       sourceId: itemContainer.sourceId,
       assessmentTitle: itemContainer.title,
       sourceType: 'assessment',
-      unresolvedSourceBankRefs:
-        'unresolvedSourceBankRefs' in itemContainer
-          ? itemContainer.unresolvedSourceBankRefs
-          : undefined,
+      unresolvedSourceBankRefs: itemContainer.unresolvedSourceBankRefs,
       assessment: assessmentOutput,
       questions,
       warnings,
@@ -86,7 +83,7 @@ export class PLEmitter implements OutputEmitter {
     questions: PLQuestionOutput[],
     options?: EmitOptions,
   ): PLAssessmentOutput {
-    const meta = 'meta' in itemContainer ? itemContainer.meta : undefined;
+    const meta = itemContainer.meta;
     const assessmentType = meta?.assessmentType ?? 'Homework';
     const directoryName = slugify(itemContainer.title);
     const prefix = options?.questionIdPrefix ?? '';
@@ -104,7 +101,7 @@ export class PLEmitter implements OutputEmitter {
 
     // Build zones
     const zones: PLAssessmentZone[] = [];
-    const assessmentZones = 'zones' in itemContainer ? itemContainer.zones : undefined;
+    const assessmentZones = itemContainer.zones;
     if (assessmentZones && assessmentZones.length > 0) {
       for (const zone of assessmentZones) {
         const zoneQuestions = this.buildZoneQuestions(zone, questionDirBySourceId, prefix);

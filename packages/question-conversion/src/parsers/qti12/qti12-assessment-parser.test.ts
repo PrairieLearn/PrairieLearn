@@ -160,7 +160,6 @@ describe('QTI12AssessmentParser', async () => {
       assessmentMetaXml: '<quiz><time_limit>30</time_limit></quiz>',
     });
 
-    assert.equal(result.kind, 'question-bank');
     assert.equal(result.sourceType, 'question-bank');
     assert.isFalse('meta' in result);
     assert.isFalse('zones' in result);

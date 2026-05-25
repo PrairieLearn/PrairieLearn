@@ -226,8 +226,7 @@ interface IRItemContainerBase {
 
 /** An assessment with questions and assessment-level metadata. */
 export interface IRAssessment extends IRItemContainerBase {
-  kind?: 'assessment';
-  sourceType?: 'assessment';
+  sourceType: 'assessment';
   /** Questions organized by sections/zones. If present, preferred over flat `questions`. */
   zones?: IRZone[];
   /** Bank references that could not be resolved from the item content in this export. */
@@ -240,7 +239,6 @@ export interface IRAssessment extends IRItemContainerBase {
 
 /** A question bank/object bank with questions but no assessment-level metadata. */
 export interface IRQuestionBank extends IRItemContainerBase {
-  kind: 'question-bank';
   sourceType: 'question-bank';
   zones?: undefined;
   unresolvedSourceBankRefs?: undefined;

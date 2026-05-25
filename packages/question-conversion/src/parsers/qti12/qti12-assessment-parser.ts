@@ -74,7 +74,7 @@ function parseItemContainer(xmlContent: string) {
     return {
       kind: 'assessment' as const,
       element: assessment,
-      parsed: buildParsedAssessment(assessment),
+      parsed: buildParsedItemContainer(assessment),
     };
   }
 
@@ -83,7 +83,7 @@ function parseItemContainer(xmlContent: string) {
     return {
       kind: 'question-bank' as const,
       element: objectBank,
-      parsed: buildParsedAssessment(objectBank),
+      parsed: buildParsedItemContainer(objectBank),
     };
   }
 
@@ -92,11 +92,11 @@ function parseItemContainer(xmlContent: string) {
 
 type QTI12ItemContainer = ReturnType<typeof parseItemContainer>;
 
-function buildParsedAssessment(assessment: Record<string, unknown>) {
-  const ident = attr(assessment, 'ident');
-  const qtimetadata = assessment['qtimetadata'];
+function buildParsedItemContainer(element: Record<string, unknown>) {
+  const ident = attr(element, 'ident');
+  const qtimetadata = element['qtimetadata'];
   const metadata = parseMetadata(qtimetadata);
-  const title = he.decode(attr(assessment, 'title') || metadata['bank_title'] || ident);
+  const title = he.decode(attr(element, 'title') || metadata['bank_title'] || ident);
   return { ident, title, metadata };
 }
 
@@ -148,7 +148,6 @@ export class QTI12ItemContainerParser implements InputParser {
     if (rubricWarning) parseWarnings.push(rubricWarning);
 
     return {
-      kind: 'assessment',
       sourceId: container.parsed.ident,
       title: container.parsed.title,
       sourceType: 'assessment',
@@ -174,7 +173,6 @@ export class QTI12ItemContainerParser implements InputParser {
     );
 
     return {
-      kind: 'question-bank',
       sourceId: container.parsed.ident,
       title: container.parsed.title,
       sourceType: 'question-bank',
