@@ -20,7 +20,6 @@ export function Home({
   unreadNewsItems,
   blogUrl,
   now,
-  lockdownBrowser,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -33,7 +32,6 @@ export function Home({
   unreadNewsItems: NewsItem[];
   blogUrl: string | null;
   now: Date;
-  lockdownBrowser: boolean;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -57,11 +55,7 @@ export function Home({
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
       <NewsAlert newsItems={unreadNewsItems} csrfToken={csrfToken} blogUrl={blogUrl} now={now} />
-      <InstructorCoursesCard
-        instructorCourses={instructorCourses}
-        urlPrefix={urlPrefix}
-        lockdownBrowser={lockdownBrowser}
-      />
+      <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards
           studentCourses={listedStudentCourses}
@@ -136,31 +130,24 @@ function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps
 interface InstructorCoursesCardProps {
   instructorCourses: InstructorHomePageCourse[];
   urlPrefix: string;
-  lockdownBrowser: boolean;
 }
 
-function InstructorCoursesCard({
-  instructorCourses,
-  urlPrefix,
-  lockdownBrowser,
-}: InstructorCoursesCardProps) {
+function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCoursesCardProps) {
   if (instructorCourses.length === 0) return null;
 
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>Courses with instructor access</h2>
-        {!lockdownBrowser && (
-          <a
-            href="https://docs.prairielearn.com"
-            className="btn btn-light btn-sm ms-auto"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <i className="bi bi-journal-text me-sm-1" aria-hidden="true" />
-            <span className="d-none d-sm-inline">View docs</span>
-          </a>
-        )}
+        <a
+          href="https://docs.prairielearn.com"
+          className="btn btn-light btn-sm ms-auto"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i className="bi bi-journal-text me-sm-1" aria-hidden="true" />
+          <span className="d-none d-sm-inline">View docs</span>
+        </a>
       </div>
 
       <div className="table-responsive">

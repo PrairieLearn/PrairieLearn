@@ -423,7 +423,6 @@ export function StudentAssessmentInstance({
             assessment_instance: resLocals.assessment_instance,
             csrfToken: resLocals.__csrf_token,
             authz_result: resLocals.authz_result,
-            lockdownBrowser: resLocals.lockdown_browser,
           })
         : ''}
       ${InstructorInfoPanel({

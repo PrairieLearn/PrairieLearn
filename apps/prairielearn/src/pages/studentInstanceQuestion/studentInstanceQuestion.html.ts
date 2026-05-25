@@ -222,7 +222,6 @@ export function StudentInstanceQuestion({
                 authz_result: resLocals.authz_result,
                 variantId: renderState?.variant.id,
                 csrfToken: resLocals.__csrf_token,
-                lockdownBrowser: resLocals.lockdown_browser,
               })
             : ''}
           ${hasCalculator ? CalculatorDrawerToggle() : ''}
