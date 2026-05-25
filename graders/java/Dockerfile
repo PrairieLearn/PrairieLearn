@@ -1,3 +1,11 @@
+# Use the official GCC image to build the Landlock sandbox executable in a multi-stage build. This stage is discarded after the executable is built, so the final image does not include the GCC compiler.
+FROM gcc:16 AS landlock_builder
+ARG CACHEBUST=2026-04-15-14-34-07
+
+# Copy the sandbox.c file and compile it into a Landlock-based sandbox executable
+COPY sandbox.c /sandbox.c
+RUN gcc -O2 -o /landlock_sandbox -Wall -Wextra -Werror /sandbox.c
+
 FROM ubuntu:24.04
 ARG CACHEBUST=2026-04-15-14-34-07
 
@@ -18,14 +26,7 @@ RUN apt-get update \
     # Delete all java.management files to hinder student's ability to retrieve information from the grader
     && rm -rf /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_agent.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_ext.so
 
-# Copy the sandbox.c file and compile it into a Landlock-based sandbox executable
-COPY sandbox.c /sandbox.c
-RUN apt-get update && apt-get install --no-install-recommends -y gcc libc6-dev \
-    && gcc -O2 -o /usr/local/bin/landlock_sandbox -Wall -Wextra -Werror /sandbox.c \
-    && apt-get purge -y gcc libc6-dev \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /sandbox.c
+COPY --from=landlock_builder /landlock_sandbox /usr/local/bin/landlock_sandbox
 
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java org/prairielearn/autograder/AutograderInfo.java /javagrader/
