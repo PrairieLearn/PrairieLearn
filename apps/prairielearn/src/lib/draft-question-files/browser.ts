@@ -16,12 +16,12 @@ import { type InstructorFilePaths, getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';
 
 import {
-  DRAFT_INFO_JSON_DISABLED_REASON,
   getQuestionRootPath,
   isDraftQuestionInfoFile,
   requireQuestionQid,
   resolveWithinQuestionRoot,
 } from './paths.js';
+import { DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
 import type { DraftEditorSelection } from './selection.js';
 import { CODE_EDITOR_TAB_FILES } from './urls.js';
 

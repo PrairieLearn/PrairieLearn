@@ -27,6 +27,7 @@ import {
   uploadDraftQuestionFile,
 } from '../../../lib/draft-question-files/mutations.js';
 import { ModifiableQuestionFilePathSchema } from '../../../lib/draft-question-files/paths.js';
+import { getReservedDraftUploadReason } from '../../../lib/draft-question-files/paths.shared.js';
 import { classifyDraftQuestion } from '../../../lib/draft-question-files/question.js';
 import { parseSelectionQueryParam } from '../../../lib/draft-question-files/selection.js';
 import { features } from '../../../lib/features/index.js';
@@ -347,12 +348,16 @@ router.post(
   }),
 );
 
-const UploadDraftFileBodySchema = z.object({
-  /** When set, replace this exact file (relative to the question root). */
-  file_path: z.string().min(1).optional(),
-  /** When `file_path` is not set, upload into this directory (relative to the question root). */
-  directory: z.string().optional(),
-});
+const UploadDraftFileBodySchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('replace'),
+    file_path: z.string().min(1),
+  }),
+  z.object({
+    kind: z.literal('new'),
+    directory: z.string().optional(),
+  }),
+]);
 
 router.post(
   '/files',
@@ -365,13 +370,19 @@ router.post(
 
     const body = UploadDraftFileBodySchema.parse(req.body);
     const requestedPath =
-      body.file_path ?? path.posix.join(body.directory ?? '', req.file.originalname);
+      body.kind === 'replace'
+        ? body.file_path
+        : path.posix.join(body.directory ?? '', req.file.originalname);
     const filePath = ModifiableQuestionFilePathSchema.safeParse(requestedPath);
     if (!filePath.success) {
       throw new error.HttpStatusError(
         400,
         filePath.error.issues[0]?.message ?? 'Invalid file path',
       );
+    }
+    const reservedReason = getReservedDraftUploadReason(filePath.data);
+    if (reservedReason != null) {
+      throw new error.HttpStatusError(400, reservedReason);
     }
 
     // A failed sync job is an expected outcome rather than a crash: report it

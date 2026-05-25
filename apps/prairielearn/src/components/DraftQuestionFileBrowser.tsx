@@ -42,8 +42,7 @@ function DraftQuestionDirectoryActions({
           disabled={disableActions}
           infoDirectory={d.directory}
           maxFileSizeBytes={data.maxFileSizeBytes}
-          targetFilePath={null}
-          directory={d.directory}
+          target={{ kind: 'new', directory: d.directory }}
           urlPrefix={data.urlPrefix}
           onUploadFile={actions.onUploadFile}
         />
@@ -55,8 +54,7 @@ function DraftQuestionDirectoryActions({
         className="btn btn-sm btn-outline-secondary"
         disabled={disableActions}
         maxFileSizeBytes={data.maxFileSizeBytes}
-        targetFilePath={null}
-        directory={data.selectedDirectory}
+        target={{ kind: 'new', directory: data.selectedDirectory }}
         urlPrefix={data.urlPrefix}
         onUploadFile={actions.onUploadFile}
       />
@@ -140,8 +138,7 @@ function DraftQuestionFileRow({
             className="btn btn-xs btn-secondary text-nowrap"
             disabled={!canUpload}
             maxFileSizeBytes={data.maxFileSizeBytes}
-            targetFilePath={file.selectedFilePath}
-            directory={null}
+            target={{ kind: 'replace', filePath: file.selectedFilePath }}
             urlPrefix={data.urlPrefix}
             onUploadFile={actions.onUploadFile}
           />

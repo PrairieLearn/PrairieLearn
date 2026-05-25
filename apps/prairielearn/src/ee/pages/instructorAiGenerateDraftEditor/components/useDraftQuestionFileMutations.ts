@@ -1,6 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 
-import type { DraftQuestionFileBrowserActions } from '../../../../components/DraftQuestionFileBrowserActions.js';
+import type {
+  DraftQuestionFileBrowserActions,
+  DraftUploadTarget,
+} from '../../../../components/DraftQuestionFileBrowserActions.js';
 import { unwrapAppResponse } from '../../../../lib/client/errors.js';
 
 import { useTRPC } from './aiDraftFilesTrpc.js';
@@ -9,22 +12,21 @@ async function uploadDraftFile({
   uploadUrl,
   uploadCsrfToken,
   file,
-  targetFilePath,
-  directory,
+  target,
 }: {
   uploadUrl: string;
   uploadCsrfToken: string;
   file: File;
-  targetFilePath: string | null;
-  directory: string | null;
+  target: DraftUploadTarget;
 }): Promise<void> {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('__csrf_token', uploadCsrfToken);
-  if (targetFilePath != null) {
-    formData.append('file_path', targetFilePath);
-  } else if (directory != null) {
-    formData.append('directory', directory);
+  formData.append('kind', target.kind);
+  if (target.kind === 'replace') {
+    formData.append('file_path', target.filePath);
+  } else if (target.directory != null) {
+    formData.append('directory', target.directory);
   }
 
   const response = await fetch(uploadUrl, {
@@ -62,8 +64,8 @@ export function useDraftQuestionFileMutations({
   const uploadUrl = `${urlPrefix}/ai_generate_editor/${questionId}/files`;
 
   return {
-    onUploadFile: async ({ file, targetFilePath, directory }) => {
-      await uploadDraftFile({ uploadUrl, uploadCsrfToken, file, targetFilePath, directory });
+    onUploadFile: async ({ file, target }) => {
+      await uploadDraftFile({ uploadUrl, uploadCsrfToken, file, target });
       await onMutated();
     },
     onRenameFile: async ({ oldFilePath, newFilePath }) => {

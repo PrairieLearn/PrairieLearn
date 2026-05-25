@@ -4,6 +4,7 @@ import { type Ref, useImperativeHandle, useState } from 'react';
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
+  type AppError,
   getAppError,
   renderAppError,
   syncJobFailedRenderer,
@@ -29,7 +30,7 @@ export function QuestionCodeEditors({
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
-  filesError?: { message: string } | null;
+  filesError: AppError<AiDraftFilesError['List']> | null;
   onFileMutated: () => Promise<unknown>;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
@@ -111,7 +112,8 @@ export function QuestionCodeEditors({
             role="alert"
           >
             <span>
-              <strong>Error loading files:</strong> {filesError.message}
+              <strong>Error loading files:</strong>{' '}
+              {renderAppError(filesError, { UNKNOWN: ({ message }) => message })}
             </span>
             <button
               type="button"
