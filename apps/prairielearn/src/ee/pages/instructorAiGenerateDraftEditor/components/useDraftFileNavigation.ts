@@ -6,6 +6,7 @@ import {
   ROOT_SELECTION,
   selectionParser,
 } from '../../../../lib/draft-question-files/selection.js';
+import { CODE_EDITOR_TAB_FILES } from '../../../../lib/draft-question-files/urls.js';
 
 /** The AI draft editor's tabs, in display order. */
 export const AI_DRAFT_EDITOR_TABS = ['preview', 'files', 'all-files', 'rich-text-editor'] as const;
@@ -13,7 +14,9 @@ export type AiDraftEditorTab = (typeof AI_DRAFT_EDITOR_TABS)[number];
 
 /**
  * File-browser navigation for the AI draft editor, backed by the `selection` /
- * `tab` URL params. Opening a file or directory switches to the "All files" tab.
+ * `tab` URL params. Opening a file or directory switches to the "All files"
+ * tab, except for files in {@link CODE_EDITOR_TAB_FILES} which route to the
+ * dedicated "Files" tab (matching `getEditorUrlForSelection`).
  */
 export function useDraftFileNavigation() {
   const [selection, setSelection] = useQueryState('selection', selectionParser);
@@ -21,8 +24,9 @@ export function useDraftFileNavigation() {
 
   const navigateTo = useCallback(
     async (next: DraftEditorSelection) => {
-      await setSelection(next);
-      await setActiveTab('all-files', { clearOnDefault: false });
+      const isCodeEditorFile = next.kind === 'file' && CODE_EDITOR_TAB_FILES.has(next.path);
+      await setSelection(isCodeEditorFile ? ROOT_SELECTION : next);
+      await setActiveTab(isCodeEditorFile ? 'files' : 'all-files', { clearOnDefault: false });
     },
     [setSelection, setActiveTab],
   );
