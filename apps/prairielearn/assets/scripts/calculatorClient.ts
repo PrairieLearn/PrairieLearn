@@ -694,7 +694,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) => ce.parse(latex).toString();
+    const normalizeLatex = (latex: string) => ce.parse(latex, { form: 'raw' }).toString();
     const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
     inputField.onExport = historyOnExport;
     outputField.onExport = historyOnExport;
