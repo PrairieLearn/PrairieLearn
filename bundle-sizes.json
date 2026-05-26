@@ -321,8 +321,8 @@
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
     "raw": 1098416,
-    "gzip": 325025,
-    "brotli": 281616
+    "gzip": 325013,
+    "brotli": 281571
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 1033220,
