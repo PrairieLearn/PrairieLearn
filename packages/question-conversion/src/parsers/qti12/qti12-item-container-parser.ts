@@ -1097,5 +1097,3 @@ function formatDateInTimezone(date: Date, timezone: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
 }
-
-export class QTI12AssessmentParser extends QTI12ItemContainerParser {}

@@ -39,7 +39,6 @@ interface AssessmentConversionResult extends ConversionResultBase {
 
 interface QuestionBankConversionResult extends ConversionResultBase {
   sourceType: 'question-bank';
-  unresolvedSourceBankRefs?: undefined;
 }
 
 /** Result of converting an item container. */

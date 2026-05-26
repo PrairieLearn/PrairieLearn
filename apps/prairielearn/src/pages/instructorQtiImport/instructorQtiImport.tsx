@@ -17,7 +17,7 @@ import {
   type ConversionResult,
   type ConversionWarning,
   PLEmitter,
-  QTI12AssessmentParser,
+  QTI12ItemContainerParser,
   type QtiFileEntry,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
@@ -241,6 +241,7 @@ router.post(
       };
 
       for (const result of results) {
+        if (result.sourceType !== 'assessment') continue;
         const rules = result.assessment.infoJson.allowAccess;
         if (rules) {
           for (const rule of rules) {
@@ -349,7 +350,7 @@ async function convertEntry(
   // then emit from the already-parsed IR.
   let ir;
   try {
-    ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
+    ir = await parseAssessment(xmlContent, [new QTI12ItemContainerParser()], baseOptions);
   } catch (err) {
     return {
       ok: false,
@@ -436,13 +437,9 @@ async function serializeConversionResult(
     }),
   );
 
-  const serializedBase = {
+  const common = {
     sourceId: result.sourceId,
-    assessmentTitle: result.assessmentTitle,
-    assessment: {
-      directoryName: result.assessment.directoryName,
-      infoJson: result.assessment.infoJson,
-    },
+    title: result.assessmentTitle,
     questions,
     warnings: [...result.warnings, ...extraWarnings],
   };
@@ -450,8 +447,9 @@ async function serializeConversionResult(
   if (result.sourceType === 'question-bank') {
     return {
       result: {
-        ...serializedBase,
+        ...common,
         sourceType: 'question-bank',
+        directoryName: result.assessment.directoryName,
       },
       webResourcesDir,
     };
@@ -459,8 +457,12 @@ async function serializeConversionResult(
 
   return {
     result: {
-      ...serializedBase,
+      ...common,
       sourceType: 'assessment',
+      assessment: {
+        directoryName: result.assessment.directoryName,
+        infoJson: result.assessment.infoJson,
+      },
       unresolvedSourceBankRefs: result.unresolvedSourceBankRefs,
     },
     webResourcesDir,
@@ -587,27 +589,36 @@ export function deduplicateIdenticalQuestions(
       }
     }
 
-    return {
+    const deduped = {
       ...result,
-      assessment: {
-        ...result.assessment,
-        infoJson: {
-          ...result.assessment.infoJson,
-          zones: result.assessment.infoJson.zones.map((zone) => ({
-            ...zone,
-            questions: zone.questions.map((question) => ({
-              ...question,
-              id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
-            })),
-          })),
-        },
-      },
       questions: [...questionsByDirectoryName.values()],
       warnings: result.warnings.map((warning) => ({
         ...warning,
         questionId: canonicalWarningIdByOriginal.get(warning.questionId) ?? warning.questionId,
       })),
     };
+
+    if (result.sourceType === 'assessment') {
+      return {
+        ...deduped,
+        sourceType: 'assessment' as const,
+        assessment: {
+          ...result.assessment,
+          infoJson: {
+            ...result.assessment.infoJson,
+            zones: result.assessment.infoJson.zones.map((zone) => ({
+              ...zone,
+              questions: zone.questions.map((question) => ({
+                ...question,
+                id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+              })),
+            })),
+          },
+        },
+      };
+    }
+
+    return deduped;
   });
 }
 

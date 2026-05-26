@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { assert, describe, it } from 'vitest';
 
-import { QTI12AssessmentParser, QTI12ItemContainerParser } from './qti12-assessment-parser.js';
+import { QTI12ItemContainerParser } from './qti12-item-container-parser.js';
 
 const FIXTURES = path.join(import.meta.dirname, '../../test-fixtures/qti12');
 
@@ -11,9 +11,9 @@ function readFixture(name: string): string {
   return readFileSync(path.join(FIXTURES, name), 'utf-8');
 }
 
-const parser = new QTI12AssessmentParser();
+const parser = new QTI12ItemContainerParser();
 
-describe('QTI12AssessmentParser', async () => {
+describe('QTI12ItemContainerParser', async () => {
   describe('HTML entity decoding in titles', async () => {
     it('decodes &amp; in assessment title', async () => {
       const xml = `<?xml version="1.0"?>

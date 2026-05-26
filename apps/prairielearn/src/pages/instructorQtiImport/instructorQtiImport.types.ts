@@ -26,31 +26,30 @@ interface StoredSerializedQuestionOutput extends Omit<
   clientFiles: Record<string, string>;
 }
 
-interface SerializedConversionResultBase {
+interface SerializedConversionResultCommon {
   draftId: string;
   sourceId: string;
-  assessmentTitle: string;
-  /**
-   * PrairieLearn assessment-shaped output used for review. For question banks, this is only used
-   * to group the questions during import; it is not imported as an assessment.
-   */
-  assessment: {
-    directoryName: string;
-    infoJson: PLAssessmentInfoJson;
-  };
+  /** Display title of the source item container (assessment or question bank). */
+  title: string;
   questions: SerializedQuestionOutput[];
   warnings: ConversionWarning[];
 }
 
-interface SerializedAssessmentConversionResult extends SerializedConversionResultBase {
+interface SerializedAssessmentConversionResult extends SerializedConversionResultCommon {
   sourceType: 'assessment';
+  /** PrairieLearn assessment to create on import. */
+  assessment: {
+    directoryName: string;
+    infoJson: PLAssessmentInfoJson;
+  };
   /** Question bank references that still need supplemental content before import. */
   unresolvedSourceBankRefs?: IRSourceBankRef[];
 }
 
-interface SerializedQuestionBankConversionResult extends SerializedConversionResultBase {
+interface SerializedQuestionBankConversionResult extends SerializedConversionResultCommon {
   sourceType: 'question-bank';
-  unresolvedSourceBankRefs?: undefined;
+  /** Directory name for organizing questions in this bank. */
+  directoryName: string;
 }
 
 /** Conversion result sent to the browser for review. */
@@ -58,8 +57,8 @@ export type SerializedConversionResult =
   | SerializedAssessmentConversionResult
   | SerializedQuestionBankConversionResult;
 
-type StoredSerializedConversionResultBase = Omit<
-  SerializedConversionResultBase,
+type StoredSerializedConversionResultCommon = Omit<
+  SerializedConversionResultCommon,
   'draftId' | 'questions'
 > & {
   questions: StoredSerializedQuestionOutput[];
@@ -67,13 +66,17 @@ type StoredSerializedConversionResultBase = Omit<
 
 /** Conversion result stored server-side while the user reviews an import. */
 export type StoredSerializedConversionResult =
-  | (StoredSerializedConversionResultBase & {
+  | (StoredSerializedConversionResultCommon & {
       sourceType: 'assessment';
+      assessment: {
+        directoryName: string;
+        infoJson: PLAssessmentInfoJson;
+      };
       unresolvedSourceBankRefs?: IRSourceBankRef[];
     })
-  | (StoredSerializedConversionResultBase & {
+  | (StoredSerializedConversionResultCommon & {
       sourceType: 'question-bank';
-      unresolvedSourceBankRefs?: undefined;
+      directoryName: string;
     });
 
 /** Access rule properties that were present but stripped during import. */
@@ -115,6 +118,10 @@ export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>
     n++;
   }
   return candidate;
+}
+
+export function getUnresolvedSourceBankRefs(result: SerializedConversionResult): IRSourceBankRef[] {
+  return result.sourceType === 'assessment' ? (result.unresolvedSourceBankRefs ?? []) : [];
 }
 
 export function hasCanvasUnresolvedSourceBankRefs(refs: IRSourceBankRef[]): boolean {

@@ -10,7 +10,7 @@ import { logger } from '@prairielearn/logger';
 import type { ConversionResult } from '../emitters/emitter.js';
 import { PLEmitter } from '../emitters/pl-emitter.js';
 import type { ParseOptions } from '../parsers/parser.js';
-import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
+import { QTI12ItemContainerParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
 import type { IRItemContainer } from '../types/ir.js';
 import {
@@ -209,7 +209,7 @@ interface ParsedAssessment {
   webResourcesDir: string;
 }
 
-const PARSERS = [new QTI12AssessmentParser()];
+const PARSERS = [new QTI12ItemContainerParser()];
 const EMITTER = new PLEmitter();
 
 async function parseFile(

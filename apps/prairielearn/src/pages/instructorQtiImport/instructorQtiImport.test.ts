@@ -2,10 +2,44 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import { deduplicateIdenticalQuestions, serializeClientFiles } from './instructorQtiImport.js';
 import type { StoredSerializedConversionResult } from './instructorQtiImport.types.js';
+
+function makeQuestions(directoryPrefix: string, questionSourceId: string, questionHtml: string) {
+  const questionDirectoryName = `imported/${directoryPrefix}/q1`;
+  return {
+    questionDirectoryName,
+    questions: [
+      {
+        directoryName: questionDirectoryName,
+        sourceId: questionSourceId,
+        infoJson: {
+          uuid: `${questionSourceId}-uuid`,
+          title: 'Question 1',
+          topic: directoryPrefix,
+          tags: ['imported'],
+          type: 'v3' as const,
+          singleVariant: true,
+          gradingMethod: 'Internal' as const,
+        },
+        questionHtml,
+        clientFiles: {
+          'image.png': 'aW1hZ2U=',
+        },
+        skippedVideos: [] as string[],
+      },
+    ],
+    warnings: [
+      {
+        questionId: questionSourceId,
+        message: 'Unsupported rubric data',
+        level: 'warn' as const,
+      },
+    ],
+  };
+}
 
 function makeResult({
   directoryPrefix,
@@ -20,11 +54,27 @@ function makeResult({
   questionSourceId?: string;
   questionHtml?: string;
 }): StoredSerializedConversionResult {
-  const questionDirectoryName = `imported/${directoryPrefix}/q1`;
+  const { questionDirectoryName, questions, warnings } = makeQuestions(
+    directoryPrefix,
+    questionSourceId,
+    questionHtml,
+  );
+
+  if (sourceType === 'question-bank') {
+    return {
+      sourceId,
+      title: directoryPrefix,
+      sourceType: 'question-bank',
+      directoryName: directoryPrefix,
+      questions,
+      warnings,
+    };
+  }
+
   return {
     sourceId,
-    assessmentTitle: directoryPrefix,
-    sourceType,
+    title: directoryPrefix,
+    sourceType: 'assessment',
     assessment: {
       directoryName: directoryPrefix,
       infoJson: {
@@ -41,33 +91,8 @@ function makeResult({
         ],
       },
     },
-    questions: [
-      {
-        directoryName: questionDirectoryName,
-        sourceId: questionSourceId,
-        infoJson: {
-          uuid: `${questionSourceId}-uuid`,
-          title: 'Question 1',
-          topic: directoryPrefix,
-          tags: ['imported'],
-          type: 'v3',
-          singleVariant: true,
-          gradingMethod: 'Internal',
-        },
-        questionHtml,
-        clientFiles: {
-          'image.png': 'aW1hZ2U=',
-        },
-        skippedVideos: [],
-      },
-    ],
-    warnings: [
-      {
-        questionId: questionSourceId,
-        message: 'Unsupported rubric data',
-        level: 'warn',
-      },
-    ],
+    questions,
+    warnings,
   };
 }
 
@@ -126,6 +151,7 @@ describe('deduplicateIdenticalQuestions', () => {
     expect(results[0].questions).toHaveLength(1);
     expect(results[1].questions).toHaveLength(1);
     expect(results[1].questions[0].directoryName).toBe(results[0].questions[0].directoryName);
+    assert(results[1].sourceType === 'assessment');
     expect(results[1].assessment.infoJson.zones[0].questions[0].id).toBe(
       results[0].questions[0].directoryName,
     );
@@ -142,6 +168,7 @@ describe('deduplicateIdenticalQuestions', () => {
     ]);
 
     expect(results[1].questions[0].directoryName).toBe('imported/quiz-2/q1');
+    assert(results[1].sourceType === 'assessment');
     expect(results[1].assessment.infoJson.zones[0].questions[0].id).toBe('imported/quiz-2/q1');
   });
 
@@ -157,6 +184,7 @@ describe('deduplicateIdenticalQuestions', () => {
     ]);
 
     expect(results[0].questions[0].directoryName).toBe('imported/bank-1/q1');
+    assert(results[0].sourceType === 'assessment');
     expect(results[0].assessment.infoJson.zones[0].questions[0].id).toBe('imported/bank-1/q1');
     expect(results[1].questions[0].directoryName).toBe('imported/bank-1/q1');
   });

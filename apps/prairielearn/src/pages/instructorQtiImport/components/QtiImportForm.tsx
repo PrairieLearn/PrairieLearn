@@ -1,7 +1,7 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type SubmitEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
-import type { PLAssessmentQuestion } from '@prairielearn/question-conversion';
+import type { IRSourceBankRef, PLAssessmentQuestion } from '@prairielearn/question-conversion';
 
 import { getAppError } from '../../../lib/client/errors.js';
 import {
@@ -16,6 +16,7 @@ import {
   type SerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  getUnresolvedSourceBankRefs,
   hasCanvasUnresolvedSourceBankRefs,
   resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
@@ -75,13 +76,24 @@ function deduplicateAssessmentNumbers(
   results: SerializedConversionResult[],
   existingLabels: { set: string; number: string }[],
 ): AssessmentOverrides[] {
-  const overrides: AssessmentOverrides[] = results.map((r) => ({
-    title: r.assessment.infoJson.title,
-    type: r.assessment.infoJson.type,
-    set: r.assessment.infoJson.set,
-    number: r.assessment.infoJson.number,
-    included: r.questions.length > 0,
-  }));
+  const overrides: AssessmentOverrides[] = results.map((r) => {
+    if (r.sourceType === 'assessment') {
+      return {
+        title: r.assessment.infoJson.title,
+        type: r.assessment.infoJson.type,
+        set: r.assessment.infoJson.set,
+        number: r.assessment.infoJson.number,
+        included: r.questions.length > 0,
+      };
+    }
+    return {
+      title: r.title,
+      type: 'Homework',
+      set: 'Homework',
+      number: '1',
+      included: r.questions.length > 0,
+    };
+  });
 
   // Seed with existing (set, number) pairs so imports don't collide.
   const usedBySet = new Map<string, Set<string>>();
@@ -130,15 +142,18 @@ function buildInitialQuestionOverrides(
   return overrides;
 }
 
+function resultDirectoryName(result: SerializedConversionResult): string {
+  return result.sourceType === 'assessment'
+    ? result.assessment.directoryName
+    : result.directoryName;
+}
+
 function countUnresolvedSourceBankRefs(results: SerializedConversionResult[]): number {
-  return results.reduce(
-    (count, result) => count + (result.unresolvedSourceBankRefs ?? []).length,
-    0,
-  );
+  return results.reduce((count, result) => count + getUnresolvedSourceBankRefs(result).length, 0);
 }
 
 function hasUnresolvedSourceBankRefs(results: SerializedConversionResult[]): boolean {
-  return results.some((result) => (result.unresolvedSourceBankRefs ?? []).length > 0);
+  return results.some((result) => getUnresolvedSourceBankRefs(result).length > 0);
 }
 
 function mergeSourceBankResults(
@@ -153,7 +168,7 @@ function mergeSourceBankResults(
   const mergedPrimary = primaryResults.map((result) => {
     if (result.sourceType === 'question-bank') return result;
 
-    const refs = result.unresolvedSourceBankRefs ?? [];
+    const refs = getUnresolvedSourceBankRefs(result);
     if (refs.length === 0) return result;
 
     let changed = false;
@@ -161,7 +176,7 @@ function mergeSourceBankResults(
       result.questions.map((question) => [question.directoryName, question]),
     );
     const zones = [...result.assessment.infoJson.zones];
-    const remainingRefs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']> = [];
+    const remainingRefs: IRSourceBankRef[] = [];
     const removedWarningQuestionIds = new Set<string>();
 
     for (const ref of refs) {
@@ -296,7 +311,7 @@ export function QtiImportForm({
   };
 
   const handleExportUpload = async (
-    e: FormEvent<HTMLFormElement>,
+    e: SubmitEvent<HTMLFormElement>,
     onSuccess: (data: UploadResponse) => void,
   ) => {
     e.preventDefault();
@@ -317,7 +332,7 @@ export function QtiImportForm({
     }
   };
 
-  const handleUpload = async (e: FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (e: SubmitEvent<HTMLFormElement>) => {
     await handleExportUpload(e, (data) => {
       if (data.results.length === 0 && data.parseWarnings.length === 0) {
         throw new Error('No QTI content found in the uploaded file');
@@ -344,7 +359,7 @@ export function QtiImportForm({
     });
   };
 
-  const handleBankUpload = async (e: FormEvent<HTMLFormElement>) => {
+  const handleBankUpload = async (e: SubmitEvent<HTMLFormElement>) => {
     await handleExportUpload(e, (data) => {
       const previousUnresolvedCount = countUnresolvedSourceBankRefs(results);
       const mergedResults = mergeSourceBankResults(results, data.results, {
@@ -356,7 +371,7 @@ export function QtiImportForm({
       setQuestionOverrides(buildInitialQuestionOverrides(mergedResults, existingDirs));
       setOverrides(deduplicateAssessmentNumbers(mergedResults, data.existingAssessmentLabels));
       if (unresolvedCount >= previousUnresolvedCount) {
-        const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
+        const refs = results.flatMap((result) => getUnresolvedSourceBankRefs(result));
         const exportType = hasCanvasUnresolvedSourceBankRefs(refs)
           ? 'Canvas course export'
           : 'export';
@@ -388,7 +403,11 @@ export function QtiImportForm({
           ({ result, override }) => override.included && getIncludedQuestionCount(result) > 0,
         );
       const includedAssessments = includedResults.filter(
-        ({ result }) => result.sourceType === 'assessment',
+        (
+          entry,
+        ): entry is typeof entry & {
+          result: Extract<SerializedConversionResult, { sourceType: 'assessment' }>;
+        } => entry.result.sourceType === 'assessment',
       );
       const includedQuestionBankResults = includedResults.filter(
         ({ result }) => result.sourceType === 'question-bank',
@@ -626,18 +645,18 @@ export function QtiImportForm({
     result: SerializedConversionResult;
     index: number;
   }) => (
-    <Card key={result.assessment.directoryName} className="mb-3">
+    <Card key={resultDirectoryName(result)} className="mb-3">
       <Card.Header className="d-flex align-items-center gap-2">
         <Form.Check
           id={`include-${i}`}
           checked={overrides[i].included}
           disabled={result.questions.length === 0}
           label=""
-          aria-label={`Include ${result.assessmentTitle}`}
+          aria-label={`Include ${result.title}`}
           onChange={(e) => updateOverride(i, { included: e.target.checked })}
         />
         <div className="flex-grow-1">
-          <strong>{result.assessmentTitle}</strong>
+          <strong>{result.title}</strong>
           <span className="text-muted ms-2">
             ({result.questions.length} question{result.questions.length !== 1 ? 's' : ''})
           </span>

@@ -1,5 +1,7 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type SubmitEvent, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
+
+import type { IRSourceBankRef } from '@prairielearn/question-conversion';
 
 import {
   type CollisionStrategy,
@@ -8,6 +10,7 @@ import {
   type SerializedConversionResult,
   type SerializedQuestionOutput,
   type StrippedAccessRules,
+  getUnresolvedSourceBankRefs,
   hasCanvasUnresolvedSourceBankRefs,
 } from '../instructorQtiImport.types.js';
 
@@ -17,9 +20,7 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
-function uniqueCanvasCourseIds(
-  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
-): string[] {
+function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
   return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
 }
 
@@ -38,21 +39,15 @@ function CanvasCourseIdList({ courseIds }: { courseIds: string[] }) {
   );
 }
 
-function countReferencedBankQuestions(
-  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
-) {
+function countReferencedBankQuestions(refs: IRSourceBankRef[]) {
   return refs.reduce((sum, ref) => sum + (ref.numberChoose ?? 1), 0);
 }
 
-function sourceBankRefKey(
-  ref: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>[number],
-) {
+function sourceBankRefKey(ref: IRSourceBankRef) {
   return ref.sourceBankExportId ?? ref.sourceBankRef;
 }
 
-function uniqueSourceBankRefs(
-  refs: NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']>,
-): NonNullable<SerializedConversionResult['unresolvedSourceBankRefs']> {
+function uniqueSourceBankRefs(refs: IRSourceBankRef[]): IRSourceBankRef[] {
   const seen = new Set<string>();
   return refs.filter((ref) => {
     const key = sourceBankRefKey(ref);
@@ -63,7 +58,7 @@ function uniqueSourceBankRefs(
 }
 
 export function UnresolvedBankWarnings({ results }: { results: SerializedConversionResult[] }) {
-  const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
+  const refs = results.flatMap((result) => getUnresolvedSourceBankRefs(result));
   if (refs.length === 0) return null;
 
   const courseIds = uniqueCanvasCourseIds(refs);
@@ -238,7 +233,7 @@ export function UploadStep({
   onSubmit,
 }: {
   uploading: boolean;
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
 }) {
   return (
     <form encType="multipart/form-data" onSubmit={onSubmit}>
@@ -291,11 +286,11 @@ export function MissingBanksStep({
   uploading: boolean;
   uploadingBankKey: string | null;
   successMessage: string | null;
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   onSkip: () => void;
   onStartOver: () => void;
 }) {
-  const refs = results.flatMap((result) => result.unresolvedSourceBankRefs ?? []);
+  const refs = results.flatMap((result) => getUnresolvedSourceBankRefs(result));
   const uniqueRefs = uniqueSourceBankRefs(refs);
   const courseIds = uniqueCanvasCourseIds(refs);
   const importedQuestionCount = results.reduce((sum, result) => sum + result.questions.length, 0);
