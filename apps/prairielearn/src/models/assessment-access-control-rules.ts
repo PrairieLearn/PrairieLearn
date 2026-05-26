@@ -255,7 +255,7 @@ export function dbRowToAccessControlJson(
 
 export async function selectAccessControlRules(
   assessment: Assessment,
-  targetTypes: AccessControlTargetType[] = ['none', 'student_label', 'enrollment'],
+  targetTypes: AccessControlTargetType[],
 ): Promise<AccessControlJsonWithRequiredId[]> {
   const rows = await queryRows(
     sql.select_access_control_rules,

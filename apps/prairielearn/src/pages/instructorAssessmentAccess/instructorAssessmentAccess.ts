@@ -74,7 +74,9 @@ router.get(
       const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
         selectAccessControlRules(
           res.locals.assessment,
-          permissions.hasCourseInstancePermissionView ? undefined : ['none', 'student_label'],
+          permissions.hasCourseInstancePermissionView
+            ? ['none', 'student_label', 'enrollment']
+            : ['none', 'student_label'],
         ),
         permissions.hasCourseInstancePermissionView
           ? 0

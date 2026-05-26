@@ -294,10 +294,8 @@ const saveAllRules = t.procedure
         await lockAssessment(opts.ctx.assessment);
 
         // Determine which enrollment rules to delete
-        const currentRules = await selectAccessControlRules(opts.ctx.assessment);
-        const existingIds = new Set(
-          currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
-        );
+        const currentRules = await selectAccessControlRules(opts.ctx.assessment, ['enrollment']);
+        const existingIds = new Set(currentRules.map((r) => r.id));
         const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
         const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
