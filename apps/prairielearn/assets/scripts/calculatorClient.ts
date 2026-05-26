@@ -110,9 +110,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) => {
-    return ce.parse(latex).toString();
-  };
+  const onExport = (_mf: unknown, latex: string) => ce.parse(latex, { form: 'raw' }).toString();
   calculatorInputElement.onExport = onExport;
   calculatorOutput.onExport = onExport;
 
