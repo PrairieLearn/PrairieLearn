@@ -12,6 +12,12 @@ class GroupInfo(TypedDict):
     depends: list[str] | None
 
 
+class DisplayBlockType(Enum):
+    VERTICAL = "vertical"
+    INLINE_WRAP = "inline-wrap"
+    INLINE_NOWRAP = "inline-nowrap"
+
+
 class GradingMethodType(Enum):
     UNORDERED = "unordered"
     ORDERED = "ordered"
@@ -70,7 +76,7 @@ ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
-WRAP_INLINE_DEFAULT = False
+DISPLAY_BLOCK_DEFAULT = DisplayBlockType.VERTICAL
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -265,7 +271,7 @@ class OrderBlocksOptions:
     format: FormatType
     code_language: str | None
     inline: bool
-    wrap_inline: bool
+    display_block: DisplayBlockType
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -326,8 +332,11 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
-        self.wrap_inline = pl.get_boolean_attrib(
-            html_element, "wrap-inline", WRAP_INLINE_DEFAULT
+        self.display_block = pl.get_enum_attrib(
+            html_element,
+            "display-block",
+            DisplayBlockType,
+            DISPLAY_BLOCK_DEFAULT,
         )
         self.has_optional_blocks = is_multigraph(html_element)
 
@@ -365,7 +374,7 @@ class OrderBlocksOptions:
             "min-incorrect",
             "weight",
             "inline",
-            "wrap-inline",
+            "display-block",
             "max-indent",
             "feedback",
             "partial-credit",
@@ -439,14 +448,13 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if self.inline and self.indentation:
+        if (
+            self.inline
+            or self.display_block == DisplayBlockType.INLINE_WRAP
+            or self.display_block == DisplayBlockType.INLINE_NOWRAP
+        ) and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
-            )
-
-        if not self.inline and self.wrap_inline:
-            raise ValueError(
-                "The wrap-inline attribute may only be used when inline is true."
             )
 
         if (
