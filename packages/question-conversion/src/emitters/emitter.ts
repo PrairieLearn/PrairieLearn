@@ -31,13 +31,13 @@ interface ConversionResultBase {
   warnings: ConversionWarning[];
 }
 
-export interface AssessmentConversionResult extends ConversionResultBase {
+interface AssessmentConversionResult extends ConversionResultBase {
   sourceType: 'assessment';
   /** Bank references that still need supplemental content to become importable questions. */
   unresolvedSourceBankRefs?: IRSourceBankRef[];
 }
 
-export interface QuestionBankConversionResult extends ConversionResultBase {
+interface QuestionBankConversionResult extends ConversionResultBase {
   sourceType: 'question-bank';
   unresolvedSourceBankRefs?: undefined;
 }

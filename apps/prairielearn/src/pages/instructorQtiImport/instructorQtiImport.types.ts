@@ -42,13 +42,13 @@ interface SerializedConversionResultBase {
   warnings: ConversionWarning[];
 }
 
-export interface SerializedAssessmentConversionResult extends SerializedConversionResultBase {
+interface SerializedAssessmentConversionResult extends SerializedConversionResultBase {
   sourceType: 'assessment';
   /** Question bank references that still need supplemental content before import. */
   unresolvedSourceBankRefs?: IRSourceBankRef[];
 }
 
-export interface SerializedQuestionBankConversionResult extends SerializedConversionResultBase {
+interface SerializedQuestionBankConversionResult extends SerializedConversionResultBase {
   sourceType: 'question-bank';
   unresolvedSourceBankRefs?: undefined;
 }
