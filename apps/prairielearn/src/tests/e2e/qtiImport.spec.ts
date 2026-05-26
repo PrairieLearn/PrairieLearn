@@ -428,7 +428,11 @@ test.describe('QTI Import', () => {
     await enableFeatureFlag('qti-content-import');
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/instructor/course_admin/questions`);
-    const link = page.getByRole('link', { name: 'Import questions' });
+    await page.getByRole('button', { name: 'Add questions' }).click();
+    await expect(page.getByText('Import content into')).toBeVisible();
+    const link = page
+      .getByRole('link', { name: courseInstance.short_name })
+      .and(page.locator('[href*="qti_import"]'));
 
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', /\/instance_admin\/qti_import\?return_to=questions/);
@@ -488,7 +492,7 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
   });
 
-  test('reports unreferenced binary assets without importing them', async ({
+  test('does not report unreferenced binary assets', async ({
     page,
     courseInstance,
     testCoursePath,
@@ -510,13 +514,11 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('1 image and other asset')).toBeVisible();
     await expect(
-      page.getByText(
-        '1 asset file will not be included because it is not referenced in the questions or assessments.',
-      ),
-    ).toBeVisible();
-    await page.getByText('Show 1 file').click();
-    await expect(page.getByText('unused.png')).toBeVisible();
+      page.getByText(/asset file.*will not be included because.*not referenced/),
+    ).not.toBeVisible();
+    await expect(page.getByText('Show 1 file')).not.toBeVisible();
     await expect(page.getByText('notes.txt')).not.toBeVisible();
+    await expect(page.getByText('unused.png')).not.toBeVisible();
   });
 
   test('can upload a Canvas quiz export with plain imsqti resource type', async ({
@@ -563,7 +565,7 @@ test.describe('QTI Import', () => {
     await page.getByRole('button', { name: 'Import content' }).click();
 
     await expect(page.getByText('What can be imported')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('Some questions are in Canvas question banks')).not.toBeVisible();
+    await expect(page.getByText('Some questions are in question banks')).not.toBeVisible();
     await expect(page.getByText('Embedded Bank Quiz')).toBeVisible();
     await expect(page.getByText('(1 question)')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import 1 assessment' })).toBeEnabled();
@@ -590,7 +592,7 @@ test.describe('QTI Import', () => {
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
 
-    await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
+    await expect(page.getByText('Some questions are in question banks')).toBeVisible({
       timeout: 15000,
     });
     await expect(
@@ -633,7 +635,7 @@ test.describe('QTI Import', () => {
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
 
-    await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
+    await expect(page.getByText('Some questions are in question banks')).toBeVisible({
       timeout: 15000,
     });
     await expect(
@@ -690,7 +692,7 @@ test.describe('QTI Import', () => {
     await page.getByLabel('Export file').setInputFiles(assessmentZipPath);
     await page.getByRole('button', { name: 'Import content' }).click();
 
-    await expect(page.getByText('Some questions are in Canvas question banks')).toBeVisible({
+    await expect(page.getByText('Some questions are in question banks')).toBeVisible({
       timeout: 15000,
     });
     await expect(
