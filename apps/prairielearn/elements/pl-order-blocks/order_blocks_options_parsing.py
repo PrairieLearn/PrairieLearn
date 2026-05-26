@@ -16,6 +16,10 @@ class DisplayBlockType(Enum):
     VERTICAL = "vertical"
     INLINE_WRAP = "inline-wrap"
     INLINE_NOWRAP = "inline-nowrap"
+    def isInline(self):
+        if self == DisplayBlockType.INLINE_WRAP or self == DisplayBlockType.INLINE_NOWRAP:
+            return True
+        return False
 
 
 class GradingMethodType(Enum):

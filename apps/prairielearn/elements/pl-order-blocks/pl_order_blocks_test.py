@@ -352,6 +352,26 @@ def test_initially_placed_validation(
     assert_answer_options(order_blocks_options, answer_options_list)
 
 
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+                "weight": 2,
+                "indentation": False,
+                "partial-credit": "lcs",
+            },
+            [
+                {"tag": "1", "depends": r""},
+                {"tag": "2", "depends": r"1"},
+                {"tag": "3", "depends": r"1|2", "final": True},
+            ],
+            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
+        ),
+    ],
+)
 def test_valid_final_tag(
     options: dict, answer_options_list: list[dict], error: str
 ) -> None:
