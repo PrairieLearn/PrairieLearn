@@ -699,7 +699,11 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    context: { coursePath: string; filePath: string },
+  ) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -732,7 +736,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = validate(result.data, loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data, { coursePath, filePath });
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
 
@@ -761,7 +765,11 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    context: { coursePath: string; filePath: string },
+  ) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -1029,9 +1037,13 @@ function isValidORCID(orcid: string): boolean {
 function validateQuestion({
   question,
   sharingEnabled,
+  coursePath,
+  questionPath,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
+  coursePath: string;
+  questionPath: string;
 }): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1106,6 +1118,39 @@ function validateQuestion({
         }
       }
       // Origin courses are validated in bulk in loadQuestions(), and skipped here.
+    }
+  }
+
+  //Sync warnings for missing dependencies
+  for (const file of question.dependencies.clientFilesCourseScripts ?? []) {
+    const fullPath = path.join(coursePath, 'clientFilesCourse', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: clientFilesCourse/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesCourseStyles ?? []) {
+    const fullPath = path.join(coursePath, 'clientFilesCourse', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: clientFilesCourse/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesQuestionScripts ?? []) {
+    const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: clientFilesQuestion/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesQuestionStyles ?? []) {
+    const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: clientFilesQuestion/${file}`);
     }
   }
 
@@ -1821,7 +1866,17 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (
+      question: QuestionJson,
+      _rawQuestion: z.input<typeof schemas.QuestionJsonSchema>,
+      context: { coursePath: string; filePath: string },
+    ) =>
+      validateQuestion({
+        question,
+        sharingEnabled,
+        coursePath: context.coursePath,
+        questionPath: path.join(context.coursePath, path.dirname(context.filePath)),
+      }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
