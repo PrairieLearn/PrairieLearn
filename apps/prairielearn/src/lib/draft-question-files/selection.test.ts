@@ -41,6 +41,21 @@ describe('parseSelectionQueryParam', () => {
       assert.deepEqual(parseSelectionQueryParam(raw), ROOT_SELECTION);
     }
   });
+
+  it('falls back to the root for paths that escape the question root', () => {
+    for (const raw of [
+      'file:../infoCourse.json',
+      'file:foo/../../bar',
+      'file:/etc/passwd',
+      'file:foo\\bar',
+      'file:foo\0bar',
+      'dir:..',
+      'dir:../tests',
+      'dir:/tmp',
+    ]) {
+      assert.deepEqual(parseSelectionQueryParam(raw), ROOT_SELECTION);
+    }
+  });
 });
 
 describe('selectionEquals', () => {

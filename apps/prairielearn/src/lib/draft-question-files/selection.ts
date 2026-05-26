@@ -15,14 +15,27 @@ export const ROOT_SELECTION: DraftEditorSelection = { kind: 'dir', path: null };
 const FILE_PREFIX = 'file:';
 const DIR_PREFIX = 'dir:';
 
+/**
+ * Checks that a selection path stays within the question root without
+ * pulling `node:path` into the client bundle.
+ */
+function isSafeSelectionPath(value: string): boolean {
+  if (value === '' || value.includes('\0') || value.includes('\\')) return false;
+  if (value.startsWith('/')) return false;
+  return !value.split('/').includes('..');
+}
+
 function decodeSelection(value: string): DraftEditorSelection | null {
   if (value.startsWith(FILE_PREFIX)) {
     const path = value.slice(FILE_PREFIX.length);
-    return path === '' ? null : { kind: 'file', path };
+    if (!isSafeSelectionPath(path)) return null;
+    return { kind: 'file', path };
   }
   if (value.startsWith(DIR_PREFIX)) {
     const path = value.slice(DIR_PREFIX.length);
-    return { kind: 'dir', path: path === '' ? null : path };
+    if (path === '') return { kind: 'dir', path: null };
+    if (!isSafeSelectionPath(path)) return null;
+    return { kind: 'dir', path };
   }
   return null;
 }
