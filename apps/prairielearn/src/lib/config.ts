@@ -177,10 +177,7 @@ export const ConfigSchema = z.object({
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
   fileUploadMaxParts: z.number().default(1000),
-  fileStoreS3Bucket: z
-    .string()
-    .nullable()
-    .default(DEV_MODE ? 'file-store' : null),
+  fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
   cronActive: z.boolean().default(true),
   /**

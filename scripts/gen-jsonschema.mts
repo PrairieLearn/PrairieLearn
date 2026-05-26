@@ -102,7 +102,6 @@ const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/sc
 const PrairieLearnConfigSchema = z.object({
   ...EnvSpecificPrairieLearnConfigSchema.shape,
   courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(STANDARD_COURSE_DIRS),
-  fileStoreS3Bucket: EnvSpecificPrairieLearnConfigSchema.shape.fileStoreS3Bucket.default(null),
 });
 
 const UnifiedConfigJsonSchema = zodToJsonSchema(

@@ -209,8 +209,8 @@
       "default": 1000
     },
     "fileStoreS3Bucket": {
-      "type": ["string", "null"],
-      "default": null
+      "type": "string",
+      "default": "file-store"
     },
     "fileStoreStorageTypeDefault": {
       "type": "string",
