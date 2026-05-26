@@ -110,7 +110,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) => ce.parse(latex, { form: 'raw' }).toString();
+  const onExport = (_mf: unknown, latex: string) =>
+    ce.parse(latex.replace(/^=/, ''), { form: 'raw' }).toString();
   calculatorInputElement.onExport = onExport;
   calculatorOutput.onExport = onExport;
 
@@ -692,7 +693,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) => ce.parse(latex, { form: 'raw' }).toString();
+    const normalizeLatex = (latex: string) =>
+      ce.parse(latex.replace(/^=/, ''), { form: 'raw' }).toString();
     const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
     inputField.onExport = historyOnExport;
     outputField.onExport = historyOnExport;
@@ -705,7 +707,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
     inputCopyBtn.dataset.clipboardText = normalizeLatex(input);
-    outputCopyBtn.dataset.clipboardText = normalizeLatex(outputField.value.replace(/^=/, ''));
+    outputCopyBtn.dataset.clipboardText = normalizeLatex(outputField.value);
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
