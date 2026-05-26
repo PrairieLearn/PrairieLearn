@@ -42,8 +42,6 @@ function NoGroupConfigCard({
     origHash: string;
     groupConfig: StaffGroupConfig;
     groupSettingsDefaults: GroupSettingsFormValues | null;
-    groups?: GroupUsersRow[];
-    notAssigned?: string[];
   }) => void;
 }) {
   const trpc = useTRPC();
@@ -206,11 +204,11 @@ function InstructorAssessmentGroupsInner({
   const groupMembershipQueryKey = trpc.assessmentGroups.membership.queryKey();
   const groupMembershipQuery = useQuery({
     ...trpc.assessmentGroups.membership.queryOptions(),
-    enabled: !!groupConfigInfo && canViewStudentData,
-    initialData: {
-      groups: initialGroups ?? [],
-      notAssigned: initialNotAssigned ?? [],
-    },
+    enabled: groupConfigInfo != null && canViewStudentData,
+    initialData:
+      groupConfigInfo === initialGroupConfigInfo && initialGroups && initialNotAssigned
+        ? { groups: initialGroups, notAssigned: initialNotAssigned }
+        : undefined,
     staleTime: Infinity,
   });
 
@@ -238,34 +236,16 @@ function InstructorAssessmentGroupsInner({
         hasAssessmentInstances={hasAssessmentInstances}
         courseInstanceId={courseInstanceId}
         assessment={assessment}
-        onEnable={({
-          origHash: newHash,
-          groupConfig,
-          groupSettingsDefaults: newDefaults,
-          groups: newGroups,
-          notAssigned: newNotAssigned,
-        }) => {
+        onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
           setOrigHash(newHash);
+          // Setting `groupConfigInfo` flips the membership query's `enabled`
+          // from false to true, which triggers an auto-fetch on the next render.
           setGroupConfigInfo(groupConfig);
           setGroupSettingsDefaults(newDefaults);
-          if (canViewStudentData) {
-            queryClient.setQueryData(groupMembershipQueryKey, {
-              groups: newGroups ?? [],
-              notAssigned: newNotAssigned ?? [],
-            });
-          }
         }}
       />
     );
   }
-
-  const groupMembership = groupMembershipQuery.data;
-  const unassignedStudentCount = groupMembership.notAssigned.length;
-  const groupMembershipError =
-    groupMembershipQuery.error == null
-      ? null
-      : (getAppError<AssessmentGroupsError['Membership']>(groupMembershipQuery.error)?.message ??
-        'An unknown error occurred.');
 
   return (
     <>
@@ -277,10 +257,10 @@ function InstructorAssessmentGroupsInner({
             courseInstanceId={courseInstanceId}
             assessmentId={assessment.id}
             membershipSummary={
-              canViewStudentData
+              canViewStudentData && groupMembershipQuery.data
                 ? {
-                    groupCount: groupMembership.groups.length,
-                    unassignedStudentCount,
+                    groupCount: groupMembershipQuery.data.groups.length,
+                    unassignedStudentCount: groupMembershipQuery.data.notAssigned.length,
                   }
                 : undefined
             }
@@ -319,7 +299,7 @@ function InstructorAssessmentGroupsInner({
               setOrigHash(newHash);
               setGroupSettingsDefaults(null);
               setGroupConfigInfo(undefined);
-              queryClient.setQueryData(groupMembershipQueryKey, { groups: [], notAssigned: [] });
+              queryClient.removeQueries({ queryKey: groupMembershipQueryKey });
             }}
           />
         )}
@@ -353,8 +333,7 @@ function InstructorAssessmentGroupsInner({
         {canViewStudentData ? (
           <GroupsCard
             groupsCsvFilename={groupsCsvFilename}
-            groups={groupMembership.groups}
-            notAssigned={groupMembership.notAssigned}
+            membershipQuery={groupMembershipQuery}
             assessment={assessment}
             assessmentSet={assessmentSet}
             courseInstanceId={courseInstanceId}
@@ -374,10 +353,7 @@ function InstructorAssessmentGroupsInner({
             })}
             minGroupSize={minGroupSize}
             maxGroupSize={maxGroupSize}
-            lastRefreshedAt={groupMembershipQuery.dataUpdatedAt}
-            isRefreshingGroups={groupMembershipQuery.isFetching}
-            membershipErrorMessage={groupMembershipError}
-            onRefreshGroups={refreshGroupMembership}
+            onRefresh={refreshGroupMembership}
           />
         ) : (
           <div className="card">

@@ -316,6 +316,8 @@ const enableGroupWork = t.procedure
       });
     }
 
+    // TODO: Drop this compatibility payload once old Groups UI bundles no
+    // longer consume it; new clients fetch `membership` after enabling.
     const [groups, notAssigned] = ctx.authz_data.has_course_instance_permission_view
       ? await Promise.all([
           selectGroupsForConfig(groupConfig.id),

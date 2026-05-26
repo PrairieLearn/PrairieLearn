@@ -1,4 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { type UseQueryResult, useMutation } from '@tanstack/react-query';
+import type { TRPCClientErrorLike } from '@trpc/client';
+import type { inferRouterOutputs } from '@trpc/server';
 import clsx from 'clsx';
 import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -25,7 +27,10 @@ import {
 import type { GroupUsersRow } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { AssessmentRouter } from '../../../trpc/assessment/trpc.js';
 import type { ActionAccess } from '../types.js';
+
+type MembershipData = inferRouterOutputs<AssessmentRouter>['assessmentGroups']['membership'];
 
 function EditGroupModal({
   row,
@@ -669,8 +674,7 @@ function GroupRow({
 
 export function GroupsCard({
   groupsCsvFilename,
-  groups,
-  notAssigned,
+  membershipQuery,
   assessment,
   assessmentSet,
   courseInstanceId,
@@ -678,14 +682,10 @@ export function GroupsCard({
   editAccess,
   minGroupSize,
   maxGroupSize,
-  lastRefreshedAt,
-  isRefreshingGroups,
-  membershipErrorMessage,
-  onRefreshGroups,
+  onRefresh,
 }: {
   groupsCsvFilename: string;
-  groups: GroupUsersRow[];
-  notAssigned: string[];
+  membershipQuery: UseQueryResult<MembershipData, TRPCClientErrorLike<AssessmentRouter>>;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
   courseInstanceId: string;
@@ -693,14 +693,11 @@ export function GroupsCard({
   editAccess: ActionAccess;
   minGroupSize: number;
   maxGroupSize: number;
-  lastRefreshedAt: number;
-  isRefreshingGroups: boolean;
-  membershipErrorMessage: string | null;
-  onRefreshGroups: () => void;
+  onRefresh: () => void;
 }) {
+  const { groups, notAssigned } = membershipQuery.data ?? { groups: [], notAssigned: [] };
   const [now, setNow] = useState(() => Date.now());
   const canEdit = editAccess.status === 'allowed';
-  const relativeNow = Math.max(now, lastRefreshedAt);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
@@ -745,14 +742,14 @@ export function GroupsCard({
           <AddGroupModal
             show={addModal.show}
             onHide={addModal.hide}
-            onGroupMembershipChanged={onRefreshGroups}
+            onGroupMembershipChanged={onRefresh}
           />
           <DeleteAllGroupsModal
             assessmentSetName={assessmentSet.name}
             assessmentNumber={assessment.number}
             show={deleteAllModal.show}
             onHide={deleteAllModal.hide}
-            onGroupMembershipChanged={onRefreshGroups}
+            onGroupMembershipChanged={onRefresh}
           />
           {editModal.data && (
             <EditGroupModal
@@ -760,7 +757,7 @@ export function GroupsCard({
               row={editModal.data}
               show={editModal.show}
               onHide={editModal.hide}
-              onGroupMembershipChanged={onRefreshGroups}
+              onGroupMembershipChanged={onRefresh}
             />
           )}
           {deleteModal.data && (
@@ -769,7 +766,7 @@ export function GroupsCard({
               row={deleteModal.data}
               show={deleteModal.show}
               onHide={deleteModal.hide}
-              onGroupMembershipChanged={onRefreshGroups}
+              onGroupMembershipChanged={onRefresh}
             />
           )}
         </>
@@ -787,8 +784,18 @@ export function GroupsCard({
                     {assignmentSummary}
                   </>
                 )}
-                {' · Updated '}
-                {formatDistance(lastRefreshedAt, relativeNow, { addSuffix: true })}
+                {membershipQuery.data ? (
+                  <>
+                    {' · Updated '}
+                    {formatDistance(
+                      membershipQuery.dataUpdatedAt,
+                      Math.max(now, membershipQuery.dataUpdatedAt),
+                      { addSuffix: true },
+                    )}
+                  </>
+                ) : (
+                  membershipQuery.isFetching && <> · Refreshing...</>
+                )}
               </div>
             </div>
             <div className="d-flex gap-2">
@@ -841,10 +848,10 @@ export function GroupsCard({
               <Button
                 variant="outline-secondary"
                 aria-label="Refresh groups"
-                disabled={isRefreshingGroups}
-                onClick={onRefreshGroups}
+                disabled={membershipQuery.isFetching}
+                onClick={onRefresh}
               >
-                {isRefreshingGroups ? (
+                {membershipQuery.isFetching ? (
                   <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
                 ) : (
                   <i className="bi bi-arrow-clockwise" aria-hidden="true" />
@@ -859,9 +866,9 @@ export function GroupsCard({
             </Alert>
           )}
 
-          {membershipErrorMessage && (
-            <Alert variant="danger">
-              Could not refresh group membership: {membershipErrorMessage}
+          {membershipQuery.isError && (
+            <Alert variant="danger" className="mb-3">
+              Could not refresh group memberships. {membershipQuery.error.message}
             </Alert>
           )}
 
