@@ -8,12 +8,8 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import {
-  type AccessControlFormData,
-  type DeadlineEntry,
-  type DueValue,
-  isOverrideFieldActive,
-} from '../types.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
+import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
 function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
@@ -327,21 +323,23 @@ export function OverrideDueDateField({
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
     rules: {
-      validate: (value, formValues) => {
-        if (!isOverrideFieldActive(formValues, index, 'due')) return true;
-        return validateDueDate(value, validationReleaseDateRef.current, displayTimezone) ?? true;
-      },
+      validate: validateActiveOverrideField(
+        index,
+        'due',
+        (value) =>
+          validateDueDate(value, validationReleaseDateRef.current, displayTimezone) ?? true,
+      ),
     },
   });
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
     name: `overrides.${index}.due.credit`,
     rules: {
-      validate: (value, formValues) => {
-        if (!isOverrideFieldActive(formValues, index, 'due')) return true;
-        return (
-          validateDueCredit(value, formValues.overrides[index]?.due.customCredit ?? false) ?? true
-        );
-      },
+      validate: validateActiveOverrideField(
+        index,
+        'due',
+        (value, formValues) =>
+          validateDueCredit(value, formValues.overrides[index]?.due.customCredit ?? false) ?? true,
+      ),
     },
   });
 

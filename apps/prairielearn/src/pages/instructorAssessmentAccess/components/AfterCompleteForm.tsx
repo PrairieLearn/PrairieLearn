@@ -5,12 +5,12 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
+import { validateActiveOverrideField } from './overrideFields.js';
 import {
   type AccessControlFormData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   defaultRuleHasCompletionMechanism,
-  isOverrideFieldActive,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 
@@ -547,10 +547,9 @@ export function OverrideAfterCompleteForm({
   >({
     name: `overrides.${index}.questionVisibility`,
     rules: {
-      validate: (value, formValues) => {
-        if (!isOverrideFieldActive(formValues, index, 'questionVisibility')) return true;
-        return validateQuestionVisibility(value);
-      },
+      validate: validateActiveOverrideField(index, 'questionVisibility', (value) =>
+        validateQuestionVisibility(value),
+      ),
     },
   });
   const { field: svField } = useController<
@@ -559,10 +558,9 @@ export function OverrideAfterCompleteForm({
   >({
     name: `overrides.${index}.scoreVisibility`,
     rules: {
-      validate: (value, formValues) => {
-        if (!isOverrideFieldActive(formValues, index, 'scoreVisibility')) return true;
-        return validateScoreVisibility(value);
-      },
+      validate: validateActiveOverrideField(index, 'scoreVisibility', (value) =>
+        validateScoreVisibility(value),
+      ),
     },
   });
 

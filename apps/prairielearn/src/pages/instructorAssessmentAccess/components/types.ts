@@ -147,14 +147,6 @@ export interface AccessControlFormData {
   overrides: OverrideData[];
 }
 
-export function isOverrideFieldActive(
-  formValues: AccessControlFormData,
-  index: number,
-  fieldName: OverridableFieldName,
-): boolean {
-  return formValues.overrides[index]?.overriddenFields.includes(fieldName) ?? false;
-}
-
 /**
  * The default rule has a completion mechanism when something can actually
  * close the assessment: a due date, a late deadline, a duration limit, or a

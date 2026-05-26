@@ -250,6 +250,23 @@ describe('getGlobalDateValidationErrors', () => {
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
   });
+
+  it('does not map inherited after-complete conflicts to inactive override fields', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([makeOverride()], {
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: true },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.questionVisibility',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
+    expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
+  });
 });
 
 describe('getAccessControlFormValidationErrors', () => {

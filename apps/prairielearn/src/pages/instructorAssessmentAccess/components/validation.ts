@@ -11,12 +11,8 @@ import {
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
-import {
-  type AccessControlFormData,
-  formDataToJson,
-  isOverrideFieldActive,
-  isReleasedNow,
-} from './types.js';
+import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
+import { type AccessControlFormData, formDataToJson, isReleasedNow } from './types.js';
 
 export type AccessControlFormFieldPath =
   | 'defaultRule.release.date'
@@ -57,7 +53,6 @@ function buildValidationRules(formData: AccessControlFormData): AccessControlVal
 
 function mapIssueToFormFieldPath(
   issue: AccessControlValidationIssue,
-  formData?: AccessControlFormData,
 ): AccessControlFormFieldPath | null {
   const prefix: 'defaultRule' | `overrides.${number}` =
     issue.ruleIndex === 0 ? 'defaultRule' : `overrides.${issue.ruleIndex - 1}`;
@@ -86,14 +81,6 @@ function mapIssueToFormFieldPath(
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
         if (issue.path.length === 2) {
-          if (
-            formData &&
-            issue.ruleIndex > 0 &&
-            !isOverrideFieldActive(formData, issue.ruleIndex - 1, 'questionVisibility') &&
-            isOverrideFieldActive(formData, issue.ruleIndex - 1, 'scoreVisibility')
-          ) {
-            return `${prefix}.scoreVisibility`;
-          }
           return `${prefix}.questionVisibility`;
         }
         switch (issue.path[2]) {
@@ -120,6 +107,27 @@ function mapIssueToFormFieldPath(
     default:
       return null;
   }
+}
+
+function mapIssueToEditableFormFieldPath(
+  issue: AccessControlValidationIssue,
+  formData: AccessControlFormData,
+): AccessControlFormFieldPath | null {
+  const path = mapIssueToFormFieldPath(issue);
+  if (!path) return null;
+  if (isFormFieldPathEditable(formData, path)) return path;
+
+  if (
+    issue.path[0] === 'afterComplete' &&
+    issue.path[1] === 'questions' &&
+    issue.path.length === 2 &&
+    issue.ruleIndex > 0
+  ) {
+    const scorePath: AccessControlFormFieldPath = `overrides.${issue.ruleIndex - 1}.scoreVisibility`;
+    if (isFormFieldPathEditable(formData, scorePath)) return scorePath;
+  }
+
+  return null;
 }
 
 /**
@@ -158,7 +166,7 @@ function getReleaseStateValidationErrors(
   }
 
   formData.overrides.forEach((override, index) => {
-    if (override.overriddenFields.includes('release')) {
+    if (isOverrideFieldActive(formData, index, 'release')) {
       checkRule(override.release, `overrides.${index}.release.date`);
     }
   });
@@ -213,7 +221,7 @@ export function getGlobalDateValidationErrors(
     validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
-      const path = mapIssueToFormFieldPath(issue, formData);
+      const path = mapIssueToEditableFormFieldPath(issue, formData);
       if (!path || seenPaths.has(path)) continue;
       seenPaths.add(path);
       results.push({ path, message: issue.message });
@@ -230,7 +238,7 @@ export function getGlobalDateValidationErrors(
     }
     for (const issues of issueGroups) {
       for (const issue of issues) {
-        const path = mapIssueToFormFieldPath(issue, formData);
+        const path = mapIssueToEditableFormFieldPath(issue, formData);
         if (!path || seenPaths.has(path)) continue;
         seenPaths.add(path);
         results.push({ path, message: issue.message });

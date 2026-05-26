@@ -5,7 +5,8 @@ import { useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { type AccessControlFormData, isOverrideFieldActive } from '../types.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
+import type { AccessControlFormData } from '../types.js';
 
 function PasswordToggle({
   value,
@@ -104,10 +105,11 @@ export function OverridePasswordField({ index }: { index: number }) {
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
     rules: {
-      validate: (value, formValues) => {
-        if (!isOverrideFieldActive(formValues, index, 'password')) return true;
-        return value !== '' || 'Password is required';
-      },
+      validate: validateActiveOverrideField(
+        index,
+        'password',
+        (value) => value !== '' || 'Password is required',
+      ),
     },
   });
 

@@ -1,39 +1,8 @@
 import { useCallback } from 'react';
-import { type FieldPath, useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
+import { getOverrideFieldPaths } from '../overrideFields.js';
 import type { AccessControlFormData, OverridableFieldName } from '../types.js';
-
-function getOverrideFieldErrorPaths(
-  index: number,
-  fieldName: OverridableFieldName,
-): FieldPath<AccessControlFormData>[] {
-  const prefix = `overrides.${index}` as const;
-
-  switch (fieldName) {
-    case 'release':
-      return [`${prefix}.release`, `${prefix}.release.date`, `${prefix}.release.released`];
-    case 'due':
-      return [`${prefix}.due`, `${prefix}.due.date`, `${prefix}.due.credit`];
-    case 'earlyDeadlines':
-      return [`${prefix}.earlyDeadlines`];
-    case 'lateDeadlines':
-      return [`${prefix}.lateDeadlines`];
-    case 'afterLastDeadline':
-      return [`${prefix}.afterLastDeadline`, `${prefix}.afterLastDeadline.credit`];
-    case 'durationMinutes':
-      return [`${prefix}.durationMinutes`];
-    case 'password':
-      return [`${prefix}.password`];
-    case 'questionVisibility':
-      return [
-        `${prefix}.questionVisibility`,
-        `${prefix}.questionVisibility.visibleFromDate`,
-        `${prefix}.questionVisibility.visibleUntilDate`,
-      ];
-    case 'scoreVisibility':
-      return [`${prefix}.scoreVisibility`, `${prefix}.scoreVisibility.visibleFromDate`];
-  }
-}
 
 /**
  * Hook that manages whether a single override field is active (overridden) or
@@ -57,7 +26,7 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
         shouldDirty: true,
         shouldValidate: true,
       });
-      void trigger(getOverrideFieldErrorPaths(index, fieldName));
+      void trigger(getOverrideFieldPaths(index, fieldName));
     }
   }, [index, fieldName, setValue, getValues, trigger]);
 
@@ -68,7 +37,7 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       current.filter((f) => f !== fieldName),
       { shouldDirty: true, shouldValidate: true },
     );
-    const paths = getOverrideFieldErrorPaths(index, fieldName);
+    const paths = getOverrideFieldPaths(index, fieldName);
     clearErrors(paths);
     void trigger(paths);
   }, [index, fieldName, setValue, getValues, clearErrors, trigger]);
