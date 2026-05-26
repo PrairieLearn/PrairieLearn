@@ -29,4 +29,6 @@ export interface ResLocalsAuthnUser {
   is_administrator: boolean;
   is_institution_administrator: boolean;
   lockdown_browser: boolean;
+  /** PT reservation_id; present only when authenticated via PrairieTest in an LDB session. */
+  reservation_id?: string;
 }

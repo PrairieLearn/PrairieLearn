@@ -5,7 +5,9 @@ import { run } from '@prairielearn/run';
 import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
+import { Modal } from './Modal.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 
 export function Navbar({
@@ -120,7 +122,7 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${EndExamControl({ resLocals })} ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
@@ -134,6 +136,54 @@ export function Navbar({
       : ''}
     ${FlashMessages()}
   `;
+}
+
+/**
+ * Renders an "End exam" control when the user is in a LockDown Browser
+ * session. The button opens a confirmation modal whose form POSTs to
+ * `/pl/end-exam`; that handler mints a short-lived JWT and bridges the
+ * student to PrairieTest's end-exam callback, which closes the
+ * reservation and exits LockDown Browser. Mirrors PrairieTest's
+ * `endExamModal` pattern on its reservation page.
+ *
+ * PL's CSRF token is bound to the request URL, so we mint one specifically
+ * for `/pl/end-exam` rather than reusing `resLocals.__csrf_token` (which
+ * is bound to the current page's URL and would be rejected on submit).
+ */
+function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
+  if (!resLocals.lockdown_browser || !resLocals.reservation_id) return '';
+  const endExamCsrfToken = generateCsrfToken({
+    url: '/pl/end-exam',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <a
+      role="button"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#endExamModal"
+    >
+      End exam
+    </a>
+    ${EndExamModal({ csrfToken: endExamCsrfToken })}
+  `;
+}
+
+function EndExamModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'End exam',
+    id: 'endExamModal',
+    formAction: '/pl/end-exam',
+    body: html`<p>
+      Are you sure you want to end your exam? Only do this after you have completed your entire
+      exam. This will close LockDown Browser.
+    </p>`,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">End exam</button>
+    `,
+  });
 }
 
 function NavbarByType({

@@ -545,6 +545,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
