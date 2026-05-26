@@ -17,6 +17,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
@@ -1034,6 +1035,13 @@ function isValidORCID(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
+function nodeModuleDependencyExists(file: string): boolean {
+  return (
+    fs.pathExistsSync(path.resolve(APP_ROOT_PATH, 'node_modules', file)) ||
+    fs.pathExistsSync(path.resolve(REPOSITORY_ROOT_PATH, 'node_modules', file))
+  );
+}
+
 function validateQuestion({
   question,
   sharingEnabled,
@@ -1151,6 +1159,34 @@ function validateQuestion({
 
     if (!fs.pathExistsSync(fullPath)) {
       warnings.push(`Missing dependency file: clientFilesQuestion/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.coreStyles ?? []) {
+    const fullPath = path.join(APP_ROOT_PATH, 'public', 'stylesheets', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: public/stylesheets/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.coreScripts ?? []) {
+    const fullPath = path.join(APP_ROOT_PATH, 'public', 'javascripts', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      warnings.push(`Missing dependency file: public/javascripts/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.nodeModulesStyles ?? []) {
+    if (!nodeModuleDependencyExists(file)) {
+      warnings.push(`Missing dependency file: node_modules/${file}`);
+    }
+  }
+
+  for (const file of question.dependencies.nodeModulesScripts ?? []) {
+    if (!nodeModuleDependencyExists(file)) {
+      warnings.push(`Missing dependency file: node_modules/${file}`);
     }
   }
 
