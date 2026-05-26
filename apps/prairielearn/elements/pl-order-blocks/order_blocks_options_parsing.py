@@ -16,7 +16,8 @@ class DisplayBlockType(Enum):
     VERTICAL = "vertical"
     INLINE_WRAP = "inline-wrap"
     INLINE_NOWRAP = "inline-nowrap"
-    def is_inline(self):
+
+    def is_inline(self) -> bool:
         return self in {DisplayBlockType.INLINE_WRAP, DisplayBlockType.INLINE_NOWRAP}
 
 
@@ -450,11 +451,7 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if (
-            self.inline
-            or self.display_block == DisplayBlockType.INLINE_WRAP
-            or self.display_block == DisplayBlockType.INLINE_NOWRAP
-        ) and self.indentation:
+        if (self.inline or self.display_block.is_inline()) and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
             )

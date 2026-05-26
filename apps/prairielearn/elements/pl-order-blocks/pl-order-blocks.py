@@ -411,9 +411,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "editable": editable,
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline() else "",
+            if inline or display_block.is_inline()
+            else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP or (inline and display_block == DisplayBlockType.VERTICAL) else "",
+            if display_block == DisplayBlockType.INLINE_NOWRAP
+            or (inline and display_block == DisplayBlockType.VERTICAL)
+            else "",
         }
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
@@ -459,9 +462,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 block.get("badge_type", "") == "" for block in student_submission
             ),
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline() else "",
+            if inline or display_block.is_inline()
+            else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP or (inline and display_block == DisplayBlockType.VERTICAL) else "",
+            if display_block == DisplayBlockType.INLINE_NOWRAP
+            or (inline and display_block == DisplayBlockType.VERTICAL)
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM
@@ -541,9 +547,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline() else "",
+            if inline or display_block.is_inline()
+            else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP or (inline and display_block == DisplayBlockType.VERTICAL) else "",
+            if display_block == DisplayBlockType.INLINE_NOWRAP
+            or (inline and display_block == DisplayBlockType.VERTICAL)
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM

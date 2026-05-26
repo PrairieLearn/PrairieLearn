@@ -47,6 +47,8 @@ def assert_order_blocks_options(
         assert order_block_options.solution_header == options["solution-header"]
     if "partial-credit" in options:
         assert order_block_options.partial_credit.value == options["partial-credit"]
+    if "display-block" in options:
+        assert order_block_options.display_block.value == options["display-block"]
     if "solution-placement" in options:
         assert (
             order_block_options.solution_placement.value
@@ -448,3 +450,59 @@ def test_shuffle_distractor_groups() -> None:
 
     # Third block should be last
     assert result[4]["tag"] == "third"
+
+
+@pytest.mark.parametrize(
+    ("options"),
+    [
+        {"answers-name": "test", "display-block": "vertical"},
+        {"answers-name": "test", "display-block": "inline-wrap"},
+        {"answers-name": "test", "display-block": "inline-nowrap"},
+        {"answers-name": "test", "display-block": "vertical", "indentation": True},
+    ],
+)
+def test_display_block_validation(options: dict) -> None:
+    """Tests valid pl-order-blocks display-block option validation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    order_blocks_options._validate_order_blocks_options()
+
+
+@pytest.mark.parametrize(
+    ("options", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "display-block": "inline-wrap",
+                "indentation": True,
+            },
+            "The indentation attribute may not be used when inline is true.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "display-block": "inline-nowrap",
+                "indentation": True,
+            },
+            "The indentation attribute may not be used when inline is true.",
+        ),
+    ],
+)
+def test_display_block_validation_failure(options: dict, error: str) -> None:
+    """Tests pl-order-blocks display-block option failure with indentation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options._validate_order_blocks_options()
