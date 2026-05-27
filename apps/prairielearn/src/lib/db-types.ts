@@ -1153,11 +1153,11 @@ export const InstitutionSchema = z.object({
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
-export const InstitutionSettingSchema = z.object({
+export const InstitutionSettingsSchema = z.object({
   course_request_message: z.string().nullable(),
   institution_id: IdSchema,
 });
-export type InstitutionSetting = z.infer<typeof InstitutionSettingSchema>;
+export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;
 
 export const InstitutionAdministratorSchema = z.object({
   id: IdSchema,
