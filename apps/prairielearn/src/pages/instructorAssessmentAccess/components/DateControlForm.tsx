@@ -29,7 +29,7 @@ export function DefaultDateControlForm({
   isExam: boolean;
 }) {
   const ruleEditable = useAccessControlRuleEditable();
-  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { clearErrors, register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -59,19 +59,36 @@ export function DefaultDateControlForm({
           disabled={!ruleEditable}
           {...register('defaultRule.dateControlEnabled', {
             onChange: (e) => {
-              if (e.target.checked && !getValues('defaultRule.release.date')) {
-                setValue(
-                  'defaultRule.release.date',
-                  startOfDayDatetime(todayDate(displayTimezone)),
-                  {
+              if (e.target.checked) {
+                if (!getValues('defaultRule.release.date')) {
+                  setValue(
+                    'defaultRule.release.date',
+                    startOfDayDatetime(todayDate(displayTimezone)),
+                    {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    },
+                  );
+                  setValue('defaultRule.release.released', true, {
                     shouldDirty: true,
                     shouldValidate: true,
-                  },
-                );
-                setValue('defaultRule.release.released', true, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                });
+                  });
+                }
+              } else {
+                // Clear errors on fields whose UI is about to unmount.
+                // Their useController validators stay registered (default
+                // shouldUnregister: false) so the existing error stays in
+                // formState.errors and blocks saving, even though the
+                // user can no longer see or edit the offending input.
+                clearErrors([
+                  'defaultRule.release',
+                  'defaultRule.due',
+                  'defaultRule.earlyDeadlines',
+                  'defaultRule.lateDeadlines',
+                  'defaultRule.afterLastDeadline',
+                  'defaultRule.durationMinutes',
+                  'defaultRule.password',
+                ]);
               }
             },
           })}
