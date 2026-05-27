@@ -16,7 +16,7 @@ test.describe.serial('Course request page institution message', () => {
     await setCourseRequestMessage(null);
   });
 
-  test('renders the institution message as Markdown with a disclaimer', async ({ page }) => {
+  test('renders the institution message as Markdown', async ({ page }) => {
     await setCourseRequestMessage(
       '## Licensing\n\nContact **licensing@example.edu** for chargeback info.',
     );
@@ -25,7 +25,6 @@ test.describe.serial('Course request page institution message', () => {
 
     const card = page.getByTestId('institution-message-card');
     await expect(card).toBeVisible();
-    await expect(card.getByText(/provided by .* not by PrairieLearn/)).toBeVisible();
     await expect(card.getByRole('heading', { name: 'Licensing' })).toBeVisible();
     await expect(card.getByText('licensing@example.edu')).toBeVisible();
   });
@@ -51,7 +50,7 @@ test.describe.serial('Course request page institution message', () => {
 
     await page.goto('/pl/request_course');
 
-    await expect(page.getByRole('heading', { name: 'Request a New Course' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Request a course' })).toBeVisible();
     await expect(page.getByTestId('institution-message-card')).toHaveCount(0);
   });
 });

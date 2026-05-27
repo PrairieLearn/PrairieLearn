@@ -31,36 +31,38 @@ export function RequestCourse({
     },
     headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
-      <h1 class="h2 mb-3">Request a course</h1>
-      ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
-      ${Modal({
-        id: 'fill-course-request-lti13-modal',
-        title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
-        form: false,
-        body: html`
-          <p>
-            You appear to be coming from a course in another learning system. Should we partially
-            fill in this request form with information from that course?
-          </p>
-          <p>(You can edit it after it's auto-filled.)</p>
-        `,
-        footer: html`
-          <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
-            Fill from LMS data
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Don't fill
-          </button>
-        `,
-      })}
-      ${CourseNewRequestForm({
-        csrfToken: resLocals.__csrf_token,
-        isDefaultInstitution:
-          resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
-        institutionName: resLocals.authn_institution.long_name,
-        institutionMessageHtml,
-        userEmail: resLocals.authn_user.uid,
-      })}
+      <div class="mx-auto" style="max-width: 1000px;">
+        <h1 class="h2 mb-3">Request a course</h1>
+        ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
+        ${Modal({
+          id: 'fill-course-request-lti13-modal',
+          title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+          form: false,
+          body: html`
+            <p>
+              You appear to be coming from a course in another learning system. Should we partially
+              fill in this request form with information from that course?
+            </p>
+            <p>(You can edit it after it's auto-filled.)</p>
+          `,
+          footer: html`
+            <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
+              Fill from LMS data
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Don't fill
+            </button>
+          `,
+        })}
+        ${CourseNewRequestForm({
+          csrfToken: resLocals.__csrf_token,
+          isDefaultInstitution:
+            resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
+          institutionName: resLocals.authn_institution.long_name,
+          institutionMessageHtml,
+          userEmail: resLocals.authn_user.uid,
+        })}
+      </div>
     `,
   });
 }
@@ -78,14 +80,9 @@ function InstitutionMessageCard({
   return html`
     <div class="card mb-4" data-testid="institution-message-card">
       <div class="card-header d-flex align-items-center">
-        <h2 class="h5 mb-0">Information from ${institutionName}</h2>
+        <h2 class="h5 mb-0">Information from "${institutionName}"</h2>
       </div>
-      <div class="card-body">
-        <p class="text-muted small mb-3">
-          The information below was provided by ${institutionName}, not by PrairieLearn.
-        </p>
-        ${unsafeHtml(institutionMessageHtml)}
-      </div>
+      <div class="card-body">${unsafeHtml(institutionMessageHtml)}</div>
     </div>
   `;
 }
@@ -166,7 +163,8 @@ function CourseNewRequestForm({
       </p>
 
       ${InstitutionMessageCard({ institutionMessageHtml, institutionName })}
-
+      ${institutionMessageHtml ? '' : html`<hr class="my-3" />`}
+      <h2 class="h5 mb-3">About you</h2>
       <div class="row">
         <div class="mb-3 col-md-6">
           <label class="form-label" for="cr-firstname">First name</label>
@@ -271,6 +269,8 @@ function CourseNewRequestForm({
               </div>
             </div>
           `}
+      <hr class="my-3" />
+      <h2 class="h5 mb-3">About your course</h2>
       <div class="mb-3">
         <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
         <input
@@ -362,6 +362,8 @@ function CourseNewRequestForm({
           >, even if you don't yet have use for a local installation.
         </small>
       </div>
+      <hr class="my-3" />
+      <h2 class="h5 mb-3">About your request</h2>
       <div class="mb-3">
         <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
           How did you hear about PrairieLearn?
