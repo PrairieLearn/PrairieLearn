@@ -133,7 +133,7 @@ export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRo
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -152,7 +152,7 @@ export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),

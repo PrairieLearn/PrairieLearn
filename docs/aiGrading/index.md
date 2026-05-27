@@ -136,7 +136,7 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
-**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer.
+**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Student submissions are not used for model training when using PrairieLearn AI grading credits.
 
 ## Billing
 
@@ -190,7 +190,7 @@ Across a range of open-ended questions and frontier models, rubric-item accuracy
 For more detail, see our published research:
 
 - **Text grading** — Zhao, C., Fowler, M., Gertner, Y., Poulsen, S., West, M., & Silva, M. (2026). [AI-Supported Grading and Rubric Refinement for Free Response Questions](https://dl.acm.org/doi/10.1145/3770762.3772545). In _Proceedings of the 57th ACM Technical Symposium on Computer Science Education_ (SIGCSE TS 2026).
-- **Image grading** — Levine, J., Aenlle, M., Zilles, C., West, M., & Silva, M. (forthcoming). Automated grading of handwritten mathematics using vision-capable LLMs. In _Proceedings of the 27th International Conference on Artificial Intelligence in Education_ (AIED 2026). Springer.
+- **Image grading** — Levine, J., Aenlle, M., Zilles, C., West, M., & Silva, M. (forthcoming). [Automated grading of handwritten mathematics using vision-capable LLMs](https://arxiv.org/abs/2605.19043). In _Proceedings of the 27th International Conference on Artificial Intelligence in Education_ (AIED 2026). Springer.
 
 ## Cost and runtime
 

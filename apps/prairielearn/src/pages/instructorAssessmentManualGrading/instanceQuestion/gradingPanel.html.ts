@@ -445,8 +445,7 @@ ${submission.feedback?.manual}</textarea
                             </button>
 
                             <div class="dropdown-item-text text-muted small">
-                              AI can make mistakes. Review submission group assignments before
-                              grading.
+                              AI can make mistakes. Review submission groups before grading.
                             </div>
                           </div>
                         </div>

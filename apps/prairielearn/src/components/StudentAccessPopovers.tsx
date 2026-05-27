@@ -57,7 +57,7 @@ export function StudentAccessTimelinePopover({
   accessTimeline,
   displayTimezone,
 }: {
-  accessTimeline: AccessTimelineEntry[];
+  accessTimeline: readonly AccessTimelineEntry[];
   displayTimezone: string;
 }) {
   // Hide segments where submissions aren't allowed. Rendering a 0%-credit

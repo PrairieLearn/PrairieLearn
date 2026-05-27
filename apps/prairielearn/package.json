@@ -184,7 +184,7 @@
     "jquery": "^3.7.1 <4",
     "jquery-ui-dist": "^1.13.3",
     "jquery-ui-touch-punch": "^0.2.3",
-    "js-cookie": "^3.0.5",
+    "js-cookie": "^3.0.7",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",
     "lodash": "^4.18.1",
@@ -269,7 +269,7 @@
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/vite-plugin-express": "workspace:^",

@@ -18,6 +18,7 @@ export function Scorebar({
     <div
       className={clsx('progress', 'border', 'border-success', className)}
       style={{ minWidth, maxWidth }}
+      data-testid="scorebar"
     >
       <div
         className="progress-bar bg-success"
