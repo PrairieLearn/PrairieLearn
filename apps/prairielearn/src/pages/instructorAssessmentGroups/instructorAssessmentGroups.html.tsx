@@ -212,7 +212,7 @@ function InstructorAssessmentGroupsInner({
           if (permissions.isExampleCourse) {
             return {
               status: 'denied',
-              reason: 'Enabling group work is not available for the example course.',
+              reason: 'Enabling group work is not permitted for the example course.',
             };
           }
           return {
@@ -252,7 +252,7 @@ function InstructorAssessmentGroupsInner({
             if (permissions.isExampleCourse) {
               return {
                 status: 'denied',
-                reason: 'Editing group settings is not available for the example course.',
+                reason: 'Editing group settings is not permitted for the example course.',
               };
             }
             return {
@@ -284,7 +284,7 @@ function InstructorAssessmentGroupsInner({
               if (permissions.isExampleCourse) {
                 return {
                   status: 'denied',
-                  reason: 'Editing group memberships is not available for the example course.',
+                  reason: 'Editing group memberships is not permitted for the example course.',
                 };
               }
               return {
