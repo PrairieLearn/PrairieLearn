@@ -1,7 +1,7 @@
 {
   "uuid": "152677c4-faae-44e7-b62e-08664513a390",
   "type": "Exam",
-  "title": "Exam with a workspace question linked to PrairieTest",
+  "title": "LockDown Browser exam linked to PrairieTest",
   "set": "Exam",
   "number": "21",
   "allowAccess": [
