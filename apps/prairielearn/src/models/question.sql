@@ -6,6 +6,17 @@ FROM
 WHERE
   id = $question_id;
 
+-- BLOCK select_questions_by_ids_and_course_id
+SELECT
+  *
+FROM
+  questions
+WHERE
+  id = ANY ($question_ids::bigint[])
+  AND course_id = $course_id
+  AND deleted_at IS NULL
+  AND draft IS FALSE;
+
 -- BLOCK select_question_by_qid
 SELECT
   *

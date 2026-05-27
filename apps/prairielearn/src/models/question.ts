@@ -20,6 +20,20 @@ export async function selectOptionalQuestionById(question_id: string): Promise<Q
   return await queryOptionalRow(sql.select_question_by_id, { question_id }, QuestionSchema);
 }
 
+export async function selectQuestionsByIdsAndCourseId({
+  question_ids,
+  course_id,
+}: {
+  question_ids: string[];
+  course_id: string;
+}): Promise<Question[]> {
+  return await queryRows(
+    sql.select_questions_by_ids_and_course_id,
+    { question_ids, course_id },
+    QuestionSchema,
+  );
+}
+
 export async function selectQuestionByQid({
   qid,
   course_id,

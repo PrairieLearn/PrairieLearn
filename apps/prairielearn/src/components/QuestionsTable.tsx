@@ -3,19 +3,23 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type FilterFn,
+  type RowSelectionState,
   type SortingState,
+  type Table,
+  createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Alert, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
   type ColumnFilterEntry,
+  IndeterminateCheckbox,
   type MultiSelectFilterValue,
   TanstackTableCard,
   type TanstackTableCsvCell,
@@ -26,6 +30,7 @@ import {
   parseAsMultiSelectFilter,
   parseAsSortingState,
   useColumnFilters,
+  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
@@ -58,6 +63,18 @@ const HIDDEN_BY_DEFAULT = new Set([
 ]);
 
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+
+function SelectAllCheckbox({ table }: { table: Table<SafeQuestionsPageData> }) {
+  return (
+    <IndeterminateCheckbox
+      checked={table.getIsAllPageRowsSelected()}
+      indeterminate={table.getIsSomePageRowsSelected()}
+      aria-label="Select all questions"
+      onChange={() => table.toggleAllPageRowsSelected()}
+    />
+  );
+}
 
 function displayQid(row: SafeQuestionsPageData, qidPrefix?: string): string {
   return qidPrefix && row.share_publicly ? `${qidPrefix}${row.qid}` : row.qid;
@@ -79,6 +96,10 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
     queryKey: TQueryKey;
     queryFn?: QueryFunction<SafeQuestionsPageData[], TQueryKey>;
   };
+  renderSelectionToolbar?: (props: {
+    selectedQuestions: SafeQuestionsPageData[];
+    clearSelection: () => void;
+  }) => ReactNode;
 }
 
 export function QuestionsTable<TQueryKey extends readonly unknown[]>({
@@ -94,15 +115,24 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   isPublic,
   qidPrefix,
   questionsQueryOptions,
+  renderSelectionToolbar,
 }: QuestionsTableProps<TQueryKey>) {
+  const rowSelectionEnabled = renderSelectionToolbar != null;
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
+  const defaultPinning = useMemo(
+    () => ({
+      left: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.left,
+      right: DEFAULT_PINNING.right,
+    }),
+    [rowSelectionEnabled],
+  );
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
-    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
+    parseAsColumnPinningState.withDefault(defaultPinning),
   );
 
   const filterRegistry = useMemo(() => {
@@ -128,6 +158,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const { createCheckboxProps } = useShiftClickCheckbox<SafeQuestionsPageData>();
 
   const {
     data: questions = initialQuestions,
@@ -142,18 +174,48 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     initialData: initialQuestions,
   });
 
-  const columns = useMemo(
+  const selectionColumn = useMemo(
     () =>
-      createQuestionsTableColumns({
-        courseInstances,
-        qidPrefix,
-        showSharingSets,
-        courseId,
-        courseInstanceId: currentCourseInstanceId,
-        isPublic,
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => <SelectAllCheckbox table={table} />,
+        cell: ({ row, table }) => (
+          <input
+            type="checkbox"
+            aria-label={`Select ${displayQid(row.original, qidPrefix)}`}
+            {...createCheckboxProps(row, table)}
+          />
+        ),
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
+        enableSorting: false,
+        enableHiding: false,
+        enablePinning: true,
       }),
-    [courseInstances, qidPrefix, showSharingSets, courseId, currentCourseInstanceId, isPublic],
+    [createCheckboxProps, qidPrefix],
   );
+
+  const columns = useMemo(() => {
+    const questionColumns = createQuestionsTableColumns({
+      courseInstances,
+      qidPrefix,
+      showSharingSets,
+      courseId,
+      courseInstanceId: currentCourseInstanceId,
+      isPublic,
+    });
+    return rowSelectionEnabled ? [selectionColumn, ...questionColumns] : questionColumns;
+  }, [
+    courseInstances,
+    qidPrefix,
+    showSharingSets,
+    courseId,
+    currentCourseInstanceId,
+    isPublic,
+    rowSelectionEnabled,
+    selectionColumn,
+  ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
@@ -197,6 +259,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     columns,
     columnResizeMode: 'onChange',
     globalFilterFn: fuzzyFilter,
+    enableRowSelection: rowSelectionEnabled,
     getRowId: (row) => row.id,
     state: {
       sorting,
@@ -205,9 +268,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       columnSizing,
       columnVisibility,
       columnPinning,
+      rowSelection,
     },
     initialState: {
-      columnPinning: DEFAULT_PINNING,
+      columnPinning: defaultPinning,
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
@@ -216,6 +280,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -235,6 +300,82 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
       : undefined;
 
+  const selectedQuestions = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+  const displayedCount = table.getRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
+  const selectedCount = selectedQuestions.length;
+  const isFiltered = displayedCount !== totalCount;
+
+  const statusContent =
+    rowSelectionEnabled && selectedCount > 0 ? (
+      <>
+        Selected {selectedCount} of {displayedCount}{' '}
+        {displayedCount === 1 ? 'question' : 'questions'}
+        {isFiltered && ' (filtered)'}
+      </>
+    ) : undefined;
+
+  const selectionToolbar =
+    rowSelectionEnabled && selectedQuestions.length > 0
+      ? renderSelectionToolbar({
+          selectedQuestions,
+          clearSelection: () => setRowSelection({}),
+        })
+      : null;
+
+  const addQuestionButtons = run(() => {
+    if (!addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
+      return null;
+    }
+
+    if (addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
+      // Special case: we have two feature-flagged buttons, we don't want to show a
+      // dropdown if only a single button is available.
+      //
+      // TODO: once QTI importing is unflagged, remove this branch.
+      return (
+        <a className="btn btn-sm btn-light" href={addQuestionUrl}>
+          <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+          Create new question
+        </a>
+      );
+    }
+
+    return (
+      <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
+        {addQuestionUrl && (
+          <Dropdown.Item as="a" href={addQuestionUrl}>
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+            Create new question
+          </Dropdown.Item>
+        )}
+        {showAiGenerateQuestionButton && (
+          <Dropdown.Item as="a" href={aiGenerateUrl}>
+            <i className="bi bi-stars me-2" aria-hidden="true" />
+            Generate question with AI
+          </Dropdown.Item>
+        )}
+        {importQuestionsUrl && (
+          <>
+            {(addQuestionUrl || showAiGenerateQuestionButton) && <Dropdown.Divider />}
+            <Dropdown.Item as="a" href={importQuestionsUrl}>
+              <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+              Import questions
+            </Dropdown.Item>
+          </>
+        )}
+      </DropdownButton>
+    );
+  });
+
+  const headerButtons =
+    selectionToolbar || addQuestionButtons ? (
+      <>
+        {selectionToolbar}
+        {addQuestionButtons}
+      </>
+    ) : undefined;
+
   return (
     <>
       {isQuestionsError && (
@@ -250,7 +391,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
         pluralLabel="questions"
         downloadButtonOptions={{
           filenameBase: 'questions',
-          hasSelection: false,
+          hasSelection: rowSelectionEnabled,
           mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
             {
               name: 'QID',
@@ -278,50 +419,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             workspace_image: row.workspace_image,
           }),
         }}
-        headerButtons={run(() => {
-          if (!addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
-            return undefined;
-          }
-
-          if (addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
-            // Special case: we have two feature-flagged buttons, we don't want to show a
-            // dropdown if only a single button is available.
-            //
-            // TODO: once QTI importing is unflagged, remove this branch.
-            return (
-              <a className="btn btn-sm btn-light" href={addQuestionUrl}>
-                <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                Create new question
-              </a>
-            );
-          }
-
-          return (
-            <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
-              {addQuestionUrl && (
-                <Dropdown.Item as="a" href={addQuestionUrl}>
-                  <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                  Create new question
-                </Dropdown.Item>
-              )}
-              {showAiGenerateQuestionButton && (
-                <Dropdown.Item as="a" href={aiGenerateUrl}>
-                  <i className="bi bi-stars me-2" aria-hidden="true" />
-                  Generate question with AI
-                </Dropdown.Item>
-              )}
-              {importQuestionsUrl && (
-                <>
-                  {(addQuestionUrl || showAiGenerateQuestionButton) && <Dropdown.Divider />}
-                  <Dropdown.Item as="a" href={importQuestionsUrl}>
-                    <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
-                    Import questions
-                  </Dropdown.Item>
-                </>
-              )}
-            </DropdownButton>
-          );
-        })}
+        headerButtons={headerButtons}
         globalFilter={{
           placeholder: 'Search by QID, title...',
         }}
@@ -384,6 +482,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             </TanstackTableEmptyState>
           ),
         }}
+        statusContent={statusContent}
         onResetColumnFilters={onResetColumnFilters}
       />
     </>

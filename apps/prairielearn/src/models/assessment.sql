@@ -155,6 +155,17 @@ FROM
 WHERE
   z.assessment_id = $assessment_id;
 
+-- BLOCK select_zones_for_assessment
+SELECT
+  *
+FROM
+  zones
+WHERE
+  assessment_id = $assessment_id
+ORDER BY
+  number,
+  id;
+
 -- BLOCK select_assessment_zone_points_range
 WITH
   -- For each alternative group, rank questions by max_points (best and worst).

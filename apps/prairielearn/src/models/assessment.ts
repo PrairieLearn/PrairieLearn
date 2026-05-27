@@ -19,6 +19,8 @@ import {
   AssessmentSetSchema,
   type AssessmentTool,
   AssessmentToolSchema,
+  type Zone,
+  ZoneSchema,
 } from '../lib/db-types.js';
 import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 
@@ -155,6 +157,14 @@ export async function selectAssessmentToolDefaults({ assessment_id }: { assessme
     { assessment_id, zone_id: null },
     AssessmentToolSchema,
   );
+}
+
+export async function selectZonesForAssessment({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<Zone[]> {
+  return queryRows(sql.select_zones_for_assessment, { assessment_id }, ZoneSchema);
 }
 
 export async function selectAssessments({
