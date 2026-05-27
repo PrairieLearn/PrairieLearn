@@ -43,6 +43,8 @@ data['options']['group'] = {  # None when the assessment is not group work
 
 Each entry in `group.members` has the same shape as `data['options']['user']` (uid + uin + name). The current viewing user is included in `members`.
 
+**Identity of "user".** `data['options']['user']` is the **effective user** making the current request — the `user_id` parameter already plumbed through `ensureVariant` in `lib/question-variant.ts`. This is NOT `variant.user_id` (which is NULL on group variants per the `user_team_xor` check constraint on the `variants` table). On group variants, `data['options']['user']` therefore varies request-to-request: it is whichever teammate is rendering the page right now. `data['options']['group']` is the stable team identity.
+
 Field set matches what the questions-table CSV export already exposes (minus the computed `role`). No `email` field is added — `uid` is the operative identifier.
 
 When the gate is closed (any condition below not met) or no user context exists (e.g. a sync-time `generate` call without a variant), both keys are present with value `None`. The keys are always present so question authors can write the idiomatic `if data['options']['user']: ...`.
@@ -53,7 +55,7 @@ User data is included only when **all** are true:
 
 1. **Course opt-in.** `courses.questions_receive_user_data = true`.
 2. **First-party rendering.** The question is owned by the course in whose context the variant was created. Concretely: `question.course_id == variant.course_id` (or the equivalent path through `course_instance.course_id` — exact column to be confirmed at implementation time). This single check covers public sharing, sharing-set imports, and instructor preview of foreign questions: in all three cases the variant's course differs from the question's owning course.
-3. **A user exists.** `generate()` is sometimes called with no variant and no user (sync, cache warming); in those calls, `user` and `group` are `None`. Phases that take a variant always have a `variant.user_id` and therefore always have a user.
+3. **A user exists.** Every code path that constructs a variant goes through `ensureVariant` → `makeAndInsertVariant` → `makeVariant` → `questionModule.generate`, and `ensureVariant` requires `user_id: string` (non-nullable). So in practice, `generate` always has an effective user. The `None` value of `user`/`group` is reserved for the gating conditions (1) and (2) — no separate "no user context" branch is needed.
 
 There is no per-question opt-out. The course-level setting is the only switch.
 
@@ -64,10 +66,16 @@ Dual representation, matching the existing `devModeFeatures` pattern:
 - **Database:** New column `courses.questions_receive_user_data BOOLEAN NOT NULL DEFAULT FALSE`.
 - **Course JSON:** New optional field `infoCourse.json` → `options.questionsReceiveUserData: boolean`.
 
-Sync behavior (in `apps/prairielearn/src/sync/course-db.ts` + the courses sync writer):
+Sync behavior (in `apps/prairielearn/src/sync/course-db.ts` + `apps/prairielearn/src/sync/fromDisk/courseInfo.ts`):
 
-- **Dev mode (`config.devMode = true`):** `infoCourse.json` is authoritative; the DB column is overwritten on every sync.
-- **Production:** The DB column is authoritative. If `infoCourse.json` sets a value that diverges from the DB, sync emits a non-fatal warning and does not change the DB. This is the same divergence pattern used for `devModeFeatures`.
+The column lives **outside** `courses.options` (it gets its own top-level boolean column) because the existing pattern fully overwrites `courses.options` on every sync, which would conflict with UI-driven toggles in production.
+
+- **Dev mode (`config.devMode = true`):** `infoCourse.json` is authoritative; sync writes the column from JSON.
+- **Production:** The DB column is authoritative; sync does **not** write to the column. If `infoCourse.json` sets a value that differs from the current DB value, sync emits a non-fatal warning. UI is the only way to change the column in production.
+
+Implementation sketch:
+- In `course-db.ts` (parser): read `info.options.questionsReceiveUserData`; in production, fetch current `courses.questions_receive_user_data` for the course_id and warn on mismatch.
+- In `fromDisk/courseInfo.ts` (writer): conditionally include the column in the UPDATE only when `config.devMode === true`.
 
 UI:
 
@@ -108,13 +116,12 @@ No structural changes. `data['options']` is already a passthrough dict. Optional
 - Unit tests for `getUserContextForQuestion`: matrix over `{opted-in, not opted-in} × {shared question, owned question} × {has user, no user} × {individual, group}`.
 - Integration test exercising a freeform render with the flag on/off, asserting the dict passed to Python contains/omits the expected keys.
 
-## Open questions for the implementation phase
+## Resolved during grill-with-docs
 
-These are not blockers for the spec — they will be resolved during grill-with-docs / implementation:
-
-1. **Exact column for "rendering course."** Whether the gate uses `variant.course_id` directly, or routes through `course_instance.course_id`. The variants table has a `course_id`; need to confirm it's populated for all variant origin paths.
-2. **`generate` call site.** `generate()` is called without a variant in some paths (warming caches, sync validation). For those, user/group must be `None`.
-3. **Instructor preview behavior.** When an instructor previews a question they own (no assessment context), the variant exists and `variant.user_id` is the instructor. Per the gating rules, data flows. That's the intended behavior — instructors see their own user data, which matches the model where the instructor is "the user."
+1. **"Rendering course" column.** `variants.course_id` is `NOT NULL` and is the right value to compare against `questions.course_id`. No need to route through `course_instance`.
+2. **`generate` always has a user.** The only caller of `makeVariant` is `makeAndInsertVariant`, which is only called from `ensureVariant`, which requires `user_id: string`. We will plumb the effective `user_id` (and a precomputed group context, if applicable) through `makeVariant` and into `questionModule.generate`. `generate`'s signature will be updated to accept the caller-side user/group context.
+3. **Instructor preview behavior.** When an instructor previews a question they own, `ensureVariant` is called with the instructor's `user_id`. Per the gating rules, `data['options']['user']` reflects the instructor. This is intended — the instructor authoring the question is the "current viewing user."
+4. **Render/file caching does NOT leak.** `getCacheKey` in `freeform.ts` (line 1773) hashes `data.options` into the cache key (it explicitly excludes only `params`, `correct_answers`, `submitted_answers`, `format_errors`, `partial_scores`, `feedback`, and `raw_submitted_answers`). Putting user identity into `data.options` therefore fragments the cache per-user automatically, preventing one user's `file()` output from being served to another. The cache hit rate will drop on group variants (one cached entry per teammate), which is the correct trade-off.
 
 ## Out of scope (deferred)
 
