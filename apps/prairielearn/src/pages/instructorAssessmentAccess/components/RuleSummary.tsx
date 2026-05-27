@@ -34,7 +34,7 @@ function formatCreditPercent(credit: number): string {
 }
 
 /** react-hook-form error subtree for an override rule. */
-export type OverrideFormErrors = FieldErrors<OverrideData>;
+export type OverrideRuleFormErrors = FieldErrors<OverrideData>;
 type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
@@ -594,7 +594,7 @@ function HiddenAfterCompletionVisibility({
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  formErrors?: OverrideFormErrors,
+  formErrors?: OverrideRuleFormErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -1246,7 +1246,7 @@ export function OverrideRuleSummaryCard({
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  formErrors?: OverrideFormErrors;
+  formErrors?: OverrideRuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
   isActive?: boolean;
