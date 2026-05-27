@@ -162,6 +162,7 @@ window.PLDrawingApi = {
 
       // Parse any numerical options from string to floating point
       for (const key in opts) {
+        if (/^type$|^label|color|^plist$/.test(key)) continue; // skip parsing for string-only options
         const parsed = Number(opts[key]);
         if (!Number.isNaN(parsed)) {
           opts[key] = parsed;
