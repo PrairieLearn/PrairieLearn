@@ -124,3 +124,24 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_rubric_settings_context_keys
+SELECT DISTINCT
+  ON (v.id) v.params AS variant_params,
+  v.true_answer AS variant_true_answer,
+  s.submitted_answer AS submission_submitted_answer
+FROM
+  instance_questions AS iq
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+ORDER BY
+  v.id ASC,
+  s.date DESC,
+  s.id DESC
+  -- We're only retrieving a small subset of the variants, as we only need to
+  -- know common params/answer keys that are not expected to change
+  -- significantly between variants.
+LIMIT
+  5;
