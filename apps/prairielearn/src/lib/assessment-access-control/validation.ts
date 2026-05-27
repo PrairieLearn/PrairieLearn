@@ -1109,10 +1109,6 @@ export function validateAccessControlRules({
     const seenLabels = new Set<string>();
     const duplicateLabels = new Set<string>();
 
-    if (targetType === 'student_label' && labels.length === 0) {
-      errors.push('Student-label access control overrides must target at least one student label.');
-    }
-
     for (const label of labels) {
       if (seenLabels.has(label)) {
         duplicateLabels.add(label);

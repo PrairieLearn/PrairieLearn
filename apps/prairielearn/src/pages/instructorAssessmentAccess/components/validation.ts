@@ -40,8 +40,7 @@ export type AccessControlFormFieldPath =
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
   | `overrides.${number}.scoreVisibility`
-  | `overrides.${number}.scoreVisibility.visibleFromDate`
-  | `overrides.${number}.appliesTo`;
+  | `overrides.${number}.scoreVisibility.visibleFromDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -180,29 +179,6 @@ function getReleaseStateValidationErrors(
   return results;
 }
 
-function getOverrideTargetValidationErrors(
-  formData: AccessControlFormData,
-): { path: AccessControlFormFieldPath; message: string }[] {
-  const results: { path: AccessControlFormFieldPath; message: string }[] = [];
-
-  formData.overrides.forEach((override, index) => {
-    const { targetType, enrollments, studentLabels } = override.appliesTo;
-    if (targetType === 'enrollment' && enrollments.length === 0) {
-      results.push({
-        path: `overrides.${index}.appliesTo`,
-        message: 'Select at least one student for this override.',
-      });
-    } else if (targetType === 'student_label' && studentLabels.length === 0) {
-      results.push({
-        path: `overrides.${index}.appliesTo`,
-        message: 'Select at least one student label for this override.',
-      });
-    }
-  });
-
-  return results;
-}
-
 export function getGlobalDateValidationErrors(
   formData: AccessControlFormData,
   displayTimezone: string,
@@ -259,17 +235,4 @@ export function getGlobalDateValidationErrors(
   }
 
   return results;
-}
-
-export function getAccessControlFormValidationErrors(
-  formData: AccessControlFormData,
-  displayTimezone: string,
-): {
-  path: AccessControlFormFieldPath;
-  message: string;
-}[] {
-  return [
-    ...getOverrideTargetValidationErrors(formData),
-    ...getGlobalDateValidationErrors(formData, displayTimezone),
-  ];
 }

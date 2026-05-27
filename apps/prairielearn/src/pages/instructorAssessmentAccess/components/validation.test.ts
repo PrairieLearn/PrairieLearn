@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AccessControlFormData, OverrideData } from './types.js';
-import {
-  getAccessControlFormValidationErrors,
-  getGlobalDateValidationErrors,
-} from './validation.js';
+import { getGlobalDateValidationErrors } from './validation.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
@@ -266,47 +263,5 @@ describe('getGlobalDateValidationErrors', () => {
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
-  });
-});
-
-describe('getAccessControlFormValidationErrors', () => {
-  it('requires enrollment overrides to target at least one student', () => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData([
-        makeOverride({
-          appliesTo: {
-            targetType: 'enrollment',
-            enrollments: [],
-            studentLabels: [],
-          },
-        }),
-      ]),
-      TEST_TIMEZONE,
-    );
-
-    expect(errors).toContainEqual({
-      path: 'overrides.0.appliesTo',
-      message: 'Select at least one student for this override.',
-    });
-  });
-
-  it('requires student-label overrides to target at least one label', () => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData([
-        makeOverride({
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [],
-          },
-        }),
-      ]),
-      TEST_TIMEZONE,
-    );
-
-    expect(errors).toContainEqual({
-      path: 'overrides.0.appliesTo',
-      message: 'Select at least one student label for this override.',
-    });
   });
 });

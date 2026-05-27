@@ -883,7 +883,7 @@ describe('Empty accessControl array', () => {
     );
   });
 
-  it('rejects student-label overrides with no labels', () => {
+  it('allows inert student-label rules with no labels by default', () => {
     const result = validateAccessControlRules({
       rules: [
         AccessControlJsonSchema.parse({}),
@@ -896,10 +896,7 @@ describe('Empty accessControl array', () => {
       ],
     });
 
-    assert.include(
-      result.errors,
-      'Student-label access control overrides must target at least one student label.',
-    );
+    assert.deepEqual(result.errors, []);
   });
 });
 

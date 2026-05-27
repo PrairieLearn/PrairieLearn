@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { get, useFieldArray, useFormState, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -37,8 +37,6 @@ export function AppliesToField({
   >({
     name: `${namePrefix}.appliesTo`,
   });
-  const { errors } = useFormState<AccessControlFormData>();
-  const targetError: string | undefined = get(errors, `${namePrefix}.appliesTo`)?.message;
 
   const { data: allLabels } = useQuery({
     ...trpc.accessControl.studentLabels.queryOptions(),
@@ -220,13 +218,11 @@ export function AppliesToField({
         )}
       </div>
       {hasNoTargets && (
-        <Alert variant={targetError ? 'danger' : 'warning'} className="mt-3 mb-0" role="alert">
-          {targetError ??
-            `This override has no targets. ${
-              ruleEditable
-                ? `Add at least one ${targetDescription} for this rule to take effect.`
-                : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`
-            }`}
+        <Alert variant="warning" className="mt-3 mb-0">
+          This override has no targets.{' '}
+          {ruleEditable
+            ? `Add at least one ${targetDescription} for this rule to take effect.`
+            : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`}
         </Alert>
       )}
     </div>

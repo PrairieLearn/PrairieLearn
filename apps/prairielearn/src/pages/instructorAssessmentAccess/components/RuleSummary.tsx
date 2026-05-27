@@ -598,19 +598,6 @@ function generateOverrideFieldItems(
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
-  const appliesToError =
-    'appliesTo' in (formErrors ?? {}) ? formErrors?.appliesTo?.message : undefined;
-
-  if (appliesToError) {
-    items.push({
-      label: 'Applies to',
-      value:
-        rule.appliesTo.targetType === 'enrollment'
-          ? 'No students selected'
-          : 'No student labels selected',
-      error: appliesToError,
-    });
-  }
 
   if (overriddenFields.has('release')) {
     // A null/empty release date means "not released" (resolver returns active: false).
