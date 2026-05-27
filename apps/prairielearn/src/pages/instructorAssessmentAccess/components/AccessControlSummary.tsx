@@ -20,9 +20,9 @@ import {
   AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
+  type OverrideRuleFormErrors,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
-  type OverrideRuleFormErrors,
   generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
 } from './RuleSummary.js';
