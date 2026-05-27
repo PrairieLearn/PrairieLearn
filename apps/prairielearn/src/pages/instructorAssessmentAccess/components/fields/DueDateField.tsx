@@ -3,8 +3,6 @@ import { useEffect } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 
-import { formatDateFriendly } from '@prairielearn/formatter';
-
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -12,17 +10,6 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import { isOverrideFieldActive, validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
-
-function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
-  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
-}
-
-function formatCourseLocalDate(value: string, displayTimezone: string): string {
-  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
-    dateOnly: true,
-    includeTz: false,
-  });
-}
 
 function DueDateInput({
   value,
@@ -205,12 +192,11 @@ function DueDateInput({
 function validateDueDate(
   date: string | null,
   releaseDate: string | null | undefined,
-  displayTimezone: string,
 ): string | undefined {
   if (date === null) return undefined;
   if (!date) return 'Date is required';
   if (releaseDate && new Date(date) <= new Date(releaseDate)) {
-    return `Must be after release date (${formatCourseLocalDate(releaseDate, displayTimezone)})`;
+    return 'Due date must be after the release date';
   }
   return undefined;
 }
@@ -244,7 +230,7 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
     name: 'defaultRule.due.date',
     rules: {
       validate: (value, formValues) =>
-        validateDueDate(value, formValues.defaultRule.release.date, displayTimezone) ?? true,
+        validateDueDate(value, formValues.defaultRule.release.date) ?? true,
     },
   });
   const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
@@ -340,7 +326,7 @@ export function OverrideDueDateField({
         const overrideReleaseDate = isOverrideFieldActive(formValues, index, 'release')
           ? formValues.overrides[index]?.release.date
           : undefined;
-        return validateDueDate(value, overrideReleaseDate, displayTimezone) ?? true;
+        return validateDueDate(value, overrideReleaseDate) ?? true;
       }),
     },
   });
