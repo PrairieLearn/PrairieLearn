@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
-import { config } from './config.js';
+import { getFileStoreS3Bucket } from './file-store.js';
 
 // The file-store bucket lifecycle policy must expire this prefix after 24 hours.
 const DRAFT_KEY_PREFIX = 'qti-import-drafts/';
@@ -31,7 +31,7 @@ function draftKey(draftId: string) {
 export async function createQtiImportDraft(data: CreateQtiImportDraftData): Promise<string> {
   const draftId = crypto.randomUUID();
   await uploadToS3(
-    config.fileStoreS3Bucket,
+    getFileStoreS3Bucket(),
     draftKey(draftId),
     null,
     false,
@@ -51,7 +51,7 @@ export async function readQtiImportDraft({
   courseInstanceId: string;
   userId: string;
 }): Promise<QtiImportDraftData> {
-  const buffer = await getFromS3(config.fileStoreS3Bucket, draftKey(draftId), true);
+  const buffer = await getFromS3(getFileStoreS3Bucket(), draftKey(draftId), true);
   const data = QtiImportDraftDataSchema.parse(JSON.parse(buffer.toString('utf8')));
   if (
     data.courseId !== courseId ||
@@ -64,5 +64,5 @@ export async function readQtiImportDraft({
 }
 
 export async function deleteQtiImportDraft(draftId: string): Promise<void> {
-  await deleteFromS3(config.fileStoreS3Bucket, draftKey(draftId));
+  await deleteFromS3(getFileStoreS3Bucket(), draftKey(draftId));
 }
