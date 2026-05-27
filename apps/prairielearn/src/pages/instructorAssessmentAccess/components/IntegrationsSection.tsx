@@ -9,7 +9,7 @@ import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
   const ruleEditable = useAccessControlRuleEditable();
-  const { clearErrors, setValue, trigger } = useFormContext<AccessControlFormData>();
+  const { clearErrors, setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
     name: 'defaultRule.prairieTestExams',
@@ -56,12 +56,6 @@ export function IntegrationsSection() {
               shouldValidate: true,
             });
             clearErrors('defaultRule.prairieTestExams');
-            // Trigger validation across the entire form so RHF prunes leftover
-            // errors from PrairieTestControlForm's register()-based validators,
-            // whose error entries (e.g. examUuid required) persist in
-            // formState.errors even after the inputs unmount. A targeted
-            // trigger('defaultRule.prairieTestExams') does not prune them.
-            void trigger();
           } else {
             // Add an initial entry when toggling it on so that the user can immediately
             // start configuring it without needing to click "Add Exam" first.
