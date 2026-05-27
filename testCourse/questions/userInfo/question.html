@@ -1,0 +1,27 @@
+<pl-question-panel>
+  <p>
+    This question demonstrates reading the viewing user's identity in <code>server.py</code>
+    via <code>data['options']['user']</code>. The course must opt in via
+    <code>questionsReceiveUserData: true</code> in <code>infoCourse.json</code> options
+    (or by toggling the corresponding course setting in production).
+  </p>
+
+  <h2>Viewing user</h2>
+  <ul>
+    <li>uid: <code>{{params.user_uid}}</code></li>
+    <li>name: <code>{{params.user_name}}</code></li>
+    <li>uin: <code>{{params.user_uin}}</code></li>
+  </ul>
+
+  {{#params.group_name}}
+    <h2>Group</h2>
+    <ul>
+      <li>name: <code>{{params.group_name}}</code></li>
+      <li>members: <code>{{params.group_member_uids}}</code></li>
+    </ul>
+  {{/params.group_name}}
+
+  <p>
+    Confirm: <code>{{params.user_uid}}</code>
+  </p>
+</pl-question-panel>

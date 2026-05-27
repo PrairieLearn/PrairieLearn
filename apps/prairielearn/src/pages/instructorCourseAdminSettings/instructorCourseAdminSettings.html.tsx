@@ -217,6 +217,26 @@ export function InstructorCourseAdminSettings({
               Show the getting started checklist
             </label>
           </div>
+          <div className="form-check mb-3">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="questions_receive_user_data"
+              name="questions_receive_user_data"
+              defaultChecked={course.questions_receive_user_data}
+              disabled={!authzData.has_course_permission_own || course.example_course}
+            />
+            <label className="form-check-label" htmlFor="questions_receive_user_data">
+              Expose user data to <code>server.py</code>
+            </label>
+            <div className="small text-muted">
+              When enabled, questions in this course receive the viewing user's identity (uid, uin,
+              name) via <code>data['options']['user']</code>, and on group assessments the team
+              members via <code>data['options']['group']</code>. Only course owners can change this
+              setting. Questions imported from other courses via sharing never receive user data,
+              regardless of this setting.
+            </div>
+          </div>
           {aiQuestionGenerationCourseToggleEnabled && (
             <div className="form-check mb-3">
               <input

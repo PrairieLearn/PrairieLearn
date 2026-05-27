@@ -405,6 +405,34 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
+### Accessing the viewing user's identity
+
+Courses can opt in to exposing the viewing user's identity to `server.py`. When enabled, `data["options"]` contains two extra keys, available in every phase (`generate`, `prepare`, `render`, `parse`, `grade`, `test`, `file`):
+
+```python
+def generate(data):
+    user = data["options"]["user"]    # None if not exposed
+    group = data["options"]["group"]  # None on individual assessments
+
+    if user is not None:
+        data["params"]["greeting"] = f"Hello, {user['name']}!"
+
+    if group is not None:
+        # group["members"] entries have the same shape as `user`.
+        data["params"]["teammate_uids"] = [m["uid"] for m in group["members"]]
+```
+
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is the **viewing user** — on group assessments this is whichever teammate is rendering the page right now, not a fixed property of the variant.
+
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
+
+User and group data are passed only when **all** of the following are true:
+
+1. The course has opted in by setting `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json` (in production, this setting is managed via the course settings page by a course owner).
+2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
+
+When the gate is closed, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.
+
 ## Generating dynamic files with `file()`
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:

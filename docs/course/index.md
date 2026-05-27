@@ -407,6 +407,24 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
+## Exposing user data to `server.py`
+
+By default, questions cannot see who is viewing them. A course can opt in to passing the viewing user's identity (uid, uin, name) into `server.py` through `data["options"]["user"]`, and the team membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-the-viewing-users-identity) for the exact shape and access patterns.
+
+To enable this for a course, add the following to `infoCourse.json`:
+
+```json title="infoCourse.json"
+{
+  "options": {
+    "questionsReceiveUserData": true
+  }
+}
+```
+
+In **dev mode**, this JSON value is the source of truth and is written into the database on every sync. In **production**, the setting is stored in the database and managed only via the course settings page by a user with the `Owner` role. If the JSON value diverges from the database value, sync emits a non-fatal warning and does not change the database.
+
+Questions imported from another course (via public sharing or a sharing set) never receive user data, regardless of either course's settings.
+
 ## Comments in JSON files
 
 You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:

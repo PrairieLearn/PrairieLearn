@@ -74,6 +74,7 @@ The column lives **outside** `courses.options` (it gets its own top-level boolea
 - **Production:** The DB column is authoritative; sync does **not** write to the column. If `infoCourse.json` sets a value that differs from the current DB value, sync emits a non-fatal warning. UI is the only way to change the column in production.
 
 Implementation sketch:
+
 - In `course-db.ts` (parser): read `info.options.questionsReceiveUserData`; in production, fetch current `courses.questions_receive_user_data` for the course_id and warn on mismatch.
 - In `fromDisk/courseInfo.ts` (writer): conditionally include the column in the UPDATE only when `config.devMode === true`.
 
@@ -86,19 +87,19 @@ UI:
 
 ### TypeScript
 
-| File | Change |
-|---|---|
-| `apps/prairielearn/src/migrations/<ts>_courses__questions_receive_user_data.{ts,sql}` | Add column with `DEFAULT FALSE`. Single-step, no backfill. Follow `migrations/README.md`. |
-| `database/tables/courses.pg` | Regenerated to include the new column. |
-| `apps/prairielearn/src/lib/db-types.ts` | Add `questions_receive_user_data` to `CourseSchema`. |
-| `apps/prairielearn/src/schemas/infoCourse.ts` | Add `questionsReceiveUserData: z.boolean().optional()` to `CourseOptionsJsonSchema`. |
-| `apps/prairielearn/src/sync/course-db.ts` | Read `info.options.questionsReceiveUserData`; pass through to course sync writer. |
-| `apps/prairielearn/src/sync/fromDisk/courses.ts` (or equivalent) | Apply dev-mode-overwrites vs prod-warn-on-divergence logic for the new column. |
-| `apps/prairielearn/src/question-servers/freeform.ts` | New helper `getUserContextForQuestion(...)`. Inject `user` and `group` into `data.options` at all phase call sites. |
-| `apps/prairielearn/src/question-servers/types.ts` | Export `UserContext` and `GroupContext` types. |
-| `apps/prairielearn/src/lib/groups.ts` | No change; `getGroupInfo` already returns members. |
-| `apps/prairielearn/src/models/course.ts` (or similar) | `updateCourseQuestionsReceiveUserData(course_id, value, authn_user_id)` that writes the column and inserts an audit event in a transaction. Reuse existing model fn if one fits. |
-| `apps/prairielearn/src/pages/instructorCourseAdminSettings/` (or equivalent) | Add the toggle UI; wire through tRPC (per `trpc` skill conventions). |
+| File                                                                                  | Change                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/prairielearn/src/migrations/<ts>_courses__questions_receive_user_data.{ts,sql}` | Add column with `DEFAULT FALSE`. Single-step, no backfill. Follow `migrations/README.md`.                                                                                        |
+| `database/tables/courses.pg`                                                          | Regenerated to include the new column.                                                                                                                                           |
+| `apps/prairielearn/src/lib/db-types.ts`                                               | Add `questions_receive_user_data` to `CourseSchema`.                                                                                                                             |
+| `apps/prairielearn/src/schemas/infoCourse.ts`                                         | Add `questionsReceiveUserData: z.boolean().optional()` to `CourseOptionsJsonSchema`.                                                                                             |
+| `apps/prairielearn/src/sync/course-db.ts`                                             | Read `info.options.questionsReceiveUserData`; pass through to course sync writer.                                                                                                |
+| `apps/prairielearn/src/sync/fromDisk/courses.ts` (or equivalent)                      | Apply dev-mode-overwrites vs prod-warn-on-divergence logic for the new column.                                                                                                   |
+| `apps/prairielearn/src/question-servers/freeform.ts`                                  | New helper `getUserContextForQuestion(...)`. Inject `user` and `group` into `data.options` at all phase call sites.                                                              |
+| `apps/prairielearn/src/question-servers/types.ts`                                     | Export `UserContext` and `GroupContext` types.                                                                                                                                   |
+| `apps/prairielearn/src/lib/groups.ts`                                                 | No change; `getGroupInfo` already returns members.                                                                                                                               |
+| `apps/prairielearn/src/models/course.ts` (or similar)                                 | `updateCourseQuestionsReceiveUserData(course_id, value, authn_user_id)` that writes the column and inserts an audit event in a transaction. Reuse existing model fn if one fits. |
+| `apps/prairielearn/src/pages/instructorCourseAdminSettings/` (or equivalent)          | Add the toggle UI; wire through tRPC (per `trpc` skill conventions).                                                                                                             |
 
 ### Python
 
@@ -106,10 +107,10 @@ No structural changes. `data['options']` is already a passthrough dict. Optional
 
 ### Docs
 
-| File | Change |
-|---|---|
-| `docs/question.md` | Document the new `data['options']['user']` and `data['options']['group']` fields, including gating rules and shape. |
-| `docs/course.md` (or wherever `infoCourse.json` options are documented) | Document `questionsReceiveUserData`. |
+| File                                                                    | Change                                                                                                              |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `docs/question.md`                                                      | Document the new `data['options']['user']` and `data['options']['group']` fields, including gating rules and shape. |
+| `docs/course.md` (or wherever `infoCourse.json` options are documented) | Document `questionsReceiveUserData`.                                                                                |
 
 ### Tests
 
@@ -128,4 +129,4 @@ No structural changes. `data['options']` is already a passthrough dict. Optional
 - A `data['options']['student_info']`-shaped alternative for non-group questions (Nathan's MVP). The chosen shape is unified across individual and group — `user` is always the viewing user, `group` is non-null only when the assessment is group work.
 - Per-question or per-element opt-in.
 - Exposing `email` (separate field on `users`), `lti_user_id`, or institution-level identifiers.
-- Audit events for *reads* of user data inside questions (only the course-setting toggle is audited).
+- Audit events for _reads_ of user data inside questions (only the course-setting toggle is audited).

@@ -17,7 +17,10 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { updateCourseShowGettingStarted } from '../../models/course.js';
+import {
+  updateCourseQuestionsReceiveUserData,
+  updateCourseShowGettingStarted,
+} from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -108,6 +111,22 @@ router.post(
         await updateCourseShowGettingStarted({
           course_id: res.locals.course.id,
           show_getting_started,
+        });
+      }
+
+      const questions_receive_user_data = req.body.questions_receive_user_data === 'on';
+
+      if (res.locals.course.questions_receive_user_data !== questions_receive_user_data) {
+        if (!res.locals.authz_data.has_course_permission_own) {
+          throw new error.HttpStatusError(
+            403,
+            'Only course owners can change whether questions receive user data',
+          );
+        }
+        await updateCourseQuestionsReceiveUserData({
+          course_id: res.locals.course.id,
+          questions_receive_user_data,
+          authn_user_id: res.locals.authn_user.id,
         });
       }
 
