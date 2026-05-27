@@ -20,6 +20,7 @@ import {
   type PrepareVariant,
   type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
+  type QuestionUserContext,
   type RenderResultData,
   type RenderSelection,
 } from './types.js';
@@ -127,6 +128,8 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  _preferences?: Record<string, string | number | boolean>,
+  _userContext?: QuestionUserContext,
 ): QuestionServerReturnValue<GenerateResultData> {
   return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
 }
@@ -136,6 +139,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  _userContext?: QuestionUserContext,
 ): QuestionServerReturnValue<GradeResultData> {
   return await callFunction<GradeResultData>('grade', question_course, question, {
     submission,
@@ -156,6 +160,7 @@ export async function render({
   submissions: Submission[];
   course: Course;
   locals: QuestionRenderRequiredLocals;
+  userContext?: QuestionUserContext;
 }): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
@@ -170,6 +175,7 @@ export async function prepare(
   _question: Question,
   _course: Course,
   variant: PrepareVariant,
+  _userContext?: QuestionUserContext,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -184,6 +190,7 @@ export async function parse(
   variant: Variant,
   _question: Question,
   _course: Course,
+  _userContext?: QuestionUserContext,
 ): QuestionServerReturnValue<ParseResultData> {
   const data = {
     params: variant.params ?? {},

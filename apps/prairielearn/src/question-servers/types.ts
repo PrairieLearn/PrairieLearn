@@ -3,6 +3,10 @@ import { type Course, type Question, type Submission, type Variant } from '../li
 import type { ResLocalsQuestionRender } from '../lib/question-render.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
+import type { QuestionUserContext } from './user-context.js';
+
+export type { QuestionUserContext } from './user-context.js';
+
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 /**
@@ -100,11 +104,13 @@ export interface QuestionServer {
     course: Course,
     variant_seed: string,
     preferences?: Record<string, string | number | boolean>,
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
     course: Course,
     variant: PrepareVariant,
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (params: {
     renderSelection: RenderSelection;
@@ -114,30 +120,35 @@ export interface QuestionServer {
     submissions: Submission[];
     course: Course;
     locals: QuestionRenderRequiredLocals;
+    userContext?: QuestionUserContext;
   }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
     variant: Variant,
     question: Question,
     course: Course,
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<Partial<GradeResultData>>;
   file?: (
     filename: string,
     variant: Variant,
     question: Question,
     course: Course,
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<Buffer>;
   test?: (
     variant: Variant,
     question: Question,
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
+    userContext?: QuestionUserContext,
   ) => QuestionServerReturnValue<TestResultData>;
 }
 

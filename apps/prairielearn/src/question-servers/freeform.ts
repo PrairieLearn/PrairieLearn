@@ -45,12 +45,15 @@ import {
   type PrepareVariant,
   type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
+  type QuestionUserContext,
   type RenderResultData,
   type RenderSelection,
   type TestResultData,
 } from './types.js';
 
 const debug = debugfn('prairielearn:freeform');
+
+const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
 
 type Phase = 'generate' | 'prepare' | 'render' | 'parse' | 'grade' | 'test' | 'file';
 
@@ -825,6 +828,7 @@ export async function generate(
   course: Course,
   variant_seed: string,
   preferences: Record<string, string | number | boolean> = {},
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
@@ -833,7 +837,13 @@ export async function generate(
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      options: {
+        ...course.options,
+        ...question.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences,
     } satisfies ExecutionData;
 
@@ -860,6 +870,7 @@ export async function prepare(
   question: Question,
   course: Course,
   variant: PrepareVariant,
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attempted to prepare broken variant');
@@ -871,7 +882,12 @@ export async function prepare(
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
@@ -910,6 +926,7 @@ async function renderPanel({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
@@ -918,6 +935,7 @@ async function renderPanel({
   course: Course;
   locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
@@ -977,6 +995,8 @@ async function renderPanel({
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
+    user: userContext.user,
+    group: userContext.group,
   };
 
   const data = {
@@ -1062,6 +1082,7 @@ async function renderPanelInstrumented({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
@@ -1071,6 +1092,7 @@ async function renderPanelInstrumented({
   course: Course;
   locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
     span.setAttributes({
@@ -1087,6 +1109,7 @@ async function renderPanelInstrumented({
       course,
       locals,
       context,
+      userContext,
     });
     span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
     return result;
@@ -1101,6 +1124,7 @@ export async function render({
   submissions,
   course,
   locals,
+  userContext = EMPTY_USER_CONTEXT,
 }: {
   renderSelection: RenderSelection;
   variant: Variant;
@@ -1109,6 +1133,7 @@ export async function render({
   submissions: Submission[];
   course: Course;
   locals: QuestionRenderRequiredLocals;
+  userContext?: QuestionUserContext;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1137,6 +1162,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1161,6 +1187,7 @@ export async function render({
               course,
               locals,
               context,
+              userContext,
             });
 
             courseIssues.push(...newCourseIssues);
@@ -1184,6 +1211,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1517,6 +1545,7 @@ export async function file(
   variant: Variant,
   question: Question,
   course: Course,
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
@@ -1529,7 +1558,12 @@ export async function file(
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
@@ -1569,6 +1603,7 @@ export async function parse(
   variant: Variant,
   question: Question,
   course: Course,
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<ParseResultData> {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
@@ -1584,7 +1619,12 @@ export async function parse(
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1621,6 +1661,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
@@ -1641,7 +1682,12 @@ export async function grade(
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1680,6 +1726,7 @@ export async function test(
   question: Question,
   course: Course,
   test_type: 'correct' | 'incorrect' | 'invalid',
+  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
 ): QuestionServerReturnValue<TestResultData> {
   return instrumented('freeform.test', async () => {
     debug('test()');
@@ -1696,7 +1743,12 @@ export async function test(
       score: 0,
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,

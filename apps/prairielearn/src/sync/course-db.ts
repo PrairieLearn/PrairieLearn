@@ -18,7 +18,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
-import { findCoursesBySharingNames } from '../models/course.js';
+import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -665,6 +665,24 @@ async function loadCourseInfo({
     }
   }
 
+  const questionsReceiveUserData = info.options.questionsReceiveUserData ?? false;
+
+  // In production, the database is the source of truth for this setting (managed
+  // via course settings UI). The infoCourse.json value is informational and emits
+  // a warning if it diverges from the DB.
+  if (courseId != null && !config.devMode) {
+    const existingCourse = await selectOptionalCourseById(courseId);
+    if (
+      existingCourse != null &&
+      existingCourse.questions_receive_user_data !== questionsReceiveUserData
+    ) {
+      infofile.addWarning(
+        loadedData,
+        `"options.questionsReceiveUserData" in infoCourse.json (${questionsReceiveUserData}) differs from the database value (${existingCourse.questions_receive_user_data}). In production, this setting is managed via course settings; sync will not change it.`,
+      );
+    }
+  }
+
   const course = {
     path: coursePath,
     name: info.name,
@@ -677,6 +695,7 @@ async function loadCourseInfo({
     sharingSets,
     options: {
       devModeFeatures,
+      questionsReceiveUserData,
     },
     comment: info.comment,
   };

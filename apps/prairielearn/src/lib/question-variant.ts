@@ -12,6 +12,7 @@ import { selectPreferencesForInstanceQuestion } from '../models/assessment-quest
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
+import { buildQuestionUserContext } from '../question-servers/user-context.js';
 
 import {
   type Course,
@@ -54,13 +55,22 @@ interface VariantCreationData {
 export async function makeVariant({
   question,
   course,
+  variant_course,
   variant_seed: variant_seed_option,
   preferences = {},
+  effective_user_id,
+  team_id,
 }: {
   question: Question;
   course: Course;
+  /** The course where the variant is being created. May differ from `course` (the question's course) for shared questions. */
+  variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
+  /** The effective user creating the variant. Used to expose user info to `server.py` if the course has opted in. */
+  effective_user_id: string | null;
+  /** The team the variant belongs to, if this is a group-work variant. */
+  team_id: string | null;
 }): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -72,12 +82,21 @@ export async function makeVariant({
     variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
+  const userContext = await buildQuestionUserContext({
+    question,
+    questionCourse: course,
+    variantCourse: variant_course,
+    effectiveUserId: effective_user_id,
+    teamId: team_id,
+  });
+
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(
     question,
     course,
     variant_seed,
     preferences,
+    userContext,
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
@@ -107,6 +126,7 @@ export async function makeVariant({
       question,
       course,
       variant,
+      userContext,
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -146,11 +166,19 @@ export async function getDynamicFile(
   if (!questionModule.file) {
     throw new Error(`Question type ${question.type} does not support file generation`);
   }
+  const userContext = await buildQuestionUserContext({
+    question,
+    questionCourse: question_course,
+    variantCourse: variant_course,
+    effectiveUserId: user_id,
+    teamId: variant.team_id,
+  });
   const { courseIssues, data: fileData } = await questionModule.file(
     filename,
     variant,
     question,
     question_course,
+    userContext,
   );
 
   const studentMessage = 'Error creating file: ' + filename;
@@ -258,11 +286,27 @@ async function makeAndInsertVariant({
     preferences = result ? { ...preferences, ...result } : preferences;
   }
 
+  // Pre-fetch the team_id for instance-question-backed variants so we can
+  // build the user/group context before the transaction. team_id on an
+  // assessment instance is set at instance creation and does not change.
+  let team_id: string | null = null;
+  if (instance_question_id != null) {
+    const instance_question = await sqldb.queryOptionalRow(
+      sql.select_instance_question_data,
+      { instance_question_id },
+      InstanceQuestionDataSchema,
+    );
+    team_id = instance_question?.team_id ?? null;
+  }
+
   const { courseIssues, variant: variantData } = await makeVariant({
     question,
     course: question_course,
+    variant_course,
     variant_seed: options.variant_seed,
     preferences,
+    effective_user_id: user_id,
+    team_id,
   });
 
   const variant = await sqldb.runInTransactionAsync(async () => {
