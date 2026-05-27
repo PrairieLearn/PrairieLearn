@@ -9,11 +9,16 @@ import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const RubricSettingsContextKeyRowsSchema = z.object({
-  variant_params: z.record(z.string(), z.unknown()).nullable(),
-  variant_true_answer: z.record(z.string(), z.unknown()).nullable(),
-  submission_submitted_answer: z.record(z.string(), z.unknown()).nullable(),
+  params_keys: z.string().array().nullable(),
+  true_answer_keys: z.string().array().nullable(),
+  submitted_answer_keys: z.string().array().nullable(),
 });
-export type RubricSettingsContextKeys = z.infer<typeof RubricSettingsContextKeyRowsSchema>;
+
+export interface RubricSettingsContextKeys {
+  variant_params: Record<string, unknown>;
+  variant_true_answer: Record<string, unknown>;
+  submission_submitted_answer: Record<string, unknown>;
+}
 
 export async function selectInstanceQuestionsForManualGrading({
   assessment,
@@ -45,22 +50,16 @@ export async function selectRubricSettingsContextKeys({
 
   // Aggregate the keys across all variants to get the full set of keys that
   // should be included in the context. Values are not relevant, so just set
-  // them all to true.
+  // them all to null.
   return {
     variant_params: Object.fromEntries(
-      variants
-        .flatMap((variant) => Object.keys(variant.variant_params ?? {}))
-        .map((key) => [key, true]),
+      variants.flatMap((variant) => variant.params_keys ?? []).map((key) => [key, null]),
     ),
     variant_true_answer: Object.fromEntries(
-      variants
-        .flatMap((variant) => Object.keys(variant.variant_true_answer ?? {}))
-        .map((key) => [key, true]),
+      variants.flatMap((variant) => variant.true_answer_keys ?? []).map((key) => [key, null]),
     ),
     submission_submitted_answer: Object.fromEntries(
-      variants
-        .flatMap((variant) => Object.keys(variant.submission_submitted_answer ?? {}))
-        .map((key) => [key, true]),
+      variants.flatMap((variant) => variant.submitted_answer_keys ?? []).map((key) => [key, null]),
     ),
   };
 }

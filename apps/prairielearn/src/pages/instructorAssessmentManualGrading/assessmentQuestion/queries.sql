@@ -127,9 +127,18 @@ WHERE
 
 -- BLOCK select_rubric_settings_context_keys
 SELECT DISTINCT
-  ON (v.id) v.params AS variant_params,
-  v.true_answer AS variant_true_answer,
-  s.submitted_answer AS submission_submitted_answer
+  ON (v.id) ARRAY(
+    SELECT
+      jsonb_object_keys(v.params)
+  ) AS params_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(v.true_answer)
+  ) AS true_answer_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(s.submitted_answer)
+  ) AS submitted_answer_keys
 FROM
   instance_questions AS iq
   JOIN variants AS v ON v.instance_question_id = iq.id
