@@ -21,7 +21,7 @@ const StorageTypes = Object.freeze({
   FileSystem: 'FileSystem',
 });
 
-function getFileStoreS3Bucket(): string {
+export function getFileStoreS3Bucket(): string {
   if (config.fileStoreS3Bucket === null) {
     throw new Error('fileStoreS3Bucket must be configured to use S3 file storage');
   }

@@ -2516,7 +2516,7 @@ export class MultiEditor extends Editor {
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
 
 /** A single question to import, with all file contents as serialized data. */
-interface QtiImportQuestionData {
+export interface QtiImportQuestionData {
   directoryName: string;
   infoJson: Record<string, unknown>;
   questionHtml: string;
@@ -2537,19 +2537,22 @@ export interface QtiImportAssessmentData {
 export class QtiImportEditor extends Editor {
   private course_instance: CourseInstance;
   private assessments: QtiImportAssessmentData[];
+  private questions: QtiImportQuestionData[];
 
   constructor(
     params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
       assessments: QtiImportAssessmentData[];
+      questions?: QtiImportQuestionData[];
     },
   ) {
     const { course_instance } = params.locals;
     super({
       ...params,
-      description: `${course_instance.short_name}: Import ${params.assessments.length} assessment(s) from QTI`,
+      description: `${course_instance.short_name}: Import QTI content`,
     });
     this.course_instance = course_instance;
     this.assessments = params.assessments;
+    this.questions = params.questions ?? [];
   }
 
   async write() {
@@ -2582,49 +2585,61 @@ export class QtiImportEditor extends Editor {
     // Pre-validate all paths before writing anything to avoid partial state.
     const existingQids = await discoverInfoDirs(questionsBaseDir, 'info.json');
     const importedQids: string[] = [];
-
+    const questionsByDirectoryName = new Map<string, QtiImportQuestionData>();
+    for (const question of this.questions) {
+      questionsByDirectoryName.set(question.directoryName, question);
+    }
     for (const assessment of this.assessments) {
       for (const question of assessment.questions) {
-        const qDir = path.join(questionsBaseDir, question.directoryName);
-        if (!contains(questionsBaseDir, qDir)) {
-          throw new AugmentedError('Invalid question folder path', {
-            info: html`
-              <p>The question folder path</p>
-              <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
-              </div>
-              <p>must be inside the questions directory</p>
-              <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
-              </div>
-            `,
-          });
+        if (!questionsByDirectoryName.has(question.directoryName)) {
+          questionsByDirectoryName.set(question.directoryName, question);
         }
-        // Validate that the new QID doesn't nest inside (or contain) an existing question.
-        validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
-        importedQids.push(question.directoryName);
+      }
+    }
 
-        if (Object.keys(question.clientFiles).length > 0) {
-          const cfDir = path.join(qDir, 'clientFilesQuestion');
-          for (const name of Object.keys(question.clientFiles)) {
-            const filePath = path.join(cfDir, name);
-            if (!contains(cfDir, filePath)) {
-              throw new AugmentedError('Invalid client file path', {
-                info: html`
-                  <p>The client file path</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
-                  </div>
-                  <p>must be inside the clientFilesQuestion directory</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
-                  </div>
-                `,
-              });
-            }
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+      if (!contains(questionsBaseDir, qDir)) {
+        throw new AugmentedError('Invalid question folder path', {
+          info: html`
+            <p>The question folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
+            </div>
+            <p>must be inside the questions directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+      // Validate that the new QID doesn't nest inside (or contain) an existing question.
+      validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
+      importedQids.push(question.directoryName);
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const name of Object.keys(question.clientFiles)) {
+          const filePath = path.join(cfDir, name);
+          if (!contains(cfDir, filePath)) {
+            throw new AugmentedError('Invalid client file path', {
+              info: html`
+                <p>The client file path</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                </div>
+                <p>must be inside the clientFilesQuestion directory</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                </div>
+              `,
+            });
           }
         }
       }
+    }
+
+    for (const assessment of this.assessments) {
       const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
       if (!contains(assessmentsBaseDir, assessmentDir)) {
         throw new AugmentedError('Invalid assessment folder path', {
@@ -2644,41 +2659,40 @@ export class QtiImportEditor extends Editor {
 
     const pathsToAdd: string[] = [];
 
-    for (const assessment of this.assessments) {
-      // Write each question (paths already validated above).
-      for (const question of assessment.questions) {
-        const qDir = path.join(questionsBaseDir, question.directoryName);
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
 
-        // When overwriting, wipe the entire directory so stale artifacts
-        // (e.g. a previous server.py or old clientFilesQuestion entries)
-        // don't persist alongside the fresh import.
-        if (question.overwrite && (await fs.pathExists(qDir))) {
-          await fs.remove(qDir);
-        }
-
-        const qInfoJson = { ...question.infoJson };
-        if (shareSourcePublicly) {
-          qInfoJson.sharePublicly = true;
-          qInfoJson.shareSourcePublicly = true;
-        }
-        const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
-        await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
-        await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
-
-        if (question.serverPy) {
-          await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
-        }
-
-        if (Object.keys(question.clientFiles).length > 0) {
-          const cfDir = path.join(qDir, 'clientFilesQuestion');
-          for (const [name, base64Content] of Object.entries(question.clientFiles)) {
-            await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
-          }
-        }
-
-        pathsToAdd.push(qDir);
+      // When overwriting, wipe the entire directory so stale artifacts
+      // (e.g. a previous server.py or old clientFilesQuestion entries)
+      // don't persist alongside the fresh import.
+      if (question.overwrite && (await fs.pathExists(qDir))) {
+        await fs.remove(qDir);
       }
 
+      const qInfoJson = { ...question.infoJson };
+      if (shareSourcePublicly) {
+        qInfoJson.sharePublicly = true;
+        qInfoJson.shareSourcePublicly = true;
+      }
+      const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
+      await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
+      await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
+
+      if (question.serverPy) {
+        await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
+      }
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const [name, base64Content] of Object.entries(question.clientFiles)) {
+          await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
+        }
+      }
+
+      pathsToAdd.push(qDir);
+    }
+
+    for (const assessment of this.assessments) {
       // Write the assessment (path already validated above).
       const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
       const aInfoJson = { ...assessment.infoJson };
@@ -2695,7 +2709,7 @@ export class QtiImportEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage: `${this.course_instance.short_name}: import ${this.assessments.length} assessment(s) from QTI`,
+      commitMessage: `${this.course_instance.short_name}: import QTI content`,
     };
   }
 }

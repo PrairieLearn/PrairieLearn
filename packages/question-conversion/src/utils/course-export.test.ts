@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { detectCourseExport, findQtiFilesFromManifest } from './course-export.js';
+import { detectCourseExport, findQtiFilesFromManifest, findQtiXmlFiles } from './course-export.js';
 
 // Minimal Canvas IMS CC manifest with two assessment resources:
 // one with a non_cc_assessments companion, one without.
@@ -34,6 +34,9 @@ const CANVAS_MANIFEST = `<?xml version="1.0" encoding="UTF-8"?>
     </resource>
     <resource identifier="quiz2_meta" type="associatedcontent/imscc_xmlv1p1/learning-application-resource" href="quiz2/assessment_meta.xml">
       <file href="quiz2/assessment_meta.xml"/>
+    </resource>
+    <resource identifier="bank1" type="associatedcontent/imscc_xmlv1p1/learning-application-resource" href="non_cc_assessments/bank1.xml.qti">
+      <file href="non_cc_assessments/bank1.xml.qti"/>
     </resource>
     <resource identifier="other" type="webcontent" href="some/page.html">
       <file href="some/page.html"/>
@@ -152,7 +155,7 @@ describe('findQtiFilesFromManifest', () => {
     assert.deepEqual(result, []);
   });
 
-  it('returns [] when manifest has no QTI assessment resources', async () => {
+  it('returns [] when manifest has no QTI content resources', async () => {
     await writeFile(
       path.join(tmpDir, 'imsmanifest.xml'),
       `<?xml version="1.0"?><manifest><resources>
@@ -196,7 +199,7 @@ describe('findQtiFilesFromManifest', () => {
       assert.equal(quiz2.assessmentDir, path.join(tmpDir, 'quiz2'));
     });
 
-    it('skips non-assessment resources', async () => {
+    it('skips non-QTI web resources', async () => {
       const entries = await findQtiFilesFromManifest(tmpDir);
       assert.isTrue(
         entries.every((e) => !e.qtiPath.includes('page.html')),
@@ -204,9 +207,34 @@ describe('findQtiFilesFromManifest', () => {
       );
     });
 
-    it('returns one entry per QTI assessment resource', async () => {
+    it('returns one entry per QTI content resource', async () => {
       const entries = await findQtiFilesFromManifest(tmpDir);
-      assert.equal(entries.length, 2);
+      assert.equal(entries.filter((e) => !e.qtiPath.includes('bank1')).length, 2);
+    });
+
+    it('includes standalone non_cc_assessments object banks', async () => {
+      const entries = await findQtiFilesFromManifest(tmpDir);
+      const bank = entries.find((e) => e.qtiPath.includes('bank1'));
+      assert.ok(bank);
+      assert.equal(bank.qtiPath, path.join(tmpDir, 'non_cc_assessments', 'bank1.xml.qti'));
+      assert.equal(bank.assessmentDir, path.join(tmpDir, 'non_cc_assessments'));
+    });
+
+    it('resolves the QTI XML when a resource has multiple file children', async () => {
+      await writeFile(
+        path.join(tmpDir, 'imsmanifest.xml'),
+        `<?xml version="1.0"?><manifest><resources>
+          <resource identifier="quiz1" type="imsqti_xmlv1p2/imscc_xmlv1p1/assessment">
+            <file href="quiz1/assessment_meta.xml"/>
+            <file href="quiz1/quiz.xml"/>
+          </resource>
+        </resources></manifest>`,
+      );
+
+      const entries = await findQtiFilesFromManifest(tmpDir);
+
+      assert.equal(entries.length, 1);
+      assert.equal(entries[0].qtiPath, path.join(tmpDir, 'quiz1', 'quiz.xml'));
     });
   });
 
@@ -230,5 +258,74 @@ describe('findQtiFilesFromManifest', () => {
       const entries = await findQtiFilesFromManifest(tmpDir);
       assert.isTrue(entries.every((e) => !e.qtiPath.includes('page.html')));
     });
+  });
+
+  it('resolves QTI object bank resources', async () => {
+    await writeFile(
+      path.join(tmpDir, 'imsmanifest.xml'),
+      `<?xml version="1.0"?><manifest><resources>
+        <resource identifier="bank1" type="imsqti_xmlv1p2/objectbank" href="banks/bank1.xml.qti"/>
+      </resources></manifest>`,
+    );
+
+    const entries = await findQtiFilesFromManifest(tmpDir);
+
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].qtiPath, path.join(tmpDir, 'banks', 'bank1.xml.qti'));
+    assert.equal(entries[0].assessmentDir, path.join(tmpDir, 'banks'));
+  });
+
+  it('resolves Canvas quiz-export resources typed only as imsqti_xmlv1p2', async () => {
+    await writeFile(
+      path.join(tmpDir, 'imsmanifest.xml'),
+      `<?xml version="1.0"?><manifest><resources>
+        <resource identifier="quiz1" type="imsqti_xmlv1p2">
+          <file href="quiz1/quiz1.xml"/>
+        </resource>
+      </resources></manifest>`,
+    );
+
+    const entries = await findQtiFilesFromManifest(tmpDir);
+
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].qtiPath, path.join(tmpDir, 'quiz1', 'quiz1.xml'));
+    assert.equal(entries[0].assessmentDir, path.join(tmpDir, 'quiz1'));
+  });
+});
+
+describe('findQtiXmlFiles', () => {
+  it('finds direct QTI XML files when no manifest exists', async () => {
+    await writeFile(path.join(tmpDir, 'quiz.xml'), '<questestinterop/>');
+
+    const result = await findQtiXmlFiles(tmpDir);
+
+    assert.deepEqual(result, [path.join(tmpDir, 'quiz.xml')]);
+  });
+
+  it('ignores known non-QTI XML files', async () => {
+    await writeFile(path.join(tmpDir, 'assessment_meta.xml'), '<quiz/>');
+    await writeFile(path.join(tmpDir, 'imsmanifest.xml'), '<manifest/>');
+
+    const result = await findQtiXmlFiles(tmpDir);
+
+    assert.deepEqual(result, []);
+  });
+
+  it('finds QTI XML files one directory deep', async () => {
+    await mkdir(path.join(tmpDir, 'bank'), { recursive: true });
+    await writeFile(path.join(tmpDir, 'bank', 'bank.xml'), '<questestinterop/>');
+
+    const result = await findQtiXmlFiles(tmpDir);
+
+    assert.deepEqual(result, [path.join(tmpDir, 'bank', 'bank.xml')]);
+  });
+
+  it('finds QTI .xml.qti files one directory deep', async () => {
+    await mkdir(path.join(tmpDir, 'non_cc_assessments'), { recursive: true });
+    await writeFile(path.join(tmpDir, 'non_cc_assessments', 'bank.xml.qti'), '<questestinterop/>');
+
+    const result = await findQtiXmlFiles(tmpDir);
+
+    assert.deepEqual(result, [path.join(tmpDir, 'non_cc_assessments', 'bank.xml.qti')]);
   });
 });
