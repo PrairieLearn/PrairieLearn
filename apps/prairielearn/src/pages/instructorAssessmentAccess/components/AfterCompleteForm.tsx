@@ -3,6 +3,7 @@ import { get, useController, useFormContext, useFormState, useWatch } from 'reac
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import { validateActiveOverrideField } from './overrideFields.js';
@@ -108,6 +109,7 @@ function QuestionVisibilityInput({
   visibleUntilDateError?: string;
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const hideQuestionsMode = getHideQuestionsMode(value);
   const selectedDescription = QUESTION_VISIBILITY_ITEMS.find(
     (item) => item.value === hideQuestionsMode,
@@ -152,6 +154,7 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
+          disabled={!ruleEditable}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -170,6 +173,7 @@ function QuestionVisibilityInput({
               step={1}
               value={value.visibleFromDate ?? ''}
               isInvalid={visibleFromDateInvalid}
+              disabled={!ruleEditable}
               aria-invalid={visibleFromDateInvalid}
               aria-errormessage={
                 visibleFromDateInvalid
@@ -203,6 +207,7 @@ function QuestionVisibilityInput({
               step={1}
               value={value.visibleUntilDate ?? ''}
               isInvalid={visibleUntilDateInvalid}
+              disabled={!ruleEditable}
               aria-invalid={visibleUntilDateInvalid}
               aria-errormessage={
                 visibleUntilDateInvalid ? `${idPrefix}-hide-questions-between-end-error` : undefined
@@ -235,6 +240,7 @@ function QuestionVisibilityInput({
             aria-label="Show questions on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
+            disabled={!ruleEditable}
             aria-invalid={visibleFromDateInvalid}
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-questions-date-error` : undefined
@@ -285,6 +291,7 @@ function ScoreVisibilityInput({
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const hideScoreMode = getHideScoreMode(value);
   const selectedDescription = SCORE_VISIBILITY_ITEMS.find(
     (item) => item.value === hideScoreMode,
@@ -318,6 +325,7 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
+          disabled={!ruleEditable}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -333,6 +341,7 @@ function ScoreVisibilityInput({
             aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
+            disabled={!ruleEditable}
             aria-invalid={visibleFromDateInvalid}
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-score-date-error` : undefined

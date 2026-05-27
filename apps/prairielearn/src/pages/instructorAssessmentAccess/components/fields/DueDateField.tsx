@@ -6,6 +6,7 @@ import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import { validateActiveOverrideField } from '../overrideFields.js';
@@ -42,6 +43,7 @@ function DueDateInput({
   creditError?: string;
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const effectiveCredit = value.credit ?? 100;
 
   const getCreditPeriodText = () => {
@@ -76,6 +78,7 @@ function DueDateInput({
           id={`${idPrefix}-due-never`}
           label="No due date"
           checked={value.date === null}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) onChange({ ...value, date: null });
           }}
@@ -86,6 +89,7 @@ function DueDateInput({
           id={`${idPrefix}-due-on-date`}
           label="Due on date"
           checked={value.date !== null}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
@@ -114,6 +118,7 @@ function DueDateInput({
             aria-invalid={!!dateError}
             aria-errormessage={dateError ? `${idPrefix}-due-date-error` : undefined}
             value={value.date}
+            disabled={!ruleEditable}
             onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
           {dateError && (
@@ -129,15 +134,20 @@ function DueDateInput({
       <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
         {!value.customCredit ? (
           <span className="text-muted small">
-            100% credit (default){' '}
-            <Button
-              variant="link"
-              size="sm"
-              className="p-0 align-baseline"
-              onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
-            >
-              Change
-            </Button>
+            100% credit (default)
+            {ruleEditable && (
+              <>
+                {' '}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 align-baseline"
+                  onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
+                >
+                  Change
+                </Button>
+              </>
+            )}
           </span>
         ) : (
           <>
@@ -160,6 +170,7 @@ function DueDateInput({
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
                 value={value.credit ?? ''}
                 placeholder="100"
+                disabled={!ruleEditable}
                 onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
@@ -169,14 +180,16 @@ function DueDateInput({
               />
               <InputGroup.Text>%</InputGroup.Text>
             </InputGroup>
-            <Button
-              variant="link"
-              size="sm"
-              className="p-0"
-              onClick={() => onChange({ ...value, customCredit: false, credit: null })}
-            >
-              Reset to default
-            </Button>
+            {ruleEditable && (
+              <Button
+                variant="link"
+                size="sm"
+                className="p-0"
+                onClick={() => onChange({ ...value, customCredit: false, credit: null })}
+              >
+                Reset to default
+              </Button>
+            )}
           </>
         )}
       </div>
