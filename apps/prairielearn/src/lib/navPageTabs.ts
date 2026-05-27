@@ -143,7 +143,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
         tabLabel: 'Groups',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
         activeSubPage: 'questions',

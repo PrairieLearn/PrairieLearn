@@ -15,7 +15,7 @@ Linking a PrairieLearn course instance with a Canvas course requires the followi
 - PrairieLearn Course Instance
   - [Student Data Editor](course/index.md#course-staff)
 
-To check this, in PrairieLearn go to the "Staff" tab and make sure that the "Student data access" column has an "Editor" badge for the appropriate course instance, in the row corresponding to your name. If you don't have Student Data Editor permission, add this or ask the course owner to do so.
+To check this, in PrairieLearn go to the "Staff" tab and make sure that the "Student data access" column has an "Editor" badge for the appropriate course instance, in the row corresponding to your name. If you don't have student data editor permissions, add them or ask the course owner to do so.
 
 ## Setting up your Canvas course for PrairieLearn
 

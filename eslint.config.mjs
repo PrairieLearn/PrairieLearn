@@ -60,6 +60,10 @@ export default [
       ),
       // This has false positives in our codebase.
       '@eslint-react/jsx-no-leaked-semicolon': 'off',
+      // False positive on renderer/dispatch maps (e.g. AppErrorAlert's `render`
+      // prop): callbacks invoked directly via `renderer(arg)` are flagged as
+      // nested components even though they're never used as components.
+      '@eslint-react/no-nested-component-definitions': 'off',
       // We don't want these style rules
       '@html-eslint/attrs-newline': 'off',
       '@html-eslint/element-newline': 'off',
@@ -77,6 +81,8 @@ export default [
           enforceBeforeSelfClose: true,
         },
       ],
+      // Use our PrairieLearn-specific variant instead.
+      '@html-eslint/no-duplicate-id': 'off',
       '@html-eslint/no-heading-inside-button': 'off', // not important
       '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
       '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.

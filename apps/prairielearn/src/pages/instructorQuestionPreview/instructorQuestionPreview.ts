@@ -178,6 +178,7 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: null,
       variant,

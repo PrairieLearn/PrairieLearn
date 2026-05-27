@@ -224,6 +224,7 @@ const STAFF_ASSESSMENT = {
   score_stat_number: 50,
   score_stat_std: 15,
   share_source_publicly: false,
+  show_question_titles: false,
   shuffle_questions: true,
   statistics_last_updated_at: new Date(),
   stats_last_updated: new Date(),

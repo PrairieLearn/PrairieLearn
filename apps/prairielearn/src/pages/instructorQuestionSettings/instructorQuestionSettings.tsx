@@ -51,6 +51,11 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import {
+  type QuestionSharingSetRow,
+  selectQuestionSharingConstraints,
+  selectSharingSetsForQuestion,
+} from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
@@ -59,8 +64,6 @@ import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.htm
 import {
   EditableCourseSchema,
   SelectedAssessmentsSchema,
-  type SharingSetRow,
-  SharingSetRowSchema,
 } from './instructorQuestionSettings.types.js';
 
 const router = Router();
@@ -240,6 +243,9 @@ router.post(
           external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
           external_grading_enable_networking: BooleanFromCheckboxSchema,
           external_grading_environment: z.string().optional(),
+          share_publicly: BooleanFromCheckboxSchema,
+          share_source_publicly: BooleanFromCheckboxSchema,
+          sharing_sets: ArrayFromStringOrArraySchema.optional(),
         })
         .parse(req.body);
 
@@ -249,6 +255,24 @@ router.post(
           400,
           `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
         );
+      }
+
+      const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
+      let resolvedSharingSets: string[] | undefined;
+      if (sharingEnabled) {
+        const sharingSetRows = await selectSharingSetsForQuestion({
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        });
+        const validSetNames = new Set(sharingSetRows.map((r) => r.name));
+        const requestedSetNames = new Set(body.sharing_sets);
+
+        for (const name of requestedSetNames) {
+          if (!validSetNames.has(name)) {
+            throw new error.HttpStatusError(400, `Unknown sharing set: "${name}"`);
+          }
+        }
+        resolvedSharingSets = [...requestedSetNames];
       }
 
       const paths = getPaths(undefined, res.locals);
@@ -287,6 +311,24 @@ router.post(
         body.partial_credit,
         res.locals.question.type === 'Freeform',
       );
+
+      if (sharingEnabled) {
+        questionInfo.sharePublicly = propertyValueWithDefault(
+          questionInfo.sharePublicly,
+          body.share_publicly,
+          false,
+        );
+        questionInfo.shareSourcePublicly = propertyValueWithDefault(
+          questionInfo.shareSourcePublicly,
+          body.share_source_publicly,
+          false,
+        );
+        questionInfo.sharingSets = propertyValueWithDefault(
+          questionInfo.sharingSets,
+          resolvedSharingSets,
+          (val: any) => !val || val.length === 0,
+        );
+      }
 
       if (body.preferences.length > 0) {
         const preferencesSchema: QuestionPreferencesSchemaJson = {};
@@ -587,17 +629,19 @@ router.get(
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn: SharingSetRow[] | undefined;
+    let sharingSets: QuestionSharingSetRow[] | undefined;
+    let sharingConstraints:
+      | Awaited<ReturnType<typeof selectQuestionSharingConstraints>>
+      | undefined;
     if (sharingEnabled) {
-      const result = await sqldb.queryRows(
-        sql.select_sharing_sets,
-        {
-          question_id: question.id,
-          course_id: course.id,
-        },
-        SharingSetRowSchema,
-      );
-      sharingSetsIn = result.filter((row) => row.in_set);
+      sharingSets = await selectSharingSetsForQuestion({
+        question_id: question.id,
+        course_id: course.id,
+      });
+      sharingConstraints = await selectQuestionSharingConstraints({
+        question_id: question.id,
+        course_id: course.id,
+      });
     }
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: userId,
@@ -640,7 +684,15 @@ router.get(
               questionTags={parsedQuestionTags}
               qids={qids}
               assessmentsWithQuestion={assessmentsWithQuestion}
-              sharing={{ enabled: sharingEnabled, setsIn: sharingSetsIn ?? [] }}
+              sharing={{
+                enabled: sharingEnabled,
+                sets: sharingSets ?? [],
+                constraints: sharingConstraints ?? {
+                  used_in_other_course: false,
+                  used_in_same_course_public_assessment: false,
+                  locked_sharing_set_names: [],
+                },
+              }}
               editableCourses={parsedEditableCourses}
               origHash={origHash}
               canEdit={canEdit}

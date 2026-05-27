@@ -132,6 +132,11 @@ export interface IRQuestion {
   points?: number;
   feedback?: IRFeedback;
   assets: Map<string, AssetReference>;
+  /**
+   * Filenames the parser chose to omit. Their referencing tags have been commented out
+   * in `promptHtml` and the files are not included in `assets`.
+   */
+  skippedFiles?: string[];
   metadata?: Record<string, string>;
   shuffleAnswers?: boolean;
   gradingMethod: IRQuestionGradingMethod;

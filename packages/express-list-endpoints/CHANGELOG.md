@@ -1,5 +1,17 @@
 # @prairielearn/express-list-endpoints
 
+## 2.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 2.0.3
 
 ### Patch Changes

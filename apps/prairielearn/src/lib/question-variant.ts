@@ -27,11 +27,6 @@ import { extractDefaultPreferences } from './question-preferences.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const VariantWithFormattedDateSchema = VariantSchema.extend({
-  formatted_date: z.string(),
-});
-type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
-
 type QuestionPreferenceValues = z.infer<typeof QuestionPreferenceValuesSchema>;
 
 const InstanceQuestionDataSchema = z.object({
@@ -205,11 +200,11 @@ async function lockAssessmentInstanceForInstanceQuestion(
 async function selectVariantForInstanceQuestion(
   instance_question_id: string,
   require_open: boolean,
-): Promise<VariantWithFormattedDate | null> {
+): Promise<Variant | null> {
   return await sqldb.queryOptionalRow(
     sql.select_variant_for_instance_question,
     { instance_question_id, require_open },
-    VariantWithFormattedDateSchema,
+    VariantSchema,
   );
 }
 
@@ -250,7 +245,7 @@ async function makeAndInsertVariant({
   options: { variant_seed?: string | null };
   require_open: boolean;
   client_fingerprint_id: string | null;
-}): Promise<VariantWithFormattedDate> {
+}): Promise<Variant> {
   const question = await selectQuestion(question_id, instance_question_id);
 
   // Look up preferences for this question instance
@@ -351,7 +346,7 @@ async function makeAndInsertVariant({
         course_id: variant_course.id,
         client_fingerprint_id,
       },
-      VariantWithFormattedDateSchema,
+      VariantSchema,
     );
   });
 
@@ -406,7 +401,7 @@ export async function ensureVariant({
   options: { variant_seed?: string | null };
   require_open: boolean;
   client_fingerprint_id: string | null;
-}): Promise<VariantWithFormattedDate> {
+}): Promise<Variant> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
     // test is also performed in makeAndInsertVariant inside a transaction to

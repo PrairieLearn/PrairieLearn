@@ -16,6 +16,7 @@ import { validateAccessControlRules } from '../lib/assessment-access-control/val
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
@@ -25,7 +26,6 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
-  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -1118,37 +1118,6 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-/**
- * Converts legacy group properties to the new groups format for unified handling.
- */
-export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
-  const canAssignRoles = assessment.groupRoles
-    .filter((role) => role.canAssignRoles)
-    .map((role) => role.name);
-
-  return {
-    enabled: assessment.groupWork,
-    minMembers: assessment.groupMinSize,
-    maxMembers: assessment.groupMaxSize,
-    roles: assessment.groupRoles.map((role) => ({
-      name: role.name,
-      minMembers: role.minimum,
-      maxMembers: role.maximum,
-    })),
-    studentPermissions: {
-      canCreateGroup: assessment.studentGroupCreate,
-      canJoinGroup: assessment.studentGroupJoin,
-      canLeaveGroup: assessment.studentGroupLeave,
-      canNameGroup: assessment.studentGroupChooseName,
-    },
-    rolePermissions: {
-      canAssignRoles,
-      canView: assessment.canView,
-      canSubmit: assessment.canSubmit,
-    },
-  };
-}
-
 function validateAssessment({
   assessment,
   rawAssessment,
@@ -1291,14 +1260,18 @@ function validateAssessment({
       draftQids.add(qid);
     }
   };
-  assessment.zones.forEach((zone) => {
-    zone.questions.map((zoneQuestion) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
+    const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+    zone.questions.forEach((zoneQuestion, questionIndex) => {
       const effectiveAlternativePoolAllowRealTimeGrading =
         zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
 
       // We'll normalize either single questions or alternative pools
       // to make validation easier
-      let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
+      let alternatives: (QuestionPointsJson & {
+        allowRealTimeGrading: boolean;
+        id?: string;
+      })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       }
@@ -1318,6 +1291,7 @@ function validateAssessment({
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
             allowRealTimeGrading:
               alternative.allowRealTimeGrading ?? effectiveAlternativePoolAllowRealTimeGrading,
+            id: alternative.id,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1330,20 +1304,24 @@ function validateAssessment({
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
             allowRealTimeGrading: effectiveAlternativePoolAllowRealTimeGrading,
+            id: zoneQuestion.id,
           },
         ];
       } else {
         errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
-      alternatives.forEach((alternative) => {
+      alternatives.forEach((alternative, alternativeIndex) => {
+        const alternativeLabel = alternative.id
+          ? `Question "${alternative.id}"`
+          : `Zone "${zoneLabel}", question ${questionIndex + 1}, alternative ${alternativeIndex + 1}`;
         if (
           !alternative.allowRealTimeGrading &&
           ((Array.isArray(alternative.autoPoints) && alternative.autoPoints.length > 1) ||
             (Array.isArray(alternative.points) && alternative.points.length > 1))
         ) {
           errors.push(
-            'Cannot specify an array of multiple point values if real-time grading is disabled',
+            `${alternativeLabel}: Cannot specify an array of multiple point values if real-time grading is disabled`,
           );
         }
 
@@ -1352,7 +1330,9 @@ function validateAssessment({
           alternative.autoPoints == null &&
           alternative.manualPoints == null
         ) {
-          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+          errors.push(
+            `${alternativeLabel}: Must specify "points", "autoPoints" or "manualPoints" for a question`,
+          );
         }
         if (
           alternative.points != null &&
@@ -1361,13 +1341,13 @@ function validateAssessment({
             alternative.maxAutoPoints != null)
         ) {
           errors.push(
-            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+            `${alternativeLabel}: Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
           );
         }
         if (assessment.type === 'Exam') {
           if (alternative.maxPoints != null || alternative.maxAutoPoints != null) {
             errors.push(
-              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment',
+              `${alternativeLabel}: Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment`,
             );
           }
 
@@ -1381,7 +1361,7 @@ function validateAssessment({
             (points, index) => index === 0 || points <= pointsList[index - 1],
           );
           if (!isNonIncreasing) {
-            errors.push('Points for a question must be non-increasing');
+            errors.push(`${alternativeLabel}: Points for a question must be non-increasing`);
           }
         }
         if (assessment.type === 'Homework') {
@@ -1392,13 +1372,13 @@ function validateAssessment({
               alternative.maxAutoPoints != null)
           ) {
             errors.push(
-              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+              `${alternativeLabel}: Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
             );
           }
 
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
-              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
+              `${alternativeLabel}: Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment`,
             );
           }
 
@@ -1408,7 +1388,7 @@ function validateAssessment({
               alternative.maxPoints != null &&
               alternative.maxPoints > 0
             ) {
-              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+              errors.push(`${alternativeLabel}: Cannot specify "points": 0 when "maxPoints" > 0`);
             }
 
             if (
@@ -1416,11 +1396,46 @@ function validateAssessment({
               alternative.maxAutoPoints != null &&
               alternative.maxAutoPoints > 0
             ) {
-              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+              errors.push(
+                `${alternativeLabel}: Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0`,
+              );
+            }
+
+            if (
+              alternative.autoPoints != null &&
+              alternative.maxAutoPoints != null &&
+              !Array.isArray(alternative.autoPoints) &&
+              alternative.autoPoints > alternative.maxAutoPoints
+            ) {
+              warnings.push(
+                `${alternativeLabel}: "autoPoints" (${alternative.autoPoints}) should not exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
+              );
+            }
+
+            if (
+              alternative.points != null &&
+              alternative.maxPoints != null &&
+              !Array.isArray(alternative.points) &&
+              alternative.points > alternative.maxPoints
+            ) {
+              warnings.push(
+                `${alternativeLabel}: "points" (${alternative.points}) should not exceed "maxPoints" (${alternative.maxPoints})`,
+              );
             }
           }
         }
       });
+
+      if (
+        !courseInstanceExpired &&
+        zoneQuestion.numberChoose != null &&
+        zoneQuestion.alternatives &&
+        zoneQuestion.numberChoose > zoneQuestion.alternatives.length
+      ) {
+        warnings.push(
+          `Zone "${zoneLabel}", alternative group ${questionIndex + 1}: "numberChoose" (${zoneQuestion.numberChoose}) exceeds the number of alternatives (${zoneQuestion.alternatives.length})`,
+        );
+      }
     });
   });
 
@@ -1440,12 +1455,14 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to groups format for unified validation
+  // Convert legacy group properties to groups format for unified validation.
   const isLegacyGroups = assessment.groups == null;
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
 
   // Validate groups if we have roles defined
-  if (groups.roles.length > 0) {
+  if (groups != null && groups.roles.length > 0) {
     const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
@@ -1562,12 +1579,60 @@ function validateAssessment({
     errors.push('The first zone cannot have lockpoint: true');
   }
 
-  assessment.zones.forEach((zone) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
     // A lockpoint zone with no questions would create a pointless barrier -
     // the student would have to cross a lockpoint with nothing to work on
     // in the zone, which is almost certainly a configuration mistake.
     if (zone.lockpoint && zone.numberChoose === 0) {
       errors.push('A lockpoint zone must include at least one selectable question');
+    }
+
+    if (!courseInstanceExpired) {
+      const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+
+      // Calculate the effective number of questions in the zone, accounting
+      // for alternative groups that contribute multiple questions.
+      const effectiveZoneSize = zone.questions.reduce((sum, q) => {
+        if (q.alternatives) {
+          const altCount = q.alternatives.length;
+          return sum + Math.min(q.numberChoose ?? altCount, altCount);
+        }
+        return sum + 1;
+      }, 0);
+
+      if (
+        zone.bestQuestions != null &&
+        zone.numberChoose != null &&
+        zone.bestQuestions > zone.numberChoose
+      ) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) should not exceed "numberChoose" (${zone.numberChoose})`,
+        );
+      }
+
+      if (zone.numberChoose != null && zone.numberChoose > effectiveZoneSize) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" (${zone.numberChoose}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
+        );
+      }
+
+      if (zone.bestQuestions != null && zone.bestQuestions > effectiveZoneSize) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
+        );
+      }
+
+      if (zone.numberChoose === 0 && !zone.lockpoint) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" is 0, so no questions will be presented from this zone`,
+        );
+      }
+
+      if (zone.bestQuestions === 0) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" is 0, so no questions from this zone will count toward the total points`,
+        );
+      }
     }
   });
 

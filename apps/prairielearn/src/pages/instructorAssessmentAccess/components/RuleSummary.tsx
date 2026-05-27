@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 import type { FieldErrors } from 'react-hook-form';
 
@@ -17,11 +17,11 @@ import {
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
+import { getAfterLastDeadlineLabel } from './fields/AfterLastDeadlineField.js';
 import {
   type AfterLastDeadlineValue,
   type DeadlineEntry,
   type DefaultRuleData,
-  type OverridableFieldName,
   type OverrideData,
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
@@ -33,27 +33,21 @@ function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
 }
 
-type RuleData = DefaultRuleData | OverrideData;
-
 /** react-hook-form error subtree for a single access control rule. */
 export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
-
-function isDefaultRuleData(rule: RuleData): rule is DefaultRuleData {
-  return 'dateControlEnabled' in rule;
-}
-
-function isOverrideFieldActive(rule: RuleData, fieldName: OverridableFieldName): boolean {
-  if (isDefaultRuleData(rule)) return true;
-  return rule.overriddenFields.includes(fieldName);
-}
+type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
   date: ReactNode;
   label: string;
-  credit: string;
+  access: string;
   error?: string;
   current?: boolean;
   currentVariant?: 'success' | 'primary';
+}
+
+function formatListedForStudents(listed: boolean): string {
+  return listed ? 'Listed for students' : 'Hidden from students';
 }
 
 /**
@@ -151,7 +145,7 @@ function getDefaultRuleCurrentState(
 export function generateDefaultRuleDateTableRows(
   rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: DefaultRuleFormErrors,
 ): DateTableRow[] {
   if (!rule.dateControlEnabled) return [];
 
@@ -160,8 +154,6 @@ export function generateDefaultRuleDateTableRows(
   const releaseDate = rule.release.date;
   const dueDate = rule.due.date;
   const dueCredit = rule.due.credit ?? 100;
-  const earlyDeadlines = rule.earlyDeadlines;
-  const lateDeadlines = rule.lateDeadlines;
 
   // Build rows in logical order: release, early deadlines, due date, late deadlines.
   const afterLastDeadline = rule.afterLastDeadline;
@@ -192,6 +184,14 @@ export function generateDefaultRuleDateTableRows(
     }
   };
 
+  rows.push({
+    date: '',
+    label: 'Before release',
+    access: formatListedForStudents(rule.beforeReleaseListed),
+    current: isBeforeReleaseSegment,
+    currentVariant,
+  });
+
   if (releaseDate || releaseDateError) {
     rows.push({
       date: releaseDate ? (
@@ -205,14 +205,12 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: 'Release',
-      credit: '—',
-      current: isBeforeReleaseSegment,
-      currentVariant,
+      access: 'Opens',
       error: releaseDateError,
     });
   }
 
-  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.earlyDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.earlyDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -227,7 +225,7 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Early ${index + 1}`,
-      credit: formatCreditPercent(deadline.credit),
+      access: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
@@ -249,7 +247,7 @@ export function generateDefaultRuleDateTableRows(
         />
       ),
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
       current: isDeadlineCurrent(dueDate),
       currentVariant,
@@ -258,7 +256,7 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No due date',
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
       current: isNoDeadlineSegment,
       currentVariant,
@@ -268,12 +266,12 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: 'No date set',
       label: 'Due',
-      credit: formatCreditPercent(dueCredit),
+      access: formatCreditPercent(dueCredit),
       error: dueError,
     });
   }
 
-  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+  rule.lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
     const dateErr = formErrors?.lateDeadlines?.[index]?.date?.message;
     const creditErr = formErrors?.lateDeadlines?.[index]?.credit?.message;
     rows.push({
@@ -288,25 +286,28 @@ export function generateDefaultRuleDateTableRows(
         'No date set'
       ),
       label: `Late ${index + 1}`,
-      credit: formatCreditPercent(deadline.credit),
+      access: formatCreditPercent(deadline.credit),
       error: [dateErr, creditErr].filter(Boolean).join('; ') || undefined,
       current: deadline.date ? isDeadlineCurrent(deadline.date) : false,
       currentVariant,
     });
   });
 
-  // Show "After last deadline" only when there is a deadline it can apply to.
+  // Show the after-last-deadline row only when there is a deadline it can apply to.
   const hasAnyDeadline = rule.due.date || rule.lateDeadlines.some((d) => d.date);
 
   if (hasAnyDeadline) {
     rows.push({
       date: '',
-      label: 'After last deadline',
-      credit: afterLastDeadline?.allowSubmissions
-        ? afterLastDeadline.credit != null
-          ? formatCreditPercent(afterLastDeadline.credit)
-          : 'Practice'
-        : 'Closed',
+      label: getAfterLastDeadlineLabel(rule.lateDeadlines),
+      access:
+        afterLastDeadline == null
+          ? 'No access'
+          : afterLastDeadline.allowSubmissions
+            ? afterLastDeadline.credit != null
+              ? formatCreditPercent(afterLastDeadline.credit)
+              : 'Practice'
+            : 'Closed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -316,175 +317,182 @@ export function generateDefaultRuleDateTableRows(
   return rows;
 }
 
-interface SummaryItem {
+interface AfterCompleteTableRow {
   key: string;
-  icon: string;
-  text: ReactNode;
-  error?: string;
+  timeRange: ReactNode;
+  questionsVisible: boolean;
+  scoreVisible: boolean;
+  errors?: string[];
 }
 
-export function generateRuleSummary(
-  rule: RuleData,
+interface AfterCompleteVisibilityEvent {
+  date: string;
+  questionsVisible?: boolean;
+  scoreVisible?: boolean;
+}
+
+type SummaryBadgeVariant = 'success' | 'danger' | 'warning' | 'info' | 'muted';
+
+function SummaryBadge({
+  children,
+  icon,
+  variant = 'muted',
+}: {
+  children: ReactNode;
+  icon?: string;
+  variant?: SummaryBadgeVariant;
+}) {
+  const className = run(() => {
+    switch (variant) {
+      case 'success':
+        return 'bg-success-subtle border border-success-subtle text-success-emphasis';
+      case 'danger':
+        return 'bg-danger-subtle border border-danger-subtle text-danger-emphasis';
+      case 'warning':
+        return 'bg-warning-subtle border border-warning-subtle text-warning-emphasis';
+      case 'info':
+        return 'bg-info-subtle border border-info-subtle text-info-emphasis';
+      case 'muted':
+        return 'bg-body-tertiary border text-body-secondary';
+    }
+  });
+
+  return (
+    <span
+      className={`badge rounded-pill d-inline-flex align-items-center gap-1 fw-medium ${className}`}
+    >
+      {icon && <i className={`bi ${icon}`} aria-hidden="true" />}
+      {children}
+    </span>
+  );
+}
+
+function VisibilityBadge({ visible }: { visible: boolean }) {
+  return (
+    <SummaryBadge
+      variant={visible ? 'success' : 'danger'}
+      icon={visible ? 'bi-eye' : 'bi-eye-slash'}
+    >
+      {visible ? 'Shown' : 'Hidden'}
+    </SummaryBadge>
+  );
+}
+
+function AfterCompleteTimeRange({
+  date,
+  displayTimezone,
+}: {
+  date: string;
+  displayTimezone: string;
+}) {
+  return (
+    <>
+      After{' '}
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(date)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+        tooltip
+      />
+    </>
+  );
+}
+
+function buildAfterCompleteVisibilityEvents(rule: DefaultRuleData): AfterCompleteVisibilityEvent[] {
+  const events: AfterCompleteVisibilityEvent[] = [];
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+
+  if (qv.hidden && qv.visibleFromDate) {
+    events.push({
+      date: qv.visibleFromDate,
+      questionsVisible: true,
+    });
+    if (qv.visibleUntilDate) {
+      events.push({
+        date: qv.visibleUntilDate,
+        questionsVisible: false,
+      });
+    }
+  }
+
+  if (sv.hidden && sv.visibleFromDate) {
+    events.push({
+      date: sv.visibleFromDate,
+      scoreVisible: true,
+    });
+  }
+
+  return events.sort((a, b) => {
+    try {
+      return Temporal.PlainDateTime.compare(
+        Temporal.PlainDateTime.from(a.date),
+        Temporal.PlainDateTime.from(b.date),
+      );
+    } catch {
+      return 0;
+    }
+  });
+}
+
+export function generateAfterCompleteTableRows(
+  rule: DefaultRuleData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
-): SummaryItem[] {
-  const items: SummaryItem[] = [];
-
-  if (isDefaultRuleData(rule)) {
-    const listed = rule.beforeReleaseListed;
-    const text = run(() => {
-      const releaseDate = rule.dateControlEnabled ? rule.release.date : null;
-      if (releaseDate) {
-        return listed ? 'Listed before release' : 'Hidden before release';
-      }
-      if (rule.prairieTestExams.length > 0) {
-        return listed ? 'Listed before exam' : 'Hidden before exam';
-      }
-      return listed ? 'Always listed' : 'Always hidden';
-    });
-    items.push({
-      key: 'before-release',
-      icon: listed ? 'bi-eye' : 'bi-eye-slash',
-      text,
-    });
-  }
-
-  if (isOverrideFieldActive(rule, 'durationMinutes')) {
-    const durationMinutes = rule.durationMinutes;
-    if (durationMinutes !== null) {
-      const error = formErrors?.durationMinutes?.message;
-      items.push({
-        key: 'duration',
-        icon: 'bi-clock',
-        text: error ? 'Missing time limit' : `${durationMinutes} minutes`,
-        error,
-      });
-    }
-  }
-
-  if (isOverrideFieldActive(rule, 'password')) {
-    const password = rule.password;
-    if (password !== null) {
-      const error = formErrors?.password?.message;
-      items.push({
-        key: 'password',
-        icon: 'bi-lock',
-        text: error ? 'Missing password' : 'Password protected',
-        error,
-      });
-    }
-  }
-
-  const isDefault = isDefaultRuleData(rule);
-  const hasDateControl = isDefault ? rule.dateControlEnabled : false;
-  const hasPrairieTest = isDefault ? rule.prairieTestExams.length > 0 : false;
+  formErrors?: DefaultRuleFormErrors,
+): AfterCompleteTableRow[] {
+  const hasDateControl = rule.dateControlEnabled;
+  const hasPrairieTest = rule.prairieTestExams.length > 0;
   const showAfterComplete = hasDateControl || hasPrairieTest;
 
   const qvNonDefault = isNonDefaultQuestionVisibility(rule.questionVisibility);
   const svNonDefault = isNonDefaultScoreVisibility(rule.scoreVisibility);
+  const showQuestions = showAfterComplete || qvNonDefault;
+  const showScore = showAfterComplete || svNonDefault;
 
-  if ((showAfterComplete || qvNonDefault) && isOverrideFieldActive(rule, 'questionVisibility')) {
-    const qv = rule.questionVisibility;
-    const qvError =
-      formErrors?.questionVisibility?.visibleFromDate?.message ||
-      formErrors?.questionVisibility?.visibleUntilDate?.message ||
-      formErrors?.questionVisibility?.message;
-    if (!qv.hidden) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye',
-        text: 'Questions visible after completion',
-        error: qvError,
-      });
-    } else if (qv.visibleFromDate && qv.visibleUntilDate) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Questions hidden after completion, shown{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-            {' – '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: qvError,
-      });
-    } else if (qv.visibleFromDate) {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Questions hidden after completion until{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: qvError,
-      });
-    } else {
-      items.push({
-        key: 'question-visibility',
-        icon: 'bi-eye-slash',
-        text: 'Questions hidden after completion',
-        error: qvError,
-      });
+  if (!showQuestions && !showScore) return [];
+
+  const qv = rule.questionVisibility;
+  const sv = rule.scoreVisibility;
+  const errors = [
+    formErrors?.questionVisibility?.visibleFromDate?.message,
+    formErrors?.questionVisibility?.visibleUntilDate?.message,
+    formErrors?.questionVisibility?.message,
+    formErrors?.scoreVisibility?.visibleFromDate?.message,
+    formErrors?.scoreVisibility?.message,
+  ].filter((error): error is string => !!error);
+
+  let questionsVisible = !qv.hidden;
+  let scoreVisible = !sv.hidden;
+  const rows: AfterCompleteTableRow[] = [
+    {
+      key: 'immediately',
+      timeRange: 'Immediately after completion',
+      questionsVisible,
+      scoreVisible,
+      errors,
+    },
+  ];
+
+  const events = buildAfterCompleteVisibilityEvents(rule);
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    if (event.questionsVisible !== undefined) questionsVisible = event.questionsVisible;
+    if (event.scoreVisible !== undefined) scoreVisible = event.scoreVisible;
+    while (events[i + 1]?.date === event.date) {
+      i++;
+      const nextEvent = events[i];
+      if (nextEvent.questionsVisible !== undefined) questionsVisible = nextEvent.questionsVisible;
+      if (nextEvent.scoreVisible !== undefined) scoreVisible = nextEvent.scoreVisible;
     }
-  }
-  if ((showAfterComplete || svNonDefault) && isOverrideFieldActive(rule, 'scoreVisibility')) {
-    const sv = rule.scoreVisibility;
-    const svError =
-      formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
-    if (sv.hidden && sv.visibleFromDate) {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye-slash',
-        text: (
-          <>
-            Score hidden after completion until{' '}
-            <FriendlyDate
-              date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
-              timezone={displayTimezone}
-              options={{ includeTz: false }}
-              tooltip
-            />
-          </>
-        ),
-        error: svError,
-      });
-    } else if (sv.hidden) {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye-slash',
-        text: 'Score hidden after completion',
-        error: svError,
-      });
-    } else {
-      items.push({
-        key: 'score-visibility',
-        icon: 'bi-eye',
-        text: 'Score visible after completion',
-        error: svError,
-      });
-    }
+    rows.push({
+      key: `after-${event.date || i}`,
+      timeRange: <AfterCompleteTimeRange date={event.date} displayTimezone={displayTimezone} />,
+      questionsVisible,
+      scoreVisible,
+    });
   }
 
-  return items;
+  return rows;
 }
 
 interface OverrideFieldItem {
@@ -518,7 +526,8 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
+  if (afterLastDeadline == null) return 'No access';
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
@@ -528,11 +537,58 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push('submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
   } else {
-    parts.push('closed');
+    parts.push('Closed');
   }
   return parts.join(', ');
+}
+
+function HiddenAfterCompletionVisibility({
+  visibleFromDate,
+  visibleUntilDate,
+  displayTimezone,
+}: {
+  visibleFromDate?: string;
+  visibleUntilDate?: string;
+  displayTimezone: string;
+}) {
+  if (visibleFromDate && visibleUntilDate) {
+    return (
+      <>
+        Hidden after completion; visible from{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleFromDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />{' '}
+        until{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleUntilDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      </>
+    );
+  }
+
+  if (visibleFromDate) {
+    return (
+      <>
+        Hidden after completion; visible starting{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(visibleFromDate)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+          tooltip
+        />
+      </>
+    );
+  }
+
+  return 'Hidden after completion';
 }
 
 function generateOverrideFieldItems(
@@ -638,7 +694,7 @@ function generateOverrideFieldItems(
   if (overriddenFields.has('password')) {
     items.push({
       label: 'Password',
-      value: rule.password ? 'Password protected' : 'No password',
+      value: rule.password ? 'Required to start or submit' : 'No password',
       error: formErrors?.password?.message,
     });
   }
@@ -650,56 +706,21 @@ function generateOverrideFieldItems(
       formErrors?.questionVisibility?.visibleUntilDate?.message ||
       formErrors?.questionVisibility?.message;
     if (qv.hidden) {
-      if (qv.visibleFromDate && qv.visibleUntilDate) {
-        items.push({
-          label: 'Question visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-              , hidden again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleUntilDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: qvError,
-        });
-      } else if (qv.visibleFromDate) {
-        items.push({
-          label: 'Question visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(qv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: qvError,
-        });
-      } else {
-        items.push({
-          label: 'Question visibility',
-          value: 'Questions hidden after completion',
-          error: qvError,
-        });
-      }
+      items.push({
+        label: 'Question visibility',
+        value: (
+          <HiddenAfterCompletionVisibility
+            visibleFromDate={qv.visibleFromDate}
+            visibleUntilDate={qv.visibleUntilDate}
+            displayTimezone={displayTimezone}
+          />
+        ),
+        error: qvError,
+      });
     } else {
       items.push({
         label: 'Question visibility',
-        value: 'Questions visible after completion',
+        value: 'Visible after completion',
         error: qvError,
       });
     }
@@ -710,33 +731,20 @@ function generateOverrideFieldItems(
     const svError =
       formErrors?.scoreVisibility?.visibleFromDate?.message || formErrors?.scoreVisibility?.message;
     if (sv.hidden) {
-      if (sv.visibleFromDate) {
-        items.push({
-          label: 'Score visibility',
-          value: (
-            <>
-              Hidden, shown again{' '}
-              <FriendlyDate
-                date={Temporal.PlainDateTime.from(sv.visibleFromDate)}
-                timezone={displayTimezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            </>
-          ),
-          error: svError,
-        });
-      } else {
-        items.push({
-          label: 'Score visibility',
-          value: 'Score hidden after completion',
-          error: svError,
-        });
-      }
+      items.push({
+        label: 'Score visibility',
+        value: (
+          <HiddenAfterCompletionVisibility
+            visibleFromDate={sv.visibleFromDate}
+            displayTimezone={displayTimezone}
+          />
+        ),
+        error: svError,
+      });
     } else {
       items.push({
         label: 'Score visibility',
-        value: 'Score visible after completion',
+        value: 'Visible after completion',
         error: svError,
       });
     }
@@ -785,101 +793,225 @@ function CreditBadge({ credit }: { credit: string }) {
   if (!credit) return null;
 
   const numericValue = Number.parseInt(credit, 10);
-  let className: string;
+  let variant: SummaryBadgeVariant;
 
   if (Number.isNaN(numericValue)) {
-    className = 'bg-body-tertiary text-body-secondary';
+    variant = 'muted';
   } else if (numericValue > 100) {
-    className = 'bg-info-subtle text-info-emphasis';
+    variant = 'info';
   } else if (numericValue === 100) {
-    className = 'bg-success-subtle text-success-emphasis';
+    variant = 'success';
   } else if (numericValue === 0) {
-    className = 'bg-danger-subtle text-danger-emphasis';
+    variant = 'danger';
   } else {
-    className = 'bg-warning-subtle text-warning-emphasis';
+    variant = 'warning';
   }
 
-  return <span className={`badge rounded-pill fw-medium ${className}`}>{credit}</span>;
+  return <SummaryBadge variant={variant}>{credit}</SummaryBadge>;
 }
 
 function YesNoBadge({ value }: { value: boolean | null }) {
   if (value === null) {
     return <span className="text-body-secondary">—</span>;
   }
-  const className = value
-    ? 'bg-success-subtle text-success-emphasis'
-    : 'bg-warning-subtle text-warning-emphasis';
   return (
-    <span className={`badge rounded-pill fw-medium ${className}`}>{value ? 'Yes' : 'No'}</span>
+    <SummaryBadge variant={value ? 'success' : 'warning'}>{value ? 'Yes' : 'No'}</SummaryBadge>
   );
 }
 
-export function DateTableView({ rows }: { rows: DateTableRow[] }) {
-  if (rows.length === 0) return null;
+function SummaryCardHeader({
+  icon,
+  title,
+  headingId,
+}: {
+  icon: string;
+  title: string;
+  headingId: string;
+}) {
   return (
-    <div
-      className="border rounded-top overflow-hidden"
-      style={{ borderColor: 'var(--bs-border-color)' }}
-    >
-      <table className="table table-sm mb-0">
-        <thead>
-          <tr>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
-              style={thStyle}
+    <div className="access-summary-card-header">
+      <i className={`bi ${icon} text-body-secondary`} aria-hidden="true" />
+      <h6 id={headingId}>{title}</h6>
+    </div>
+  );
+}
+
+const DATE_CONTROL_HEADING_ID = 'access-summary-heading-date-control';
+const PRAIRIE_TEST_HEADING_ID = 'access-summary-heading-prairie-test';
+const AFTER_COMPLETION_HEADING_ID = 'access-summary-heading-after-completion';
+
+export function DateTableView({
+  rows,
+  rule,
+  formErrors,
+}: {
+  rows: DateTableRow[];
+  rule: DefaultRuleData;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
+}) {
+  // The footer (time limit, password) renders inside this table, so it only
+  // appears when the table itself does. That's intentional: setting either
+  // field flips `dateControlEnabled` to true, which always produces at least
+  // one row (a "No due date" row, if nothing else).
+  if (rows.length === 0) return null;
+
+  const footerItems: ReactNode[] = [];
+  if (rule.durationMinutes != null) {
+    const error = formErrors?.durationMinutes?.message;
+    if (!error) {
+      footerItems.push(`${rule.durationMinutes} min time limit`);
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing time limit
+        </span>,
+      );
+    }
+  }
+  if (rule.password != null) {
+    const error = formErrors?.password?.message;
+    if (!error) {
+      footerItems.push('Password required to start or submit');
+    } else {
+      footerItems.push(
+        <span className="text-danger">
+          <i className="bi bi-exclamation-circle" aria-hidden="true" />
+          &nbsp;Missing password
+        </span>,
+      );
+    }
+  }
+
+  return (
+    <div className="access-summary-card access-summary-card--cols-2">
+      <SummaryCardHeader
+        icon="bi-calendar3"
+        title="Date control"
+        headingId={DATE_CONTROL_HEADING_ID}
+      />
+      <div className="access-summary-rows" role="table" aria-labelledby={DATE_CONTROL_HEADING_ID}>
+        <div className="access-summary-row access-summary-row--headers" role="row">
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
+          >
+            Date
+          </div>
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--span-rest"
+            role="columnheader"
+          >
+            Access
+          </div>
+        </div>
+        {rows.map((row, index) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          <div key={index} className="access-summary-row" role="row">
+            <div
+              className={clsx(
+                'access-summary-cell access-summary-cell--first',
+                row.current &&
+                  `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
+              )}
+              role="cell"
             >
-              <i className="bi bi-calendar3 me-1" aria-hidden="true" />
-              Date
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              Credit
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            // eslint-disable-next-line @eslint-react/no-array-index-key
-            <tr key={index}>
-              <td
-                className={clsx(
-                  'border-0 position-relative ps-3',
-                  row.current &&
-                    `assessment-access-date-cell-current assessment-access-date-cell-current-${row.currentVariant ?? 'primary'}`,
+              <div className="text-nowrap">
+                {row.label && (
+                  <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
+                    {row.label}
+                    {row.date ? ':' : ''}
+                  </span>
                 )}
-                style={tdStyle}
-              >
-                <div className="text-nowrap">
-                  {row.label && (
-                    <span className={`me-1 ${row.error ? 'text-danger' : 'text-body-secondary'}`}>
-                      {row.label}
-                      {row.date ? ':' : ''}
-                    </span>
-                  )}
-                  {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+                {row.error ? <span className="text-danger">{row.date}</span> : row.date}
+              </div>
+              {row.error && (
+                <div className="text-danger small">
+                  <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                  {row.error}
                 </div>
-                {row.error && (
-                  <div className="text-danger small">
-                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                    {row.error}
-                  </div>
-                )}
-              </td>
-              <td className="border-0" style={tdStyle}>
-                <CreditBadge credit={row.credit} />
-              </td>
-            </tr>
+              )}
+            </div>
+            <div className="access-summary-cell access-summary-cell--span-rest" role="cell">
+              <CreditBadge credit={row.access} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {footerItems.length > 0 && (
+        <div className="access-summary-card-footer">
+          {footerItems.map((item, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <Fragment key={index}>
+              <span>{item}</span>
+              {index < footerItems.length - 1 && <span className="mx-1">·</span>}
+            </Fragment>
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[] }) {
+  if (rows.length === 0) return null;
+  const errors = Array.from(new Set(rows.flatMap((row) => row.errors ?? [])));
+  return (
+    <div className="access-summary-card access-summary-card--cols-3">
+      <SummaryCardHeader
+        icon="bi-check2-circle"
+        title="After completion"
+        headingId={AFTER_COMPLETION_HEADING_ID}
+      />
+      <div
+        className="access-summary-rows"
+        role="table"
+        aria-labelledby={AFTER_COMPLETION_HEADING_ID}
+      >
+        <div className="access-summary-row access-summary-row--headers" role="row">
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
+          >
+            Time range
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Question visibility
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Score visibility
+          </div>
+        </div>
+        {rows.map((row) => (
+          <div key={row.key} className="access-summary-row" role="row">
+            <div className="access-summary-cell access-summary-cell--first" role="cell">
+              {row.timeRange}
+            </div>
+            <div className="access-summary-cell text-nowrap" role="cell">
+              <VisibilityBadge visible={row.questionsVisible} />
+            </div>
+            <div className="access-summary-cell text-nowrap" role="cell">
+              <VisibilityBadge visible={row.scoreVisible} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {errors.length > 0 && (
+        <div className="access-summary-card-footer text-danger">
+          {errors.map((error) => (
+            <div key={error}>
+              <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 interface CurrentIndicator {
-  variant: 'success' | 'primary';
+  variant: 'success' | 'primary' | 'secondary';
   icon: string;
   text: ReactNode;
 }
@@ -931,6 +1063,10 @@ function buildDefaultRuleCurrentIndicator(
     };
   }
 
+  if (!segment.accessible) {
+    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
+  }
+
   if (!segment.submittable) {
     return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
   }
@@ -964,7 +1100,7 @@ export function DefaultRuleCurrentIndicator({
   if (!indicator) return null;
   return (
     <div
-      className={`d-flex align-items-center gap-2 px-3 py-2 rounded mb-2 bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
+      className={`d-flex align-items-center gap-2 px-3 py-2 rounded bg-${indicator.variant}-subtle text-${indicator.variant}-emphasis`}
       role="status"
     >
       <i className={`bi ${indicator.icon}`} aria-hidden="true" />
@@ -975,29 +1111,20 @@ export function DefaultRuleCurrentIndicator({
   );
 }
 
-const thStyle = {
-  fontSize: '0.75rem',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  paddingTop: '0.5rem',
-  paddingBottom: '0.5rem',
-};
-
-const tdStyle = {
-  paddingTop: '0.5rem',
-  paddingBottom: '0.5rem',
-};
-
 export function PrairieTestExamsTable({
   exams,
+  beforeReleaseListed,
   initialMetadata,
   ptHost,
   formErrors,
+  canFetchMetadata,
 }: {
   exams: DefaultRuleData['prairieTestExams'];
+  beforeReleaseListed: boolean;
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
   formErrors?: FieldErrors<DefaultRuleData>;
+  canFetchMetadata: boolean;
 }) {
   const trpc = useTRPC();
 
@@ -1015,7 +1142,7 @@ export function PrairieTestExamsTable({
   // metadata until the first query result lands.
   const { data: metadata } = useQuery({
     ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
-    enabled: validExamUuids.length > 0,
+    enabled: canFetchMetadata && validExamUuids.length > 0,
     initialData: initialMetadata,
   });
 
@@ -1024,86 +1151,82 @@ export function PrairieTestExamsTable({
   const metadataByUuid = new Map(metadata.map((m) => [m.uuid.toLowerCase(), m]));
 
   return (
-    <div
-      className="border rounded overflow-hidden"
-      style={{ borderColor: 'var(--bs-border-color)' }}
-    >
-      <table className="table table-sm mb-0">
-        <thead>
-          <tr>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom ps-3"
-              style={thStyle}
-            >
-              <i className="bi bi-pc-display me-1" aria-hidden="true" />
-              PrairieTest exams
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              Allows submissions
-            </th>
-            <th
-              className="fw-semibold text-body-secondary text-nowrap border-bottom"
-              style={thStyle}
-            >
-              After completion
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {exams.map((exam, index) => {
-            const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
-            const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
-            const examLink =
-              meta?.pt_course_id && meta.pt_exam_id
-                ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
-                : null;
-            const examName =
-              meta?.pt_course_name && meta.pt_exam_name
-                ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
-                : null;
+    <div className="access-summary-card access-summary-card--cols-3">
+      <SummaryCardHeader
+        icon="bi-pc-display"
+        title="PrairieTest"
+        headingId={PRAIRIE_TEST_HEADING_ID}
+      />
+      <div className="access-summary-rows" role="table" aria-labelledby={PRAIRIE_TEST_HEADING_ID}>
+        <div className="access-summary-row access-summary-row--headers" role="row">
+          <div
+            className="access-summary-cell access-summary-cell--header access-summary-cell--first"
+            role="columnheader"
+          >
+            Exam
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            Allows submissions
+          </div>
+          <div className="access-summary-cell access-summary-cell--header" role="columnheader">
+            After completion
+          </div>
+        </div>
+        {exams.map((exam, index) => {
+          const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
+          const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
+          const examLink =
+            meta?.pt_course_id && meta.pt_exam_id
+              ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
+              : null;
+          const examName =
+            meta?.pt_course_name && meta.pt_exam_name
+              ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
+              : null;
 
-            return (
-              // We don't use UUID as they might be duplicated in the list.
-              // eslint-disable-next-line @eslint-react/no-array-index-key
-              <tr key={index}>
-                <td className="border-0" style={{ ...tdStyle, paddingLeft: '1rem' }}>
-                  {uuidError ? (
-                    <span className="text-danger">
-                      <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
-                      {uuidError}
-                    </span>
-                  ) : examName && examLink ? (
-                    <a href={examLink} target="_blank" rel="noopener noreferrer">
-                      {examName}
-                    </a>
-                  ) : (
-                    <span className="text-body-secondary">Unknown exam</span>
-                  )}
-                </td>
-                <td className="border-0 text-nowrap" style={tdStyle}>
-                  <YesNoBadge value={!exam.readOnly} />
-                </td>
-                <td className="border-0 text-nowrap" style={tdStyle}>
-                  {run(() => {
-                    if (exam.readOnly) return <>&mdash;</>;
+          return (
+            // We don't use UUID as they might be duplicated in the list.
+            // eslint-disable-next-line @eslint-react/no-array-index-key
+            <div key={index} className="access-summary-row" role="row">
+              <div className="access-summary-cell access-summary-cell--first" role="cell">
+                {uuidError ? (
+                  <span className="text-danger">
+                    <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+                    {uuidError}
+                  </span>
+                ) : examName && examLink ? (
+                  <a href={examLink} target="_blank" rel="noopener noreferrer">
+                    {examName}
+                  </a>
+                ) : (
+                  <span className="text-body-secondary">Unknown exam</span>
+                )}
+              </div>
+              <div className="access-summary-cell text-nowrap" role="cell">
+                <YesNoBadge value={!exam.readOnly} />
+              </div>
+              <div className="access-summary-cell text-nowrap" role="cell">
+                {run(() => {
+                  if (exam.readOnly) return <>&mdash;</>;
 
-                    if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
-                      return 'Questions and score hidden';
-                    } else if (exam.afterCompleteQuestionsHidden) {
-                      return 'Questions hidden';
-                    } else {
-                      return 'Questions and score visible';
-                    }
-                  })}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
+                    return 'Questions and score hidden';
+                  } else if (exam.afterCompleteQuestionsHidden) {
+                    return 'Questions hidden';
+                  } else {
+                    return 'Questions and score visible';
+                  }
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="access-summary-card-footer">
+        <span>{formatListedForStudents(beforeReleaseListed)} before the exam</span>
+        <span className="mx-1">·</span>
+        <span>PrairieTest controls access and time limits during reservations</span>
+      </div>
     </div>
   );
 }
@@ -1117,6 +1240,7 @@ export function OverrideRuleSummaryCard({
   formErrors,
   dragHandleProps,
   isActive = false,
+  canEdit = true,
 }: {
   rule: OverrideData;
   title: string;
@@ -1126,6 +1250,7 @@ export function OverrideRuleSummaryCard({
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
   isActive?: boolean;
+  canEdit?: boolean;
 }) {
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
@@ -1169,13 +1294,25 @@ export function OverrideRuleSummaryCard({
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEdit && (
-            <Button variant="outline-primary" size="sm" aria-label="Edit" onClick={onEdit}>
-              <i className="bi bi-pencil" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Edit</span>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              aria-label={canEdit ? 'Edit' : 'View'}
+              className="d-inline-flex align-items-center"
+              onClick={onEdit}
+            >
+              <i className={canEdit ? 'bi bi-pencil' : 'bi bi-eye'} aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">{canEdit ? 'Edit' : 'View'}</span>
             </Button>
           )}
           {onRemove && (
-            <Button variant="outline-danger" size="sm" aria-label="Remove" onClick={onRemove}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              aria-label="Remove"
+              className="d-inline-flex align-items-center"
+              onClick={onRemove}
+            >
               <i className="bi bi-trash" aria-hidden="true" />
               <span className="toolbar-btn-label ms-1">Remove</span>
             </Button>

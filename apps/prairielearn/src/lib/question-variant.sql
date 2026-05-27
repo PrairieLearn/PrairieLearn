@@ -31,64 +31,51 @@ RETURNING
   id;
 
 -- BLOCK insert_variant
-WITH
-  new_variant AS (
-    INSERT INTO
-      variants (
-        instance_question_id,
-        question_id,
-        course_instance_id,
-        user_id,
-        team_id,
-        number,
-        variant_seed,
-        params,
-        true_answer,
-        options,
-        preferences,
-        broken,
-        broken_at,
-        authn_user_id,
-        workspace_id,
-        course_id,
-        client_fingerprint_id
-      )
-    VALUES
-      (
-        $instance_question_id,
-        $question_id,
-        $course_instance_id,
-        $user_id,
-        $group_id,
-        $number,
-        $variant_seed,
-        $params,
-        $true_answer,
-        $options,
-        $preferences,
-        $broken,
-        CASE
-          WHEN $broken THEN NOW()
-          ELSE NULL
-        END,
-        $authn_user_id,
-        $workspace_id,
-        $course_id,
-        $client_fingerprint_id
-      )
-    RETURNING
-      *
+INSERT INTO
+  variants (
+    instance_question_id,
+    question_id,
+    course_instance_id,
+    user_id,
+    team_id,
+    number,
+    variant_seed,
+    params,
+    true_answer,
+    options,
+    preferences,
+    broken,
+    broken_at,
+    authn_user_id,
+    workspace_id,
+    course_id,
+    client_fingerprint_id
   )
-SELECT
-  v.*,
-  format_date_full_compact (
-    v.date,
-    COALESCE(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date
-FROM
-  new_variant AS v
-  JOIN courses AS c ON (c.id = v.course_id)
-  LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
+VALUES
+  (
+    $instance_question_id,
+    $question_id,
+    $course_instance_id,
+    $user_id,
+    $group_id,
+    $number,
+    $variant_seed,
+    $params,
+    $true_answer,
+    $options,
+    $preferences,
+    $broken,
+    CASE
+      WHEN $broken THEN NOW()
+      ELSE NULL
+    END,
+    $authn_user_id,
+    $workspace_id,
+    $course_id,
+    $client_fingerprint_id
+  )
+RETURNING
+  *;
 
 -- BLOCK select_and_lock_assessment_instance_for_instance_question
 SELECT
@@ -103,11 +90,9 @@ FOR NO KEY UPDATE OF
 
 -- BLOCK select_variant_for_instance_question
 SELECT
-  v.*,
-  format_date_full_compact (v.date, ci.display_timezone) AS formatted_date
+  v.*
 FROM
   variants AS v
-  JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
 WHERE
   v.instance_question_id = $instance_question_id
   AND (

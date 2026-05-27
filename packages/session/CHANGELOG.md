@@ -1,5 +1,17 @@
 # @prairielearn/session
 
+## 4.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 4.0.3
 
 ### Patch Changes

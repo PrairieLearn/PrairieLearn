@@ -11,6 +11,7 @@ import {
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
@@ -28,7 +29,8 @@ const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMod
   {
     value: 'show_score_only',
     label: 'Show score only',
-    description: 'Students see their score but not the questions while the reservation is active',
+    description:
+      'Students see their score but not the questions after finishing while the reservation is still active',
   },
   {
     value: 'hide_questions_and_score',
@@ -48,6 +50,7 @@ function getAfterCompleteVisibilityMode(
 }
 
 function ExamAfterCompleteFields({ index }: { index: number }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const { field: questionsHiddenField } = useController<
     AccessControlFormData,
     `defaultRule.prairieTestExams.${number}.afterCompleteQuestionsHidden`
@@ -68,6 +71,9 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
   });
 
   const mode = getAfterCompleteVisibilityMode(questionsHiddenField.value, scoreHiddenField.value);
+  const selectedDescription = AFTER_COMPLETE_VISIBILITY_ITEMS.find(
+    (item) => item.value === mode,
+  )?.description;
 
   const handleModeChange = (newMode: AfterCompleteVisibilityMode) => {
     questionsHiddenField.onChange(newMode !== 'show_questions_and_score');
@@ -77,7 +83,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
   return (
     <div className="mt-3">
       <Form.Label className="fw-bold" htmlFor={`defaultRule-exam-after-complete-${index}`}>
-        After completion (during reservation)
+        After completion
       </Form.Label>
       <RichSelect
         items={AFTER_COMPLETE_VISIBILITY_ITEMS}
@@ -85,9 +91,12 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
         aria-label="After completion visibility during reservation"
         id={`defaultRule-exam-after-complete-${index}`}
         minWidth={300}
-        disabled={readOnly}
+        disabled={!ruleEditable || readOnly}
         onChange={handleModeChange}
       />
+      {!readOnly && selectedDescription && (
+        <Form.Text className="text-muted d-block">{selectedDescription}</Form.Text>
+      )}
       {readOnly && (
         <Form.Text className="text-muted d-block">
           Questions and scores are always shown during read-only reservations.
@@ -98,6 +107,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
 }
 
 export function PrairieTestControlForm() {
+  const ruleEditable = useAccessControlRuleEditable();
   const { register, setValue, trigger } = useFormContext<AccessControlFormData>();
 
   const {
@@ -141,15 +151,17 @@ export function PrairieTestControlForm() {
           <Form.Group className="mb-3" controlId={`defaultRule-exam-uuid-${index}`}>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <Form.Label className="mb-0">Exam UUID</Form.Label>
-              <Button
-                size="sm"
-                variant="outline-danger"
-                aria-label={`Remove exam ${index + 1}`}
-                onClick={() => removeExam(index)}
-              >
-                <i className="bi bi-trash me-1" aria-hidden="true" />
-                Remove
-              </Button>
+              {ruleEditable && (
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  aria-label={`Remove exam ${index + 1}`}
+                  onClick={() => removeExam(index)}
+                >
+                  <i className="bi bi-trash me-1" aria-hidden="true" />
+                  Remove
+                </Button>
+              )}
             </div>
             <Form.Control
               type="text"
@@ -160,6 +172,7 @@ export function PrairieTestControlForm() {
               }
               aria-describedby={`defaultRule-exam-uuid-${index}-help`}
               defaultValue=""
+              disabled={!ruleEditable}
               placeholder="e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c"
               {...register(`defaultRule.prairieTestExams.${index}.examUuid`, {
                 required: 'Exam UUID is required',
@@ -197,6 +210,7 @@ export function PrairieTestControlForm() {
               id={`defaultRule-exam-readonly-${index}`}
               label="Read-only mode"
               defaultChecked={false}
+              disabled={!ruleEditable}
               {...register(`defaultRule.prairieTestExams.${index}.readOnly`, {
                 onChange: (e: ChangeEvent<HTMLInputElement>) => {
                   if (e.target.checked) {
@@ -226,23 +240,25 @@ export function PrairieTestControlForm() {
           <ExamAfterCompleteFields index={index} />
         </div>
       ))}
-      <Button
-        size="sm"
-        variant="outline-primary"
-        onClick={() => {
-          appendExam({
-            examUuid: '',
-            readOnly: false,
-            afterCompleteQuestionsHidden: false,
-            afterCompleteScoreHidden: false,
-          });
-          // Trigger validation so the empty UUID error shows immediately.
-          void trigger('defaultRule.prairieTestExams');
-        }}
-      >
-        <i className="bi bi-plus-circle me-1" aria-hidden="true" />
-        Add exam
-      </Button>
+      {ruleEditable && (
+        <Button
+          size="sm"
+          variant="outline-primary"
+          onClick={() => {
+            appendExam({
+              examUuid: '',
+              readOnly: false,
+              afterCompleteQuestionsHidden: false,
+              afterCompleteScoreHidden: false,
+            });
+            // Trigger validation so the empty UUID error shows immediately.
+            void trigger('defaultRule.prairieTestExams');
+          }}
+        >
+          <i className="bi bi-plus-circle me-1" aria-hidden="true" />
+          Add exam
+        </Button>
+      )}
     </div>
   );
 }

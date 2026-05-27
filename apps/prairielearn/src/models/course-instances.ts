@@ -34,10 +34,6 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
   start_date: DateFromISOString.nullable(),
   /** The latest end date of an access rule. */
   end_date: DateFromISOString.nullable(),
-  /** @deprecated Use start_date instead. */
-  formatted_start_date: z.string(),
-  /** @deprecated Use end_date instead. */
-  formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
 });

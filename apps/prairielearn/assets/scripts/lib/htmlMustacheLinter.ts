@@ -1,20 +1,20 @@
+import { type Formatter, createFormatter } from '@reteps/tree-sitter-htmlmustache/formatter';
 import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/browser';
+} from '@reteps/tree-sitter-htmlmustache/linter';
 import type ace from 'ace-builds';
 
-import { htmlMustacheConfig } from './htmlMustacheConfig.js';
+import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
 const RUNTIME_WASM_FILENAME = 'web-tree-sitter.wasm';
 
 let linterPromise: Promise<Linter> | null = null;
+let formatterPromise: Promise<Formatter> | null = null;
 
-function getLinter(): Promise<Linter> {
-  if (linterPromise) return linterPromise;
-
+function locateWasm(name: string): string {
   const grammarWasm = document
     .querySelector('meta[name="htmlmustache-grammar-wasm"]')
     ?.getAttribute('content');
@@ -23,17 +23,30 @@ function getLinter(): Promise<Linter> {
     ?.getAttribute('content');
 
   if (!grammarWasm || !runtimeWasm) {
-    return Promise.reject(new Error('Missing htmlmustache wasm meta tags'));
+    throw new Error('Missing htmlmustache wasm meta tags');
   }
 
+  if (name === GRAMMAR_WASM_FILENAME) return grammarWasm;
+  if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
+  return name;
+}
+
+function getLinter(): Promise<Linter> {
+  if (linterPromise) return linterPromise;
+
   linterPromise = createLinter({
-    locateWasm: (name) => {
-      if (name === GRAMMAR_WASM_FILENAME) return grammarWasm;
-      if (name === RUNTIME_WASM_FILENAME) return runtimeWasm;
-      return name;
-    },
+    locateWasm,
   });
   return linterPromise;
+}
+
+function getFormatter(): Promise<Formatter> {
+  if (formatterPromise) return formatterPromise;
+
+  formatterPromise = createFormatter({
+    locateWasm,
+  });
+  return formatterPromise;
 }
 
 function diagnosticsToAnnotations(diagnostics: Diagnostic[]): ace.Ace.Annotation[] {
@@ -80,9 +93,9 @@ export function attachHtmlMustacheLinter({
     });
     reformatButton.addEventListener('click', async () => {
       try {
-        const linter = await getLinter();
+        const formatter = await getFormatter();
         const cursor = editor.getCursorPosition();
-        const formatted = await linter.format(editor.getValue(), htmlMustacheConfig);
+        const formatted = await formatter.format(editor.getValue(), htmlMustacheConfig);
         // Use setValue (not session.setValue) so the change is added to the undo stack.
         editor.setValue(formatted, -1);
         editor.moveCursorToPosition(cursor);

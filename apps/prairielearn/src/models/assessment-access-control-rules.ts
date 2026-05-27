@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { callScalar, execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callScalar, execute, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -42,6 +42,7 @@ export interface EnrollmentAccessControlRuleData {
   dueCredit: number | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
+  afterLastDeadlineOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
   afterLastDeadlineCredit: number | null;
   durationMinutesOverridden: boolean;
@@ -120,7 +121,20 @@ function dbBaseRowToAccessControlJson(
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
-  if (allowSubmissions === true) {
+  if (rule.date_control_after_last_deadline_overridden) {
+    if (allowSubmissions === true) {
+      const credit = rule.date_control_after_last_deadline_credit;
+      dateControl.afterLastDeadline = {
+        allowSubmissions,
+        ...(credit != null ? { credit } : {}),
+      };
+    } else if (allowSubmissions === false) {
+      dateControl.afterLastDeadline = { allowSubmissions };
+    } else {
+      dateControl.afterLastDeadline = null;
+    }
+  } else if (allowSubmissions === true) {
+    // Legacy rows written before the overridden flag was added.
     const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
@@ -241,7 +255,7 @@ export function dbRowToAccessControlJson(
 
 export async function selectAccessControlRules(
   assessment: Assessment,
-  targetTypes: AccessControlTargetType[] = ['none', 'student_label', 'enrollment'],
+  targetTypes: AccessControlTargetType[],
 ): Promise<AccessControlJsonWithRequiredId[]> {
   const rows = await queryRows(
     sql.select_access_control_rules,
@@ -249,6 +263,14 @@ export async function selectAccessControlRules(
     RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
+}
+
+export async function countEnrollmentAccessControlRules(assessment: Assessment): Promise<number> {
+  return await queryScalar(
+    sql.count_enrollment_access_control_rules,
+    { assessment_id: assessment.id },
+    z.number(),
+  );
 }
 
 const PrairieTestExamMetadataSchema = z.object({
@@ -289,8 +311,13 @@ export async function syncEnrollmentAccessControl(
     date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
-    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
-    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineCredit,
+    date_control_after_last_deadline_overridden: ruleData.afterLastDeadlineOverridden,
+    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineOverridden
+      ? ruleData.afterLastDeadlineAllowSubmissions
+      : null,
+    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineOverridden
+      ? ruleData.afterLastDeadlineCredit
+      : null,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,

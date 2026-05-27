@@ -114,7 +114,6 @@ const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/se
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
@@ -142,12 +141,6 @@ const findEditUrlData = [
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
-  },
-  {
-    name: 'instance admin',
-    selector: '[data-testid="edit-course-instance-configuration-link"]',
-    url: courseInstanceInstanceAdminSettingsUrl,
-    expectedEditUrl: courseInstanceInstanceAdminEditUrl,
   },
 ];
 
