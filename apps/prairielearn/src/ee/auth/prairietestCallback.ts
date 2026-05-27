@@ -65,6 +65,9 @@ router.post(
       );
     }
 
+    // LockDown Browser's security level and child-window navigation stem
+    // are set by PrairieTest on the first page of the LDB session, and are persisted, so the
+    // assessment redirect needs no LDB query parameters here.
     const redirectUrl =
       course_instance_id !== undefined && assessment_id !== undefined
         ? getStudentAssessmentUrl(course_instance_id, assessment_id)
