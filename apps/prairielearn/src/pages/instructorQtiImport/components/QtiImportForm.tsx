@@ -787,7 +787,9 @@ export function QtiImportForm({
             onCourseInstanceChange={(id) => {
               setSelectedCourseInstanceId(id);
               const tokens = csrfTokensByCourseInstance[id];
-              setTrpcClient(
+              // The tRPC proxy is callable, so wrap it to prevent React from treating it
+              // as a functional state update.
+              setTrpcClient(() =>
                 createCourseInstanceTrpcClient({
                   csrfToken: tokens.trpc,
                   courseInstanceId: id,
