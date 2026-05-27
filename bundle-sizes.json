@@ -230,14 +230,14 @@
     "brotli": 274505
   },
   "scripts/esm-bundles/hydrated-components/PublicQuestionsTable.ts": {
-    "raw": 1034880,
-    "gzip": 318570,
-    "brotli": 257038
+    "raw": 1035697,
+    "gzip": 318812,
+    "brotli": 257233
   },
   "scripts/esm-bundles/hydrated-components/QtiImportForm.ts": {
-    "raw": 839402,
-    "gzip": 261073,
-    "brotli": 225441
+    "raw": 851381,
+    "gzip": 264275,
+    "brotli": 228270
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
     "raw": 1503999,
@@ -290,9 +290,9 @@
     "brotli": 304805
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
-    "raw": 1071026,
-    "gzip": 330068,
-    "brotli": 267364
+    "raw": 1071894,
+    "gzip": 330323,
+    "brotli": 267602
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
     "raw": 1335363,
