@@ -21,6 +21,7 @@ export function AdministratorInstitutionGeneral({
   availableTimezones,
   statistics,
   planGrants,
+  courseRequestMessage,
   courseRequestMessageHtml,
   resLocals,
 }: {
@@ -28,6 +29,7 @@ export function AdministratorInstitutionGeneral({
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
+  courseRequestMessage: string | null;
   courseRequestMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
@@ -197,17 +199,9 @@ export function AdministratorInstitutionGeneral({
       <form method="POST" class="mb-3">
         <div class="mb-3">
           <label class="form-label" for="course_request_message"> Message (Markdown) </label>
-          <textarea
-            class="form-control font-monospace"
-            id="course_request_message"
-            name="course_request_message"
-            rows="10"
-            aria-describedby="course_request_message_help"
-          >
-${institution.course_request_message ?? ''}</textarea
-          >
+          ${CourseRequestMessageTextarea({ courseRequestMessage })}
           <small id="course_request_message_help" class="form-text text-muted">
-            Leave blank to hide the message from the course request page.
+            Leave blank to avoid showing a message on the course request page.
           </small>
         </div>
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -248,4 +242,13 @@ function StatisticsCard({ title, value }: { title: string; value: HtmlValue }) {
       <span class="text-muted">${title}</span>
     </div>
   `;
+}
+
+function CourseRequestMessageTextarea({
+  courseRequestMessage,
+}: {
+  courseRequestMessage: string | null;
+}): HtmlValue {
+  // prettier-ignore
+  return html`<textarea class="form-control font-monospace" id="course_request_message" name="course_request_message" rows="10" aria-describedby="course_request_message_help">${courseRequestMessage ?? ''}</textarea>`;
 }

@@ -1,13 +1,13 @@
-import { execute } from '@prairielearn/postgres';
+import { updateInstitutionCourseRequestMessage } from '../../models/institution-settings.js';
 
 import { expect, test } from './fixtures.js';
 
 const DEFAULT_INSTITUTION_ID = '1';
 
 async function setCourseRequestMessage(message: string | null): Promise<void> {
-  await execute('UPDATE institutions SET course_request_message = $message WHERE id = $id;', {
-    id: DEFAULT_INSTITUTION_ID,
-    message,
+  await updateInstitutionCourseRequestMessage({
+    institution_id: DEFAULT_INSTITUTION_ID,
+    course_request_message: message,
   });
 }
 

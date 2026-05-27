@@ -1,4 +1,4 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution } from '../../../lib/db-types.js';
@@ -6,10 +6,12 @@ import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export function InstitutionAdminGeneral({
   institution,
+  courseRequestMessage,
   courseRequestMessageHtml,
   resLocals,
 }: {
   institution: Institution;
+  courseRequestMessage: string | null;
   courseRequestMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
@@ -35,17 +37,9 @@ export function InstitutionAdminGeneral({
       <form method="POST" class="mb-4">
         <div class="mb-3">
           <label class="form-label" for="course_request_message"> Message (Markdown) </label>
-          <textarea
-            class="form-control font-monospace"
-            id="course_request_message"
-            name="course_request_message"
-            rows="10"
-            aria-describedby="course_request_message_help"
-          >
-${institution.course_request_message ?? ''}</textarea
-          >
+          ${CourseRequestMessageTextarea({ courseRequestMessage })}
           <small id="course_request_message_help" class="form-text text-muted">
-            Leave blank to hide the message from the course request page.
+            Leave blank to avoid showing a message on the course request page.
           </small>
         </div>
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -69,4 +63,13 @@ ${institution.course_request_message ?? ''}</textarea
         : ''}
     `,
   });
+}
+
+function CourseRequestMessageTextarea({
+  courseRequestMessage,
+}: {
+  courseRequestMessage: string | null;
+}): HtmlValue {
+  // prettier-ignore
+  return html`<textarea class="form-control font-monospace" id="course_request_message" name="course_request_message" rows="10" aria-describedby="course_request_message_help">${courseRequestMessage ?? ''}</textarea>`;
 }

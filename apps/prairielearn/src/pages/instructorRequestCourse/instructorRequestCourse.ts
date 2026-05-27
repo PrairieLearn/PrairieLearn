@@ -21,6 +21,7 @@ import {
   checkCourseShortNameInInstitution,
   checkCourseTitleInInstitution,
 } from '../../models/course.js';
+import { selectInstitutionSettings } from '../../models/institution-settings.js';
 import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
 import { RequestCourse } from './instructorRequestCourse.html.js';
@@ -35,11 +36,10 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const rows = await queryRows(
-      sql.get_requests,
-      { user_id: res.locals.authn_user.id },
-      CourseRequestRowSchema,
-    );
+    const [rows, institutionSettings] = await Promise.all([
+      queryRows(sql.get_requests, { user_id: res.locals.authn_user.id }, CourseRequestRowSchema),
+      selectInstitutionSettings({ institution_id: res.locals.authn_institution.id }),
+    ]);
 
     let lti13Info: Lti13CourseRequestInput = null;
     if (isEnterprise() && 'lti13_claims' in req.session) {
@@ -63,8 +63,9 @@ router.get(
       }
     }
 
-    const institutionMessageHtml = res.locals.authn_institution.course_request_message
-      ? markdownToHtml(res.locals.authn_institution.course_request_message, {
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const institutionMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
           allowHtml: false,
           interpretMath: false,
         })

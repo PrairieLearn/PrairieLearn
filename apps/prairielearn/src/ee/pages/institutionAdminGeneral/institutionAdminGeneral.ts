@@ -3,17 +3,19 @@ import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { InstitutionSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import {
+  selectInstitutionSettings,
+  updateInstitutionCourseRequestMessage,
+} from '../../../models/institution-settings.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 
 import { InstitutionAdminGeneral } from './institutionAdminGeneral.html.js';
 
 const router = Router({ mergeParams: true });
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -24,8 +26,12 @@ router.get(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    const courseRequestMessageHtml = institution.course_request_message
-      ? markdownToHtml(institution.course_request_message, {
+    const institutionSettings = await selectInstitutionSettings({
+      institution_id: institution.id,
+    });
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const courseRequestMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
           allowHtml: false,
           interpretMath: false,
         })
@@ -34,6 +40,7 @@ router.get(
     res.send(
       InstitutionAdminGeneral({
         institution,
+        courseRequestMessage,
         courseRequestMessageHtml,
         resLocals: res.locals,
       }),
@@ -58,21 +65,18 @@ router.post(
           : null;
 
       await runInTransactionAsync(async () => {
-        const updatedInstitution = await queryRow(
-          sql.update_institution_course_request_message,
-          {
-            institution_id: institution.id,
-            course_request_message: newMessage,
-          },
-          InstitutionSchema,
-        );
+        const oldSettings = await selectInstitutionSettings({ institution_id: institution.id });
+        const updatedSettings = await updateInstitutionCourseRequestMessage({
+          institution_id: institution.id,
+          course_request_message: newMessage,
+        });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.id,
-          table_name: 'institutions',
+          table_name: 'institution_settings',
           action: 'update',
           institution_id: institution.id,
-          old_state: institution,
-          new_state: updatedInstitution,
+          old_state: oldSettings,
+          new_state: updatedSettings,
           row_id: institution.id,
         });
       });

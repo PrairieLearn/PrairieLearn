@@ -214,6 +214,7 @@ function CourseNewRequestForm({
                   name="cr-email"
                   id="cr-email"
                   aria-invalid="false"
+                  aria-errormessage="cr-email-warning"
                   placeholder="login@yourinstitution.edu"
                   minlength="1"
                   required
@@ -437,7 +438,7 @@ function CourseNewRequestForm({
         </div>
       </div>
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button class="btn btn-primary" type="submit" disabled>Submit Request</button>
+      <button class="btn btn-primary" type="submit" disabled>Submit request</button>
     </form>
   `;
 }

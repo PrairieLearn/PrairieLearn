@@ -9,6 +9,10 @@ import { InstitutionSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import {
+  selectInstitutionSettings,
+  updateInstitutionCourseRequestMessage,
+} from '../../../models/institution-settings.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForContext,
@@ -35,8 +39,12 @@ router.get(
       InstitutionStatisticsSchema,
     );
     const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
-    const courseRequestMessageHtml = institution.course_request_message
-      ? markdownToHtml(institution.course_request_message, {
+    const institutionSettings = await selectInstitutionSettings({
+      institution_id: req.params.institution_id,
+    });
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const courseRequestMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
           allowHtml: false,
           interpretMath: false,
         })
@@ -47,6 +55,7 @@ router.get(
         availableTimezones,
         statistics,
         planGrants,
+        courseRequestMessage,
         courseRequestMessageHtml,
         resLocals: res.locals,
       }),
@@ -92,22 +101,20 @@ router.post(
           ? req.body.course_request_message
           : null;
       await runInTransactionAsync(async () => {
-        const institution = await getInstitution(req.params.institution_id);
-        const updatedInstitution = await queryRow(
-          sql.update_institution_course_request_message,
-          {
-            institution_id: req.params.institution_id,
-            course_request_message: newMessage,
-          },
-          InstitutionSchema,
-        );
+        const oldSettings = await selectInstitutionSettings({
+          institution_id: req.params.institution_id,
+        });
+        const updatedSettings = await updateInstitutionCourseRequestMessage({
+          institution_id: req.params.institution_id,
+          course_request_message: newMessage,
+        });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.id,
-          table_name: 'institutions',
+          table_name: 'institution_settings',
           action: 'update',
           institution_id: req.params.institution_id,
-          old_state: institution,
-          new_state: updatedInstitution,
+          old_state: oldSettings,
+          new_state: updatedSettings,
           row_id: req.params.institution_id,
         });
       });
