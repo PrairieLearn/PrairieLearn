@@ -1042,6 +1042,78 @@ function nodeModuleDependencyExists(file: string): boolean {
   );
 }
 
+function getNodeModulePackage(file: string): string | null {
+  const parts = file.split('/');
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  if (parts[0].startsWith('@')) {
+    if (parts.length < 2) {
+      return null;
+    }
+
+    return `${parts[0]}/${parts[1]}`;
+  }
+
+  return parts[0];
+}
+
+let prairieLearnPackageDependencies:
+  | {
+      dependencies: Set<string>;
+      devDependencies: Set<string>;
+    }
+  | undefined;
+
+function getPrairieLearnPackageDependencies(): {
+  dependencies: Set<string>;
+  devDependencies: Set<string>;
+} {
+  if (prairieLearnPackageDependencies == null) {
+    const packageJsonPath = path.join(APP_ROOT_PATH, 'package.json');
+    const packageJson = fs.readJsonSync(packageJsonPath);
+
+    prairieLearnPackageDependencies = {
+      dependencies: new Set(Object.keys(packageJson.dependencies ?? {})),
+      devDependencies: new Set(Object.keys(packageJson.devDependencies ?? {})),
+    };
+  }
+  return prairieLearnPackageDependencies;
+}
+
+function validateNodeModulesDependency({
+  file,
+  warnings,
+  checkedPackages,
+}: {
+  file: string;
+  warnings: string[];
+  checkedPackages: Set<string>;
+}) {
+  const packageName = getNodeModulePackage(file);
+
+  if (packageName != null && !checkedPackages.has(packageName)) {
+    checkedPackages.add(packageName);
+
+    const { dependencies, devDependencies } = getPrairieLearnPackageDependencies();
+
+    if (!dependencies.has(packageName)) {
+      if (devDependencies.has(packageName)) {
+        warnings.push(`Node module dependency "${packageName}" is only listed in devDependencies`);
+      } else {
+        warnings.push(
+          `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn`,
+        );
+      }
+    }
+  }
+  if (!nodeModuleDependencyExists(file)) {
+    warnings.push(`Missing dependency file: node_modules/${file}`);
+  }
+}
+
 function validateQuestion({
   question,
   sharingEnabled,
@@ -1178,16 +1250,22 @@ function validateQuestion({
     }
   }
 
+  const checkedNodeModulePackages = new Set<string>();
+
   for (const file of question.dependencies.nodeModulesStyles ?? []) {
-    if (!nodeModuleDependencyExists(file)) {
-      warnings.push(`Missing dependency file: node_modules/${file}`);
-    }
+    validateNodeModulesDependency({
+      file,
+      warnings,
+      checkedPackages: checkedNodeModulePackages,
+    });
   }
 
   for (const file of question.dependencies.nodeModulesScripts ?? []) {
-    if (!nodeModuleDependencyExists(file)) {
-      warnings.push(`Missing dependency file: node_modules/${file}`);
-    }
+    validateNodeModulesDependency({
+      file,
+      warnings,
+      checkedPackages: checkedNodeModulePackages,
+    });
   }
 
   return { warnings, errors };
