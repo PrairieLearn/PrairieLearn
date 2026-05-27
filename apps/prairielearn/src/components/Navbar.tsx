@@ -157,14 +157,14 @@ function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
     authnUserId: resLocals.authn_user.id,
   });
   return html`
-    <a
-      role="button"
+    <button
+      type="button"
       class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
       data-bs-toggle="modal"
       data-bs-target="#endExamModal"
     >
       End exam
-    </a>
+    </button>
     ${EndExamModal({ csrfToken: endExamCsrfToken })}
   `;
 }

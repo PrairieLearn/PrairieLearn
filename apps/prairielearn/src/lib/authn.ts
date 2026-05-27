@@ -141,15 +141,21 @@ export async function loadUser(
       authnParams.provider === 'LTI 1.3' ||
       Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
 
-    const preservedSessionData = inLti13Launch
-      ? ['lti13_claims', 'authn_lti13_instance_id']
-          .map((key) => [key, req.session[key]] as const)
-          .filter(([_, v]) => v !== undefined)
-      : [];
+    // The PrairieTest callback sets lockdown_browser and reservation_id on the
+    // session before calling loadUser (which triggers this regeneration). They
+    // must be carried forward so the LDB end-exam control renders correctly.
+    const inPrairieTestLaunch = authnParams.provider === 'PrairieTest';
+
+    const preservedSessionData = [
+      ...(inLti13Launch ? ['lti13_claims', 'authn_lti13_instance_id'] : []),
+      ...(inPrairieTestLaunch ? ['lockdown_browser', 'reservation_id'] : []),
+    ]
+      .map((key) => [key, req.session[key]] as const)
+      .filter(([_, v]) => v !== undefined);
 
     await req.session.regenerate();
 
-    for (const [key, value] of preservedSessionData) {
+
       req.session[key] = value;
     }
   }
