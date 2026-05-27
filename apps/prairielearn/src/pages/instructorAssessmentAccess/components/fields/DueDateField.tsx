@@ -349,9 +349,14 @@ export function OverrideDueDateField({
     customCredit: customCreditCtrl.field.value,
   };
 
+  // Re-validate when the effective release date changes so the per-field
+  // error message reflects the current release date instead of the value
+  // captured when the validator was first registered. Toggling the `due`
+  // override itself is handled by useOverrideField, so isOverridden is not
+  // a dep here.
   useEffect(() => {
     void trigger(`overrides.${index}.due.date`);
-  }, [index, isOverridden, validationReleaseDate, trigger]);
+  }, [index, validationReleaseDate, trigger]);
 
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);

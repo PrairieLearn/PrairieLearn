@@ -117,6 +117,12 @@ function mapIssueToEditableFormFieldPath(
   if (!path) return null;
   if (isFormFieldPathEditable(formData, path)) return path;
 
+  // The "score hidden while questions visible" rule is a cross-field
+  // constraint between question and score visibility. The default mapping
+  // attaches the issue to question visibility, but on an override the user
+  // can resolve it by editing whichever of the two fields they have
+  // overridden. If only score visibility is overridden, redirect the error
+  // there so it lands on an input the user can actually edit.
   if (
     issue.path[0] === 'afterComplete' &&
     issue.path[1] === 'questions' &&
