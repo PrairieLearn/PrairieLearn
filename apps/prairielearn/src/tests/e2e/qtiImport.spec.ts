@@ -429,10 +429,7 @@ test.describe('QTI Import', () => {
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/instructor/course_admin/questions`);
     await page.getByRole('button', { name: 'Add questions' }).click();
-    await expect(page.getByText('Import content into')).toBeVisible();
-    const link = page
-      .getByRole('link', { name: courseInstance.short_name })
-      .and(page.locator('[href*="qti_import"]'));
+    const link = page.getByRole('link', { name: 'Import questions' });
 
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', /\/instance_admin\/qti_import\?return_to=questions/);
