@@ -1,18 +1,17 @@
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import {
+  MAX_BULK_QUESTION_SELECTION,
+  SafeQuestionsPageDataSchema,
+} from '../../components/QuestionsTable.shared.js';
 import type { Question } from '../../lib/db-types.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
-import { FileModifyEditor, QuestionDeleteEditor } from '../../lib/editors.js';
+import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
   selectAssessmentById,
   selectAssessments,
@@ -22,7 +21,7 @@ import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
-import { selectQuestionsByIdsAndCourseId } from '../../models/question.js';
+import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import type {
   AssessmentJsonInput,
@@ -32,7 +31,6 @@ import type {
 import { throwAppError } from '../app-errors.js';
 
 import {
-  type createContext,
   requireCoursePermissionEdit,
   requireCoursePermissionPreview,
   requireNotExampleCourse,
@@ -63,11 +61,8 @@ export interface QuestionsError {
   DeleteQuestions: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-type AssessmentInfoForEdit = AssessmentJsonInput & Record<string, unknown>;
-type CourseContext = Awaited<ReturnType<typeof createContext>>;
-
 const QuestionIdsInputSchema = z.object({
-  questionIds: z.array(IdSchema).min(1).max(500),
+  questionIds: z.array(IdSchema).min(1).max(MAX_BULK_QUESTION_SELECTION),
 });
 
 function uniqueIds(ids: string[]) {
@@ -103,7 +98,7 @@ async function selectQuestionsForMutation({
   courseId: string;
 }) {
   const uniqueQuestionIds = uniqueIds(questionIds);
-  const selectedQuestions = await selectQuestionsByIdsAndCourseId({
+  const selectedQuestions = await selectLiveQuestionsByIdsAndCourseId({
     question_ids: uniqueQuestionIds,
     course_id: courseId,
   });
@@ -118,7 +113,7 @@ async function selectQuestionsForMutation({
   return uniqueQuestionIds.map((id) => questionById.get(id)!);
 }
 
-async function readAssessmentInfoForEdit({
+async function resolveAssessmentInfoPath({
   assessmentId,
   courseId,
   coursePath,
@@ -126,7 +121,7 @@ async function readAssessmentInfoForEdit({
   assessmentId: string;
   courseId: string;
   coursePath: string;
-}) {
+}): Promise<string> {
   const assessment = await selectAssessmentById(assessmentId);
   assertNonDeletedTarget({ deletedAt: assessment.deleted_at, label: 'Assessment' });
   const courseInstance = await assertCourseInstanceBelongsToCourse({
@@ -141,7 +136,7 @@ async function readAssessmentInfoForEdit({
     });
   }
 
-  const assessmentInfoPath = path.join(
+  return path.join(
     coursePath,
     'courseInstances',
     courseInstance.short_name,
@@ -149,52 +144,6 @@ async function readAssessmentInfoForEdit({
     assessment.tid,
     'infoAssessment.json',
   );
-
-  const assessmentInfo = JSON.parse(
-    await fs.readFile(assessmentInfoPath, 'utf8'),
-  ) as AssessmentInfoForEdit;
-  assessmentInfo.zones ??= [];
-
-  return { assessment, assessmentInfo, assessmentInfoPath };
-}
-
-async function writeAssessmentInfo({
-  ctx,
-  assessmentInfo,
-  assessmentInfoPath,
-  errorMessage,
-}: {
-  ctx: CourseContext;
-  assessmentInfo: AssessmentInfoForEdit;
-  assessmentInfoPath: string;
-  errorMessage: string;
-}) {
-  const origHash = (await getOriginalHash(assessmentInfoPath)) ?? '';
-  const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
-
-  const editor = new FileModifyEditor({
-    locals: ctx.locals,
-    container: {
-      rootPath: ctx.course.path,
-      invalidRootPaths: [],
-    },
-    filePath: assessmentInfoPath,
-    editContents: b64EncodeUnicode(formattedJson),
-    origHash,
-  });
-
-  const serverJob = await editor.prepareServerJob();
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    throwAppError<QuestionsError['AddToAssessment'] | QuestionsError['RemoveFromAssessment']>({
-      code: 'SYNC_JOB_FAILED',
-      message: errorMessage,
-      jobSequenceId: serverJob.jobSequenceId,
-    });
-  }
-
-  return serverJob.jobSequenceId;
 }
 
 function collectQids(zones: ZoneAssessmentJsonInput[]) {
@@ -297,39 +246,45 @@ const addToAssessment = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
-    const { assessmentInfo, assessmentInfoPath } = await readAssessmentInfoForEdit({
+    const assessmentInfoPath = await resolveAssessmentInfoPath({
       assessmentId: input.assessmentId,
       courseId: ctx.course.id,
       coursePath: ctx.course.path,
     });
 
-    const zones = assessmentInfo.zones ?? [];
-    const targetZone = zones.at(input.zoneNumber - 1);
-    if (!targetZone) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid assessment zone' });
-    }
-
-    const existingQids = collectQids(zones);
-    const questionsToAdd = selectedQuestions.filter((question) => {
-      return question.qid && !existingQids.has(question.qid);
+    let addedCount = 0;
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges: (assessmentInfo) => {
+        const zones = assessmentInfo.zones ?? [];
+        const targetZone = zones.at(input.zoneNumber - 1);
+        if (!targetZone) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid assessment zone' });
+        }
+        const existingQids = collectQids(zones);
+        const questionsToAdd = selectedQuestions.filter(
+          (question) => question.qid && !existingQids.has(question.qid),
+        );
+        targetZone.questions.push(...questionsToAdd.map(buildQuestionBlock));
+        addedCount = questionsToAdd.length;
+        return assessmentInfo;
+      },
+      jsonPath: assessmentInfoPath,
+      conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
+      locals: ctx.locals,
+      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
     });
 
-    targetZone.questions.push(...questionsToAdd.map(buildQuestionBlock));
-
-    const jobSequenceId =
-      questionsToAdd.length > 0
-        ? await writeAssessmentInfo({
-            ctx,
-            assessmentInfo,
-            assessmentInfoPath,
-            errorMessage: 'Failed to add questions to assessment',
-          })
-        : null;
+    if (!saveResult.success && saveResult.reason === 'sync_failed') {
+      throwAppError<QuestionsError['AddToAssessment']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to add questions to assessment',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
+    }
 
     return {
-      addedCount: questionsToAdd.length,
-      skippedCount: selectedQuestions.length - questionsToAdd.length,
-      jobSequenceId,
+      addedCount,
+      skippedCount: selectedQuestions.length - addedCount,
     };
   });
 
@@ -349,42 +304,49 @@ const removeFromAssessment = t.procedure
     const qidsToRemove = new Set(
       selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
     );
-    const { assessmentInfo, assessmentInfoPath } = await readAssessmentInfoForEdit({
+    const assessmentInfoPath = await resolveAssessmentInfoPath({
       assessmentId: input.assessmentId,
       courseId: ctx.course.id,
       coursePath: ctx.course.path,
     });
 
     let removedCount = 0;
-    for (const zone of assessmentInfo.zones ?? []) {
-      const nextQuestions: ZoneQuestionBlockJsonInput[] = [];
-      for (const question of zone.questions) {
-        const result = removeQidsFromBlock(question, qidsToRemove);
-        removedCount += result.removedCount;
-        if (result.question) {
-          nextQuestions.push(result.question);
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges: (assessmentInfo) => {
+        for (const zone of assessmentInfo.zones ?? []) {
+          const nextQuestions: ZoneQuestionBlockJsonInput[] = [];
+          for (const question of zone.questions) {
+            const result = removeQidsFromBlock(question, qidsToRemove);
+            removedCount += result.removedCount;
+            if (result.question) {
+              nextQuestions.push(result.question);
+            }
+          }
+          if (zone.questions.length > 0 && nextQuestions.length === 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Cannot remove questions because it would leave an empty zone',
+            });
+          }
+          zone.questions = nextQuestions;
         }
-      }
-      if (zone.questions.length > 0 && nextQuestions.length === 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Cannot remove questions because it would leave an empty zone',
-        });
-      }
-      zone.questions = nextQuestions;
+        return assessmentInfo;
+      },
+      jsonPath: assessmentInfoPath,
+      conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
+      locals: ctx.locals,
+      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
+    });
+
+    if (!saveResult.success && saveResult.reason === 'sync_failed') {
+      throwAppError<QuestionsError['RemoveFromAssessment']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to remove questions from assessment',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
     }
 
-    const jobSequenceId =
-      removedCount > 0
-        ? await writeAssessmentInfo({
-            ctx,
-            assessmentInfo,
-            assessmentInfoPath,
-            errorMessage: 'Failed to remove questions from assessment',
-          })
-        : null;
-
-    return { removedCount, jobSequenceId };
+    return { removedCount };
   });
 
 const deleteQuestions = t.procedure

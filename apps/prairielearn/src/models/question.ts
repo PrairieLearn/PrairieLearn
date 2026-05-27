@@ -34,6 +34,25 @@ export async function selectQuestionsByIdsAndCourseId({
   );
 }
 
+/**
+ * Like `selectQuestionsByIdsAndCourseId`, but filters out draft questions and
+ * soft-deleted questions. Use this when the caller is acting on user-visible
+ * questions (e.g. bulk edits from the instructor questions table).
+ */
+export async function selectLiveQuestionsByIdsAndCourseId({
+  question_ids,
+  course_id,
+}: {
+  question_ids: string[];
+  course_id: string;
+}): Promise<Question[]> {
+  return await queryRows(
+    sql.select_live_questions_by_ids_and_course_id,
+    { question_ids, course_id },
+    QuestionSchema,
+  );
+}
+
 export async function selectQuestionByQid({
   qid,
   course_id,

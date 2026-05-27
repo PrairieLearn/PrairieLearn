@@ -1,11 +1,14 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Badge, Button, Modal } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import { QuestionsTable } from '../../components/QuestionsTable.js';
-import type { SafeQuestionsPageData } from '../../components/QuestionsTable.shared.js';
+import {
+  MAX_BULK_QUESTION_SELECTION,
+  type SafeQuestionsPageData,
+} from '../../components/QuestionsTable.shared.js';
 import { AppErrorAlert, getAppError, syncJobFailedRenderer } from '../../lib/client/errors.js';
 import type { PublicCourseInstance } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
@@ -462,23 +465,37 @@ function QuestionSelectionToolbar({
     () => getSharedAssessmentTargets(selectedQuestions, courseInstances),
     [selectedQuestions, courseInstances],
   );
+  const selectionLimitExceeded = selectedQuestions.length > MAX_BULK_QUESTION_SELECTION;
+  const selectionLimitMessage = `Select ${MAX_BULK_QUESTION_SELECTION} or fewer questions to use bulk actions`;
+  const removeButtonTitle = selectionLimitExceeded
+    ? selectionLimitMessage
+    : sharedAssessmentTargets.length === 0
+      ? 'Selected questions do not share an assessment'
+      : undefined;
 
   return (
     <>
       <div className="d-flex align-items-center gap-2">
-        <Button variant="light" size="sm" onClick={() => setShowAddModal(true)}>
+        {selectionLimitExceeded && (
+          <Badge bg="warning" text="dark">
+            {selectionLimitMessage}
+          </Badge>
+        )}
+        <Button
+          variant="light"
+          size="sm"
+          disabled={selectionLimitExceeded}
+          title={selectionLimitExceeded ? selectionLimitMessage : undefined}
+          onClick={() => setShowAddModal(true)}
+        >
           <i className="bi bi-plus-square me-1" aria-hidden="true" />
           Add to assessment
         </Button>
         <Button
           variant="light"
           size="sm"
-          disabled={sharedAssessmentTargets.length === 0}
-          title={
-            sharedAssessmentTargets.length === 0
-              ? 'Selected questions do not share an assessment'
-              : undefined
-          }
+          disabled={selectionLimitExceeded || sharedAssessmentTargets.length === 0}
+          title={removeButtonTitle}
           onClick={() => setShowRemoveModal(true)}
         >
           <i className="bi bi-dash-square me-1" aria-hidden="true" />
@@ -488,6 +505,8 @@ function QuestionSelectionToolbar({
           variant="light"
           size="sm"
           className="text-danger"
+          disabled={selectionLimitExceeded}
+          title={selectionLimitExceeded ? selectionLimitMessage : undefined}
           onClick={() => setShowDeleteModal(true)}
         >
           <i className="bi bi-trash3 me-1" aria-hidden="true" />
