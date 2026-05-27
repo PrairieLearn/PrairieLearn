@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 
@@ -9,7 +9,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { validateActiveOverrideField } from '../overrideFields.js';
+import { isOverrideFieldActive, validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
@@ -231,8 +231,6 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
   const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
-  const releaseDateRef = useRef(releaseDate);
-  releaseDateRef.current = releaseDate;
 
   const earlyDeadlines = useWatch<AccessControlFormData, 'defaultRule.earlyDeadlines'>({
     name: 'defaultRule.earlyDeadlines',
@@ -245,7 +243,8 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
   const dateCtrl = useController<AccessControlFormData, 'defaultRule.due.date'>({
     name: 'defaultRule.due.date',
     rules: {
-      validate: (value) => validateDueDate(value, releaseDateRef.current, displayTimezone) ?? true,
+      validate: (value, formValues) =>
+        validateDueDate(value, formValues.defaultRule.release.date, displayTimezone) ?? true,
     },
   });
   const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
@@ -262,6 +261,9 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
     customCredit: customCreditCtrl.field.value,
   };
 
+  // Re-validate the due date whenever the release date changes so the
+  // cross-field error message updates without the user touching the due
+  // date input.
   useEffect(() => {
     void trigger('defaultRule.due.date');
   }, [releaseDate, trigger]);
@@ -323,8 +325,6 @@ export function OverrideDueDateField({
 
   const effectiveReleaseDate = releaseDateOverridden ? releaseDate : defaultRuleReleaseDate;
   const validationReleaseDate = releaseDateOverridden ? releaseDate : undefined;
-  const validationReleaseDateRef = useRef(validationReleaseDate);
-  validationReleaseDateRef.current = validationReleaseDate;
 
   const customCreditCtrl = useController<
     AccessControlFormData,
@@ -336,12 +336,12 @@ export function OverrideDueDateField({
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
     rules: {
-      validate: validateActiveOverrideField(
-        index,
-        'due',
-        (value) =>
-          validateDueDate(value, validationReleaseDateRef.current, displayTimezone) ?? true,
-      ),
+      validate: validateActiveOverrideField(index, 'due', (value, formValues) => {
+        const overrideReleaseDate = isOverrideFieldActive(formValues, index, 'release')
+          ? formValues.overrides[index]?.release.date
+          : undefined;
+        return validateDueDate(value, overrideReleaseDate, displayTimezone) ?? true;
+      }),
     },
   });
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
@@ -362,11 +362,9 @@ export function OverrideDueDateField({
     customCredit: customCreditCtrl.field.value,
   };
 
-  // Re-validate when the effective release date changes so the per-field
-  // error message reflects the current release date instead of the value
-  // captured when the validator was first registered. Toggling the `due`
-  // override itself is handled by useOverrideField, so isOverridden is not
-  // a dep here.
+  // Re-validate the due date whenever the effective release date changes so
+  // the cross-field error message updates without the user touching the due
+  // date input.
   useEffect(() => {
     void trigger(`overrides.${index}.due.date`);
   }, [index, validationReleaseDate, trigger]);
