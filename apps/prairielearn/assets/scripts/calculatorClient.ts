@@ -4,7 +4,7 @@ import {
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
-import { MathfieldElement } from 'mathlive';
+import { type Mathfield, MathfieldElement } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -110,10 +110,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) =>
+  const parseLatexForClipboard = (_mf: Mathfield | null, latex: string) =>
+    // The starting = sign is handled separately to avoid ce introducing a "missing operand" error.
+    (latex.startsWith('=') ? '=' : '') +
     ce.parse(latex.replace(/^=/, ''), { form: 'raw' }).toString();
-  calculatorInputElement.onExport = onExport;
-  calculatorOutput.onExport = onExport;
+
+  calculatorInputElement.onExport = parseLatexForClipboard;
+  calculatorOutput.onExport = parseLatexForClipboard;
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
@@ -693,11 +696,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) =>
-      ce.parse(latex.replace(/^=/, ''), { form: 'raw' }).toString();
-    const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
-    inputField.onExport = historyOnExport;
-    outputField.onExport = historyOnExport;
+    inputField.onExport = parseLatexForClipboard;
+    outputField.onExport = parseLatexForClipboard;
 
     // Copy buttons
     const inputCopyBtn = ensureElement(
@@ -706,8 +706,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.dataset.clipboardText = normalizeLatex(input);
-    outputCopyBtn.dataset.clipboardText = normalizeLatex(outputField.value);
+    inputCopyBtn.dataset.clipboardText = parseLatexForClipboard(null, input);
+    outputCopyBtn.dataset.clipboardText = parseLatexForClipboard(null, outputField.value);
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
