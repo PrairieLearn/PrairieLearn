@@ -5,6 +5,7 @@ import type { IRSourceBankRef } from '@prairielearn/question-conversion';
 
 import {
   type CollisionStrategy,
+  type CourseInstanceOption,
   type ParseWarning,
   type QuestionOverrides,
   type SerializedConversionResult,
@@ -231,9 +232,15 @@ export function ImportSummary({
 export function UploadStep({
   uploading,
   onSubmit,
+  courseInstances,
+  selectedCourseInstanceId,
+  onCourseInstanceChange,
 }: {
   uploading: boolean;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  courseInstances: CourseInstanceOption[];
+  selectedCourseInstanceId: string;
+  onCourseInstanceChange: (id: string) => void;
 }) {
   return (
     <form encType="multipart/form-data" onSubmit={onSubmit}>
@@ -244,6 +251,24 @@ export function UploadStep({
           Learn more about importing content into PrairieLearn
         </a>
       </p>
+      {courseInstances.length > 1 && (
+        <div className="mb-3">
+          <Form.Label htmlFor="course-instance-select">Target course instance</Form.Label>
+          <Form.Select
+            id="course-instance-select"
+            value={selectedCourseInstanceId}
+            disabled={uploading}
+            onChange={(e) => onCourseInstanceChange(e.target.value)}
+          >
+            {courseInstances.map((ci) => (
+              <option key={ci.id} value={ci.id}>
+                {ci.shortName}: {ci.longName}
+              </option>
+            ))}
+          </Form.Select>
+          <Form.Text>Assessments will be created in this course instance.</Form.Text>
+        </div>
+      )}
       <div className="mb-3">
         <Form.Label htmlFor="qti-file">Export file</Form.Label>
         <Form.Control

@@ -128,6 +128,13 @@ export function hasCanvasUnresolvedSourceBankRefs(refs: IRSourceBankRef[]): bool
   return refs.some((ref) => ref.sourceBankExportId != null || ref.externalCourseId != null);
 }
 
+/** A selectable course instance for the import target picker. */
+export interface CourseInstanceOption {
+  id: string;
+  shortName: string;
+  longName: string;
+}
+
 /** Response shape of the upload endpoint. */
 export interface UploadResponse {
   results: SerializedConversionResult[];

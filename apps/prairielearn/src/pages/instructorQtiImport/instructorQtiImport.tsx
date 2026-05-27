@@ -30,6 +30,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
@@ -39,9 +40,11 @@ import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { QtiImportForm } from './components/QtiImportForm.js';
 import type {
+  CourseInstanceOption,
   ParseWarning,
   SerializedConversionResult,
   StoredSerializedConversionResult,
@@ -104,23 +107,39 @@ router.get(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     const returnTo = req.query.return_to === 'questions' ? 'questions' : 'assessments';
-    const trpcCsrfToken = generatePrefixCsrfToken(
-      {
-        url: getCourseInstanceTrpcUrl(res.locals.course_instance.id),
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
 
-    // Generate a prefix-based CSRF token for the upload endpoint.
-    // The page URL is a prefix of /upload, so this covers both.
-    const uploadCsrfToken = generatePrefixCsrfToken(
-      {
-        url: req.baseUrl,
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+      requiredRole: ['Previewer'],
+    });
+
+    // Generate per-CI CSRF tokens so the client can switch target CI without
+    // a page reload. Each CI needs its own upload prefix token and tRPC token.
+    const csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }> = {};
+    for (const ci of courseInstances) {
+      const uploadBase = `/pl/course_instance/${ci.id}/instructor/instance_admin/qti_import`;
+      csrfTokensByCourseInstance[ci.id] = {
+        upload: generatePrefixCsrfToken(
+          { url: uploadBase, authn_user_id: res.locals.authn_user.id },
+          config.secretKey,
+        ),
+        trpc: generatePrefixCsrfToken(
+          { url: getCourseInstanceTrpcUrl(ci.id), authn_user_id: res.locals.authn_user.id },
+          config.secretKey,
+        ),
+      };
+    }
+
+    const ciOptions: CourseInstanceOption[] = courseInstances.map((ci) => ({
+      id: ci.id,
+      shortName: ci.short_name,
+      longName: ci.long_name ?? ci.short_name,
+    }));
 
     res.send(
       PageLayout({
@@ -143,8 +162,8 @@ router.get(
           <Hydrate>
             <QtiImportForm
               courseInstanceId={res.locals.course_instance.id}
-              csrfToken={uploadCsrfToken}
-              trpcCsrfToken={trpcCsrfToken}
+              courseInstances={ciOptions}
+              csrfTokensByCourseInstance={csrfTokensByCourseInstance}
               returnTo={returnTo}
             />
           </Hydrate>

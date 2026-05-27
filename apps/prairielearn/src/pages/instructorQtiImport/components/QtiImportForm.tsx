@@ -11,6 +11,7 @@ import {
 import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js';
 import {
+  type CourseInstanceOption,
   type ParseWarning,
   type QuestionOverrides,
   type SerializedConversionResult,
@@ -247,18 +248,23 @@ function mergeEmbeddedSourceBanks(
 }
 
 export function QtiImportForm({
-  courseInstanceId,
-  csrfToken,
-  trpcCsrfToken,
+  courseInstanceId: initialCourseInstanceId,
+  courseInstances,
+  csrfTokensByCourseInstance,
   returnTo,
 }: {
   courseInstanceId: string;
-  csrfToken: string;
-  trpcCsrfToken: string;
+  courseInstances: CourseInstanceOption[];
+  csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }>;
   returnTo: 'assessments' | 'questions';
 }) {
-  const [trpcClient] = useState(() =>
-    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
+  const [selectedCourseInstanceId, setSelectedCourseInstanceId] = useState(initialCourseInstanceId);
+  const csrfTokens = csrfTokensByCourseInstance[selectedCourseInstanceId];
+  const [trpcClient, setTrpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({
+      csrfToken: csrfTokens.trpc,
+      courseInstanceId: selectedCourseInstanceId,
+    }),
   );
   const [step, setStep] = useState<ImportStep>('upload');
   const [results, setResults] = useState<SerializedConversionResult[]>([]);
@@ -284,11 +290,11 @@ export function QtiImportForm({
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
     const formData = new FormData(form);
-    const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+    const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
     const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
       method: 'POST',
       headers: {
-        'X-CSRF-Token': csrfToken,
+        'X-CSRF-Token': csrfTokens.upload,
         Accept: 'application/json',
       },
       body: formData,
@@ -543,7 +549,7 @@ export function QtiImportForm({
 
       await trpcClient.qtiImport.create.mutate(payload);
 
-      const baseUrl = getCourseInstanceBaseUrl(courseInstanceId);
+      const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
       disableBeforeUnload();
       window.location.href =
         returnTo === 'questions'
@@ -753,7 +759,10 @@ export function QtiImportForm({
               <>
                 {' '}
                 <Alert.Link
-                  href={getCourseInstanceEditErrorUrl(courseInstanceId, error.jobSequenceId)}
+                  href={getCourseInstanceEditErrorUrl(
+                    selectedCourseInstanceId,
+                    error.jobSequenceId,
+                  )}
                 >
                   View sync errors
                 </Alert.Link>
@@ -769,7 +778,24 @@ export function QtiImportForm({
           </Alert>
         )}
 
-        {step === 'upload' && <UploadStep uploading={uploading} onSubmit={handleUpload} />}
+        {step === 'upload' && (
+          <UploadStep
+            uploading={uploading}
+            courseInstances={courseInstances}
+            selectedCourseInstanceId={selectedCourseInstanceId}
+            onSubmit={handleUpload}
+            onCourseInstanceChange={(id) => {
+              setSelectedCourseInstanceId(id);
+              const tokens = csrfTokensByCourseInstance[id];
+              setTrpcClient(
+                createCourseInstanceTrpcClient({
+                  csrfToken: tokens.trpc,
+                  courseInstanceId: id,
+                }),
+              );
+            }}
+          />
+        )}
 
         {step === 'missing-banks' && (
           <MissingBanksStep
