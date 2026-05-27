@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
@@ -21,12 +21,14 @@ export function AdministratorInstitutionGeneral({
   availableTimezones,
   statistics,
   planGrants,
+  courseRequestMessageHtml,
   resLocals,
 }: {
   institution: Institution;
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
+  courseRequestMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -185,6 +187,47 @@ export function AdministratorInstitutionGeneral({
           Save
         </button>
       </form>
+
+      <h2 class="h4">Course request message</h2>
+      <p>
+        This message is shown to users from this institution on the
+        <a href="/pl/request_course">course request page</a>. Markdown formatting is supported; HTML
+        tags are not rendered.
+      </p>
+      <form method="POST" class="mb-3">
+        <div class="mb-3">
+          <label class="form-label" for="course_request_message"> Message (Markdown) </label>
+          <textarea
+            class="form-control font-monospace"
+            id="course_request_message"
+            name="course_request_message"
+            rows="10"
+            aria-describedby="course_request_message_help"
+          >
+${institution.course_request_message ?? ''}</textarea
+          >
+          <small id="course_request_message_help" class="form-text text-muted">
+            Leave blank to hide the message from the course request page.
+          </small>
+        </div>
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          type="submit"
+          name="__action"
+          value="update_course_request_message"
+          class="btn btn-primary"
+        >
+          Save
+        </button>
+      </form>
+      ${courseRequestMessageHtml
+        ? html`
+            <h3 class="h5">Preview</h3>
+            <div class="card mb-4">
+              <div class="card-body">${unsafeHtml(courseRequestMessageHtml)}</div>
+            </div>
+          `
+        : ''}
 
       <h2 class="h4">Plans</h2>
       ${PlanGrantsEditor({

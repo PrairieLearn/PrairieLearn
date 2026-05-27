@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { assertNever } from '@prairielearn/utils';
 
 import { Modal } from '../../components/Modal.js';
@@ -14,10 +14,12 @@ import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequ
 export function RequestCourse({
   rows,
   lti13Info,
+  institutionMessageHtml,
   resLocals,
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
+  institutionMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -30,7 +32,12 @@ export function RequestCourse({
     headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
       <h1 class="visually-hidden">Request a Course</h1>
-      ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
+      ${CourseRequestsCard({ rows })}
+      ${InstitutionMessageCard({
+        institutionMessageHtml,
+        institutionName: resLocals.authn_institution.long_name,
+      })}
+      ${EncodedData(lti13Info, 'course-request-lti13-info')}
       ${Modal({
         id: 'fill-course-request-lti13-modal',
         title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
@@ -60,6 +67,31 @@ export function RequestCourse({
       })}
     `,
   });
+}
+
+function InstitutionMessageCard({
+  institutionMessageHtml,
+  institutionName,
+}: {
+  institutionMessageHtml: string;
+  institutionName: string;
+}): HtmlValue {
+  if (!institutionMessageHtml) {
+    return '';
+  }
+  return html`
+    <div class="card mb-4" data-testid="institution-message-card">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Information from ${institutionName}</h2>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info" role="note">
+          The information below was provided by ${institutionName}, not by PrairieLearn.
+        </div>
+        ${unsafeHtml(institutionMessageHtml)}
+      </div>
+    </div>
+  `;
 }
 
 function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionSchema } from '../../../lib/db-types.js';
@@ -34,12 +35,19 @@ router.get(
       InstitutionStatisticsSchema,
     );
     const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
+    const courseRequestMessageHtml = institution.course_request_message
+      ? markdownToHtml(institution.course_request_message, {
+          allowHtml: false,
+          interpretMath: false,
+        })
+      : '';
     res.send(
       AdministratorInstitutionGeneral({
         institution,
         availableTimezones,
         statistics,
         planGrants,
+        courseRequestMessageHtml,
         resLocals: res.locals,
       }),
     );
@@ -76,6 +84,34 @@ router.post(
         });
       });
       flash('success', 'Successfully updated institution settings.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_course_request_message') {
+      const newMessage =
+        typeof req.body.course_request_message === 'string' &&
+        req.body.course_request_message.trim().length > 0
+          ? req.body.course_request_message
+          : null;
+      await runInTransactionAsync(async () => {
+        const institution = await getInstitution(req.params.institution_id);
+        const updatedInstitution = await queryRow(
+          sql.update_institution_course_request_message,
+          {
+            institution_id: req.params.institution_id,
+            course_request_message: newMessage,
+          },
+          InstitutionSchema,
+        );
+        await insertAuditLog({
+          authn_user_id: res.locals.authn_user.id,
+          table_name: 'institutions',
+          action: 'update',
+          institution_id: req.params.institution_id,
+          old_state: institution,
+          new_state: updatedInstitution,
+          row_id: req.params.institution_id,
+        });
+      });
+      flash('success', 'Successfully updated the course request message.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({

@@ -1,5 +1,6 @@
 columns
     course_instance_enrollment_limit: integer not null default 10000
+    course_request_message: text
     default_authn_provider_id: bigint
     display_timezone: text not null default 'America/Chicago'::text
     id: bigint not null default nextval('institutions_id_seq'::regclass)

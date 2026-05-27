@@ -1143,6 +1143,7 @@ export const InstitutionAuthnProviderSchema = null;
 
 export const InstitutionSchema = z.object({
   course_instance_enrollment_limit: z.number(),
+  course_request_message: z.string().nullable(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
   id: IdSchema,

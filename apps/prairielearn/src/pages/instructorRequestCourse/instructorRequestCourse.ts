@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
@@ -62,7 +63,14 @@ router.get(
       }
     }
 
-    res.send(RequestCourse({ rows, lti13Info, resLocals: res.locals }));
+    const institutionMessageHtml = res.locals.authn_institution.course_request_message
+      ? markdownToHtml(res.locals.authn_institution.course_request_message, {
+          allowHtml: false,
+          interpretMath: false,
+        })
+      : '';
+
+    res.send(RequestCourse({ rows, lti13Info, institutionMessageHtml, resLocals: res.locals }));
   }),
 );
 
