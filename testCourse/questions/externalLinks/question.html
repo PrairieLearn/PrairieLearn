@@ -1,15 +1,14 @@
 <pl-question-panel>
   <p>
     This question embeds external links in its content so that LockDown
-    Browser's content-link behavior can be exercised. LockDown Browser does
-    <strong>not</strong> stop a content link from opening — clicking one of the
-    links below opens it in a new window. What is restricted is navigating
-    <em>onward</em> from there: a child window opened from the quiz is allowed
-    only a single navigation, after which further navigation shows
-    <strong>"LINK IS BLOCKED"</strong> on the toolbar.
+    Browser's content-link behavior can be exercised. PrairieLearn is opened
+    in a stemmed (rldbwn) child window with blocked navigation to outside
+    sources, so clicking one of the links below should show
+    <strong>"LINK IS BLOCKED"</strong> on the toolbar rather than navigating
+    away.
   </p>
 
-  <p>Open this YouTube video in a new window:</p>
+  <p>Try opening this YouTube video:</p>
   <ul>
     <li>
       <a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" rel="noopener">
@@ -19,7 +18,7 @@
   </ul>
   <p>
     A couple of other external links, useful for confirming the same
-    open-then-hinder behavior on different sites:
+    blocked-navigation behavior on different sites:
   </p>
   <ul>
     <li>
@@ -46,21 +45,18 @@
     ></iframe>
   </p>
 
-  <p>
-    Open the YouTube link above, then click a link on the page that opens
-    (for example a related video or a channel). What happens?
-  </p>
+  <p>Click one of the external links above. What happens?</p>
 </pl-question-panel>
 
 <pl-multiple-choice answers-name="link_behavior">
   <pl-answer correct="true">
-    The link opened in a new window, but the next navigation showed "LINK IS
-    BLOCKED" on the toolbar.
+    Navigation was blocked and the toolbar showed "LINK IS BLOCKED".
   </pl-answer>
   <pl-answer correct="false">
-    The link was blocked from opening at all.
+    The link opened in a new window and I could browse freely.
   </pl-answer>
   <pl-answer correct="false">
-    The link opened and I could browse freely, with no restrictions.
+    The link opened in a new window, but only a single further navigation was
+    allowed before being blocked.
   </pl-answer>
 </pl-multiple-choice>
