@@ -22,7 +22,7 @@ import {
   DefaultRuleCurrentIndicator,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
-  type RuleFormErrors,
+  type OverrideFormErrors,
   generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
 } from './RuleSummary.js';
@@ -56,7 +56,7 @@ function SortableOverrideCard({
 }: {
   id: string;
   override: OverrideData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: OverrideFormErrors | undefined;
   title: string;
   displayTimezone: string;
   isActive: boolean;
