@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
+import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 
@@ -88,7 +89,7 @@ async function copyQuestion({
 }
 
 async function openQuestionsTable(page: Page, courseInstanceId: string, search: string) {
-  await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions`);
+  await page.goto(getCourseAdminQuestionsUrl({ courseInstanceId }));
   const searchInput = page.getByLabel('Search by QID, title...');
   await expect(searchInput).toBeVisible();
   await searchInput.fill(search);

@@ -4,6 +4,7 @@ import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
 
+import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import type { UploadResponse } from '../../pages/instructorQtiImport/instructorQtiImport.types.js';
 
@@ -427,7 +428,7 @@ test.describe('QTI Import', () => {
   }) => {
     await enableFeatureFlag('qti-content-import');
 
-    await page.goto(`/pl/course_instance/${courseInstance.id}/instructor/course_admin/questions`);
+    await page.goto(getCourseAdminQuestionsUrl({ courseInstanceId: courseInstance.id }));
     await page.getByRole('button', { name: 'Add questions' }).click();
     const link = page.getByRole('link', { name: 'Import questions' });
 
