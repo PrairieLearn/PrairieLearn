@@ -30,7 +30,7 @@ function DurationDetails({
               aria-label="Duration in minutes"
               aria-invalid={!!error}
               placeholder="Duration in minutes"
-              value={value}
+              value={value === 0 ? '' : value}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
               disabled={!ruleEditable}
