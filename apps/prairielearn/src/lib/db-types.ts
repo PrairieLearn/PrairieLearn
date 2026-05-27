@@ -15,9 +15,9 @@ export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 const QuestionPreferencesFieldSchema = z
   .object({
-    type: z.enum(['boolean', 'number', 'string']),
     default: z.union([z.string(), z.number(), z.boolean()]),
     enum: z.array(z.union([z.string(), z.number()])).optional(),
+    type: z.enum(['boolean', 'number', 'string']),
   })
   .strict();
 
@@ -123,7 +123,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]);
+export const JsonCommentSchema = z.union([
+  z.string(),
+  z.array(z.any()),
+  z.record(z.string(), z.any()),
+]);
 
 export const QuestionPreferenceValuesSchema = z.record(
   z.string(),
@@ -1442,7 +1446,9 @@ export const QuestionSchema = z.object({
   json_external_grading_comment: z
     .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
     .nullable(),
-  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).nullable(),
+  json_workspace_comment: z
+    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
+    .nullable(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),

@@ -186,7 +186,7 @@ export const PointsListJsonSchema = z
   .min(1)
   .describe('An array of point values.');
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema.default(0), PointsListJsonSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
@@ -384,7 +384,7 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional()
     .default([]),
   tools: z
-    .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+    .partialRecord(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
     .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
     .optional(),
 });
@@ -581,7 +581,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
     tools: z
-      .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+      .partialRecord(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
       .describe('Configuration for assessment tools.')
       .optional(),
   })

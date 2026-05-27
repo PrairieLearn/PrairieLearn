@@ -9,7 +9,11 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
-import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+  EnumAssessmentTypeSchema,
+} from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -28,7 +32,6 @@ import {
   selectAssessmentZonePointsRange,
   selectAssessments,
 } from '../../models/assessment.js';
-import { type EnumAssessmentTool, EnumAssessmentToolSchema } from '../../lib/db-types.js';
 import { type AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -436,7 +439,7 @@ const updateAssessment = t.procedure
         if (Object.keys(tools).length === 0) {
           delete assessmentInfo.tools;
         } else {
-          assessmentInfo.tools = tools as typeof assessmentInfo.tools;
+          assessmentInfo.tools = tools;
         }
 
         if (assessment.type === 'Exam') {

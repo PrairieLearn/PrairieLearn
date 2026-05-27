@@ -19,6 +19,7 @@ import {
   getStudentAssessmentUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { EnumAssessmentToolSchema } from '../../lib/db-types.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -33,7 +34,6 @@ import {
   selectAssessmentToolDefaults,
   selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
-import { EnumAssessmentToolSchema } from '../../lib/db-types.js';
 import { type AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { settingsScope } from '../../trpc/assessment/assessment-settings.js';
 

@@ -90,12 +90,13 @@ function applyUniqueItemsOverride(ctx: {
   path: (string | number)[];
 }) {
   const segment = ctx.path[ctx.path.length - 1];
-  const path = ctx.path as (string | number)[];
+  const path = ctx.path;
 
   if (segment === 'canView' || segment === 'canSubmit') {
     const action = segment === 'canView' ? 'view' : 'submit';
-    const inZone = path.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = path.includes('ZoneQuestionBlockJsonSchema');
+    const inQuestion = path.includes('ZoneQuestionBlockJsonSchema') || path.includes('questions');
+    const inZone =
+      path.includes('ZoneAssessmentJsonSchema') || (path.includes('zones') && !inQuestion);
     const inGroups = path.includes('groups');
 
     if (inGroups) return;

@@ -17,6 +17,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { type EnumAssessmentTool } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -29,7 +30,6 @@ import {
   selectGroupRoleNamesForAssessment,
 } from '../../models/group.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type EnumAssessmentTool } from '../../lib/db-types.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
@@ -102,7 +102,7 @@ router.get(
       const zone = jsonZones[row.zone_number - 1];
       const tools = (zone.tools ?? {}) as Partial<Record<EnumAssessmentTool, { enabled: boolean }>>;
       tools[row.tool] = { enabled: row.enabled };
-      zone.tools = tools as typeof zone.tools;
+      zone.tools = tools;
     }
 
     // Load assessment-level tool defaults for zone inheritance display.

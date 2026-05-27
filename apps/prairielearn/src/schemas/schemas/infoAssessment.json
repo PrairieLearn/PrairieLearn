@@ -548,7 +548,6 @@
                     {
                       "description": "A single point value.",
                       "type": "number",
-                      "default": 0,
                       "minimum": 0
                     },
                     {
@@ -568,7 +567,6 @@
                     {
                       "description": "A single point value.",
                       "type": "number",
-                      "default": 0,
                       "minimum": 0
                     },
                     {
@@ -636,7 +634,6 @@
                           {
                             "description": "A single point value.",
                             "type": "number",
-                            "default": 0,
                             "minimum": 0
                           },
                           {
@@ -656,7 +653,6 @@
                           {
                             "description": "A single point value.",
                             "type": "number",
-                            "default": 0,
                             "minimum": 0
                           },
                           {
@@ -767,24 +763,22 @@
                   "type": "boolean"
                 },
                 "canSubmit": {
-                  "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+                  "description": "A list of group role names that can submit the question. Only applicable for group assessments.",
                   "type": "array",
                   "items": {
                     "type": "string"
                   },
                   "uniqueItems": true,
-                  "default": [],
-                  "deprecated": true
+                  "default": []
                 },
                 "canView": {
-                  "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+                  "description": "A list of group role names that can view the question. Only applicable for group assessments.",
                   "type": "array",
                   "items": {
                     "type": "string"
                   },
                   "uniqueItems": true,
-                  "default": [],
-                  "deprecated": true
+                  "default": []
                 },
                 "preferences": {
                   "description": "The preferences passed to the question to customize its behavior.",
@@ -826,24 +820,22 @@
             "type": "boolean"
           },
           "canSubmit": {
-            "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+            "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
             "type": "array",
             "items": {
               "type": "string"
             },
             "uniqueItems": true,
-            "default": [],
-            "deprecated": true
+            "default": []
           },
           "canView": {
-            "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+            "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
             "type": "array",
             "items": {
               "type": "string"
             },
             "uniqueItems": true,
-            "default": [],
-            "deprecated": true
+            "default": []
           },
           "tools": {
             "description": "Tools available for questions in this zone. Overrides assessment-level tools.",
@@ -858,7 +850,6 @@
                 }
               }
             },
-            "required": ["calculator"],
             "propertyNames": {
               "type": "string",
               "enum": ["calculator"]
@@ -1114,7 +1105,6 @@
           }
         }
       },
-      "required": ["calculator"],
       "propertyNames": {
         "type": "string",
         "enum": ["calculator"]

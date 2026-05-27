@@ -781,10 +781,7 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async queryScalars<Model extends z.ZodType>(
-    sql: string,
-    model: Model,
-  ): Promise<z.infer<Model>[]>;
+  async queryScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
   async queryScalars<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
@@ -858,10 +855,7 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async callScalars<Model extends z.ZodType>(
-    sql: string,
-    model: Model,
-  ): Promise<z.infer<Model>[]>;
+  async callScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
   async callScalars<Model extends z.ZodType>(
     sql: string,
     params: any[],
