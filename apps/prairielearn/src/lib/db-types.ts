@@ -1145,6 +1145,7 @@ export const InstitutionSchema = z.object({
   course_instance_enrollment_limit: z.number(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
+  github_course_owner: z.string().nullable(),
   id: IdSchema,
   long_name: z.string(),
   short_name: z.string(),

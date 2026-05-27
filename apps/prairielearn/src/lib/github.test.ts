@@ -1,6 +1,113 @@
-import { assert, describe, it } from 'vitest';
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { courseRepoContentUrl, httpPrefixForCourseRepo } from './github.js';
+import { withConfig } from '../tests/utils/config.js';
+
+const { orgsGet, orgsGetMembershipForUser } = vi.hoisted(() => ({
+  orgsGet: vi.fn(),
+  orgsGetMembershipForUser: vi.fn(),
+}));
+
+vi.mock('@octokit/rest', () => ({
+  Octokit: vi.fn().mockImplementation(function () {
+    return {
+      orgs: {
+        get: orgsGet,
+        getMembershipForUser: orgsGetMembershipForUser,
+      },
+    };
+  }),
+}));
+
+const {
+  checkGithubOrgAccess,
+  courseRepoContentUrl,
+  httpPrefixForCourseRepo,
+  isPlatformDefaultOrg,
+} = await import('./github.js');
+
+beforeEach(() => {
+  orgsGet.mockReset();
+  orgsGetMembershipForUser.mockReset();
+});
+
+describe('isPlatformDefaultOrg', () => {
+  it('matches case-insensitively against config.githubCourseOwner', async () => {
+    await withConfig({ githubCourseOwner: 'PrairieLearn' }, () => {
+      assert.isTrue(isPlatformDefaultOrg('PrairieLearn'));
+      assert.isTrue(isPlatformDefaultOrg('prairielearn'));
+      assert.isTrue(isPlatformDefaultOrg('PRAIRIELEARN'));
+      assert.isFalse(isPlatformDefaultOrg('SomeOtherOrg'));
+    });
+  });
+});
+
+describe('checkGithubOrgAccess', () => {
+  it('returns no_client when githubClientToken is unset', async () => {
+    await withConfig({ githubClientToken: null, githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'no_client' });
+    });
+  });
+
+  it('returns no_machine_user when githubMachineUser is unset', async () => {
+    await withConfig({ githubClientToken: 'token', githubMachineUser: null }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'no_machine_user' });
+    });
+  });
+
+  it('returns org_unreachable when orgs.get returns 404', async () => {
+    orgsGet.mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }));
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'org_unreachable' });
+    });
+  });
+
+  it('returns org_unreachable when orgs.get returns 403', async () => {
+    orgsGet.mockRejectedValueOnce(Object.assign(new Error('forbidden'), { status: 403 }));
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'org_unreachable' });
+    });
+  });
+
+  it('returns not_a_member when membership query returns 404', async () => {
+    orgsGet.mockResolvedValueOnce({ data: {} });
+    orgsGetMembershipForUser.mockRejectedValueOnce(
+      Object.assign(new Error('not found'), { status: 404 }),
+    );
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'not_a_member' });
+    });
+  });
+
+  it('treats pending membership state as not_a_member with detail', async () => {
+    orgsGet.mockResolvedValueOnce({ data: {} });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'pending' } });
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'not_a_member', detail: 'pending' });
+    });
+  });
+
+  it('returns ok when both calls succeed with active membership', async () => {
+    orgsGet.mockResolvedValueOnce({ data: {} });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active' } });
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess('SomeOrg');
+      assert.deepEqual(result, { ok: true });
+    });
+  });
+
+  it('rethrows unexpected (non-404/403) errors from orgs.get', async () => {
+    orgsGet.mockRejectedValueOnce(Object.assign(new Error('upstream broken'), { status: 500 }));
+    await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
+      await expect(checkGithubOrgAccess('SomeOrg')).rejects.toThrow('upstream broken');
+    });
+  });
+});
 
 describe('Github library', () => {
   describe('httpPrefixforCourseRepo', () => {

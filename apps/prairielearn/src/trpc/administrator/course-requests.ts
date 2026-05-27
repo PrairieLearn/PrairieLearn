@@ -1,9 +1,9 @@
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
 import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
-import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
   suggestInstitutionPrefix,
@@ -15,7 +15,12 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { checkGithubRepositoryExists } from '../../lib/github.js';
+import {
+  type GithubOrgAccessResult,
+  checkGithubOrgAccess,
+  checkGithubRepositoryExists,
+  isPlatformDefaultOrg,
+} from '../../lib/github.js';
 import {
   selectOptionalCourseByPath,
   selectOptionalCourseByRepositoryName,
@@ -71,6 +76,7 @@ const createCourse = t.procedure
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
+      githubCourseOwner: z.string().min(1, 'GitHub organization is required'),
       githubUser: z.string(),
     }),
   )
@@ -78,9 +84,19 @@ const createCourse = t.procedure
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
+    if (!isPlatformDefaultOrg(input.githubCourseOwner)) {
+      const access = await checkGithubOrgAccess(input.githubCourseOwner);
+      if (!access.ok) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: githubOrgAccessErrorMessage(access, input.githubCourseOwner),
+        });
+      }
+    }
+
     const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
       selectOptionalCourseByRepositoryName(input.repoShortName),
-      checkGithubRepositoryExists(input.repoShortName),
+      checkGithubRepositoryExists(input.repoShortName, input.githubCourseOwner),
       selectOptionalCourseByPath(normalizedPath),
     ]);
 
@@ -91,7 +107,7 @@ const createCourse = t.procedure
           message: 'Conflicts detected with existing courses or repositories.',
           repoCourse: NullableStaffCourseSchema.parse(repoCourse),
           githubRepoUrl: githubRepoExists
-            ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+            ? `https://github.com/${input.githubCourseOwner}/${input.repoShortName}`
             : null,
           pathCourse: NullableStaffCourseSchema.parse(pathCourse),
         },
@@ -107,11 +123,31 @@ const createCourse = t.procedure
       displayTimezone: input.displayTimezone,
       path: normalizedPath,
       repoShortName: input.repoShortName,
+      githubCourseOwner: input.githubCourseOwner,
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };
   });
+
+function githubOrgAccessErrorMessage(
+  result: Extract<GithubOrgAccessResult, { ok: false }>,
+  org: string,
+): string {
+  switch (result.reason) {
+    case 'no_client':
+      return 'GitHub integration is not configured on this server.';
+    case 'no_machine_user':
+      return 'GitHub machine user is not configured; cannot validate org access.';
+    case 'org_unreachable':
+      return `Could not access GitHub organization '${org}'. Confirm the org exists and the machine account has been invited.`;
+    case 'not_a_member':
+      if (result.detail === 'pending') {
+        return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
+      }
+      return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
+  }
+}
 
 const SourcesSchema = z
   .array(z.object({ url: z.string().url(), title: z.string().optional() }))

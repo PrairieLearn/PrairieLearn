@@ -407,6 +407,7 @@ export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
   course_instance_enrollment_limit: true,
   default_authn_provider_id: true,
   display_timezone: true,
+  github_course_owner: true,
   id: true,
   long_name: true,
   short_name: true,

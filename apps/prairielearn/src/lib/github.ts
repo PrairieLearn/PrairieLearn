@@ -23,8 +23,9 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 /*
   Required configuration options to get this working:
   - config.githubClientToken
-  - config.githubCourseOwner
+  - config.githubCourseOwner (platform default; institutions may override)
   - config.githubMachineTeam
+  - config.githubMachineUser (required to validate org access)
 */
 
 /**
@@ -37,16 +38,75 @@ function getGithubClient() {
   return new Octokit({ auth: config.githubClientToken });
 }
 
+export type GithubOrgAccessResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: 'no_client' | 'no_machine_user' | 'org_unreachable' | 'not_a_member';
+      detail?: string;
+    };
+
 /**
- * Checks whether a repository already exists on GitHub.
+ * Returns true when `value` refers to the same GitHub org as `config.githubCourseOwner`.
+ * GitHub org names are case-insensitive.
  */
-export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
+export function isPlatformDefaultOrg(value: string): boolean {
+  return value.toLowerCase() === config.githubCourseOwner.toLowerCase();
+}
+
+/**
+ * Verifies that the PrairieLearn machine account has access to the given GitHub org.
+ * Calls `GET /orgs/{org}` and `GET /orgs/{org}/memberships/{username}`. Membership state
+ * other than `'active'` (e.g. `'pending'` for unaccepted invitations) is treated as not a member.
+ *
+ * Unexpected errors (5xx, network) are re-thrown so callers can surface them as server errors
+ * instead of persisting an unverified value.
+ */
+export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccessResult> {
+  const client = getGithubClient();
+  if (client === null) return { ok: false, reason: 'no_client' };
+  if (config.githubMachineUser === null) return { ok: false, reason: 'no_machine_user' };
+
+  try {
+    await client.orgs.get({ org });
+  } catch (err: any) {
+    if (err.status === 404 || err.status === 403) {
+      return { ok: false, reason: 'org_unreachable' };
+    }
+    throw err;
+  }
+
+  try {
+    const response = await client.orgs.getMembershipForUser({
+      org,
+      username: config.githubMachineUser,
+    });
+    if (response.data.state !== 'active') {
+      return { ok: false, reason: 'not_a_member', detail: response.data.state };
+    }
+  } catch (err: any) {
+    if (err.status === 404 || err.status === 403) {
+      return { ok: false, reason: 'not_a_member' };
+    }
+    throw err;
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Checks whether a repository already exists on GitHub in the given org.
+ */
+export async function checkGithubRepositoryExists(
+  repoName: string,
+  owner: string,
+): Promise<boolean> {
   const client = getGithubClient();
   if (client === null) return false;
 
   try {
     const response = await client.repos.get({
-      owner: config.githubCourseOwner,
+      owner,
       repo: repoName,
     });
     // If the repository was renamed, GitHub returns a 301 redirect which
@@ -64,13 +124,11 @@ export async function checkGithubRepositoryExists(repoName: string): Promise<boo
 
 /**
  * Creates a new, empty repository.
- * @param client Octokit client
- * @param repo Name of the new repository to create
  */
-async function createEmptyRepository(client: Octokit, repo: string) {
+async function createEmptyRepository(client: Octokit, org: string, repo: string) {
   await client.repos.createInOrg({
-    org: config.githubCourseOwner,
-    owner: config.githubCourseOwner,
+    org,
+    owner: org,
     name: repo,
     private: true,
   });
@@ -78,17 +136,19 @@ async function createEmptyRepository(client: Octokit, repo: string) {
 
 /**
  * Adds a file's contents in a repository.
- * @param client Octokit client
- * @param repo Repository to set file contents in
- * @param path Path to the file, relative from the root of the repository.
- * @param contents Raw contents of the file, stored as a string.
  */
-async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
+async function addFileToRepo(
+  client: Octokit,
+  owner: string,
+  repo: string,
+  path: string,
+  contents: string,
+) {
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await client.repos.createOrUpdateFileContents({
-        owner: config.githubCourseOwner,
+        owner,
         repo,
         path,
         message: `Update ${path}`,
@@ -110,20 +170,17 @@ async function addFileToRepo(client: Octokit, repo: string, path: string, conten
 
 /**
  * Add a team to a specific repository.
- * @param client Octokit client
- * @param repo Repository to update
- * @param team Team to add
- * @param permission String permission to give to the team
  */
 async function addTeamToRepo(
   client: Octokit,
+  org: string,
   repo: string,
   team: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
-    owner: config.githubCourseOwner,
-    org: config.githubCourseOwner,
+    owner: org,
+    org,
     repo,
     team_slug: team,
     permission,
@@ -132,19 +189,16 @@ async function addTeamToRepo(
 
 /**
  * Invites a user to a specific repository.
- * @param client Octokit client
- * @param repo Repository to update
- * @param username Username to add
- * @param permission String permission to give to the user
  */
 async function addUserToRepo(
   client: Octokit,
+  owner: string,
   repo: string,
   username: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
   await client.repos.addCollaborator({
-    owner: config.githubCourseOwner,
+    owner,
     repo,
     username,
     permission,
@@ -160,6 +214,7 @@ async function addUserToRepo(
  * @param options.display_timezone - The display timezone of the course.
  * @param options.path - The path of the course.
  * @param options.repo_short_name - The short name of the repository.
+ * @param options.github_course_owner - The GitHub org that will own the new repository.
  * @param options.github_user - The GitHub username of the instructor.
  * @param options.course_request_id - The course request ID.
  * @param authn_user Authenticated user that is creating the course.
@@ -172,11 +227,14 @@ export async function createCourseRepoJob(
     display_timezone: string;
     path: string;
     repo_short_name: string;
+    github_course_owner: string;
     github_user: string | null;
     course_request_id: string;
   },
   authn_user: User,
 ) {
+  const owner = options.github_course_owner;
+
   const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
     if (client === null) {
@@ -191,8 +249,8 @@ export async function createCourseRepoJob(
 
     // Create an empty repository for the course
     job.info('Creating empty repository');
-    await createEmptyRepository(client, options.repo_short_name);
-    job.info(`Created repository ${options.repo_short_name}`);
+    await createEmptyRepository(client, owner, options.repo_short_name);
+    job.info(`Created repository ${owner}/${options.repo_short_name}`);
 
     job.info('Creating infoCourse.json based on template');
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
@@ -206,20 +264,20 @@ export async function createCourseRepoJob(
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
-    await addFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents);
+    await addFileToRepo(client, owner, options.repo_short_name, 'infoCourse.json', newContents);
     job.info('Uploaded new infoCourse.json file');
 
     // Copy the template .gitignore file
     job.info('Copying .gitignore file');
     const gitignorePath = path.join(TEMPLATE_COURSE_PATH, '.gitignore');
     const gitignoreContents = await fs.readFile(gitignorePath, 'utf-8');
-    await addFileToRepo(client, options.repo_short_name, '.gitignore', gitignoreContents);
+    await addFileToRepo(client, owner, options.repo_short_name, '.gitignore', gitignoreContents);
     job.info('Uploaded new .gitignore file');
 
     job.info('Copying README.md file');
     const readmePath = path.join(TEMPLATE_COURSE_PATH, 'README.md');
     const readmeContents = await fs.readFile(readmePath, 'utf-8');
-    await addFileToRepo(client, options.repo_short_name, 'README.md', readmeContents);
+    await addFileToRepo(client, owner, options.repo_short_name, 'README.md', readmeContents);
     job.info('Uploaded new README.md file');
 
     // Find main branch (which is the only branch in the new repo).
@@ -228,7 +286,7 @@ export async function createCourseRepoJob(
 
     const branches = (
       await client.repos.listBranches({
-        owner: config.githubCourseOwner,
+        owner,
         repo: options.repo_short_name,
       })
     ).data;
@@ -240,7 +298,7 @@ export async function createCourseRepoJob(
 
     // Add machine and instructor to the repo
     job.info('Adding machine team to repo');
-    await addTeamToRepo(client, options.repo_short_name, config.githubMachineTeam, 'admin');
+    await addTeamToRepo(client, owner, options.repo_short_name, config.githubMachineTeam, 'admin');
     job.info(
       `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
     );
@@ -248,7 +306,7 @@ export async function createCourseRepoJob(
     if (options.github_user) {
       job.info('Adding instructor to repo');
       try {
-        await addUserToRepo(client, options.repo_short_name, options.github_user, 'admin');
+        await addUserToRepo(client, owner, options.repo_short_name, options.github_user, 'admin');
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );
@@ -259,7 +317,7 @@ export async function createCourseRepoJob(
 
     // Insert the course into the courses table
     job.info('Adding course to database');
-    const repository = `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`;
+    const repository = `git@github.com:${owner}/${options.repo_short_name}.git`;
     const inserted_course = await insertCourse({
       institution_id: options.institution_id,
       short_name: options.short_name,

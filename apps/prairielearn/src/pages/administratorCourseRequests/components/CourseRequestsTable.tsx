@@ -27,6 +27,7 @@ import type { AdminCourseRequestError } from '../../../trpc/administrator/course
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
+  github_course_owner: string;
 }
 
 export function CourseRequestsTable({
@@ -34,6 +35,7 @@ export function CourseRequestsTable({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   showAll,
   aiSecretsConfigured,
 }: {
@@ -41,6 +43,7 @@ export function CourseRequestsTable({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   showAll: boolean;
   aiSecretsConfigured: boolean;
 }) {
@@ -101,6 +104,7 @@ export function CourseRequestsTable({
         institutions={institutions}
         availableTimezones={availableTimezones}
         coursesRoot={coursesRoot}
+        defaultGithubCourseOwner={defaultGithubCourseOwner}
         aiSecretsConfigured={aiSecretsConfigured}
       />
     </div>
@@ -284,11 +288,13 @@ function CourseRequestApproveModal({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   aiSecretsConfigured,
 }: ReturnType<typeof useModalState<CourseRequestRow>> & {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   aiSecretsConfigured: boolean;
 }) {
   return (
@@ -300,6 +306,7 @@ function CourseRequestApproveModal({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
+          defaultGithubCourseOwner={defaultGithubCourseOwner}
           aiSecretsConfigured={aiSecretsConfigured}
           onCancel={onHide}
         />
@@ -313,6 +320,7 @@ function CourseRequestApproveModalContent({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   aiSecretsConfigured,
   onCancel,
 }: {
@@ -320,6 +328,7 @@ function CourseRequestApproveModalContent({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   aiSecretsConfigured: boolean;
   onCancel: () => void;
 }) {
@@ -334,6 +343,8 @@ function CourseRequestApproveModalContent({
   const defaultInstitutionId = autoFilledInstitutionId ?? '';
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
+  const initialGithubCourseOwner =
+    (autoFilledInstitutionId && userInstitution?.github_course_owner) || defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
@@ -348,16 +359,23 @@ function CourseRequestApproveModalContent({
       path,
       repository_short_name: repoName,
       github_user: request.github_user ?? '',
+      github_course_owner: initialGithubCourseOwner,
     },
   });
 
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    setValue,
+    formState: { isSubmitting, dirtyFields },
   } = methods;
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, institutions);
+
+  const handleInstitutionChange = (institution: AdminInstitution) => {
+    if (dirtyFields.github_course_owner) return;
+    setValue('github_course_owner', institution.github_course_owner ?? defaultGithubCourseOwner);
+  };
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -369,6 +387,7 @@ function CourseRequestApproveModalContent({
         displayTimezone: data.display_timezone,
         path: data.path,
         repoShortName: data.repository_short_name,
+        githubCourseOwner: data.github_course_owner.trim(),
         githubUser: data.github_user,
       },
       {
@@ -543,7 +562,27 @@ function CourseRequestApproveModalContent({
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
             repositoryRequired={true}
+            onInstitutionChange={handleInstitutionChange}
           />
+          <div className="mb-3">
+            <label className="form-label" htmlFor="courseRequestAddInputGithubCourseOwner">
+              GitHub organization
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="courseRequestAddInputGithubCourseOwner"
+              defaultValue={initialGithubCourseOwner}
+              aria-describedby="courseRequestAddInputGithubCourseOwnerHelp"
+              {...register('github_course_owner', {
+                required: 'GitHub organization is required',
+              })}
+            />
+            <small id="courseRequestAddInputGithubCourseOwnerHelp" className="form-text text-muted">
+              The repository will be created in this GitHub organization. Pre-filled from the
+              selected institution's default; can be overridden for this course.
+            </small>
+          </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
               GitHub username

@@ -56,6 +56,7 @@ router.get(
               institutions={AdminInstitutionSchema.array().parse(institutions)}
               availableTimezones={availableTimezones}
               coursesRoot={config.coursesRoot}
+              defaultGithubCourseOwner={config.githubCourseOwner}
               trpcCsrfToken={trpcCsrfToken}
               aiSecretsConfigured={!!config.administratorOpenAiApiKey}
               showAll={showAll}

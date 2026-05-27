@@ -213,6 +213,9 @@ router.post(
       z.boolean(),
     );
 
+    let autoApproved = false;
+    let autoApprovalBlockedMessage: string | null = null;
+    let autoApprovedRepoShortName: string | null = null;
     if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await queryRow(
@@ -221,29 +224,68 @@ router.post(
         z.object({
           institution_id: IdSchema,
           display_timezone: z.string(),
+          institution_github_course_owner: z.string().nullable(),
         }),
       );
-      const repo_short_name = github.reponameFromShortname(short_name);
-      const repo_options = {
-        short_name,
-        title,
-        institution_id: existingSettingsResult.institution_id,
-        display_timezone: existingSettingsResult.display_timezone,
-        path: path.join(config.coursesRoot, repo_short_name),
-        repo_short_name,
-        github_user,
-        course_request_id,
-      };
-      await github.createCourseRepoJob(repo_options, res.locals.authn_user);
+      const githubCourseOwner =
+        existingSettingsResult.institution_github_course_owner ?? config.githubCourseOwner;
 
-      // Redirect on success so that refreshing doesn't create another request
-      res.redirect(req.originalUrl);
+      // Verify org access before auto-creating. If the institution's configured org has
+      // become unreachable since it was saved, fall through to the manual-approval path
+      // so an admin can investigate instead of failing in a background job.
+      const access = github.isPlatformDefaultOrg(githubCourseOwner)
+        ? ({ ok: true } as const)
+        : await github.checkGithubOrgAccess(githubCourseOwner);
 
-      // Do this in the background once we've redirected the response.
-      try {
+      if (access.ok) {
+        const repo_short_name = github.reponameFromShortname(short_name);
+        await github.createCourseRepoJob(
+          {
+            short_name,
+            title,
+            institution_id: existingSettingsResult.institution_id,
+            display_timezone: existingSettingsResult.display_timezone,
+            path: path.join(config.coursesRoot, repo_short_name),
+            repo_short_name,
+            github_course_owner: githubCourseOwner,
+            github_user,
+            course_request_id,
+          },
+          res.locals.authn_user,
+        );
+        autoApproved = true;
+        autoApprovedRepoShortName = repo_short_name;
+      } else {
+        const detailSuffix = access.detail ? `: ${access.detail}` : '';
+        logger.error(
+          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${access.reason}${detailSuffix})`,
+        );
+        Sentry.captureMessage(
+          `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
+          { extra: { reason: access.reason, detail: access.detail, course_request_id } },
+        );
+        autoApprovalBlockedMessage =
+          '*Auto-approval skipped — GitHub org access check failed*\n' +
+          `Course rubric: ${short_name}\n` +
+          `Course title: ${title}\n` +
+          `Institution: ${institution}\n` +
+          `Target org: ${githubCourseOwner} (${access.reason}${detailSuffix})\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email})`;
+      }
+    }
+
+    // Redirect on success so that refreshing doesn't create another request.
+    res.redirect(req.originalUrl);
+
+    // Do remaining work in the background once we've redirected the response.
+    try {
+      if (autoApprovalBlockedMessage) {
+        await opsbot.sendCourseRequestMessage(autoApprovalBlockedMessage);
+      }
+      if (autoApproved) {
         await opsbot.sendCourseRequestMessage(
           '*Automatically creating course*\n' +
-            `Course repo: ${repo_short_name}\n` +
+            `Course repo: ${autoApprovedRepoShortName}\n` +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
             `Institution: ${institution}\n` +
@@ -251,16 +293,7 @@ router.post(
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
         );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
-    } else {
-      // Not automatically created.
-      res.redirect(req.originalUrl);
-
-      // Do this in the background once we've redirected the response.
-      try {
+      } else {
         await opsbot.sendCourseRequestMessage(
           '*Incoming course request*\n' +
             `Course rubric: ${short_name}\n` +
@@ -270,10 +303,10 @@ router.post(
             `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
             `GitHub username: ${github_user || 'not provided'}`,
         );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
       }
+    } catch (err) {
+      logger.error('Error sending course request message to Slack', err);
+      Sentry.captureException(err);
     }
   }),
 );

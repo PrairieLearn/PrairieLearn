@@ -21,12 +21,14 @@ export function AdministratorInstitutionGeneral({
   availableTimezones,
   statistics,
   planGrants,
+  defaultGithubCourseOwner,
   resLocals,
 }: {
   institution: Institution;
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
+  defaultGithubCourseOwner: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -180,6 +182,37 @@ export function AdministratorInstitutionGeneral({
           type="submit"
           name="__action"
           value="update_enrollment_limits"
+          class="btn btn-primary"
+        >
+          Save
+        </button>
+      </form>
+
+      <h2 class="h4">GitHub</h2>
+      <form method="POST" class="mb-3">
+        <div class="mb-3">
+          <label class="form-label" for="github_course_owner">Default GitHub organization</label>
+          <input
+            type="text"
+            class="form-control"
+            id="github_course_owner"
+            name="github_course_owner"
+            value="${institution.github_course_owner ?? ''}"
+            placeholder="${defaultGithubCourseOwner}"
+            aria-describedby="github_course_owner_help"
+          />
+          <small id="github_course_owner_help" class="form-text text-muted">
+            When approved course requests for this institution are turned into courses, repositories
+            are created in this GitHub organization. Leave blank to use the platform default
+            (<code>${defaultGithubCourseOwner}</code>). Saving validates that the PrairieLearn
+            machine account is an active member of the organization.
+          </small>
+        </div>
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          type="submit"
+          name="__action"
+          value="update_github_course_owner"
           class="btn btn-primary"
         >
           Save

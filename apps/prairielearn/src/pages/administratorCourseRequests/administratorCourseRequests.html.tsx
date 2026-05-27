@@ -15,6 +15,7 @@ export function AdministratorCourseRequests({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   trpcCsrfToken,
   aiSecretsConfigured,
   showAll,
@@ -23,6 +24,7 @@ export function AdministratorCourseRequests({
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   trpcCsrfToken: string;
   aiSecretsConfigured: boolean;
   showAll: boolean;
@@ -37,6 +39,7 @@ export function AdministratorCourseRequests({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
+          defaultGithubCourseOwner={defaultGithubCourseOwner}
           aiSecretsConfigured={aiSecretsConfigured}
           showAll={showAll}
         />

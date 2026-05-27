@@ -25,10 +25,12 @@ SELECT
 -- BLOCK get_existing_owner_course_settings
 SELECT
   co.institution_id,
-  co.display_timezone
+  co.display_timezone,
+  i.github_course_owner AS institution_github_course_owner
 FROM
   course_permissions AS cp
   JOIN courses AS co ON co.id = cp.course_id
+  JOIN institutions AS i ON i.id = co.institution_id
 WHERE
   (
     cp.user_id = $user_id
