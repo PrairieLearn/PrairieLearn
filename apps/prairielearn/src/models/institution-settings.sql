@@ -6,6 +6,15 @@ FROM
 WHERE
   institution_id = $institution_id;
 
+-- BLOCK select_institution_settings_for_update
+SELECT
+  *
+FROM
+  institution_settings
+WHERE
+  institution_id = $institution_id
+FOR UPDATE;
+
 -- BLOCK upsert_institution_settings
 INSERT INTO
   institution_settings (institution_id, course_request_message)

@@ -3,10 +3,8 @@ import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   selectInstitutionSettings,
   updateInstitutionCourseRequestMessage,
@@ -64,21 +62,10 @@ router.post(
           ? req.body.course_request_message
           : null;
 
-      await runInTransactionAsync(async () => {
-        const oldSettings = await selectInstitutionSettings({ institution_id: institution.id });
-        const updatedSettings = await updateInstitutionCourseRequestMessage({
-          institution_id: institution.id,
-          course_request_message: newMessage,
-        });
-        await insertAuditLog({
-          authn_user_id: res.locals.authn_user.id,
-          table_name: 'institution_settings',
-          action: 'update',
-          institution_id: institution.id,
-          old_state: oldSettings,
-          new_state: updatedSettings,
-          row_id: institution.id,
-        });
+      await updateInstitutionCourseRequestMessage({
+        institution_id: institution.id,
+        course_request_message: newMessage,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       flash('success', 'Successfully updated the course request message.');

@@ -8,6 +8,7 @@ async function setCourseRequestMessage(message: string | null): Promise<void> {
   await updateInstitutionCourseRequestMessage({
     institution_id: DEFAULT_INSTITUTION_ID,
     course_request_message: message,
+    authn_user_id: '1',
   });
 }
 
