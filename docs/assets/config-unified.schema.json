@@ -1280,6 +1280,14 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingEvalRepository": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "aiGradingEvalBranch": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "aiGradingRateLimitDollars": {
       "type": "number",
       "default": 10

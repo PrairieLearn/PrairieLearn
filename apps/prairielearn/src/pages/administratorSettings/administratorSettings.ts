@@ -1,10 +1,12 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
+import { AiGradingModelIdSchema } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
@@ -86,6 +88,90 @@ router.post(
         await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
+        user: res.locals.authn_user,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'delete_ai_grading_eval_courses') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      const { deleteAllAiGradingEvalCourses } =
+        await import('../../ee/lib/ai-grading-eval/delete-eval-courses.js');
+      const jobSequenceId = await deleteAllAiGradingEvalCourses(res.locals.authn_user);
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'run_ai_grading_eval') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      if (!config.aiGradingEvalRepository) {
+        throw new error.HttpStatusError(
+          400,
+          'aiGradingEvalRepository is not configured. Set it in config.json.',
+        );
+      }
+      if (!config.serverCanonicalHost) {
+        throw new error.HttpStatusError(
+          400,
+          'serverCanonicalHost is not configured. Set it in config.json so AI grading eval output can include working deep links to the synthetic course.',
+        );
+      }
+
+      const rawModels = req.body.models;
+      const modelInput = Array.isArray(rawModels) ? rawModels : rawModels ? [rawModels] : [];
+      const models = z
+        .array(AiGradingModelIdSchema)
+        .min(1, 'Select at least one AI grading model.')
+        .safeParse(modelInput);
+      if (!models.success) {
+        throw new error.HttpStatusError(400, models.error.issues[0]?.message ?? 'Invalid models');
+      }
+
+      const creditDollars = z.coerce
+        .number()
+        .nonnegative('credit_dollars must be a non-negative number.')
+        .safeParse(req.body.credit_dollars);
+      if (!creditDollars.success) {
+        throw new error.HttpStatusError(
+          400,
+          creditDollars.error.issues[0]?.message ?? 'Invalid credit_dollars',
+        );
+      }
+      const creditMilliDollars = Math.round(creditDollars.data * 1000);
+
+      const { runAiGradingEval } = await import('../../ee/lib/ai-grading-eval/ai-grading-eval.js');
+      const jobSequenceId = await runAiGradingEval({
+        repository: config.aiGradingEvalRepository,
+        branch: config.aiGradingEvalBranch,
+        models: models.data,
+        creditMilliDollars,
+        user: res.locals.authn_user,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'upload_verdicts_csv') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      if (!config.aiGradingEvalRepository) {
+        throw new error.HttpStatusError(
+          400,
+          'aiGradingEvalRepository is not configured. Set it in config.json.',
+        );
+      }
+      if (!config.serverCanonicalHost) {
+        throw new error.HttpStatusError(
+          400,
+          'serverCanonicalHost is not configured. Set it in config.json so AI grading eval output can include working deep links to the synthetic course.',
+        );
+      }
+      const uploaded = (req.files ?? []) as Express.Multer.File[];
+      if (uploaded.length === 0) {
+        throw new error.HttpStatusError(400, 'Select at least one verdicts CSV file.');
+      }
+      const { uploadVerdictCsvs } = await import('../../ee/lib/ai-grading-eval/upload-verdicts.js');
+      const jobSequenceId = await uploadVerdictCsvs({
+        repository: config.aiGradingEvalRepository,
+        branch: config.aiGradingEvalBranch,
+        files: uploaded.map((f) => ({ originalname: f.originalname, buffer: f.buffer })),
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);

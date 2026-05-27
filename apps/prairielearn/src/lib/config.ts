@@ -608,6 +608,13 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
+   * Git URL of the AI grading evals repository. Consumed by the dev-mode-only
+   * "Run AI grading eval" admin action; ignored in production.
+   */
+  aiGradingEvalRepository: z.string().nullable().default(null),
+  /** Optional branch to check out from `aiGradingEvalRepository`. */
+  aiGradingEvalBranch: z.string().nullable().default(null),
+  /**
    * The hourly spending rate limit for AI grading, in US dollars.
    * This is applied per course instance.
    * Accounts for both input and output tokens.

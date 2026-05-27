@@ -1,7 +1,14 @@
+import { groupBy } from 'es-toolkit';
+
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  AI_GRADING_MODELS,
+  AI_GRADING_PROVIDER_DISPLAY_NAMES,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { config } from '../../lib/config.js';
 import { type NewsItem } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -210,6 +217,273 @@ export function AdministratorSettings({
                         </button>
                       `
                     : ''}
+                </form>
+              </div>
+            </div>
+          `
+        : ''}
+      ${config.devMode
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                <h2>AI grading evals</h2>
+              </div>
+              <div class="card-body">
+                <p class="mb-3">
+                  Measures, for each selected model, the
+                  <strong>percentage of submission gradings a human said were correct</strong>.
+                  Unsure cases count as incorrect until a reviewer resolves them.
+                </p>
+                <div class="accordion mb-3" id="ai-grading-eval-explanation">
+                  <div class="accordion-item">
+                    <h3 class="accordion-header">
+                      <button
+                        class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#ai-grading-eval-explanation-body"
+                        aria-expanded="false"
+                        aria-controls="ai-grading-eval-explanation-body"
+                      >
+                        More details
+                      </button>
+                    </h3>
+                    <div id="ai-grading-eval-explanation-body" class="accordion-collapse collapse">
+                      <div class="accordion-body">
+                        <p class="mb-1"><strong>Per-submission grading sets</strong></p>
+                        <ul class="mb-3">
+                          <li>
+                            Each submission has a <em>correct set</em> of rubric-item selections
+                            that are known to be valid gradings for it, and an
+                            <em>incorrect set</em> of selections known to be invalid.
+                          </li>
+                          <li>
+                            These sets are properties of the submission itself rather than of any
+                            particular grader, so all evaluated models are scored against the same
+                            sets.
+                          </li>
+                          <li>
+                            The sets are reconstructed at the start of every run by seeding from the
+                            TA grading in <code>submissions.csv</code> and replaying every CSV in
+                            <code>verdicts/</code>.
+                          </li>
+                        </ul>
+                        <p class="mb-1"><strong>Evaluation loop</strong></p>
+                        <ol class="mb-3">
+                          <li>Each selected model grades every submission.</li>
+                          <li>
+                            Each AI grading is compared to the submission's sets: a match in the
+                            correct set is labeled <em>correct</em>, a match in the incorrect set is
+                            labeled <em>incorrect</em>, and an unmatched grading is labeled
+                            <em>unsure</em>.
+                          </li>
+                          <li>
+                            Unsure gradings are written to an HTML form in your system temp
+                            directory. The form displays each question, submission, and AI grading,
+                            and asks the reviewer whether the grading is correct. Upon completing
+                            the form, the reviewer exports a CSV file with all their verdicts.
+                          </li>
+                          <li>
+                            Upload the verdicts CSV under <strong>Upload verdicts CSVs</strong>
+                            below. Statistics are recomputed immediately, and the new verdicts are
+                            folded into the correct and incorrect sets for every subsequent run.
+                          </li>
+                        </ol>
+                        <p class="mb-1"><strong>Repeating runs</strong></p>
+                        <ul class="mb-3">
+                          <li>
+                            Each additional run grows the shared sets, reducing the human annotation
+                            needed by future runs (regardless of which model produced the run).
+                          </li>
+                          <li>
+                            Re-running the same model also reveals its variability. A model whose
+                            unsure count shrinks across runs is producing the same rubric-item
+                            selections each time and is comparatively stable; one whose unsure count
+                            persists is producing new selections each time and is comparatively
+                            variable.
+                          </li>
+                        </ul>
+                        <div class="alert alert-warning mb-0" role="alert">
+                          <strong>Do not run concurrently:</strong> grading runs and verdict uploads
+                          share a single local checkout of the eval repository and a single eval
+                          course, so overlapping operations will fail or produce stale results.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p class="mb-1">
+                  <strong>Required in <code>config.json</code>:</strong>
+                </p>
+                <ul class="mb-3">
+                  <li>
+                    <code>aiGradingEvalRepository</code> —
+                    ${config.aiGradingEvalRepository
+                      ? html`<code>${config.aiGradingEvalRepository}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                  </li>
+                  <li>
+                    <code>aiGradingEvalBranch</code> —
+                    ${config.aiGradingEvalBranch
+                      ? html`<code>${config.aiGradingEvalBranch}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                  </li>
+                  <li>
+                    <code>serverCanonicalHost</code> (required) —
+                    ${config.serverCanonicalHost
+                      ? html`<code>${config.serverCanonicalHost}</code>
+                          <span class="text-success small ms-1">Provided</span>`
+                      : html`<span class="text-danger fw-bold">Missing</span>`}
+                    <div class="text-muted small">
+                      Must be reachable from the annotation packet HTML files, which are opened
+                      directly off disk by reviewers — so a bare <code>localhost</code> won't work.
+                      Follow
+                      <a
+                        href="https://docs.prairielearn.com/dev-guide/configJson/#setting-up-external-image-capture-locally"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        these instructions
+                      </a>
+                      to find your local IPv4 address and set
+                      <code>serverCanonicalHost</code> to <code>http://&lt;your-ip&gt;:3000</code>.
+                      The linked guide is written for external image capture, but the host setup it
+                      walks through is the same one we need here.
+                    </div>
+                  </li>
+                </ul>
+                ${config.aiGradingEvalRepository && config.serverCanonicalHost
+                  ? html`
+                      <form method="POST" class="mb-3">
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <fieldset class="mb-3">
+                          <legend class="h6">Models</legend>
+                          <p class="form-text mt-0 mb-2">
+                            Each selected model grades every eval. Stats are reported per model so
+                            results can be compared side-by-side.
+                          </p>
+                          ${Object.entries(groupBy(AI_GRADING_MODELS, (m) => m.provider)).map(
+                            ([provider, models]) => html`
+                              <div class="mb-2">
+                                <div class="text-muted small text-uppercase">
+                                  ${AI_GRADING_PROVIDER_DISPLAY_NAMES[
+                                    provider as keyof typeof AI_GRADING_PROVIDER_DISPLAY_NAMES
+                                  ]}
+                                </div>
+                                ${models.map(
+                                  (m) => html`
+                                    <div class="form-check">
+                                      <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="models"
+                                        value="${m.modelId}"
+                                        id="ai-grading-eval-model-${m.modelId}"
+                                        ${m.modelId === DEFAULT_AI_GRADING_MODEL ? 'checked' : ''}
+                                      />
+                                      <label
+                                        class="form-check-label"
+                                        for="ai-grading-eval-model-${m.modelId}"
+                                      >
+                                        ${m.name}
+                                        <span class="text-muted small">— ${m.sublabel}</span>
+                                      </label>
+                                    </div>
+                                  `,
+                                )}
+                              </div>
+                            `,
+                          )}
+                        </fieldset>
+                        <div class="mb-3" style="max-width: 16rem;">
+                          <label for="ai-grading-eval-credits" class="form-label">
+                            Seed credit ($)
+                          </label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            id="ai-grading-eval-credits"
+                            name="credit_dollars"
+                            value="20"
+                            min="0"
+                            step="1"
+                            required
+                          />
+                          <div class="form-text">
+                            Non-transferable credit added to the eval course instance.
+                          </div>
+                        </div>
+                        <button
+                          type="submit"
+                          class="btn btn-primary"
+                          name="__action"
+                          value="run_ai_grading_eval"
+                        >
+                          Run AI grading eval
+                        </button>
+                      </form>
+                    `
+                  : html`
+                      <p class="text-muted">
+                        Set <code>aiGradingEvalRepository</code> and
+                        <code>serverCanonicalHost</code> in <code>config.json</code> to enable the
+                        run action.
+                      </p>
+                    `}
+                ${config.aiGradingEvalRepository && config.serverCanonicalHost
+                  ? html`
+                      <hr />
+                      <h3 class="h6">Upload verdicts CSVs</h3>
+                      <p class="form-text mt-0 mb-2">
+                        Drop one or more exported verdicts CSV files. Each is routed to the right
+                        eval directory by <code>eval_id</code>, deduplicated by content hash, then
+                        committed and pushed upstream automatically.
+                      </p>
+                      <form method="POST" enctype="multipart/form-data" class="mb-3">
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <div class="mb-3">
+                          <input
+                            type="file"
+                            class="form-control"
+                            name="verdicts_files"
+                            accept=".csv,text/csv"
+                            multiple
+                            required
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          class="btn btn-primary"
+                          name="__action"
+                          value="upload_verdicts_csv"
+                        >
+                          Upload and commit
+                        </button>
+                      </form>
+                    `
+                  : ''}
+                <hr />
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                    name="__action"
+                    value="delete_ai_grading_eval_courses"
+                    onclick="return confirm('Delete every AI grading eval course?');"
+                  >
+                    Delete all eval courses
+                  </button>
                 </form>
               </div>
             </div>
