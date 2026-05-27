@@ -1,0 +1,117 @@
+<pl-question-panel>
+  <p>
+    The examples below illustrate different drawing tools and grading criteria available in
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-sketch"><code>pl-sketch</code></a>.
+    For convenience, all examples allow blank submissions.
+  </p>
+</pl-question-panel>
+
+<pl-card>
+  <pl-question-panel>
+    <p>
+      A single <code>pl-sketch</code> canvas can host multiple curves that are each graded
+      independently. Each tool gets its own color, its own drawing style, and its own
+      <code>match-function</code> criterion &mdash; so students get per-curve feedback, and the
+      solution overlay reveals all three together.
+    </p>
+    <p>For full marks, draw all three functions on the grid below:</p>
+    <ul>
+      <li><span style="color: #1a3a8f; font-weight: 600;">$f(x) = \sin(x)$</span> &mdash; freehand</li>
+      <li><span style="color: #3b82f6; font-weight: 600;">$g(x) = x^2/4$</span> &mdash; smooth spline</li>
+      <li><span style="color: #f97316; font-weight: 600;">$h(x) = |x|$</span> &mdash; polyline</li>
+    </ul>
+  </pl-question-panel>
+  <pl-sketch answers-name="multi-curve" x-range="-3,3" y-range="-2,4" allow-blank="true">
+    <pl-sketch-tool id="sin" type="free-draw" label="sin(x)" color="#1a3a8f"></pl-sketch-tool>
+    <pl-sketch-tool id="parabola" type="spline" label="x²/4" color="#3b82f6"></pl-sketch-tool>
+    <pl-sketch-tool id="absval" type="polyline" label="|x|" color="#f97316"></pl-sketch-tool>
+
+    <pl-sketch-grade type="match-function" tool-id="sin" function="sin(x)" tolerance="30" allow-undefined="true" feedback="The sine curve does not match $\sin(x)$."></pl-sketch-grade>
+    <pl-sketch-grade type="match-function" tool-id="parabola" function="x**2/4" tolerance="30" allow-undefined="true" feedback="The parabola does not match $x^2/4$."></pl-sketch-grade>
+    <pl-sketch-grade type="match-function" tool-id="absval" function="abs(x)" tolerance="30" allow-undefined="true" feedback="The absolute-value curve does not match $|x|$."></pl-sketch-grade>
+
+    <pl-sketch-solution tool-id="sin" function="sin(x)"></pl-sketch-solution>
+    <pl-sketch-solution tool-id="parabola" function="x**2/4"></pl-sketch-solution>
+    <pl-sketch-solution tool-id="absval" coordinates="(-3,3),(0,0),(3,3)"></pl-sketch-solution>
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>The <code>match-function</code> criterion compares a freehand sketch to a reference function.
+      Restricting the comparison to a specific <code>x-range</code> lets the question grade only
+      the relevant interval, while <code>tolerance</code> controls how close the sketch needs to
+      be in pixels.
+    </p>
+    <p>For full marks, sketch the function $f(x) = \sin(x)$ on the interval $[0, 2\pi]$.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-sin" x-range="-1,7" y-range="-2,2" allow-blank="true">
+    <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+    <pl-sketch-grade type="match-function" tool-id="fd" function="sin(x)" x-range="0,6.28"></pl-sketch-grade>
+    <pl-sketch-solution tool-id="fd" function="sin(x)" x-range="0,6.28"></pl-sketch-solution>
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>Multiple grading criteria can be stacked to grade open-ended questions where many curve
+      shapes are valid answers. Here, <code>monot-increasing</code>, <code>greater-than</code>,
+      and two <code>match</code> criteria at the endpoints combine to accept any positive
+      increasing function passing through the marked points.
+    </p>
+    <p>For full marks, draw any function that is positive and monotonically increasing on $[0, 4]$,
+      starting at $(0, 1)$ and ending at $(4, 3)$.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-increasing" x-range="-1,5" y-range="-1,5" allow-blank="true">
+    <pl-sketch-tool id="ref" type="point" read-only="true" color="dimgray" hollow="true"></pl-sketch-tool>
+    <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+    <pl-sketch-initial tool-id="ref" coordinates="(0,1)"></pl-sketch-initial>
+    <pl-sketch-initial tool-id="ref" coordinates="(4,3)"></pl-sketch-initial>
+    <pl-sketch-grade type="monot-increasing" tool-id="fd" x-range="0,4" feedback="Your function must be monotonically increasing on $[0, 4]$."></pl-sketch-grade>
+    <pl-sketch-grade type="greater-than" tool-id="fd" y="0" x-range="0,4" feedback="Your function must be positive on $[0, 4]$."></pl-sketch-grade>
+    <pl-sketch-grade type="match" tool-id="fd" x="0" y="1" feedback="Your function must start at $(0, 1)$."></pl-sketch-grade>
+    <pl-sketch-grade type="match" tool-id="fd" x="4" y="3" feedback="Your function must end at $(4, 3)$."></pl-sketch-grade>
+    <pl-sketch-solution tool-id="fd" function="1 + x/2" x-range="0,4"></pl-sketch-solution>
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>The <code>concave-up</code> criterion checks the shape of the drawn function rather than
+      its exact values. Combined with a <code>match</code> point, the question accepts a wide
+      range of valid answers (any U-shaped curve passing through the marked point).
+    </p>
+    <p>For full marks, sketch any concave-up function that passes through the point $(0, 1)$.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-concave" x-range="-3,3" y-range="-1,5" allow-blank="true">
+    <pl-sketch-tool id="ref" type="point" read-only="true" color="dimgray" hollow="true"></pl-sketch-tool>
+    <pl-sketch-tool id="sp" type="spline"></pl-sketch-tool>
+    <pl-sketch-initial tool-id="ref" coordinates="(0,1)"></pl-sketch-initial>
+    <pl-sketch-grade type="concave-up" tool-id="sp" feedback="Your function must be concave-up."></pl-sketch-grade>
+    <pl-sketch-grade type="match" tool-id="sp" x="0" y="1" feedback="Your function must pass through $(0, 1)$."></pl-sketch-grade>
+    <pl-sketch-solution tool-id="sp" function="x**2 + 1" x-range="-2,2"></pl-sketch-solution>
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>Sketching is not limited to drawing curves. The <code>point</code> tool combined with
+      <code>match</code> criteria lets students annotate specific locations on a pre-drawn graph,
+      such as marking intersections, extrema, or roots.
+    </p>
+    <p>Given $f(x) = x^2$ (blue) and $g(x) = x + 2$ (orange) shown below, mark the points where
+      they intersect.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-intersect" x-range="-3,3" y-range="-1,6" allow-blank="true">
+    <pl-sketch-tool id="f" type="spline" read-only="true" color="#1a3a8f"></pl-sketch-tool>
+    <pl-sketch-tool id="g" type="spline" read-only="true" color="#f97316"></pl-sketch-tool>
+    <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+    <pl-sketch-initial tool-id="f" function="x**2" x-range="-2.4,2.4"></pl-sketch-initial>
+    <pl-sketch-initial tool-id="g" function="x + 2" x-range="-3,3"></pl-sketch-initial>
+    <pl-sketch-grade type="match" tool-id="pt" x="-1" y="1" feedback="Missing the intersection at $(-1, 1)$."></pl-sketch-grade>
+    <pl-sketch-grade type="match" tool-id="pt" x="2" y="4" feedback="Missing the intersection at $(2, 4)$."></pl-sketch-grade>
+    <pl-sketch-grade type="count" tool-id="pt" count="2" feedback="Mark exactly two intersection points."></pl-sketch-grade>
+    <pl-sketch-solution tool-id="pt" coordinates="(-1,1)"></pl-sketch-solution>
+    <pl-sketch-solution tool-id="pt" coordinates="(2,4)"></pl-sketch-solution>
+  </pl-sketch>
+</pl-card>

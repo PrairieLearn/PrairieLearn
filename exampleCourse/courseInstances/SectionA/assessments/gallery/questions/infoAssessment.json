@@ -26,6 +26,10 @@
         { "id": "gallery/multipleChoice/complex", "autoPoints": 1 },
         { "id": "gallery/multipleChoice/advanced", "autoPoints": 1 }
       ]
+    },
+    {
+      "title": "Sketching",
+      "questions": [{ "id": "gallery/sketch", "autoPoints": 1 }]
     }
   ],
   "text": "<p><strong>Comments about this assessment:</strong> </p><p> This assessment includes examples from the question gallery at <a href=\"https://www.prairielearn.com/catalog/questions\" target=\"_blank\">https://www.prairielearn.com/catalog/questions</a>.</p>"
