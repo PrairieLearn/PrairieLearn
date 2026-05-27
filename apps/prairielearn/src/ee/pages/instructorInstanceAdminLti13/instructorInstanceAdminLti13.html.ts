@@ -32,11 +32,11 @@ export function InstructorInstanceAdminLti13NoInstances({
 }): string {
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,
@@ -44,7 +44,7 @@ export function InstructorInstanceAdminLti13NoInstances({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Integrations with other learning systems</h1>
+          <h1>LMS connections</h1>
         </div>
         <div class="card-body">
           ${lti13_instances.length === 0
@@ -105,11 +105,11 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,

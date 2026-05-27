@@ -1,10 +1,10 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -13,7 +13,11 @@ import type {
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
+import type { ManualGradingError } from '../../../trpc/assessmentQuestion/manual-grading.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
@@ -23,8 +27,6 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
-import { createManualGradingTrpcClient } from './utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 interface AssessmentQuestionManualGradingProps {
@@ -39,7 +41,7 @@ interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
-  aiGradingModelSelectionEnabled: boolean;
+  aiSubmissionGroupingEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -51,6 +53,8 @@ interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
+  availableAiGradingProviders: EnumAiGradingProvider[];
+  aiGradingRelativeCosts: Record<string, string>;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -69,16 +73,18 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
-  aiGradingModelSelectionEnabled,
+  aiSubmissionGroupingEnabled,
   initialAiGradingMode,
-  rubricData,
+  rubricData: initialRubricData,
   instanceQuestionGroups,
   courseStaff,
-  aiGradingStats,
+  aiGradingStats: initialAiGradingStats,
   initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
+  availableAiGradingProviders,
+  aiGradingRelativeCosts,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -87,25 +93,32 @@ function AssessmentQuestionManualGradingInner({
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+  const [rubricData, setRubricData] = useState(initialRubricData);
+  const [aiGradingStats, setAiGradingStats] = useState(initialAiGradingStats);
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
+  const setAiGradingModeError = getAppError<ManualGradingError['SetAiGradingMode']>(
+    setAiGradingModeMutation.error,
+  );
 
   return (
     <>
-      {setAiGradingModeMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => setAiGradingModeMutation.reset()}
-        >
-          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-        </Alert>
-      )}
+      <AppErrorAlert
+        error={setAiGradingModeError}
+        className="mb-3"
+        render={{
+          UNKNOWN: ({ message }) => (
+            <>
+              <strong>Error:</strong> {message}
+            </>
+          ),
+        }}
+        onDismiss={() => setAiGradingModeMutation.reset()}
+      />
       <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb mb-0">
@@ -162,15 +175,24 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+        aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+        availableAiGradingProviders={availableAiGradingProviders}
+        aiGradingRelativeCosts={aiGradingRelativeCosts}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
+        onRubricSettingsSaved={({ rubric_data, aiGradingStats: newAiGradingStats }) => {
+          setRubricData(rubric_data);
+          setAiGradingStats(newAiGradingStats);
+          void queryClient.invalidateQueries({
+            queryKey: trpc.manualGrading.instances.queryKey(),
+          });
+        }}
       />
 
       <GroupInfoModal
@@ -186,7 +208,7 @@ function AssessmentQuestionManualGradingInner({
           setConflictModalState(null);
           // Refetch the table data to show the latest state.
           void queryClient.invalidateQueries({
-            queryKey: trpc.instances.queryKey(),
+            queryKey: trpc.manualGrading.instances.queryKey(),
           });
         }}
       />
@@ -206,7 +228,14 @@ export function AssessmentQuestionManualGrading({
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createManualGradingTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAssessmentQuestionTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: innerProps.courseInstance.id,
+      assessmentId: innerProps.assessment.id,
+      assessmentQuestionId: innerProps.assessmentQuestion.id,
+    }),
+  );
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

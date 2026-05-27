@@ -1,5 +1,9 @@
 # Elements for drawing
 
+A canvas for auto-gradeable drawings.
+
+Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
+
 ## Elements to create drawing canvas
 
 ### `pl-drawing` element
@@ -24,9 +28,10 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
 | `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
+| `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
 | `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
 | `height`                   | integer | 320                                          | Vertical height of the canvas (in pixels).                                                                                                                                  |
-| `grid-size`                | integer | 20                                           | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.                                                            |
+| `grid-size`                | integer | 20                                           | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, no grid is drawn and the canvas background is transparent.                               |
 | `snap-to-grid`             | boolean | false                                        | If true, objects placed in the canvas snap to the closest grid point. Otherwise, they can be placed outside the grid.                                                       |
 | `correct-answer`           | string  | special                                      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                            |
 | `tol`                      | float   | `0.5*grid-size`                              | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.                     |
@@ -34,13 +39,20 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | `show-tolerance-hint`      | boolean | true                                         | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.                                                                                         |
 | `tolerance-hint`           | string  | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.                                                                                                                        |
 | `disregard-extra-elements` | boolean | false                                        | If true, extra elements are ignored if they match the same reference object. Otherwise, multiple matching elements will reduce the awarded points.                          |
+| `allow-blank`              | boolean | false                                        | Whether a submission with no user-placed elements is allowed. By default, submissions without user-placed elements will not be graded (invalid submission).                 |
 | `hide-answer-panel`        | boolean | true                                         | If true, the correct answer is not displayed in the answer panel.                                                                                                           |
+| `show-score`               | boolean | false                                        | Whether to show the score badge next to this element in the "Submitted answer" panel. Defaults to `false` for backwards compatibility.                                      |
 | `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
 | `aria-description`         | string  | None                                         | Text that describes the diagram in detail. See the [accessibility section](#accessibility)                                                                                  |
 
 #### Accessibility
 
 Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
+
+#### Example implementations
+
+- [demo/drawing/centroid]: Gradable drawing with `weight`, `allow-blank`, and `show-score`
+- [element/drawingGallery]: Image gallery with drawing objects
 
 ### `pl-drawing-initial` element
 
@@ -2096,7 +2108,7 @@ These button icons can then be attached to your elements by setting the `get_but
 
 <!-- Reference links -->
 
-[element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
+[element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [demo/drawing/liftingmechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
 [demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
 [demo/drawing/vmdiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/vmDiagrams
@@ -2109,3 +2121,4 @@ These button icons can then be attached to your elements by setting the `get_but
 [demo/drawing/customizedbuttons]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/customizedButtons
 [demo/drawing/inclinedplane-reaction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/inclinedPlane-reaction
 [demo/drawing/frame-exploded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/frame-exploded
+[demo/drawing/centroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/centroid

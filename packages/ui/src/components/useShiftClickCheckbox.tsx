@@ -7,7 +7,7 @@ import { type MouseEvent, useCallback, useState } from 'react';
  *
  * @example
  * ```tsx
- * const { lastClickedRowIndex, createCheckboxProps } = useShiftClickCheckbox();
+ * const { lastClickedRowId, createCheckboxProps } = useShiftClickCheckbox();
  *
  * // In your column definition:
  * cell: ({ row, table }) => {
@@ -16,7 +16,7 @@ import { type MouseEvent, useCallback, useState } from 'react';
  * ```
  */
 export function useShiftClickCheckbox<TData>() {
-  const [lastClickedRowIndex, setLastClickedRowIndex] = useState<number | null>(null);
+  const [lastClickedRowId, setLastClickedRowId] = useState<string | null>(null);
 
   /**
    * Creates props for a checkbox that supports shift-click range selection.
@@ -27,27 +27,34 @@ export function useShiftClickCheckbox<TData>() {
   const createCheckboxProps = useCallback(
     (row: Row<TData>, table: Table<TData>) => {
       const handleClick = (e: MouseEvent<HTMLInputElement>) => {
-        if (e.shiftKey && lastClickedRowIndex !== null) {
-          // Shift-click: select range
-          const currentIndex = row.index;
-          const start = Math.min(lastClickedRowIndex, currentIndex);
-          const end = Math.max(lastClickedRowIndex, currentIndex);
+        const rows = table.getRowModel().rows;
+        if (e.shiftKey && lastClickedRowId !== null) {
+          // Shift-click: select range using current visible positions, so the
+          // range reflects the user's current sort/filter rather than the
+          // pre-sort data order (`row.index` is the original data index).
+          const currentPos = rows.findIndex((r) => r.id === row.id);
+          const lastPos = rows.findIndex((r) => r.id === lastClickedRowId);
 
-          // Get all rows in the range
-          const rows = table.getRowModel().rows;
-          const shouldSelect = !row.getIsSelected();
+          if (currentPos !== -1 && lastPos !== -1) {
+            const start = Math.min(lastPos, currentPos);
+            const end = Math.max(lastPos, currentPos);
+            const shouldSelect = !row.getIsSelected();
 
-          // Select or deselect all rows in the range
-          for (let i = start; i <= end; i++) {
-            if (rows[i]?.getCanSelect()) {
-              rows[i].toggleSelected(shouldSelect);
+            for (let i = start; i <= end; i++) {
+              if (rows[i]?.getCanSelect()) {
+                rows[i].toggleSelected(shouldSelect);
+              }
             }
+          } else {
+            // Anchor row is no longer visible (e.g. filtered out): fall back
+            // to a single toggle.
+            row.getToggleSelectedHandler()(e);
           }
         } else {
           // Normal click: toggle this row
           row.getToggleSelectedHandler()(e);
         }
-        setLastClickedRowIndex(row.index);
+        setLastClickedRowId(row.id);
       };
 
       return {
@@ -59,12 +66,12 @@ export function useShiftClickCheckbox<TData>() {
         onChange: () => {},
       };
     },
-    [lastClickedRowIndex],
+    [lastClickedRowId],
   );
 
   return {
-    lastClickedRowIndex,
-    setLastClickedRowIndex,
+    lastClickedRowId,
+    setLastClickedRowId,
     createCheckboxProps,
   };
 }

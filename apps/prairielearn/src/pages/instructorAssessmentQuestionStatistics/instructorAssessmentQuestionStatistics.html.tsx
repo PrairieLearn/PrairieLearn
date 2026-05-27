@@ -1,6 +1,7 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -9,7 +10,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  AlternativeGroupSchema,
+  AlternativePoolSchema,
   AssessmentQuestionSchema,
   CourseInstanceSchema,
   CourseSchema,
@@ -32,26 +33,36 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   question_tags: z.array(TagSchema.shape.name),
   question_id: IdSchema,
   assessment_question_number: z.string(),
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
+  alternative_pool_number: AlternativePoolSchema.shape.number,
+  alternative_pool_size: z.number(),
   zone_title: ZoneSchema.shape.title,
   start_new_zone: z.boolean(),
-  start_new_alternative_group: z.boolean(),
+  start_new_alternative_pool: z.boolean(),
 });
 export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,
-  statsLastUpdated,
   rows,
   resLocals,
 }: {
   questionStatsCsvFilename: string;
-  statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
   resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
+  // Use assessments.stats_last_updated (the time when we last updated
+  // the _question_ statistics for this assessment). Note that this is
+  // different to assessments.statistics_last_updated_at (the time we last
+  // updated the assessment instance statistics stored in the assessments
+  // row itself).
+  const statsLastUpdated =
+    resLocals.assessment.stats_last_updated == null
+      ? 'never'
+      : formatDate(
+          resLocals.assessment.stats_last_updated,
+          resLocals.course_instance.display_timezone,
+        );
 
   return PageLayout({
     resLocals,

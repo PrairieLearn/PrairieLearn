@@ -16,6 +16,7 @@ BEGIN
 
     -- Move all our data into a temporary table so it's easier to work with
 
+    DROP TABLE IF EXISTS disk_questions;
     CREATE TEMPORARY TABLE disk_questions (
         qid TEXT NOT NULL,
         uuid uuid,
@@ -150,7 +151,6 @@ BEGIN
         share_publicly = (src.data->>'share_publicly')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         json_comment = (src.data->'comment'),
-        external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
         external_grading_image = src.data->>'external_grading_image',
         external_grading_files = jsonb_array_to_text_array(src.data->'external_grading_files'),
         external_grading_entrypoint = src.data->>'external_grading_entrypoint',
@@ -168,6 +168,7 @@ BEGIN
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
         json_workspace_comment = (src.data->'workspace_comment'),
+        preferences_schema = (src.data->'preferences_schema'),
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

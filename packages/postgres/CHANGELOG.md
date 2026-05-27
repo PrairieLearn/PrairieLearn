@@ -1,5 +1,30 @@
 # @prairielearn/postgres
 
+## 6.0.4
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 6.0.3
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 6.0.2
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
+## 6.0.1
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 6.0.0
 
 ### Major Changes

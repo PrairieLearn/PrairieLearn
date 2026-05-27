@@ -73,6 +73,8 @@ def assert_answer_options(
     ):
         if "correct" in test_options:
             assert answer_options.correct == test_options["correct"]
+        if "initially-placed" in test_options:
+            assert answer_options.initially_placed == test_options["initially-placed"]
         if "ranking" in test_options:
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
@@ -264,6 +266,82 @@ def test_order_block_validation_failure(options: dict, error: str) -> None:
 )
 def test_answer_validation(options: dict, answer_options_list: list[dict]) -> None:
     """Tests valid pl-answer tag options validation"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    assert_answer_options(order_blocks_options, answer_options_list)
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "correct": False, "initially-placed": True},
+            ],
+            "Incorrect blocks cannot be initially placed.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "distractor-for": "1", "initially-placed": True},
+            ],
+            "A block with distractors cannot be initially placed.",
+        ),
+    ],
+)
+def test_initially_placed_validation_failure(
+    options: dict, answer_options_list: list[dict], error: str
+) -> None:
+    """Tests pl-answer initially-placed option failure"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options.validate()
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "correct": True, "initially-placed": True},
+                {"tag": "3", "correct": True, "initially-placed": False},
+                {"tag": "4", "correct": True, "initially-placed": False},
+                {"tag": "5", "correct": True, "initially-placed": True},
+                {"tag": "6", "correct": True, "initially-placed": False},
+                {"tag": "7", "correct": True, "initially-placed": True},
+                {"tag": "8", "correct": True, "initially-placed": False},
+            ],
+        ),
+    ],
+)
+def test_initially_placed_validation(
+    options: dict, answer_options_list: list[dict]
+) -> None:
+    """Tests valid pl-answer initially-placed option"""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )

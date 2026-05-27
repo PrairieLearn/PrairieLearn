@@ -1,5 +1,23 @@
 # @prairielearn/zod
 
+## 2.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 2.0.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 2.0.2
 
 ### Patch Changes

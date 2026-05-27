@@ -4,7 +4,7 @@ export interface StudentSyncItem {
   uid: string;
   currentStatus: EnumEnrollmentStatus | null;
   enrollmentId: string | null;
-  userName?: string | null;
+  name?: string | null;
 }
 
 export interface SyncPreview {
@@ -67,7 +67,7 @@ export function computeSyncDiff(
         uid: existing.user?.uid ?? existing.enrollment.pending_uid ?? uid,
         currentStatus: existing.enrollment.status,
         enrollmentId: existing.enrollment.id,
-        userName: existing.user?.name,
+        name: existing.user?.name,
       });
     } else {
       unchangedCount++;
@@ -81,7 +81,7 @@ export function computeSyncDiff(
         uid: student.user?.uid ?? student.enrollment.pending_uid ?? uid,
         currentStatus: student.enrollment.status,
         enrollmentId: student.enrollment.id,
-        userName: student.user?.name,
+        name: student.user?.name,
       };
 
       if (['invited', 'rejected'].includes(student.enrollment.status)) {

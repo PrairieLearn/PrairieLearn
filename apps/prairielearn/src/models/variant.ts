@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callScalar,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
@@ -15,9 +14,9 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
+import { selectCourseInstanceRole } from '../lib/authz-data.js';
 import {
   type Course,
-  SprocAuthzCourseInstanceSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -225,24 +224,25 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callScalar(
-        'authz_course_instance',
-        [authn_user.id, variant.course_instance_id, new Date()],
-        SprocAuthzCourseInstanceSchema,
-      );
+      const authnUserCourseInstanceRole = await selectCourseInstanceRole({
+        userId: authn_user.id,
+        courseInstanceId: variant.course_instance_id,
+      });
 
-      const userPermissions = await callScalar(
-        'authz_course_instance',
-        [user.id, variant.course_instance_id, new Date()],
-        SprocAuthzCourseInstanceSchema,
-      );
+      const userCourseInstanceRole = idsEqual(authn_user.id, user.id)
+        ? authnUserCourseInstanceRole
+        : await selectCourseInstanceRole({
+            userId: user.id,
+            courseInstanceId: variant.course_instance_id,
+          });
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        authnUserPermissions.course_instance_role,
+        authnUserCourseInstanceRole,
       ).has_course_instance_permission_view;
-      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        userPermissions.course_instance_role,
-      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView =
+        calculateCourseInstanceRolePermissions(
+          userCourseInstanceRole,
+        ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the

@@ -1,10 +1,6 @@
 import type { Header } from '@tanstack/react-table';
 
-import {
-  CategoricalColumnFilter,
-  MultiSelectColumnFilter,
-  NumericInputColumnFilter,
-} from '@prairielearn/ui';
+import { MultiSelectColumnFilter, NumericInputColumnFilter } from '@prairielearn/ui';
 
 import {
   GRADING_STATUS_VALUES,
@@ -27,7 +23,7 @@ export function createColumnFilters({
     }: {
       header: Header<InstanceQuestionRow, GradingStatusValue>;
     }) => (
-      <CategoricalColumnFilter
+      <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...GRADING_STATUS_VALUES]}
       />
@@ -37,7 +33,7 @@ export function createColumnFilters({
     }: {
       header: Header<InstanceQuestionRow, InstanceQuestionRow['assigned_grader_name']>;
     }) => (
-      <CategoricalColumnFilter
+      <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
       />
@@ -47,7 +43,7 @@ export function createColumnFilters({
     }: {
       header: Header<InstanceQuestionRow, InstanceQuestionRow['last_grader_name']>;
     }) => (
-      <CategoricalColumnFilter
+      <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
       />
@@ -60,7 +56,7 @@ export function createColumnFilters({
         InstanceQuestionRow['instance_question']['instance_question_group_name']
       >;
     }) => (
-      <CategoricalColumnFilter
+      <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={[...allSubmissionGroups, 'No group']}
       />

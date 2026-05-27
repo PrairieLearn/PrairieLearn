@@ -1,0 +1,109 @@
+/* Prevent double-scrolling: make the editor fill remaining space in the
+   app-main-container flex column instead of using a hardcoded viewport offset.
+   Use a flex column so sync-error alerts and the editor share the space. */
+#content:has([data-assessment-editor]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* When the split pane is wide enough for side-by-side, prevent the editor
+   from overflowing #content so that only the tree/detail panels scroll
+   (not the outer app-main-container). When narrow, allow natural page
+   scrolling since the tab bar consumes significant vertical space. */
+#content:has([data-assessment-editor] .pl-ui-split-pane:not([data-narrow])) {
+  overflow: hidden;
+}
+
+/* When sync errors/warnings are present above the editor, cap their height
+   so the editor remains usable. The alert becomes independently scrollable. */
+#content:has([data-assessment-editor]) > .alert {
+  flex-shrink: 0;
+  max-height: 25vh;
+  overflow-y: auto;
+}
+
+#content:has([data-assessment-editor]) > .js-hydrated-component {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── SplitPane app-specific overrides ─────────────────────────────────── */
+
+.pl-ui-split-pane__left {
+  /* Contain z-indexed children (e.g. sticky zone headers) so they don't
+     paint over the separator's focus ring. */
+  isolation: isolate;
+  container-type: inline-size;
+  container-name: split-left;
+}
+
+.pl-ui-split-pane__separator:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -1px;
+  background-color: var(--bs-primary-bg-subtle);
+  z-index: 1;
+}
+
+/* ── Toolbar button text: hide when the left pane is narrow ────────── */
+@container split-left (max-width: 650px) {
+  .toolbar-btn-label {
+    display: none;
+  }
+}
+
+/* ── Assessment tree hover/drag styles ──────────────────────────────── */
+.tree-delete-btn:hover {
+  color: var(--bs-danger) !important;
+}
+
+/* Shared hover-show pattern for tree and picker rows */
+.hover-show {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tree-row:hover .hover-show,
+.picker-row:hover .hover-show {
+  opacity: 1;
+}
+.hover-show:focus-within {
+  opacity: 1;
+}
+[data-dragging] .hover-show {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
+  background-color: transparent;
+}
+.tree-row.list-group-item-action:active:has(.hover-show:active) {
+  background-color: var(--bs-list-group-action-hover-bg);
+}
+
+/* Question picker styles */
+.picker-row:not([aria-disabled]):hover {
+  background-color: var(--bs-primary-bg-subtle);
+}
+.picker-row[aria-disabled]:hover {
+  background-color: transparent;
+}
+.picker-delete-btn:hover {
+  color: var(--bs-danger) !important;
+}
+
+/* Selection highlight */
+.tree-row-selected {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+.tree-row-warning-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 4px;
+  border-radius: 999px;
+  background-color: var(--bs-warning);
+}

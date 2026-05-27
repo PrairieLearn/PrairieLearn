@@ -1,6 +1,6 @@
 # `pl-overlay` element
 
-The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
+The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions. It is most commonly used to place input fields (such as [`pl-number-input`](pl-number-input.md)) on top of a [`pl-figure`](pl-figure.md) or [`pl-drawing`](../pl-drawing/index.md) so students can fill in labels at specific positions on a diagram.
 
 ## Sample element
 

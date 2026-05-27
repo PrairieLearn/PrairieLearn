@@ -9,7 +9,6 @@ import {
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
-import mustache from 'mustache';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -17,12 +16,15 @@ import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -31,6 +33,7 @@ import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
 import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import { config } from '../../../lib/config.js';
 import {
+  AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
   GradingJobSchema,
@@ -44,10 +47,17 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
+import {
+  type CounterClockwiseRotationDegrees,
+  type InstanceQuestionAIGradingInfo,
+  type InstanceQuestionAIGradingInfoBase,
+  RotationCorrectionOutputSchema,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -58,19 +68,20 @@ const SubmissionVariantSchema = z.object({
 
 /**
  * Models supporting system messages after the first user message.
- * As of November 2025,
- * - OpenAI GPT 5-mini and GPT 5.1 support this.
- * - Google Gemini 2.5-flash and Gemini 3.1 Pro Preview do not support this.
- * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
+ * As of May 2026,
+ * - OpenAI GPT 5.4-mini and GPT 5.4 support this.
+ * - Google Gemini 3 Flash Preview, Gemini 3.5 Flash, and Gemini 3.1 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.6, and Claude Opus 4.7 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
-  'gpt-5-mini-2025-08-07',
-  'gpt-5.1-2025-11-13',
+  'gpt-5.4-mini-2026-03-17',
+  'gpt-5.4-2026-03-05',
 ]);
 
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
+  rotationCorrected = false,
   submission_text,
   submitted_answer,
   rubric_items,
@@ -81,6 +92,8 @@ export async function generatePrompt({
 }: {
   questionPrompt: string;
   questionAnswer: string;
+  /** If true, the prompt will include that rotation correction was applied prior to grading. */
+  rotationCorrected?: boolean;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
@@ -95,22 +108,29 @@ export async function generatePrompt({
     ? 'system'
     : 'user';
 
-  const graderGuidelinesMessages = grader_guidelines
-    ? ([
-        {
-          role: systemRoleAfterUserMessage,
-          content: 'The instructor has provided the following grader guidelines:',
-        },
-        {
-          role: 'user',
-          content: mustache.render(grader_guidelines, {
-            submitted_answers: submitted_answer,
-            correct_answers: true_answer,
-            params,
-          }),
-        },
-      ] satisfies ModelMessage[])
-    : [];
+  const graderGuidelinesMessages = run((): ModelMessage[] => {
+    if (!grader_guidelines) return [];
+    const { rendered, error } = safeMustacheRender(grader_guidelines, {
+      submitted_answers: submitted_answer,
+      correct_answers: true_answer,
+      params,
+    });
+    if (error) {
+      // Treat as a per-submission failure for the same reason as rubric-item
+      // template errors: the rubric the AI would see is degraded.
+      throw new Error('Could not parse grader guidelines');
+    }
+    return [
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'The instructor has provided the following grader guidelines:',
+      },
+      {
+        role: 'user',
+        content: rendered,
+      },
+    ];
+  });
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -120,9 +140,10 @@ export async function generatePrompt({
         content: formatPrompt([
           [
             "You are an instructor for a course, and you are grading a student's response to a question.",
-            'You are provided several rubric items with a description, explanation, and grader note.',
-            "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
-            'If no rubric items apply, do not select any.',
+            'You are provided several numbered rubric items with a description, explanation, and grader note.',
+            "You must grade the student's response by using the rubric and returning, for each rubric item, whether that rubric item applies to the student's response.",
+            'The keys of the `rubric_items` object are the rubric item numbers shown below (e.g. `"1"`, `"2"`, ...).',
+            'If no rubric items apply, set every value to false.',
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
@@ -136,8 +157,12 @@ export async function generatePrompt({
       {
         role: 'user',
         content: rubric_items
-          .map((item) => {
-            const itemParts: string[] = [`description: ${item.description}`];
+          .map((item, index) => {
+            const number = index + 1;
+            const itemParts: string[] = [
+              `Rubric item number ${number}:`,
+              `description: ${item.description}`,
+            ];
             if (item.explanation) {
               itemParts.push(`explanation: ${item.explanation}`);
             }
@@ -187,6 +212,16 @@ export async function generatePrompt({
         content: questionAnswer.trim(),
       },
     );
+  }
+
+  if (rotationCorrected) {
+    input.push({
+      role: systemRoleAfterUserMessage,
+      content: formatPrompt([
+        'One or more images were uploaded in a rotated state by the student (this was an error by the student). The system corrected their rotation.',
+        'If there are rubric items associated with image rotation, then please note that one or more images were rotated incorrectly.',
+      ]),
+    });
   }
 
   input.push(
@@ -239,10 +274,10 @@ export function generateSubmissionMessage({
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
           return {
             type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
+            image: segment.fileData,
+            mediaType: 'image/jpeg',
             providerOptions: {
               openai: {
                 imageDetail: 'auto',
@@ -409,29 +444,25 @@ export function parseAiRubricItems({
     rubric_item_id: string;
   }[];
   appliedRubricDescription: Set<string>;
+  unrecognizedKeys: string[];
 } {
-  // Compute the set of selected rubric descriptions.
+  const appliedRubricItems: { rubric_item_id: string }[] = [];
   const appliedRubricDescription = new Set<string>();
-  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
-    if (selected) {
-      appliedRubricDescription.add(description);
-    }
-  });
+  const unrecognizedKeys: string[] = [];
 
-  // Build a lookup table for rubric items by description.
-  const rubricItemsByDescription: Record<string, RubricItem> = {};
-  for (const item of rubric_items) {
-    rubricItemsByDescription[item.description] = item;
+  for (const [key, selected] of Object.entries(ai_rubric_items)) {
+    const number = Number(key);
+    if (!Number.isInteger(number) || number < 1 || number > rubric_items.length) {
+      unrecognizedKeys.push(key);
+      continue;
+    }
+    if (!selected) continue;
+    const item = rubric_items[number - 1];
+    appliedRubricItems.push({ rubric_item_id: item.id });
+    appliedRubricDescription.add(item.description);
   }
 
-  // It's possible that the rubric could have changed since we last
-  // fetched it. We'll optimistically apply all the rubric items
-  // that were selected. If an item was deleted, we'll allow the
-  // grading to fail; the user can then try again.
-  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
-    rubric_item_id: rubricItemsByDescription[description].id,
-  }));
-  return { appliedRubricItems, appliedRubricDescription };
+  return { appliedRubricItems, appliedRubricDescription, unrecognizedKeys };
 }
 
 export async function selectInstanceQuestionsForAssessmentQuestion({
@@ -450,7 +481,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion({
   );
 }
 
-export async function selectRubricGradingItems(
+async function selectRubricGradingItems(
   manual_rubric_grading_id: string | null,
 ): Promise<RubricItem[]> {
   return await queryRows(
@@ -476,20 +507,25 @@ export async function insertAiGradingJob({
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: response,
-    rotation_correction_degrees: null,
-    model: model_id,
-    prompt_tokens: response.usage.inputTokens ?? 0,
-    completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
-    course_id,
-    course_instance_id,
-  });
+}): Promise<string> {
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(response),
+      rotation_correction_degrees: null,
+      model: model_id,
+      prompt_tokens: response.usage.inputTokens ?? 0,
+      completion_tokens: response.usage.outputTokens ?? 0,
+      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 /**
@@ -533,7 +569,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
-}): Promise<void> {
+}): Promise<string> {
   let prompt_tokens =
     (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
@@ -558,19 +594,24 @@ export async function insertAiGradingJobWithRotationCorrection({
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
-  await execute(sql.insert_ai_grading_job, {
-    grading_job_id,
-    job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: gradingResponseWithRotationCorrection,
-    rotation_correction_degrees: rotationCorrectionDegrees,
-    model: model_id,
-    prompt_tokens,
-    completion_tokens,
-    cost,
-    course_id,
-    course_instance_id,
-  });
+  const result = await queryScalar(
+    sql.insert_ai_grading_job,
+    {
+      grading_job_id,
+      job_sequence_id,
+      prompt: JSON.stringify(sanitizeObject(prompt)),
+      completion: sanitizeObject(gradingResponseWithRotationCorrection),
+      rotation_correction_degrees: rotationCorrectionDegrees,
+      model: model_id,
+      prompt_tokens,
+      completion_tokens,
+      cost,
+      course_id,
+      course_instance_id,
+    },
+    IdSchema,
+  );
+  return result;
 }
 
 export async function selectLastVariantAndSubmission(
@@ -583,8 +624,12 @@ export async function selectLastVariantAndSubmission(
   );
 }
 
-export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+export async function hasPriorAiGradingJobs(assessment_question_id: string): Promise<boolean> {
+  return await queryScalar(
+    sql.select_has_prior_ai_grading_jobs,
+    { assessment_question_id },
+    z.boolean(),
+  );
 }
 
 export async function deleteAiGradingJobs({
@@ -654,6 +699,13 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+export async function setAiGradingLastSelectedModel(
+  assessment_question_id: string,
+  model_id: AiGradingModelId,
+) {
+  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
 }
 
 const rateLimiter = new RedisRateLimiter({
@@ -784,7 +836,8 @@ async function correctImageOrientation({
         },
         {
           type: 'image',
-          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          image: images[i - 1],
+          mediaType: 'image/jpeg',
           providerOptions: {
             openai: {
               imageDetail: 'auto',
@@ -799,6 +852,8 @@ async function correctImageOrientation({
     model,
     schema: RotationCorrectionOutputSchema,
     messages: prompt,
+    // System messages in `messages` are hard-coded authored strings; safe to allow.
+    allowSystemInMessages: true,
   });
 
   const index = Number.parseInt(response.object.upright_image) - 1;
@@ -875,45 +930,131 @@ export async function correctImagesOrientation({
     rotationCorrections,
   };
 }
+
+const AiGradingJobDataForSubmissionSchema = z.object({
+  manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  prompt: AiGradingJobSchema.shape.prompt,
+  completion: AiGradingJobSchema.shape.completion,
+  rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
+});
+
 /**
- * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
- *
- * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
- * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
- *
- * If a rubric item key contains escaped backslashes, Google Gemini generates
- * unescaped backslashes in the JSON response, leading to a JSON parsing error.
- *
- * Example: Rubric item key \\mathbb{x} gets generated as \mathbb{x}, which is invalid JSON since
- * it contains an unescaped backslash.
- *
- * This function escapes all backslashes of rubric item keys in the JSON response.
- *
- * @param rawResponseText - The raw AI grading response returned from the Gemini model.
- * - The response must be a JSON string containing a "rubric_items" key.
- * - The "rubric_items" key must be the last key in the JSON object.
- *
- * @returns The corrected JSON as a string, or null if it could not be corrected.
+ * Builds the `aiGradingInfo` displayed in the manual-grading instance question
+ * page for the most-recent submission of the given instance question. Returns
+ * `null` if the submission has not been AI-graded.
  */
-export function correctGeminiMalformedRubricGradingJson(rawResponseText: string): string | null {
-  const RUBRIC_ITEMS_KEY = '"rubric_items":';
-
-  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
-  if (startRubric === -1) return null;
-
-  // The rubric items object starts right after the "rubric_items": key.
-  const rubricItemsRaw = rawResponseText.slice(startRubric + RUBRIC_ITEMS_KEY.length).trim();
-
-  // Gemini sometimes returns unescaped backslashes in the rubric item keys.
-  // We need to escape them properly.
-  // This only changes the keys of rubricItemsRaw since its values are all booleans.
-  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
-
-  // All characters before the rubric items, including the "rubric_items": key.
-  const charactersBeforeRubricItemsObject = rawResponseText.slice(
-    0,
-    startRubric + RUBRIC_ITEMS_KEY.length,
+export async function buildAiGradingInfo({
+  submission_id,
+  submissionHtmls,
+}: {
+  submission_id: string;
+  submissionHtmls: string[];
+}): Promise<InstanceQuestionAIGradingInfo | null> {
+  const aiGradingJobData = await queryOptionalRow(
+    sql.select_ai_grading_job_data_for_submission,
+    { submission_id },
+    AiGradingJobDataForSubmissionSchema,
   );
 
-  return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
+  if (!aiGradingJobData) return null;
+
+  const submissionManuallyGraded =
+    (await queryOptionalScalar(
+      sql.select_exists_manual_grading_job_for_submission,
+      { submission_id },
+      z.boolean(),
+    )) ?? false;
+
+  const selectedRubricItems = await selectRubricGradingItems(
+    aiGradingJobData.manual_rubric_grading_id,
+  );
+
+  const formattedPrompt =
+    aiGradingJobData.prompt !== null
+      ? (await formatJsonWithPrettier(JSON.stringify(aiGradingJobData.prompt, null, 2)))
+          .replaceAll('\\n', '\n')
+          .trimStart()
+      : '';
+
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
+  const explanation = run(() => {
+    const completion = aiGradingJobData.completion;
+    if (!completion) return null;
+
+    // OpenAI chat completion format
+    if (completion.choices) {
+      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // OpenAI response format
+    if (completion.output_parsed) {
+      const explanation = completion?.output_parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // `ai` package format
+    if (completion.object) {
+      const explanation = completion?.object?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    return null;
+  });
+
+  const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
+  const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
+  const validatedDegrees = parsed.success ? parsed.data : {};
+  const rotationCorrectionDegrees = Object.fromEntries(
+    Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+  );
+
+  const hasPersistedRotationCorrectionData =
+    correctedDegrees != null &&
+    typeof correctedDegrees === 'object' &&
+    Object.keys(correctedDegrees).length > 0;
+
+  const hasImage = run(() => {
+    // Use persisted rotation metadata to infer image context. This preserves
+    // historical AI grading context even if the current rendered HTML no
+    // longer includes image-capture markers.
+    if (hasPersistedRotationCorrectionData) return true;
+    if (submissionHtmls.length > 0) {
+      return containsImageCapture(submissionHtmls[0]);
+    }
+    return false;
+  });
+
+  const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    submissionManuallyGraded,
+    prompt: formattedPrompt,
+    selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+    explanation,
+  };
+
+  if (hasImage) {
+    return {
+      ...aiGradingInfoBase,
+      hasImage: true,
+      rotationCorrectionDegrees,
+    };
+  }
+  return {
+    ...aiGradingInfoBase,
+    hasImage: false,
+    rotationCorrectionDegrees: null,
+  };
 }

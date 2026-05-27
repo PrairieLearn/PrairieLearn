@@ -152,3 +152,16 @@ has become increasingly complex, with many different possible combinations of op
   <pl-answer correct="false" distractor-for="correct-block2">Distractor 2 for correct code 2</pl-answer>
   <pl-answer correct="true" tag="correct-block-no-distractors3">Some correct block after the distractor group</pl-answer>
 </pl-order-blocks>
+
+
+<pl-order-blocks answers-name="pre_dragged" source-blocks-order="random" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" solution-placement="bottom">
+  <pl-answer correct="true" tag="1" depends="" initially-placed="true">Base Case</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1">$n=1: 2^1 \gt 1$</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" initially-placed="true">Induction Hypothesis</pl-answer>
+  <pl-answer correct="true" tag="4" depends="3">Assume $2^k \gt k$ for some integer $1 \leq k \lt n$</pl-answer>
+  <pl-answer correct="true" tag="5" depends="4" initially-placed="true">Inductive Step</pl-answer>
+  <pl-answer correct="true" tag="6" depends="5">Let $n$ be an arbitrary integer.</pl-answer>
+  <pl-answer correct="true" tag="7" depends="6">$2^n = 2 \cdot 2^{n-1}$</pl-answer>
+  <pl-answer correct="true" tag="8" depends="7">$2^n \gt 2(n-1)$  by IH</pl-answer>
+  <pl-answer correct="true" tag="9" depends="8">Since $2(n-1) \gt 2n-n$, then $2^n \gt n$</pl-answer>
+</pl-order-blocks>
