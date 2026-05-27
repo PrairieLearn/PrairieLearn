@@ -22,7 +22,7 @@
     "multipipe": "^4.0.0",
     "pg": "^8.20.0",
     "pg-cursor": "^2.19.0",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

@@ -29,7 +29,8 @@ import {
   selectGroupRoleNamesForAssessment,
 } from '../../models/group.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import { type EnumAssessmentTool } from '../../lib/db-types.js';
+import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
@@ -99,8 +100,9 @@ router.get(
     });
     for (const row of zoneToolRows) {
       const zone = jsonZones[row.zone_number - 1];
-      zone.tools ??= {};
-      zone.tools[row.tool] = { enabled: row.enabled };
+      const tools = (zone.tools ?? {}) as Partial<Record<EnumAssessmentTool, { enabled: boolean }>>;
+      tools[row.tool] = { enabled: row.enabled };
+      zone.tools = tools as typeof zone.tools;
     }
 
     // Load assessment-level tool defaults for zone inheritance display.

@@ -10,10 +10,12 @@ import type {
   StaffTag,
   StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import {
   type EnumAssessmentTool,
   EnumAssessmentToolSchema,
+  type EnumAssessmentType,
+} from '../../../lib/db-types.js';
+import {
   type QuestionPointsJson,
   type ZoneAssessmentJson,
 } from '../../../schemas/infoAssessment.js';

@@ -3,8 +3,7 @@ import { type ZodSchema, z } from 'zod';
 import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
-export const EnumAssessmentToolSchema = z.enum(['calculator']);
-export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
+const EnumAssessmentToolSchema = z.enum(['calculator']);
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
@@ -107,8 +106,8 @@ export const GroupsJsonSchema = z
       .describe('Array of custom user roles in a group.')
       .optional()
       .default([]),
-    studentPermissions: GroupsStudentPermissionsJsonSchema.optional().default({}),
-    rolePermissions: GroupsRolePermissionsJsonSchema.optional().default({}),
+    studentPermissions: GroupsStudentPermissionsJsonSchema.prefault({}),
+    rolePermissions: GroupsRolePermissionsJsonSchema.prefault({}),
   })
   .strict()
   .describe('Configuration for group-based assessments.');

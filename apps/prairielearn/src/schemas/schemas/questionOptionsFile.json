@@ -7,22 +7,13 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
-    },
-    "fileName": {
-      "description": "Filename of the file to download",
-      "type": "string"
-    }
-  },
-  "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
         {
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",
@@ -30,6 +21,10 @@
           "properties": {}
         }
       ]
+    },
+    "fileName": {
+      "description": "Filename of the file to download",
+      "type": "string"
     }
   }
 }

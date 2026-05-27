@@ -8,7 +8,20 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -35,6 +48,7 @@
     },
     "selfEnrollment": {
       "type": "object",
+      "default": {},
       "properties": {
         "enabled": {
           "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
@@ -55,8 +69,7 @@
           "type": "boolean",
           "default": false
         }
-      },
-      "default": {}
+      }
     },
     "hideInEnrollPage": {
       "description": "DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.",
@@ -93,7 +106,20 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "object",
+                "additionalProperties": {},
+                "properties": {}
+              }
+            ]
           },
           "role": {
             "description": "DEPRECATED -- do not use.",
@@ -126,8 +152,8 @@
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "type": "string",
-      "enum": ["Set", "Module"],
-      "default": "Set"
+      "default": "Set",
+      "enum": ["Set", "Module"]
     },
     "shareSourcePublicly": {
       "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
@@ -155,64 +181,43 @@
             "maxLength": 255
           },
           "color": {
-            "$ref": "#/definitions/ColorJsonSchema"
+            "description": "A color name.",
+            "type": "string",
+            "enum": [
+              "red1",
+              "red2",
+              "red3",
+              "pink1",
+              "pink2",
+              "pink3",
+              "purple1",
+              "purple2",
+              "purple3",
+              "blue1",
+              "blue2",
+              "blue3",
+              "turquoise1",
+              "turquoise2",
+              "turquoise3",
+              "green1",
+              "green2",
+              "green3",
+              "yellow1",
+              "yellow2",
+              "yellow3",
+              "orange1",
+              "orange2",
+              "orange3",
+              "brown1",
+              "brown2",
+              "brown3",
+              "gray1",
+              "gray2",
+              "gray3"
+            ]
           }
         }
       }
-    }
-  },
-  "definitions": {
-    "ColorJsonSchema": {
-      "description": "A color name.",
-      "type": "string",
-      "enum": [
-        "red1",
-        "red2",
-        "red3",
-        "pink1",
-        "pink2",
-        "pink3",
-        "purple1",
-        "purple2",
-        "purple3",
-        "blue1",
-        "blue2",
-        "blue3",
-        "turquoise1",
-        "turquoise2",
-        "turquoise3",
-        "green1",
-        "green2",
-        "green3",
-        "yellow1",
-        "yellow2",
-        "yellow3",
-        "orange1",
-        "orange2",
-        "orange3",
-        "brown1",
-        "brown2",
-        "brown3",
-        "gray1",
-        "gray2",
-        "gray3"
-      ]
-    },
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
     }
   }
 }

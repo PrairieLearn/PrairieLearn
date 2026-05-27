@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import {
   type EnumAssessmentTool,
   EnumAssessmentToolSchema,
-} from '../../../../schemas/infoAssessment.js';
+} from '../../../../lib/db-types.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToBoolean,
@@ -148,7 +148,7 @@ export function ZoneDetailPanel({
         allowRealTimeGrading: data.allowRealTimeGrading,
         canView: data.canView,
         canSubmit: data.canSubmit,
-        tools: hasToolOverride ? tools : undefined,
+        tools: hasToolOverride ? (tools as Record<EnumAssessmentTool, { enabled: boolean }>) : undefined,
       });
     },
     [onUpdate, zone.trackingId],

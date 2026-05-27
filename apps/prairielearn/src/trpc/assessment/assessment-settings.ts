@@ -28,10 +28,8 @@ import {
   selectAssessmentZonePointsRange,
   selectAssessments,
 } from '../../models/assessment.js';
-import {
-  type AssessmentJsonInput,
-  EnumAssessmentToolSchema,
-} from '../../schemas/infoAssessment.js';
+import { type EnumAssessmentTool, EnumAssessmentToolSchema } from '../../lib/db-types.js';
+import { type AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, t } from './init.js';
@@ -422,20 +420,23 @@ const updateAssessment = t.procedure
           true,
         );
 
-        assessmentInfo.tools = assessmentInfo.tools ?? {};
+        const tools: Partial<Record<EnumAssessmentTool, { enabled: boolean }>> =
+          assessmentInfo.tools ?? {};
         for (const tool of EnumAssessmentToolSchema.options) {
           const enabled = input.tools?.[tool] ?? false;
           // Only update the tool if it was already defined in the assessmentInfo
           // or if it's being enabled. This prevents accidentally adding new tools
           // to the assessmentInfo when editing an existing assessment that doesn't
           // have those tools configured.
-          if (tool in assessmentInfo.tools || enabled) {
-            assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
+          if (tool in tools || enabled) {
+            tools[tool] = { ...tools[tool], enabled };
           }
         }
         // If no tools are configured, delete the tools property to avoid storing an empty object.
-        if (Object.keys(assessmentInfo.tools).length === 0) {
+        if (Object.keys(tools).length === 0) {
           delete assessmentInfo.tools;
+        } else {
+          assessmentInfo.tools = tools as typeof assessmentInfo.tools;
         }
 
         if (assessment.type === 'Exam') {

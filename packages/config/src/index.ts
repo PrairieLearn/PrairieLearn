@@ -112,7 +112,7 @@ export function makeImdsConfigSource(): ConfigSource {
   };
 }
 
-export class ConfigLoader<Schema extends z.ZodTypeAny> {
+export class ConfigLoader<Schema extends z.ZodType> {
   private readonly schema: Schema;
   private resolvedConfig: z.infer<Schema>;
 
@@ -122,11 +122,11 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     // Get the default values from the schema. This ensures that all values
     // have defaults, and also allows us to override nested defaults with
     // `_.merge()` in `loadAndValidate()`.
-    this.resolvedConfig = schema.parse({});
+    this.resolvedConfig = schema.parse({}) as z.infer<Schema>;
   }
 
   async loadAndValidate(sources: ConfigSource<any>[] = []) {
-    let config = this.schema.parse({});
+    let config = this.schema.parse({}) as Record<string, any>;
     // If the config setting is an array, override instead of merge
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
@@ -134,12 +134,12 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
       config = mergeWith(config, await source.load(config), mergeRule);
     }
 
-    const parsedConfig = this.schema.parse(config);
-    mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
+    const parsedConfig = this.schema.parse(config) as Record<string, any>;
+    mergeWith(this.resolvedConfig as Record<string, any>, parsedConfig, mergeRule);
   }
 
   reset() {
-    this.resolvedConfig = this.schema.parse({});
+    this.resolvedConfig = this.schema.parse({}) as z.infer<Schema>;
   }
 
   get config() {

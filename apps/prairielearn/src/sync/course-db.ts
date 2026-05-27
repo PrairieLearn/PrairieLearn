@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import { type ZodSchema, z } from 'zod';
+import { type ZodType, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -685,7 +685,7 @@ async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends ZodSchema>({
+async function loadAndValidateJson<T extends ZodType>({
   coursePath,
   filePath,
   schema,
@@ -701,12 +701,12 @@ async function loadAndValidateJson<T extends ZodSchema>({
   tolerateMissing?: boolean;
   validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
-  const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
+  const loadedJson = (await loadInfoFile({
     coursePath,
     filePath,
     schema,
     tolerateMissing,
-  });
+  })) as InfoFile<z.infer<T>> | null;
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
     // as would happen if there was a .DS_Store file, or if we're
@@ -732,7 +732,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = validate(result.data, loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data as z.input<T>);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
 
@@ -744,7 +744,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 /**
  * Loads and schema-validates all info files in a directory.
  */
-async function loadInfoForDirectory<T extends ZodSchema>({
+async function loadInfoForDirectory<T extends ZodType>({
   coursePath,
   directory,
   infoFilename,
@@ -770,7 +770,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir: string) => {
-    const infoFiles: Record<string, InfoFile<T>> = {};
+    const infoFiles: Record<string, InfoFile<z.infer<T>>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory

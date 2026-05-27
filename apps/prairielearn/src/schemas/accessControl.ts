@@ -1,6 +1,21 @@
 import { z } from 'zod';
 
-import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+// v4 re-author of @prairielearn/zod's DatetimeLocalStringSchema (which is still
+// v3 and not interoperable with v4 schemas).
+export const DatetimeLocalStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, {
+    message: 'must be a valid datetime-local string (YYYY-MM-DDTHH:MM or YYYY-MM-DDTHH:MM:SS)',
+  })
+  .transform((s) => (s.length === 16 ? `${s}:00` : s))
+  .transform((s, ctx) => {
+    const date = new Date(s);
+    if (Number.isNaN(date.getTime())) {
+      ctx.addIssue({ code: 'custom', message: 'must be a valid date' });
+      return z.NEVER;
+    }
+    return s;
+  });
 
 export const DeadlineEntryJsonSchema = z
   .object({

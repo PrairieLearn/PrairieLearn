@@ -21,15 +21,15 @@ const SafeDirectoryName = z
   .min(1)
   .regex(SHORT_NAME_REGEX, 'Directory name contains invalid characters');
 
-const QuestionInfoJsonSchema = QuestionJsonSchema.passthrough();
-const AssessmentInfoJsonSchema = AssessmentJsonSchema.passthrough();
+const QuestionInfoJsonSchema = QuestionJsonSchema.loose();
+const AssessmentInfoJsonSchema = AssessmentJsonSchema.loose();
 
 const QuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
   infoJson: QuestionInfoJsonSchema,
   questionHtml: z.string(),
   serverPy: z.string().optional(),
-  clientFiles: z.record(z.string()),
+  clientFiles: z.record(z.string(), z.string()),
   overwrite: z.boolean().optional(),
 });
 

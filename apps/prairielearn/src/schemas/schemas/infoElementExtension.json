@@ -89,12 +89,28 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
           "type": "object",
           "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
             "type": "string"
           }
         },
@@ -103,6 +119,9 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         },
         "extensionScripts": {
@@ -110,27 +129,12 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         }
       }
-    }
-  },
-  "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
     }
   }
 }

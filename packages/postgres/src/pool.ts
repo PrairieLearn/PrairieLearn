@@ -12,20 +12,12 @@ export type QueryParams = Record<string, any> | any[];
 
 /**
  * Type constraint for row schemas accepted by query functions.
- * Accepts `z.object(...)`, unions/intersections/discriminated unions of objects,
- * transforms/refinements of any of those, branded variants, and `z.unknown()`
- * as an escape hatch.
+ * Pre-v4 this was a structural union over object-like schema variants; v4
+ * removed several of those wrapper classes (ZodEffects, ZodBranded, etc.)
+ * and folded their behavior into the base `ZodType`. We can no longer enforce
+ * "object-shaped" at the TS level, so the constraint is now any `z.ZodType`.
  */
-type AnyObjectLikeSchema =
-  | z.AnyZodObject
-  | z.ZodEffects<AnyObjectLikeSchema, any, any>
-  | z.ZodIntersection<AnyObjectLikeSchema, AnyObjectLikeSchema>
-  | z.ZodUnion<Readonly<[AnyObjectLikeSchema, ...AnyObjectLikeSchema[]]>>
-  | z.ZodDiscriminatedUnion<string, z.AnyZodObject[]>;
-export type AnyRowSchema =
-  | AnyObjectLikeSchema
-  | z.ZodBranded<AnyObjectLikeSchema, any>
-  | z.ZodUnknown;
+export type AnyRowSchema = z.ZodType;
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
@@ -789,11 +781,11 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model>[]>;
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -802,7 +794,7 @@ export class PostgresPool {
    * Executes a query and returns all values from a single column, validated
    * against the given Zod schema. Errors if the query returns more than one column.
    */
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -814,8 +806,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async queryScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryScalar<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -825,7 +817,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the query does not return exactly
    * one row or returns more than one column.
    */
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -837,11 +829,11 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -851,7 +843,7 @@ export class PostgresPool {
    * if no rows are returned. Validated against the given Zod schema. Errors if
    * the query returns more than one row or more than one column.
    */
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -866,11 +858,11 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model>[]>;
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -879,7 +871,7 @@ export class PostgresPool {
    * Calls the given sproc and returns all values from a single column, validated
    * against the given Zod schema. Errors if the sproc returns more than one column.
    */
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -891,8 +883,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async callScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callScalar<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -902,7 +894,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the sproc does not return exactly
    * one row or returns more than one column.
    */
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -914,11 +906,11 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -928,7 +920,7 @@ export class PostgresPool {
    * null if no rows are returned. Validated against the given Zod schema.
    * Errors if the sproc returns more than one row or more than one column.
    */
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,

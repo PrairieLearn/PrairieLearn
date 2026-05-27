@@ -5,9 +5,27 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
-
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+
+// These schemas mirror the v4 originals in `apps/prairielearn/src/schemas/`,
+// which are used for JSON Schema generation. They live here in their v3
+// form for everything else in the codebase that still composes via `zod/v3`.
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
+
+const QuestionPreferencesFieldSchema = z
+  .object({
+    type: z.enum(['boolean', 'number', 'string']),
+    default: z.union([z.string(), z.number(), z.boolean()]),
+    enum: z.array(z.union([z.string(), z.number()])).optional(),
+  })
+  .strict();
+
+export const QuestionPreferencesSchemaJsonSchema = z.record(
+  z.string().min(1),
+  QuestionPreferencesFieldSchema,
+);
+export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -105,7 +123,7 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]);
 
 export const QuestionPreferenceValuesSchema = z.record(
   z.string(),
@@ -313,7 +331,7 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credits_added: z.boolean(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
   id: IdSchema,
   refunded_at: DateFromISOString.nullable(),
   stripe_object_id: z.string(),
@@ -609,7 +627,7 @@ export const AssessmentToolSchema = z.object({
   assessment_id: IdSchema.nullable(),
   enabled: z.boolean(),
   id: IdSchema,
-  settings: z.record(z.unknown()),
+  settings: z.record(z.string(), z.unknown()),
   tool: EnumAssessmentToolSchema,
   zone_id: IdSchema.nullable(),
 });
@@ -1422,9 +1440,9 @@ export const QuestionSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_external_grading_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.any())])
+    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
     .nullable(),
-  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.any())]).nullable(),
+  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).nullable(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),

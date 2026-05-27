@@ -8,7 +8,20 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     },
     "controller": {
       "description": "The name of the element's controller file.",
@@ -21,7 +34,20 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
@@ -98,12 +124,28 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
           "type": "object",
           "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
             "type": "string"
           }
         },
@@ -112,6 +154,9 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         },
         "elementScripts": {
@@ -119,27 +164,12 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         }
       }
-    }
-  },
-  "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
     }
   }
 }

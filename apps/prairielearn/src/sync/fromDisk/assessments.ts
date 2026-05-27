@@ -7,19 +7,22 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentTool,
+  EnumAssessmentToolSchema,
+  type QuestionPreferencesSchemaJson,
+  QuestionPreferencesSchemaJsonSchema,
+  SprocSyncAssessmentsSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
   type AssessmentJson,
-  EnumAssessmentToolSchema,
   type QuestionAlternativeJson,
   type QuestionJson,
   type QuestionPointsJson,
   type QuestionPreferences,
-  type QuestionPreferencesSchemaJson,
-  QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';

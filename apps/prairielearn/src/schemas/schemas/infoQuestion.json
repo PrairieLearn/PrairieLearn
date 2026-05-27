@@ -8,7 +8,20 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -31,14 +44,16 @@
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",
+      "default": [],
       "items": {
         "description": "A tag associated with a question.",
         "type": "string"
-      },
-      "default": []
+      }
     },
     "authors": {
       "type": "array",
+      "default": [],
+      "maxItems": 10,
       "items": {
         "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
         "type": "object",
@@ -65,18 +80,16 @@
             "type": "string"
           }
         }
-      },
-      "maxItems": 10,
-      "default": []
+      }
     },
     "clientFiles": {
       "description": "The list of question files accessible by the client.",
       "type": "array",
+      "default": ["client.js", "question.html", "answer.html"],
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
-      },
-      "default": ["client.js", "question.html", "answer.html"]
+      }
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",
@@ -93,8 +106,8 @@
     "gradingMethod": {
       "description": "The grading method used for this question.",
       "type": "string",
-      "enum": ["Internal", "External", "Manual"],
-      "default": "Internal"
+      "default": "Internal",
+      "enum": ["Internal", "External", "Manual"]
     },
     "singleVariant": {
       "description": "Whether the question is not randomized and only generates a single variant.",
@@ -124,7 +137,20 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "enabled": {
           "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
@@ -153,15 +179,17 @@
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
           "type": "array",
+          "default": [],
           "items": {
             "description": "A single file or directory that will be copied to the external grader.",
             "type": "string"
-          },
-          "default": []
+          }
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "enableNetworking": {
           "description": "Whether the grading containers should have network access. Access is disabled by default.",
@@ -174,7 +202,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {}
+          "default": {},
+          "propertyNames": {
+            "type": "string"
+          }
         }
       }
     },
@@ -182,10 +213,24 @@
       "description": "The question's client-side dependencies.",
       "type": "object",
       "additionalProperties": false,
+      "default": {},
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
@@ -253,8 +298,7 @@
             "type": "string"
           }
         }
-      },
-      "default": {}
+      }
     },
     "workspaceOptions": {
       "description": "Options for workspace questions.",
@@ -264,7 +308,20 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {},
+              "properties": {}
+            }
+          ]
         },
         "image": {
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
@@ -272,7 +329,9 @@
         },
         "port": {
           "description": "The port number used in the Docker image.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "home": {
           "description": "The home directory of the workspace container.",
@@ -300,11 +359,11 @@
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
           "type": "array",
+          "default": [],
           "items": {
             "description": "A single file or directory that will be copied out of the workspace container when saving a submission.",
             "type": "string"
-          },
-          "default": []
+          }
         },
         "enableNetworking": {
           "description": "Whether the workspace should have network access. Access is disabled by default.",
@@ -317,7 +376,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {}
+          "default": {},
+          "propertyNames": {
+            "type": "string"
+          }
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
@@ -360,37 +422,37 @@
             "enum": ["string", "number", "boolean"]
           },
           "default": {
-            "type": ["string", "number", "boolean"]
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
           },
           "enum": {
             "type": "array",
             "items": {
-              "type": ["string", "number"]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           }
         }
       },
       "propertyNames": {
+        "type": "string",
         "minLength": 1
       }
-    }
-  },
-  "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
     }
   }
 }

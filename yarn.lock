@@ -4719,7 +4719,7 @@ __metadata:
     "@types/node": "npm:^24.12.2"
     "@typescript/native-preview": "npm:beta"
     node-fetch: "npm:^3.3.2"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -4818,7 +4818,7 @@ __metadata:
     fs-extra: "npm:^11.3.4"
     tmp-promise: "npm:^3.0.3"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5019,7 +5019,7 @@ __metadata:
     vitest: "npm:^4.1.5"
     winston: "npm:^3.19.0"
     winston-transport: "npm:^4.9.0"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5096,7 +5096,7 @@ __metadata:
     tmp-promise: "npm:^3.0.3"
     typescript-cp: "npm:^0.1.9"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5214,7 +5214,7 @@ __metadata:
     pg: "npm:^8.20.0"
     pg-cursor: "npm:^2.19.0"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5528,8 +5528,7 @@ __metadata:
     xml2js: "npm:^0.6.2"
     y-protocols: "npm:^1.0.7"
     yjs: "npm:^13.6.30"
-    zod: "npm:^3.25.76 <4"
-    zod-to-json-schema: "npm:^3.25.2"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5785,7 +5784,7 @@ __metadata:
     tsx: "npm:^4.21.0"
     typescript-cp: "npm:^0.1.9"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5804,7 +5803,7 @@ __metadata:
     filesize: "npm:^11.0.17"
     socket.io: "npm:^4.8.3"
     typescript-cp: "npm:^0.1.9"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -5818,7 +5817,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^4.1.5"
     postgres-interval: "npm:^4.0.2"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -17402,8 +17401,7 @@ __metadata:
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.9.14"
     vitest: "npm:^4.1.5"
-    zod: "npm:^3.25.76 <4"
-    zod-to-json-schema: "npm:^3.25.2"
+    zod: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
 
@@ -21022,15 +21020,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod-to-json-schema@npm:^3.25.2":
-  version: 3.25.2
-  resolution: "zod-to-json-schema@npm:3.25.2"
-  peerDependencies:
-    zod: ^3.25.28 || ^4
-  checksum: 10c0/dd300554393903022487688af14fbda5c719ba8179702bb55b3aa86318830467f0f7beb7d654036975ac963dc4843b72e59636448bfff9a0608f277bb6a14939
-  languageName: node
-  linkType: hard
-
 "zod-validation-error@npm:^3.5.0 || ^4.0.0":
   version: 4.0.2
   resolution: "zod-validation-error@npm:4.0.2"
@@ -21040,17 +21029,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.0 || ^4.0.0, zod@npm:^4.1.11, zod@npm:^4.4.3":
+"zod@npm:^3.25.0 || ^4.0.0, zod@npm:^4.1.11, zod@npm:^4.3.0, zod@npm:^4.4.3":
   version: 4.4.3
   resolution: "zod@npm:4.4.3"
   checksum: 10c0/7ea31b558e88f9faf44f31dd185e2e1cbf51fed3081787fb96cc2534749b50c0acfc6da7f0922a7353ed092dd358c7d50c28ea96c94d04af64191bd33152eca3
-  languageName: node
-  linkType: hard
-
-"zod@npm:^3.25.76 <4":
-  version: 3.25.76
-  resolution: "zod@npm:3.25.76"
-  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
   languageName: node
   linkType: hard
 

@@ -21,7 +21,7 @@ const QuestionPreferencesFieldSchema = z
   })
   .strict();
 
-export const QuestionPreferencesSchemaJsonSchema = z.record(
+const QuestionPreferencesSchemaJsonSchema = z.record(
   z.string().min(1),
   QuestionPreferencesFieldSchema,
 );
@@ -140,7 +140,7 @@ const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the workspace container.')
       .optional()
       .default({}),
@@ -203,7 +203,7 @@ const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the grading container.')
       .optional()
       .default({}),
