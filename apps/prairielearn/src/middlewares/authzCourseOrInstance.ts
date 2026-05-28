@@ -372,6 +372,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     ip: req.ip || null,
     req_date: res.locals.req_date,
     is_administrator: res.locals.is_administrator,
+    session_is_lockdown_browser: req.session.lockdown_browser ?? false,
     overrides: {
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
@@ -554,6 +555,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       is_administrator: effectiveUserData
         ? effectiveUserData.is_administrator
         : res.locals.is_administrator,
+      session_is_lockdown_browser: req.session.lockdown_browser ?? false,
       overrides: overrideResult.data,
     });
 

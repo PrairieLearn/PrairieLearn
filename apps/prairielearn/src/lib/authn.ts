@@ -59,6 +59,12 @@ interface LoadUserOptions {
   redirect?: boolean;
   /** Override the post-auth redirect target. Only used when `redirect` is true. */
   redirectUrl?: string;
+  /**
+   * Whether the user authenticated from within LockDown Browser. Only the
+   * PrairieTest auth flow sets this; it is persisted on the session so
+   * downstream enforcement can require LDB for LDB-only reservations.
+   */
+  lockdownBrowser?: boolean;
 }
 
 export async function loadUser(
@@ -160,6 +166,10 @@ export async function loadUser(
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
 
+  if (options.lockdownBrowser !== undefined) {
+    req.session.lockdown_browser = options.lockdownBrowser;
+  }
+
   // After explicitly authenticating, clear the cookie that disables
   // automatic authentication.
   if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
@@ -179,7 +189,13 @@ export async function loadUser(
 
     // Potentially prompt the user to accept the terms before redirecting them.
     if (isEnterprise()) {
-      await redirectToTermsPageIfNeeded(res, selectedUser.user, req.ip, redirUrl);
+      await redirectToTermsPageIfNeeded(
+        res,
+        selectedUser.user,
+        req.ip,
+        req.session.lockdown_browser ?? false,
+        redirUrl,
+      );
     }
 
     res.redirect(redirUrl);

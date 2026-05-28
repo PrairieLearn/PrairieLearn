@@ -169,6 +169,7 @@ export async function calculateModernCourseInstanceStudentAccess(
  * @param params.ip - The IP address of the request.
  * @param params.req_date - The date of the request.
  * @param params.is_administrator - Whether the user is an administrator.
+ * @param params.session_is_lockdown_browser - Whether the current session was established from inside LockDown Browser.
  * @param params.overrides - The overrides to apply to the authorization data.
  */
 export async function constructCourseOrInstanceContext({
@@ -178,6 +179,7 @@ export async function constructCourseOrInstanceContext({
   ip,
   req_date,
   is_administrator,
+  session_is_lockdown_browser,
   overrides = {},
 }: {
   user: User;
@@ -186,6 +188,7 @@ export async function constructCourseOrInstanceContext({
   ip: string | null;
   req_date: Date;
   is_administrator: boolean;
+  session_is_lockdown_browser: boolean;
   overrides?: CourseOrInstanceOverrides;
 }): Promise<ConstructedCourseOrInstanceContext> {
   const resolvedOverrides = {
@@ -249,7 +252,13 @@ export async function constructCourseOrInstanceContext({
   });
 
   const mode =
-    resolvedOverrides.mode ?? (await ipToMode({ ip, date: req_date, authn_user_id: user.id }));
+    resolvedOverrides.mode ??
+    (await ipToMode({
+      ip,
+      date: req_date,
+      authn_user_id: user.id,
+      session_is_lockdown_browser,
+    }));
 
   const authzData = {
     user,

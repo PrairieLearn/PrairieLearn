@@ -29,18 +29,28 @@ describe('ipToMode tests', function () {
 
   describe('IP validation', () => {
     it('should throw if ip is null or undefined', async () => {
-      await expect(ipToMode({ ip: null, date: new Date(), authn_user_id })).rejects.toThrow(
-        'IP address is required',
-      );
-      await expect(ipToMode({ ip: undefined, date: new Date(), authn_user_id })).rejects.toThrow(
-        'IP address is required',
-      );
+      await expect(
+        ipToMode({ ip: null, date: new Date(), authn_user_id, session_is_lockdown_browser: false }),
+      ).rejects.toThrow('IP address is required');
+      await expect(
+        ipToMode({
+          ip: undefined,
+          date: new Date(),
+          authn_user_id,
+          session_is_lockdown_browser: false,
+        }),
+      ).rejects.toThrow('IP address is required');
     });
   });
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
-      const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+      const result = await ipToMode({
+        ip: '10.0.0.1',
+        date: new Date(),
+        authn_user_id,
+        session_is_lockdown_browser: false,
+      });
       assert.equal(result, 'Public');
     });
   });
@@ -59,6 +69,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Exam');
         });
@@ -73,6 +84,7 @@ describe('ipToMode tests', function () {
             // 10 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Exam');
         });
@@ -87,6 +99,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -101,6 +114,7 @@ describe('ipToMode tests', function () {
             // 10 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -115,6 +129,7 @@ describe('ipToMode tests', function () {
             // 3 hours from now (well outside the 1-hour window around session date).
             date: new Date(Date.now() + 1000 * 60 * 60 * 3),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -132,6 +147,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(firstSessionInLocation, 'Exam');
 
@@ -140,6 +156,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(secondSessionInLocation, 'Exam');
 
@@ -148,6 +165,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(notInLocation, 'Public');
         });
@@ -160,7 +178,12 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -174,6 +197,7 @@ describe('ipToMode tests', function () {
             ip: '10.0.0.1',
             date: new Date(Date.now() + 2 * 60 * 60 * 1000),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -184,7 +208,12 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -196,7 +225,12 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -211,6 +245,7 @@ describe('ipToMode tests', function () {
             // 25 minutes from now (5 minutes after access end)
             date: new Date(Date.now() + 1000 * 60 * 25),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Exam');
         });
@@ -226,6 +261,7 @@ describe('ipToMode tests', function () {
             // 60 minutes from now (40 minutes after access end)
             date: new Date(Date.now() + 1000 * 60 * 60),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -236,7 +272,12 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -257,6 +298,7 @@ describe('ipToMode tests', function () {
             // 10 minutes ago.
             date: new Date(Date.now() - 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -274,6 +316,7 @@ describe('ipToMode tests', function () {
             // 10 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 10),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -290,7 +333,12 @@ describe('ipToMode tests', function () {
 
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -306,7 +354,12 @@ describe('ipToMode tests', function () {
 
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.01', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.01',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -325,6 +378,7 @@ describe('ipToMode tests', function () {
             // 90 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 90),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -345,6 +399,7 @@ describe('ipToMode tests', function () {
             // 50 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 50),
             authn_user_id,
+            session_is_lockdown_browser: false,
           });
           assert.equal(result, 'Public');
         });
@@ -362,6 +417,7 @@ describe('ipToMode tests', function () {
           // 10 minutes ago.
           date: new Date(Date.now() - 1000 * 60 * 10),
           authn_user_id,
+          session_is_lockdown_browser: false,
         });
         assert.equal(result, 'Public');
       });
@@ -378,6 +434,7 @@ describe('ipToMode tests', function () {
           // 90 minutes from now (well past the 20min access_end + 30min grace period).
           date: new Date(Date.now() + 1000 * 60 * 90),
           authn_user_id,
+          session_is_lockdown_browser: false,
         });
         assert.equal(result, 'Public');
       });
@@ -389,7 +446,12 @@ describe('ipToMode tests', function () {
 
         await execute(sql.check_in_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+          session_is_lockdown_browser: false,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -401,7 +463,12 @@ describe('ipToMode tests', function () {
         await execute(sql.check_in_reservations);
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+          session_is_lockdown_browser: false,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -412,8 +479,105 @@ describe('ipToMode tests', function () {
 
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+          session_is_lockdown_browser: false,
+        });
         assert.equal(result, 'Exam');
+      });
+    });
+  });
+
+  describe('LockDown Browser enforcement', () => {
+    describe('Center exam at LDB-required location', () => {
+      it('should throw from a non-LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          await expect(
+            ipToMode({
+              ip: '10.0.0.1',
+              date: new Date(),
+              authn_user_id,
+              session_is_lockdown_browser: false,
+            }),
+          ).rejects.toThrow(/LockDown Browser/);
+        });
+      });
+
+      it('should return "Exam" from an LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: true,
+          });
+          assert.equal(result, 'Exam');
+        });
+      });
+
+      it('should not throw before check-in, even from a non-LDB session', async () => {
+        // Before check-in the reservation isn't active yet, so the LDB
+        // requirement doesn't bind — students can still browse PrairieLearn
+        // on a regular browser ahead of the exam.
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 10 minutes from now: WHERE clause includes it, but
+            // reservation_active is false because there's no check-in.
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.equal(result, 'Exam');
+        });
+      });
+    });
+
+    describe('Course exam with LDB-required session', () => {
+      it('should throw from a non-LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_lockdown_browser_on_course_session);
+          await execute(sql.check_in_reservations);
+
+          await expect(
+            ipToMode({
+              ip: '192.168.0.1',
+              date: new Date(),
+              authn_user_id,
+              session_is_lockdown_browser: false,
+            }),
+          ).rejects.toThrow(/LockDown Browser/);
+        });
+      });
+
+      it('should return "Exam" from an LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_lockdown_browser_on_course_session);
+          await execute(sql.check_in_reservations);
+
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: true,
+          });
+          assert.equal(result, 'Exam');
+        });
       });
     });
   });
