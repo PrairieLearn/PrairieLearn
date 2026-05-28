@@ -52,9 +52,11 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
  * For images pointing into the question's clientFilesQuestion directory via the
  * Mustache prefix, the directory attribute is set explicitly and the prefix is
  * stripped from file-name. Other relative paths are passed through as file-name
- * without a directory attribute. Images with absolute URLs (http://, https://,
- * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
- * file-name against a local course directory and cannot host remote resources.
+ * without a directory attribute. Images with remote URLs (http://, https://,
+ * protocol-relative) are kept as <img> because pl-figure resolves file-name
+ * against a local course directory and cannot host remote resources. If they
+ * lack a style/class, a responsive max-width style is added so the import
+ * linter treats them as intentionally raw images.
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
@@ -67,7 +69,7 @@ export function rewriteImagesAsPlFigure(html: string): string {
     }
 
     const src = attrs['src'] ?? '';
-    if (ABSOLUTE_URL_RE.test(src)) return tag;
+    if (ABSOLUTE_URL_RE.test(src)) return addResponsiveStyleToRemoteImage(tag, attrs);
 
     const parts: string[] = [];
 
@@ -85,6 +87,17 @@ export function rewriteImagesAsPlFigure(html: string): string {
 
     return `<pl-figure ${parts.join(' ')}></pl-figure>`;
   });
+}
+
+function addResponsiveStyleToRemoteImage(tag: string, attrs: Record<string, string>): string {
+  const src = attrs['src'] ?? '';
+  if (!/^(?:https?:|\/\/)/i.test(src) || attrs['style'] || attrs['class']) return tag;
+
+  const styleAttr = ' style="max-width: 100%;"';
+  if (tag.endsWith('/>')) {
+    return tag.replace(/\s*\/>$/, `${styleAttr} />`);
+  }
+  return tag.replace(/\s*>$/, `${styleAttr}>`);
 }
 
 const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
@@ -366,15 +379,26 @@ const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/
 
 /**
  * Clean up question HTML for PrairieLearn output.
- * Strips wrapping <div> tags that Canvas often adds.
+ * Strips a single wrapping <div> tag that Canvas often adds.
  */
 export function cleanQuestionHtml(html: string): string {
   let cleaned = html.trim();
-  // Remove single wrapping <div>...</div>
-  const divWrapRe = /^<div>\s*([\s\S]*?)\s*<\/div>$/i;
-  const divMatch = divWrapRe.exec(cleaned);
-  if (divMatch) {
-    cleaned = divMatch[1].trim();
+  const divOpenMatch = /^<div(?:\s[^>]*)?>/i.exec(cleaned);
+  if (!divOpenMatch) return cleaned;
+
+  const divTagRe = /<\/?div(?:\s[^>]*)?>/gi;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = divTagRe.exec(cleaned)) !== null) {
+    const isClose = /^<\//.test(match[0]);
+    depth += isClose ? -1 : 1;
+
+    if (depth === 0) {
+      if (divTagRe.lastIndex === cleaned.length) {
+        cleaned = cleaned.slice(divOpenMatch[0].length, match.index).trim();
+      }
+      break;
+    }
   }
   return cleaned;
 }

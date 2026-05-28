@@ -81,13 +81,29 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.include(result, '<pl-figure');
   });
 
-  it('leaves absolute http(s) URLs as <img>', () => {
+  it('adds responsive style to unstyled absolute http(s) URLs', () => {
     const html = '<img src="https://example.com/img.png" alt="external">';
+    assert.equal(
+      rewriteImagesAsPlFigure(html),
+      '<img src="https://example.com/img.png" alt="external" style="max-width: 100%;">',
+    );
+  });
+
+  it('adds responsive style to unstyled protocol-relative URLs', () => {
+    const html = '<img src="//cdn.example.com/img.png">';
+    assert.equal(
+      rewriteImagesAsPlFigure(html),
+      '<img src="//cdn.example.com/img.png" style="max-width: 100%;">',
+    );
+  });
+
+  it('leaves already styled absolute URLs unchanged', () => {
+    const html = '<img src="https://example.com/img.png" style="width: 300px;">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
-  it('leaves protocol-relative URLs as <img>', () => {
-    const html = '<img src="//cdn.example.com/img.png">';
+  it('leaves classed absolute URLs unchanged', () => {
+    const html = '<img src="https://example.com/img.png" class="equation_image">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
@@ -289,6 +305,15 @@ describe('rewritePreAsPlCode', () => {
 describe('cleanQuestionHtml', () => {
   it('strips wrapping div', () => {
     assert.equal(cleanQuestionHtml('<div><p>Hello</p></div>'), '<p>Hello</p>');
+  });
+
+  it('strips wrapping div with attributes', () => {
+    assert.equal(cleanQuestionHtml('<div class="prompt"><p>Hello</p></div>'), '<p>Hello</p>');
+  });
+
+  it('preserves sibling divs instead of stripping the first open and last close', () => {
+    const html = '<div>First</div><div><div>Second</div></div>';
+    assert.equal(cleanQuestionHtml(html), html);
   });
 
   it('preserves content without wrapping div', () => {
