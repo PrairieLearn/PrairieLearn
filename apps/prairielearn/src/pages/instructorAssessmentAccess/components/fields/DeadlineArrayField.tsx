@@ -257,7 +257,7 @@ function DeadlineArrayInput({
 
     if (isEarly) {
       if (currentDueDate && deadlineDate > currentDueDate) {
-        return 'Early deadline is out of range';
+        return 'Early deadline must be on or before the due date';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
         if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
@@ -265,14 +265,14 @@ function DeadlineArrayInput({
         }
       }
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Deadline is out of range';
+        return 'Early deadline must be after the release date';
       }
     } else {
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Deadline is out of range';
+        return 'Late deadline must be after the release date';
       }
       if (currentDueDate && deadlineDate < currentDueDate) {
-        return 'Late deadline is out of range';
+        return 'Late deadline must be on or after the due date';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
         if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {

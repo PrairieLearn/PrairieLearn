@@ -1,0 +1,12 @@
+columns
+    course_request_message: text
+    institution_id: bigint not null
+
+indexes
+    institution_settings_pkey: PRIMARY KEY (institution_id) USING btree (institution_id)
+
+check constraints
+    course_request_message_length: CHECK (char_length(course_request_message) <= 10000)
+
+foreign-key constraints
+    institution_settings_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE

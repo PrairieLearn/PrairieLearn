@@ -27,6 +27,7 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
+import type { RubricSettingsContextKeys } from './queries.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 interface AssessmentQuestionManualGradingProps {
@@ -55,6 +56,7 @@ interface AssessmentQuestionManualGradingProps {
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
+  rubricSettingsContextKeys: RubricSettingsContextKeys;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -85,6 +87,7 @@ function AssessmentQuestionManualGradingInner({
   questionNumber,
   availableAiGradingProviders,
   aiGradingRelativeCosts,
+  rubricSettingsContextKeys,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -184,6 +187,7 @@ function AssessmentQuestionManualGradingInner({
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         availableAiGradingProviders={availableAiGradingProviders}
         aiGradingRelativeCosts={aiGradingRelativeCosts}
+        rubricSettingsContextKeys={rubricSettingsContextKeys}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
         onRubricSettingsSaved={({ rubric_data, aiGradingStats: newAiGradingStats }) => {
