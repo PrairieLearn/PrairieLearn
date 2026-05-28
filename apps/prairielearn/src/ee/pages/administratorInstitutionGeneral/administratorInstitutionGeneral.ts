@@ -7,19 +7,14 @@ import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/pos
 
 import { config } from '../../../lib/config.js';
 import { InstitutionSchema } from '../../../lib/db-types.js';
-import {
-  type GithubOrgAccessResult,
-  checkGithubOrgAccess,
-  isPlatformDefaultOrg,
-} from '../../../lib/github.js';
+import { validateGithubCourseOwner } from '../../../lib/github.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
-  updateInstitutionCourseRequestMessage,
-  updateInstitutionGithubCourseOwner,
+  updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
@@ -116,9 +111,10 @@ router.post(
           `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
         );
       }
-      await updateInstitutionCourseRequestMessage({
+      await updateInstitutionSetting({
         institution_id: req.params.institution_id,
-        course_request_message: newMessage,
+        field: 'course_request_message',
+        value: newMessage,
         authn_user_id: res.locals.authn_user.id,
       });
       flash('success', 'Successfully updated the course request message.');
@@ -142,18 +138,19 @@ router.post(
         typeof req.body.github_course_owner === 'string' ? req.body.github_course_owner.trim() : '';
       const newValue = raw.length > 0 ? raw : null;
 
-      if (newValue !== null && !isPlatformDefaultOrg(newValue)) {
-        const access = await checkGithubOrgAccess(newValue);
+      if (newValue !== null) {
+        const access = await validateGithubCourseOwner(newValue);
         if (!access.ok) {
-          flash('error', githubOrgAccessErrorMessage(access, newValue));
+          flash('error', access.message);
           res.redirect(req.originalUrl);
           return;
         }
       }
 
-      await updateInstitutionGithubCourseOwner({
+      await updateInstitutionSetting({
         institution_id: req.params.institution_id,
-        github_course_owner: newValue,
+        field: 'github_course_owner',
+        value: newValue,
         authn_user_id: res.locals.authn_user.id,
       });
       flash('success', 'Successfully updated default GitHub organization.');
@@ -163,24 +160,5 @@ router.post(
     }
   }),
 );
-
-function githubOrgAccessErrorMessage(
-  result: Extract<GithubOrgAccessResult, { ok: false }>,
-  org: string,
-): string {
-  switch (result.reason) {
-    case 'no_client':
-      return 'GitHub integration is not configured on this server.';
-    case 'no_machine_user':
-      return 'GitHub machine user is not configured; cannot validate org access.';
-    case 'org_unreachable':
-      return `Could not access GitHub organization '${org}'. Confirm the org exists and the machine account has been invited.`;
-    case 'not_a_member':
-      if (result.detail === 'pending') {
-        return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
-      }
-      return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
-  }
-}
 
 export default router;

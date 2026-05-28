@@ -15,12 +15,7 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import {
-  type GithubOrgAccessResult,
-  checkGithubOrgAccess,
-  checkGithubRepositoryExists,
-  isPlatformDefaultOrg,
-} from '../../lib/github.js';
+import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
 import {
   selectOptionalCourseByPath,
   selectOptionalCourseByRepositoryName,
@@ -84,14 +79,9 @@ const createCourse = t.procedure
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
-    if (!isPlatformDefaultOrg(input.githubCourseOwner)) {
-      const access = await checkGithubOrgAccess(input.githubCourseOwner);
-      if (!access.ok) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: githubOrgAccessErrorMessage(access, input.githubCourseOwner),
-        });
-      }
+    const access = await validateGithubCourseOwner(input.githubCourseOwner);
+    if (!access.ok) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: access.message });
     }
 
     const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
@@ -129,25 +119,6 @@ const createCourse = t.procedure
     });
     return { jobSequenceId };
   });
-
-function githubOrgAccessErrorMessage(
-  result: Extract<GithubOrgAccessResult, { ok: false }>,
-  org: string,
-): string {
-  switch (result.reason) {
-    case 'no_client':
-      return 'GitHub integration is not configured on this server.';
-    case 'no_machine_user':
-      return 'GitHub machine user is not configured; cannot validate org access.';
-    case 'org_unreachable':
-      return `Could not access GitHub organization '${org}'. Confirm the org exists and the machine account has been invited.`;
-    case 'not_a_member':
-      if (result.detail === 'pending') {
-        return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
-      }
-      return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
-  }
-}
 
 const SourcesSchema = z
   .array(z.object({ url: z.string().url(), title: z.string().optional() }))

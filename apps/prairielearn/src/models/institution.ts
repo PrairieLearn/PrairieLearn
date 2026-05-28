@@ -3,11 +3,10 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type Institution, InstitutionSchema, InstitutionSettingsSchema } from '../lib/db-types.js';
+import { type Institution, InstitutionSchema } from '../lib/db-types.js';
 
-const AdminInstitutionWithSettingsRowSchema = z.object({
-  institution: InstitutionSchema,
-  institution_settings: InstitutionSettingsSchema.nullable(),
+const AdminInstitutionWithSettingsRowSchema = InstitutionSchema.extend({
+  github_course_owner: z.string().nullable(),
 });
 
 const sql = loadSqlEquiv(import.meta.url);

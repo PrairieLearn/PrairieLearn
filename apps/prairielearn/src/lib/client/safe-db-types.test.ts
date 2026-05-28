@@ -5,7 +5,6 @@ import type z from 'zod';
 
 import {
   AdminInstitutionSchema,
-  AdminInstitutionSettingsSchema,
   AdminInstitutionWithSettingsSchema,
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
@@ -474,16 +473,8 @@ const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
 };
 
 const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
-  institution: minimalAdminInstitution,
-  institution_settings: {
-    github_course_owner: 'PrairieLearn',
-    institution_id: minimalAdminInstitution.id,
-  },
-};
-
-const minimalAdminInstitutionSettings: z.input<typeof AdminInstitutionSettingsSchema> = {
+  ...minimalAdminInstitution,
   github_course_owner: 'PrairieLearn',
-  institution_id: minimalAdminInstitution.id,
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
@@ -766,12 +757,7 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalAdminInstitution);
   });
 
-  it('parses valid AdminInstitutionSettings with GitHub course owner', () => {
-    const parsed = AdminInstitutionSettingsSchema.parse(minimalAdminInstitutionSettings);
-    expect(parsed).toMatchObject(minimalAdminInstitutionSettings);
-  });
-
-  it('parses valid AdminInstitutionWithSettings with grouped settings', () => {
+  it('parses valid AdminInstitutionWithSettings with GitHub course owner', () => {
     const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
     expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
   });

@@ -8,7 +8,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
-  updateInstitutionCourseRequestMessage,
+  updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 
@@ -70,9 +70,10 @@ router.post(
         );
       }
 
-      await updateInstitutionCourseRequestMessage({
+      await updateInstitutionSetting({
         institution_id: institution.id,
-        course_request_message: newMessage,
+        field: 'course_request_message',
+        value: newMessage,
         authn_user_id: res.locals.authn_user.id,
       });
 

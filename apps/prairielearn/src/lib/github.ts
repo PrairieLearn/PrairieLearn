@@ -56,11 +56,12 @@ export function isPlatformDefaultOrg(value: string): boolean {
 
 /**
  * Verifies that the PrairieLearn machine account has access to the given GitHub org.
- * Calls `GET /orgs/{org}` and `GET /orgs/{org}/memberships/{username}`. Membership state
- * other than `'active'` (e.g. `'pending'` for unaccepted invitations) is treated as not a member.
+ * Calls `GET /orgs/{org}` and `GET /orgs/{org}/memberships/{username}`. Membership in
+ * `'pending'` state (i.e., an unaccepted invitation) is reported separately so callers
+ * can surface a more actionable message.
  *
- * Unexpected errors (5xx, network) are re-thrown so callers can surface them as server errors
- * instead of persisting an unverified value.
+ * Unexpected errors (5xx, network) are re-thrown so callers can surface them as server
+ * errors instead of persisting an unverified value.
  */
 export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccessResult> {
   const client = getGithubClient();
@@ -83,9 +84,6 @@ export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccess
     });
     if (response.data.state === 'pending') {
       return { ok: false, reason: 'pending_invitation' };
-    }
-    if (response.data.state !== 'active') {
-      return { ok: false, reason: 'not_a_member' };
     }
   } catch (err: any) {
     // 403 from this endpoint means the machine user can't read its own

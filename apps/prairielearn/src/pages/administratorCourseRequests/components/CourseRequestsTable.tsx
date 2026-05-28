@@ -15,9 +15,10 @@ import {
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
 import { type AppError, getAppError } from '../../../lib/client/errors.js';
-import type {
-  AdminInstitution,
-  AdminInstitutionWithSettings,
+import {
+  type AdminInstitution,
+  AdminInstitutionSchema,
+  type AdminInstitutionWithSettings,
 } from '../../../lib/client/safe-db-types.js';
 import {
   getAdministratorCourseRequestsUrl,
@@ -339,11 +340,8 @@ function CourseRequestApproveModalContent({
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
   const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
-  const adminInstitutions = institutions.map(({ institution }) => institution);
-  const userInstitutionRow = institutions.find(
-    ({ institution }) => institution.id === request.user_institution_id,
-  );
-  const userInstitution = userInstitutionRow?.institution;
+  const adminInstitutions = institutions.map((i) => AdminInstitutionSchema.parse(i));
+  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
   const autoFilledInstitutionId =
     userInstitution && !isDefaultInstitution ? userInstitution.id : null;
@@ -351,8 +349,7 @@ function CourseRequestApproveModalContent({
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
   const initialGithubCourseOwner =
-    (autoFilledInstitutionId && userInstitutionRow?.institution_settings?.github_course_owner) ||
-    defaultGithubCourseOwner;
+    (autoFilledInstitutionId && userInstitution?.github_course_owner) || defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
@@ -382,11 +379,10 @@ function CourseRequestApproveModalContent({
 
   const handleInstitutionChange = (institution: AdminInstitution) => {
     if (dirtyFields.github_course_owner) return;
-    const institutionWithSettings = institutions.find((i) => i.institution.id === institution.id);
+    const institutionWithSettings = institutions.find((i) => i.id === institution.id);
     setValue(
       'github_course_owner',
-      institutionWithSettings?.institution_settings?.github_course_owner ??
-        defaultGithubCourseOwner,
+      institutionWithSettings?.github_course_owner ?? defaultGithubCourseOwner,
     );
   };
 

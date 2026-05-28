@@ -265,20 +265,19 @@ router.post(
         autoApproved = true;
         autoApprovedRepoShortName = repo_short_name;
       } else {
-        const detailSuffix = access.detail ? `: ${access.detail}` : '';
         logger.error(
-          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${access.reason}${detailSuffix})`,
+          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${access.reason})`,
         );
         Sentry.captureMessage(
           `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
-          { extra: { reason: access.reason, detail: access.detail, course_request_id } },
+          { extra: { reason: access.reason, course_request_id } },
         );
         autoApprovalBlockedMessage =
           '*Auto-approval skipped — GitHub org access check failed*\n' +
           `Course rubric: ${short_name}\n` +
           `Course title: ${title}\n` +
           `Institution: ${institution}\n` +
-          `Target org: ${githubCourseOwner} (${access.reason}${detailSuffix})\n` +
+          `Target org: ${githubCourseOwner} (${access.reason})\n` +
           `Requested by: ${first_name} ${last_name} (${work_email})`;
       }
     }

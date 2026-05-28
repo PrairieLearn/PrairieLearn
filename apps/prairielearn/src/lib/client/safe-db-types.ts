@@ -36,7 +36,6 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
-  InstitutionSettingsSchema as RawInstitutionSettingsSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -417,17 +416,10 @@ export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
 export const AdminInstitutionSchema = RawAdminInstitutionSchema.brand<'AdminInstitution'>();
 export type AdminInstitution = z.infer<typeof AdminInstitutionSchema>;
 
-export const RawAdminInstitutionSettingsSchema = RawInstitutionSettingsSchema.pick({
-  github_course_owner: true,
-  institution_id: true,
-});
-export const AdminInstitutionSettingsSchema =
-  RawAdminInstitutionSettingsSchema.brand<'AdminInstitutionSettings'>();
-export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSchema>;
-
-export const AdminInstitutionWithSettingsSchema = z.object({
-  institution: AdminInstitutionSchema,
-  institution_settings: AdminInstitutionSettingsSchema.nullable(),
+// Extended admin-institution shape that includes joined institution_settings
+// columns. Not branded: structurally usable anywhere AdminInstitution is.
+export const AdminInstitutionWithSettingsSchema = RawAdminInstitutionSchema.extend({
+  github_course_owner: z.string().nullable(),
 });
 export type AdminInstitutionWithSettings = z.infer<typeof AdminInstitutionWithSettingsSchema>;
 

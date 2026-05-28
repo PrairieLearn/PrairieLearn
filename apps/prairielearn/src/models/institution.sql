@@ -39,11 +39,8 @@ ORDER BY
 
 -- BLOCK select_all_admin_institutions_with_settings
 SELECT
-  to_jsonb(i.*) AS institution,
-  CASE
-    WHEN ist.institution_id IS NULL THEN NULL
-    ELSE to_jsonb(ist.*)
-  END AS institution_settings
+  i.*,
+  ist.github_course_owner
 FROM
   institutions AS i
   LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id

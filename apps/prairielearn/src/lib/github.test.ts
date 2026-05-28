@@ -83,12 +83,12 @@ describe('checkGithubOrgAccess', () => {
     });
   });
 
-  it('treats pending membership state as not_a_member with detail', async () => {
+  it('treats pending membership state as pending_invitation', async () => {
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'pending' } });
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
       const result = await checkGithubOrgAccess('SomeOrg');
-      assert.deepEqual(result, { ok: false, reason: 'not_a_member', detail: 'pending' });
+      assert.deepEqual(result, { ok: false, reason: 'pending_invitation' });
     });
   });
 

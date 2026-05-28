@@ -28,7 +28,7 @@ router.get(
     const rows = showAll ? await selectAllCourseRequests() : await selectPendingCourseRequests();
     const institutions = await selectAllAdminInstitutionsWithSettings();
     const availableTimezones = await getCanonicalTimezones(
-      institutions.map(({ institution }) => institution.display_timezone),
+      institutions.map((i) => i.display_timezone),
     );
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
