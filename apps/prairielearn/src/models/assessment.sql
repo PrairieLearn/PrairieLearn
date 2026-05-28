@@ -155,6 +155,19 @@ FROM
 WHERE
   z.assessment_id = $assessment_id;
 
+-- BLOCK select_assessment_in_course
+SELECT
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  a.id = $assessment_id
+  AND ci.course_id = $course_id
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_zones_for_assessment
 SELECT
   *

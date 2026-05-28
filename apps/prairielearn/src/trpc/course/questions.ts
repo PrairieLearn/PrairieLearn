@@ -9,13 +9,13 @@ import {
   MAX_BULK_QUESTION_SELECTION,
   SafeQuestionsPageDataSchema,
 } from '../../components/QuestionsTable.shared.js';
-import type { Question } from '../../lib/db-types.js';
+import type { Assessment, Question } from '../../lib/db-types.js';
 import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-import { removeQidsFromBlock } from '../../lib/infoAssessment-edits.js';
+import { removeQidsFromZone } from '../../lib/infoAssessment-edits.js';
 import {
-  selectAssessmentById,
   selectAssessments,
+  selectOptionalAssessmentInCourse,
   selectZonesForAssessment,
 } from '../../models/assessment.js';
 import {
@@ -71,16 +71,6 @@ const QuestionIdsInputSchema = z.object({
   questionIds: z.array(IdSchema).min(1).max(MAX_BULK_QUESTION_SELECTION),
 });
 
-function uniqueIds(ids: string[]) {
-  return [...new Set(ids)];
-}
-
-function assertNonDeletedTarget({ deletedAt, label }: { deletedAt: Date | null; label: string }) {
-  if (deletedAt !== null) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: `${label} is deleted` });
-  }
-}
-
 async function assertCourseInstanceBelongsToCourse({
   courseInstanceId,
   courseId,
@@ -89,10 +79,9 @@ async function assertCourseInstanceBelongsToCourse({
   courseId: string;
 }) {
   const courseInstance = await selectCourseInstanceById(courseInstanceId);
-  if (!idsEqual(courseInstance.course_id, courseId)) {
+  if (!idsEqual(courseInstance.course_id, courseId) || courseInstance.deleted_at !== null) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid course instance' });
   }
-  assertNonDeletedTarget({ deletedAt: courseInstance.deleted_at, label: 'Course instance' });
   return courseInstance;
 }
 
@@ -103,7 +92,7 @@ async function selectQuestionsForMutation({
   questionIds: string[];
   courseId: string;
 }) {
-  const uniqueQuestionIds = uniqueIds(questionIds);
+  const uniqueQuestionIds = [...new Set(questionIds)];
   const selectedQuestions = await selectLiveQuestionsByIdsAndCourseId({
     question_ids: uniqueQuestionIds,
     course_id: courseId,
@@ -114,34 +103,41 @@ async function selectQuestionsForMutation({
       message: 'One or more selected questions are not valid for this course',
     });
   }
-
-  const questionById = new Map(selectedQuestions.map((question) => [question.id, question]));
-  return uniqueQuestionIds.map((id) => questionById.get(id)!);
+  return selectedQuestions;
 }
 
-async function resolveAssessmentInfoPath({
+async function selectAssessmentForEdit({
   assessmentId,
   courseId,
-  coursePath,
 }: {
   assessmentId: string;
   courseId: string;
-  coursePath: string;
-}): Promise<string> {
-  const assessment = await selectAssessmentById(assessmentId);
-  assertNonDeletedTarget({ deletedAt: assessment.deleted_at, label: 'Assessment' });
-  const courseInstance = await assertCourseInstanceBelongsToCourse({
-    courseInstanceId: assessment.course_instance_id,
-    courseId,
+}): Promise<{ assessment: Assessment; courseInstance: CourseInstance }> {
+  const result = await selectOptionalAssessmentInCourse({
+    assessment_id: assessmentId,
+    course_id: courseId,
   });
+  if (!result) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid assessment' });
+  }
+  return { assessment: result.assessment, courseInstance: result.course_instance };
+}
 
+function assessmentInfoPath({
+  coursePath,
+  courseInstance,
+  assessment,
+}: {
+  coursePath: string;
+  courseInstance: CourseInstance;
+  assessment: Assessment;
+}): string {
   if (!assessment.tid) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: 'Assessment directory is not available',
     });
   }
-
   return path.join(
     coursePath,
     'courseInstances',

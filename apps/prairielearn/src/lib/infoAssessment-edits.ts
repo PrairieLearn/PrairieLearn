@@ -50,27 +50,18 @@ export function removeQidsFromZone(
 }
 
 /**
- * Walks an assessment's zones and removes any references to `qidsToRemove`.
- * Zones whose question list becomes empty are dropped. Mutates `assessment`
- * in place (matching the in-place editing pattern used by the editors).
+ * Returns a copy of `assessment` with any references to `qidsToRemove`
+ * filtered out. Zones whose question list becomes empty are dropped.
  */
 export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
   qidsToRemove: Set<string>,
-): { removedCount: number; droppedZoneCount: number } {
-  let removedCount = 0;
-  let droppedZoneCount = 0;
-  const remainingZones: ZoneAssessmentJsonInput[] = [];
+): AssessmentJsonInput {
+  const zones: ZoneAssessmentJsonInput[] = [];
   for (const zone of assessment.zones ?? []) {
-    const result = removeQidsFromZone(zone, qidsToRemove);
-    removedCount += result.removedCount;
-    if (result.questions.length === 0) {
-      droppedZoneCount += 1;
-      continue;
-    }
-    zone.questions = result.questions;
-    remainingZones.push(zone);
+    const { questions } = removeQidsFromZone(zone, qidsToRemove);
+    if (questions.length === 0) continue;
+    zones.push({ ...zone, questions });
   }
-  assessment.zones = remainingZones;
-  return { removedCount, droppedZoneCount };
+  return { ...assessment, zones };
 }

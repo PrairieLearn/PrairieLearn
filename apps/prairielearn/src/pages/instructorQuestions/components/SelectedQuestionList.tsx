@@ -1,13 +1,10 @@
-import { useMemo } from 'react';
-
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
 
 const COLLAPSE_THRESHOLD = 5;
 
 export function SelectedQuestionList({ questions }: { questions: SafeQuestionsPageData[] }) {
-  const sortedQuestions = useMemo(
-    () => [...questions].sort((a, b) => a.qid.localeCompare(b.qid, undefined, { numeric: true })),
-    [questions],
+  const sortedQuestions = [...questions].sort((a, b) =>
+    a.qid.localeCompare(b.qid, undefined, { numeric: true }),
   );
   const heading = `${sortedQuestions.length} selected ${
     sortedQuestions.length === 1 ? 'question' : 'questions'

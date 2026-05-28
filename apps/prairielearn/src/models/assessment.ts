@@ -19,6 +19,8 @@ import {
   AssessmentSetSchema,
   type AssessmentTool,
   AssessmentToolSchema,
+  type CourseInstance,
+  CourseInstanceSchema,
   type Zone,
   ZoneSchema,
 } from '../lib/db-types.js';
@@ -34,6 +36,29 @@ export async function selectOptionalAssessmentById(
   assessment_id: string,
 ): Promise<Assessment | null> {
   return await queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
+}
+
+/**
+ * Returns the assessment together with its course instance, scoped to the
+ * given course. Returns `null` when the assessment does not exist, has been
+ * deleted, belongs to a deleted course instance, or belongs to a different
+ * course.
+ */
+export async function selectOptionalAssessmentInCourse({
+  assessment_id,
+  course_id,
+}: {
+  assessment_id: string;
+  course_id: string;
+}): Promise<{ assessment: Assessment; course_instance: CourseInstance } | null> {
+  return await queryOptionalRow(
+    sql.select_assessment_in_course,
+    { assessment_id, course_id },
+    z.object({
+      assessment: AssessmentSchema,
+      course_instance: CourseInstanceSchema,
+    }),
+  );
 }
 
 export async function selectAssessmentByTid({

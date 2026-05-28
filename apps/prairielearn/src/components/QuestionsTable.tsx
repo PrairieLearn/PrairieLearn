@@ -35,13 +35,13 @@ import {
 
 import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
-import type { QuestionsError } from '../trpc/course/questions.js';
 import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
   getAiQuestionGenerationDraftsUrl,
   getCourseInstanceBaseUrl,
 } from '../lib/client/url.js';
+import type { QuestionsError } from '../trpc/course/questions.js';
 
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
 import {
@@ -125,13 +125,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  const defaultPinning = useMemo(
-    () => ({
-      left: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.left,
-      right: DEFAULT_PINNING.right,
-    }),
-    [rowSelectionEnabled],
-  );
+  const defaultPinning: ColumnPinningState = {
+    left: rowSelectionEnabled ? ['select', 'qid'] : DEFAULT_PINNING.left,
+    right: DEFAULT_PINNING.right,
+  };
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
     parseAsColumnPinningState.withDefault(defaultPinning),
@@ -172,28 +169,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     initialData: initialQuestions,
   });
 
-  const selectionColumn = useMemo(
-    () =>
-      columnHelper.display({
-        id: 'select',
-        header: ({ table }) => <SelectAllCheckbox table={table} />,
-        cell: ({ row, table }) => (
-          <input
-            type="checkbox"
-            aria-label={`Select ${displayQid(row.original, qidPrefix)}`}
-            {...createCheckboxProps(row, table)}
-          />
-        ),
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
-        enableSorting: false,
-        enableHiding: false,
-        enablePinning: true,
-      }),
-    [createCheckboxProps, qidPrefix],
-  );
-
   const columns = useMemo(() => {
     const questionColumns = createQuestionsTableColumns({
       courseInstances,
@@ -203,7 +178,27 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       courseInstanceId: currentCourseInstanceId,
       isPublic,
     });
-    return rowSelectionEnabled ? [selectionColumn, ...questionColumns] : questionColumns;
+    if (!rowSelectionEnabled) {
+      return questionColumns;
+    }
+    const selectionColumn = columnHelper.display({
+      id: 'select',
+      header: ({ table }) => <SelectAllCheckbox table={table} />,
+      cell: ({ row, table }) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${displayQid(row.original, qidPrefix)}`}
+          {...createCheckboxProps(row, table)}
+        />
+      ),
+      size: 40,
+      minSize: 40,
+      maxSize: 40,
+      enableSorting: false,
+      enableHiding: false,
+      enablePinning: true,
+    });
+    return [selectionColumn, ...questionColumns];
   }, [
     courseInstances,
     qidPrefix,
@@ -212,7 +207,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     currentCourseInstanceId,
     isPublic,
     rowSelectionEnabled,
-    selectionColumn,
+    createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
