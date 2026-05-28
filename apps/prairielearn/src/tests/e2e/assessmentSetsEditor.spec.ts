@@ -18,7 +18,7 @@ test.describe('Assessment sets editor', () => {
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create two assessment sets with unique abbreviations
     const timestamp = Date.now().toString().slice(-4);
@@ -29,14 +29,14 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(abbrev1);
     await page.getByLabel('Name').fill('Test Set Alpha');
     await page.getByLabel('Heading').fill('Test Set Alpha Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     await page.getByRole('button', { name: 'New assessment set' }).click();
     await page.getByLabel('Abbreviation').fill(abbrev2);
     await page.getByLabel('Name').fill('Test Set Beta');
     await page.getByLabel('Heading').fill('Test Set Beta Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -59,7 +59,7 @@ test.describe('Assessment sets editor', () => {
 
     expect(await getRowIndex(betaRow)).toBeLessThan(betaIndexBefore);
 
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
@@ -90,7 +90,7 @@ test.describe('Assessment sets editor', () => {
 
     // Enter edit mode
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create a new assessment set to edit
     const timestamp = Date.now().toString().slice(-4);
@@ -101,7 +101,7 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(originalAbbrev);
     await page.getByLabel('Name').fill('Original Name');
     await page.getByLabel('Heading').fill('Original Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -123,7 +123,7 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(editedAbbrev);
     await page.getByLabel('Name').fill('Edited Name');
     await page.getByLabel('Heading').fill('Edited Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     // Verify the table shows updated values
@@ -131,7 +131,7 @@ test.describe('Assessment sets editor', () => {
     await expect(tbody.locator('.badge', { hasText: originalAbbrev })).not.toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
@@ -154,7 +154,7 @@ test.describe('Assessment sets editor', () => {
 
     // Enter edit mode
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create a new assessment set to delete
     const timestamp = Date.now().toString().slice(-4);
@@ -164,7 +164,7 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(deleteAbbrev);
     await page.getByLabel('Name').fill('To Be Deleted');
     await page.getByLabel('Heading').fill('Delete Me');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -180,7 +180,7 @@ test.describe('Assessment sets editor', () => {
     await expect(tbody.locator('.badge', { hasText: deleteAbbrev })).not.toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
