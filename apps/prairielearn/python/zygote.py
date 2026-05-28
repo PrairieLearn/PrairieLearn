@@ -510,10 +510,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                     # were running as the `executor` user
                     if drop_privileges:
                         # Kill all processes started by `executor`.
-                        subprocess.run(
-                            ["pkill", "-u", "executor", "--signal", "SIGKILL"],
-                            check=False,
-                        )
+                        os.system("pkill -u executor --signal SIGKILL")
 
                         # Check that all processes are gone. If they're not,
                         # that probably means that someone is trying to escape

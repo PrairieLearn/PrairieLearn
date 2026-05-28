@@ -110,7 +110,6 @@ export function AccessControlForm({
   // Sync cross-field date validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
   // so we re-sync when child `trigger()` calls clear a manual error we set.
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Cross-field date validation must write manual react-hook-form errors. */
   useEffect(() => {
     const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
     for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
@@ -139,7 +138,6 @@ export function AccessControlForm({
 
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
     if (!canEditAccessSettings) return;

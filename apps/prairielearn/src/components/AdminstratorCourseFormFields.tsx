@@ -137,7 +137,6 @@ export function AdministratorCourseFormFields({
   const repoMatchesShortName =
     !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
 
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Keep derived react-hook-form fields synchronized until the admin edits them. */
   useEffect(() => {
     if (!shortName) return;
     if (prefixState.status === 'loading') return;
@@ -169,7 +168,6 @@ export function AdministratorCourseFormFields({
     dirtyFields.repository_short_name,
     setValue,
   ]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   return (
     <div className="row g-3 mb-3">

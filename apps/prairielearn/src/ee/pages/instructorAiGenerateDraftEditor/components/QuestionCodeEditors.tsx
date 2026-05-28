@@ -88,7 +88,7 @@ export function QuestionCodeEditors({
     };
   }, []);
 
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- ACE editor contents and undo state are synchronized through imperative editor APIs. */
+  // Sync editor content when props change (e.g., after AI updates or saves).
   useEffect(() => {
     const htmlEditor = htmlEditorInstanceRef.current;
     const pythonEditor = pythonEditorInstanceRef.current;
@@ -112,7 +112,6 @@ export function QuestionCodeEditors({
       pythonEditor.gotoLine(1, 0, false);
     }
   }, [htmlContents, pythonContents]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   useImperativeHandle(editorRef, () => ({
     discardChanges: () => {

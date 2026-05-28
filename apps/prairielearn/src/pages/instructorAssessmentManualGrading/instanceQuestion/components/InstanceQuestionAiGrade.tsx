@@ -80,7 +80,6 @@ function InstanceQuestionAiGradeInner({
     initialOngoingJobSequenceTokens != null &&
       Object.keys(initialOngoingJobSequenceTokens).length > 0,
   );
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Reload the server-rendered grading panel once an initial AI grading job finishes. */
   useEffect(() => {
     if (submissionStatus !== JobItemStatus.complete && submissionStatus !== JobItemStatus.failed) {
       return;
@@ -93,7 +92,6 @@ function InstanceQuestionAiGradeInner({
       });
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   // Imperatively toggle the AI grade button's disabled state because the
   // button lives in the server-rendered grading panel — making this

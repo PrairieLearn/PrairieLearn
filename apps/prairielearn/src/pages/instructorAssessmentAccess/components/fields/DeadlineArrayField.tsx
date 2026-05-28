@@ -171,7 +171,6 @@ function DeadlineArrayInput({
   // changes (handles append and remove) or when external constraints change.
   // Without this, react-hook-form won't run validators on newly appended fields
   // or re-check existing fields against updated constraints.
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Re-run react-hook-form validation for deadline array constraint changes. */
   useEffect(() => {
     if (deadlineFields.length > 0) {
       for (let i = 0; i < deadlineFields.length; i++) {
@@ -188,7 +187,6 @@ function DeadlineArrayInput({
     fieldArrayName,
     trigger,
   ]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   const getDateError = (index: number): string | undefined => {
     return get(errors, `${fieldArrayName}.${index}.date`)?.message;

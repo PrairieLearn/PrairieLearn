@@ -136,7 +136,6 @@ export function GroupSettingsCard({
   const watchedRoles = watch('roles');
   const watchedCanCreateGroup = watch('studentPermissions.canCreateGroup');
 
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Group-role warnings are represented as manual react-hook-form errors. */
   useEffect(() => {
     const violations: Record<string, string> = {};
     if (watchedRoles.length > 0) {
@@ -176,7 +175,6 @@ export function GroupSettingsCard({
       }
     }
   }, [watchedRoles, setError, clearErrors]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   const formLevelRoleErrors = Object.values(errors.root ?? {})
     .map((e) => (typeof e === 'object' ? e.message : null))
@@ -226,12 +224,10 @@ export function GroupSettingsCard({
   };
 
   const wasDirtyRef = useRef(isDirty);
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Clear stale save status on the first dirty transition after a save. */
   useEffect(() => {
     if (isDirty && !wasDirtyRef.current) onClearSaveStatus();
     wasDirtyRef.current = isDirty;
   }, [isDirty, onClearSaveStatus]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   return (
     <div className="card">

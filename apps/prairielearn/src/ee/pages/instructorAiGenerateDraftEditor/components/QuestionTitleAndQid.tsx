@@ -94,14 +94,13 @@ function InlineEditableField({
     onEditStart();
   }
 
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Entering edit mode should imperatively focus and select the input. */
+  // Focus and select the input when entering edit mode.
   useEffect(() => {
     if (isEditing) {
       inputRef.current?.focus();
       inputRef.current?.select();
     }
   }, [isEditing]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   function handleSave() {
     const trimmed = localValue.trim();

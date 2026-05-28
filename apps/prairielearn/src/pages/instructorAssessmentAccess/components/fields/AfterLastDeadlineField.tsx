@@ -147,13 +147,11 @@ function AfterLastDeadlineInput({
   // explicitly. Use primitives (not object refs) so the effect is stable.
   const precedingCredit =
     lateDeadlines.at(-1)?.credit ?? (dueDate != null ? effectiveDueCredit : undefined);
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Re-run react-hook-form validation when derived credit constraints change. */
   useEffect(() => {
     if (mode === 'partial_credit') {
       void trigger(creditFieldPath);
     }
   }, [trigger, creditFieldPath, mode, precedingCredit]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   // For overrides we can't fully reason about the effective deadlines (override
   // stacking may produce a different set), so we fall back to a generic label.

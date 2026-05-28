@@ -470,7 +470,6 @@ function CreditPoolSection({
     !changesQuery.isError &&
     (changesQuery.data?.totalCount ?? 0) === 0;
 
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Refetch once after returning from Stripe checkout. */
   useEffect(() => {
     if (initialCheckoutStatus === 'success') {
       // Refetch credit pool data after a successful purchase.
@@ -480,7 +479,6 @@ function CreditPoolSection({
       });
     }
   }, [initialCheckoutStatus, queryClient, trpc]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   const freeCreditStatus = freeCreditStatusQuery.data;
   const hasFreeCreditAvailable = (freeCreditStatus?.redemptions_remaining ?? 0) > 0;

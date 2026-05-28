@@ -244,7 +244,6 @@ export function TanstackTable<RowDataModel>({
   const hasAutoSized = useAutoSizeColumns(table, tableRef, filters);
 
   // Re-measure the virtualizer when auto-sizing completes
-  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- The virtualizer exposes an imperative measurement API after column auto-sizing. */
   useEffect(() => {
     if (hasAutoSized) {
       // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
@@ -252,7 +251,6 @@ export function TanstackTable<RowDataModel>({
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
-  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
