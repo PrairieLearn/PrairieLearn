@@ -33,6 +33,8 @@ ansi2html_style.SCHEME["iterm"] = (
 
 conv: Ansi2HTMLConverter = Ansi2HTMLConverter(inline=True, scheme="iterm")
 
+_DEFAULT_ALT_TEXT = "Report missing alt-text using the report an issue button"
+
 
 def ansi_to_html(output: str | None) -> str | None:
     if output is None:
@@ -60,6 +62,21 @@ def round_value(value: float, digits: int = 2) -> str:
         The value rounded to the specified precision
     """
     return f"{value:.{digits}f}".rstrip("0").rstrip(".")
+
+
+def normalize_images(images: list[Any]) -> list[dict[str, Any]]:
+    normalized_images: list[dict[str, Any]] = []
+
+    for image in images:
+        if isinstance(image, str):
+            normalized_image = {"url": image}
+        else:
+            normalized_image = dict(image)
+
+        normalized_image.setdefault("alt", _DEFAULT_ALT_TEXT)
+        normalized_images.append(normalized_image)
+
+    return normalized_images
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -106,7 +123,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["output"] = ansi_to_html(output)
         html_params["has_output"] = bool(output)
 
-        images = results.get("images", [])
+        images = normalize_images(results.get("images", []))
         html_params["images"] = images
         html_params["has_images"] = bool(images)
 
@@ -142,7 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 message = results_test.get("message", None)
                 output = results_test.get("output", None)
                 description = results_test.get("description", None)
-                images = results_test.get("images", [])
+                images = normalize_images(results_test.get("images", []))
 
                 test: dict[str, Any] = {
                     "index": index,

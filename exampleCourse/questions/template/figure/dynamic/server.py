@@ -18,9 +18,13 @@ def generate(data):
     if shape == "diamond":
         data["params"]["dimension_name"] = "length of the diagonal"
         data["params"]["dimension_label"] = "diamond diagonal"
+        data["params"]["alt_label"] = (
+            f"corners at (0, +/-{radius}) and (+/-{radius}, 0)"
+        )
     else:
         data["params"]["dimension_name"] = "diameter"
         data["params"]["dimension_label"] = "circle diameter"
+        data["params"]["alt_label"] = f"x-intercepts at +/-{radius}"
 
     # Compute the correct answer.
     data["correct_answers"]["dimension"] = 2 * radius

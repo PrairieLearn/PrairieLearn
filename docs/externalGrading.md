@@ -159,10 +159,12 @@ The [`<pl-external-grader-results>` element](./elements/pl-external-grader-resul
   "images": [
     {
       "label": "First Image",
+      "alt": "A plot of the first result",
       "url": "data:image/png;base64,..."
     },
     {
       "label": "Second Image",
+      "alt": "A plot of the second result",
       "url": "data:image/jpeg;base64,..."
     }
   ],
@@ -185,10 +187,12 @@ The [`<pl-external-grader-results>` element](./elements/pl-external-grader-resul
       "images": [
         {
           "label": "First Image",
+          "alt": "A plot of the first test result",
           "url": "data:image/gif;base64,..."
         },
         {
           "label": "First Image",
+          "alt": "A plot of the second test result",
           "url": "data:image/png;base64,..."
         }
       ]
@@ -201,6 +205,7 @@ Plots or images can be added to either individual test cases or to the main outp
 
 - `url`: The source of the image, typically formatted as standard data URL like `"data:[mimetype];base64,[contents]"`.
 - `label`: An optional label for the image (defaults to "Figure").
+- `alt`: Optional alternative text for the image. If omitted, PrairieLearn uses the label for the image's `alt` text, or "Figure" if no label was provided.
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
 

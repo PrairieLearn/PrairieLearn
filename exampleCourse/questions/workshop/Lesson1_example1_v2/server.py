@@ -16,6 +16,7 @@ def generate(data):
 
     equation = "$y = " + str(a) + " - x^{" + str(b) + "}$"
     data["params"]["equation"] = equation
+    data["params"]["root_approx"] = f"{np.power(a, 1 / b):.1f}"
 
     x2 = a ** (1 / b)
     A = a * x2 - x2 ** (b + 1) / (b + 1)
