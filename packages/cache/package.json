@@ -13,13 +13,13 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@prairielearn/logger": "^3.1.4",
-    "@prairielearn/sentry": "^5.0.6",
+    "@prairielearn/logger": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
     "ioredis": "^5.10.1",
     "lru-cache": "^11.3.6"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta"
   }

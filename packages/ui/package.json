@@ -20,8 +20,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@prairielearn/browser-utils": "^2.7.2",
-    "@prairielearn/run": "^2.0.5",
+    "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/run": "workspace:^",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
@@ -38,7 +38,7 @@
     "use-debounce": "^10.1.1"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9",

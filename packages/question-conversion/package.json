@@ -21,7 +21,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@prairielearn/logger": "^3.1.4",
+    "@prairielearn/logger": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
     "commander": "^14.0.3",
     "fast-xml-parser": "^5.7.2",
@@ -30,7 +30,7 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",

@@ -20,7 +20,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta"
   }

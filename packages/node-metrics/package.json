@@ -20,7 +20,7 @@
     "loopbench": "^2.0.0"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta"

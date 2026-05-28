@@ -17,16 +17,16 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@prairielearn/error": "^3.0.7",
-    "@prairielearn/logger": "^3.1.4",
-    "@prairielearn/named-locks": "^4.0.4",
-    "@prairielearn/postgres": "^6.0.4",
+    "@prairielearn/error": "workspace:^",
+    "@prairielearn/logger": "workspace:^",
+    "@prairielearn/named-locks": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
     "fs-extra": "^11.3.4",
     "serialize-error": "^13.0.1",
     "zod": "^3.25.76 <4"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",

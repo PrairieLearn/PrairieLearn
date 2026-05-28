@@ -69,7 +69,7 @@ start-all: start-support
 	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:
-	@pnpm --filter @prairielearn/prairielearn pg-describe postgres -o ../../database
+	@pnpm --filter @prairielearn/prairielearn exec pg-describe postgres -o ../../database
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:

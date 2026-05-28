@@ -20,11 +20,11 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@prairielearn/browser-utils": "^2.7.2",
-    "@prairielearn/compiled-assets": "^4.1.5",
-    "@prairielearn/error": "^3.0.7",
-    "@prairielearn/html": "^5.0.5",
-    "@prairielearn/utils": "^3.1.5",
+    "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/compiled-assets": "workspace:^",
+    "@prairielearn/error": "workspace:^",
+    "@prairielearn/html": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
@@ -34,7 +34,7 @@
     "superjson": "^2.2.6"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta"
   }

@@ -158,7 +158,7 @@ Integration and unit tests are written with Vitest. End-to-end tests are written
 Individual tests:
 
 - For integration and unit tests, use `pnpm test path/to/file.test.ts` from the root directory.
-- For end-to-end tests, use `pnpm test:e2e path/to/integration.spec.ts` from the root directory.
+- For end-to-end tests, use `pnpm --filter @prairielearn/prairielearn test:e2e path/to/integration.spec.ts` from the root directory.
 
 Avoid running the entire test suite unless necessary, as it can be time-consuming. However, if you must:
 

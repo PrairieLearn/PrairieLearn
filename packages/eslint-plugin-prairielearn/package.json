@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@html-eslint/parser": "^0.58.1",
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript-eslint/rule-tester": "^8.59.2",
     "@typescript-eslint/types": "^8.59.2",

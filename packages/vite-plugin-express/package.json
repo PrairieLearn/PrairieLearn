@@ -22,7 +22,7 @@
     "vite": "^8.0.10"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@types/picomatch": "^4.0.3",
     "@typescript/native-preview": "beta"

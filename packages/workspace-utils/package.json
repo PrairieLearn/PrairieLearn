@@ -17,9 +17,9 @@
     "dev": "tsgo --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
-    "@prairielearn/path-utils": "^1.0.0",
-    "@prairielearn/postgres": "^6.0.4",
-    "@prairielearn/zod": "^2.0.5",
+    "@prairielearn/path-utils": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
     "filesize": "^11.0.17",
@@ -27,7 +27,7 @@
     "zod": "^3.25.76 <4"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "^2.1.0",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9"
