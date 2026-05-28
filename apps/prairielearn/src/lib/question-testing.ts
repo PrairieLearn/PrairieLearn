@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { ElementType } from 'domelementtype';
+import { isTag } from 'domhandler';
 import { isEqual, pick, range } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   // people might use `srcset`, or use `data-*` attributes for lazy loading or
   // other client-side purposes.
   $('*').each((_, el) => {
-    if (el.type !== ElementType.Tag) return;
+    if (!isTag(el)) return;
     for (const value of Object.values(el.attribs)) {
       const match = value.match(pattern);
       if (match) filenames.add(match[1].trim());
@@ -188,6 +188,7 @@ function compareTestResults(
   expectedData: questionServers.TestResultData,
   hasFatalIssue: boolean,
   submission: Submission,
+  question: Question,
 ): Error[] {
   const courseIssues: Error[] = [];
 
@@ -217,8 +218,13 @@ function compareTestResults(
   if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
-  checkEqual('score', expectedData.score, submission.score);
+  // For manual-only questions, auto-grading is skipped entirely, so the
+  // submission will have null partial_scores and score. Skip comparison
+  // in that case since there's nothing to compare against.
+  if (question.grading_method !== 'Manual') {
+    checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+    checkEqual('score', expectedData.score, submission.score);
+  }
   return courseIssues;
 }
 
@@ -283,7 +289,7 @@ async function testVariant(
   const submission = await selectSubmission(submission_id);
 
   // Step 3: Compare expected results with actual submission
-  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission, question);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
@@ -342,23 +348,19 @@ async function testQuestion({
   let submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
-  const instance_question_id = null;
-  const options = { variant_seed };
-  const require_open = true;
-  const client_fingerprint_id = null;
   const generateStart = Date.now();
   try {
     variant = await ensureVariant({
       question_id: question.id,
-      instance_question_id,
+      instance_question_id: null,
       user_id: authn_user_id,
       authn_user_id,
       course_instance,
       variant_course,
       question_course,
-      options,
-      require_open,
-      client_fingerprint_id,
+      options: { variant_seed },
+      require_open: true,
+      client_fingerprint_id: null,
     });
   } finally {
     const generateEnd = Date.now();

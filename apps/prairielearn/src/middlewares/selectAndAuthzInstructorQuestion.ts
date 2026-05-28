@@ -15,11 +15,7 @@ const SelectAndAuthSchema = z.object({
   open_issue_count: z.coerce.number(),
 });
 
-export type ResLocalsInstructorQuestionSchema = z.infer<typeof SelectAndAuthSchema>;
-
-export type ResLocalsInstructorQuestion = ResLocalsInstructorQuestionSchema & {
-  questionRenderContext?: 'manual_grading' | 'ai_grading';
-};
+export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema>;
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {

@@ -1,14 +1,26 @@
 import { useReducer, useState } from 'react';
 
-import type {
-  EditorAction,
-  EditorState,
-  QuestionAlternativeForm,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
+import {
+  type EditorAction,
+  type EditorState,
+  type QuestionAlternativeForm,
+  type SelectedItem,
+  type StandaloneQuestionBlockForm,
+  type ZoneAssessmentForm,
+  type ZoneQuestionBlockForm,
+  assertStandaloneQuestion,
 } from '../types.js';
 
-import { alternativeToQuestionBlock, questionBlockToAlternative } from './dataTransform.js';
+import {
+  alternativeToQuestionBlock,
+  createAltPoolWithTrackingId,
+  createAlternativeWithTrackingId,
+  createQuestionWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  questionBlockToAlternative,
+} from './dataTransform.js';
+import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
+import { findQuestionByTrackingId, isQidInAssessment } from './zoneLookup.js';
 
 /**
  * Finds a zone by its trackingId.
@@ -21,29 +33,6 @@ function findZoneByTrackingId(
   const index = zones.findIndex((z) => z.trackingId === trackingId);
   if (index === -1) return null;
   return { zone: zones[index], index };
-}
-
-/**
- * Finds a question by its trackingId across all zones.
- * Returns the question, zone, and their indices, or null if not found.
- */
-export function findQuestionByTrackingId(
-  zones: ZoneAssessmentForm[],
-  trackingId: string,
-): {
-  question: ZoneQuestionBlockForm;
-  questionIndex: number;
-  zone: ZoneAssessmentForm;
-  zoneIndex: number;
-} | null {
-  for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
-    const zone = zones[zoneIndex];
-    const questionIndex = zone.questions.findIndex((q) => q.trackingId === trackingId);
-    if (questionIndex !== -1) {
-      return { question: zone.questions[questionIndex], questionIndex, zone, zoneIndex };
-    }
-  }
-  return null;
 }
 
 /**
@@ -98,21 +87,211 @@ function findAlternativeAcrossZones(
 }
 
 /**
- * Searches zones for a tracking ID and returns what type of item it is.
- * Returns null if the tracking ID is not found anywhere.
+ * Removes a question/alternative with the given QID from the zones array.
+ * Also cleans up the corresponding metadata entries.
  */
-export function findByTrackingId(
+function removeQid(
   zones: ZoneAssessmentForm[],
-  trackingId: string,
-): 'zone' | 'question' | 'alternative' | null {
+  questionMetadata: EditorState['questionMetadata'],
+  qid: string,
+): void {
   for (const zone of zones) {
-    if (zone.trackingId === trackingId) return 'zone';
-    for (const question of zone.questions) {
-      if (question.trackingId === trackingId) return 'question';
-      if (question.alternatives?.some((a) => a.trackingId === trackingId)) return 'alternative';
+    for (let qi = 0; qi < zone.questions.length; qi++) {
+      const q = zone.questions[qi];
+      if (q.id === qid) {
+        delete questionMetadata[qid];
+        zone.questions.splice(qi, 1);
+        return;
+      }
+      for (let ai = 0; ai < (q.alternatives ?? []).length; ai++) {
+        if (q.alternatives![ai].id === qid) {
+          delete questionMetadata[qid];
+          q.alternatives!.splice(ai, 1);
+          return;
+        }
+      }
     }
   }
-  return null;
+}
+
+/**
+ * Handles the QUESTION_PICKED compound action.
+ */
+function handleQuestionPicked(
+  state: EditorState,
+  action: Extract<EditorAction, { type: 'QUESTION_PICKED' }>,
+): EditorState {
+  const { qid, metadata, expectedSelectedItem } = action;
+  const gradingMethod = metadata.question.grading_method;
+
+  // Bail if the selection changed during the async fetch — the user navigated
+  // away, so this pick is stale.
+  if (!selectedItemsEqual(state.selectedItem, expectedSelectedItem)) {
+    return state;
+  }
+
+  const selectedItem = state.selectedItem;
+
+  if (selectedItem?.type === 'altPoolPicker') {
+    const newZones = structuredClone(state.zones);
+    const newQuestionMetadata = { ...state.questionMetadata };
+    let newSelectedItem: SelectedItem = selectedItem;
+
+    // Remove from current location if already in assessment (move behavior)
+    if (isQidInAssessment(newZones, qid)) {
+      removeQid(newZones, newQuestionMetadata, qid);
+    }
+
+    if (selectedItem.altPoolTrackingId) {
+      // Adding to existing alt pool
+      const altPoolResult = findQuestionByTrackingId(newZones, selectedItem.altPoolTrackingId);
+      if (!altPoolResult) return state;
+
+      // Empty pools start neutral; seed point defaults from the first picked question.
+      const shouldInitializeAltPoolPoints =
+        altPoolResult.question.alternatives?.length === 0 &&
+        altPoolResult.question.autoPoints == null &&
+        altPoolResult.question.maxAutoPoints == null &&
+        altPoolResult.question.manualPoints == null;
+
+      if (shouldInitializeAltPoolPoints) {
+        const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
+        Object.assign(altPoolResult.question, pointFields);
+      }
+
+      if (!altPoolResult.question.alternatives) return state;
+
+      const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+      altPoolResult.question.alternatives.push(newAlt);
+      newQuestionMetadata[qid] = metadata;
+    } else {
+      // Creating new alt pool: first question picked creates the pool
+      const newAltPool = {
+        ...createAltPoolWithTrackingId(),
+        ...getDefaultPointFieldsForNewQuestion(gradingMethod),
+      };
+      const firstAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+      newAltPool.alternatives = [firstAlt];
+
+      const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
+      if (!zoneResult) return state;
+      zoneResult.zone.questions.push(newAltPool);
+      newQuestionMetadata[qid] = metadata;
+
+      // Update selection so subsequent picks add to this pool
+      newSelectedItem = {
+        type: 'altPoolPicker',
+        zoneTrackingId: selectedItem.zoneTrackingId,
+        altPoolTrackingId: newAltPool.trackingId,
+      };
+    }
+
+    return {
+      ...state,
+      zones: newZones,
+      questionMetadata: newQuestionMetadata,
+      selectedItem: newSelectedItem,
+    };
+  }
+
+  if (selectedItem?.type === 'picker') {
+    if (selectedItem.returnToSelection) {
+      // Changing a question's QID via the picker
+      const returnTo = selectedItem.returnToSelection;
+      if (returnTo.type !== 'question' && returnTo.type !== 'alternative') return state;
+
+      const newZones = structuredClone(state.zones);
+      const newQuestionMetadata = { ...state.questionMetadata };
+
+      const found = findQuestionByTrackingId(newZones, returnTo.questionTrackingId);
+      if (!found) return state;
+
+      // Remove from current location if already in assessment (move behavior),
+      // but skip if the question being removed is the one we're about to update.
+      if (isQidInAssessment(newZones, qid)) {
+        const currentQid =
+          returnTo.type === 'alternative'
+            ? found.question.alternatives?.find(
+                (a) => a.trackingId === returnTo.alternativeTrackingId,
+              )?.id
+            : found.question.id;
+        if (currentQid !== qid) {
+          removeQid(newZones, newQuestionMetadata, qid);
+        }
+      }
+
+      // Re-find after potential removal (indices may have shifted)
+      const updatedFound = findQuestionByTrackingId(newZones, returnTo.questionTrackingId);
+      if (!updatedFound) return state;
+
+      // Get old QID for metadata cleanup
+      const oldId =
+        returnTo.type === 'alternative'
+          ? updatedFound.question.alternatives?.find(
+              (a) => a.trackingId === returnTo.alternativeTrackingId,
+            )?.id
+          : updatedFound.question.id;
+
+      // Update metadata
+      if (oldId && oldId !== qid) {
+        delete newQuestionMetadata[oldId];
+      }
+      newQuestionMetadata[qid] = metadata;
+
+      // Update QID on the question/alternative
+      if (returnTo.type === 'alternative') {
+        const alt = updatedFound.question.alternatives?.find(
+          (a) => a.trackingId === returnTo.alternativeTrackingId,
+        );
+        if (alt) {
+          alt.id = qid;
+          alt.preferences = undefined;
+        }
+      } else {
+        updatedFound.zone.questions[updatedFound.questionIndex] = {
+          ...updatedFound.question,
+          id: qid,
+          preferences: undefined,
+        } as ZoneQuestionBlockForm;
+      }
+
+      return {
+        ...state,
+        zones: newZones,
+        questionMetadata: newQuestionMetadata,
+        selectedItem: returnTo,
+      };
+    }
+
+    // Adding a new question to a zone
+    const newZones = structuredClone(state.zones);
+    const newQuestionMetadata = { ...state.questionMetadata };
+
+    // Remove from current location if already in assessment (move behavior)
+    if (isQidInAssessment(newZones, qid)) {
+      removeQid(newZones, newQuestionMetadata, qid);
+    }
+
+    const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
+    if (!zoneResult) return state;
+
+    const newQuestion: StandaloneQuestionBlockForm = {
+      ...createQuestionWithTrackingId(),
+      id: qid,
+      ...getDefaultPointFieldsForNewQuestion(gradingMethod),
+    };
+
+    zoneResult.zone.questions.push(newQuestion);
+    newQuestionMetadata[qid] = metadata;
+
+    return {
+      ...state,
+      zones: newZones,
+      questionMetadata: newQuestionMetadata,
+    };
+  }
+
+  return state;
 }
 
 /**
@@ -121,7 +300,7 @@ export function findByTrackingId(
  * All operations use trackingIds for stable identity instead of position indices.
  */
 export function createEditorReducer(initialState: EditorState) {
-  return function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  function coreReducer(state: EditorState, action: EditorAction): EditorState {
     switch (action.type) {
       case 'ADD_QUESTION': {
         const { zoneTrackingId, question, questionData } = action;
@@ -157,7 +336,7 @@ export function createEditorReducer(initialState: EditorState) {
         }
 
         if (alternativeTrackingId !== undefined) {
-          // Updating an alternative within an alternative group
+          // Updating an alternative within an alternative pool
           const altResult = findAlternativeByTrackingId(
             questionResult.question,
             alternativeTrackingId,
@@ -172,11 +351,11 @@ export function createEditorReducer(initialState: EditorState) {
             ...question,
           };
         } else {
-          // Updating a regular question or alternative group itself
+          // Updating a regular question or alternative pool itself
           questionResult.zone.questions[questionResult.questionIndex] = {
             ...questionResult.question,
             ...question,
-          };
+          } as ZoneQuestionBlockForm;
         }
 
         return {
@@ -202,7 +381,7 @@ export function createEditorReducer(initialState: EditorState) {
         delete newQuestionMetadata[questionId];
 
         if (alternativeTrackingId !== undefined) {
-          // Deleting an alternative from an alternative group
+          // Deleting an alternative from an alternative pool
           const altResult = findAlternativeByTrackingId(
             questionResult.question,
             alternativeTrackingId,
@@ -215,9 +394,9 @@ export function createEditorReducer(initialState: EditorState) {
 
           questionResult.question.alternatives!.splice(altResult.index, 1);
         } else {
-          // Deleting a regular question or entire alternative group
+          // Deleting a regular question or entire alternative pool
 
-          // Clean up metadata for all alternatives in the group
+          // Clean up metadata for all alternatives in the pool
           const { alternatives } = questionResult.question;
           if (alternatives) {
             for (const alt of alternatives) {
@@ -388,17 +567,17 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'TOGGLE_GROUP_COLLAPSE': {
+      case 'TOGGLE_POOL_COLLAPSE': {
         const { trackingId } = action;
-        const newCollapsedGroups = new Set(state.collapsedGroups);
-        if (newCollapsedGroups.has(trackingId)) {
-          newCollapsedGroups.delete(trackingId);
+        const newCollapsedPools = new Set(state.collapsedPools);
+        if (newCollapsedPools.has(trackingId)) {
+          newCollapsedPools.delete(trackingId);
         } else {
-          newCollapsedGroups.add(trackingId);
+          newCollapsedPools.add(trackingId);
         }
         return {
           ...state,
-          collapsedGroups: newCollapsedGroups,
+          collapsedPools: newCollapsedPools,
         };
       }
 
@@ -416,38 +595,44 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'EXPAND_ALL_GROUPS': {
+      case 'DISMISS_BANNER': {
+        const newDismissedBanners = new Set(state.dismissedBanners);
+        newDismissedBanners.add(action.trackingId);
         return {
           ...state,
-          collapsedGroups: new Set<string>(),
+          dismissedBanners: newDismissedBanners,
         };
       }
 
-      case 'COLLAPSE_ALL_GROUPS': {
-        const groupTrackingIds = state.zones.flatMap((z) =>
+      case 'EXPAND_ALL_POOLS': {
+        return {
+          ...state,
+          collapsedPools: new Set<string>(),
+        };
+      }
+
+      case 'COLLAPSE_ALL_POOLS': {
+        const poolTrackingIds = state.zones.flatMap((z) =>
           z.questions.filter((q) => (q.alternatives?.length ?? 0) > 0).map((q) => q.trackingId),
         );
         return {
           ...state,
-          collapsedGroups: new Set<string>(groupTrackingIds),
+          collapsedPools: new Set<string>(poolTrackingIds),
         };
       }
 
       case 'ADD_ALTERNATIVE': {
-        const { altGroupTrackingId, alternative, questionData } = action;
+        const { altPoolTrackingId, alternative, questionData } = action;
         const newZones = structuredClone(state.zones);
 
-        const groupResult = findQuestionByTrackingId(newZones, altGroupTrackingId);
-        if (!groupResult) {
+        const poolResult = findQuestionByTrackingId(newZones, altPoolTrackingId);
+        if (!poolResult?.question.alternatives) {
           throw new Error(
-            `ADD_ALTERNATIVE: Alt group with trackingId ${altGroupTrackingId} not found`,
+            `ADD_ALTERNATIVE: Alt pool with trackingId ${altPoolTrackingId} not found`,
           );
         }
 
-        if (!groupResult.question.alternatives) {
-          groupResult.question.alternatives = [];
-        }
-        groupResult.question.alternatives.push(alternative);
+        poolResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
           questionData && alternative.id
@@ -462,7 +647,7 @@ export function createEditorReducer(initialState: EditorState) {
       }
 
       case 'REORDER_ALTERNATIVE': {
-        const { alternativeTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+        const { alternativeTrackingId, toAltPoolTrackingId, beforeAlternativeTrackingId } = action;
         const newZones = structuredClone(state.zones);
 
         // Find the alternative being moved
@@ -473,16 +658,12 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        // Find the destination alt group
-        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        // Find the destination alt pool
+        const toPoolResult = findQuestionByTrackingId(newZones, toAltPoolTrackingId);
+        if (!toPoolResult?.question.alternatives) {
           throw new Error(
-            `REORDER_ALTERNATIVE: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+            `REORDER_ALTERNATIVE: Alt pool with trackingId ${toAltPoolTrackingId} not found`,
           );
-        }
-
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
         }
 
         // Remove alternative from source
@@ -491,15 +672,15 @@ export function createEditorReducer(initialState: EditorState) {
         // Find insertion point
         let insertIndex: number;
         if (beforeAlternativeTrackingId === null) {
-          insertIndex = toGroupResult.question.alternatives.length;
+          insertIndex = toPoolResult.question.alternatives.length;
         } else {
-          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+          const beforeIdx = toPoolResult.question.alternatives.findIndex(
             (a) => a.trackingId === beforeAlternativeTrackingId,
           );
-          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+          insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toGroupResult.question.alternatives.splice(insertIndex, 0, movedAlt);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, movedAlt);
 
         return {
           ...state,
@@ -527,14 +708,14 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        // Remove alternative from source group
+        // Remove alternative from source pool
         const [removedAlt] = fromResult.question.alternatives!.splice(
           fromResult.alternativeIndex,
           1,
         );
 
         // Convert to standalone question block, inheriting any point fields
-        // from the parent alt group so the extracted question is valid.
+        // from the parent alt pool so the extracted question is valid.
         const newQuestion = alternativeToQuestionBlock(removedAlt, fromResult.question);
 
         // Find insertion point (uses trackingIds, so unaffected by shrinkage)
@@ -558,32 +739,29 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'MERGE_QUESTION_INTO_ALT_GROUP': {
-        const { questionTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+      case 'MERGE_QUESTION_INTO_ALT_POOL': {
+        const { questionTrackingId, toAltPoolTrackingId, beforeAlternativeTrackingId } = action;
         const newZones = structuredClone(state.zones);
 
         // Find the standalone question being merged
         const fromResult = findQuestionByTrackingId(newZones, questionTrackingId);
         if (!fromResult) {
           throw new Error(
-            `MERGE_QUESTION_INTO_ALT_GROUP: Question with trackingId ${questionTrackingId} not found`,
+            `MERGE_QUESTION_INTO_ALT_POOL: Question with trackingId ${questionTrackingId} not found`,
           );
         }
 
-        // Find the destination alt group
-        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        // Find the destination alt pool
+        const toPoolResult = findQuestionByTrackingId(newZones, toAltPoolTrackingId);
+        if (!toPoolResult?.question.alternatives) {
           throw new Error(
-            `MERGE_QUESTION_INTO_ALT_GROUP: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+            `MERGE_QUESTION_INTO_ALT_POOL: Alt pool with trackingId ${toAltPoolTrackingId} not found`,
           );
-        }
-
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
         }
 
         // Remove question from source zone
         const [removedQuestion] = fromResult.zone.questions.splice(fromResult.questionIndex, 1);
+        assertStandaloneQuestion(removedQuestion);
 
         // Convert to alternative
         const newAlt = questionBlockToAlternative(removedQuestion);
@@ -591,56 +769,74 @@ export function createEditorReducer(initialState: EditorState) {
         // Find insertion point
         let insertIndex: number;
         if (beforeAlternativeTrackingId === null) {
-          insertIndex = toGroupResult.question.alternatives.length;
+          insertIndex = toPoolResult.question.alternatives.length;
         } else {
-          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+          const beforeIdx = toPoolResult.question.alternatives.findIndex(
             (a) => a.trackingId === beforeAlternativeTrackingId,
           );
-          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+          insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toGroupResult.question.alternatives.splice(insertIndex, 0, newAlt);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, newAlt);
+
+        // If the merged question was selected, follow it to its new location
+        // as an alternative. sanitizeSelectedItem can't handle this because a
+        // question trackingId becoming an alternative trackingId is a type change.
+        let mergeSelectedItem = state.selectedItem;
+        if (
+          state.selectedItem?.type === 'question' &&
+          state.selectedItem.questionTrackingId === questionTrackingId
+        ) {
+          mergeSelectedItem = {
+            type: 'alternative',
+            questionTrackingId: toAltPoolTrackingId,
+            alternativeTrackingId: questionTrackingId,
+          };
+        }
 
         return {
           ...state,
           zones: newZones,
+          selectedItem: mergeSelectedItem,
         };
       }
 
       case 'REMOVE_QUESTION_BY_QID': {
         const { qid } = action;
+        if (!isQidInAssessment(state.zones, qid)) return state;
+
         const newZones = structuredClone(state.zones);
         const newQuestionMetadata = { ...state.questionMetadata };
+        removeQid(newZones, newQuestionMetadata, qid);
+        return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
+      }
 
-        for (const zone of newZones) {
-          for (let qi = 0; qi < zone.questions.length; qi++) {
-            const q = zone.questions[qi];
-            if (q.id === qid) {
-              // Remove standalone question
-              if (q.alternatives) {
-                for (const alt of q.alternatives) {
-                  if (alt.id) delete newQuestionMetadata[alt.id];
-                }
-              }
-              delete newQuestionMetadata[qid];
-              zone.questions.splice(qi, 1);
-              return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
-            }
-            for (let ai = 0; ai < (q.alternatives ?? []).length; ai++) {
-              if (q.alternatives![ai].id === qid) {
-                delete newQuestionMetadata[qid];
-                q.alternatives!.splice(ai, 1);
-                return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
-              }
-            }
-          }
-        }
-        // QID not found — no-op
-        return state;
+      case 'SET_SELECTED_ITEM': {
+        return {
+          ...state,
+          selectedItem: action.selectedItem,
+        };
+      }
+
+      case 'QUESTION_PICKED': {
+        return handleQuestionPicked(state, action);
       }
 
       case 'RESET': {
-        return initialState;
+        // Resolve transient picker states to persisted selections so the
+        // post-reducer sanitizer can validate against initialState.zones.
+        const currentItem = state.selectedItem;
+        let resolved: SelectedItem = null;
+        if (currentItem?.type === 'picker') {
+          resolved = currentItem.returnToSelection ?? null;
+        } else if (currentItem?.type === 'altPoolPicker') {
+          resolved = currentItem.altPoolTrackingId
+            ? { type: 'altPool', questionTrackingId: currentItem.altPoolTrackingId }
+            : null;
+        } else {
+          resolved = currentItem;
+        }
+        return { ...initialState, selectedItem: resolved };
       }
 
       case 'UNDO':
@@ -651,6 +847,25 @@ export function createEditorReducer(initialState: EditorState) {
       default:
         return state;
     }
+  }
+
+  // Wrap the core reducer with automatic selection sanitization.
+  // When zones change, the current selection may point at a removed or
+  // restructured item. sanitizeSelectedItem resolves it to a valid selection
+  // or null. selectedItemsEqual preserves referential identity so that
+  // autosave-driven zone changes don't produce a new object reference when
+  // the selection is logically unchanged.
+  return function editorReducer(state: EditorState, action: EditorAction): EditorState {
+    const nextState = coreReducer(state, action);
+
+    if (nextState.zones !== state.zones && nextState.selectedItem != null) {
+      const sanitized = sanitizeSelectedItem(nextState.selectedItem, nextState.zones);
+      if (!selectedItemsEqual(nextState.selectedItem, sanitized)) {
+        return { ...nextState, selectedItem: sanitized };
+      }
+    }
+
+    return nextState;
   };
 }
 
@@ -666,8 +881,10 @@ export function useAssessmentEditor(initialState: EditorState) {
   return {
     zones: state.zones,
     questionMetadata: state.questionMetadata,
-    collapsedGroups: state.collapsedGroups,
+    collapsedPools: state.collapsedPools,
     collapsedZones: state.collapsedZones,
+    dismissedBanners: state.dismissedBanners,
+    selectedItem: state.selectedItem,
     canUndo: false,
     canRedo: false,
     dispatch,

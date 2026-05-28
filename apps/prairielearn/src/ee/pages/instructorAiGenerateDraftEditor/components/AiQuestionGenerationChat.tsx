@@ -463,7 +463,7 @@ function useShowSpinner({
 
   // The effect manages the timeout: it resets and starts a new timer when dependencies change.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
     setTimerElapsed(false);
 
     if (!isActive) return;

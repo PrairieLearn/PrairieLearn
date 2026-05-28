@@ -5,6 +5,7 @@
 
 ## Custom scripts
 /start-custom.sh
+scripts/migration-report.html
 
 ## s3rver S3 emulation data directory
 /s3rver
@@ -24,6 +25,11 @@ docker-compose.override.yml
 
 ### tmux
 .tmux.conf
+
+### Claude Code
+.claude/worktrees/
+.claude/commands/
+.claude/settings.local.json
 
 ## Backup files
 

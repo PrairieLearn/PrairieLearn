@@ -10,6 +10,7 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -30,7 +31,7 @@ const CourseWithPermissionsSchema = z.object({
   course: CourseSchema,
   course_role: EnumCourseRoleSchema,
 });
-export type CourseWithPermissions = Course & {
+type CourseWithPermissions = Course & {
   permissions_course: {
     course_role: EnumCourseRole;
     has_course_permission_own: boolean;
@@ -50,6 +51,66 @@ export async function selectOptionalCourseById(course_id: string): Promise<Cours
 
 export async function selectCourseByShortName(shortName: string): Promise<Course> {
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
+}
+
+export async function selectOptionalCourseByRepositoryName(
+  repoName: string,
+): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await queryOptionalRow(
+    sql.select_course_by_repository_name,
+    { repo_name: escapedRepoName },
+    CourseSchema,
+  );
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
+interface CourseFieldCheck {
+  exists: boolean;
+  owned: boolean;
+}
+
+const CourseFieldCheckRowSchema = z.object({
+  exists: z.boolean(),
+  owned: z.boolean().nullable(),
+});
+
+export async function checkCourseTitleInInstitution({
+  title,
+  institutionId,
+  userId,
+}: {
+  title: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_title_in_institution,
+    { title, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export async function checkCourseShortNameInInstitution({
+  shortName,
+  institutionId,
+  userId,
+}: {
+  shortName: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
 }
 
 export function getLockNameForCoursePath(coursePath: string): string {
@@ -159,7 +220,7 @@ export async function selectCoursesWithStaffAccess({
       // Administrators have Owner permission in all courses, so we can skip the
       // complex query and just return all courses
       const courses = await queryRows(sql.select_all_courses, CourseSchema);
-      return courses.map((course) => ({ course, course_role: 'Owner' as EnumCourseRole }));
+      return courses.map((course) => ({ course, course_role: 'Owner' as const }));
     }
 
     return await queryRows(
@@ -284,6 +345,57 @@ export async function insertCourse({
   });
 }
 
+const updateCourseColumnSqlMap = {
+  short_name: sql.update_course_column_short_name,
+  title: sql.update_course_column_title,
+  display_timezone: sql.update_course_column_display_timezone,
+  path: sql.update_course_column_path,
+  repository: sql.update_course_column_repository,
+  branch: sql.update_course_column_branch,
+  institution_id: sql.update_course_column_institution_id,
+} as const;
+
+export async function updateCourseColumn({
+  courseId,
+  columnName,
+  value,
+  authnUserId,
+}: {
+  courseId: string;
+  columnName:
+    | 'short_name'
+    | 'title'
+    | 'display_timezone'
+    | 'path'
+    | 'repository'
+    | 'branch'
+    | 'institution_id';
+  value: string;
+  authnUserId: string;
+}): Promise<Course> {
+  return await runInTransactionAsync(async () => {
+    const oldCourse = await selectCourseById(courseId);
+    const course = await queryRow(
+      updateCourseColumnSqlMap[columnName],
+      { course_id: courseId, value },
+      CourseSchema,
+    );
+    await insertAuditLog({
+      authn_user_id: authnUserId,
+      action: 'update',
+      table_name: 'courses',
+      column_name: columnName,
+      row_id: courseId,
+      parameters: { [columnName]: value },
+      old_state: oldCourse,
+      new_state: course,
+      course_id: courseId,
+      institution_id: course.institution_id,
+    });
+    return course;
+  });
+}
+
 /**
  * Update the `show_getting_started` column for a course.
  */
@@ -301,6 +413,32 @@ export async function updateCourseShowGettingStarted({
 }
 
 /**
+ * Returns `true` if the course can still pick/change its sharing name — i.e.
+ * no sharing name has been set yet, or no questions have been shared publicly
+ * or through a sharing set. Changing the sharing name after questions have
+ * been shared would break consuming courses that imported those questions.
+ */
+export async function selectCanChooseSharingName(course: {
+  id: string;
+  sharing_name: string | null;
+}): Promise<boolean> {
+  return (
+    course.sharing_name === null ||
+    !(await queryScalar(sql.select_shared_question_exists, { course_id: course.id }, z.boolean()))
+  );
+}
+
+export async function selectOptionalCourseBySharingToken(
+  sharing_token: string,
+): Promise<Course | null> {
+  return await queryOptionalRow(
+    sql.select_course_by_sharing_token,
+    { sharing_token },
+    CourseSchema,
+  );
+}
+
+/**
  * Update the `sharing_name` column for a course.
  */
 export async function updateCourseSharingName({
@@ -313,6 +451,29 @@ export async function updateCourseSharingName({
   await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,
+  });
+}
+
+/**
+ * Updates `sharing_name` only if the course is still allowed to change it
+ * (i.e., no sharing name yet, or no shared questions). The check and the
+ * write run in one transaction with `SELECT ... FOR UPDATE` on the courses
+ * row, so concurrent calls serialize and a question being shared between
+ * page-load and submit cannot slip past the guard. Returns `true` on
+ * success, `false` if the check failed at the time of the write.
+ */
+export async function updateCourseSharingNameIfAllowed({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<boolean> {
+  return await runInTransactionAsync(async () => {
+    const course = await queryRow(sql.select_course_by_id_for_update, { course_id }, CourseSchema);
+    if (!(await selectCanChooseSharingName(course))) return false;
+    await execute(sql.update_course_sharing_name, { course_id, sharing_name });
+    return true;
   });
 }
 

@@ -1,15 +1,37 @@
 -- BLOCK select_assessment_instances
+WITH
+  group_user_lists AS (
+    SELECT
+      g.id,
+      array_agg(u.uid) AS uid_list,
+      array_agg(u.name) AS user_name_list,
+      array_agg(
+        users_get_displayed_role (u.id, a.course_instance_id)
+      ) AS user_roles_list
+    FROM
+      team_configs AS gc
+      JOIN assessments AS a ON (a.id = gc.assessment_id)
+      JOIN teams AS g ON (g.team_config_id = gc.id)
+      JOIN team_users AS gu ON (gu.team_id = g.id)
+      JOIN users AS u ON (u.id = gu.user_id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND gc.deleted_at IS NULL
+      AND g.deleted_at IS NULL
+    GROUP BY
+      g.id
+  )
 SELECT
   (aset.name || ' ' || a.number) AS assessment_label,
   u.id AS user_id,
   u.uid,
   u.name,
   users_get_displayed_role (u.id, ci.id) AS role,
-  gi.id AS group_id,
-  gi.name AS group_name,
-  gi.uid_list,
-  gi.user_name_list,
-  gi.user_roles_list AS group_roles,
+  g.id AS group_id,
+  g.name AS group_name,
+  gul.uid_list,
+  gul.user_name_list,
+  gul.user_roles_list AS group_roles,
   substring(
     u.uid
     FROM
@@ -70,10 +92,7 @@ SELECT
     ELSE NULL
   END AS total_time_sec,
   ai.date,
-  format_date_full_compact (ai.date, ci.display_timezone) AS date_formatted,
-  format_interval (ai.duration) AS duration,
-  DATE_PART('epoch', ai.duration) AS duration_secs,
-  DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
+  ai.duration,
   (
     row_number() OVER (
       PARTITION BY
@@ -90,10 +109,19 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN team_info ($assessment_id) AS gi ON (gi.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
+  LEFT JOIN group_user_lists AS gul ON (gul.id = ai.team_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
+  -- Filter out group instances that don't have an undeleted group
+  AND (
+    ai.team_id IS NULL
+    OR g.id IS NOT NULL
+  )
 ORDER BY
   u.uid,
   u.id,

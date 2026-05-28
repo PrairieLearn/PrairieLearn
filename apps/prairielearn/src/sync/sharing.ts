@@ -6,7 +6,6 @@ import { IdSchema } from '@prairielearn/zod';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
-import { isDraftQid } from './question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -28,52 +27,95 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
   );
 }
 
-export function getInvalidRenames(
+export async function getInvalidRenames(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidRenames: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!(question.qid in courseData.questions)) {
-      invalidRenames.push(question.qid);
-    }
-  });
+): Promise<boolean> {
+  const renamedQuestions = sharedQuestions.filter(
+    (question) => !(question.qid in courseData.questions),
+  );
 
-  const existInvalidRenames = invalidRenames.length > 0;
-  if (existInvalidRenames) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-    );
-  }
-  return existInvalidRenames;
+  if (renamedQuestions.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_renames_used_in_other_courses,
+    { course_id: courseId, question_ids: renamedQuestions.map((q) => q.id) },
+    z.object({ qid: z.string() }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  logger.error(
+    `✖ Course sync completely failed. The following questions are shared and used in other courses, so they cannot be renamed or deleted: ${blockedQuestions.map((q) => q.qid).join(', ')}`,
+  );
+  return true;
 }
 
-export function checkInvalidPublicSharingRemovals(
+export async function checkInvalidPublicSharingRemovals(
+  courseId: string,
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
   logger: ServerJobLogger,
-): boolean {
-  const invalidUnshares: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (!question.share_publicly) {
-      return;
+): Promise<boolean> {
+  const unsharingQuestionIds: string[] = [];
+  // Questions that remain source-public are still valid in same-course public assessments, but
+  // they are not valid for other-course imports that require full public sharing.
+  const sourcePublicQuestionIds = new Set<string>();
+  for (const question of sharedQuestions) {
+    if (!question.share_publicly) continue;
+    if (!(question.qid in courseData.questions)) {
+      // Renamed or deleted questions are handled by getInvalidRenames.
+      continue;
     }
-
-    // TODO: allow if question is not used in anyone else's assessments
     const questionData = courseData.questions[question.qid].data;
     if (!questionData?.sharePublicly) {
-      invalidUnshares.push(question.qid);
+      unsharingQuestionIds.push(question.id);
+      if (questionData?.shareSourcePublicly) {
+        sourcePublicQuestionIds.add(question.id);
+      }
     }
-  });
+  }
 
-  const existInvalidUnshares = invalidUnshares.length > 0;
-  if (existInvalidUnshares) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidUnshares.join(', ')}`,
+  if (unsharingQuestionIds.length === 0) return false;
+
+  const blockedQuestions = await sqldb.queryRows(
+    sql.select_questions_blocking_unshare,
+    { course_id: courseId, question_ids: unsharingQuestionIds },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+      used_in_other_course: z.boolean(),
+      used_in_public_assessment: z.boolean(),
+    }),
+  );
+
+  if (blockedQuestions.length === 0) return false;
+
+  const usedInOtherCourse = blockedQuestions
+    .filter((q) => q.used_in_other_course)
+    .map((q) => q.qid);
+  const usedInPublicAssessment = blockedQuestions
+    .filter((q) => q.used_in_public_assessment && !sourcePublicQuestionIds.has(q.id))
+    .map((q) => q.qid);
+
+  if (usedInOtherCourse.length === 0 && usedInPublicAssessment.length === 0) return false;
+
+  const messages: string[] = ['✖ Course sync completely failed.'];
+  if (usedInOtherCourse.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in other courses' assessments: ${usedInOtherCourse.join(', ')}.`,
     );
   }
-  return existInvalidUnshares;
+  if (usedInPublicAssessment.length > 0) {
+    messages.push(
+      `The following publicly shared questions cannot be unshared because they are used in publicly shared assessments in this course: ${usedInPublicAssessment.join(', ')}.`,
+    );
+  }
+  logger.error(messages.join(' '));
+
+  return true;
 }
 
 export async function checkInvalidSharingSetDeletions(
@@ -81,61 +123,20 @@ export async function checkInvalidSharingSetDeletions(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  const sharingSets = await sqldb.queryScalars(
-    sql.select_sharing_sets,
-    { course_id: courseId },
+  const sharingSetNames = (courseData.course.data?.sharingSets ?? []).map((ss) => ss.name);
+  const invalidSharingSetDeletions = await sqldb.queryScalars(
+    sql.select_blocked_sharing_set_deletions,
+    { course_id: courseId, sharing_set_names: sharingSetNames },
     z.string(),
   );
-
-  const invalidSharingSetDeletions: string[] = [];
-  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
-  sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames.has(sharingSet)) {
-      invalidSharingSetDeletions.push(sharingSet);
-    }
-  });
 
   const existInvalidSharingSetDeletions = invalidSharingSetDeletions.length > 0;
   if (existInvalidSharingSetDeletions) {
     logger.error(
-      `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
+      `✖ Course sync completely failed. The following sharing sets are still in use and cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
     );
   }
   return existInvalidSharingSetDeletions;
-}
-
-export function checkInvalidSharingSetAdditions(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharingSetAdditions: Record<string, string[]> = {};
-  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
-
-  for (const qid in courseData.questions) {
-    const question = courseData.questions[qid];
-    const questionSharingSets = question.data?.sharingSets || [];
-    questionSharingSets.forEach((sharingSet) => {
-      if (!sharingSetNames.has(sharingSet)) {
-        if (!(qid in invalidSharingSetAdditions)) {
-          invalidSharingSetAdditions[qid] = [];
-        }
-        invalidSharingSetAdditions[qid].push(sharingSet);
-      }
-    });
-  }
-
-  const existInvalidSharingSetAdditions = Object.keys(invalidSharingSetAdditions).length > 0;
-  if (existInvalidSharingSetAdditions) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
-        invalidSharingSetAdditions,
-      )
-        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
-        .join(', ')}`,
-    );
-  }
-
-  return existInvalidSharingSetAdditions;
 }
 
 export async function checkInvalidSharingSetRemovals(
@@ -153,137 +154,55 @@ export async function checkInvalidSharingSetRemovals(
     }),
   );
 
-  const invalidSharingSetRemovals: Record<string, string[]> = {};
+  const removedQuestionSharingSets: { question_id: string; sharing_set_name: string }[] = [];
   sharedQuestions.forEach((question) => {
     if (!(question.qid in courseData.questions)) {
       // this case is handled by the checks for shared questions being
       // renamed or deleted
       return;
     }
-    if (!courseData.questions[question.qid].data?.sharingSets) {
-      invalidSharingSetRemovals[question.qid] = question.sharing_sets;
-      return;
-    }
-
+    const diskSharingSets = courseData.questions[question.qid].data?.sharingSets ?? [];
     question.sharing_sets.forEach((sharingSet) => {
-      // TODO: allow if the sharing set hasn't been shared to a course
-      if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
-        if (!(question.qid in invalidSharingSetRemovals)) {
-          invalidSharingSetRemovals[question.qid] = [];
-        }
-        invalidSharingSetRemovals[question.qid].push(sharingSet);
+      if (!diskSharingSets.includes(sharingSet)) {
+        removedQuestionSharingSets.push({
+          question_id: question.id,
+          sharing_set_name: sharingSet,
+        });
       }
     });
   });
 
-  const existInvalidSharingSetRemovals = Object.keys(invalidSharingSetRemovals).length > 0;
-  if (existInvalidSharingSetRemovals) {
-    logger.error(
-      `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
-        invalidSharingSetRemovals,
-      )
-        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
-        .join(', ')}`,
-    );
-  }
+  if (removedQuestionSharingSets.length === 0) return false;
 
-  return existInvalidSharingSetRemovals;
-}
+  // This check intentionally ignores `questions.share_publicly`: a publicly
+  // shared question still gets blocked if a consumer with access via the set
+  // uses it. To loosen this so public sharing acts as a fallback path, add
+  // `AND NOT q.share_publicly` to `select_in_use_question_sharing_set_removals`.
+  const blockedPairs = await sqldb.queryRows(
+    sql.select_in_use_question_sharing_set_removals,
+    {
+      course_id: courseId,
+      removed_question_sharing_sets: JSON.stringify(removedQuestionSharingSets),
+    },
+    z.object({ qid: z.string(), sharing_set_name: z.string() }),
+  );
 
-export function checkInvalidSharedAssessments(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharedAssessments = new Set<string>();
-  for (const courseInstanceKey in courseData.courseInstances) {
-    const courseInstance = courseData.courseInstances[courseInstanceKey];
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
-      if (!assessment.data?.shareSourcePublicly) {
-        continue;
-      }
-      for (const zone of assessment.data.zones) {
-        for (const question of zone.questions) {
-          if (!question.id) {
-            continue;
-          }
-          const infoJson = courseData.questions[question.id];
-          if (!infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly) {
-            invalidSharedAssessments.add(tid);
-          }
-        }
-      }
+  if (blockedPairs.length === 0) return false;
+
+  const invalidSharingSetRemovals: Record<string, string[]> = {};
+  for (const { qid, sharing_set_name } of blockedPairs) {
+    if (!(qid in invalidSharingSetRemovals)) {
+      invalidSharingSetRemovals[qid] = [];
     }
+    invalidSharingSetRemovals[qid].push(sharing_set_name);
   }
 
-  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
-  if (existInvalidSharedAssessment) {
-    logger.error(
-      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
-    );
-  }
-  return existInvalidSharedAssessment;
-}
+  const blockedLines = Object.entries(invalidSharingSetRemovals).map(
+    ([qid, sharingSets]) => `  - ${qid}: ${sharingSets.join(', ')}`,
+  );
+  logger.error(
+    `✖ Course sync completely failed. The following questions cannot be removed from these sharing sets because at least one consuming course with access to the sharing set uses the question:\n${blockedLines.join('\n')}`,
+  );
 
-export function checkInvalidSharedCourseInstances(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const invalidSharedCourseInstances = new Set<string>();
-
-  for (const courseInstanceKey in courseData.courseInstances) {
-    const courseInstance = courseData.courseInstances[courseInstanceKey];
-    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
-
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
-      if (!assessment.data?.shareSourcePublicly) {
-        invalidSharedCourseInstances.add(courseInstance.courseInstance.data.longName);
-      }
-    }
-  }
-
-  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
-  if (existInvalidSharedCourseInstance) {
-    logger.error(
-      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
-    );
-  }
-  return existInvalidSharedCourseInstance;
-}
-
-export function checkInvalidDraftQuestionSharing(
-  courseData: CourseData,
-  logger: ServerJobLogger,
-): boolean {
-  const draftQuestionsWithSharingSets: string[] = [];
-  const draftQuestionsWithPublicSharing: string[] = [];
-  for (const qid in courseData.questions) {
-    const question = courseData.questions[qid];
-
-    const isDraft = isDraftQid(qid);
-    const questionSharingSets = question.data?.sharingSets || [];
-
-    if (isDraft && questionSharingSets.length > 0) {
-      draftQuestionsWithSharingSets.push(qid);
-    }
-
-    if (isDraft && (question.data?.sharePublicly || question.data?.shareSourcePublicly)) {
-      draftQuestionsWithPublicSharing.push(qid);
-    }
-  }
-
-  if (draftQuestionsWithSharingSets.length > 0) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
-    );
-  }
-
-  if (draftQuestionsWithPublicSharing.length > 0) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithPublicSharing.join(', ')}`,
-    );
-  }
-
-  return draftQuestionsWithSharingSets.length > 0 || draftQuestionsWithPublicSharing.length > 0;
+  return true;
 }

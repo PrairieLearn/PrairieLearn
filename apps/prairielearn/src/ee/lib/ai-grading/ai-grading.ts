@@ -3,19 +3,23 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
+import { type GenerateObjectResult, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
+  calculateCostWithFeeMilliDollars,
+  formatMilliDollars,
+} from '../../../lib/ai-grading-credits.js';
+import {
   type AiImageGradingResponses,
+  calculateResponseCost,
   logResponseUsage,
   logResponsesUsage,
 } from '../../../lib/ai-util.js';
@@ -29,11 +33,16 @@ import {
   type Question,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
+import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
+import {
+  insertAiGradingJobAndDeductCreditsIfNeeded,
+  selectCreditPool,
+} from '../../../models/ai-grading-credit-pool.js';
 import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -44,7 +53,6 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
-  correctGeminiMalformedRubricGradingJson,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -58,13 +66,228 @@ import {
 import {
   type AIGradingLog,
   type AIGradingLogger,
+  type CounterClockwiseRotationDegrees,
   HandwritingOrientationsOutputSchema,
 } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+type AiGradingResponsesForPersistence = {
+  model_id: AiGradingModelId;
+  finalGradingResponse: GenerateObjectResult<any>;
+} & (
+  | {
+      rotationCorrectionApplied: true;
+      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      rotationCorrections: Record<
+        string,
+        {
+          degreesRotated: CounterClockwiseRotationDegrees;
+          response: GenerateObjectResult<any>;
+        }
+      >;
+    }
+  | {
+      rotationCorrectionApplied: false;
+      gradingResponseWithRotationIssue?: undefined;
+      rotationCorrections?: undefined;
+    }
+);
+
+interface AiGradingPersistenceContext {
+  prompt: ModelMessage[];
+  course_instance: CourseInstance;
+  instance_question: InstanceQuestion;
+  /** Persisted AI grading actions are attributed to the authenticated user, even with a different effective user. */
+  authn_user_id: string;
+  job_sequence_id: string;
+}
+
+/**
+ * Calculate the total cost in milli-dollars (with infrastructure fee) for all
+ * responses from a single grading operation.
+ */
+function calculateTotalGradingCostMilliDollars({
+  model_id,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+}: AiGradingResponsesForPersistence): number {
+  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  if (gradingResponseWithRotationIssue) {
+    totalRawCost += calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationIssue.usage,
+    });
+  }
+  if (rotationCorrections) {
+    for (const correction of Object.values(rotationCorrections)) {
+      totalRawCost += calculateResponseCost({
+        model: model_id,
+        usage: correction.response.usage,
+      });
+    }
+  }
+  return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
+}
+
+async function insertAiGradingJobForResponses({
+  grading_job_id,
+  persistenceContext,
+  responses,
+}: {
+  grading_job_id: string;
+  persistenceContext: Pick<
+    AiGradingPersistenceContext,
+    'prompt' | 'course_instance' | 'job_sequence_id'
+  >;
+  responses: AiGradingResponsesForPersistence;
+}): Promise<string> {
+  const aiGradingJobParams = {
+    grading_job_id,
+    job_sequence_id: persistenceContext.job_sequence_id,
+    model_id: responses.model_id,
+    prompt: persistenceContext.prompt,
+    course_id: persistenceContext.course_instance.course_id,
+    course_instance_id: persistenceContext.course_instance.id,
+  };
+
+  if (responses.rotationCorrectionApplied) {
+    return await insertAiGradingJobWithRotationCorrection({
+      ...aiGradingJobParams,
+      gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
+      rotationCorrections: responses.rotationCorrections,
+      gradingResponseWithRotationCorrection: responses.finalGradingResponse,
+    });
+  }
+
+  return await insertAiGradingJob({
+    ...aiGradingJobParams,
+    response: responses.finalGradingResponse,
+  });
+}
+
+async function updateInstanceQuestionScoreForAiGrading({
+  assessment,
+  instance_question_id,
+  submission_id,
+  authn_user_id,
+  score,
+}: {
+  assessment: Assessment;
+  instance_question_id: string;
+  submission_id: string;
+  authn_user_id: string;
+  score: Parameters<typeof manualGrading.updateInstanceQuestionScore>[0]['score'];
+}): Promise<string> {
+  const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
+    assessment,
+    instance_question_id,
+    submission_id,
+    check_modified_at: null,
+    score,
+    authn_user_id,
+    is_ai_graded: true,
+  });
+  assert(grading_job_id);
+  return grading_job_id;
+}
+
+async function insertAiOnlyGradingJob({
+  submission_id,
+  authn_user_id,
+  score,
+  manual_points,
+  manual_rubric_grading_id,
+}: {
+  submission_id: string;
+  authn_user_id: string;
+  score: number;
+  manual_points: number;
+  manual_rubric_grading_id: string | null;
+}): Promise<string> {
+  return await queryScalar(
+    sql.insert_grading_job,
+    {
+      submission_id,
+      authn_user_id,
+      grading_method: 'AI',
+      correct: null,
+      score,
+      auto_points: 0,
+      manual_points,
+      manual_rubric_grading_id,
+      feedback: null,
+    },
+    IdSchema,
+  );
+}
+
+/**
+ * @returns The amount actually deducted from the credit pool (may be less
+ * than the full API cost if the pool was partially depleted). This is the
+ * instructor-incurred cost, used for the live cost display.
+ */
+async function finalizeAiGradingPersistence({
+  createGradingJob,
+  trackRateLimitAndCost,
+  persistenceContext,
+  responses,
+}: {
+  createGradingJob: () => Promise<string>;
+  trackRateLimitAndCost: boolean;
+  persistenceContext: AiGradingPersistenceContext;
+  responses: AiGradingResponsesForPersistence;
+}): Promise<number> {
+  return await runInTransactionAsync(async () => {
+    const grading_job_id = await createGradingJob();
+    const costMilliDollars = trackRateLimitAndCost
+      ? calculateTotalGradingCostMilliDollars(responses)
+      : 0;
+
+    const { deducted_milli_dollars } = await insertAiGradingJobAndDeductCreditsIfNeeded({
+      trackRateLimitAndCost,
+      course_instance_id: persistenceContext.course_instance.id,
+      cost_milli_dollars: costMilliDollars,
+      user_id: persistenceContext.authn_user_id,
+      assessment_question_id: persistenceContext.instance_question.assessment_question_id,
+      reason: `AI graded instance question ${persistenceContext.instance_question.id}`,
+      createAiGradingJob: async () =>
+        await insertAiGradingJobForResponses({
+          grading_job_id,
+          persistenceContext,
+          responses,
+        }),
+    });
+
+    await updateCourseInstanceUsagesForAiGradingResponses({
+      courseInstanceId: persistenceContext.course_instance.id,
+      authnUserId: persistenceContext.authn_user_id,
+      model: responses.model_id,
+      gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
+      rotationCorrections: responses.rotationCorrections,
+      finalGradingResponse: responses.finalGradingResponse,
+    });
+
+    return deducted_milli_dollars;
+  });
+}
+
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE = 5;
+
+export async function getActiveAiGradingJobCountForCourseInstance(
+  course_instance_id: string,
+): Promise<number> {
+  return await queryScalar(
+    sql.count_active_ai_grading_jobs_for_course_instance,
+    { course_instance_id },
+    z.number(),
+  );
+}
+
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
+const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
 
 /**
  * Grade instance questions using AI.
@@ -91,7 +314,9 @@ export async function aiGrade({
   assessment: Assessment;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
+  /** Authenticated user; AI grading persistence is attributed to this actor. */
   authn_user_id: string;
+  /** Effective user; used for server job context but not grading actor attribution. */
   user_id: string;
   mode: 'human_graded' | 'all' | 'selected';
   /**
@@ -142,15 +367,34 @@ export async function aiGrade({
 
   const question_course = await getQuestionCourse(question, course);
 
-  const serverJob = await createServerJob({
-    type: 'ai_grading',
-    description: 'Perform AI grading',
-    userId: user_id,
-    authnUserId: authn_user_id,
-    courseId: course.id,
-    courseInstanceId: course_instance.id,
-    assessmentId: assessment.id,
-    assessmentQuestionId: assessment_question.id,
+  // Hold an advisory lock for the course instance while we check the running
+  // job count and create the new server job, so concurrent requests can't both
+  // pass the limit check before either inserts its job_sequences row.
+  const serverJob = await runInTransactionAsync(async () => {
+    await execute(sql.ai_grading_concurrency_advisory_lock, {
+      course_instance_id: course_instance.id,
+    });
+
+    const activeJobCount = await getActiveAiGradingJobCountForCourseInstance(course_instance.id);
+    if (activeJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
+      throw new error.HttpStatusError(
+        429,
+        `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please wait for running jobs to finish.`,
+      );
+    }
+
+    return await createServerJob({
+      type: 'ai_grading',
+      description: 'Perform AI grading',
+      // Preserve effective-user context for job ownership while also recording the
+      // authenticated actor who initiated the AI grading operation.
+      userId: user_id,
+      authnUserId: authn_user_id,
+      courseId: course.id,
+      courseInstanceId: course_instance.id,
+      assessmentId: assessment.id,
+      assessmentQuestionId: assessment_question.id,
+    });
   });
 
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
@@ -198,6 +442,8 @@ export async function aiGrade({
     let rateLimitExceeded =
       trackRateLimitAndCost &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
+    let hasAiGradingCredits = true;
+    let firstFailureMessage: string | undefined;
 
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
@@ -220,6 +466,40 @@ export async function aiGrade({
         item_statuses,
       });
       return;
+    }
+
+    // Check credit pool before starting the batch. This is a best-effort
+    // check without FOR UPDATE — concurrent batches may both pass this check.
+    // Credits are deducted per-submission *after* the API call, and the full
+    // cost is always recorded. Transferable credits are allowed to go
+    // negative so the credit pool reflects the true cost of work already
+    // done; the next batch is held by this `<= 0` pre-check until the
+    // instructor purchases credits.
+    if (trackRateLimitAndCost) {
+      const creditPool = await selectCreditPool(course_instance.id);
+      if (creditPool.total_milli_dollars <= 0) {
+        job.error(
+          `${INSUFFICIENT_CREDITS_MESSAGE} Available credits: ${formatMilliDollars(creditPool.total_milli_dollars)}.`,
+        );
+
+        item_statuses = instance_questions.reduce(
+          (acc, instance_question) => {
+            acc[instance_question.id] = JobItemStatus.failed;
+            return acc;
+          },
+          {} as Record<string, JobItemStatus>,
+        );
+
+        await emitServerJobProgressUpdate({
+          job_sequence_id: serverJob.jobSequenceId,
+          num_complete: instance_questions.length,
+          num_failed: instance_questions.length,
+          num_total: instance_questions.length,
+          job_failure_message: INSUFFICIENT_CREDITS_MESSAGE,
+          item_statuses,
+        });
+        return;
+      }
     }
 
     job.info(`Using model ${model_id} for AI grading.`);
@@ -261,6 +541,25 @@ export async function aiGrade({
         return false;
       }
 
+      // Best-effort per-submission credit check. No FOR UPDATE lock — this is
+      // a read-only guard to avoid making an API call when the pool is already
+      // depleted. The authoritative deduction happens later under a lock.
+      if (trackRateLimitAndCost && hasAiGradingCredits) {
+        const pool = await selectCreditPool(course_instance.id);
+        if (pool.total_milli_dollars <= 0) {
+          hasAiGradingCredits = false;
+          logger.error(
+            'No credits remaining. Purchase credits on the AI grading settings page. AI grading jobs that are still in progress will continue to completion.',
+          );
+        }
+      }
+      if (!hasAiGradingCredits) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since there are no credits remaining.`,
+        );
+        return false;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -270,7 +569,10 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-        questionRenderContext: 'ai_grading',
+        urlPrefix,
+        showCorrectAnswer: false,
+        allowAnswerEditing: false,
+        questionRenderContext: 'ai_grading' as const,
       };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
@@ -311,14 +613,40 @@ export async function aiGrade({
         params: submission.params ?? {},
         submitted_answers: submission.submitted_answer,
       };
-      for (const rubric_item of rubric_items) {
-        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
-        rubric_item.explanation = rubric_item.explanation
-          ? mustache.render(rubric_item.explanation, mustacheParams)
-          : null;
-        rubric_item.grader_note = rubric_item.grader_note
-          ? mustache.render(rubric_item.grader_note, mustacheParams)
-          : null;
+      const renderRubricField = (
+        template: string | null,
+        fieldName: string,
+        displayNumber: number,
+      ): string | null => {
+        if (!template) return template;
+        const { rendered, error } = safeMustacheRender(template, mustacheParams);
+        if (error) {
+          // Treat rubric-template errors as per-submission failures: the rubric
+          // the AI would see is degraded, so we don't trust any grade derived
+          // from it. The thrown message becomes the banner's job_failure_detail
+          // subtext, so keep it short and user-facing; the underlying Mustache
+          // error is logged separately to the server-job log for debugging.
+          // `displayNumber` is the 1-indexed position of the rubric item,
+          // matching the numbering shown to the instructor in the rubric editor.
+          logger.error(`Rubric item ${displayNumber} ${fieldName} mustache error: ${error}`);
+          throw new Error(`Could not parse rubric item ${displayNumber} ${fieldName}`);
+        }
+        return rendered;
+      };
+      for (const [index, rubric_item] of rubric_items.entries()) {
+        const displayNumber = index + 1;
+        rubric_item.description =
+          renderRubricField(rubric_item.description, 'description', displayNumber) ?? '';
+        rubric_item.explanation = renderRubricField(
+          rubric_item.explanation,
+          'explanation',
+          displayNumber,
+        );
+        rubric_item.grader_note = renderRubricField(
+          rubric_item.grader_note,
+          'grader_note',
+          displayNumber,
+        );
       }
 
       let input = await generatePrompt({
@@ -370,24 +698,32 @@ export async function aiGrade({
       };
 
       if (rubric_items.length > 0) {
-        // Dynamically generate the rubric schema based on the rubric items.
-        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
-        for (const item of rubric_items) {
-          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
-            z.object({
-              [item.description]: z.boolean(),
-            }),
-          );
-        }
+        // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
+        // item is identified by its 1-indexed position in the prompt; using numbers
+        // instead of descriptions avoids JSON-escaping issues with quotes/backslashes
+        // in user-authored rubric text. The schema is strict so any extra keys
+        // emitted by the model surface as a per-submission failure instead of being
+        // silently stripped.
+        const RubricGradingItemsSchema = z
+          .object(
+            Object.fromEntries(
+              rubric_items.map((item, index) => {
+                const number = index + 1;
+                return [
+                  String(number),
+                  z
+                    .boolean()
+                    .describe(
+                      `True if rubric item number ${number} applies to the student's response. Rubric item number ${number}: ${item.description}`,
+                    ),
+                ];
+              }),
+            ),
+          )
+          .strict();
 
-        // OpenAI will take the property descriptions into account. See the
-        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
-          // rubric_items must be the last property in the schema.
-          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
-          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
-          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -401,21 +737,6 @@ export async function aiGrade({
           finalGradingResponse,
           rotationCorrectionApplied,
         } = (await run(async () => {
-          const experimental_repairText: (options: {
-            text: string;
-            error: JSONParseError | TypeValidationError;
-          }) => Promise<string | null> = async (options) => {
-            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
-              return null;
-            }
-            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // unescaped backslashes in the rubric item keys of the response.
-
-            // TODO: Remove this temporary fix once Google fixes the underlying issue.
-            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
-            return correctGeminiMalformedRubricGradingJson(options.text);
-          };
-
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -428,7 +749,12 @@ export async function aiGrade({
                 model,
                 schema: RubricGradingResultSchema,
                 messages: input,
-                experimental_repairText,
+                // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
+                // intentionally interleave `role: 'system'` and `role: 'user'`
+                // messages. All system-role content is hard-coded authored strings;
+                // no user-supplied text is ever placed in a system message, so the
+                // SDK's prompt-injection warning does not apply here.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -441,7 +767,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -491,7 +818,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -539,126 +867,89 @@ export async function aiGrade({
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
-        const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: finalGradingResponse.object.rubric_items,
-          rubric_items,
+        const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
+          parseAiRubricItems({
+            ai_rubric_items: finalGradingResponse.object.rubric_items,
+            rubric_items,
+          });
+        if (unrecognizedKeys.length > 0) {
+          logger.error(
+            `AI grading response contained unrecognized rubric_items keys: ${JSON.stringify(unrecognizedKeys)}. Expected stringified integers in [1, ${rubric_items.length}].`,
+          );
+        }
+        const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
+          ? {
+              model_id,
+              rotationCorrectionApplied,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+            }
+          : { model_id, rotationCorrectionApplied, finalGradingResponse };
+        const persistenceContext = {
+          prompt: input,
+          course_instance,
+          instance_question,
+          authn_user_id,
+          job_sequence_id: serverJob.jobSequenceId,
+        } satisfies AiGradingPersistenceContext;
+
+        const deductedCost = await run(async () => {
+          if (shouldUpdateScore) {
+            // Requires grading: update instance question score
+            const manual_rubric_data = {
+              rubric_id: rubric_items[0].rubric_id,
+              applied_rubric_items: appliedRubricItems,
+            };
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () =>
+                await updateInstanceQuestionScoreForAiGrading({
+                  assessment,
+                  instance_question_id: instance_question.id,
+                  submission_id: submission.id,
+                  score: {
+                    // TODO: consider asking for and recording freeform feedback.
+                    manual_rubric_data,
+                    feedback: { manual: '' },
+                  },
+                  authn_user_id,
+                }),
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          } else {
+            // Does not require grading: only create grading job and rubric grading
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () => {
+                assert(assessment_question.max_manual_points);
+                const manual_rubric_grading = await manualGrading.insertRubricGrading(
+                  rubric_items[0].rubric_id,
+                  assessment_question.max_points ?? 0,
+                  assessment_question.max_manual_points,
+                  appliedRubricItems,
+                  0,
+                );
+                const score =
+                  manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+                return await insertAiOnlyGradingJob({
+                  submission_id: submission.id,
+                  authn_user_id,
+                  score,
+                  manual_points: manual_rubric_grading.computed_points,
+                  manual_rubric_grading_id: manual_rubric_grading.id,
+                });
+              },
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          }
         });
 
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const manual_rubric_data = {
-            rubric_id: rubric_items[0].rubric_id,
-            applied_rubric_items: appliedRubricItems,
-          };
-          await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
-              assessment,
-              instance_question_id: instance_question.id,
-              submission_id: submission.id,
-              check_modified_at: null,
-              score: {
-                // TODO: consider asking for and recording freeform feedback.
-                manual_rubric_data,
-                feedback: { manual: '' },
-              },
-              authn_user_id: user_id,
-              is_ai_graded: true,
-            });
-            assert(grading_job_id);
-
-            const aiGradingJobParams = {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            };
-
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
-
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-          });
-        } else {
-          // Does not require grading: only create grading job and rubric grading
-          await runInTransactionAsync(async () => {
-            assert(assessment_question.max_manual_points);
-            const manual_rubric_grading = await manualGrading.insertRubricGrading(
-              rubric_items[0].rubric_id,
-              assessment_question.max_points ?? 0,
-              assessment_question.max_manual_points,
-              appliedRubricItems,
-              0,
-            );
-            const score =
-              manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-            const grading_job_id = await queryScalar(
-              sql.insert_grading_job,
-              {
-                submission_id: submission.id,
-                authn_user_id: user_id,
-                grading_method: 'AI',
-                correct: null,
-                score,
-                auto_points: 0,
-                manual_points: manual_rubric_grading.computed_points,
-                manual_rubric_grading_id: manual_rubric_grading.id,
-                feedback: null,
-              },
-              IdSchema,
-            );
-
-            const aiGradingJobParams = {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            };
-
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
-
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
-            });
-          });
+        if (trackRateLimitAndCost) {
+          total_cost_milli_dollars += deductedCost;
+          num_items_incurred_cost += 1;
         }
 
         logger.info('AI rubric items:');
@@ -708,6 +999,8 @@ export async function aiGrade({
                 model,
                 schema: GradingResultSchema,
                 messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -720,6 +1013,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -758,6 +1053,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -806,108 +1103,66 @@ export async function aiGrade({
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
         const score = finalGradingResponse.object.score;
-
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const feedback = finalGradingResponse.object.feedback;
-          await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
-              assessment,
-              instance_question_id: instance_question.id,
-              submission_id: submission.id,
-              check_modified_at: null,
-              score: {
-                manual_score_perc: score,
-                feedback: { manual: feedback },
-              },
-              authn_user_id: user_id,
-              is_ai_graded: true,
-            });
-            assert(grading_job_id);
-
-            const aiGradingJobParams = {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
+        const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
+          ? {
               model_id,
-              prompt: input,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            };
-
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
-
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
+              rotationCorrectionApplied,
               gradingResponseWithRotationIssue,
               rotationCorrections,
               finalGradingResponse,
-            });
-          });
-        } else {
-          // Does not require grading: only create grading job and rubric grading
-          await runInTransactionAsync(async () => {
-            assert(assessment_question.max_manual_points);
-            const grading_job_id = await queryScalar(
-              sql.insert_grading_job,
-              {
-                submission_id: submission.id,
-                authn_user_id: user_id,
-                grading_method: 'AI',
-                correct: null,
-                score: score / 100,
-                auto_points: 0,
-                manual_points: (score * assessment_question.max_manual_points) / 100,
-                manual_rubric_grading_id: null,
-                feedback: null,
-              },
-              IdSchema,
-            );
-
-            const aiGradingJobParams = {
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            };
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
             }
+          : { model_id, rotationCorrectionApplied, finalGradingResponse };
+        const persistenceContext = {
+          prompt: input,
+          course_instance,
+          instance_question,
+          authn_user_id,
+          job_sequence_id: serverJob.jobSequenceId,
+        } satisfies AiGradingPersistenceContext;
 
-            await updateCourseInstanceUsagesForAiGradingResponses({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              gradingResponseWithRotationIssue,
-              rotationCorrections,
-              finalGradingResponse,
+        const deductedCost = await run(async () => {
+          if (shouldUpdateScore) {
+            // Requires grading: update instance question score
+            const feedback = finalGradingResponse.object.feedback;
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () =>
+                await updateInstanceQuestionScoreForAiGrading({
+                  assessment,
+                  instance_question_id: instance_question.id,
+                  submission_id: submission.id,
+                  score: {
+                    manual_score_perc: score,
+                    feedback: { manual: feedback },
+                  },
+                  authn_user_id,
+                }),
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
             });
-          });
+          } else {
+            // Does not require grading: only create grading job
+            return await finalizeAiGradingPersistence({
+              createGradingJob: async () => {
+                assert(assessment_question.max_manual_points);
+                return await insertAiOnlyGradingJob({
+                  submission_id: submission.id,
+                  authn_user_id,
+                  score: score / 100,
+                  manual_points: (score * assessment_question.max_manual_points) / 100,
+                  manual_rubric_grading_id: null,
+                });
+              },
+              trackRateLimitAndCost,
+              persistenceContext,
+              responses: responsesForPersistence,
+            });
+          }
+        });
+
+        if (trackRateLimitAndCost) {
+          total_cost_milli_dollars += deductedCost;
+          num_items_incurred_cost += 1;
         }
 
         logger.info(`AI score: ${finalGradingResponse.object.score}`);
@@ -916,8 +1171,20 @@ export async function aiGrade({
       return true;
     };
 
+    // No mutex is needed here: mapLimit schedules async work concurrently, but
+    // these counters are updated on Node's single-threaded event loop.
     let num_complete = 0;
     let num_failed = 0;
+    let total_cost_milli_dollars = 0;
+    let num_items_incurred_cost = 0;
+    // Polled before every per-item dispatch and finally emit so a Stop click
+    // can't get masked by a stale local flag.
+    let stopRequested = false as boolean;
+    const refreshStopRequested = async () => {
+      if (stopRequested) return;
+      const { status } = await selectJobSequenceStatus(serverJob.jobSequenceId);
+      if (status === 'Stopping' || status === 'Stopped') stopRequested = true;
+    };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -941,6 +1208,24 @@ export async function aiGrade({
           },
         };
 
+        const costFields = trackRateLimitAndCost
+          ? { total_cost_milli_dollars, num_items_incurred_cost }
+          : {};
+
+        const getJobFailureMessage = () => {
+          if (!hasAiGradingCredits) return INSUFFICIENT_CREDITS_MESSAGE;
+          if (rateLimitExceeded) return HOURLY_USAGE_CAP_REACHED_MESSAGE;
+          return undefined;
+        };
+
+        await refreshStopRequested();
+        if (stopRequested) {
+          // Skip queued items entirely so they don't appear graded by this
+          // job, leaving any concurrent job's status to win in the table UI.
+          delete item_statuses[instance_question.id];
+          return false;
+        }
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -949,7 +1234,9 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
+            ...costFields,
           });
 
           const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
@@ -964,19 +1251,30 @@ export async function aiGrade({
 
           return gradingSuccessful;
         } catch (err: any) {
-          logger.error(err);
+          const message = err?.message ?? String(err);
+          logger.error(
+            `AI grading failed for instance question ${instance_question.id}: ${message}`,
+          );
           item_statuses[instance_question.id] = JobItemStatus.failed;
           num_failed += 1;
+          if (firstFailureMessage === undefined) {
+            firstFailureMessage = message;
+          }
           return false;
         } finally {
           num_complete += 1;
+          await refreshStopRequested();
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,
             num_complete,
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
+            job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            stop_state: stopRequested ? 'stopping' : undefined,
+            ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
             switch (log.messageType) {
@@ -993,6 +1291,34 @@ export async function aiGrade({
         }
       },
     );
+
+    // Final poll: catches Stop clicks that arrived during the last batch. A
+    // Stop click that lands after this poll is still handled — the inner
+    // job's finisher in `update_job_on_finish` projects Stopping → Stopped.
+    await refreshStopRequested();
+
+    if (stopRequested) {
+      // num_complete counts every item the worker processed (incremented in
+      // the per-item finally), so the actually-graded count is num_complete
+      // minus the failures.
+      const num_graded = num_complete - num_failed;
+      const num_skipped = instance_questions.length - num_complete;
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete,
+        num_failed,
+        num_total: instance_questions.length,
+        item_statuses,
+        stop_state: 'stopped',
+        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+      });
+      // `job.stop` writes the message to the output and throws a control-flow
+      // signal that the ServerJob wrapper catches; the inner jobs row and the
+      // surrounding job_sequences row both land in 'Stopped' status.
+      job.stop(
+        `\nAI grading stopped by instructor. ${num_graded} graded, ${num_failed} failed, ${num_skipped} skipped.`,
+      );
+    }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

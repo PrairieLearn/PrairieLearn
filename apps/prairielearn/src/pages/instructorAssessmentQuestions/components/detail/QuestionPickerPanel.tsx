@@ -1,10 +1,18 @@
-import { rankItem } from '@tanstack/match-sorter-utils';
+import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { run } from '@prairielearn/run';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
+import { type AppError, getAppError, renderAppError } from '../../../../lib/client/errors.js';
+import { rankSearchText } from '../../../../lib/client/search.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
+import type {
+  AssessmentQuestionsError,
+  QuestionByQidResult,
+} from '../../../../trpc/assessment/assessment-questions.js';
+import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { CourseQuestionForPicker } from '../../types.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { QuestionTopicTagBadges } from '../QuestionTopicTagBadges.js';
@@ -29,6 +37,8 @@ export function QuestionPickerPanel({
   courseId,
   courseInstanceId,
   currentAssessmentId,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
   onQuestionSelected,
   onRemoveQuestionByQid,
 }: {
@@ -41,11 +51,15 @@ export function QuestionPickerPanel({
   courseInstanceId: string;
   currentAssessmentId?: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
   onQuestionSelected: (qid: string) => void;
   onRemoveQuestionByQid: (qid: string) => void;
 }) {
+  const trpc = useTRPC();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(() => new Set());
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(() => new Set());
@@ -53,6 +67,21 @@ export function QuestionPickerPanel({
     () => new Set(),
   );
   const [expandedTagsQids, setExpandedTagsQids] = useState<Set<string>>(() => new Set());
+
+  const sharedQuestionMode =
+    searchQuery.startsWith('@') && (questionSharingEnabled || consumePublicQuestionsEnabled);
+  const hasSlash = sharedQuestionMode && debouncedSearchQuery.includes('/');
+
+  const sharedQuestionQuery = useQuery({
+    ...trpc.assessmentQuestions.questionByQid.queryOptions(
+      { qid: debouncedSearchQuery },
+      { enabled: hasSlash },
+    ),
+    retry: false,
+  });
+  const sharedQuestionError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    sharedQuestionQuery.error,
+  );
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
 
@@ -85,10 +114,7 @@ export function QuestionPickerPanel({
     return {
       topics: Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       tags: Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      assessments: [
-        { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' } as FilterItem,
-        ...sortedAssessments,
-      ],
+      assessments: [{ id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' }, ...sortedAssessments],
     };
   }, [courseQuestions, currentAssessmentId]);
 
@@ -98,8 +124,8 @@ export function QuestionPickerPanel({
 
       const matchesSearch =
         !searchLower ||
-        rankItem(q.qid, searchLower).passed ||
-        rankItem(q.title, searchLower).passed;
+        rankSearchText(q.qid, searchLower).passed ||
+        rankSearchText(q.title, searchLower).passed;
 
       const matchesTopic = selectedTopics.size === 0 || selectedTopics.has(String(q.topic.id));
 
@@ -160,6 +186,10 @@ export function QuestionPickerPanel({
     onQuestionSelected(question.qid);
   };
 
+  const handleSelectShared = (result: QuestionByQidResult) => {
+    onQuestionSelected(`@${result.course.sharing_name}/${result.question.qid}`);
+  };
+
   const clearFilters = () => {
     setSelectedTopics(new Set());
     setSelectedTags(new Set());
@@ -174,6 +204,11 @@ export function QuestionPickerPanel({
     selectedGradingMethods.size > 0;
 
   const virtualRows = rowVirtualizer.getVirtualItems();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   if (isLoading) {
     return (
@@ -237,23 +272,108 @@ export function QuestionPickerPanel({
           )}
         </div>
       </div>
-      {searchQuery.trimStart().startsWith('@') && (
-        <div className="alert alert-warning small mx-2 mt-2 mb-0" role="alert">
-          <i className="bi bi-info-circle me-1" aria-hidden="true" />
-          Shared questions from other courses are not yet searchable here.
-        </div>
-      )}
       {pickerError && (
         <div className="alert alert-danger small mx-2 mt-2 mb-0" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          {pickerError.message || 'Failed to add question. Please try again.'}
+          {renderAppError(pickerError, {
+            QUESTION_NOT_FOUND: ({ message }) => message,
+            UNKNOWN: ({ message }) => message || 'Failed to add question. Please try again.',
+          })}
         </div>
       )}
-      <div className="px-2 py-1 bg-light border-bottom text-muted small">
-        {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
-      </div>
+      {!sharedQuestionMode && (
+        <div className="px-2 py-1 bg-light border-bottom text-muted small">
+          {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
+        </div>
+      )}
       <div ref={scrollParentRef} className="flex-grow-1" style={{ overflow: 'auto' }}>
-        {sortedQuestions.length === 0 ? (
+        {sharedQuestionMode ? (
+          sharedQuestionQuery.isFetching ? (
+            <div className="d-flex align-items-center justify-content-center py-5 text-muted">
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Searching...</span>
+              </div>
+              Searching...
+            </div>
+          ) : sharedQuestionQuery.data ? (
+            run(() => {
+              const result = sharedQuestionQuery.data;
+              const qid = `@${result.course.sharing_name}/${result.question.qid}`;
+              const hasTitle = !!result.question.title?.trim();
+              const isCurrentChange = currentChangeQid === qid;
+              const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
+              return (
+                <div
+                  role={isDisabled ? undefined : 'button'}
+                  tabIndex={isDisabled ? undefined : 0}
+                  aria-label={hasTitle ? `${qid}: ${result.question.title}` : qid}
+                  aria-disabled={isDisabled || undefined}
+                  className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
+                  style={{
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    fontSize: '0.85rem',
+                    opacity: isDisabled ? 0.5 : undefined,
+                  }}
+                  onClick={isDisabled ? undefined : () => handleSelectShared(result)}
+                  onKeyDown={
+                    isDisabled
+                      ? undefined
+                      : (e) => {
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectShared(result);
+                          }
+                        }
+                  }
+                >
+                  <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                    <div className="d-flex align-items-center gap-1">
+                      <code className="small">{qid}</code>
+                      <span
+                        className="badge bg-light text-muted border"
+                        style={{ fontSize: '0.65rem' }}
+                      >
+                        {result.course.short_name}
+                      </span>
+                    </div>
+                    {hasTitle && <div className="text-truncate small">{result.question.title}</div>}
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      <QuestionTopicTagBadges
+                        topic={result.topic}
+                        tags={result.tags}
+                        qid={qid}
+                        isExpanded={expandedTagsQids.has(qid)}
+                        setExpandedQids={setExpandedTagsQids}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : sharedQuestionError ? (
+            renderAppError(sharedQuestionError, {
+              QUESTION_NOT_FOUND: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+                  <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Shared question not found.</p>
+                </div>
+              ),
+              UNKNOWN: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
+                  <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Failed to search for a shared question. Try again.</p>
+                </div>
+              ),
+            })
+          ) : (
+            <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+              <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
+              <p className="mb-1">To add a shared question, enter its exact reference:</p>
+              <code>@&lt;sharing-name&gt;/&lt;qid&gt;</code>
+            </div>
+          )
+        ) : sortedQuestions.length === 0 ? (
           <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
             <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
             <p className="mb-1">No questions match your search criteria.</p>
@@ -278,6 +398,8 @@ export function QuestionPickerPanel({
             {virtualRows.map((virtualRow) => {
               const question = sortedQuestions[virtualRow.index];
               const qid = question.qid;
+              const hasTitle = !!question.title?.trim();
+              const accessibleLabel = hasTitle ? `${qid}: ${question.title}` : qid;
               const addedZoneNames = questionsInAssessment.get(qid);
               const isInAssessment = addedZoneNames != null;
               const isCurrentChange = currentChangeQid === qid;
@@ -293,7 +415,7 @@ export function QuestionPickerPanel({
                   data-index={virtualRow.index}
                   role={isDisabled ? undefined : 'button'}
                   tabIndex={isDisabled ? undefined : 0}
-                  aria-label={`${qid}: ${question.title}${isCurrentChange ? ' (current)' : isInAssessment ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
+                  aria-label={`${accessibleLabel}${isCurrentChange ? ' (current)' : isInAssessment ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
                   aria-disabled={isDisabled || undefined}
                   className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
                   style={{
@@ -342,7 +464,7 @@ export function QuestionPickerPanel({
                         </span>
                       )}
                     </div>
-                    <div className="text-truncate small">{question.title}</div>
+                    {hasTitle && <div className="text-truncate small">{question.title}</div>}
                     <div className="d-flex flex-wrap gap-1 mt-1">
                       <QuestionTopicTagBadges
                         topic={question.topic}

@@ -64,13 +64,13 @@ describe('computeSyncDiff', () => {
         uid: 'blocked@example.com',
         currentStatus: 'blocked',
         enrollmentId: 'blocked@example.com-id',
-        userName: null,
+        name: null,
       },
       {
         uid: 'removed@example.com',
         currentStatus: 'removed',
         enrollmentId: 'removed@example.com-id',
-        userName: null,
+        name: null,
       },
     ]);
     expect(diff.toCancelInvitation).toEqual([]);

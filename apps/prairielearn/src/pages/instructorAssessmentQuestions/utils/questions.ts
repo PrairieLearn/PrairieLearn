@@ -11,17 +11,32 @@ import type {
   StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
-import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+  type QuestionPointsJson,
+  type ZoneAssessmentJson,
+} from '../../../schemas/infoAssessment.js';
+import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-questions.js';
 import type {
   AssessmentForPicker,
   CourseQuestionForPicker,
+  InheritanceSource,
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
 
 export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
+
+/**
+ * Whether the question has a non-empty, non-whitespace title.
+ * When false, callers should display the QID instead.
+ */
+export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -111,7 +126,7 @@ export function buildHierarchicalAssessment(
   rows: StaffAssessmentQuestionRow[],
 ): ZoneAssessmentJson[] {
   const zones: ZoneAssessmentJson[] = [];
-  const zoneAlternativeGroupCounts: Record<number, number> = {};
+  const zoneAlternativePoolCounts: Record<number, number> = {};
 
   for (const row of rows) {
     zones[row.zone.number - 1] ??= {
@@ -130,35 +145,35 @@ export function buildHierarchicalAssessment(
     };
 
     const zoneNumber = row.zone.number;
-    zoneAlternativeGroupCounts[zoneNumber] ??= -1;
+    zoneAlternativePoolCounts[zoneNumber] ??= -1;
 
-    // If this is a new alternative group in this zone, increment the count
-    if (row.start_new_alternative_group) {
-      zoneAlternativeGroupCounts[zoneNumber]++;
+    // If this is a new alternative pool in this zone, increment the count
+    if (row.start_new_alternative_pool) {
+      zoneAlternativePoolCounts[zoneNumber]++;
     }
 
     // Use the count as the position within the zone
-    const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
+    const positionInZone = zoneAlternativePoolCounts[zoneNumber];
     if (!zones[zoneNumber - 1].questions[positionInZone]) {
       zones[zoneNumber - 1].questions[positionInZone] ??= {
-        comment: row.alternative_group.json_comment ?? undefined,
-        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
-        canView: row.alternative_group.json_can_view ?? [],
-        canSubmit: row.alternative_group.json_can_submit ?? [],
-        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
-        allowRealTimeGrading: row.alternative_group.json_allow_real_time_grading ?? undefined,
-        numberChoose: row.alternative_group.number_choose ?? undefined,
-        triesPerVariant: row.alternative_group.json_tries_per_variant ?? undefined,
-        points: row.alternative_group.json_points ?? undefined,
-        autoPoints: row.alternative_group.json_auto_points ?? undefined,
-        maxPoints: row.alternative_group.json_max_points ?? undefined,
-        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
-        manualPoints: row.alternative_group.json_manual_points ?? undefined,
-        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
+        comment: row.alternative_pool.json_comment ?? undefined,
+        advanceScorePerc: row.alternative_pool.advance_score_perc ?? undefined,
+        canView: row.alternative_pool.json_can_view ?? [],
+        canSubmit: row.alternative_pool.json_can_submit ?? [],
+        gradeRateMinutes: row.alternative_pool.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.alternative_pool.json_allow_real_time_grading ?? undefined,
+        numberChoose: row.alternative_pool.number_choose ?? undefined,
+        triesPerVariant: row.alternative_pool.json_tries_per_variant ?? undefined,
+        points: row.alternative_pool.json_points ?? undefined,
+        autoPoints: row.alternative_pool.json_auto_points ?? undefined,
+        maxPoints: row.alternative_pool.json_max_points ?? undefined,
+        maxAutoPoints: row.alternative_pool.json_max_auto_points ?? undefined,
+        manualPoints: row.alternative_pool.json_manual_points ?? undefined,
+        forceMaxPoints: row.alternative_pool.json_force_max_points ?? undefined,
       };
     }
 
-    if (row.alternative_group.json_has_alternatives) {
+    if (row.alternative_pool.json_has_alternatives) {
       if (row.assessment_question.number_in_alternative_group == null) {
         throw new Error('Assessment question number is required');
       }
@@ -179,12 +194,15 @@ export function buildHierarchicalAssessment(
         maxPoints: row.assessment_question.json_max_points ?? undefined,
         maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
+        preferences: row.assessment_question.preferences ?? undefined,
       };
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
       zones[zoneNumber - 1].questions[positionInZone].comment =
         row.assessment_question.json_comment ?? undefined;
+      zones[zoneNumber - 1].questions[positionInZone].preferences =
+        row.assessment_question.preferences ?? undefined;
     }
   }
   return zones;
@@ -220,7 +238,7 @@ export function computeZonePointTotals(
   // instead of the initial autoPoints value.
   const blockPoints = questions.map((q) => {
     if (q.alternatives) {
-      // Resolve each alternative's effective points (alternative-level ?? group-level)
+      // Resolve each alternative's effective points (alternative-level ?? pool-level)
       const resolved = q.alternatives.map((alt) => ({
         auto: firstPoints(
           alt.maxAutoPoints ??
@@ -268,7 +286,7 @@ export function computeZonePointTotals(
 
 /**
  * Computes the maximum total points for a question, resolving inheritance
- * from the parent alt group when applicable.
+ * from the parent alt pool when applicable.
  */
 export function computeQuestionTotalPoints(
   question: QuestionPointsJson,
@@ -292,7 +310,7 @@ export function computeQuestionTotalPoints(
 }
 
 /**
- * Returns true if alternatives within an alt group have different total point values.
+ * Returns true if alternatives within an alt pool have different total point values.
  */
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
@@ -389,11 +407,70 @@ export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
 }
 
 /**
- * Returns true if an alt group's numberChoose exceeds the number of alternatives.
+ * Returns true if an alt pool's numberChoose exceeds the number of alternatives.
  */
-export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
+export function hasAltPoolChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
   if (block.numberChoose == null || block.alternatives == null) return false;
   return block.numberChoose > block.alternatives.length;
+}
+
+/**
+ * Computes the [min, max] range of questions chosen from a specific alt pool,
+ * based on the zone's spreading algorithm (mirrors `z_numbered_assessment_questions`
+ * in `assessment.sql`).
+ *
+ * Think of it like dealing cards in rounds: round 1 deals one question to each
+ * block, round 2 deals a second to blocks large enough, etc. The zone's
+ * `numberChoose` is the total number of cards dealt.
+ */
+export function computeAltPoolChosenRange(
+  zone: ZoneAssessmentForm,
+  targetBlock: ZoneQuestionBlockForm,
+): { min: number; max: number } {
+  // Compute the effective size of each block (how many questions it contributes).
+  const blockSizes = zone.questions.map((block) => {
+    if (block.alternatives) {
+      return Math.min(block.numberChoose ?? block.alternatives.length, block.alternatives.length);
+    }
+    return 1;
+  });
+
+  const targetIdx = zone.questions.indexOf(targetBlock);
+  const targetSize = blockSizes[targetIdx];
+
+  // If zone.numberChoose is null (select all), every block contributes its full effective size.
+  if (zone.numberChoose == null) {
+    return { min: targetSize, max: targetSize };
+  }
+
+  const budget = zone.numberChoose;
+
+  // Build rounds: round k (1-indexed) has one question from each block with size >= k.
+  // questionsDealtByRound[k] = cumulative questions dealt through round k.
+  const maxRound = Math.max(...blockSizes, 0);
+  const questionsDealtByRound: number[] = [0];
+  for (let k = 1; k <= maxRound; k++) {
+    const blocksInRound = blockSizes.filter((s) => s >= k).length;
+    questionsDealtByRound[k] = questionsDealtByRound[k - 1] + blocksInRound;
+  }
+
+  // How many full rounds is the target guaranteed to participate in?
+  // That's the last round k (up to targetSize) where the cumulative deal fits in budget.
+  let fullRoundsGuaranteed = 0;
+  for (let k = 0; k <= targetSize; k++) {
+    if (questionsDealtByRound[k] <= budget) {
+      fullRoundsGuaranteed = k;
+    }
+  }
+
+  // The target *might* get one more if it has capacity in the next round
+  // and there's leftover budget after the last full round.
+  const hasCapacityForNextRound = targetSize > fullRoundsGuaranteed;
+  const hasLeftoverBudget = budget > questionsDealtByRound[fullRoundsGuaranteed];
+  const max =
+    hasCapacityForNextRound && hasLeftoverBudget ? fullRoundsGuaranteed + 1 : fullRoundsGuaranteed;
+
+  return { min: fullRoundsGuaranteed, max };
 }
 
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
@@ -460,7 +537,7 @@ export function buildQuestionMetadata(opts: {
 }
 
 /**
- * Computes the set of tags shared across all alternatives in an alt group.
+ * Computes the set of tags shared across all alternatives in an alt pool.
  * Returns the tag objects from the first alternative that has tags.
  */
 export function getSharedTags(
@@ -485,7 +562,7 @@ export function getSharedTags(
 }
 
 /**
- * Returns the topic shared by all alternatives in an alt group, or null if they differ.
+ * Returns the topic shared by all alternatives in an alt pool, or null if they differ.
  */
 export function getSharedTopic(
   alternatives: { id: string }[],
@@ -498,4 +575,58 @@ export function getSharedTopic(
   const firstName = topics[0].name;
   if (topics.every((t) => t.name === firstName)) return topics[0];
   return null;
+}
+
+/**
+ * Returns a warning message if a tool is enabled in an earlier zone but
+ * disabled in a later zone. Students have access to tools in previous
+ * zones regardless, so the zone restriction is not actually enforced.
+ */
+export function getZoneMixedToolsWarning({
+  zone: currentZone,
+  zones,
+  assessmentToolDefaults,
+}: {
+  zone: ZoneAssessmentForm;
+  zones: ZoneAssessmentForm[];
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+}): string | null {
+  if (zones.length < 2) return null;
+
+  for (const tool of EnumAssessmentToolSchema.options) {
+    const defaultValue = assessmentToolDefaults[tool] ?? false;
+
+    let seenEnabled = false;
+    for (const zone of zones) {
+      const effectiveValue = zone.tools?.[tool]?.enabled ?? defaultValue;
+      if (effectiveValue) {
+        seenEnabled = true;
+      } else if (seenEnabled && currentZone.trackingId === zone.trackingId) {
+        const toolLabel = tool[0].toUpperCase() + tool.slice(1);
+        return `${toolLabel} is enabled in an earlier zone so students can still access it from earlier questions.`;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolves the effective `canView` / `canSubmit` for a given level by walking
+ * the inheritance chain. The first layer that defines an explicit override
+ * (non-undefined) wins; if no layer overrides, the value is undefined
+ * (meaning "all roles" per the JSON schema).
+ *
+ * Layers are passed in order from innermost parent to outermost. For a zone,
+ * pass `[assessmentValue]`; for an alt pool or standalone question, pass
+ * `[zone?.canView, assessmentValue]`; for an alternative inside a pool,
+ * `[pool?.canView, zone?.canView, assessmentValue]`.
+ */
+export function resolveRolePermissionCascade(
+  layers: { value: string[] | undefined; source: InheritanceSource }[],
+): { value: string[] | undefined; source: InheritanceSource } {
+  for (const layer of layers) {
+    if (layer.value !== undefined) return layer;
+  }
+  return { value: undefined, source: layers.at(-1)?.source ?? 'assessment' };
 }

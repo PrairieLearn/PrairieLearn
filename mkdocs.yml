@@ -59,6 +59,8 @@ theme:
     - content.tooltips
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
+    # https://squidfunk.github.io/mkdocs-material/reference/content-tabs/#linked-content-tabs
+    - content.tabs.link
 plugins:
   - exclude:
       glob:
@@ -117,7 +119,9 @@ plugins:
 
           inventories:
             - url: https://numpy.org/doc/stable/objects.inv
-            - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            # Pandas docs has been unstable recently, which causes CI errors.
+            # https://github.com/pandas-dev/pandas/issues/64584
+            # - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
             - url: https://networkx.org/documentation/latest/objects.inv
             # - url: https://docs.sympy.org/latest/objects.inv # Doesn't seem to support ARM yet.
@@ -196,11 +200,10 @@ extra:
 
 nav:
   - Overview: 'index.md'
-  - Getting Started:
-      - getting-started/index.md
+  - Getting started:
+      - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Quick start': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
@@ -208,18 +211,23 @@ nav:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
+      # Hidden until the qti-content-import feature flag is generally available:
+      # - 'Importing content from other platforms': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
+          # TODO: unhide once modern access control is generally available.
+          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Preferences': 'question/preferences.md'
           - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
       - 'Elements':
@@ -257,6 +265,7 @@ nav:
           - '<span class="muted">pl-</span>python-variable': 'elements/pl-python-variable.md'
           - '<span class="muted">pl-</span>question-panel': 'elements/pl-question-panel.md'
           - '<span class="muted">pl-</span>rich-text-editor': 'elements/pl-rich-text-editor.md'
+          - '<span class="muted">pl-</span>sketch': 'elements/pl-sketch.md'
           - '<span class="muted">pl-</span>string-input': 'elements/pl-string-input.md'
           - '<span class="muted">pl-</span>submission-panel': 'elements/pl-submission-panel.md'
           - '<span class="muted">pl-</span>symbolic-input': 'elements/pl-symbolic-input.md'
@@ -288,6 +297,7 @@ nav:
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
+      - 'AI grading': 'aiGrading/index.md'
       - 'Content sharing': 'contentSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
@@ -342,6 +352,8 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
+  assessment/accessControlModern.md
+  importingContent.md
 
 validation:
   omitted_files: warn

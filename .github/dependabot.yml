@@ -23,6 +23,15 @@ updates:
     schedule:
       interval: monthly
     rebase-strategy: disabled
+    ignore:
+      # See note in welcome.yml for more details on this.
+      - dependency-name: 'actions/first-interaction'
+        versions: ['>=2']
+    groups:
+      github-actions:
+        patterns:
+          - 'actions/*'
+          - 'docker/*'
 
   - package-ecosystem: npm
     directories:

@@ -12,24 +12,28 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
+import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
+import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
   DetailActions,
   DetailState,
+  EditorState,
   QuestionAlternativeForm,
   SelectedItem,
   TreeActions,
@@ -38,11 +42,8 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 import {
-  createAltGroupWithTrackingId,
-  createAlternativeWithTrackingId,
-  createQuestionWithTrackingId,
+  createAltPoolWithTrackingId,
   createZoneWithTrackingId,
-  getDefaultPointFieldsForNewQuestion,
   prepareZonesForEditor,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
@@ -55,19 +56,18 @@ import {
   toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
-import { sanitizeSelectedItem, selectedItemsEqual } from '../utils/selectedItem.js';
-import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 import {
-  findByTrackingId,
+  findAltPoolByTrackingId,
+  findAlternativeByTrackingId,
   findQuestionByTrackingId,
-  useAssessmentEditor,
-} from '../utils/useAssessmentEditor.js';
+  findZoneByTrackingId,
+  getInitialSelectedZoneItem,
+} from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
-import { SplitPane } from './SplitPane.js';
 import { DetailPanel } from './detail/DetailPanel.js';
 import { AssessmentTree } from './tree/AssessmentTree.js';
 import { DragPreview } from './tree/DragPreview.js';
@@ -103,7 +103,7 @@ function useBeforeUnload(enabled: boolean): () => void {
 /**
  * Collision detection for vertical lists that uses item boundaries instead of
  * center distances. Unlike closestCenter, this works correctly for items of
- * different heights (e.g. a tall alt group next to a short question row).
+ * different heights (e.g. a tall alt pool next to a short question row).
  */
 const verticalBoundaryCollision: CollisionDetection = (args) => {
   const { collisionRect, droppableContainers, droppableRects } = args;
@@ -136,12 +136,21 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
+  assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
   switchViewUrl: string | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
+  search: string;
 }
 
 function AssessmentEditorInner({
@@ -150,33 +159,94 @@ function AssessmentEditorInner({
   questionRows,
   jsonZones,
   assessment,
+  assessmentToolDefaults,
+  groupsConfigured,
+  groupRoles,
+  assessmentCanView,
+  assessmentCanSubmit,
+  groupsPageUrl,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
   csrfToken,
   origHash,
   switchViewUrl,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
+  search,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const questionByQidMutation = useMutation({
-    mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
+    mutationFn: (qid: string) =>
+      queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
+  const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    questionByQidMutation.error,
+  );
 
-  const [initialState] = useState(() => {
+  const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
+
+  const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
+
+    const zones = prepareZonesForEditor(jsonZones, questionMetadataMap);
+
     return {
-      zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
+      zones,
       questionMetadata: questionMetadataMap,
-      collapsedGroups: new Set<string>(),
+      collapsedPools: new Set<string>(),
       collapsedZones: new Set<string>(),
+      dismissedBanners: new Set<string>(),
+      selectedItem: getInitialSelectedZoneItem(search, zones),
     };
   });
 
-  const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
-    useAssessmentEditor(initialState);
+  const {
+    zones,
+    questionMetadata,
+    collapsedPools,
+    collapsedZones,
+    dismissedBanners,
+    selectedItem,
+    dispatch,
+  } = useAssessmentEditor(initialState);
+
+  const setSelectedItem = useCallback(
+    (item: SelectedItem) => {
+      dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    const next = run(() => {
+      switch (selectedItem?.type) {
+        case 'question': {
+          const foundQuestion = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundQuestion?.question.id ? `q:${foundQuestion.question.id}` : null;
+        }
+        case 'zone': {
+          const foundZone = findZoneByTrackingId(zones, selectedItem.zoneTrackingId);
+          return foundZone ? `z:${foundZone.zoneIndex}` : null;
+        }
+        case 'altPool': {
+          const foundAltPool = findAltPoolByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundAltPool ? `z:${foundAltPool.zoneIndex}:${foundAltPool.altPoolIndex}` : null;
+        }
+        case 'alternative': {
+          const foundAlt = findAlternativeByTrackingId(zones, selectedItem.alternativeTrackingId);
+          return foundAlt ? `q:${foundAlt.alternative.id}` : null;
+        }
+        default:
+          return null;
+      }
+    });
+    void setPreselection(next);
+  }, [selectedItem, zones, setPreselection]);
+
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
   const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
   const changeTracking = useMemo(
@@ -201,28 +271,6 @@ function AssessmentEditorInner({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
-  const [selectedItemState, setSelectedItem] = useState<SelectedItem>(null);
-  // After tree mutations (drag-and-drop, extraction, deletion), the stored
-  // selection may point at a removed or restructured item. sanitizeSelectedItem
-  // resolves this to a valid selection or null. We preserve referential identity
-  // via selectedItemsEqual so that autosave-driven `zones` changes (which happen
-  // on every keystroke) don't produce a new object reference when the selection
-  // is logically unchanged. A new reference would re-trigger the effect that
-  // resets selectedFormHasErrors (clearing validation mid-edit) and re-run
-  // expensive memos like the tree event handlers.
-  const selectedItem = useMemo(() => {
-    const nextSelectedItem = sanitizeSelectedItem(selectedItemState, zones);
-    return selectedItemsEqual(selectedItemState, nextSelectedItem)
-      ? selectedItemState
-      : nextSelectedItem;
-  }, [selectedItemState, zones]);
-
-  // Refs track the latest values so async handlers (handleQuestionPicked)
-  // can read fresh state after an await instead of using the stale closure.
-  const selectedItemRef = useRef(selectedItem);
-  selectedItemRef.current = selectedItem;
-  const zonesRef = useRef(zones);
-  zonesRef.current = zones;
 
   // Tracks validation errors for the currently mounted detail form only.
   // Invalid draft values in the open form are discarded on unmount because
@@ -236,7 +284,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -247,7 +295,7 @@ function AssessmentEditorInner({
   const resetModal = useModalState<string>(null);
 
   const courseQuestionsQuery = useQuery({
-    ...trpc.courseQuestions.queryOptions(),
+    ...trpc.assessmentQuestions.courseQuestions.queryOptions(),
     enabled: editMode,
   });
   const courseQuestions = courseQuestionsQuery.data ?? [];
@@ -281,7 +329,7 @@ function AssessmentEditorInner({
     if (selectedItem?.type === 'picker') {
       const returnTo = selectedItem.returnToSelection;
       if (returnTo?.type === 'alternative') {
-        // Changing an alternative: disable only siblings in the same alt group
+        // Changing an alternative: disable only siblings in the same alt pool
         const result = findQuestionByTrackingId(zones, returnTo.questionTrackingId);
         if (result?.question.alternatives) {
           for (const alt of result.question.alternatives) {
@@ -291,7 +339,7 @@ function AssessmentEditorInner({
       } else {
         // Adding to zone or changing a standalone question: disable only
         // standalone QIDs already directly in the zone (not ones inside alt
-        // groups, since selecting those would move them out of the group).
+        // pools, since selecting those would move them out of the pool).
         const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
         if (zone) {
           for (const q of zone.questions) {
@@ -299,11 +347,11 @@ function AssessmentEditorInner({
           }
         }
       }
-    } else if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
-      // Disable only QIDs in the target alt group
+    } else if (selectedItem?.type === 'altPoolPicker' && selectedItem.altPoolTrackingId) {
+      // Disable only QIDs in the target alt pool
       for (const zone of zones) {
         for (const q of zone.questions) {
-          if (q.trackingId === selectedItem.altGroupTrackingId && q.alternatives) {
+          if (q.trackingId === selectedItem.altPoolTrackingId && q.alternatives) {
             for (const alt of q.alternatives) {
               if (alt.id) disabled.add(alt.id);
             }
@@ -335,12 +383,12 @@ function AssessmentEditorInner({
 
   // Custom collision detection:
   // 1. For standalone question drags (mouse only): check if the cursor is inside
-  //    an alt group's merge zone. If yes, return the merge zone so the question
-  //    can be merged into the group on drop. The merge zone is inset from the alt
-  //    group edges so the top/bottom resolve to reorder instead of merge.
+  //    an alt pool's merge zone. If yes, return the merge zone so the question
+  //    can be merged into the pool on drop. The merge zone is inset from the alt
+  //    pool edges so the top/bottom resolve to reorder instead of merge.
   // 2. Fall back to boundary-based vertical collision (not closestCenter) to
   //    determine reorder position. closestCenter uses item centers, which breaks
-  //    for items of very different heights — tall alt groups have centers far from
+  //    for items of very different heights — tall alt pools have centers far from
   //    their edges, making it impossible to position items immediately above/below.
   const collisionDetection: CollisionDetection = (args) => {
     const activeData = args.active.data.current;
@@ -356,8 +404,8 @@ function AssessmentEditorInner({
         if (container.data.current?.type !== 'merge-zone') continue;
         const rect = args.droppableRects.get(container.id);
         if (!rect) continue;
-        // Inset the merge zone so the edges of the alt group body still resolve
-        // to reorder. This gives the user room to drag past the group without
+        // Inset the merge zone so the edges of the alt pool body still resolve
+        // to reorder. This gives the user room to drag past the pool without
         // accidentally triggering a merge.
         const inset = Math.min(20, (rect.bottom - rect.top) / 4);
         if (dragCenterY >= rect.top + inset && dragCenterY <= rect.bottom - inset) {
@@ -372,7 +420,7 @@ function AssessmentEditorInner({
       if (activeType === 'question' && type === 'alternative') return false;
       if (activeType !== 'zone' && type === 'zone') return false;
       if (type === 'merge-zone') return false;
-      // When dragging an alternative, exclude its parent alt group so siblings
+      // When dragging an alternative, exclude its parent alt pool so siblings
       // resolve correctly in boundary collision
       if (
         activeType === 'alternative' &&
@@ -408,215 +456,31 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
-    if (selectedItem?.type === 'altGroupPicker') {
-      let questionData: QuestionByQidResult;
-      try {
-        questionData = await questionByQidMutation.mutateAsync(qid);
-      } catch {
-        // mutateAsync re-throws, but the error is stored in mutation.error
-        // and surfaced via pickerError. We just need to bail out here.
-        return;
-      }
-      if (selectedItemRef.current !== selectedItem) return;
-
-      const metadata = buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        courseQuestions,
-      });
-
-      // Remove from current location if already in assessment (move behavior)
-      if (questionsInAssessment.has(qid)) {
-        handleRemoveQuestionByQid(qid);
-      }
-
-      if (selectedItem.altGroupTrackingId) {
-        // Empty groups start neutral; seed point defaults from the first picked question.
-        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
-        const altGroupResult = findQuestionByTrackingId(
-          zonesRef.current,
-          selectedItem.altGroupTrackingId,
-        );
-        const shouldInitializeAltGroupPoints =
-          altGroupResult?.question.alternatives?.length === 0 &&
-          altGroupResult.question.autoPoints == null &&
-          altGroupResult.question.maxAutoPoints == null &&
-          altGroupResult.question.manualPoints == null;
-
-        if (shouldInitializeAltGroupPoints) {
-          dispatch({
-            type: 'UPDATE_QUESTION',
-            questionTrackingId: selectedItem.altGroupTrackingId,
-            question: getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-          });
-        }
-
-        // Adding to existing alt group
-        const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-        dispatch({
-          type: 'ADD_ALTERNATIVE',
-          altGroupTrackingId: selectedItem.altGroupTrackingId,
-          alternative: newAlt,
-          questionData: metadata,
-        });
-      } else {
-        // Creating new alt group: first question picked creates the group
-        const newAltGroup = {
-          ...createAltGroupWithTrackingId(),
-          ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-        };
-        const firstAlt = {
-          ...createAlternativeWithTrackingId(),
-          id: qid,
-        } as QuestionAlternativeForm;
-        newAltGroup.alternatives = [firstAlt];
-
-        // Don't pass questionData to ADD_QUESTION — it stores metadata under
-        // question.id, which is undefined for alt groups. Store it separately.
-        dispatch({
-          type: 'ADD_QUESTION',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          question: newAltGroup,
-        });
-        dispatch({
-          type: 'UPDATE_QUESTION_METADATA',
-          questionId: qid,
-          questionData: metadata,
-        });
-
-        // Update selection so subsequent picks add to this group
-        setSelectedItem({
-          type: 'altGroupPicker',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          altGroupTrackingId: newAltGroup.trackingId,
-        });
-      }
-      // Stay in picker for "add another" behavior
-      return;
-    }
-
-    if (selectedItem?.type !== 'picker') return;
-
-    if (selectedItem.returnToSelection) {
-      // Returning to a question detail panel after picking a new QID
-      const returnTo = selectedItem.returnToSelection;
-      if (returnTo.type === 'question' || returnTo.type === 'alternative') {
-        const questionTrackingId = returnTo.questionTrackingId;
-
-        let questionData: QuestionByQidResult;
-        try {
-          questionData = await questionByQidMutation.mutateAsync(qid);
-        } catch {
-          // mutateAsync re-throws, but the error is stored in mutation.error
-          // and surfaced via pickerError. We just need to bail out here.
-          return;
-        }
-        if (selectedItemRef.current !== selectedItem) return;
-
-        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
-        const found = findQuestionByTrackingId(zonesRef.current, questionTrackingId);
-
-        // Remove from current location if already in assessment (move behavior),
-        // but skip if the question being removed is the one we're about to update.
-        if (questionsInAssessment.has(qid)) {
-          const currentQid = run(() => {
-            if (!found) return undefined;
-            if (returnTo.type === 'alternative') {
-              return found.question.alternatives?.find(
-                (a) => a.trackingId === returnTo.alternativeTrackingId,
-              )?.id;
-            }
-            return found.question.id;
-          });
-          if (currentQid !== qid) {
-            handleRemoveQuestionByQid(qid);
-          }
-        }
-        if (found) {
-          const oldId =
-            returnTo.type === 'alternative'
-              ? found.question.alternatives?.find(
-                  (a) => a.trackingId === returnTo.alternativeTrackingId,
-                )?.id
-              : found.question.id;
-
-          dispatch({
-            type: 'UPDATE_QUESTION_METADATA',
-            questionId: qid,
-            oldQuestionId: oldId,
-            questionData: buildQuestionMetadata({
-              data: questionData,
-              assessment,
-              courseInstance,
-              courseQuestions,
-            }),
-          });
-
-          if (returnTo.type === 'alternative') {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              alternativeTrackingId: returnTo.alternativeTrackingId,
-              question: { id: qid },
-            });
-          } else {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              question: { id: qid },
-            });
-          }
-        }
-
-        setSelectedItem(returnTo);
-      }
-      return;
-    }
-
-    // Adding a new question to a zone
-    let questionData: QuestionByQidResult;
     try {
-      questionData = await questionByQidMutation.mutateAsync(qid);
+      const questionData = await questionByQidMutation.mutateAsync(qid);
+      dispatch({
+        type: 'QUESTION_PICKED',
+        qid,
+        metadata: buildQuestionMetadata({
+          data: questionData,
+          assessment,
+          courseInstance,
+          courseQuestions,
+        }),
+        expectedSelectedItem: selectedItem,
+      });
     } catch {
       // mutateAsync re-throws, but the error is stored in mutation.error
       // and surfaced via pickerError. We just need to bail out here.
-      return;
     }
-    if (selectedItemRef.current !== selectedItem) return;
-
-    // Remove from current location if already in assessment (move behavior)
-    if (questionsInAssessment.has(qid)) {
-      handleRemoveQuestionByQid(qid);
-    }
-
-    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
-      ...createQuestionWithTrackingId(),
-      id: qid,
-      ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-    };
-
-    dispatch({
-      type: 'ADD_QUESTION',
-      zoneTrackingId: selectedItem.zoneTrackingId,
-      question: newQuestion,
-      questionData: buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        courseQuestions,
-      }),
-    });
-
-    // Stay in picker for "add another" behavior
   };
 
   const handlePickerDone = () => {
-    if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
-      // After adding to an alt group, select the alt group detail panel
+    if (selectedItem?.type === 'altPoolPicker' && selectedItem.altPoolTrackingId) {
+      // After adding to an alt pool, select the alt pool detail panel
       setSelectedItem({
-        type: 'altGroup',
-        questionTrackingId: selectedItem.altGroupTrackingId,
+        type: 'altPool',
+        questionTrackingId: selectedItem.altPoolTrackingId,
       });
       return;
     }
@@ -654,7 +518,7 @@ function AssessmentEditorInner({
       dispatch({
         type: 'UPDATE_QUESTION',
         questionTrackingId,
-        question: normalized as Partial<QuestionAlternativeForm>,
+        question: normalized,
         alternativeTrackingId,
       });
     } else {
@@ -671,49 +535,6 @@ function AssessmentEditorInner({
     questionId: string,
     alternativeTrackingId?: string,
   ) => {
-    // Clear selection if the deleted item was selected
-    if (
-      selectedItem?.type === 'question' &&
-      selectedItem.questionTrackingId === questionTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'alternative' &&
-      selectedItem.alternativeTrackingId === alternativeTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroup' &&
-      selectedItem.questionTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroupPicker' &&
-      selectedItem.altGroupTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
-      const returnTo = selectedItem.returnToSelection;
-      if (
-        (returnTo.type === 'question' || returnTo.type === 'altGroup') &&
-        returnTo.questionTrackingId === questionTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-      if (
-        returnTo.type === 'alternative' &&
-        returnTo.alternativeTrackingId === alternativeTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-    }
-
     dispatch({
       type: 'DELETE_QUESTION',
       questionTrackingId,
@@ -730,9 +551,7 @@ function AssessmentEditorInner({
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
-      canSubmit: [],
-      canView: [],
-    } as Omit<ZoneAssessmentForm, 'trackingId'>);
+    });
     dispatch({ type: 'ADD_ZONE', zone });
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
   };
@@ -742,66 +561,28 @@ function AssessmentEditorInner({
   };
 
   const handleDeleteZone = (zoneTrackingId: string) => {
-    if (selectedItem) {
-      const zone = zones.find((z) => z.trackingId === zoneTrackingId);
-      const trackingIds = new Set<string>([zoneTrackingId]);
-      if (zone) {
-        for (const q of zone.questions) {
-          trackingIds.add(q.trackingId);
-          for (const alt of q.alternatives ?? []) {
-            trackingIds.add(alt.trackingId);
-          }
-        }
-      }
-
-      const shouldClear = run(() => {
-        switch (selectedItem.type) {
-          case 'zone':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'question':
-          case 'altGroup':
-            return trackingIds.has(selectedItem.questionTrackingId);
-          case 'alternative':
-            return trackingIds.has(selectedItem.alternativeTrackingId);
-          case 'picker':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'altGroupPicker':
-            return (
-              trackingIds.has(selectedItem.zoneTrackingId) ||
-              (selectedItem.altGroupTrackingId !== undefined &&
-                trackingIds.has(selectedItem.altGroupTrackingId))
-            );
-          default:
-            return false;
-        }
-      });
-
-      if (shouldClear) {
-        setSelectedItem(null);
-      }
-    }
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
 
-  const handleAddAltGroup = (zoneTrackingId: string) => {
-    const newAltGroup = createAltGroupWithTrackingId();
+  const handleAddAltPool = (zoneTrackingId: string) => {
+    const newAltPool = createAltPoolWithTrackingId();
     dispatch({
       type: 'ADD_QUESTION',
       zoneTrackingId,
-      question: newAltGroup,
+      question: newAltPool,
     });
     setSelectedItem({
-      type: 'altGroup',
-      questionTrackingId: newAltGroup.trackingId,
+      type: 'altPool',
+      questionTrackingId: newAltPool.trackingId,
     });
   };
 
-  const handleAddToAltGroup = (altGroupTrackingId: string) => {
+  const handleAddToAltPool = (altPoolTrackingId: string) => {
     const zoneTrackingId = zones.find((z) =>
-      z.questions.some((q) => q.trackingId === altGroupTrackingId),
+      z.questions.some((q) => q.trackingId === altPoolTrackingId),
     )?.trackingId;
     if (!zoneTrackingId) return;
-    setSelectedItem({ type: 'altGroupPicker', zoneTrackingId, altGroupTrackingId });
+    setSelectedItem({ type: 'altPoolPicker', zoneTrackingId, altPoolTrackingId });
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
@@ -837,7 +618,7 @@ function AssessmentEditorInner({
       return;
     }
 
-    // Alternative reorder within same group
+    // Alternative reorder within same pool
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
@@ -845,7 +626,7 @@ function AssessmentEditorInner({
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
-      // Only handle within-group reorder here; cross-group is handled in handleDragOver
+      // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
       if (fromBlock.trackingId !== toBlock.trackingId) return;
@@ -860,30 +641,21 @@ function AssessmentEditorInner({
       dispatch({
         type: 'REORDER_ALTERNATIVE',
         alternativeTrackingId: activeIdStr,
-        toAltGroupTrackingId: fromBlock.trackingId,
+        toAltPoolTrackingId: fromBlock.trackingId,
         beforeAlternativeTrackingId,
       });
       return;
     }
 
-    // Merge standalone question into alt group via merge zone
+    // Merge standalone question into alt pool via merge zone
     if (over.data.current?.type === 'merge-zone') {
-      const altGroupTrackingId = over.data.current.altGroupTrackingId as string;
+      const altPoolTrackingId = over.data.current.altPoolTrackingId as string;
       dispatch({
-        type: 'MERGE_QUESTION_INTO_ALT_GROUP',
+        type: 'MERGE_QUESTION_INTO_ALT_POOL',
         questionTrackingId: activeIdStr,
-        toAltGroupTrackingId: altGroupTrackingId,
+        toAltPoolTrackingId: altPoolTrackingId,
         beforeAlternativeTrackingId: null,
       });
-      // The question's trackingId is preserved but it's now an alternative
-      // inside the group. Update the selection so DetailPanel can find it.
-      if (selectedItem?.type === 'question' && selectedItem.questionTrackingId === activeIdStr) {
-        setSelectedItem({
-          type: 'alternative',
-          questionTrackingId: altGroupTrackingId,
-          alternativeTrackingId: activeIdStr,
-        });
-      }
       return;
     }
 
@@ -893,7 +665,7 @@ function AssessmentEditorInner({
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fromPosition || !rawToPosition) return;
 
-    // If "over" resolved to an alternative inside an alt group, use the alt group's position
+    // If "over" resolved to an alternative inside an alt pool, use the alt pool's position
     const toPosition =
       rawToPosition.alternativeIndex != null
         ? { zoneIndex: rawToPosition.zoneIndex, questionIndex: rawToPosition.questionIndex }
@@ -916,12 +688,6 @@ function AssessmentEditorInner({
       toZoneTrackingId: toZone.trackingId,
       beforeQuestionTrackingId,
     });
-  };
-
-  const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
-    if (selectedItem?.type === 'alternative' && selectedItem.alternativeTrackingId === trackingId) {
-      setSelectedItem({ type: 'question', questionTrackingId: trackingId });
-    }
   };
 
   const handleDragOver = ({ active, over }: DragOverEvent) => {
@@ -953,7 +719,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: targetZone.trackingId,
           beforeQuestionTrackingId: null,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
+
         return;
       }
 
@@ -962,13 +728,13 @@ function AssessmentEditorInner({
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
-        // Alternative dragged over alternative in different group → cross-group move
+        // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
             type: 'REORDER_ALTERNATIVE',
             alternativeTrackingId: activeIdStr,
-            toAltGroupTrackingId: toBlock.trackingId,
+            toAltPoolTrackingId: toBlock.trackingId,
             beforeAlternativeTrackingId: toBlock.alternatives![toPos.alternativeIndex].trackingId,
           });
         }
@@ -976,7 +742,7 @@ function AssessmentEditorInner({
       }
 
       if (overType === 'question') {
-        // If the alternative resolved to its own parent group, skip extraction
+        // If the alternative resolved to its own parent pool, skip extraction
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
         if (fromBlock.trackingId === toBlock.trackingId) return;
 
@@ -988,7 +754,6 @@ function AssessmentEditorInner({
           toZoneTrackingId: toZone.trackingId,
           beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
       }
       return;
     }
@@ -1028,13 +793,13 @@ function AssessmentEditorInner({
     }
   };
 
-  const isAllExpanded = collapsedGroups.size === 0;
+  const isAllExpanded = collapsedPools.size === 0;
 
   const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
   const hasZoneWithNoEffectiveQuestions = zonesForSave.some((zone) => zone.questions.length === 0);
 
-  // Check against pre-stripped zones since stripTrackingIds silently drops empty alt groups
-  const hasEmptyAltGroup = zones.some((zone) =>
+  // Check against pre-stripped zones since stripTrackingIds silently drops empty alt pools
+  const hasEmptyAltPool = zones.some((zone) =>
     zone.questions.some((q) => q.alternatives?.length === 0),
   );
   const structuralSaveValidationErrorKind = useMemo(
@@ -1050,7 +815,7 @@ function AssessmentEditorInner({
   const saveButtonDisabled =
     !hasUnsavedChanges ||
     hasZoneWithNoEffectiveQuestions ||
-    hasEmptyAltGroup ||
+    hasEmptyAltPool ||
     selectedFormHasErrors ||
     structuralSaveValidationErrorKind != null;
 
@@ -1063,8 +828,8 @@ function AssessmentEditorInner({
             return 'Cannot save: the selected zone has configuration errors';
           case 'question':
             return 'Cannot save: the selected question has configuration errors';
-          case 'altGroup':
-            return 'Cannot save: the selected alternative group has configuration errors';
+          case 'altPool':
+            return 'Cannot save: the selected alternative pool has configuration errors';
           case 'alternative':
             return 'Cannot save: the selected alternative has configuration errors';
           default:
@@ -1076,8 +841,10 @@ function AssessmentEditorInner({
     switch (structuralSaveValidationErrorKind) {
       case 'zone':
         return 'Cannot save: one or more zones have configuration errors';
-      case 'altGroup':
-        return 'Cannot save: one or more alternative groups have configuration errors';
+      case 'altPool':
+        return 'Cannot save: one or more alternative pools have configuration errors';
+      case 'questionPoints':
+        return 'Cannot save: one or more questions have no points configured';
       default:
         return undefined;
     }
@@ -1085,8 +852,8 @@ function AssessmentEditorInner({
 
   const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
-    : hasEmptyAltGroup
-      ? 'Cannot save: one or more alternative groups have no questions'
+    : hasEmptyAltPool
+      ? 'Cannot save: one or more alternative pools have no questions'
       : (selectedFormErrorDisabledReason ?? structuralSaveValidationErrorReason);
 
   const treeState: TreeState = useMemo(
@@ -1095,7 +862,7 @@ function AssessmentEditorInner({
       viewType,
       selectedItem,
       questionMetadata,
-      collapsedGroups,
+      collapsedPools,
       collapsedZones,
       changeTracking,
       courseInstanceId: courseInstance.id,
@@ -1107,7 +874,7 @@ function AssessmentEditorInner({
       viewType,
       selectedItem,
       questionMetadata,
-      collapsedGroups,
+      collapsedPools,
       collapsedZones,
       changeTracking,
       courseInstance.id,
@@ -1119,8 +886,8 @@ function AssessmentEditorInner({
   const treeActions: TreeActions = useMemo(
     () => ({
       onAddQuestion: handleAddQuestion,
-      onAddAltGroup: handleAddAltGroup,
-      onAddToAltGroup: handleAddToAltGroup,
+      onAddAltPool: handleAddAltPool,
+      onAddToAltPool: handleAddToAltPool,
       onDeleteQuestion: handleDeleteQuestion,
       onDeleteZone: handleDeleteZone,
       setSelectedItem,
@@ -1129,7 +896,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -1140,9 +907,16 @@ function AssessmentEditorInner({
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
+      assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     }),
     [
       editMode,
@@ -1150,10 +924,22 @@ function AssessmentEditorInner({
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
+      assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     ],
+  );
+
+  const handleDismissBanner = useCallback(
+    (trackingId: string) => dispatch({ type: 'DISMISS_BANNER', trackingId }),
+    [dispatch],
   );
 
   const detailActions: DetailActions = useMemo(
@@ -1162,26 +948,27 @@ function AssessmentEditorInner({
       onUpdateQuestion: handleUpdateQuestion,
       onDeleteQuestion: handleDeleteQuestion,
       onDeleteZone: handleDeleteZone,
-      onAddToAltGroup: handleAddToAltGroup,
+      onAddToAltPool: handleAddToAltPool,
       onQuestionPicked: handleQuestionPicked,
       onPickQuestion: handlePickQuestion,
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
       onFormValidChange: handleFormValidChange,
+      onDismissBanner: handleDismissBanner,
     }),
     // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [zones, selectedItem, courseQuestions],
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
   const toggleExpandCollapse = () => {
     if (isAllExpanded) {
-      dispatch({ type: 'COLLAPSE_ALL_GROUPS' });
+      dispatch({ type: 'COLLAPSE_ALL_POOLS' });
     } else {
-      dispatch({ type: 'EXPAND_ALL_GROUPS' });
+      dispatch({ type: 'EXPAND_ALL_POOLS' });
     }
   };
 
@@ -1231,10 +1018,10 @@ function AssessmentEditorInner({
           'alternative',
           '#question-alternatives',
         );
-      case 'altGroup':
+      case 'altPool':
         return docsLink(
-          editMode ? 'Edit alternative group' : 'Alternative group',
-          'alternative group',
+          editMode ? 'Edit alternative pool' : 'Alternative pool',
+          'alternative pool',
           '#question-alternatives',
         );
       case 'picker': {
@@ -1246,17 +1033,17 @@ function AssessmentEditorInner({
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
         return `Adding to "${name}"`;
       }
-      case 'altGroupPicker': {
+      case 'altPoolPicker': {
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
-        return selectedItem.altGroupTrackingId
-          ? `Adding to alternative group in "${name}"`
-          : `Creating alternative group in "${name}"`;
+        return selectedItem.altPoolTrackingId
+          ? `Adding to alternative pool in "${name}"`
+          : `Creating alternative pool in "${name}"`;
       }
     }
   });
 
   const rightHeaderAction = run(() => {
-    if (selectedItem?.type === 'picker' || selectedItem?.type === 'altGroupPicker') {
+    if (selectedItem?.type === 'picker' || selectedItem?.type === 'altPoolPicker') {
       const isChangeMode = selectedItem.type === 'picker' && selectedItem.returnToSelection != null;
       return (
         <button
@@ -1296,105 +1083,65 @@ function AssessmentEditorInner({
         <div
           data-dragging={isDragging || undefined}
           style={{ height: '100%' }}
-          data-assessment-editor
+          data-split-pane-page
         >
           <SplitPane
             forceOpen={selectedItem}
-            rightCollapsed={selectedItem == null ? true : undefined}
-            rightTitle={rightTitle}
-            rightHeaderAction={rightHeaderAction}
-            left={
-              <AssessmentTree
-                zones={zones}
-                state={treeState}
-                actions={treeActions}
-                isAllExpanded={isAllExpanded}
-                switchViewUrl={switchViewUrl}
-                editControls={
-                  <EditModeToolbar
-                    csrfToken={csrfToken}
-                    origHash={origHash}
-                    zones={zonesForSave}
-                    editMode={editMode}
-                    canEdit={canEdit && !!origHash}
-                    setEditMode={setEditMode}
-                    saveButtonDisabled={saveButtonDisabled}
-                    saveButtonDisabledReason={saveButtonDisabledReason}
-                    onSubmit={disableBeforeUnload}
-                    onCancel={() => {
-                      // Resolve transient picker states to persisted selections.
-                      const resolvedItem = run((): SelectedItem => {
-                        if (selectedItem?.type === 'picker') {
-                          return selectedItem.returnToSelection ?? null;
-                        }
-                        if (selectedItem?.type === 'altGroupPicker') {
-                          return selectedItem.altGroupTrackingId
-                            ? {
-                                type: 'altGroup',
-                                questionTrackingId: selectedItem.altGroupTrackingId,
-                              }
-                            : null;
-                        }
-                        return selectedItem;
-                      });
-
-                      // Validate the resolved selection against the initial (pre-edit) state.
-                      const valid = run(() => {
-                        if (!resolvedItem) return true;
-                        const { zones: z } = initialState;
-                        switch (resolvedItem.type) {
-                          case 'zone':
-                            return findByTrackingId(z, resolvedItem.zoneTrackingId) === 'zone';
-                          case 'question':
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question'
-                            );
-                          case 'altGroup':
-                            // Must still be a question with alternatives after reset.
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
-                              !!findQuestionByTrackingId(z, resolvedItem.questionTrackingId)
-                                ?.question.alternatives
-                            );
-                          case 'alternative':
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
-                              findByTrackingId(z, resolvedItem.alternativeTrackingId) ===
-                                'alternative'
-                            );
-                          case 'picker':
-                          case 'altGroupPicker':
-                            return false;
-                        }
-                      });
-                      setSelectedItem(valid ? resolvedItem : null);
-                      dispatch({ type: 'RESET' });
-                      setEditMode(false);
-                    }}
-                  />
-                }
-                onAddZone={handleAddZone}
-                onViewTypeChange={setViewType}
-                onToggleExpandCollapse={toggleExpandCollapse}
-              />
-            }
-            right={
-              <DetailPanel
-                selectedItem={selectedItem}
-                zones={zones}
-                questionMetadata={questionMetadata}
-                state={detailState}
-                actions={detailActions}
-                courseQuestions={courseQuestions}
-                courseQuestionsLoading={courseQuestionsQuery.isLoading}
-                questionsInAssessment={questionsInAssessment}
-                disabledQids={disabledQids}
-                currentChangeQid={currentChangeQid}
-                currentAssessmentId={assessment.id}
-                isPickingQuestion={questionByQidMutation.isPending}
-                pickerError={questionByQidMutation.error}
-              />
-            }
+            left={{
+              content: (
+                <AssessmentTree
+                  zones={zones}
+                  state={treeState}
+                  actions={treeActions}
+                  isAllExpanded={isAllExpanded}
+                  switchViewUrl={switchViewUrl}
+                  editControls={
+                    <EditModeToolbar
+                      csrfToken={csrfToken}
+                      origHash={origHash}
+                      zones={zonesForSave}
+                      editMode={editMode}
+                      canEdit={canEdit && !!origHash}
+                      setEditMode={setEditMode}
+                      saveButtonDisabled={saveButtonDisabled}
+                      saveButtonDisabledReason={saveButtonDisabledReason}
+                      onSubmit={disableBeforeUnload}
+                      onCancel={() => {
+                        dispatch({ type: 'RESET' });
+                        setEditMode(false);
+                      }}
+                    />
+                  }
+                  onAddZone={handleAddZone}
+                  onViewTypeChange={setViewType}
+                  onToggleExpandCollapse={toggleExpandCollapse}
+                />
+              ),
+            }}
+            right={{
+              content: (
+                <DetailPanel
+                  selectedItem={selectedItem}
+                  zones={zones}
+                  questionMetadata={questionMetadata}
+                  state={detailState}
+                  actions={detailActions}
+                  courseQuestions={courseQuestions}
+                  courseQuestionsLoading={courseQuestionsQuery.isLoading}
+                  questionsInAssessment={questionsInAssessment}
+                  disabledQids={disabledQids}
+                  currentChangeQid={currentChangeQid}
+                  currentAssessmentId={assessment.id}
+                  isPickingQuestion={questionByQidMutation.isPending}
+                  pickerError={pickerError}
+                  questionSharingEnabled={questionSharingEnabled}
+                  consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+                />
+              ),
+              title: rightTitle,
+              headerAction: rightHeaderAction,
+              collapsed: selectedItem == null ? true : undefined,
+            }}
             onClose={() => setSelectedItem(null)}
           />
         </div>
@@ -1438,12 +1185,19 @@ export function AssessmentQuestionsEditor({
   ...innerProps
 }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAssessmentTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: innerProps.courseInstance.id,
+      assessmentId: innerProps.assessment.id,
+    }),
+  );
+
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <AssessmentEditorInner {...innerProps} />
+          <AssessmentEditorInner search={search} {...innerProps} />
         </TRPCProvider>
       </QueryClientProviderDebug>
     </NuqsAdapter>

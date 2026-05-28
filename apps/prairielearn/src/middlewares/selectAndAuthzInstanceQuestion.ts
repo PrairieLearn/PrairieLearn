@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
 import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
@@ -23,12 +24,12 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import {
-  type GroupInfo,
   type QuestionGroupPermissions,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
 } from '../lib/groups.js';
+import type { GroupInfo } from '../lib/groups.shared.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -50,9 +51,7 @@ const InstanceQuestionInfoSchema = z.object({
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string(),
-  }),
+  assessment_instance: AssessmentInstanceSchema,
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
@@ -99,7 +98,30 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  // TODO: consider row.assessment.modern_access_control
+  // Sequence/lockpoint restrictions should not block instructors from accessing
+  // student question instances (e.g. for manual grading or viewing submissions).
+  // We check *effective* permissions so that an instructor emulating a student
+  // still sees the same restrictions the student sees.
+  const isInstructor =
+    res.locals.authz_data?.has_course_permission_preview ||
+    res.locals.authz_data?.has_course_instance_permission_view;
+  const accessMode = row.instance_question_info.question_access_mode;
+  if (!isInstructor && (accessMode === 'blocked_sequence' || accessMode === 'blocked_lockpoint')) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentInstanceAccess({
+      assessment: row.assessment,
+      userId: res.locals.authz_data.user.id,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      assessmentInstance: row.assessment_instance,
+    });
+    row.authz_result = modernResult;
+  }
+
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row, {

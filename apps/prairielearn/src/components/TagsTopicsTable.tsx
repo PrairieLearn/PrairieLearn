@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
+import { getCourseAdminQuestionsUrl } from '../lib/client/url.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
 import { EditTagsTopicsModal, type EditTagsTopicsModalState } from './EditTagsTopicsModal.js';
@@ -26,12 +27,16 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
   allowEdit,
   origHash,
   csrfToken,
+  courseId,
+  courseInstanceId,
 }: {
   entities: Entity[];
   entityType: 'topic' | 'tag';
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
+  courseId: string;
+  courseInstanceId?: string;
 }) {
   const [editMode, setEditMode] = useState(false);
   const [entitiesState, setEntitiesState] = useState<Entity[]>(entities);
@@ -136,6 +141,9 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
             </thead>
             <tbody>
               {entitiesState.map((row, index) => {
+                const badge =
+                  entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />;
+
                 return (
                   <tr key={row.name}>
                     {editMode && allowEdit && (
@@ -161,7 +169,20 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                       </td>
                     )}
                     <td className="align-middle">
-                      {entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
+                      {editMode ? (
+                        badge
+                      ) : (
+                        <a
+                          className="text-decoration-none"
+                          href={getCourseAdminQuestionsUrl({
+                            courseId,
+                            courseInstanceId,
+                            filter: { type: entityType, value: row.name },
+                          })}
+                        >
+                          {badge}
+                        </a>
+                      )}
                     </td>
                     <td className="align-middle">
                       {entityType === 'topic' ? (
