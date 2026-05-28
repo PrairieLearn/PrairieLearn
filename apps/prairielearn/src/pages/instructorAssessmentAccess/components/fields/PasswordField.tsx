@@ -6,6 +6,7 @@ import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function PasswordToggle({
@@ -108,7 +109,13 @@ export function OverridePasswordField({ index }: { index: number }) {
 
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
-    rules: { validate: (v) => v !== '' || 'Password is required' },
+    rules: {
+      validate: validateActiveOverrideField(
+        index,
+        'password',
+        (value) => value !== '' || 'Password is required',
+      ),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');
