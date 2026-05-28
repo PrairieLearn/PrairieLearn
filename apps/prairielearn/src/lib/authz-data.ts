@@ -2,6 +2,7 @@ import assert from 'assert';
 
 import z from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
@@ -263,6 +264,15 @@ export async function constructCourseOrInstanceContext({
       session_is_lockdown_browser,
       enforce_lockdown_browser,
     }));
+
+  if (mode === 'Blocked') {
+    // The user has an active LockDown Browser reservation but this session is
+    // not from LockDown Browser. Deny all access for the exam's duration.
+    throw new HttpStatusError(
+      403,
+      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
+    );
+  }
 
   const authzData = {
     user,

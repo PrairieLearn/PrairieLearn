@@ -54,6 +54,13 @@ router.get(
       session_is_lockdown_browser: req.session.lockdown_browser ?? false,
     });
 
+    if (mode === 'Blocked') {
+      throw new HttpStatusError(
+        403,
+        'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
+      );
+    }
+
     const isExamMode = mode !== 'Public';
 
     res.send(

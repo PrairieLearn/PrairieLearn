@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from './config.js';
@@ -9,12 +8,20 @@ import { type EnumMode } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * The mode resolved for a single request. This is `EnumMode` plus the
+ * transient `'Blocked'` verdict, which denies the request outright. Unlike
+ * `EnumMode`, `'Blocked'` is never persisted: the authorization layer
+ * translates it into a 403 before it can reach the database.
+ */
+export type RequestMode = EnumMode | 'Blocked';
+
 const ActiveReservationInfoSchema = z.object({
   exam_mode: z.boolean(),
   requires_lockdown_browser: z.boolean(),
 });
 
-export async function getModeForRequest(req: Request, res: Response): Promise<EnumMode> {
+export async function getModeForRequest(req: Request, res: Response): Promise<RequestMode> {
   // If we're lucky, `authzCourseOrInstance` has already populated the mode.
   if (res.locals.authz_data?.mode) {
     return res.locals.authz_data.mode;
@@ -39,10 +46,13 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
  * Resolves the request mode based on the user's active PrairieTest
  * reservations and IP address.
  *
- * Throws an `HttpStatusError(403)` when the user has an in-progress
+ * Returns `'Blocked'` when the user has an in-progress
  * LockDown-Browser-required reservation but the current session was not
  * established from inside LockDown Browser and `enforce_lockdown_browser` is
- * true.
+ * true. The authorization layer translates that verdict into a 403, denying
+ * all PrairieLearn access (not just exam pages) for the duration of the
+ * exam — this is a returned value rather than a thrown error so the resolver
+ * stays free of access-control side effects.
  *
  * Attack vector this guards against:
  *
@@ -57,10 +67,10 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
  *      they can copy/paste, open external tabs, screenshot, screen-share,
  *      etc.
  *
- * Refusing all access (not just exam pages) during the LDB window matches
- * the policy that an LDB-required reservation confines the user to LDB
- * for its full duration. A student in a non-LDB browser would otherwise
- * be free to look up answers in other course pages while the exam runs.
+ * Refusing all access matches the policy that an LDB-required reservation
+ * confines the user to LDB for its full duration. A student in a non-LDB
+ * browser would otherwise be free to look up answers in other course pages
+ * while the exam runs.
  *
  * Callers that rebuild authorization for a staff-requested effective user can
  * disable enforcement after the authenticated user has already been checked.
@@ -77,7 +87,7 @@ export async function ipToMode({
   authn_user_id: string;
   session_is_lockdown_browser: boolean;
   enforce_lockdown_browser?: boolean;
-}): Promise<EnumMode> {
+}): Promise<RequestMode> {
   // Express's types indicate that `ip` may be undefined in some cases. We want
   // to ensure that we don't try to proceed without one.
   if (ip == null) throw new Error('IP address is required');
@@ -89,10 +99,7 @@ export async function ipToMode({
   );
 
   if (enforce_lockdown_browser && requires_lockdown_browser && !session_is_lockdown_browser) {
-    throw new HttpStatusError(
-      403,
-      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
-    );
+    return 'Blocked';
   }
 
   return exam_mode ? 'Exam' : 'Public';

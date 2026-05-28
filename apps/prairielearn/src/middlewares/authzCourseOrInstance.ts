@@ -358,6 +358,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     );
   }
 
+  // API requests skip session middleware, so `req.session` can be absent at runtime.
+  const session = req.session as Request['session'] | undefined;
+  const sessionIsLockdownBrowser = session?.lockdown_browser ?? false;
+
   const {
     authzData: authnAuthzData,
     course: authnCourse,
@@ -372,7 +376,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     ip: req.ip || null,
     req_date: res.locals.req_date,
     is_administrator: res.locals.is_administrator,
-    session_is_lockdown_browser: req.session.lockdown_browser ?? false,
+    session_is_lockdown_browser: sessionIsLockdownBrowser,
     overrides: {
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
@@ -555,7 +559,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       is_administrator: effectiveUserData
         ? effectiveUserData.is_administrator
         : res.locals.is_administrator,
-      session_is_lockdown_browser: req.session.lockdown_browser ?? false,
+      session_is_lockdown_browser: sessionIsLockdownBrowser,
       // The authenticated-user pass above already enforced LDB. This pass may
       // be for a staff-requested effective user, so only compute their mode.
       enforce_lockdown_browser: false,

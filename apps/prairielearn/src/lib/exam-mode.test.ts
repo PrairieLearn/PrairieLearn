@@ -492,20 +492,36 @@ describe('ipToMode tests', function () {
 
   describe('LockDown Browser enforcement', () => {
     describe('Center exam at LDB-required location', () => {
-      it('should throw from a non-LDB session once the reservation is active', async () => {
+      it('should return "Blocked" from a non-LDB session once the reservation is active', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
           await execute(sql.enable_lockdown_browser_on_location);
           await execute(sql.check_in_reservations);
 
-          await expect(
-            ipToMode({
-              ip: '10.0.0.1',
-              date: new Date(),
-              authn_user_id,
-              session_is_lockdown_browser: false,
-            }),
-          ).rejects.toThrow(/LockDown Browser/);
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.equal(result, 'Blocked');
+        });
+      });
+
+      it('should return "Exam" from a non-LDB session when enforcement is disabled', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+            enforce_lockdown_browser: false,
+          });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -547,20 +563,19 @@ describe('ipToMode tests', function () {
     });
 
     describe('Course exam with LDB-required session', () => {
-      it('should throw from a non-LDB session once the reservation is active', async () => {
+      it('should return "Blocked" from a non-LDB session once the reservation is active', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCourseExamReservation();
           await execute(sql.enable_lockdown_browser_on_course_session);
           await execute(sql.check_in_reservations);
 
-          await expect(
-            ipToMode({
-              ip: '192.168.0.1',
-              date: new Date(),
-              authn_user_id,
-              session_is_lockdown_browser: false,
-            }),
-          ).rejects.toThrow(/LockDown Browser/);
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.equal(result, 'Blocked');
         });
       });
 

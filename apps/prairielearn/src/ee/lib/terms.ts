@@ -1,5 +1,7 @@
 import { type Response } from 'express';
 
+import { HttpStatusError } from '@prairielearn/error';
+
 import { config } from '../../lib/config.js';
 import { setCookie } from '../../lib/cookie.js';
 import { type User } from '../../lib/db-types.js';
@@ -39,6 +41,16 @@ async function shouldRedirectToTermsPage(
     authn_user_id: user.id,
     session_is_lockdown_browser,
   });
+
+  if (mode === 'Blocked') {
+    // This (non-course-scoped) page doesn't pass through `authzCourseOrInstance`,
+    // so we enforce the LockDown Browser denial here instead.
+    throw new HttpStatusError(
+      403,
+      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
+    );
+  }
+
   return mode === 'Public';
 }
 
