@@ -5,12 +5,7 @@ import type { ElementExtensionJson } from '../schemas/index.js';
 
 import type { QuestionCaller, QuestionGroup, QuestionUser } from './user-context.js';
 
-export type {
-  QuestionCaller,
-  
-  
-  
-} from './user-context.js';
+export type { QuestionCaller } from './user-context.js';
 
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
