@@ -60,9 +60,7 @@ interface EmptiedZone {
  * fail sync validation. Detected only when the deletion *introduces* the
  * problem (i.e. the pre-deletion file was syncable in this respect).
  */
-type DeletionBlocker =
-  | { code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' }
-  | { code: 'NO_ZONES_REMAINING' };
+type DeletionBlocker = { code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' } | { code: 'NO_ZONES_REMAINING' };
 
 export function blockerDescription(blocker: DeletionBlocker): string {
   switch (blocker.code) {
