@@ -23,6 +23,6 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: fuxingloh/multi-labeler@83831224bfa0ebf09ee2d762cefca593173881f0 # v4
+      - uses: fuxingloh/multi-labeler@5bc612d4ba82908c019275f06ba05fc33e92650f # v4
         with:
           config-path: .github/title-labeler.yml

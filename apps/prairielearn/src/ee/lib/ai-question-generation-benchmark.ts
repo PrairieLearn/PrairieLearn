@@ -220,7 +220,7 @@ export async function benchmarkAiQuestionGeneration({
 
     // Sync the course to the database so future edits will do their thing.
     job.info('Syncing course to database');
-    const syncResult = await syncDiskToSql(course.id, course.path, job);
+    const syncResult = await syncDiskToSql(course, job);
     if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
       // Sync should never fail when creating a brand new course, if we hit this
       // then we have a problem.

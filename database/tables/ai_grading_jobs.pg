@@ -24,3 +24,6 @@ foreign-key constraints
     ai_grading_jobs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_grading_jobs_grading_job_id_fkey: FOREIGN KEY (grading_job_id) REFERENCES grading_jobs(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_grading_jobs_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+referenced by
+    ai_grading_credit_pool_changes: FOREIGN KEY (ai_grading_job_id) REFERENCES ai_grading_jobs(id) ON UPDATE CASCADE ON DELETE SET NULL

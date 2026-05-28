@@ -338,6 +338,7 @@ export function CourseInstancePublishingForm({
                       aria-errormessage={
                         errors.start_date ? `${formId}-start-date-error` : undefined
                       }
+                      defaultValue={startDate}
                       {...register('start_date', {
                         validate: validateStartDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -378,6 +379,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       aria-invalid={!!errors.end_date}
                       aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
+                      defaultValue={endDate}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -470,6 +472,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       aria-invalid={!!errors.end_date}
                       aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
+                      defaultValue={endDate}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
