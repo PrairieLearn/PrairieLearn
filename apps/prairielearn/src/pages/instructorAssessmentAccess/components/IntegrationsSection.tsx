@@ -9,7 +9,7 @@ import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
   const ruleEditable = useAccessControlRuleEditable();
-  const { setValue } = useFormContext<AccessControlFormData>();
+  const { clearErrors, setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
     name: 'defaultRule.prairieTestExams',
@@ -55,6 +55,7 @@ export function IntegrationsSection() {
               shouldDirty: true,
               shouldValidate: true,
             });
+            clearErrors('defaultRule.prairieTestExams');
           } else {
             // Add an initial entry when toggling it on so that the user can immediately
             // start configuring it without needing to click "Add Exam" first.

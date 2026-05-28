@@ -25,7 +25,7 @@ question-convert <input> --course <dir> --course-instance <name> [flags]
 For programmatic use, `@prairielearn/question-conversion` exports a small surface from `src/index.ts`:
 
 - `convert`, `convertWith`, `parseAssessment` — high-level pipeline entry points.
-- `QTI12AssessmentParser`, `InputParser`, `ParseOptions` — parser layer.
+- `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
