@@ -6,6 +6,7 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
+import { validateActiveOverrideField } from './overrideFields.js';
 import {
   type AccessControlFormData,
   type QuestionVisibilityValue,
@@ -554,14 +555,22 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: { validate: validateQuestionVisibility },
+    rules: {
+      validate: validateActiveOverrideField(index, 'questionVisibility', (value) =>
+        validateQuestionVisibility(value),
+      ),
+    },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: {
+      validate: validateActiveOverrideField(index, 'scoreVisibility', (value) =>
+        validateScoreVisibility(value),
+      ),
+    },
   });
 
   return (

@@ -5,7 +5,7 @@ import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import * as helperDb from '../tests/helperDb.js';
 
 import { UserSchema } from './db-types.js';
-import { ipToMode } from './exam-mode.js';
+import { ipToMode, isLockdownBrowserBlocked } from './exam-mode.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -32,15 +32,23 @@ describe('ipToMode tests', function () {
       await expect(ipToMode({ ip: null, date: new Date(), authn_user_id })).rejects.toThrow(
         'IP address is required',
       );
-      await expect(ipToMode({ ip: undefined, date: new Date(), authn_user_id })).rejects.toThrow(
-        'IP address is required',
-      );
+      await expect(
+        ipToMode({
+          ip: undefined,
+          date: new Date(),
+          authn_user_id,
+        }),
+      ).rejects.toThrow('IP address is required');
     });
   });
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
-      const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+      const result = await ipToMode({
+        ip: '10.0.0.1',
+        date: new Date(),
+        authn_user_id,
+      });
       assert.equal(result, 'Public');
     });
   });
@@ -160,7 +168,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -184,7 +196,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -196,7 +212,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -236,7 +256,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -290,7 +314,11 @@ describe('ipToMode tests', function () {
 
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -306,7 +334,11 @@ describe('ipToMode tests', function () {
 
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.01', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.01',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -389,7 +421,11 @@ describe('ipToMode tests', function () {
 
         await execute(sql.check_in_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -401,7 +437,11 @@ describe('ipToMode tests', function () {
         await execute(sql.check_in_reservations);
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -412,8 +452,102 @@ describe('ipToMode tests', function () {
 
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
+      });
+    });
+  });
+
+  describe('isLockdownBrowserBlocked', () => {
+    describe('Center exam at LDB-required location', () => {
+      it('should block a non-LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          const blocked = await isLockdownBrowserBlocked({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.isTrue(blocked);
+        });
+      });
+
+      it('should not block an LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          const blocked = await isLockdownBrowserBlocked({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: true,
+          });
+          assert.isFalse(blocked);
+        });
+      });
+
+      it('should not block before check-in, even from a non-LDB session', async () => {
+        // Before check-in the reservation isn't active yet, so the LDB
+        // requirement doesn't bind — students can still browse PrairieLearn
+        // on a regular browser ahead of the exam.
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+
+          const blocked = await isLockdownBrowserBlocked({
+            ip: '10.0.0.1',
+            // 10 minutes from now: WHERE clause includes it, but
+            // reservation_active is false because there's no check-in.
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.isFalse(blocked);
+        });
+      });
+    });
+
+    describe('Course exam with LDB-required session', () => {
+      it('should block a non-LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_lockdown_browser_on_course_session);
+          await execute(sql.check_in_reservations);
+
+          const blocked = await isLockdownBrowserBlocked({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: false,
+          });
+          assert.isTrue(blocked);
+        });
+      });
+
+      it('should not block an LDB session once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_lockdown_browser_on_course_session);
+          await execute(sql.check_in_reservations);
+
+          const blocked = await isLockdownBrowserBlocked({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+            session_is_lockdown_browser: true,
+          });
+          assert.isFalse(blocked);
+        });
       });
     });
   });

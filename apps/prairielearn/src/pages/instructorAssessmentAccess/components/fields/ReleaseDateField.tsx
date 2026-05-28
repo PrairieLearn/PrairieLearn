@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -95,6 +96,7 @@ function ReleaseDateInput({
 }
 
 export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
   });
@@ -105,13 +107,19 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
   } = useController<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
     rules: {
-      validate: (value) => {
-        if (!dateControlEnabled) return true;
+      validate: (value, formValues) => {
+        if (!formValues.defaultRule.dateControlEnabled) return true;
         if (!value) return 'Release date is required';
         return true;
       },
     },
   });
+
+  // Re-run the validator when dateControlEnabled changes so the
+  // "required" error appears/disappears immediately on toggle.
+  useEffect(() => {
+    void trigger('defaultRule.release.date');
+  }, [dateControlEnabled, trigger]);
 
   const { field: releasedField } = useController<
     AccessControlFormData,

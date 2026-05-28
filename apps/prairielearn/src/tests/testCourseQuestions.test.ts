@@ -1,9 +1,12 @@
-import { afterAll, beforeAll, describe } from 'vitest';
+import * as os from 'node:os';
+
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 
@@ -24,9 +27,21 @@ const qidsTestCourse = [
 ];
 
 describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
-  beforeAll(helperServer.before());
+  beforeAll(async () => {
+    await withConfig({ workersCount: os.cpus().length }, async () => {
+      await helperServer.before()();
+    });
+  });
 
   afterAll(helperServer.after);
 
-  qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+  qidsTestCourse.forEach((qid) => {
+    it.concurrent(`auto-test ${qid}`, async () => {
+      await helperQuestion.autoTestQuestion({
+        questionBaseUrl: locals.questionBaseUrl,
+        questionPreviewTabUrl: locals.questionPreviewTabUrl,
+        qid,
+      });
+    });
+  });
 });

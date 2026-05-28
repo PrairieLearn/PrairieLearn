@@ -10,16 +10,18 @@ import type {
   IRAssessment,
   IRAssessmentMeta,
   IRFeedback,
+  IRItemContainer,
   IRParseWarning,
   IRQuestion,
+  IRQuestionBank,
   IRRubric,
   IRRubricCriterion,
   IRRubricRating,
+  IRSourceBankRef,
   IRZone,
 } from '../../types/ir.js';
 import type {
   QTI12CorrectCondition,
-  QTI12ParsedAssessment,
   QTI12ParsedItem,
   QTI12ResponseLabel,
   QTI12ResponseLid,
@@ -60,13 +62,51 @@ const CC_PROFILE_TO_QUESTION_TYPE: Record<string, string> = {
 
 const MANUAL_GRADING_QUESTION_TYPES = new Set(['rich-text', 'file-upload']);
 
+function parseItemContainer(xmlContent: string) {
+  const parsed = parseXml(xmlContent);
+  const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
+  if (!root) {
+    throw new Error('Invalid QTI 1.2 XML: missing <questestinterop> root element');
+  }
+
+  const assessment = root['assessment'] as Record<string, unknown> | undefined;
+  if (assessment) {
+    return {
+      kind: 'assessment' as const,
+      element: assessment,
+      parsed: buildParsedItemContainer(assessment),
+    };
+  }
+
+  const objectBank = root['objectbank'] as Record<string, unknown> | undefined;
+  if (objectBank) {
+    return {
+      kind: 'question-bank' as const,
+      element: objectBank,
+      parsed: buildParsedItemContainer(objectBank),
+    };
+  }
+
+  throw new Error('Invalid QTI 1.2 XML: missing <assessment> or <objectbank> element');
+}
+
+type QTI12ItemContainer = ReturnType<typeof parseItemContainer>;
+
+function buildParsedItemContainer(element: Record<string, unknown>) {
+  const ident = attr(element, 'ident');
+  const qtimetadata = element['qtimetadata'];
+  const metadata = parseMetadata(qtimetadata);
+  const title = he.decode(attr(element, 'title') || metadata['bank_title'] || ident);
+  return { ident, title, metadata };
+}
+
 /**
- * Parser for QTI 1.2 assessment profile XML (Canvas quiz/course exports).
+ * Parser for QTI 1.2 item container XML (Canvas quiz/course exports).
  *
- * Structure: <questestinterop> → <assessment> → <section> → <item>
+ * Structure: <questestinterop> → <assessment|objectbank> → <section> → <item>
  * Items use response_lid with render_choice.
  */
-export class QTI12AssessmentParser implements InputParser {
+export class QTI12ItemContainerParser implements InputParser {
   readonly formatId = 'qti12-assessment';
   private registry: TransformRegistry<QTI12ParsedItem>;
 
@@ -77,52 +117,68 @@ export class QTI12AssessmentParser implements InputParser {
   canParse(xmlContent: string): boolean {
     return (
       xmlContent.includes('ims_qtiasiv1p2') &&
-      (xmlContent.includes('<assessment') || xmlContent.includes(':assessment'))
+      (xmlContent.includes('<assessment') ||
+        xmlContent.includes(':assessment') ||
+        xmlContent.includes('<objectbank') ||
+        xmlContent.includes(':objectbank'))
     );
   }
 
-  async parse(xmlContent: string, options?: ParseOptions): Promise<IRAssessment> {
-    const parsed = parseXml(xmlContent);
-    const root = parsed['questestinterop'] as Record<string, unknown> | undefined;
-    if (!root) {
-      throw new Error('Invalid QTI 1.2 XML: missing <questestinterop> root element');
-    }
+  async parse(xmlContent: string, options?: ParseOptions): Promise<IRItemContainer> {
+    const container = parseItemContainer(xmlContent);
+    return container.kind === 'assessment'
+      ? await this.parseAssessmentContainer(container, options)
+      : await this.parseQuestionBankContainer(container, options);
+  }
 
-    const assessment = root['assessment'] as Record<string, unknown> | undefined;
-    if (!assessment) {
-      throw new Error('Invalid QTI 1.2 assessment XML: missing <assessment> element');
-    }
-
-    const parsedAssessment = this.buildParsedAssessment(assessment);
-    const meta = this.parseAssessmentMeta(assessment, options);
+  private async parseAssessmentContainer(
+    container: Extract<QTI12ItemContainer, { kind: 'assessment' }>,
+    options?: ParseOptions,
+  ): Promise<IRAssessment> {
+    const meta = this.parseAssessmentMeta(container.element, options);
     const allowedExtensions = this.parseAllowedExtensions(options?.assessmentMetaXml);
-    const { questions, zones, parseWarnings } = await this.buildQuestionsAndZones(assessment, {
-      parseOptions: options,
-      shuffleAnswers: meta.shuffleAnswers,
-      allowedExtensions,
-    });
+    const { questions, zones, unresolvedSourceBankRefs, parseWarnings } =
+      await this.buildQuestionsAndZones(container.element, {
+        parseOptions: options,
+        shuffleAnswers: meta.shuffleAnswers,
+        allowedExtensions,
+      });
 
     const { rubric, warning: rubricWarning } = this.parseRubric(options);
     if (rubricWarning) parseWarnings.push(rubricWarning);
 
     return {
-      sourceId: parsedAssessment.ident,
-      title: parsedAssessment.title,
+      sourceId: container.parsed.ident,
+      title: container.parsed.title,
+      sourceType: 'assessment',
       questions,
       zones: zones.length > 0 ? zones : undefined,
+      unresolvedSourceBankRefs:
+        unresolvedSourceBankRefs.length > 0 ? unresolvedSourceBankRefs : undefined,
       meta,
       rubric,
       parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
     };
   }
 
-  private buildParsedAssessment(assessment: Record<string, unknown>): QTI12ParsedAssessment {
-    const ident = attr(assessment, 'ident');
-    const title = he.decode(attr(assessment, 'title'));
-    const qtimetadata = assessment['qtimetadata'];
-    const metadata = parseMetadata(qtimetadata);
-    const items = this.collectItems(assessment).map((item) => this.parseItem(item));
-    return { ident, title, metadata, items };
+  private async parseQuestionBankContainer(
+    container: Extract<QTI12ItemContainer, { kind: 'question-bank' }>,
+    options?: ParseOptions,
+  ): Promise<IRQuestionBank> {
+    const parseWarnings: IRParseWarning[] = [];
+    const questions = await this.transformItems(
+      this.collectItems(container.element),
+      { parseOptions: options },
+      parseWarnings,
+    );
+
+    return {
+      sourceId: container.parsed.ident,
+      title: container.parsed.title,
+      sourceType: 'question-bank',
+      questions,
+      parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
+    };
   }
 
   private parseAssessmentMeta(
@@ -305,12 +361,27 @@ export class QTI12AssessmentParser implements InputParser {
       shuffleAnswers,
       allowedExtensions,
     }: { parseOptions?: ParseOptions; shuffleAnswers?: boolean; allowedExtensions?: string[] },
-  ): Promise<{ questions: IRQuestion[]; zones: IRZone[]; parseWarnings: IRParseWarning[] }> {
+  ): Promise<{
+    questions: IRQuestion[];
+    zones: IRZone[];
+    unresolvedSourceBankRefs: IRSourceBankRef[];
+    parseWarnings: IRParseWarning[];
+  }> {
     const allQuestions: IRQuestion[] = [];
     const zones: IRZone[] = [];
+    const unresolvedSourceBankRefs: IRSourceBankRef[] = [];
     const parseWarnings: IRParseWarning[] = [];
 
     const rootSections = ensureArray(assessment['section'] as unknown);
+    if (rootSections.length === 0) {
+      const questions = await this.transformItems(
+        this.collectItems(assessment),
+        { parseOptions, shuffleAnswers, allowedExtensions },
+        parseWarnings,
+      );
+      return { questions, zones, unresolvedSourceBankRefs, parseWarnings };
+    }
+
     for (const rootSection of rootSections) {
       if (rootSection == null || typeof rootSection !== 'object') continue;
       const rootRec = rootSection as Record<string, unknown>;
@@ -332,6 +403,11 @@ export class QTI12AssessmentParser implements InputParser {
           const sectionPoints = this.readPointsPerItem(subRec);
           const selectionNumber = this.readSelectionNumber(subRec);
           const items = this.collectItems(subRec);
+          const sourceBankRef = this.readSourceBankRef(subRec, zoneTitle || 'Questions', {
+            numberChoose: selectionNumber,
+            points: sectionPoints,
+          });
+          if (sourceBankRef) unresolvedSourceBankRefs.push(sourceBankRef);
           this.warnSourcebankRefs(subRec, zoneTitle, parseWarnings);
           const questions = await this.transformItems(
             items,
@@ -381,6 +457,12 @@ export class QTI12AssessmentParser implements InputParser {
       } else {
         // No named sub-sections — flat list
         const sectionPoints = this.readPointsPerItem(rootRec);
+        const selectionNumber = this.readSelectionNumber(rootRec);
+        const sourceBankRef = this.readSourceBankRef(rootRec, 'Questions', {
+          numberChoose: selectionNumber,
+          points: sectionPoints,
+        });
+        if (sourceBankRef) unresolvedSourceBankRefs.push(sourceBankRef);
         const items = this.collectItems(rootRec);
         this.warnSourcebankRefs(rootRec, undefined, parseWarnings);
         const questions = await this.transformItems(
@@ -392,13 +474,51 @@ export class QTI12AssessmentParser implements InputParser {
       }
     }
 
-    return { questions: allQuestions, zones, parseWarnings };
+    return { questions: allQuestions, zones, unresolvedSourceBankRefs, parseWarnings };
+  }
+
+  private readSourceBankRef(
+    section: Record<string, unknown>,
+    title: string,
+    {
+      numberChoose,
+      points,
+    }: {
+      numberChoose?: number;
+      points?: number;
+    },
+  ): IRSourceBankRef | undefined {
+    const selection = getNestedValue(section, 'selection_ordering', 'selection');
+    if (selection == null || typeof selection !== 'object') return undefined;
+
+    const selRec = selection as Record<string, unknown>;
+    const sourceBankRef = textContent(selRec['sourcebank_ref']);
+    if (!sourceBankRef) return undefined;
+    const sourceBankExportId = textContent(selRec['sourcebank_export_id']);
+
+    const isExternal =
+      textContent(getNestedValue(selRec, 'selection_extension', 'sourcebank_is_external')) ===
+      'true';
+    const sourcebankContext = textContent(
+      getNestedValue(selRec, 'selection_extension', 'sourcebank_context'),
+    );
+    const externalCourseId = isExternal
+      ? sourcebankContext?.match(/^course_(\d+)$/)?.[1]
+      : undefined;
+
+    return {
+      sourceBankRef,
+      ...(sourceBankExportId ? { sourceBankExportId } : {}),
+      title,
+      ...(numberChoose != null ? { numberChoose } : {}),
+      ...(points != null ? { points } : {}),
+      ...(externalCourseId ? { externalCourseId } : {}),
+    };
   }
 
   /**
-   * Emit a parse warning for any <sourcebank_ref> elements found in the section.
-   * Canvas quiz exports reference question banks by ID but don't include their content;
-   * those questions cannot be converted without a full course export.
+   * Emit a parse warning for any <sourcebank_ref> elements found in the section,
+   * or for empty question groups that have a selection_number but no items.
    */
   private warnSourcebankRefs(
     section: Record<string, unknown>,
@@ -409,26 +529,61 @@ export class QTI12AssessmentParser implements InputParser {
     for (const sub of subSections) {
       if (sub == null || typeof sub !== 'object') continue;
       const subRec = sub as Record<string, unknown>;
-      const ref = textContent(
-        getNestedValue(subRec, 'selection_ordering', 'selection', 'sourcebank_ref'),
-      );
-      if (ref) {
-        const location = sectionTitle ? `section "${sectionTitle}"` : 'assessment';
+      const subTitle = attr(subRec, 'title') || sectionTitle;
+      this.warnSingleSection(subRec, subTitle, warnings);
+    }
+    // Also check the section itself (when there are no sub-sections).
+    this.warnSingleSection(section, sectionTitle, warnings);
+  }
+
+  private warnSingleSection(
+    section: Record<string, unknown>,
+    sectionTitle: string | undefined,
+    warnings: IRParseWarning[],
+  ): void {
+    const selection = getNestedValue(section, 'selection_ordering', 'selection');
+    if (selection == null || typeof selection !== 'object') return;
+    const selRec = selection as Record<string, unknown>;
+
+    const ref = textContent(selRec['sourcebank_ref']);
+    const isExternal =
+      textContent(getNestedValue(selRec, 'selection_extension', 'sourcebank_is_external')) ===
+      'true';
+    const sourcebankContext = textContent(
+      getNestedValue(selRec, 'selection_extension', 'sourcebank_context'),
+    );
+    const location = sectionTitle ? `section "${sectionTitle}"` : 'the assessment';
+
+    if (ref) {
+      if (isExternal) {
+        const externalCourseId = sourcebankContext?.match(/^course_(\d+)$/)?.[1];
+        const courseHint = externalCourseId
+          ? ` The bank belongs to Canvas course ${externalCourseId}; export that course and import it instead.`
+          : '';
         warnings.push({
           questionId: ref,
-          message: `Question bank reference "${ref}" in ${location} cannot be resolved — question bank content is not included in QTI quiz exports. Re-export as a full course export to include question bank items.`,
+          message: `Question bank reference "${ref}" in ${location} points to an external question bank that is not included in the export.${courseHint}`,
+          externalCourseId,
+        });
+      } else {
+        warnings.push({
+          questionId: ref,
+          message: `Question bank reference "${ref}" in ${location} cannot be resolved — the bank content was not included in this export. Re-export from the source LMS as a full course export (not a quiz-only export) to include question bank items.`,
         });
       }
+      return;
     }
-    // Also check direct sourcebank_ref in this section
-    const directRef = textContent(
-      getNestedValue(section, 'selection_ordering', 'selection', 'sourcebank_ref'),
-    );
-    if (directRef) {
-      warnings.push({
-        questionId: directRef,
-        message: `Question bank reference "${directRef}" cannot be resolved — question bank content is not included in QTI quiz exports. Re-export as a full course export to include question bank items.`,
-      });
+
+    // No sourcebank_ref — check for empty question groups (selection_number > 0 but no items).
+    const selNum = Number.parseInt(textContent(selRec['selection_number']), 10);
+    if (!Number.isNaN(selNum) && selNum > 0) {
+      const items = this.collectItems(section);
+      if (items.length === 0) {
+        warnings.push({
+          questionId: attr(section, 'ident') ?? 'unknown',
+          message: `${sectionTitle ? `Section "${sectionTitle}"` : 'A section'} expects ${selNum} question(s) but contains no items — the linked question bank was likely not included in the export.`,
+        });
+      }
     }
   }
 
@@ -799,9 +954,7 @@ export class QTI12AssessmentParser implements InputParser {
     const handler = this.registry.get(item.questionType);
     if (!handler) {
       // Caller catches this and records it as a parse warning.
-      throw new Error(
-        `Unsupported question type "${item.questionType}" (supported: ${this.registry.supportedTypes().join(', ')})`,
-      );
+      throw new Error(`Unsupported question type "${item.questionType}"`);
     }
 
     const result = handler.transform(item);

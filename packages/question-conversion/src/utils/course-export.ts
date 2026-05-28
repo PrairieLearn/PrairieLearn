@@ -57,7 +57,7 @@ export async function detectCourseExport(dir: string): Promise<CourseExportInfo 
 }
 
 /**
- * Represents a QTI assessment file to convert, with a potentially separate
+ * Represents a QTI content file to convert, with a potentially separate
  * directory for resolving assessment_meta.xml and relative file references.
  *
  * In a Canvas course export, the QTI with actual question content lives in
@@ -75,7 +75,7 @@ export interface QtiFileEntry {
 }
 
 /**
- * Find QTI assessment XML files by parsing the resource list in `imsmanifest.xml`.
+ * Find QTI XML files by parsing the resource list in `imsmanifest.xml`.
  *
  * Canvas QTI resources have type `imsqti_xmlv1p2` (quiz exports) or
  * `imsqti_xmlv1p2/imscc_xmlv1pN/assessment` (course exports).
@@ -125,22 +125,26 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
   }
 
   const entries: QtiFileEntry[] = [];
+  const usedQtiPaths = new Set<string>();
 
   for (const resource of resourceList) {
     if (resource == null || typeof resource !== 'object') continue;
     const r = resource as Record<string, unknown>;
     const type = attr(r, 'type').toLowerCase();
-    if (!type.includes('qti') || !type.includes('assessment')) continue;
+    if (!type.includes('qti')) continue;
 
     // Resolve the primary QTI file path.
     // Canvas IMS CC: path is in a <file href="..."> child element.
     // Standard IMS QTI: path may be the `href` attribute on <resource> itself.
-    const fileEl = r['file'];
     const ccHref =
-      fileEl != null && typeof fileEl === 'object'
-        ? attr(fileEl as Record<string, unknown>, 'href')
-        : attr(r, 'href');
-    if (!ccHref || !ccHref.endsWith('.xml')) continue;
+      ensureArray(r['file'] as unknown)
+        .map((file) =>
+          file != null && typeof file === 'object'
+            ? attr(file as Record<string, unknown>, 'href')
+            : '',
+        )
+        .find((href) => isQtiXmlFilename(path.basename(href))) || attr(r, 'href');
+    if (!ccHref || (!ccHref.endsWith('.xml') && !ccHref.endsWith('.xml.qti'))) continue;
 
     const ccQtiPath = path.join(dir, ccHref.replaceAll('/', path.sep));
     const assessmentDir = path.dirname(ccQtiPath);
@@ -166,7 +170,30 @@ export async function findQtiFilesFromManifest(dir: string): Promise<QtiFileEntr
       }
     }
 
-    entries.push({ qtiPath: nonCcQtiPath ?? ccQtiPath, assessmentDir });
+    const qtiPath = nonCcQtiPath ?? ccQtiPath;
+    entries.push({ qtiPath, assessmentDir });
+    usedQtiPaths.add(qtiPath);
+  }
+
+  for (const resource of resourceList) {
+    if (resource == null || typeof resource !== 'object') continue;
+    const r = resource as Record<string, unknown>;
+    const type = attr(r, 'type').toLowerCase();
+    if (!type.includes('associatedcontent')) continue;
+
+    const depFiles = ensureArray(r['file'] as unknown);
+    for (const f of depFiles) {
+      if (f == null || typeof f !== 'object') continue;
+      const href = attr(f as Record<string, unknown>, 'href');
+      if (!href || !href.startsWith('non_cc_assessments/') || !href.endsWith('.xml.qti')) {
+        continue;
+      }
+      const qtiPath = path.join(dir, href.replaceAll('/', path.sep));
+      if (usedQtiPaths.has(qtiPath)) continue;
+
+      entries.push({ qtiPath, assessmentDir: path.dirname(qtiPath) });
+      usedQtiPaths.add(qtiPath);
+    }
   }
 
   return entries;
@@ -211,6 +238,12 @@ function parseManifestTitle(xml: string): CourseExportInfo | null {
 
 const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
 
+function isQtiXmlFilename(filename: string): boolean {
+  return (
+    (filename.endsWith('.xml') || filename.endsWith('.xml.qti')) && !NON_QTI_XML_FILES.has(filename)
+  );
+}
+
 /**
  * Heuristic fallback for finding QTI XML files when no manifest is present.
  * Scans the directory and one level of subdirectories for XML files that
@@ -219,7 +252,7 @@ const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
 export async function findQtiXmlFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir);
 
-  const directXmls = entries.filter((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+  const directXmls = entries.filter(isQtiXmlFilename);
   if (directXmls.length > 0) {
     return directXmls.map((f) => path.join(dir, f));
   }
@@ -230,7 +263,7 @@ export async function findQtiXmlFiles(dir: string): Promise<string[]> {
     const entryStat = await stat(entryPath);
     if (entryStat.isDirectory()) {
       const subEntries = await readdir(entryPath);
-      const xml = subEntries.find((f) => f.endsWith('.xml') && !NON_QTI_XML_FILES.has(f));
+      const xml = subEntries.find(isQtiXmlFilename);
       if (xml) {
         xmlFiles.push(path.join(entryPath, xml));
       }
