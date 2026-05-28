@@ -1,33 +1,33 @@
 <pl-question-panel>
   <p>
-    The examples below illustrate some concrete, more advanced use cases for
-    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-sketch"><code>pl-sketch</code></a>
+    The examples below illustrate some concrete, more advanced use cases for 
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-sketch"><code>pl-sketch</code></a> 
     and how they can be implemented. For convenience, all examples allow blank submissions.
   </p>
 </pl-question-panel>
 
 <pl-card>
   <pl-question-panel>
-    <p>To grade curves drawn with <code>pl-sketch</code> tools like <code>free-draw</code>,
-      <code>spline</code> or <code>polyline</code>, it is often easiest to compare them to a
+    <p>To grade curves drawn with <code>pl-sketch</code> tools like <code>free-draw</code>, 
+      <code>spline</code> or <code>polyline</code>, it is often easiest to compare them to a 
       reference function via the <code>match-function</code> grading criterion. This criterion
       can also be used for partial or piecewise functions when the comparison is delimited by an
       <code>x-range</code> parameter.
     </p>
-    <p>For full marks, draw the function
-
+    <p>For full marks, draw the function 
+    
     $$
-      f(x) =
-      \begin{cases}
+      f(x) = 
+      \begin{cases} 
         x &amp; \text{if } x &lt; 0 \\
-        x^2   &amp; \text{if } x \geq 0
+        x^2   &amp; \text{if } x \geq 0 
       \end{cases}.
     $$</p>
   </pl-question-panel>
   <pl-sketch answers-name="sketch-segments" x-range="-3,3" y-range="-5,5" allow-blank="true">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
-    <pl-sketch-grade type="match-function" tool-id="fd" function="x" x-range=",0"></pl-sketch-grade>
-    <pl-sketch-grade type="match-function" tool-id="fd" function="x**2" x-range="0,"></pl-sketch-grade>
+    <pl-sketch-grade type="match-function" tool-id="fd" function="x" x-range=",0"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-function" tool-id="fd" function="x**2" x-range="0,"></pl-sketch-grade> 
     <pl-sketch-solution tool-id="fd" function="x" x-range=",0"></pl-sketch-solution>
     <pl-sketch-solution tool-id="fd" function="x**2" x-range="0,"></pl-sketch-solution>
   </pl-sketch>
@@ -35,26 +35,26 @@
 
 <pl-card>
   <pl-question-panel>
-    <p>When splitting up grading criteria as in the example above, giving partial points per criterion
-      is often desirable. To prevent giving any partial marks unless the full function is correct, it
+    <p>When splitting up grading criteria as in the example above, giving partial points per criterion 
+      is often desirable. To prevent giving any partial marks unless the full function is correct, it 
       is possible to use <code>stage</code> parameters and a dummy criterion that assigns points when all
       other grading criteria are satisfied.
     </p>
-    <p>For full marks, draw the function
-
+    <p>For full marks, draw the function 
+    
     $$
-      f(x) =
-      \begin{cases}
+      f(x) = 
+      \begin{cases} 
         x &amp; \text{if } x &lt; 0 \\
-        x^2   &amp; \text{if } x \geq 0
+        x^2   &amp; \text{if } x \geq 0 
       \end{cases}.
     $$</p>
   </pl-question-panel>
   <pl-sketch answers-name="sketch-stage" x-range="-3,3" y-range="-5,5" allow-blank="true">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
-    <pl-sketch-grade type="match-function" tool-id="fd" function="x" x-range=",0" stage="1" weight="0" feedback="Your sketch is incorrect in the interval $[-\infty, 0]$."></pl-sketch-grade>
+    <pl-sketch-grade type="match-function" tool-id="fd" function="x" x-range=",0" stage="1" weight="0" feedback="Your sketch is incorrect in the interval $[-\infty, 0]$."></pl-sketch-grade> 
     <pl-sketch-grade type="match-function" tool-id="fd" function="x**2" x-range="0," stage="1" weight="0" feedback="Your sketch is incorrect in the interval $[0, \infty]$."></pl-sketch-grade>
-    <pl-sketch-grade type="less-than" tool-id="fd" y="5" weight="1" stage="2" feedback="Your sketch needs to match the entire function to earn any points!"></pl-sketch-grade>
+    <pl-sketch-grade type="less-than" tool-id="fd" y="5" weight="1" stage="2" feedback="Your sketch needs to match the entire function to earn any points!"></pl-sketch-grade> 
     <pl-sketch-solution tool-id="fd" function="x" x-range=",0"></pl-sketch-solution>
     <pl-sketch-solution tool-id="fd" function="x**2" x-range="0,"></pl-sketch-solution>
   </pl-sketch>
@@ -70,6 +70,6 @@
   </pl-question-panel>
   <pl-sketch answers-name="sketch-xyflip" x-range="-5,5" y-range="-3,3" allow-blank="true">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
-    <pl-sketch-grade type="match-function" tool-id="fd" function="y**2" xy-flip="true"></pl-sketch-grade>
+    <pl-sketch-grade type="match-function" tool-id="fd" function="y**2" xy-flip="true"></pl-sketch-grade> 
   </pl-sketch>
 </pl-card>

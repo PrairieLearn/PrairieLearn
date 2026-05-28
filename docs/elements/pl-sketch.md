@@ -38,9 +38,9 @@ A more complete example combining multiple tools, initial drawings, and several 
     <pl-sketch-initial tool-id="pt" coordinates="(0,1)"></pl-sketch-initial>
     <pl-sketch-initial tool-id="pt" coordinates="(1,2)"></pl-sketch-initial>
     <pl-sketch-initial tool-id="pt" coordinates="(2,4)"></pl-sketch-initial>
-    <pl-sketch-grade type="match" tool-id="hl" y="0"></pl-sketch-grade>
-    <pl-sketch-grade type="count" tool-id="hl" count="1"></pl-sketch-grade>
-    <pl-sketch-grade type="match-function" tool-id="fd" function="2**x"></pl-sketch-grade>
+    <pl-sketch-grade type="match" tool-id="hl" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" tool-id="hl" count="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-function" tool-id="fd" function="2**x"></pl-sketch-grade> 
     <pl-sketch-solution tool-id="fd" function="2**x"></pl-sketch-solution>
     <pl-sketch-solution tool-id="hl" coordinates="0"></pl-sketch-solution>
   </pl-sketch>
