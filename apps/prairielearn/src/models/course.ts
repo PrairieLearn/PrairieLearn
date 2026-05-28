@@ -53,14 +53,19 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
-export async function selectOptionalCourseByRepositoryName(
-  repoName: string,
-): Promise<Course | null> {
+export async function selectOptionalCourseByGithubRepository({
+  owner,
+  repoName,
+}: {
+  owner: string;
+  repoName: string;
+}): Promise<Course | null> {
   // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
   return await queryOptionalRow(
-    sql.select_course_by_repository_name,
-    { repo_name: escapedRepoName },
+    sql.select_course_by_github_repository,
+    { owner: escapedOwner, repo_name: escapedRepoName },
     CourseSchema,
   );
 }

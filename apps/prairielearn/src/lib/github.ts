@@ -337,11 +337,21 @@ export async function createCourseRepoJob(
     job.info(`Main branch for new repository: "${branch}"`);
 
     // Add machine and instructor to the repo
-    job.info('Adding machine team to repo');
-    await addTeamToRepo(client, owner, options.repo_short_name, config.githubMachineTeam, 'admin');
-    job.info(
-      `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
-    );
+    if (isPlatformDefaultOrg(owner)) {
+      job.info('Adding machine team to repo');
+      await addTeamToRepo(
+        client,
+        owner,
+        options.repo_short_name,
+        config.githubMachineTeam,
+        'admin',
+      );
+      job.info(
+        `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
+      );
+    } else {
+      job.info('Skipping machine team grant for custom GitHub organization');
+    }
 
     if (options.github_user) {
       job.info('Adding instructor to repo');

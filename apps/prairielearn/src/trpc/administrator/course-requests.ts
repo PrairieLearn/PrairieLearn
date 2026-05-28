@@ -17,8 +17,8 @@ import {
 } from '../../lib/course-request.js';
 import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
 import {
+  selectOptionalCourseByGithubRepository,
   selectOptionalCourseByPath,
-  selectOptionalCourseByRepositoryName,
 } from '../../models/course.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -85,7 +85,10 @@ const createCourse = t.procedure
     }
 
     const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
-      selectOptionalCourseByRepositoryName(input.repoShortName),
+      selectOptionalCourseByGithubRepository({
+        owner: input.githubCourseOwner,
+        repoName: input.repoShortName,
+      }),
       checkGithubRepositoryExists(input.repoShortName, input.githubCourseOwner),
       selectOptionalCourseByPath(normalizedPath),
     ]);
