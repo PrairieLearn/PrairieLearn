@@ -3,11 +3,13 @@ import { useFormContext, useWatch } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 export function IntegrationsSection() {
-  const { setValue } = useFormContext<AccessControlFormData>();
+  const ruleEditable = useAccessControlRuleEditable();
+  const { clearErrors, setValue } = useFormContext<AccessControlFormData>();
 
   const prairieTestExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
     name: 'defaultRule.prairieTestExams',
@@ -45,6 +47,7 @@ export function IntegrationsSection() {
         id="defaultRule-prairietest-enabled"
         label={<strong>PrairieTest</strong>}
         checked={prairieTestEnabled}
+        disabled={!ruleEditable}
         aria-describedby="defaultRule-prairietest-help"
         onChange={(e) => {
           if (!e.target.checked) {
@@ -52,6 +55,7 @@ export function IntegrationsSection() {
               shouldDirty: true,
               shouldValidate: true,
             });
+            clearErrors('defaultRule.prairieTestExams');
           } else {
             // Add an initial entry when toggling it on so that the user can immediately
             // start configuring it without needing to click "Add Exam" first.

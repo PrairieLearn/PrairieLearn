@@ -742,7 +742,7 @@ export function GroupSettingsCard({
                 !isDirty || !isValid || formLevelRoleErrors.length > 0 || mutation.isPending
               }
             >
-              Save and sync
+              Save
             </button>
           </div>
         )}

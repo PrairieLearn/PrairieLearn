@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -33,6 +33,7 @@ import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
   getAiQuestionGenerationDraftsUrl,
+  getCourseInstanceBaseUrl,
 } from '../lib/client/url.js';
 
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
@@ -68,6 +69,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   courseId: string;
   currentCourseInstanceId?: string;
   addQuestionUrl?: string;
+  showImportQuestionsButton?: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -85,6 +87,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   courseId,
   currentCourseInstanceId,
   addQuestionUrl,
+  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -227,6 +230,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   });
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
+  const importQuestionsUrl =
+    showImportQuestionsButton && courseInstances.length > 0
+      ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
+      : undefined;
 
   return (
     <>
@@ -271,24 +278,50 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             workspace_image: row.workspace_image,
           }),
         }}
-        headerButtons={
-          addQuestionUrl || showAiGenerateQuestionButton ? (
-            <>
+        headerButtons={run(() => {
+          if (!addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
+            return undefined;
+          }
+
+          if (addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
+            // Special case: we have two feature-flagged buttons, we don't want to show a
+            // dropdown if only a single button is available.
+            //
+            // TODO: once QTI importing is unflagged, remove this branch.
+            return (
+              <a className="btn btn-sm btn-light" href={addQuestionUrl}>
+                <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+                Create new question
+              </a>
+            );
+          }
+
+          return (
+            <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
               {addQuestionUrl && (
-                <a className="btn btn-light btn-sm" href={addQuestionUrl}>
+                <Dropdown.Item as="a" href={addQuestionUrl}>
                   <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-                  Add question
-                </a>
+                  Create new question
+                </Dropdown.Item>
               )}
               {showAiGenerateQuestionButton && (
-                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
+                <Dropdown.Item as="a" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
-                  Generate with AI
-                </a>
+                  Generate question with AI
+                </Dropdown.Item>
               )}
-            </>
-          ) : undefined
-        }
+              {importQuestionsUrl && (
+                <>
+                  {(addQuestionUrl || showAiGenerateQuestionButton) && <Dropdown.Divider />}
+                  <Dropdown.Item as="a" href={importQuestionsUrl}>
+                    <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                    Import questions
+                  </Dropdown.Item>
+                </>
+              )}
+            </DropdownButton>
+          );
+        })}
         globalFilter={{
           placeholder: 'Search by QID, title...',
         }}
@@ -315,10 +348,21 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
                     .
                   </p>
                 </div>
-                {(addQuestionUrl || showAiGenerateQuestionButton) && (
+                {(addQuestionUrl || importQuestionsUrl || showAiGenerateQuestionButton) && (
                   <div className="d-flex gap-2">
+                    {importQuestionsUrl && (
+                      <a className="btn btn-primary" href={importQuestionsUrl}>
+                        <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+                        Import questions
+                      </a>
+                    )}
                     {addQuestionUrl && (
-                      <a className="btn btn-primary" href={addQuestionUrl}>
+                      <a
+                        className={
+                          importQuestionsUrl ? 'btn btn-outline-primary' : 'btn btn-primary'
+                        }
+                        href={addQuestionUrl}
+                      >
                         <i className="bi bi-plus-lg me-2" aria-hidden="true" />
                         Add question
                       </a>
