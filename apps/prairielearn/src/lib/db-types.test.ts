@@ -10,6 +10,7 @@ import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
 const schemaNameOverrides: Record<string, string | null> = {
+  institution_settings: 'InstitutionSettingsSchema',
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
