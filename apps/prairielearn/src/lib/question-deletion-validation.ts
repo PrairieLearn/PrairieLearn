@@ -8,7 +8,7 @@ import {
   blockerDescription,
   removeQidsFromAssessment,
 } from './infoAssessment-edits.js';
-import { selectAssessmentDirectoriesForQuestions } from '../models/assessment.js';
+import { selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 
 /**
@@ -29,7 +29,7 @@ export async function selectAssessmentsBlockingDeletion({
 }): Promise<BlockedAssessment[]> {
   if (qidsToRemove.size === 0) return [];
 
-  const refs = await selectAssessmentDirectoriesForQuestions({
+  const refs = await selectAssessmentsReferencingQuestions({
     course_id: course.id,
     question_ids: questionIds,
   });
@@ -39,7 +39,7 @@ export async function selectAssessmentsBlockingDeletion({
     const jsonPath = path.join(
       course.path,
       'courseInstances',
-      ref.course_instance_directory,
+      ref.course_instance_short_name,
       'assessments',
       ref.assessment_directory,
       'infoAssessment.json',
@@ -53,8 +53,8 @@ export async function selectAssessmentsBlockingDeletion({
     const { blockers } = removeQidsFromAssessment(parsed, qidsToRemove);
     if (blockers.length > 0) {
       blocked.push({
-        assessmentLabel: ref.assessment_directory,
-        courseInstanceShortName: ref.course_instance_directory,
+        assessmentLabel: ref.assessment_label,
+        courseInstanceShortName: ref.course_instance_short_name,
         blockers,
       });
     }
@@ -66,7 +66,7 @@ export function formatBlockedAssessments(blocked: BlockedAssessment[]): string {
   return blocked
     .map((a) => {
       const reasons = a.blockers.map(blockerDescription).join('; ');
-      return `${a.courseInstanceShortName}/${a.assessmentLabel} (${reasons})`;
+      return `${a.courseInstanceShortName}: ${a.assessmentLabel} (${reasons})`;
     })
     .join(', ');
 }
