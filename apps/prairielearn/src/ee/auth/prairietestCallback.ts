@@ -17,6 +17,10 @@ const PrairieTestJwtPayloadSchema = z.object({
   user_id: z.string(),
   course_instance_id: z.string().optional(),
   assessment_id: z.string().optional(),
+  // True when PrairieTest minted this JWT from inside a LockDown Browser
+  // session. PrairieLearn persists this on the session so downstream
+  // enforcement can require LDB for LDB-only reservations.
+  lockdown_browser: z.boolean().optional(),
 });
 
 router.post(
@@ -55,7 +59,7 @@ router.post(
         cause: err,
       });
     }
-    const { user_id, course_instance_id, assessment_id } =
+    const { user_id, course_instance_id, assessment_id, lockdown_browser } =
       PrairieTestJwtPayloadSchema.parse(payload);
 
     if ((course_instance_id === undefined) !== (assessment_id === undefined)) {
@@ -77,7 +81,7 @@ router.post(
       req,
       res,
       { user_id, provider: 'PrairieTest' },
-      { redirect: true, redirectUrl },
+      { redirect: true, redirectUrl, lockdownBrowser: lockdown_browser ?? false },
     );
   }),
 );

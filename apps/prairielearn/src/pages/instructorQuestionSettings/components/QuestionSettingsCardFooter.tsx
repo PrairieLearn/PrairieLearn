@@ -78,7 +78,7 @@ function DeleteQuestionModal({
         </p>
         {assessmentsWithQuestion.length > 0 && (
           <>
-            <p>It is included by these assessments:</p>
+            <p>It will also be removed from these assessments:</p>
             <ul className="list-group my-4">
               {assessmentsWithQuestion.map((aWithQ) => (
                 <li key={aWithQ.course_instance_id} className="list-group-item">
@@ -95,11 +95,6 @@ function DeleteQuestionModal({
                 </li>
               ))}
             </ul>
-            <p>
-              So, if you delete it, you will be unable to sync your course content to the database
-              until you either remove the question from these assessments or create a new question
-              with the same QID.
-            </p>
           </>
         )}
       </Modal.Body>
