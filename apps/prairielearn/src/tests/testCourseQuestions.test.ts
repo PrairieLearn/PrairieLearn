@@ -1,3 +1,5 @@
+import * as os from 'node:os';
+
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -26,7 +28,7 @@ const qidsTestCourse = [
 
 describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
   beforeAll(async () => {
-    await withConfig({ workersCount: 8 }, async () => {
+    await withConfig({ workersCount: os.cpus().length }, async () => {
       await helperServer.before()();
     });
   });

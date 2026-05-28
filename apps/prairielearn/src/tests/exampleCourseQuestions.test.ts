@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import fg from 'fast-glob';
@@ -83,7 +84,7 @@ describe('Auto-test questions in exampleCourse', () => {
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
     beforeAll(async () => {
-      await withConfig({ workersCount: 8 }, async () => {
+      await withConfig({ workersCount: os.cpus().length }, async () => {
         await helperServer.before(EXAMPLE_COURSE_PATH)();
       });
     });
