@@ -5,6 +5,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -79,7 +80,7 @@ export async function updateAiInstanceQuestionGroup({
 
 /**
  * Set the instance question group of an instance question manually.
- * Manual group assignments take precedence over AI assignments.
+ * Manual grouping choices take precedence over AI grouping.
  */
 export async function updateManualInstanceQuestionGroup({
   instance_question_id,
@@ -109,7 +110,7 @@ export async function selectAssessmentQuestionHasInstanceQuestionGroups({
 }: {
   assessmentQuestionId: string;
 }) {
-  return await queryRow(
+  return await queryScalar(
     sql.select_assessment_question_has_instance_question_groups,
     {
       assessment_question_id: assessmentQuestionId,
@@ -137,7 +138,7 @@ export async function deleteAiInstanceQuestionGroups({
 }: {
   assessment_question_id: string;
 }) {
-  return await queryRow(
+  return await queryScalar(
     sql.delete_ai_instance_question_groups,
     {
       assessment_question_id,

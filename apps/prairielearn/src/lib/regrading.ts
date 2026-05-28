@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
@@ -208,7 +214,7 @@ async function regradeSingleAssessmentInstance({
           )
         : false;
 
-    const updatedQuestionQids = await queryRows(
+    const updatedQuestionQids = await queryScalars(
       sql.regrade_instance_questions,
       { assessment_instance_id, authn_user_id },
       QuestionSchema.shape.qid,

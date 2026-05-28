@@ -1,10 +1,8 @@
-import { useState } from 'react';
-
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { ExpandableUserList } from '../../../components/ExpandableUserList.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 
 export function ExtensionTableRow({
@@ -20,7 +18,6 @@ export function ExtensionTableRow({
   onDelete: (extension: CourseInstancePublishingExtensionRow) => void;
   onEdit: (extension: CourseInstancePublishingExtensionRow) => void;
 }) {
-  const [showAllStudents, setShowAllStudents] = useState(false);
   // Check if extension end date is before the course instance end date
   const isBeforeInstanceEndDate =
     courseInstance.publishing_end_date &&
@@ -62,53 +59,12 @@ export function ExtensionTableRow({
         </div>
       </td>
       <td className="col-3 align-middle">
-        <div>
-          {(() => {
-            const studentsToShow = showAllStudents
-              ? extension.user_data
-              : extension.user_data.slice(0, 3);
-            const hasMoreStudents = extension.user_data.length > 3;
-
-            return (
-              <>
-                {extension.user_data.length > 0 && (
-                  <div className="d-flex flex-wrap align-items-center gap-2">
-                    {studentsToShow.map((user, index) => (
-                      <div key={user.uid}>
-                        <a
-                          href={getStudentEnrollmentUrl(courseInstance.id, user.enrollment_id)}
-                          className="text-decoration-none"
-                        >
-                          {user.name || '—'}
-                        </a>
-                        {index < studentsToShow.length - 1 && ', '}
-                      </div>
-                    ))}
-                    {hasMoreStudents && (
-                      <button
-                        key={`button-${showAllStudents ? 'show-less' : 'show-more'}`}
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => setShowAllStudents(!showAllStudents)}
-                      >
-                        {showAllStudents ? (
-                          <>
-                            <i className="fas fa-chevron-up" aria-hidden="true" /> Show Less
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-chevron-down" aria-hidden="true" /> +
-                            {extension.user_data.length - 3} More
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
+        <ExpandableUserList
+          users={extension.user_data}
+          courseInstanceId={courseInstance.id}
+          nameFallback="dash"
+          emptyText=""
+        />
       </td>
       <td className="col-1 align-middle">
         <div className="d-flex gap-1">

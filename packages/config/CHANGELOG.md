@@ -1,5 +1,47 @@
 # @prairielearn/config
 
+## 4.2.2
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.2.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.2.0
+
+### Minor Changes
+
+- 7a9cda5: Add a KMS config source that decrypts encrypted config value objects.
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/aws-imds@3.0.3
+
+## 4.1.1
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 4.1.0
+
+### Minor Changes
+
+- 9400eb3: Add generic type parameter to `ConfigSource` for type-safe config loading
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+  - @prairielearn/aws-imds@3.0.2
+
 ## 4.0.3
 
 ### Patch Changes

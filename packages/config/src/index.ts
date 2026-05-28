@@ -6,11 +6,10 @@ import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
-type AbstractConfig = Record<string, unknown>;
+import type { AbstractConfig, ConfigSource } from './types.js';
 
-export interface ConfigSource<T extends AbstractConfig = AbstractConfig> {
-  load: (existingConfig: T) => Promise<Partial<T>>;
-}
+export { makeKmsConfigSource } from './sources/kms.js';
+export type { AbstractConfig, ConfigSource } from './types.js';
 
 export function makeLiteralConfigSource(config: AbstractConfig) {
   return {

@@ -113,7 +113,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string;
 }
 
-export interface QuestionChunk {
+interface QuestionChunk {
   type: 'question';
   questionId: string;
 }
@@ -188,7 +188,7 @@ const RawCourseChunkSchema = z.object({
   assessment_uuid: AssessmentSchema.shape.uuid,
   assessment_name: AssessmentSchema.shape.tid,
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
+  course_instance_name: CourseInstanceSchema.shape.short_name.nullable(),
 });
 
 interface CourseInstanceChunks {
@@ -930,7 +930,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold('Looking up course directory'));
-  let courseDir = await sqldb.queryRow(
+  let courseDir = await sqldb.queryScalar(
     sql.select_course_dir,
     { course_id },
     CourseSchema.shape.path,
@@ -1195,7 +1195,7 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  const questionIds = await sqldb.queryRows(
+  const questionIds = await sqldb.queryScalars(
     sql.select_template_question_ids,
     { question_id: question.id },
     IdSchema,

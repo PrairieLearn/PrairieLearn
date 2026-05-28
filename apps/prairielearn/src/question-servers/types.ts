@@ -1,8 +1,29 @@
+import type { QuestionRenderContext } from '../components/QuestionContainer.types.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { ResLocalsQuestionRender } from '../lib/question-render.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
+
+/**
+ * The narrow set of `res.locals` fields that {@link QuestionServer.render} actually reads.
+ * Callers should construct this object explicitly rather than passing a full `res.locals`.
+ */
+export type QuestionRenderRequiredLocals = Pick<
+  ResLocalsQuestionRender,
+  | 'questionUrl'
+  | 'baseUrl'
+  | 'clientFilesQuestionUrl'
+  | 'clientFilesCourseUrl'
+  | 'clientFilesQuestionGeneratedFileUrl'
+  | 'externalImageCaptureUrl'
+  | 'workspaceUrl'
+  | 'showCorrectAnswer'
+  | 'allowAnswerEditing'
+> & {
+  urlPrefix: string;
+  questionRenderContext?: QuestionRenderContext;
+};
 
 export interface RenderSelection {
   question?: boolean;
@@ -65,7 +86,7 @@ export interface TestResultData {
 
 export type PrepareVariant = Pick<
   Variant,
-  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'
+  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'preferences'
 >;
 
 export type ParseSubmission = Pick<
@@ -78,6 +99,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
+    preferences?: Record<string, string | number | boolean>,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
@@ -91,7 +113,7 @@ export interface QuestionServer {
     submission: Submission | null;
     submissions: Submission[];
     course: Course;
-    locals: UntypedResLocals;
+    locals: QuestionRenderRequiredLocals;
   }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
@@ -137,6 +159,7 @@ export interface ExecutionData {
     server_files_course_path: string;
     course_extensions_path: string;
   };
+  preferences: Record<string, string | number | boolean>;
   answers_names?: Record<string, string>;
   submitted_answers?: Record<string, unknown>;
   format_errors?: Record<string, unknown>;
@@ -148,6 +171,7 @@ export interface ExecutionData {
   manual_grading?: boolean;
   ai_grading?: boolean;
   panel?: 'question' | 'answer' | 'submission';
+  correct_answer_shown?: boolean;
   num_valid_submissions?: number;
   filename?: string;
   gradable?: boolean;

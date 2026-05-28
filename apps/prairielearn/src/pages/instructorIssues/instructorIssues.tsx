@@ -1,12 +1,16 @@
-import * as url from 'node:url';
-
 import { Router } from 'express';
 import SearchString from 'search-string';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRows,
+  queryScalar,
+  queryScalars,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -14,6 +18,7 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getUrl } from '../../lib/url.js';
 import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -109,7 +114,7 @@ async function updateIssueOpen(
   course_id: string,
   authn_user_id: string,
 ) {
-  const updated_issue_id = await queryOptionalRow(
+  const updated_issue_id = await queryOptionalScalar(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
@@ -137,7 +142,7 @@ router.get(
       accessType: 'instructor',
     });
 
-    const [closedCount, openCount] = await queryRows(
+    const [closedCount, openCount] = await queryScalars(
       sql.issues_count,
       { course_id: course.id },
       z.number(),
@@ -156,7 +161,7 @@ router.get(
     // than the number of actual issues. In this case, redirect to the same page
     // without setting the page number.
     if (offset > 0 && issueRows.length === 0) {
-      res.redirect(`${url.parse(req.originalUrl).pathname}?q=${encodeURIComponent(filterQuery)}`);
+      res.redirect(`${getUrl(req).pathname}?q=${encodeURIComponent(filterQuery)}`);
       return;
     }
 
@@ -272,7 +277,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
-      const closedCount = await queryRow(
+      const closedCount = await queryScalar(
         sql.close_issues,
         {
           issue_ids: issueIds,

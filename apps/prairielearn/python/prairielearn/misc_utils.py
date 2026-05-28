@@ -12,13 +12,12 @@ import string
 import unicodedata
 import uuid
 from collections.abc import Callable, Generator, Iterable
-from typing import TypeVar
 
 from pint import UnitRegistry
 from text_unidecode import unidecode
 
 
-def iter_keys() -> Generator[str, None, None]:
+def iter_keys() -> Generator[str]:
     """A continuous alphabetic list of the form `['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]`.
 
     <https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603>
@@ -105,10 +104,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-ListItem = TypeVar("ListItem")
-
-
-def partition(
+def partition[ListItem](
     data: Iterable[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
     """Implement a partition function, splitting the data into two lists based on the predicate.

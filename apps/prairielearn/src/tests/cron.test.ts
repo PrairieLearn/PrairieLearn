@@ -13,7 +13,9 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Cron', { timeout: 60_000 }, function () {
   beforeAll(async function () {
-    // set config.cronDailyMS so that daily cron jobs will execute soon
+    // Set config.cronDailySec so that daily cron jobs will execute soon.
+    // We use 15s to ensure the target time hasn't already passed by the
+    // time cron.init() runs (server startup can take several seconds).
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
     const sinceMidnightMS = now - midnight;
@@ -31,8 +33,12 @@ describe('Cron', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('1. cron jobs', () => {
-    it('should wait for 20 seconds', { timeout: 30_000 }, async () => {
+    it('should wait for cron jobs to run and then stop cron', { timeout: 30_000 }, async () => {
       await new Promise((resolve) => setTimeout(resolve, 20_000));
+      // Stop cron and wait for any in-flight jobs to finish. This avoids
+      // a race where a job has updated its `date` but hasn't yet written
+      // `succeeded_at`, which would cause the next assertion to fail.
+      await cron.stop();
     });
 
     it('should all have started', async () => {

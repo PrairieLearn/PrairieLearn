@@ -27,9 +27,16 @@ $(function() {
                         string="{{inner_html}}"
                         data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
-                        tabindex="0"
                         role="option"
-                        >{{{inner_html}}}
+                        tabindex="0">
+                        <div class="pl-order-block-row">
+                            <div class="pl-order-block-handle" aria-hidden="true">
+                                <i class="bi bi-grip-vertical"></i>
+                            </div>
+                            <div class="pl-order-block-content">
+                                {{{inner_html}}}
+                            </div>
+                        </div>
                     </li>
                 {{/options}}
             </ul>
@@ -47,8 +54,15 @@ $(function() {
                         data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         role="option"
-                        >
-                        {{{inner_html}}}
+                        tabindex="0">
+                        <div class="pl-order-block-row">
+                            <div class="pl-order-block-handle" aria-hidden="true">
+                                <i class="bi bi-grip-vertical"></i>
+                            </div>
+                            <div class="pl-order-block-content">
+                                {{{inner_html}}}
+                            </div>
+                        </div>
                     </li>
                 {{/submission_dict}}
             </ul>
@@ -133,7 +147,7 @@ $(function() {
         <strong>Your answer: </strong>
         <div id="pl-order-blocks" class="d-inline-block">
             <span class="badge text-danger badge-invalid"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fas fa-question-circle" aria-hidden="true"></i></a>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fas fa-question-circle" aria-hidden="true"></i></button>
         </div>
     {{/parse-error}}
 {{/submission}}

@@ -908,6 +908,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         NULL::bigint AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -932,6 +933,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         v.id AS log_id,
         v.client_fingerprint_id,
@@ -971,6 +973,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         v.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -999,6 +1002,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         s.id AS submission_id,
         s.id AS log_id,
         s.client_fingerprint_id,
@@ -1048,6 +1052,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1082,6 +1087,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1154,6 +1160,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1186,6 +1193,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1231,6 +1239,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         qsl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1270,6 +1279,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1304,27 +1314,12 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         asl.client_fingerprint_id,
         CASE
-          WHEN asl.open THEN jsonb_build_object(
-            'date_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_date_full_compact (asl.date_limit, ci.display_timezone)
-            END,
-            'time_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - ai.date)
-            END,
-            'remaining_time',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - asl.date)
-            END
-          )
+          WHEN asl.open THEN jsonb_build_object('date_limit', asl.date_limit)
           ELSE NULL::jsonb
         END AS data
       FROM
@@ -1350,13 +1345,11 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
-        jsonb_build_object(
-          'time_limit',
-          format_interval (asl.date_limit - ai.date)
-        ) AS data
+        jsonb_build_object('date_limit', asl.date_limit) AS data
       FROM
         assessment_state_logs AS asl
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
@@ -1395,6 +1388,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         aicl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1420,6 +1414,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id,
@@ -1448,6 +1443,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id,
@@ -1473,6 +1469,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         gl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1511,14 +1508,15 @@ SELECT
   el.instance_question_id,
   el.variant_id,
   el.variant_number,
+  el.variant_seed,
   el.submission_id,
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
   NULL AS client_fingerprint_number,
-  format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
-  format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
-  qd.instructor_question_number
+  qd.instructor_question_number,
+  ai.date AS assessment_instance_date,
+  ci.display_timezone
 FROM
   event_log AS el
   LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)

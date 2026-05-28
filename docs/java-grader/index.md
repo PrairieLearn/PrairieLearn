@@ -51,7 +51,6 @@ A full `info.json` file should look something like:
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-java",
     "timeout": 10
   }
@@ -153,7 +152,6 @@ By default, the Java compiler will show all compilation warnings to the user, ex
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-java",
     "timeout": 10,
     "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3", "JDK_JAVA_OPTIONS": "-ea" }
@@ -182,7 +180,6 @@ Some questions may include libraries and base classes that are common across mul
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-java",
     "serverFilesCourse": ["java/libs/"],
     "timeout": 10

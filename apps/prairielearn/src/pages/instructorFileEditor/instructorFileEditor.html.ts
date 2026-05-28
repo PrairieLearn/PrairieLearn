@@ -20,6 +20,7 @@ export interface FileEditorData {
   diskContents: string;
   diskHash: string;
   fileMetadata?: FileMetadata;
+  lintHtmlMustache: boolean;
 }
 
 export interface DraftEdit {
@@ -109,6 +110,21 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
+      ${editorData.lintHtmlMustache
+        ? html`
+            <meta
+              name="htmlmustache-runtime-wasm"
+              content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+            />
+            <meta
+              name="htmlmustache-grammar-wasm"
+              content="${nodeModulesAssetPath(
+                '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+              )}"
+            />
+            ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+          `
+        : ''}
       ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
@@ -191,6 +207,14 @@ export function InstructorFileEditor({
                 ${editorData.aceMode === 'ace/mode/json'
                   ? html`
                       <button type="button" class="btn btn-light btn-sm js-reformat-file">
+                        <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                        Reformat
+                      </button>
+                    `
+                  : ''}
+                ${editorData.lintHtmlMustache
+                  ? html`
+                      <button type="button" class="btn btn-light btn-sm js-reformat-html-mustache">
                         <i class="fas fa-paintbrush" aria-hidden="true"></i>
                         Reformat
                       </button>
@@ -316,6 +340,7 @@ export function InstructorFileEditor({
               data-file-metadata="${editorData.fileMetadata
                 ? JSON.stringify(editorData.fileMetadata)
                 : ''}"
+              data-lint-html-mustache="${editorData.lintHtmlMustache}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice
@@ -357,6 +382,29 @@ export function InstructorFileEditor({
                         ></button>
                       </div>
                     </div>
+                    ${editorData.lintHtmlMustache
+                      ? html`
+                          <div
+                            id="js-html-mustache-reformat-error"
+                            class="toast hide text-bg-danger border-0"
+                            role="alert"
+                            aria-live="assertive"
+                            aria-atomic="true"
+                          >
+                            <div class="d-flex">
+                              <div class="toast-body">
+                                Error reformatting file. Please check the syntax.
+                              </div>
+                              <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"
+                              ></button>
+                            </div>
+                          </div>
+                        `
+                      : ''}
                   </div>
                 </div>
               </div>

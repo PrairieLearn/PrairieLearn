@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/zod",
-  "version": "2.0.1",
+  "version": "2.0.5",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,15 +18,13 @@
   },
   "dependencies": {
     "postgres-interval": "^4.0.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76 <4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.11.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260302.1",
-    "@vitest/coverage-v8": "^4.0.18",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "@types/node": "^24.12.2",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.5",
+    "vitest": "^4.1.5"
   }
 }

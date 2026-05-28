@@ -30,7 +30,7 @@ function doTest(issuesUrl: string, label: string) {
     let questionUrl;
 
     test.sequential('should report issues to a question', async () => {
-      const questionId = await sqldb.queryRow(sql.select_question_id, IdSchema);
+      const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
       questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
       let res = await fetch(questionUrl);
       const $ = cheerio.load(await res.text());

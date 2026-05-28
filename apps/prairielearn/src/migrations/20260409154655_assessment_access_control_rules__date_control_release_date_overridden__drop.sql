@@ -1,0 +1,2 @@
+ALTER TABLE assessment_access_control_rules
+DROP COLUMN date_control_release_date_overridden;

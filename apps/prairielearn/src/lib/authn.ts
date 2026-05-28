@@ -57,6 +57,8 @@ async function handlePendingLti13User({
 interface LoadUserOptions {
   /** Redirect after processing? */
   redirect?: boolean;
+  /** Override the post-auth redirect target. Only used when `redirect` is true. */
+  redirectUrl?: string;
 }
 
 export async function loadUser(
@@ -127,6 +129,31 @@ export async function loadUser(
     });
   }
 
+  // Regenerate the session on any identity transition to prevent session
+  // fixation. The authn middleware re-enters this function on every request
+  // with the existing session's user_id, so the guard keeps it a no-op there.
+  if (req.session.user_id !== user_id) {
+    // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
+    // in the session before authentication completes and consumes them afterward.
+    // These must be carried forward across the session regeneration triggered by an identity transition.
+
+    const inLti13Launch =
+      authnParams.provider === 'LTI 1.3' ||
+      Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
+
+    const preservedSessionData = inLti13Launch
+      ? ['lti13_claims', 'authn_lti13_instance_id']
+          .map((key) => [key, req.session[key]] as const)
+          .filter(([_, v]) => v !== undefined)
+      : [];
+
+    await req.session.regenerate();
+
+    for (const [key, value] of preservedSessionData) {
+      req.session[key] = value;
+    }
+  }
+
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
   req.session.user_id = user_id;
 
@@ -141,7 +168,11 @@ export async function loadUser(
 
   if (options.redirect) {
     let redirUrl = '/';
-    if ('pl2_pre_auth_url' in req.cookies) {
+    if (options.redirectUrl !== undefined) {
+      redirUrl = options.redirectUrl;
+      // Clear cookies here as well so it doesn't affect a later login redirect
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
+    } else if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
@@ -168,7 +199,7 @@ export async function loadUser(
 
     res.locals.is_institution_administrator =
       res.locals.is_administrator ||
-      (await sqldb.queryRow(
+      (await sqldb.queryScalar(
         sql.select_is_institution_admin,
         {
           institution_id: res.locals.authn_institution.id,

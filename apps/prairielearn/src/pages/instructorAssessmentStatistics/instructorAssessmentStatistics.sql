@@ -1,27 +1,10 @@
 -- BLOCK select_assessment
 SELECT
-  to_jsonb(a) AS assessment
+  a.*
 FROM
   assessments AS a
 WHERE
   a.id = $assessment_id;
-
--- BLOCK select_duration_stats
-SELECT
-  format_interval (duration_stat_median) AS median_formatted,
-  format_interval (duration_stat_min) AS min_formatted,
-  format_interval (duration_stat_max) AS max_formatted,
-  format_interval (duration_stat_mean) AS mean_formatted,
-  DATE_PART('epoch', duration_stat_median) / 60 AS median_minutes,
-  DATE_PART('epoch', duration_stat_min) / 60 AS min_minutes,
-  DATE_PART('epoch', duration_stat_max) / 60 AS max_minutes,
-  DATE_PART('epoch', duration_stat_mean) / 60 AS mean_minutes,
-  duration_stat_thresholds AS thresholds,
-  duration_stat_hist AS hist
-FROM
-  assessments
-WHERE
-  id = $assessment_id;
 
 -- BLOCK assessment_score_histogram_by_date
 WITH
@@ -52,7 +35,6 @@ WITH
   )
 SELECT
   ai_by_user_and_date.date,
-  to_char(ai_by_user_and_date.date, 'DD Mon') AS date_formatted,
   count(score_perc)::integer AS number,
   avg(score_perc) AS mean_score_perc,
   histogram (score_perc, 0, 100, 10)
@@ -66,7 +48,7 @@ ORDER BY
 -- BLOCK user_scores
 SELECT
   ai.score_perc,
-  DATE_PART('epoch', ai.duration) AS duration_secs
+  ai.duration
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
