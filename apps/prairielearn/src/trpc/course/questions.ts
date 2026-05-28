@@ -9,8 +9,10 @@ import {
   MAX_BULK_QUESTION_SELECTION,
   SafeQuestionsPageDataSchema,
 } from '../../components/QuestionsTable.shared.js';
+import { config } from '../../lib/config.js';
 import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
 import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { removeQidsFromZone } from '../../lib/infoAssessment-edits.js';
 import {
@@ -344,19 +346,31 @@ const deleteQuestions = t.procedure
       courseId: ctx.course.id,
     });
 
-    const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
-      question_ids: selectedQuestions.map((q) => q.id),
-      course_id: ctx.course.id,
-    });
-    if (blockedByOtherCourses.length > 0) {
-      throwAppError<QuestionsError['DeleteQuestions']>({
-        code: 'QUESTIONS_USED_IN_OTHER_COURSES',
-        message:
-          blockedByOtherCourses.length === 1
-            ? 'One selected question is used by another course and cannot be deleted.'
-            : `${blockedByOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
-        qids: blockedByOtherCourses.map((q) => q.qid),
+    // Mirrors the gating in `checkSharingConfigurationValid` (sync/syncFromDisk.ts):
+    // if sharing isn't being validated at sync time, the sync won't block a
+    // cross-course consumer's broken reference either, so don't block deletion here.
+    const sharingEnabled =
+      config.checkSharingOnSync &&
+      (await features.enabled('question-sharing', {
+        course_id: ctx.course.id,
+        institution_id: ctx.course.institution_id,
+      }));
+
+    if (sharingEnabled) {
+      const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
+        question_ids: selectedQuestions.map((q) => q.id),
+        course_id: ctx.course.id,
       });
+      if (blockedByOtherCourses.length > 0) {
+        throwAppError<QuestionsError['DeleteQuestions']>({
+          code: 'QUESTIONS_USED_IN_OTHER_COURSES',
+          message:
+            blockedByOtherCourses.length === 1
+              ? 'One selected question is used by another course and cannot be deleted.'
+              : `${blockedByOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
+          qids: blockedByOtherCourses.map((q) => q.qid),
+        });
+      }
     }
 
     const editor = new QuestionDeleteEditor({
