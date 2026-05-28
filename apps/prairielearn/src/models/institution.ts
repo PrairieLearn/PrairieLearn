@@ -38,10 +38,6 @@ export async function selectInstitutionForCourseInstance({
   );
 }
 
-export async function selectAllInstitutions() {
-  return await queryRows(sql.select_all_institutions, InstitutionSchema);
-}
-
 export async function selectAllAdminInstitutions() {
   return await queryRows(sql.select_all_admin_institutions, InstitutionSchema);
 }

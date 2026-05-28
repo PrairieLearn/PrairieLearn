@@ -2,30 +2,34 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../tests/utils/config.js';
 
-const { orgsGet, orgsGetMembershipForUser } = vi.hoisted(() => ({
-  orgsGet: vi.fn(),
-  orgsGetMembershipForUser: vi.fn(),
-}));
-
-vi.mock('@octokit/rest', () => ({
-  Octokit: vi.fn().mockImplementation(function () {
-    return {
-      orgs: {
-        get: orgsGet,
-        getMembershipForUser: orgsGetMembershipForUser,
-      },
-    };
-  }),
-}));
-
-const {
+import * as githubClient from './github-client.js';
+import {
   checkGithubOrgAccess,
   courseRepoContentUrl,
   httpPrefixForCourseRepo,
   isPlatformDefaultOrg,
-} = await import('./github.js');
+} from './github.js';
+
+const orgsGet = vi.fn();
+const orgsGetMembershipForUser = vi.fn();
+
+/**
+ * Replaces the real Octokit client with one whose `orgs` methods we control.
+ * We spy on `getGithubClient` (rather than mocking `@octokit/rest`) because the
+ * test suite runs with `isolate: false`, where module mocks are unreliable once
+ * the module under test has already been loaded by another test file.
+ */
+function mockGithubClient() {
+  vi.spyOn(githubClient, 'getGithubClient').mockReturnValue({
+    orgs: {
+      get: orgsGet,
+      getMembershipForUser: orgsGetMembershipForUser,
+    },
+  } as unknown as ReturnType<typeof githubClient.getGithubClient>);
+}
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   orgsGet.mockReset();
   orgsGetMembershipForUser.mockReset();
 });
@@ -57,6 +61,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('returns org_unreachable when orgs.get returns 404', async () => {
+    mockGithubClient();
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }));
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
       const result = await checkGithubOrgAccess('SomeOrg');
@@ -65,6 +70,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('returns org_unreachable when orgs.get returns 403', async () => {
+    mockGithubClient();
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('forbidden'), { status: 403 }));
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
       const result = await checkGithubOrgAccess('SomeOrg');
@@ -73,6 +79,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('returns not_a_member when membership query returns 404', async () => {
+    mockGithubClient();
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockRejectedValueOnce(
       Object.assign(new Error('not found'), { status: 404 }),
@@ -84,6 +91,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('treats pending membership state as pending_invitation', async () => {
+    mockGithubClient();
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'pending' } });
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
@@ -93,6 +101,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('returns ok when both calls succeed with active membership', async () => {
+    mockGithubClient();
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active' } });
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
@@ -102,6 +111,7 @@ describe('checkGithubOrgAccess', () => {
   });
 
   it('rethrows unexpected (non-404/403) errors from orgs.get', async () => {
+    mockGithubClient();
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('upstream broken'), { status: 500 }));
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
       await expect(checkGithubOrgAccess('SomeOrg')).rejects.toThrow('upstream broken');

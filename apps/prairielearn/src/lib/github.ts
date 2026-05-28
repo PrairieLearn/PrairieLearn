@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { Octokit } from '@octokit/rest';
+import { type Octokit } from '@octokit/rest';
 import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
@@ -13,6 +13,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User } from './db-types.js';
+import { getGithubClient } from './github-client.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -28,17 +29,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
   - config.githubMachineUser (required to validate org access)
 */
 
-/**
- * Creates an octokit client from the client token specified in the config.
- */
-function getGithubClient() {
-  if (config.githubClientToken === null) {
-    return null;
-  }
-  return new Octokit({ auth: config.githubClientToken });
-}
-
-export type GithubOrgAccessResult =
+type GithubOrgAccessResult =
   | { ok: true }
   | {
       ok: false;
@@ -102,7 +93,7 @@ export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccess
  * Human-readable message for a failed `checkGithubOrgAccess` result. Suitable for
  * surfacing to admins/instructors via flash messages or tRPC errors.
  */
-export function githubOrgAccessErrorMessage(
+function githubOrgAccessErrorMessage(
   result: Extract<GithubOrgAccessResult, { ok: false }>,
   org: string,
 ): string {

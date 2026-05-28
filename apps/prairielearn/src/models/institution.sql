@@ -17,16 +17,6 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
--- BLOCK select_all_institutions
-SELECT
-  i.*
-FROM
-  institutions AS i
-ORDER BY
-  i.short_name,
-  i.long_name,
-  i.id;
-
 -- BLOCK select_all_admin_institutions
 SELECT
   i.*
