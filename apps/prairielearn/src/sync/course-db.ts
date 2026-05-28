@@ -666,11 +666,12 @@ async function loadCourseInfo({
   }
 
   const questionsReceiveUserData = info.options.questionsReceiveUserData ?? false;
+  const questionsReceiveUserDataSpecified = info.options.questionsReceiveUserData !== undefined;
 
   // In production, the database is the source of truth for this setting (managed
   // via course settings UI). The infoCourse.json value is informational and emits
   // a warning if it diverges from the DB.
-  if (courseId != null && !config.devMode) {
+  if (questionsReceiveUserDataSpecified && courseId != null && !config.devMode) {
     const existingCourse = await selectOptionalCourseById(courseId);
     if (
       existingCourse != null &&

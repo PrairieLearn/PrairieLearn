@@ -426,6 +426,8 @@ The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latt
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
 
+On group assessments, `data["options"]["user"]` is `None` during `generate()` and `prepare()`. These phases run once for the shared variant and persist their results, so using the first teammate who opened the question would give later teammates stale per-viewer data. `data["options"]["group"]` is still available in those phases because the team is stable for the shared variant.
+
 User and group data are passed only when **all** of the following are true:
 
 1. The course has opted in by setting `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json` (in production, this setting is managed via the course settings page by a course owner).

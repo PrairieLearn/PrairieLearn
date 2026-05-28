@@ -49,6 +49,13 @@ interface VariantCreationData {
   broken: boolean;
 }
 
+function getPersistentVariantOptions(options: Record<string, any> | undefined) {
+  const persistentOptions = { ...options };
+  delete persistentOptions.user;
+  delete persistentOptions.group;
+  return persistentOptions;
+}
+
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
  */
@@ -89,6 +96,11 @@ export async function makeVariant({
     effectiveUserId: effective_user_id,
     teamId: team_id,
   });
+  // Group variants are shared by the team, and generate()/prepare() persist
+  // their results on the variant. Do not expose the request-specific viewing
+  // user in these phases; request-time phases receive the full user context.
+  const variantCreationUserContext =
+    team_id == null ? userContext : { user: null, group: userContext.group };
 
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(
@@ -96,14 +108,14 @@ export async function makeVariant({
     course,
     variant_seed,
     preferences,
-    userContext,
+    variantCreationUserContext,
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
-    options: data.options || {},
+    options: getPersistentVariantOptions(data.options),
     preferences,
     broken: hasFatalIssue,
   };
@@ -126,7 +138,7 @@ export async function makeVariant({
       question,
       course,
       variant,
-      userContext,
+      variantCreationUserContext,
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -134,7 +146,7 @@ export async function makeVariant({
       variant_seed,
       params: data.params,
       true_answer: data.true_answer,
-      options: data.options || {},
+      options: getPersistentVariantOptions(data.options),
       broken: hasFatalIssue,
       preferences,
     };

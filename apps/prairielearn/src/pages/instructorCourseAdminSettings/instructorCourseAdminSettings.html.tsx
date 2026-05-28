@@ -218,6 +218,10 @@ export function InstructorCourseAdminSettings({
             </label>
           </div>
           <div className="form-check mb-3">
+            {course.questions_receive_user_data &&
+              (!authzData.has_course_permission_own || course.example_course) && (
+                <input type="hidden" name="questions_receive_user_data" value="on" />
+              )}
             <input
               type="checkbox"
               className="form-check-input"
