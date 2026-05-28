@@ -174,7 +174,7 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(course.id, path, job);
+        const syncResult = await syncDiskToSqlWithLock(course, job);
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
@@ -206,17 +206,6 @@ export async function pullAndUpdateCourse({
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }
 
-export async function checkCourseRepositoryExists(repoName: string) {
-  // Escape SQL LIKE wildcards so they are matched literally.
-  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  const result = await sqldb.queryScalar(
-    sql.exists_by_course_request_repository_name,
-    { repoName: escapedRepoName },
-    z.boolean(),
-  );
-  return result;
-}
-
 /**
  * Extracts the "owner/repo.git" suffix from a Git repository URL,
  * handling both SSH (git@github.com:Org/repo.git) and HTTPS
@@ -234,23 +223,31 @@ function extractRepoSuffix(repository: string): string | null {
   return null;
 }
 
-export async function checkCourseRepositoryUrlExists(repository: string) {
+export async function checkCourseRepositoryUrlExists(repository: string, excludeCourseId?: string) {
   const suffix = extractRepoSuffix(repository);
   if (suffix == null) {
     // Fall back to exact match if we can't parse the URL.
-    return await sqldb.queryScalar(sql.exists_by_course_repository, { repository }, z.boolean());
+    return await sqldb.queryScalar(
+      sql.exists_by_course_repository,
+      { repository, exclude_course_id: excludeCourseId ?? null },
+      z.boolean(),
+    );
   }
 
   // Escape SQL LIKE wildcards so they are matched literally.
   const escapedSuffix = suffix.replaceAll('%', '\\%').replaceAll('_', '\\_');
   return await sqldb.queryScalar(
     sql.exists_by_course_repository_suffix,
-    { suffix: escapedSuffix },
+    { suffix: escapedSuffix, exclude_course_id: excludeCourseId ?? null },
     z.boolean(),
   );
 }
 
-export async function checkCoursePathExists(path: string) {
-  const result = await sqldb.queryScalar(sql.exists_by_course_path, { path }, z.boolean());
+export async function checkCoursePathExists(path: string, excludeCourseId?: string) {
+  const result = await sqldb.queryScalar(
+    sql.exists_by_course_path,
+    { path, exclude_course_id: excludeCourseId ?? null },
+    z.boolean(),
+  );
   return result;
 }

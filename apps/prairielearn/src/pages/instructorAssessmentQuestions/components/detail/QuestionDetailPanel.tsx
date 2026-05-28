@@ -20,6 +20,7 @@ import type {
   QuestionAlternativeForm,
   QuestionWithId,
   SelectedItem,
+  StandaloneQuestionBlockForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../../types.js';
@@ -38,6 +39,7 @@ import {
 } from '../../utils/formHelpers.js';
 import {
   questionHasTitle,
+  resolveRolePermissionCascade,
   toAssessmentForPicker,
   validatePositiveInteger,
 } from '../../utils/questions.js';
@@ -48,6 +50,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 interface QuestionFormData {
   id?: string;
@@ -62,6 +65,8 @@ interface QuestionFormData {
   gradeRateMinutes?: number;
   forceMaxPoints?: boolean;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function QuestionDetailPanel({
@@ -72,7 +77,6 @@ export function QuestionDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onPickQuestion,
   onResetButtonClick,
   onFormValidChange,
@@ -88,11 +92,6 @@ export function QuestionDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
     alternativeTrackingId?: string,
   ) => void;
-  onDelete: (
-    questionTrackingId: string,
-    questionId: string,
-    alternativeTrackingId?: string,
-  ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
@@ -105,22 +104,33 @@ export function QuestionDetailPanel({
     assessmentDefaults,
     courseInstanceId,
     hasCoursePermissionPreview,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
   } = state;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
   const hasTitle = questionHasTitle(questionData);
+
+  const isAutoGradedWithOnlyManualPoints =
+    questionData != null &&
+    !isManualGrading &&
+    (question.manualPoints ?? zoneQuestionBlock?.manualPoints) != null &&
+    (question.autoPoints ?? zoneQuestionBlock?.autoPoints) == null;
 
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
   const maxAutoPointsValue = question.maxAutoPoints ?? zoneQuestionBlock?.maxAutoPoints;
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
-  // Alternative's own values (may be undefined = inheriting from group)
+  // Alternative's own values (may be undefined = inheriting from pool)
   const ownAutoPoints = question.autoPoints ?? undefined;
   const ownMaxAutoPoints = question.maxAutoPoints ?? undefined;
   const ownManualPoints = question.manualPoints ?? undefined;
 
-  // Group's values (what would be inherited)
+  // Pool's values (what would be inherited)
   const inheritedAutoPoints = zoneQuestionBlock?.autoPoints ?? undefined;
   const inheritedMaxAutoPoints = zoneQuestionBlock?.maxAutoPoints ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
@@ -139,6 +149,17 @@ export function QuestionDetailPanel({
     manualPoints: question.manualPoints != null,
     triesPerVariant: question.triesPerVariant != null,
   }));
+
+  const standaloneQuestion = isAlternative ? null : (question as StandaloneQuestionBlockForm);
+  const canViewParent = resolveRolePermissionCascade([
+    { value: zone?.canView, source: 'zone' },
+    { value: assessmentCanView, source: 'assessment' },
+  ]);
+  const canSubmitParent = resolveRolePermissionCascade([
+    { value: zone?.canSubmit, source: 'zone' },
+    { value: assessmentCanSubmit, source: 'assessment' },
+  ]);
+  const hasRoles = groupRoles.length > 0;
 
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
@@ -163,6 +184,8 @@ export function QuestionDetailPanel({
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
       allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
+      canView: standaloneQuestion?.canView,
+      canSubmit: standaloneQuestion?.canSubmit,
     },
     // Prevent autosave from clobbering in-progress typing. Without this,
     // the autosave feedback loop (edit → save → parent state update →
@@ -222,7 +245,6 @@ export function QuestionDetailPanel({
   // not update until user interaction with mode: 'onChange'.
   useEffect(() => {
     void trigger().then((valid) => {
-      // TODO: you can easily click off the item and save the form to bypass this validation.
       onFormValidChange(valid);
     });
   }, [trigger, onFormValidChange]);
@@ -234,7 +256,7 @@ export function QuestionDetailPanel({
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
-      // Alternatives inherit from alt group -> zone -> assessment
+      // Alternatives inherit from alt pool -> zone -> assessment
       const parentAdvanceScorePerc =
         zoneQuestionBlock.advanceScorePerc ??
         zone?.advanceScorePerc ??
@@ -255,24 +277,24 @@ export function QuestionDetailPanel({
         parentForceMaxPoints,
         advanceScorePercFromLabel:
           zoneQuestionBlock.advanceScorePerc != null
-            ? 'group'
+            ? 'pool'
             : zone?.advanceScorePerc != null
               ? 'zone'
               : 'assessment',
         gradeRateMinutesFromLabel:
           zoneQuestionBlock.gradeRateMinutes != null
-            ? 'group'
+            ? 'pool'
             : zone?.gradeRateMinutes != null
               ? 'zone'
               : 'assessment',
         allowRealTimeGradingFromLabel:
           zoneQuestionBlock.allowRealTimeGrading != null
-            ? 'group'
+            ? 'pool'
             : zone?.allowRealTimeGrading != null
               ? 'zone'
               : 'assessment',
-        // Only alt groups define forceMaxPoints; fallback is never displayed
-        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'group' : 'assessment',
+        // Only alt pools define forceMaxPoints; fallback is never displayed
+        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'pool' : 'assessment',
         watch,
         setValue,
         resetAndSave,
@@ -291,7 +313,7 @@ export function QuestionDetailPanel({
       advanceScorePercFromLabel: zone?.advanceScorePerc != null ? 'zone' : 'assessment',
       gradeRateMinutesFromLabel: zone?.gradeRateMinutes != null ? 'zone' : 'assessment',
       allowRealTimeGradingFromLabel: zone?.allowRealTimeGrading != null ? 'zone' : 'assessment',
-      // Only alt groups define forceMaxPoints; fallback is never displayed
+      // Only alt pools define forceMaxPoints; fallback is never displayed
       forceMaxPointsFromLabel: 'assessment',
       watch,
       setValue,
@@ -310,80 +332,84 @@ export function QuestionDetailPanel({
 
   return (
     <div className="p-3">
-      {/* Question header (title, tags, badges) — same in both modes */}
-      {questionData && (
-        <div className="mb-3">
-          {run(() => {
-            const titleContent = hasTitle ? (
-              questionData.question.title
-            ) : (
-              <span className="font-monospace">{question.id}</span>
-            );
-            return (
-              <div className="fw-semibold mb-1 d-inline-flex align-items-center">
-                {hasCoursePermissionPreview ? (
-                  <a
-                    href={getQuestionUrl({
-                      courseInstanceId,
-                      questionId: questionData.question.id,
-                    })}
-                  >
-                    {titleContent}
-                  </a>
+      {/* Question header (number, title, tags, badges) — same in both modes */}
+      <div className="mb-3">
+        <div className="fw-semibold mb-1 d-inline-flex align-items-center">
+          {questionData
+            ? run(() => {
+                const titleContent = hasTitle ? (
+                  questionData.question.title
                 ) : (
-                  titleContent
-                )}
-                {!hasTitle && (
-                  <CopyButton
-                    text={question.id}
-                    tooltipId="copy-qid"
-                    ariaLabel="Copy QID"
-                    className="ms-1"
-                  />
-                )}
-              </div>
-            );
-          })}
-          {hasTitle && (
-            <span
-              className="d-inline-flex align-items-center text-muted font-monospace"
-              style={{ fontSize: '0.75rem' }}
-            >
-              {question.id}
-              <CopyButton
-                text={question.id}
-                tooltipId="copy-qid"
-                ariaLabel="Copy QID"
-                className="ms-1"
-              />
-            </span>
-          )}
-          <div className="mt-1">
-            <span className={`badge color-${questionData.topic.color}`}>
-              {questionData.topic.name}
-            </span>
-          </div>
-          {questionData.tags && questionData.tags.length > 0 && (
-            <div className="d-flex flex-wrap gap-1 mt-1">
-              {questionData.tags.map((tag) => (
-                <span key={tag.name} className={`badge color-${tag.color}`}>
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {questionData.other_assessments && questionData.other_assessments.length > 0 && (
-            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-              <AssessmentBadges
-                assessments={toAssessmentForPicker(questionData.other_assessments)}
-                courseInstanceId={courseInstanceId}
-              />
-            </div>
-          )}
+                  <span className="font-monospace">{question.id}</span>
+                );
+                return (
+                  <>
+                    {hasCoursePermissionPreview ? (
+                      <a
+                        href={getQuestionUrl({
+                          courseInstanceId,
+                          questionId: questionData.question.id,
+                        })}
+                      >
+                        {titleContent}
+                      </a>
+                    ) : (
+                      titleContent
+                    )}
+                    {!hasTitle && (
+                      <CopyButton
+                        text={question.id}
+                        ariaLabel="Copy QID"
+                        className="btn-xs btn-ghost ms-1"
+                      />
+                    )}
+                  </>
+                );
+              })
+            : null}
         </div>
-      )}
+        {questionData && (
+          <div className="d-flex flex-column gap-1">
+            {hasTitle && (
+              <span
+                className="d-inline-flex align-items-center text-muted font-monospace"
+                style={{ fontSize: '0.75rem' }}
+              >
+                {question.id}
+                <CopyButton
+                  text={question.id}
+                  ariaLabel="Copy QID"
+                  className="btn-xs btn-ghost ms-1"
+                />
+              </span>
+            )}
+            <div>
+              <span className={`badge color-${questionData.topic.color}`}>
+                {questionData.topic.name}
+              </span>
+            </div>
+            {questionData.tags && questionData.tags.length > 0 && (
+              <div className="d-flex flex-wrap gap-1">
+                {questionData.tags.map((tag) => (
+                  <span key={tag.name} className={`badge color-${tag.color}`}>
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+              <div className="d-flex flex-wrap align-items-center gap-1">
+                <AssessmentBadges
+                  assessments={toAssessmentForPicker(questionData.other_assessments)}
+                  courseInstanceId={courseInstanceId}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
       {editMode && (
@@ -445,6 +471,7 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           showAutoPointsForManual={showAutoPointsForManual}
           showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
           onFieldOverrideChange={(field, overridden) =>
             setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
           }
@@ -535,6 +562,80 @@ export function QuestionDetailPanel({
         </FormField>
       </Wrapper>
 
+      {questionData?.question.preferences_schema &&
+        Object.keys(questionData.question.preferences_schema).length > 0 && (
+          <>
+            <DetailSectionHeader>Preferences</DetailSectionHeader>
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => (
+                <PreferenceField
+                  key={name}
+                  name={name}
+                  schema={schema}
+                  idPrefix={idPrefix}
+                  editMode={editMode}
+                  preferences={question.preferences}
+                  questionTrackingId={questionTrackingId}
+                  alternativeTrackingId={alternativeTrackingId}
+                  onUpdate={onUpdate}
+                />
+              ))}
+            </Wrapper>
+          </>
+        )}
+
+      {!isAlternative && groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view this question."
+                editMode={editMode}
+                isInherited={watch('canView') == null}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watch('canView') ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to this question."
+                editMode={editMode}
+                isInherited={watch('canSubmit') == null}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watch('canSubmit') ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
+      )}
+
       {/* Advanced fields */}
       <AdvancedFields
         register={register}
@@ -543,6 +644,7 @@ export function QuestionDetailPanel({
         variant="question"
         editMode={editMode}
         inheritance={advancedInheritance}
+        assessmentType={assessmentType}
       />
 
       {/* Action buttons */}
@@ -566,23 +668,6 @@ export function QuestionDetailPanel({
               </button>
             </OverlayTrigger>
           )}
-        {editMode && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'delete-question-tooltip' },
-              body: 'Remove this question from the assessment',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
-            >
-              Delete
-            </button>
-          </OverlayTrigger>
-        )}
       </div>
     </div>
   );
@@ -611,6 +696,7 @@ function PointsFields({
   resetAndSave,
   showAutoPointsForManual,
   showMaxAutoPointsForManual,
+  showManualPointsOnlyForAutoGraded,
   onFieldOverrideChange,
 }: {
   assessmentType: EnumAssessmentType;
@@ -635,6 +721,7 @@ function PointsFields({
   resetAndSave: (field: string) => void;
   showAutoPointsForManual: boolean;
   showMaxAutoPointsForManual: boolean;
+  showManualPointsOnlyForAutoGraded: boolean;
   onFieldOverrideChange: (field: string, overridden: boolean) => void;
 }) {
   const isHomework = assessmentType === 'Homework';
@@ -809,6 +896,13 @@ function PointsFields({
 
   return (
     <>
+      {showManualPointsOnlyForAutoGraded && (
+        <div className="alert alert-info small py-2 mb-2" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          This question is auto-graded but only has manual points. Auto-grading results will not
+          contribute to the score.
+        </div>
+      )}
       {isManualGrading && manualPointsField}
       {(showAutoPointsForManual || showMaxAutoPointsForManual) && (
         <div className="alert alert-warning small py-2 mb-2" role="alert">
@@ -921,5 +1015,182 @@ function PointsFields({
         ))}
       {!isManualGrading && manualPointsField}
     </>
+  );
+}
+
+function PreferenceField({
+  name,
+  schema,
+  idPrefix,
+  editMode,
+  preferences,
+  questionTrackingId,
+  alternativeTrackingId,
+  onUpdate,
+}: {
+  name: string;
+  schema: { type: string; default: string | number | boolean; enum?: (string | number)[] };
+  idPrefix: string;
+  editMode: boolean;
+  preferences: Record<string, string | number | boolean> | undefined;
+  questionTrackingId: string;
+  alternativeTrackingId: string | undefined;
+  onUpdate: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
+}) {
+  const id = `${idPrefix}-pref-${name}`;
+  const defaultDisplay = String(schema.default);
+  const currentValue = preferences?.[name];
+  const hasOverride = currentValue != null;
+
+  function setOverride(value: string | number | boolean) {
+    onUpdate(
+      questionTrackingId,
+      { preferences: { ...preferences, [name]: value } },
+      alternativeTrackingId,
+    );
+  }
+
+  function clearOverride() {
+    const newPreferences = { ...preferences };
+    delete newPreferences[name];
+    onUpdate(
+      questionTrackingId,
+      {
+        preferences: Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+      },
+      alternativeTrackingId,
+    );
+  }
+
+  if (!editMode) {
+    return (
+      <FormField
+        editMode={false}
+        id={id}
+        label={<span className="font-monospace">{name}</span>}
+        viewValue={hasOverride ? String(currentValue) : `${defaultDisplay} (default)`}
+      >
+        {() => null}
+      </FormField>
+    );
+  }
+
+  if (!hasOverride) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <input
+          type="text"
+          className="form-control form-control-sm bg-light"
+          id={id}
+          value={defaultDisplay}
+          aria-describedby={`${id}-help`}
+          disabled
+        />
+        <small id={`${id}-help`} className="form-text text-muted">
+          Using question default.{' '}
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={() => setOverride(schema.default)}
+          >
+            Override
+          </button>
+        </small>
+      </div>
+    );
+  }
+
+  const resetHelpText = (
+    <small id={`${id}-help`} className="form-text text-muted">
+      Overrides question default ({defaultDisplay}).{' '}
+      <button
+        type="button"
+        className="btn btn-link btn-sm p-0 align-baseline"
+        title="Reset to question default"
+        onClick={clearOverride}
+      >
+        Reset
+      </button>
+    </small>
+  );
+
+  if (schema.type === 'boolean') {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => setOverride(e.target.value === 'true')}
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  if (schema.enum && schema.enum.length > 0) {
+    return (
+      <div className="mb-3">
+        <label htmlFor={id} className="form-label">
+          <span className="font-monospace">{name}</span>
+        </label>
+        <select
+          className="form-select form-select-sm"
+          id={id}
+          value={String(currentValue)}
+          aria-describedby={`${id}-help`}
+          onChange={(e) => {
+            const val = e.target.value;
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }}
+        >
+          {schema.enum.map((v) => (
+            <option key={String(v)} value={String(v)}>
+              {String(v)}
+            </option>
+          ))}
+        </select>
+        {resetHelpText}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <label htmlFor={id} className="form-label">
+        <span className="font-monospace">{name}</span>
+      </label>
+      <input
+        type={schema.type === 'number' ? 'number' : 'text'}
+        step={schema.type === 'number' ? 'any' : undefined}
+        className="form-control form-control-sm"
+        id={id}
+        aria-describedby={`${id}-help`}
+        defaultValue={String(currentValue)}
+        onBlur={(e) => {
+          const val = e.target.value.trim();
+          if (val === '') {
+            clearOverride();
+          } else {
+            setOverride(schema.type === 'number' ? Number(val) : val);
+          }
+        }}
+      />
+      {resetHelpText}
+    </div>
   );
 }

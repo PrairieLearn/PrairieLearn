@@ -44,7 +44,7 @@ export function sanitizeSelectedItem(
       return result && !result.question.alternatives ? selectedItem : null;
     }
 
-    case 'altGroup': {
+    case 'altPool': {
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
       return result?.question.alternatives ? selectedItem : null;
     }
@@ -90,19 +90,19 @@ export function sanitizeSelectedItem(
         : { type: 'picker', zoneTrackingId: selectedItem.zoneTrackingId };
     }
 
-    case 'altGroupPicker': {
+    case 'altPoolPicker': {
       if (!zones.some((zone) => zone.trackingId === selectedItem.zoneTrackingId)) {
         return null;
       }
 
-      if (!selectedItem.altGroupTrackingId) {
+      if (!selectedItem.altPoolTrackingId) {
         return selectedItem;
       }
 
-      const result = findQuestionByTrackingId(zones, selectedItem.altGroupTrackingId);
+      const result = findQuestionByTrackingId(zones, selectedItem.altPoolTrackingId);
       return result?.question.alternatives
         ? selectedItem
-        : { type: 'altGroupPicker', zoneTrackingId: selectedItem.zoneTrackingId };
+        : { type: 'altPoolPicker', zoneTrackingId: selectedItem.zoneTrackingId };
     }
   }
 }
@@ -120,10 +120,10 @@ export function selectedItemsEqual(a: SelectedItem, b: SelectedItem): boolean {
       return a.zoneTrackingId === (b.type === 'zone' ? b.zoneTrackingId : '');
 
     case 'question':
-    case 'altGroup':
+    case 'altPool':
       return (
         a.questionTrackingId ===
-        (b.type === 'question' || b.type === 'altGroup' ? b.questionTrackingId : '')
+        (b.type === 'question' || b.type === 'altPool' ? b.questionTrackingId : '')
       );
 
     case 'alternative':
@@ -140,11 +140,11 @@ export function selectedItemsEqual(a: SelectedItem, b: SelectedItem): boolean {
         selectedItemsEqual(a.returnToSelection ?? null, b.returnToSelection ?? null)
       );
 
-    case 'altGroupPicker':
+    case 'altPoolPicker':
       return (
-        b.type === 'altGroupPicker' &&
+        b.type === 'altPoolPicker' &&
         a.zoneTrackingId === b.zoneTrackingId &&
-        a.altGroupTrackingId === b.altGroupTrackingId
+        a.altPoolTrackingId === b.altPoolTrackingId
       );
   }
 }

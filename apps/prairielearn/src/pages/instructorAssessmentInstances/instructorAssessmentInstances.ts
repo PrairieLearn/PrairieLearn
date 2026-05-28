@@ -2,6 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -16,7 +17,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
-import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
+import {
+  type AssessmentInstanceRow,
+  AssessmentInstanceRowQuerySchema,
+} from './instructorAssessmentInstances.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -30,9 +34,18 @@ router.get(
     const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
       { assessment_id: res.locals.assessment.id },
-      AssessmentInstanceRowSchema,
+      AssessmentInstanceRowQuerySchema,
     );
-    res.send(assessmentInstances);
+    res.send(
+      assessmentInstances.map(
+        (instance) =>
+          ({
+            ...instance,
+            date_formatted: formatDate(instance.date!, res.locals.course_instance.display_timezone),
+            duration_formatted: formatInterval(instance.duration),
+          }) satisfies AssessmentInstanceRow,
+      ),
+    );
   }),
 );
 

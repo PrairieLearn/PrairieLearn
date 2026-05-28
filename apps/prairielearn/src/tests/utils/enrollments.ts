@@ -30,7 +30,7 @@ export async function enrollUser(
     user: dbUser,
     course_id: null,
     course_instance_id: courseInstanceId,
-    ip: null,
+    ip: '127.0.0.1',
     req_date: new Date(),
     is_administrator: false,
   });

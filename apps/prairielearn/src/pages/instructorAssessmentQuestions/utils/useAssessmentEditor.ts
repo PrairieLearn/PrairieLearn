@@ -13,7 +13,7 @@ import {
 
 import {
   alternativeToQuestionBlock,
-  createAltGroupWithTrackingId,
+  createAltPoolWithTrackingId,
   createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   getDefaultPointFieldsForNewQuestion,
@@ -132,7 +132,7 @@ function handleQuestionPicked(
 
   const selectedItem = state.selectedItem;
 
-  if (selectedItem?.type === 'altGroupPicker') {
+  if (selectedItem?.type === 'altPoolPicker') {
     const newZones = structuredClone(state.zones);
     const newQuestionMetadata = { ...state.questionMetadata };
     let newSelectedItem: SelectedItem = selectedItem;
@@ -142,47 +142,47 @@ function handleQuestionPicked(
       removeQid(newZones, newQuestionMetadata, qid);
     }
 
-    if (selectedItem.altGroupTrackingId) {
-      // Adding to existing alt group
-      const altGroupResult = findQuestionByTrackingId(newZones, selectedItem.altGroupTrackingId);
-      if (!altGroupResult) return state;
+    if (selectedItem.altPoolTrackingId) {
+      // Adding to existing alt pool
+      const altPoolResult = findQuestionByTrackingId(newZones, selectedItem.altPoolTrackingId);
+      if (!altPoolResult) return state;
 
-      // Empty groups start neutral; seed point defaults from the first picked question.
-      const shouldInitializeAltGroupPoints =
-        altGroupResult.question.alternatives?.length === 0 &&
-        altGroupResult.question.autoPoints == null &&
-        altGroupResult.question.maxAutoPoints == null &&
-        altGroupResult.question.manualPoints == null;
+      // Empty pools start neutral; seed point defaults from the first picked question.
+      const shouldInitializeAltPoolPoints =
+        altPoolResult.question.alternatives?.length === 0 &&
+        altPoolResult.question.autoPoints == null &&
+        altPoolResult.question.maxAutoPoints == null &&
+        altPoolResult.question.manualPoints == null;
 
-      if (shouldInitializeAltGroupPoints) {
+      if (shouldInitializeAltPoolPoints) {
         const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
-        Object.assign(altGroupResult.question, pointFields);
+        Object.assign(altPoolResult.question, pointFields);
       }
 
-      if (!altGroupResult.question.alternatives) return state;
+      if (!altPoolResult.question.alternatives) return state;
 
       const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-      altGroupResult.question.alternatives.push(newAlt);
+      altPoolResult.question.alternatives.push(newAlt);
       newQuestionMetadata[qid] = metadata;
     } else {
-      // Creating new alt group: first question picked creates the group
-      const newAltGroup = {
-        ...createAltGroupWithTrackingId(),
+      // Creating new alt pool: first question picked creates the pool
+      const newAltPool = {
+        ...createAltPoolWithTrackingId(),
         ...getDefaultPointFieldsForNewQuestion(gradingMethod),
       };
       const firstAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-      newAltGroup.alternatives = [firstAlt];
+      newAltPool.alternatives = [firstAlt];
 
       const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
       if (!zoneResult) return state;
-      zoneResult.zone.questions.push(newAltGroup);
+      zoneResult.zone.questions.push(newAltPool);
       newQuestionMetadata[qid] = metadata;
 
-      // Update selection so subsequent picks add to this group
+      // Update selection so subsequent picks add to this pool
       newSelectedItem = {
-        type: 'altGroupPicker',
+        type: 'altPoolPicker',
         zoneTrackingId: selectedItem.zoneTrackingId,
-        altGroupTrackingId: newAltGroup.trackingId,
+        altPoolTrackingId: newAltPool.trackingId,
       };
     }
 
@@ -336,7 +336,7 @@ export function createEditorReducer(initialState: EditorState) {
         }
 
         if (alternativeTrackingId !== undefined) {
-          // Updating an alternative within an alternative group
+          // Updating an alternative within an alternative pool
           const altResult = findAlternativeByTrackingId(
             questionResult.question,
             alternativeTrackingId,
@@ -351,7 +351,7 @@ export function createEditorReducer(initialState: EditorState) {
             ...question,
           };
         } else {
-          // Updating a regular question or alternative group itself
+          // Updating a regular question or alternative pool itself
           questionResult.zone.questions[questionResult.questionIndex] = {
             ...questionResult.question,
             ...question,
@@ -381,7 +381,7 @@ export function createEditorReducer(initialState: EditorState) {
         delete newQuestionMetadata[questionId];
 
         if (alternativeTrackingId !== undefined) {
-          // Deleting an alternative from an alternative group
+          // Deleting an alternative from an alternative pool
           const altResult = findAlternativeByTrackingId(
             questionResult.question,
             alternativeTrackingId,
@@ -394,9 +394,9 @@ export function createEditorReducer(initialState: EditorState) {
 
           questionResult.question.alternatives!.splice(altResult.index, 1);
         } else {
-          // Deleting a regular question or entire alternative group
+          // Deleting a regular question or entire alternative pool
 
-          // Clean up metadata for all alternatives in the group
+          // Clean up metadata for all alternatives in the pool
           const { alternatives } = questionResult.question;
           if (alternatives) {
             for (const alt of alternatives) {
@@ -567,17 +567,17 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'TOGGLE_GROUP_COLLAPSE': {
+      case 'TOGGLE_POOL_COLLAPSE': {
         const { trackingId } = action;
-        const newCollapsedGroups = new Set(state.collapsedGroups);
-        if (newCollapsedGroups.has(trackingId)) {
-          newCollapsedGroups.delete(trackingId);
+        const newCollapsedPools = new Set(state.collapsedPools);
+        if (newCollapsedPools.has(trackingId)) {
+          newCollapsedPools.delete(trackingId);
         } else {
-          newCollapsedGroups.add(trackingId);
+          newCollapsedPools.add(trackingId);
         }
         return {
           ...state,
-          collapsedGroups: newCollapsedGroups,
+          collapsedPools: newCollapsedPools,
         };
       }
 
@@ -595,35 +595,44 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'EXPAND_ALL_GROUPS': {
+      case 'DISMISS_BANNER': {
+        const newDismissedBanners = new Set(state.dismissedBanners);
+        newDismissedBanners.add(action.trackingId);
         return {
           ...state,
-          collapsedGroups: new Set<string>(),
+          dismissedBanners: newDismissedBanners,
         };
       }
 
-      case 'COLLAPSE_ALL_GROUPS': {
-        const groupTrackingIds = state.zones.flatMap((z) =>
+      case 'EXPAND_ALL_POOLS': {
+        return {
+          ...state,
+          collapsedPools: new Set<string>(),
+        };
+      }
+
+      case 'COLLAPSE_ALL_POOLS': {
+        const poolTrackingIds = state.zones.flatMap((z) =>
           z.questions.filter((q) => (q.alternatives?.length ?? 0) > 0).map((q) => q.trackingId),
         );
         return {
           ...state,
-          collapsedGroups: new Set<string>(groupTrackingIds),
+          collapsedPools: new Set<string>(poolTrackingIds),
         };
       }
 
       case 'ADD_ALTERNATIVE': {
-        const { altGroupTrackingId, alternative, questionData } = action;
+        const { altPoolTrackingId, alternative, questionData } = action;
         const newZones = structuredClone(state.zones);
 
-        const groupResult = findQuestionByTrackingId(newZones, altGroupTrackingId);
-        if (!groupResult?.question.alternatives) {
+        const poolResult = findQuestionByTrackingId(newZones, altPoolTrackingId);
+        if (!poolResult?.question.alternatives) {
           throw new Error(
-            `ADD_ALTERNATIVE: Alt group with trackingId ${altGroupTrackingId} not found`,
+            `ADD_ALTERNATIVE: Alt pool with trackingId ${altPoolTrackingId} not found`,
           );
         }
 
-        groupResult.question.alternatives.push(alternative);
+        poolResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
           questionData && alternative.id
@@ -638,7 +647,7 @@ export function createEditorReducer(initialState: EditorState) {
       }
 
       case 'REORDER_ALTERNATIVE': {
-        const { alternativeTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+        const { alternativeTrackingId, toAltPoolTrackingId, beforeAlternativeTrackingId } = action;
         const newZones = structuredClone(state.zones);
 
         // Find the alternative being moved
@@ -649,11 +658,11 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        // Find the destination alt group
-        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult?.question.alternatives) {
+        // Find the destination alt pool
+        const toPoolResult = findQuestionByTrackingId(newZones, toAltPoolTrackingId);
+        if (!toPoolResult?.question.alternatives) {
           throw new Error(
-            `REORDER_ALTERNATIVE: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+            `REORDER_ALTERNATIVE: Alt pool with trackingId ${toAltPoolTrackingId} not found`,
           );
         }
 
@@ -663,15 +672,15 @@ export function createEditorReducer(initialState: EditorState) {
         // Find insertion point
         let insertIndex: number;
         if (beforeAlternativeTrackingId === null) {
-          insertIndex = toGroupResult.question.alternatives.length;
+          insertIndex = toPoolResult.question.alternatives.length;
         } else {
-          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+          const beforeIdx = toPoolResult.question.alternatives.findIndex(
             (a) => a.trackingId === beforeAlternativeTrackingId,
           );
-          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+          insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toGroupResult.question.alternatives.splice(insertIndex, 0, movedAlt);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, movedAlt);
 
         return {
           ...state,
@@ -699,14 +708,14 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        // Remove alternative from source group
+        // Remove alternative from source pool
         const [removedAlt] = fromResult.question.alternatives!.splice(
           fromResult.alternativeIndex,
           1,
         );
 
         // Convert to standalone question block, inheriting any point fields
-        // from the parent alt group so the extracted question is valid.
+        // from the parent alt pool so the extracted question is valid.
         const newQuestion = alternativeToQuestionBlock(removedAlt, fromResult.question);
 
         // Find insertion point (uses trackingIds, so unaffected by shrinkage)
@@ -730,23 +739,23 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'MERGE_QUESTION_INTO_ALT_GROUP': {
-        const { questionTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+      case 'MERGE_QUESTION_INTO_ALT_POOL': {
+        const { questionTrackingId, toAltPoolTrackingId, beforeAlternativeTrackingId } = action;
         const newZones = structuredClone(state.zones);
 
         // Find the standalone question being merged
         const fromResult = findQuestionByTrackingId(newZones, questionTrackingId);
         if (!fromResult) {
           throw new Error(
-            `MERGE_QUESTION_INTO_ALT_GROUP: Question with trackingId ${questionTrackingId} not found`,
+            `MERGE_QUESTION_INTO_ALT_POOL: Question with trackingId ${questionTrackingId} not found`,
           );
         }
 
-        // Find the destination alt group
-        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult?.question.alternatives) {
+        // Find the destination alt pool
+        const toPoolResult = findQuestionByTrackingId(newZones, toAltPoolTrackingId);
+        if (!toPoolResult?.question.alternatives) {
           throw new Error(
-            `MERGE_QUESTION_INTO_ALT_GROUP: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+            `MERGE_QUESTION_INTO_ALT_POOL: Alt pool with trackingId ${toAltPoolTrackingId} not found`,
           );
         }
 
@@ -760,15 +769,15 @@ export function createEditorReducer(initialState: EditorState) {
         // Find insertion point
         let insertIndex: number;
         if (beforeAlternativeTrackingId === null) {
-          insertIndex = toGroupResult.question.alternatives.length;
+          insertIndex = toPoolResult.question.alternatives.length;
         } else {
-          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+          const beforeIdx = toPoolResult.question.alternatives.findIndex(
             (a) => a.trackingId === beforeAlternativeTrackingId,
           );
-          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+          insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toGroupResult.question.alternatives.splice(insertIndex, 0, newAlt);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, newAlt);
 
         // If the merged question was selected, follow it to its new location
         // as an alternative. sanitizeSelectedItem can't handle this because a
@@ -780,7 +789,7 @@ export function createEditorReducer(initialState: EditorState) {
         ) {
           mergeSelectedItem = {
             type: 'alternative',
-            questionTrackingId: toAltGroupTrackingId,
+            questionTrackingId: toAltPoolTrackingId,
             alternativeTrackingId: questionTrackingId,
           };
         }
@@ -820,9 +829,9 @@ export function createEditorReducer(initialState: EditorState) {
         let resolved: SelectedItem = null;
         if (currentItem?.type === 'picker') {
           resolved = currentItem.returnToSelection ?? null;
-        } else if (currentItem?.type === 'altGroupPicker') {
-          resolved = currentItem.altGroupTrackingId
-            ? { type: 'altGroup', questionTrackingId: currentItem.altGroupTrackingId }
+        } else if (currentItem?.type === 'altPoolPicker') {
+          resolved = currentItem.altPoolTrackingId
+            ? { type: 'altPool', questionTrackingId: currentItem.altPoolTrackingId }
             : null;
         } else {
           resolved = currentItem;
@@ -872,8 +881,9 @@ export function useAssessmentEditor(initialState: EditorState) {
   return {
     zones: state.zones,
     questionMetadata: state.questionMetadata,
-    collapsedGroups: state.collapsedGroups,
+    collapsedPools: state.collapsedPools,
     collapsedZones: state.collapsedZones,
+    dismissedBanners: state.dismissedBanners,
     selectedItem: state.selectedItem,
     canUndo: false,
     canRedo: false,

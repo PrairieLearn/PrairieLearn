@@ -213,7 +213,6 @@ async function prepareGroup() {
     studentUsers[0],
     assessmentUrl,
     null,
-    '#leaveGroupModal',
   );
   const validRoleConfig = [
     { roleId: manager.id, groupUserId: studentUsers[0].id },
@@ -292,12 +291,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
       // The second and third questions should not be viewable
-      const lockedRows = $('tr [data-test-id="locked-instance-question-row"]');
+      const lockedRows = $('tr [data-testid="locked-instance-question-row"]');
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
@@ -448,7 +446,6 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       const invalidRoleConfig = [
         { roleId: manager.id, groupUserId: studentUsers[0].id },
@@ -481,7 +478,6 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         studentUsers[1],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       $ = assessmentInstanceSecondUserPage;
 
@@ -494,12 +490,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
-        await switchUserAndLoadAssessment(
-          studentUsers[0],
-          assessmentInstanceUrl,
-          null,
-          '#leaveGroupModal',
-        );
+        await switchUserAndLoadAssessment(studentUsers[0], assessmentInstanceUrl, null);
       $ = await updateGroupRoles(
         validRoleConfig,
         groupRoles,

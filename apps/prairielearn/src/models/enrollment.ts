@@ -6,10 +6,12 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   PotentialEnrollmentStatus,
@@ -389,6 +391,48 @@ export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
       enrollment: EnrollmentSchema,
       user: UserSchema,
     }),
+  );
+}
+
+/**
+ * Gets enrollments for the given UIDs in a course instance, matching against
+ * both user UIDs and pending UIDs (for invited/rejected students).
+ */
+export async function selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+  uids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  uids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_uids_or_pending_uids,
+    { uids, course_instance_id: courseInstance.id },
+    z.object({ enrollment: EnrollmentSchema, uid: z.string() }),
+  );
+}
+
+export async function selectEnrollmentsByIdsInCourseInstance({
+  ids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  ids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_ids_in_course_instance,
+    { ids, course_instance_id: courseInstance.id },
+    EnrollmentSchema,
   );
 }
 
@@ -901,4 +945,29 @@ export async function inviteEnrollment({
       requiredRole,
     });
   });
+}
+
+export async function selectUsersAndEnrollmentsForCourseInstance(
+  courseInstance: CourseInstanceContext,
+) {
+  return queryRows(
+    sql.select_users_and_enrollments_for_course_instance,
+    { course_instance_id: courseInstance.id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema.nullable(),
+      student_label_ids: z.array(IdSchema),
+    }),
+  );
+}
+
+export async function validateEnrollmentIdsInCourseInstance(
+  ids: Set<string>,
+  courseInstance: CourseInstanceContext,
+): Promise<number> {
+  return queryScalar(
+    sql.validate_enrollment_ids_in_course_instance,
+    { enrollment_ids: [...ids], course_instance_id: courseInstance.id },
+    z.number(),
+  );
 }

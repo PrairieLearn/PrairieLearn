@@ -103,6 +103,10 @@ Similar to how questions and elements may require client-side assets (as describ
 
 Note that any element extension assets declared in `dependencies` will always be loaded, regardless of whether their Python controller was loaded or not. As such, it is recommended that, when suitable, extensions make use of `dynamicDependencies` to load scripts only when necessary, based on the context/usage of the element.
 
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your extension. More information can be found in the [element developer guide](./devElements.md#using-node-dependencies-in-element-code).
+
 ### Other Client Files
 
 Other files available to the client may also be loaded, such as images or any downloadable content. These client files should be placed in `clientFilesExtension` in the extension directory, and the full URL to that folder is given to the host extension in `data["options"]["client_files_extensions_url"][extension_name]`. If this path is needed by the extension itself, it may be passed as an argument to a defined extension function.
