@@ -15,7 +15,10 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAssessments } from '../models/assessment.js';
+import {
+  selectAssessmentDirectoriesForQuestions,
+  selectAssessments,
+} from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -1546,17 +1549,12 @@ export class QuestionDeleteEditor extends Editor {
 
     // Assessment files are rewritten under this course's repository path, so
     // shared-question references from other courses must be ignored here.
-    const referencingAssessments = await sqldb.queryRows(
-      sql.select_assessments_with_questions,
-      { course_id: this.course.id, question_ids: this.questions.map((q) => q.id) },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
+    const referencingAssessments = await selectAssessmentDirectoriesForQuestions({
+      course_id: this.course.id,
+      question_ids: this.questions.map((q) => q.id),
+    });
 
     for (const referenced of referencingAssessments) {
-      assert(referenced.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
@@ -1641,20 +1639,15 @@ export class QuestionRenameEditor extends Editor {
     debug(
       `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
     );
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_questions,
-      { course_id: this.course.id, question_ids: [this.question.id] },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
+    const assessments = await selectAssessmentDirectoriesForQuestions({
+      course_id: this.course.id,
+      question_ids: [this.question.id],
+    });
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
