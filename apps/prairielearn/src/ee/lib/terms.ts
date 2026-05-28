@@ -33,8 +33,6 @@ async function shouldRedirectToTermsPage(
   ip: string | undefined,
   session_is_lockdown_browser: boolean,
 ) {
-  if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
-
   const mode = await ipToMode({
     ip,
     date: new Date(),
@@ -50,6 +48,8 @@ async function shouldRedirectToTermsPage(
       'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
     );
   }
+
+  if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
   return mode === 'Public';
 }
