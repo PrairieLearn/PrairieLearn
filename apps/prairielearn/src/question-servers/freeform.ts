@@ -25,7 +25,6 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -44,6 +43,7 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -76,6 +76,7 @@ type ElementNameMap = Record<
     directory: string;
   }
 >;
+
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
@@ -464,6 +465,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('variant_seed',          'integer', allPhases,                            [])
              || checkProp('options',               'object',  allPhases,                            [])
+             || checkProp('preferences',           'object',  allPhases,                            [])
              || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
              || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
              || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
@@ -474,6 +476,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
+             || checkProp('correct_answer_shown',  'boolean', ['render'],                           [])
              || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
@@ -821,6 +824,7 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  preferences: Record<string, string | number | boolean> = {},
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
@@ -829,7 +833,8 @@ export async function generate(
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      options: getContextOptions(context),
+      preferences,
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -867,6 +872,7 @@ export async function prepare(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -910,7 +916,7 @@ async function renderPanel({
   variant: Variant;
   submission: Submission | null;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
 }): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -987,11 +993,9 @@ async function renderPanel({
     feedback: submission?.feedback ?? {},
     variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
+    preferences: variant.preferences,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
-    editable: !!(
-      locals.allowAnswerEditing &&
-      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
-    ),
+    editable: locals.allowAnswerEditing && locals.questionRenderContext == null,
     manual_grading: run(() => {
       if (locals.questionRenderContext === 'manual_grading') return true;
       if (locals.questionRenderContext === 'ai_grading') {
@@ -1006,6 +1010,7 @@ async function renderPanel({
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
+    correct_answer_shown: locals.showCorrectAnswer,
     num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
@@ -1064,7 +1069,7 @@ async function renderPanelInstrumented({
   variant: Variant;
   question: Question;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
 }): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1103,7 +1108,7 @@ export async function render({
   submission: Submission | null;
   submissions: Submission[];
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1525,6 +1530,7 @@ export async function file(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
 
@@ -1579,6 +1585,7 @@ export async function parse(
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1635,6 +1642,7 @@ export async function grade(
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1689,6 +1697,7 @@ export async function test(
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

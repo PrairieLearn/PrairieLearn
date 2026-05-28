@@ -42,12 +42,44 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
   return detail;
 }
 
+function renderLabelEventText(event: StaffAuditEvent): string {
+  const { action_detail, context } = event;
+  const labelName = String(
+    (context as Record<string, unknown> | null)?.label_name ?? 'Unknown label',
+  );
+
+  if (!action_detail) {
+    return 'Label event';
+  }
+
+  const detailMap: Record<SupportedActionsForTable<'student_label_enrollments'>, string> = {
+    enrollment_added: `Label "${labelName}" added`,
+    enrollment_removed: `Label "${labelName}" removed`,
+  };
+
+  const detail = detailMap[action_detail as SupportedActionsForTable<'student_label_enrollments'>];
+  if (!detail) {
+    throw new Error(`Unknown action detail: ${action_detail}`);
+  }
+  return detail;
+}
+
+function renderEventText(event: StaffAuditEvent): string {
+  if (event.table_name === 'enrollments') {
+    return renderEnrollmentEventText(event);
+  }
+  if (event.table_name === 'student_label_enrollments') {
+    return renderLabelEventText(event);
+  }
+  return 'Unknown event';
+}
+
 export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
   if (events.length === 0) {
     return (
       <>
         <div className="card-body">
-          <div className="text-muted">No enrollment events found.</div>
+          <div className="text-muted">No audit events found.</div>
         </div>
         <div className="card-footer text-muted small">
           Missing events? Enrollment events were not logged before October 2025.
@@ -56,9 +88,11 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
     );
   }
 
+  // TODO: if/when we add more audit events to this table, consider adding
+  // search/filter functionality to help the user find specific events.
   return (
     <>
-      <table className="table table-sm table-hover" aria-label="Student Audit Events">
+      <table className="table table-sm table-hover" aria-label="Student audit events">
         <thead>
           <tr>
             <th>Date</th>
@@ -71,7 +105,7 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
               <td className="align-middle">
                 <FriendlyDate date={e.date} />
               </td>
-              <td className="align-middle">{renderEnrollmentEventText(e)}</td>
+              <td className="align-middle">{renderEventText(e)}</td>
             </tr>
           ))}
         </tbody>

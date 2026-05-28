@@ -5,13 +5,13 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import {
   type ConstructedCourseOrInstanceContext,
-  CourseOrInstanceContextDataSchema,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
@@ -19,13 +19,27 @@ import {
 } from './authz-data-lib.js';
 import {
   type CourseInstance,
+  CourseInstanceSchema,
+  CourseSchema,
   EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
+  EnumEnrollmentStatusSchema,
   EnumModeSchema,
+  InstitutionSchema,
   type User,
 } from './db-types.js';
+import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const CourseOrInstanceContextDataSchema = z.object({
+  course: CourseSchema,
+  institution: InstitutionSchema,
+  course_instance: CourseInstanceSchema.nullable(),
+  course_role: EnumCourseRoleSchema,
+  course_instance_role: EnumCourseInstanceRoleSchema,
+  enrollment_status: EnumEnrollmentStatusSchema.nullable(),
+});
 
 /**
  * If `course_id` is not provided, but `course_instance_id` is,
@@ -35,24 +49,14 @@ async function selectCourseOrInstanceContextData({
   user_id,
   course_id,
   course_instance_id,
-  ip,
-  req_date,
 }: {
   user_id: string;
   course_id: string | null;
   course_instance_id: string | null;
-  ip: string | null;
-  req_date: Date;
 }) {
-  return sqldb.queryOptionalRow(
+  return await sqldb.queryOptionalRow(
     sql.select_course_or_instance_context_data,
-    {
-      user_id,
-      course_id,
-      course_instance_id,
-      ip,
-      req_date,
-    },
+    { user_id, course_id, course_instance_id },
     CourseOrInstanceContextDataSchema,
   );
 }
@@ -64,6 +68,24 @@ export const CourseOrInstanceOverridesSchema = z.object({
   allow_example_course_override: z.boolean().optional(),
 });
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
+
+export async function checkCourseInstanceLegacyAccess({
+  courseInstanceIds,
+  userId,
+  reqDate,
+}: {
+  courseInstanceIds: string[];
+  userId: string;
+  reqDate: Date;
+}) {
+  // Quick return to avoid hitting the database if there are no course instance ids to check.
+  if (courseInstanceIds.length === 0) return [];
+  return await sqldb.queryScalars(
+    sql.check_course_instance_legacy_access,
+    { course_instance_ids: courseInstanceIds, user_id: userId, req_date: reqDate },
+    IdSchema,
+  );
+}
 
 /**
  * Checks if the user has access to the course instance. If the user is a student,
@@ -181,8 +203,6 @@ export async function constructCourseOrInstanceContext({
     user_id: user.id,
     course_id,
     course_instance_id,
-    ip,
-    req_date,
   });
 
   if (rawAuthzData === null) {
@@ -208,16 +228,14 @@ export async function constructCourseOrInstanceContext({
         resolvedOverrides.allow_example_course_override &&
         // If we can step _up_ to Viewer, do so.
         // We don't want to accidentally decrease the role of an existing user.
-        ['None', 'Previewer'].includes(rawAuthzData.permissions_course.course_role)
+        ['None', 'Previewer'].includes(rawAuthzData.course_role)
       ) {
         return 'Viewer';
       }
-
       // Otherwise, return the actual role.
-      return rawAuthzData.permissions_course.course_role;
     }
 
-    return rawAuthzData.permissions_course.course_role;
+    return rawAuthzData.course_role;
   });
 
   const course_instance_role = run(() => {
@@ -227,10 +245,11 @@ export async function constructCourseOrInstanceContext({
     if (is_administrator) {
       return 'Student Data Editor';
     }
-    return rawAuthzData.permissions_course_instance.course_instance_role;
+    return rawAuthzData.course_instance_role;
   });
 
-  const mode = resolvedOverrides.mode ?? rawAuthzData.mode;
+  const mode =
+    resolvedOverrides.mode ?? (await ipToMode({ ip, date: req_date, authn_user_id: user.id }));
 
   const authzData = {
     user,
@@ -252,13 +271,19 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
-            /* eslint-disable @typescript-eslint/no-deprecated */
+            const courseInstanceIdsWithAccess = await checkCourseInstanceLegacyAccess({
+              courseInstanceIds: [rawAuthzData.course_instance.id],
+              userId: user.id,
+              reqDate: req_date,
+            });
+            const has_student_access = courseInstanceIdsWithAccess.includes(
+              rawAuthzData.course_instance.id,
+            );
             return {
-              has_student_access: rawAuthzData.permissions_course_instance.has_student_access,
+              has_student_access,
               has_student_access_with_enrollment:
-                rawAuthzData.permissions_course_instance.has_student_access_with_enrollment,
+                has_student_access && rawAuthzData.enrollment_status === 'joined',
             };
-            /* eslint-enable @typescript-eslint/no-deprecated */
           })),
         };
       }
@@ -285,4 +310,20 @@ export async function constructCourseOrInstanceContext({
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
   };
+}
+
+export async function selectCourseInstanceRole({
+  courseInstanceId,
+  userId,
+}: {
+  userId: string;
+  courseInstanceId: string;
+}) {
+  return (
+    (await sqldb.queryOptionalScalar(
+      sql.select_course_instance_role,
+      { course_instance_id: courseInstanceId, user_id: userId },
+      EnumCourseInstanceRoleSchema,
+    )) ?? 'None'
+  );
 }

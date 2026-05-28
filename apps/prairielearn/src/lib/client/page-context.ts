@@ -4,7 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
-import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import { CourseInstancePageAuthzDataSchema, CoursePageAuthzDataSchema } from '../authz-data-lib.js';
 import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
@@ -50,12 +50,19 @@ type StaffPlainPageContext = z.infer<typeof StaffPlainPageContextSchema>;
 
 /* Authz data page context */
 
-const AuthzDataPageContextSchema = z
+const CourseAuthzDataPageContextSchema = z
   .object({
-    authz_data: PageAuthzDataSchema,
+    authz_data: CoursePageAuthzDataSchema,
   })
-  .brand<'AuthzDataPageContext'>();
-type AuthzDataPageContext = z.infer<typeof AuthzDataPageContextSchema>;
+  .brand<'CourseAuthzDataPageContext'>();
+type CourseAuthzDataPageContext = z.infer<typeof CourseAuthzDataPageContextSchema>;
+
+const CourseInstanceAuthzDataPageContextSchema = z
+  .object({
+    authz_data: CourseInstancePageAuthzDataSchema,
+  })
+  .brand<'CourseInstanceAuthzDataPageContext'>();
+type CourseInstanceAuthzDataPageContext = z.infer<typeof CourseInstanceAuthzDataPageContextSchema>;
 
 // Since this data comes from res.locals and not the database, we can make certain guarantees
 // about the data.
@@ -174,15 +181,27 @@ interface PageTypeReturnMap {
   };
 }
 
+interface AuthzDataForPageType {
+  /**
+   * A `pageType: 'course'` page may be reached from
+   * `/pl/course_instance/:course_instance_id/instructor`, and we
+   * want to preserve CI authz fields
+   */
+  course: CourseAuthzDataPageContext | CourseInstanceAuthzDataPageContext;
+  courseInstance: CourseInstanceAuthzDataPageContext;
+  assessment: CourseInstanceAuthzDataPageContext;
+  assessmentQuestion: CourseInstanceAuthzDataPageContext;
+}
+
 export type PageContext<
   PageType extends 'plain' | 'course' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
   AccessType extends 'student' | 'instructor',
   WithAuthz extends boolean = true,
-> = WithAuthz extends true
-  ? PageTypeReturnMap[AccessType][PageType] & AuthzDataPageContext
-  : PageTypeReturnMap[AccessType][PageType];
-
-export type PageContextWithAuthzData = PageContext<'plain', 'student' | 'instructor', true>;
+> = PageType extends 'plain'
+  ? PageTypeReturnMap[AccessType][PageType]
+  : WithAuthz extends true
+    ? PageTypeReturnMap[AccessType][PageType] & AuthzDataForPageType[Exclude<PageType, 'plain'>]
+    : PageTypeReturnMap[AccessType][PageType];
 
 /**
  * Extract page context from res.locals with hierarchical inclusion.
@@ -201,8 +220,7 @@ export function extractPageContext<
   options: {
     pageType: PageType;
     accessType: AccessType;
-    withAuthzData?: WithAuthz;
-  },
+  } & (PageType extends 'plain' ? { withAuthzData?: false } : { withAuthzData?: WithAuthz }),
 ): PageContext<PageType, AccessType, WithAuthz> {
   type ReturnType = PageContext<PageType, AccessType, WithAuthz>;
 
@@ -217,11 +235,17 @@ export function extractPageContext<
   });
 
   const authzData = run(() => {
-    if (withAuthzData) {
-      return AuthzDataPageContextSchema.parse(resLocals);
-    } else {
-      return null;
+    // Plain pages never include authz_data in the result, even when withAuthzData is true.
+    if (!withAuthzData || pageType === 'plain') return null;
+    if (
+      pageType === 'course' &&
+      // We don't want to strip course instance authz fields when we're on a course page
+      // mounted from a course-instance route -- we need them for role checks.
+      !('has_course_instance_permission_view' in (resLocals.authz_data ?? {}))
+    ) {
+      return CourseAuthzDataPageContextSchema.parse(resLocals);
     }
+    return CourseInstanceAuthzDataPageContextSchema.parse(resLocals);
   });
 
   if (pageType === 'plain') {

@@ -1,6 +1,6 @@
 import { renderHtml } from '@prairielearn/react';
 
-import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
+import { type AssessmentUrlParts, getAssessmentUrl } from '../lib/client/url.js';
 
 export function AssessmentBadge({
   assessment,
@@ -12,12 +12,12 @@ export function AssessmentBadge({
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+} & AssessmentUrlParts) {
   if (hideLink) {
     return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
   }
 
-  const link = getAssessmentInstanceUrl(
+  const link = getAssessmentUrl(
     // TypeScript is not smart enough to infer the correct type here
     urlPrefix !== undefined
       ? {
@@ -49,7 +49,7 @@ export function AssessmentBadgeHtml({
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+} & AssessmentUrlParts) {
   if (urlPrefix === undefined) {
     return renderHtml(
       <AssessmentBadge

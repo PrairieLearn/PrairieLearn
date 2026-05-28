@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  StaffAlternativeGroupSchema,
+  StaffAlternativePoolSchema,
   StaffAssessmentQuestionSchema,
   StaffAssessmentSchema,
   type StaffCourse,
@@ -19,8 +19,8 @@ import { AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
 
 const AssessmentQuestionRowMetaSchema = z.object({
   start_new_zone: z.boolean(),
-  start_new_alternative_group: z.boolean(),
-  alternative_group_size: z.number(),
+  start_new_alternative_pool: z.boolean(),
+  alternative_pool_size: z.number(),
 });
 
 const OtherAssessmentSchema = z.object({
@@ -39,7 +39,7 @@ export const StaffAssessmentQuestionSqlSchema = z.object({
   assessment_question: StaffAssessmentQuestionSchema,
   question: StaffQuestionSchema,
   topic: StaffTopicSchema,
-  alternative_group: StaffAlternativeGroupSchema,
+  alternative_pool: StaffAlternativePoolSchema,
   zone: StaffZoneSchema,
   assessment: StaffAssessmentSchema,
   course_instance: StaffCourseInstanceSchema,
@@ -61,7 +61,7 @@ export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionR
 /**
  * Lightweight metadata type for the assessment editor. Contains only the
  * fields the editor actually reads, avoiding the need to construct dummy
- * zone / alternative_group / assessment_question objects.
+ * zone / alternative_pool / assessment_question objects.
  */
 export interface EditorQuestionMetadata {
   question: StaffQuestion;

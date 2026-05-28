@@ -95,6 +95,26 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
     );
   }
 
+  for (const forbiddenProp of ['resLocals', 'locals'] as const) {
+    if (props && typeof props === 'object' && forbiddenProp in props) {
+      throw new AugmentedError(
+        `<Hydrate> was passed a "${forbiddenProp}" prop on <${componentName}>.`,
+        {
+          info: html`
+            <div>
+              <p>
+                All props on a hydrated component are serialized and sent to the client. Passing
+                <code>res.locals</code> (or any similarly broad object) would leak the entire
+                server-side locals — CSRF tokens, auth data, authz objects, full DB rows, etc.
+              </p>
+              <p>Pass only the specific fields the component needs as individual props.</p>
+            </div>
+          `,
+        },
+      );
+    }
+  }
+
   const scriptPath = `esm-bundles/hydrated-components/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
@@ -125,7 +145,7 @@ registerHydratedComponent(${componentName});</code></pre>
       ))}
       <script
         type="application/json"
-        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
         dangerouslySetInnerHTML={{
           __html: escapeJsonForHtml(props),
         }}
@@ -139,7 +159,7 @@ registerHydratedComponent(${componentName});</code></pre>
         // position, matching the client-side hydration which also places the component
         // at the root of its own tree. This ensures hooks like `useId()` generate
         // consistent values between server and client.
-        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
         dangerouslySetInnerHTML={{
           __html: renderToString(<Component {...props} />),
         }}

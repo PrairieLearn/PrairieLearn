@@ -61,10 +61,10 @@ router.get(
           navContext: {
             type: 'instructor',
             page: 'instance_admin',
-            subPage: 'integrations',
+            subPage: 'lms_connections',
           },
           courseOwners,
-          pageTitle: 'Integrations',
+          pageTitle: 'LMS connections',
           requiredPermissions: 'Student Data Editor',
         }),
       );

@@ -22,6 +22,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -291,10 +292,12 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
@@ -317,6 +320,11 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
+    const enabledTools = await selectEnabledToolsForInstanceQuestion({
+      instance_question_id: res.locals.instance_question.id,
+      assessment_id: res.locals.assessment.id,
+    });
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -331,7 +339,9 @@ router.get(
         res.status(403).send(
           StudentInstanceQuestion({
             resLocals: res.locals,
+            renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+            enabledTools,
           }),
         );
         return;
@@ -342,7 +352,8 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+
+    const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
@@ -390,10 +401,12 @@ router.get(
     res.send(
       StudentInstanceQuestion({
         resLocals: res.locals,
+        renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,
         questionCopyTargets,
+        enabledTools,
       }),
     );
   }),

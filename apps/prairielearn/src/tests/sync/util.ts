@@ -1,9 +1,9 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'path';
 
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -118,6 +118,7 @@ export const MANUAL_GRADING_QUESTION_ID = 'test_manual';
 export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
+export const PREFERENCES_QUESTION_ID = 'questionPreferencesTest';
 
 const course = {
   name: 'TEST 101',
@@ -220,6 +221,28 @@ const questions: Record<string, QuestionJsonInput> = {
       gradedFiles: ['fibonacci.py'],
     },
   },
+  [PREFERENCES_QUESTION_ID]: {
+    uuid: '220a816f-942f-4458-8a36-228ce7b755f0',
+    title: 'Workspace preferences test question',
+    topic: 'Workspace',
+    tags: ['test'],
+    type: 'v3',
+    preferences: {
+      num: {
+        type: 'number',
+        default: 42,
+      },
+      str: {
+        type: 'string',
+        enum: ['valid A', 'valid B'],
+        default: 'valid A',
+      },
+      bool: {
+        type: 'boolean',
+        default: true,
+      },
+    },
+  },
 };
 
 const courseInstances: Record<string, CourseInstanceData> = {
@@ -231,7 +254,6 @@ const courseInstances: Record<string, CourseInstanceData> = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [{ credit: 100 }],
         zones: [
           {
             title: 'zone 1',
