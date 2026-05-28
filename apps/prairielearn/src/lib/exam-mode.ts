@@ -48,12 +48,13 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
  *   1. A student launches their LDB-required PrairieTest reservation
  *      through LockDown Browser, completing the PT → PL auth handoff.
  *      LDB enforces its restrictions only on that browser process.
- *   2. On the same machine (or any device on the same network), they open
- *      a separate browser and sign in to PrairieLearn directly via
- *      Shibboleth / Google / SAML / LTI. Without this check, that
- *      session is in `'Exam'` mode (active PT reservation, matching IP)
- *      but has none of LDB's restrictions — they can copy/paste, open
- *      external tabs, screenshot, screen-share, etc.
+ *   2. A second person opens a separate browser on a different computer
+ *      on the same network, signs in to PrairieLearn as that student
+ *      directly via Shibboleth / Google / SAML / LTI, and helps with the
+ *      exam. Without this check, that session is in `'Exam'` mode (active
+ *      PT reservation, matching IP) but has none of LDB's restrictions —
+ *      they can copy/paste, open external tabs, screenshot, screen-share,
+ *      etc.
  *
  * Refusing all access (not just exam pages) during the LDB window matches
  * the policy that an LDB-required reservation confines the user to LDB

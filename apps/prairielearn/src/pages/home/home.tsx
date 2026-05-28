@@ -44,7 +44,13 @@ router.get(
 
     // Potentially prompt the user to accept the terms before proceeding.
     if (isEnterprise()) {
-      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
+      await redirectToTermsPageIfNeeded(
+        res,
+        res.locals.authn_user,
+        req.ip,
+        req.session.lockdown_browser ?? false,
+        req.originalUrl,
+      );
     }
 
     const instructorCourses = await queryRows(
@@ -206,6 +212,7 @@ router.post(
         ip: req.ip ?? null,
         req_date: res.locals.req_date,
         is_administrator: res.locals.is_administrator,
+        session_is_lockdown_browser: req.session.lockdown_browser ?? false,
       });
 
     if (authzData === null || courseInstance === null) {

@@ -51,6 +51,7 @@ router.get(
       ip: req.ip,
       date: res.locals.req_date,
       authn_user_id: authn_user.id,
+      session_is_lockdown_browser: req.session.lockdown_browser ?? false,
     });
 
     const isExamMode = mode !== 'Public';
@@ -104,6 +105,7 @@ router.post(
         ip: req.ip,
         date: res.locals.req_date,
         authn_user_id: res.locals.authn_user.id,
+        session_is_lockdown_browser: req.session.lockdown_browser ?? false,
       });
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');

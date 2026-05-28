@@ -74,6 +74,7 @@ router.get(
       ip: req.ip || null,
       req_date: res.locals.req_date,
       is_administrator: res.locals.is_administrator,
+      session_is_lockdown_browser: req.session.lockdown_browser ?? false,
     });
 
     if (!authzData || !hasRole(authzData, ['Editor'])) {
@@ -201,6 +202,7 @@ router.post(
       ip: req.ip || null,
       req_date: res.locals.req_date,
       is_administrator: res.locals.is_administrator,
+      session_is_lockdown_browser: req.session.lockdown_browser ?? false,
     });
 
     if (!authzData || !hasRole(authzData, ['Editor', 'Student Data Editor']) || !courseInstance) {
