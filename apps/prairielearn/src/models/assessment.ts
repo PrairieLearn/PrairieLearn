@@ -200,7 +200,7 @@ const AssessmentReferencingQuestionsSchema = z.object({
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   assessment_directory: AssessmentSchema.shape.tid.unwrap(),
 });
-export type AssessmentReferencingQuestions = z.infer<typeof AssessmentReferencingQuestionsSchema>;
+type AssessmentReferencingQuestions = z.infer<typeof AssessmentReferencingQuestionsSchema>;
 
 /**
  * Returns the assessments (in `course_id`) that reference any of

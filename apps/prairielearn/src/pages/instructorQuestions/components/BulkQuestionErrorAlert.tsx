@@ -1,7 +1,7 @@
 import { type AppError, AppErrorAlert, syncJobFailedRenderer } from '../../../lib/client/errors.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
-export type BulkQuestionError = QuestionsError[
+type BulkQuestionError = QuestionsError[
   | 'AddToAssessment'
   | 'RemoveFromAssessment'
   | 'DeleteQuestions'];

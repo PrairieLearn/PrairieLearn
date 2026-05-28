@@ -12,7 +12,7 @@ import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
 import { SelectedQuestionList } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
-export interface AssessmentTarget {
+interface AssessmentTarget {
   assessmentId: string;
   courseInstanceId: string;
   label: string;
