@@ -311,11 +311,11 @@ test.describe('Bulk question table actions', () => {
         'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
       ),
     ).toBeVisible();
-    await expect(
-      deleteModal.getByRole('listitem').filter({
-        hasText: `Sp15: HW${assessmentNumber} — the new first zone has lockpoint: true`,
-      }),
-    ).toBeVisible();
+    const lockpointItem = deleteModal.getByRole('listitem').filter({
+      hasText: 'the new first zone would be a lockpoint',
+    });
+    await expect(lockpointItem).toBeVisible();
+    await expect(lockpointItem.getByRole('link', { name: `HW${assessmentNumber}` })).toBeVisible();
     await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
     const after = await readInfoAssessment(testCoursePath, assessmentTid);
     expect(after.zones).toHaveLength(2);
@@ -370,11 +370,11 @@ test.describe('Bulk question table actions', () => {
         'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
       ),
     ).toBeVisible();
-    await expect(
-      deleteModal.getByRole('listitem').filter({
-        hasText: `Sp15: HW${assessmentNumber} — all zones would be empty`,
-      }),
-    ).toBeVisible();
+    const emptyZonesItem = deleteModal.getByRole('listitem').filter({
+      hasText: 'all zones would be empty',
+    });
+    await expect(emptyZonesItem).toBeVisible();
+    await expect(emptyZonesItem.getByRole('link', { name: `HW${assessmentNumber}` })).toBeVisible();
     await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
     const after = await readInfoAssessment(testCoursePath, assessmentTid);
     expect(after.zones).toHaveLength(1);
