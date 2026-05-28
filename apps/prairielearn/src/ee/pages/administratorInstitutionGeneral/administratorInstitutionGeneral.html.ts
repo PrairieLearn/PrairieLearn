@@ -7,6 +7,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
+import { COURSE_REQUEST_MESSAGE_MAX_LENGTH } from '../../../models/institution-settings.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export const InstitutionStatisticsSchema = z.object({
@@ -201,7 +202,8 @@ export function AdministratorInstitutionGeneral({
           <label class="form-label" for="course_request_message"> Message (Markdown) </label>
           ${CourseRequestMessageTextarea({ courseRequestMessage })}
           <small id="course_request_message_help" class="form-text text-muted">
-            Leave blank to avoid showing a message on the course request page.
+            Leave blank to avoid showing a message on the course request page. Maximum
+            ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.
           </small>
         </div>
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -250,5 +252,5 @@ function CourseRequestMessageTextarea({
   courseRequestMessage: string | null;
 }): HtmlValue {
   // prettier-ignore
-  return html`<textarea class="form-control font-monospace" id="course_request_message" name="course_request_message" rows="10" aria-describedby="course_request_message_help">${courseRequestMessage ?? ''}</textarea>`;
+  return html`<textarea class="form-control font-monospace" id="course_request_message" name="course_request_message" rows="10" maxlength="${COURSE_REQUEST_MESSAGE_MAX_LENGTH}" aria-describedby="course_request_message_help">${courseRequestMessage ?? ''}</textarea>`;
 }

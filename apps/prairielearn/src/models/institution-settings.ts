@@ -14,6 +14,8 @@ import { insertAuditEvent } from './audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export const COURSE_REQUEST_MESSAGE_MAX_LENGTH = 10000;
+
 export async function selectInstitutionSettings({
   institution_id,
 }: {

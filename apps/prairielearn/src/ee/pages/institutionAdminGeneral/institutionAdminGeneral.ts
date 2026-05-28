@@ -6,6 +6,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
+  COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
   updateInstitutionCourseRequestMessage,
 } from '../../../models/institution-settings.js';
@@ -61,6 +62,13 @@ router.post(
         req.body.course_request_message.trim().length > 0
           ? req.body.course_request_message
           : null;
+
+      if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
+        throw new HttpStatusError(
+          400,
+          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+        );
+      }
 
       await updateInstitutionCourseRequestMessage({
         institution_id: institution.id,
