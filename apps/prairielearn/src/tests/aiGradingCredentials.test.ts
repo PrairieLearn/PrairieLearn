@@ -1,10 +1,10 @@
-import { TRPCClientError, createTRPCClient, httpLink } from '@trpc/client';
-import superjson from 'superjson';
+import { TRPCClientError } from '@trpc/client';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { type AiGradingSettingsRouter } from '../ee/pages/instructorInstanceAdminAiGrading/trpc.js';
+import { createAiGradingSettingsTrpcClient } from '../ee/pages/instructorInstanceAdminAiGrading/utils/trpc-client.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { decryptFromStorage } from '../lib/storage-crypt.js';
@@ -23,7 +23,6 @@ const viewerUser: AuthUser = {
 };
 
 const aiGradingSettingsPath = '/pl/course_instance/1/instructor/instance_admin/ai_grading';
-const aiGradingSettingsUrl = siteUrl + aiGradingSettingsPath;
 
 async function createTrpcClient(user?: AuthUser) {
   const dbUser = user ? await getOrCreateUser(user) : await getConfiguredUser();
@@ -32,17 +31,9 @@ async function createTrpcClient(user?: AuthUser) {
     config.secretKey,
   );
 
-  return createTRPCClient<AiGradingSettingsRouter>({
-    links: [
-      httpLink({
-        url: aiGradingSettingsUrl + '/trpc',
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': csrfToken,
-        },
-        transformer: superjson,
-      }),
-    ],
+  return createAiGradingSettingsTrpcClient({
+    csrfToken,
+    urlBase: siteUrl + aiGradingSettingsPath,
   });
 }
 

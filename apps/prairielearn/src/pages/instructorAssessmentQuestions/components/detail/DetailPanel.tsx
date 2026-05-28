@@ -1,4 +1,6 @@
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
+import type { AppError } from '../../../../lib/client/errors.js';
+import type { AssessmentQuestionsError } from '../../../../trpc/assessment/assessment-questions.js';
 import {
   type CourseQuestionForPicker,
   type DetailActions,
@@ -9,7 +11,7 @@ import {
 } from '../../types.js';
 import { findQuestionByTrackingId } from '../../utils/zoneLookup.js';
 
-import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
+import { AltPoolDetailPanel } from './AltPoolDetailPanel.js';
 import { QuestionDetailPanel } from './QuestionDetailPanel.js';
 import { QuestionPickerPanel } from './QuestionPickerPanel.js';
 import { ZoneDetailPanel } from './ZoneDetailPanel.js';
@@ -28,6 +30,8 @@ export function DetailPanel({
   currentAssessmentId,
   isPickingQuestion,
   pickerError,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
@@ -41,7 +45,9 @@ export function DetailPanel({
   currentChangeQid?: string;
   currentAssessmentId: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
 }) {
   if (selectedItem == null) {
     return null;
@@ -61,11 +67,11 @@ export function DetailPanel({
         <ZoneDetailPanel
           key={zone.trackingId}
           zone={zone}
+          zones={zones}
           zoneIndex={zoneIndex}
           idPrefix={`zone-${zone.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateZone}
-          onDelete={actions.onDeleteZone}
           onFormValidChange={actions.onFormValidChange}
         />
       );
@@ -86,7 +92,6 @@ export function DetailPanel({
           idPrefix={`question-${question.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
@@ -118,7 +123,6 @@ export function DetailPanel({
           idPrefix={`alt-${alternative.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
@@ -126,29 +130,29 @@ export function DetailPanel({
       );
     }
 
-    case 'altGroup': {
-      const altGroupResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-      if (!altGroupResult) {
-        throw new Error(`Alt group not found: ${selectedItem.questionTrackingId}`);
+    case 'altPool': {
+      const altPoolResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+      if (!altPoolResult) {
+        throw new Error(`Alt pool not found: ${selectedItem.questionTrackingId}`);
       }
-      const block = altGroupResult.question;
+      const block = altPoolResult.question;
       return (
-        <AltGroupDetailPanel
+        <AltPoolDetailPanel
           key={block.trackingId}
           zoneQuestionBlock={block}
-          zone={altGroupResult.zone}
+          zone={altPoolResult.zone}
           questionMetadata={questionMetadata}
-          idPrefix={`altgroup-${block.trackingId}`}
+          idPrefix={`altpool-${block.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
           onFormValidChange={actions.onFormValidChange}
+          onDismissBanner={actions.onDismissBanner}
         />
       );
     }
 
     case 'picker':
-    case 'altGroupPicker':
+    case 'altPoolPicker':
       return (
         <QuestionPickerPanel
           courseQuestions={courseQuestions}
@@ -161,6 +165,8 @@ export function DetailPanel({
           currentAssessmentId={currentAssessmentId}
           isPickingQuestion={isPickingQuestion}
           pickerError={pickerError}
+          questionSharingEnabled={questionSharingEnabled}
+          consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
           onQuestionSelected={actions.onQuestionPicked}
           onRemoveQuestionByQid={actions.onRemoveQuestionByQid}
         />

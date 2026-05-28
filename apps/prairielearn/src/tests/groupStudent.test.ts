@@ -64,14 +64,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should have a CSRF token', function () {
-      const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 4);
-      // there are 6 occurrences of the same csrf, we will pick the first one
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
   });
 
   describe('3. Check if the config is correct', function () {
@@ -97,13 +89,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 4);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
     });
   });
 

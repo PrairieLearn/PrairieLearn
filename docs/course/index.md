@@ -440,6 +440,10 @@ The possible colors for assessment sets, topic, and tags are:
 
 Access permissions for course staff can be configured on the "Staff" tab. Course staff permissions are separated into _course content roles_ and _student data roles_. These can be mixed and matched arbitrarily, so any combination is possible.
 
+!!! note
+
+    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the Git repository, please contact the owner of that repository. If you are an owner and do not have GitHub access, contact us on [Slack](https://prairielearn.slack.com) in `#pl-help`.
+
 ### Course content access roles
 
 Course content access roles grant permission to access all course content, such as questions and assessments, including aggregate statistics from student usage.

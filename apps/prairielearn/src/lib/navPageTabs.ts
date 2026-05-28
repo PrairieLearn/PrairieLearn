@@ -1,12 +1,10 @@
+import { html } from '@prairielearn/html';
+
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
 import { encodeSearchString } from './uri-util.shared.js';
 
-/**
- * Retrieves horizontal navigation tab info for ContextNavigation.
- * @returns Navigation page tabs and their configurations
- */
 export function getNavPageTabs() {
   const navPagesTabs = {
     public_question: [
@@ -59,6 +57,20 @@ export function getNavPageTabs() {
         iconClasses: 'fas fa-credit-card',
         tabLabel: 'Billing',
         renderCondition: (resLocals) => resLocals.billing_enabled,
+      },
+    ],
+    students: [
+      {
+        activeSubPage: ['overview', 'detail'],
+        urlSuffix: '/instance_admin/students',
+        iconClasses: 'bi bi-people-fill',
+        tabLabel: 'Students',
+      },
+      {
+        activeSubPage: 'student_labels',
+        urlSuffix: '/instance_admin/students/labels',
+        iconClasses: 'bi bi-person-badge',
+        tabLabel: 'Student labels',
       },
     ],
     course_admin: [
@@ -131,7 +143,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
         tabLabel: 'Groups',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
         activeSubPage: 'questions',
@@ -248,6 +259,18 @@ export function getNavPageTabs() {
         urlSuffix: '/administrator/courses',
         iconClasses: 'fa fa-chalkboard',
         tabLabel: 'Courses',
+      },
+      {
+        activeSubPage: 'courseRequests',
+        urlSuffix: '/administrator/courseRequests',
+        iconClasses: 'fa fa-inbox',
+        tabLabel: 'Requests',
+        htmlSuffix: ({ pendingCourseRequestCount }) => {
+          if (!pendingCourseRequestCount) return '';
+          return html`<span class="badge rounded-pill text-bg-primary ms-2"
+            >${pendingCourseRequestCount}</span
+          >`;
+        },
       },
       {
         activeSubPage: 'queries',

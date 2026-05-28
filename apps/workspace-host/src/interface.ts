@@ -633,6 +633,10 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
   workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
+  // Set networking disabled status for workspaces that have actions that depend on it (e.g., vscode)
+  if (!row.workspace_enable_networking) {
+    workspace_environment['WORKSPACE_NETWORKING_DISABLED'] = '1';
+  }
 
   const settings = {
     workspace_image: row.workspace_image,

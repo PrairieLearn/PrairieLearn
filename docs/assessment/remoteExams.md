@@ -211,7 +211,7 @@ This configuration is good when:
 
 Some notes about this configuration:
 
-- All of the the [notes above for synchronous, timed exams](#synchronous-timed-exams) still apply.
+- All of the [notes above for synchronous, timed exams](#synchronous-timed-exams) still apply.
 - The only change between this configuration and the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of the `"allowRealTimeGrading": false`. [Disabling real-time grading](configuration.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
 - When they are doing the exam, students can save answers to a question as many times as they like. When the exam finishes, the most recent saved answer for each question (if any) will be graded. Any earlier saved answers will be ignored.
 - With this configuration students will never see their grading results for specific questions. This is because `"allowRealTimeGrading": false` disallows grading _during_ the exam, and `"showClosedAssessment": false` hides per-question grading results _after_ the exam is over.

@@ -11,6 +11,9 @@ const eslintReactConfig = eslintReact.configs['recommended-typescript'] as {
   settings?: TSESLint.FlatConfig.Settings;
 };
 
+const disableConflictReactHooksConfig =
+  eslintReact.configs['disable-conflict-eslint-plugin-react-hooks'];
+
 /**
  * React, React hooks, accessibility, and related rules.
  */
@@ -25,9 +28,8 @@ export function reactConfig(): TSESLint.FlatConfig.ConfigArray {
       },
 
       rules: {
-        // React hooks
-        'react-hooks/exhaustive-deps': 'error',
-        'react-hooks/rules-of-hooks': 'error',
+        // https://www.eslint-react.xyz/docs/migrating-from-eslint-plugin-react-hooks#migration-preset
+        ...disableConflictReactHooksConfig.rules,
 
         // react-you-might-not-need-an-effect rules as errors
         ...Object.fromEntries(
@@ -47,11 +49,9 @@ export function reactConfig(): TSESLint.FlatConfig.ConfigArray {
         ),
         // We want to be able to use `useState` without the setter function for
         // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
-        '@eslint-react/naming-convention/use-state': 'off',
-        // Forbid `snake_case` props.
-        '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
+        '@eslint-react/use-state': 'off',
         // Forbid `target="_blank"` without `rel="noreferrer"` for security reasons.
-        '@eslint-react/dom/no-unsafe-target-blank': 'error',
+        '@eslint-react/dom-no-unsafe-target-blank': 'error',
 
         // jsx-a11y strict rules
         ...jsxA11yX.configs.strict.rules,

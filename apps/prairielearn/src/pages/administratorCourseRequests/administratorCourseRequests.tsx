@@ -4,9 +4,10 @@ import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { selectAllCourseRequests } from '../../lib/course-request.js';
+import { selectAllCourseRequests, selectPendingCourseRequests } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { selectAllInstitutions } from '../../models/institution.js';
@@ -18,13 +19,21 @@ const router = Router();
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const rows = await selectAllCourseRequests();
+    const { urlPrefix, authn_user } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
+    const showAll = req.query.status === 'all';
+    const rows = showAll ? await selectAllCourseRequests() : await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
-    const availableTimezones = await getCanonicalTimezones();
+    const availableTimezones = await getCanonicalTimezones(
+      institutions.map((i) => i.display_timezone),
+    );
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: `${res.locals.urlPrefix}/administrator/trpc`,
-        authn_user_id: res.locals.authn_user.id,
+        url: `${urlPrefix}/administrator/trpc`,
+        authn_user_id: authn_user.id,
       },
       config.secretKey,
     );
@@ -35,7 +44,7 @@ router.get(
         navContext: {
           type: 'administrator',
           page: 'admin',
-          subPage: 'courses',
+          subPage: 'courseRequests',
         },
         options: {
           fullWidth: true,
@@ -48,7 +57,8 @@ router.get(
               availableTimezones={availableTimezones}
               coursesRoot={config.coursesRoot}
               trpcCsrfToken={trpcCsrfToken}
-              urlPrefix={res.locals.urlPrefix}
+              aiSecretsConfigured={!!config.administratorOpenAiApiKey}
+              showAll={showAll}
             />
           </Hydrate>
         ),

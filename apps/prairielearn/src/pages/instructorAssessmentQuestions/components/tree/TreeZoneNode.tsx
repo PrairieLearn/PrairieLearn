@@ -32,16 +32,18 @@ import { makeDraggableStyle } from './dragUtils.js';
 export function TreeZoneNode({
   zone,
   zoneNumber,
+  questionStartNumber,
   state,
   actions,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
+  questionStartNumber: number;
   state: TreeState;
   actions: TreeActions;
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
-  const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
+  const { setSelectedItem, dispatch, onAddQuestion, onAddAltPool, onDeleteZone } = actions;
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
@@ -93,19 +95,21 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center ps-2 py-2 border-bottom user-select-none text-body',
             isSelected
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',
+            (zoneChooseExceeds || zonePointsMismatch != null) && 'tree-row-warning-indicator',
           )}
           style={{
+            // Extra right padding prevents macOS overlay scrollbars
+            // from overlapping row content.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+            paddingRight: '1.5rem',
             cursor: 'pointer',
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...(zoneChooseExceeds || zonePointsMismatch != null
-              ? { borderLeft: '6px solid var(--bs-warning)' }
-              : {}),
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -176,7 +180,7 @@ export function TreeZoneNode({
                 placement="top"
                 tooltip={{
                   props: { id: `${badgeTooltipId}-choose` },
-                  body: 'Number of questions to randomly select from this zone',
+                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`,
                 }}
               >
                 <button type="button" className="btn btn-badge color-blue3">
@@ -234,8 +238,11 @@ export function TreeZoneNode({
           {editMode && (
             <button
               type="button"
-              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
-              aria-label="Delete zone"
+              className={clsx(
+                'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
+                !isSelected && 'hover-show',
+              )}
+              aria-label={`Delete zone '${zone.title}'`}
               title="Delete zone"
               onClick={(e) => {
                 e.stopPropagation();
@@ -250,10 +257,12 @@ export function TreeZoneNode({
         {/* Zone content */}
         {!isCollapsed && (
           <>
-            {zone.questions.map((zoneQuestionBlock) => (
+            {zone.questions.map((zoneQuestionBlock, questionIndex) => (
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
+                questionNumber={questionStartNumber + questionIndex}
+                zone={zone}
                 state={state}
                 actions={actions}
               />
@@ -283,10 +292,10 @@ export function TreeZoneNode({
                 <button
                   className="btn btn-sm btn-link text-muted"
                   type="button"
-                  onClick={() => onAddAltGroup(zone.trackingId)}
+                  onClick={() => onAddAltPool(zone.trackingId)}
                 >
                   <i className="bi bi-stack me-1" aria-hidden="true" />
-                  Add alternative group
+                  Add alternative pool
                 </button>
               </div>
             )}

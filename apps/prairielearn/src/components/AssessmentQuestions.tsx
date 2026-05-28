@@ -37,15 +37,15 @@ export function AssessmentQuestionHeaders({
       ) : (
         ''
       )}
-      {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
+      {question.start_new_alternative_pool && question.alternative_pool_size > 1 ? (
         <tr>
           <td colSpan={nTableCols}>
-            {question.alternative_group.number}.{' '}
-            {question.alternative_group.number_choose == null
+            {question.alternative_pool.number}.{' '}
+            {question.alternative_pool.number_choose == null
               ? 'Choose all questions from:'
-              : question.alternative_group.number_choose === 1
+              : question.alternative_pool.number_choose === 1
                 ? 'Choose 1 question from:'
-                : `Choose ${question.alternative_group.number_choose} questions from:`}
+                : `Choose ${question.alternative_pool.number_choose} questions from:`}
           </td>
         </tr>
       ) : (
@@ -56,21 +56,20 @@ export function AssessmentQuestionHeaders({
 }
 
 /**
- * Renders the question number badge for public assessment questions.
+ * Renders a question number badge such as "3." or "3.2.".
  */
 export function AssessmentQuestionNumber({
-  alternativeGroupSize,
-  alternativeGroupNumber,
-  numberInAlternativeGroup,
+  questionNumber,
+  alternativeNumber,
+  className,
 }: {
-  alternativeGroupSize: number;
-  alternativeGroupNumber: number;
-  numberInAlternativeGroup: number | null;
+  questionNumber: number;
+  alternativeNumber?: number | null;
+  className?: string;
 }) {
-  const numberText =
-    alternativeGroupSize === 1
-      ? `${alternativeGroupNumber}.`
-      : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
-
-  return <span className="badge color-gray1 me-2">{numberText} </span>;
+  return (
+    <span className={className} style={{ fontVariant: 'tabular-nums' }}>
+      {alternativeNumber != null ? `${questionNumber}.${alternativeNumber}.` : `${questionNumber}.`}
+    </span>
+  );
 }

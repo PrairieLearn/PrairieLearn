@@ -8,7 +8,6 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "comment": "testing comments in external grading blocks",
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "timeout": 60
   }

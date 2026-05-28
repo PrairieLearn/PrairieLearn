@@ -1,9 +1,9 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'path';
 
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -254,7 +254,6 @@ const courseInstances: Record<string, CourseInstanceData> = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [{ credit: 100 }],
         zones: [
           {
             title: 'zone 1',

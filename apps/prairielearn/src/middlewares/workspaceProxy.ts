@@ -3,7 +3,6 @@ import type { Socket } from 'net';
 
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -82,7 +81,7 @@ function getRequestPath(req: Request): string {
 
 export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
-  const workspaceProxyOptions: httpProxyMiddleware.Options<Request, Response> = {
+  return createProxyMiddleware<Request, Response>({
     target: 'invalid',
     ws: true,
     pathFilter: (_path, req) => {
@@ -174,6 +173,5 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         }
       },
     },
-  };
-  return createProxyMiddleware(workspaceProxyOptions);
+  });
 }

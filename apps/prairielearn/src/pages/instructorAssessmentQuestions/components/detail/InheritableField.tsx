@@ -6,7 +6,7 @@ import type { InheritanceSource } from '../../types.js';
 
 /**
  * A form field that supports value inheritance from a parent scope
- * (e.g., zone → alt group → question). When `isInherited` is true, the field
+ * (e.g., zone → alt pool → question). When `isInherited` is true, the field
  * displays a disabled input showing the inherited value with an "Override"
  * button. When overridden, an optional "Reset" button lets the user clear
  * the override and fall back to the inherited value.
@@ -24,7 +24,7 @@ export function InheritableField({
   error,
   helpText,
   inheritedValueLabel,
-  inheritedFromLabel = 'group',
+  inheritedFromLabel = 'pool',
   placeholder,
   onOverride,
   onReset,
