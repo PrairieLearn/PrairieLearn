@@ -1,9 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
 import { selectQuestionByQid } from '../../models/question.js';
+import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -134,5 +136,67 @@ test.describe('Question settings', () => {
 
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(updatedInfo.gradingMethod).toBe('Manual');
+  });
+});
+
+test.describe('Question deletion blockers', () => {
+  test('blocks deletion when it would leave an assessment with no zones', async ({
+    page,
+    testCoursePath,
+  }) => {
+    const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+    const qid = `singleblock${suffix}`;
+
+    const sourcePath = path.join(testCoursePath, 'questions', 'addNumbers');
+    const targetPath = path.join(testCoursePath, 'questions', qid);
+    await fs.cp(sourcePath, targetPath, { recursive: true });
+    const infoPath = path.join(targetPath, 'info.json');
+    const infoJson = JSON.parse(await fs.readFile(infoPath, 'utf-8'));
+    infoJson.uuid = randomUUID();
+    infoJson.title = 'Single delete blocker';
+    await fs.writeFile(infoPath, `${JSON.stringify(infoJson, null, 2)}\n`);
+
+    const assessmentTid = `singleblock${suffix}`;
+    const assessmentDir = path.join(
+      testCoursePath,
+      'courseInstances',
+      'Sp15',
+      'assessments',
+      assessmentTid,
+    );
+    await fs.mkdir(assessmentDir, { recursive: true });
+    await fs.writeFile(
+      path.join(assessmentDir, 'infoAssessment.json'),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Single delete blocker target',
+          set: 'Homework',
+          number: `5${suffix.slice(0, 4)}`,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [{ title: 'Only zone', questions: [{ id: qid, autoPoints: 1 }] }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    const question = await selectQuestionByQid({ qid, course_id: '1' });
+    await page.goto(`/pl/course/1/question/${question.id}/settings`);
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    const modal = page.getByRole('dialog').filter({ hasText: qid });
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    await expect(
+      page.getByText(
+        `Deleting this question would leave the following assessments in an invalid state: Sp15/${assessmentTid} (all zones would be empty). Remove the question from these assessments first.`,
+      ),
+    ).toBeVisible();
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
   });
 });
