@@ -194,13 +194,7 @@ export async function loadUser(
 
     // Potentially prompt the user to accept the terms before redirecting them.
     if (isEnterprise()) {
-      await redirectToTermsPageIfNeeded(
-        res,
-        selectedUser.user,
-        req.ip,
-        req.session.lockdown_browser ?? false,
-        redirUrl,
-      );
+      await redirectToTermsPageIfNeeded(res, selectedUser.user, req.ip, redirUrl);
     }
 
     res.redirect(redirUrl);

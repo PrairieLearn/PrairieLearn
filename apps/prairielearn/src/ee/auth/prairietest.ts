@@ -18,13 +18,7 @@ router.get(
     // Potentially prompt the user to accept the terms before redirecting to
     // PrairieTest.
     if (isEnterprise()) {
-      await redirectToTermsPageIfNeeded(
-        res,
-        res.locals.authn_user,
-        req.ip,
-        req.session.lockdown_browser ?? false,
-        req.originalUrl,
-      );
+      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
     const key = crypto.createSecretKey(config.prairieTestSharedAuthSecret, 'utf-8');

@@ -33,7 +33,6 @@ export async function enrollUser(
     ip: '127.0.0.1',
     req_date: new Date(),
     is_administrator: false,
-    session_is_lockdown_browser: false,
   });
 
   if (context.courseInstance === null) {

@@ -1,7 +1,5 @@
 import { type Response } from 'express';
 
-import { HttpStatusError } from '@prairielearn/error';
-
 import { config } from '../../lib/config.js';
 import { setCookie } from '../../lib/cookie.js';
 import { type User } from '../../lib/db-types.js';
@@ -28,29 +26,10 @@ function hasUserAcceptedTerms(user: User): boolean {
  * @param ip The IP address of the request
  * @returns Whether the user should be redirected to the terms acceptance page
  */
-async function shouldRedirectToTermsPage(
-  user: User,
-  ip: string | undefined,
-  session_is_lockdown_browser: boolean,
-) {
-  const mode = await ipToMode({
-    ip,
-    date: new Date(),
-    authn_user_id: user.id,
-    session_is_lockdown_browser,
-  });
-
-  if (mode === 'Blocked') {
-    // This (non-course-scoped) page doesn't pass through `authzCourseOrInstance`,
-    // so we enforce the LockDown Browser denial here instead.
-    throw new HttpStatusError(
-      403,
-      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
-    );
-  }
-
+async function shouldRedirectToTermsPage(user: User, ip: string | undefined) {
   if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
+  const mode = await ipToMode({ ip, date: new Date(), authn_user_id: user.id });
   return mode === 'Public';
 }
 
@@ -73,10 +52,9 @@ export async function redirectToTermsPageIfNeeded(
   res: Response,
   user: User,
   ip: string | undefined,
-  session_is_lockdown_browser: boolean,
   redirectUrl?: string,
 ): Promise<void> {
-  if (await shouldRedirectToTermsPage(user, ip, session_is_lockdown_browser)) {
+  if (await shouldRedirectToTermsPage(user, ip)) {
     redirectToTermsPage(res, redirectUrl);
   }
 }
