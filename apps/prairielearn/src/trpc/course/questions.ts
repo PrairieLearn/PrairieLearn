@@ -9,7 +9,7 @@ import {
   MAX_BULK_QUESTION_SELECTION,
   SafeQuestionsPageDataSchema,
 } from '../../components/QuestionsTable.shared.js';
-import type { Assessment, Question } from '../../lib/db-types.js';
+import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
 import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { removeQidsFromZone } from '../../lib/infoAssessment-edits.js';
@@ -200,10 +200,8 @@ const listZones = t.procedure
   .use(requireCoursePermissionPreview)
   .input(z.object({ assessmentId: IdSchema }))
   .query(async ({ input, ctx }) => {
-    const assessment = await selectAssessmentById(input.assessmentId);
-    assertNonDeletedTarget({ deletedAt: assessment.deleted_at, label: 'Assessment' });
-    await assertCourseInstanceBelongsToCourse({
-      courseInstanceId: assessment.course_instance_id,
+    await selectAssessmentForEdit({
+      assessmentId: input.assessmentId,
       courseId: ctx.course.id,
     });
 
@@ -228,13 +226,16 @@ const addToAssessment = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
-    const assessmentInfoPath = await resolveAssessmentInfoPath({
+    const { assessment, courseInstance } = await selectAssessmentForEdit({
       assessmentId: input.assessmentId,
       courseId: ctx.course.id,
+    });
+    const jsonPath = assessmentInfoPath({
       coursePath: ctx.course.path,
+      courseInstance,
+      assessment,
     });
 
-    let addedCount = 0;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (assessmentInfo) => {
         const zones = assessmentInfo.zones ?? [];
@@ -247,10 +248,9 @@ const addToAssessment = t.procedure
           (question) => question.qid && !existingQids.has(question.qid),
         );
         targetZone.questions.push(...questionsToAdd.map(buildQuestionBlock));
-        addedCount = questionsToAdd.length;
         return assessmentInfo;
       },
-      jsonPath: assessmentInfoPath,
+      jsonPath,
       conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
       locals: ctx.locals,
       container: { rootPath: ctx.course.path, invalidRootPaths: [] },
@@ -263,11 +263,6 @@ const addToAssessment = t.procedure
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
-
-    return {
-      addedCount,
-      skippedCount: selectedQuestions.length - addedCount,
-    };
   });
 
 const removeFromAssessment = t.procedure
@@ -286,35 +281,31 @@ const removeFromAssessment = t.procedure
     const qidsToRemove = new Set(
       selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
     );
-    const assessmentInfoPath = await resolveAssessmentInfoPath({
+    const { assessment, courseInstance } = await selectAssessmentForEdit({
       assessmentId: input.assessmentId,
       courseId: ctx.course.id,
+    });
+    const jsonPath = assessmentInfoPath({
       coursePath: ctx.course.path,
+      courseInstance,
+      assessment,
     });
 
-    let removedCount = 0;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (assessmentInfo) => {
         for (const zone of assessmentInfo.zones ?? []) {
-          const nextQuestions: ZoneQuestionBlockJsonInput[] = [];
-          for (const question of zone.questions) {
-            const result = removeQidsFromBlock(question, qidsToRemove);
-            removedCount += result.removedCount;
-            if (result.block) {
-              nextQuestions.push(result.block);
-            }
-          }
-          if (zone.questions.length > 0 && nextQuestions.length === 0) {
+          const { questions } = removeQidsFromZone(zone, qidsToRemove);
+          if (zone.questions.length > 0 && questions.length === 0) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'Cannot remove questions because it would leave an empty zone',
             });
           }
-          zone.questions = nextQuestions;
+          zone.questions = questions;
         }
         return assessmentInfo;
       },
-      jsonPath: assessmentInfoPath,
+      jsonPath,
       conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
       locals: ctx.locals,
       container: { rootPath: ctx.course.path, invalidRootPaths: [] },
@@ -327,8 +318,6 @@ const removeFromAssessment = t.procedure
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
-
-    return { removedCount };
   });
 
 const deleteQuestions = t.procedure
@@ -371,11 +360,6 @@ const deleteQuestions = t.procedure
         jobSequenceId: serverJob.jobSequenceId,
       });
     }
-
-    return {
-      deletedCount: selectedQuestions.length,
-      jobSequenceId: serverJob.jobSequenceId,
-    };
   });
 
 export const questionsRouter = t.router({

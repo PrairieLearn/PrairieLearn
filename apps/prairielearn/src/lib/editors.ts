@@ -1638,7 +1638,9 @@ export class QuestionRenameEditor extends Editor {
 
     pathsToAdd.push(oldPath, newPath);
 
-    debug(`Find all assessments (in this course's course instances) that contain ${this.question.qid}`);
+    debug(
+      `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
+    );
     const assessments = await sqldb.queryRows(
       sql.select_assessments_with_questions,
       { course_id: this.course.id, question_ids: [this.question.id] },
