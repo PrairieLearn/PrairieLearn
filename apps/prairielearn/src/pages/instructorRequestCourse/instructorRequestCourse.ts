@@ -242,11 +242,20 @@ router.post(
       // Verify org access before auto-creating. If the institution's configured org has
       // become unreachable since it was saved, fall through to the manual-approval path
       // so an admin can investigate instead of failing in a background job.
-      const access = github.isPlatformDefaultOrg(githubCourseOwner)
-        ? ({ ok: true } as const)
-        : await github.checkGithubOrgAccess(githubCourseOwner);
+      let githubOrgAccessFailureReason: string | null = null;
+      if (!github.isPlatformDefaultOrg(githubCourseOwner)) {
+        try {
+          const access = await github.checkGithubOrgAccess(githubCourseOwner);
+          if (!access.ok) {
+            githubOrgAccessFailureReason = access.reason;
+          }
+        } catch (err) {
+          githubOrgAccessFailureReason = 'unexpected_error';
+          Sentry.captureException(err, { extra: { course_request_id, githubCourseOwner } });
+        }
+      }
 
-      if (access.ok) {
+      if (githubOrgAccessFailureReason == null) {
         const repo_short_name = github.reponameFromShortname(short_name);
         await github.createCourseRepoJob(
           {
@@ -266,18 +275,20 @@ router.post(
         autoApprovedRepoShortName = repo_short_name;
       } else {
         logger.error(
-          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${access.reason})`,
+          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${githubOrgAccessFailureReason})`,
         );
-        Sentry.captureMessage(
-          `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
-          { extra: { reason: access.reason, course_request_id } },
-        );
+        if (githubOrgAccessFailureReason !== 'unexpected_error') {
+          Sentry.captureMessage(
+            `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
+            { extra: { reason: githubOrgAccessFailureReason, course_request_id } },
+          );
+        }
         autoApprovalBlockedMessage =
           '*Auto-approval skipped — GitHub org access check failed*\n' +
           `Course rubric: ${short_name}\n` +
           `Course title: ${title}\n` +
           `Institution: ${institution}\n` +
-          `Target org: ${githubCourseOwner} (${access.reason})\n` +
+          `Target org: ${githubCourseOwner} (${githubOrgAccessFailureReason})\n` +
           `Requested by: ${first_name} ${last_name} (${work_email})`;
       }
     }
