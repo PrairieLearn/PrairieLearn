@@ -856,8 +856,6 @@ export async function generate(
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
       options: {
-        ...course.options,
-        ...question.options,
         ...getContextOptions(context),
         user: userContext.user,
         group: userContext.group,
