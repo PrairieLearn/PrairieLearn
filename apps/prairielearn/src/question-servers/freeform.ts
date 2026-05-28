@@ -43,19 +43,36 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionCaller,
   type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
-  type QuestionUserContext,
   type RenderResultData,
   type RenderSelection,
   type TestResultData,
 } from './types.js';
+import {
+  type QuestionUserContext,
+  type VariantLifecyclePhase,
+  buildQuestionUserContext,
+} from './user-context.js';
 
 const debug = debugfn('prairielearn:freeform');
 
-const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
-
 type Phase = 'generate' | 'prepare' | 'render' | 'parse' | 'grade' | 'test' | 'file';
+
+function buildUserContextForCaller(
+  question: Pick<Question, 'course_id'>,
+  course: Pick<Course, 'questions_receive_user_data'>,
+  caller: QuestionCaller,
+  phase: VariantLifecyclePhase,
+): Promise<QuestionUserContext> {
+  return buildQuestionUserContext({
+    question,
+    courseOptedIn: course.questions_receive_user_data,
+    caller,
+    phase,
+  });
+}
 
 interface QuestionProcessingContext {
   course: Course;
@@ -827,11 +844,12 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
-  preferences: Record<string, string | number | boolean> = {},
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  preferences: Record<string, string | number | boolean>,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+    const userContext = await buildUserContextForCaller(question, course, caller, 'create');
 
     const data = {
       params: {},
@@ -870,12 +888,13 @@ export async function prepare(
   question: Question,
   course: Course,
   variant: PrepareVariant,
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildUserContextForCaller(question, course, caller, 'create');
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1124,7 +1143,7 @@ export async function render({
   submissions,
   course,
   locals,
-  userContext = EMPTY_USER_CONTEXT,
+  caller,
 }: {
   renderSelection: RenderSelection;
   variant: Variant;
@@ -1133,10 +1152,11 @@ export async function render({
   submissions: Submission[];
   course: Course;
   locals: QuestionRenderRequiredLocals;
-  userContext?: QuestionUserContext;
+  caller: QuestionCaller;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
+    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
@@ -1545,13 +1565,14 @@ export async function file(
   variant: Variant,
   question: Question,
   course: Course,
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1603,13 +1624,14 @@ export async function parse(
   variant: Variant,
   question: Question,
   course: Course,
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1661,7 +1683,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
@@ -1669,6 +1691,7 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
+    const userContext = await buildUserContextForCaller(question, question_course, caller, 'invoke');
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
@@ -1726,13 +1749,14 @@ export async function test(
   question: Question,
   course: Course,
   test_type: 'correct' | 'incorrect' | 'invalid',
-  userContext: QuestionUserContext = EMPTY_USER_CONTEXT,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<TestResultData> {
   return instrumented('freeform.test', async () => {
     debug('test()');
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.

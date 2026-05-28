@@ -12,7 +12,6 @@ import { insertGradingJob, updateGradingJobAfterGrading } from '../models/gradin
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
-import { buildQuestionUserContext } from '../question-servers/user-context.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
@@ -243,19 +242,16 @@ export async function saveSubmission(
 
   const questionModule = questionServers.getModule(question.type);
   const question_course = await getQuestionCourse(question, variant_course);
-  const userContext = await buildQuestionUserContext({
-    question,
-    questionCourse: question_course,
-    variantCourse: variant_course,
-    effectiveUserId: submission.user_id,
-    teamId: variant.team_id,
-  });
   const { courseIssues, data } = await questionModule.parse(
     submission,
     variant,
     question,
     question_course,
-    userContext,
+    {
+      effectiveUserId: submission.user_id,
+      teamId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -422,21 +418,19 @@ export async function gradeVariant({
     // For Internal grading we call the grading code. For Manual grading, if the question
     // reached this point, it has auto points, so it should be treated like Internal.
     const questionModule = questionServers.getModule(question.type);
-    const userContext = await buildQuestionUserContext({
-      question,
-      questionCourse: question_course,
-      variantCourse: variant_course,
-      // Grading can run from cron jobs or instructor close actions, so the
-      // request actor is not necessarily the assessed student.
-      effectiveUserId: variant.user_id,
-      teamId: variant.team_id,
-    });
     const { courseIssues, data } = await questionModule.grade(
       submission,
       variant,
       question,
       question_course,
-      userContext,
+      {
+        // Grading can run from cron jobs or instructor close actions, so the
+        // request actor is not necessarily the assessed student. Use
+        // `variant.user_id` (NULL on group variants) rather than the actor.
+        effectiveUserId: variant.user_id,
+        teamId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 

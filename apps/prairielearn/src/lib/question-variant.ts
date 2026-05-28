@@ -12,7 +12,6 @@ import { selectPreferencesForInstanceQuestion } from '../models/assessment-quest
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
-import { buildQuestionUserContext } from '../question-servers/user-context.js';
 
 import {
   type Course,
@@ -49,13 +48,6 @@ interface VariantCreationData {
   broken: boolean;
 }
 
-function getPersistentVariantOptions(options: Record<string, any> | undefined) {
-  const persistentOptions = { ...options };
-  delete persistentOptions.user;
-  delete persistentOptions.group;
-  return persistentOptions;
-}
-
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
  */
@@ -89,18 +81,11 @@ export async function makeVariant({
     variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
-  const userContext = await buildQuestionUserContext({
-    question,
-    questionCourse: course,
-    variantCourse: variant_course,
+  const caller = {
     effectiveUserId: effective_user_id,
     teamId: team_id,
-  });
-  // Group variants are shared by the team, and generate()/prepare() persist
-  // their results on the variant. Do not expose the request-specific viewing
-  // user in these phases; request-time phases receive the full user context.
-  const variantCreationUserContext =
-    team_id == null ? userContext : { user: null, group: userContext.group };
+    variantCourse: variant_course,
+  };
 
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(
@@ -108,14 +93,14 @@ export async function makeVariant({
     course,
     variant_seed,
     preferences,
-    variantCreationUserContext,
+    caller,
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
-    options: getPersistentVariantOptions(data.options),
+    options: data.options || {},
     preferences,
     broken: hasFatalIssue,
   };
@@ -138,7 +123,7 @@ export async function makeVariant({
       question,
       course,
       variant,
-      variantCreationUserContext,
+      caller,
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -146,7 +131,7 @@ export async function makeVariant({
       variant_seed,
       params: data.params,
       true_answer: data.true_answer,
-      options: getPersistentVariantOptions(data.options),
+      options: data.options || {},
       broken: hasFatalIssue,
       preferences,
     };
@@ -178,19 +163,16 @@ export async function getDynamicFile(
   if (!questionModule.file) {
     throw new Error(`Question type ${question.type} does not support file generation`);
   }
-  const userContext = await buildQuestionUserContext({
-    question,
-    questionCourse: question_course,
-    variantCourse: variant_course,
-    effectiveUserId: user_id,
-    teamId: variant.team_id,
-  });
   const { courseIssues, data: fileData } = await questionModule.file(
     filename,
     variant,
     question,
     question_course,
-    userContext,
+    {
+      effectiveUserId: user_id,
+      teamId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error creating file: ' + filename;

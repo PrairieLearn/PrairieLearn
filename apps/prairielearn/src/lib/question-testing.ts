@@ -8,7 +8,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
-import { buildQuestionUserContext } from '../question-servers/user-context.js';
 
 import {
   type Course,
@@ -95,6 +94,11 @@ async function testDynamicFiles({
       variant,
       question,
       question_course,
+      {
+        effectiveUserId: user_id,
+        teamId: variant.team_id,
+        variantCourse: course,
+      },
     );
 
     const studentMessage = 'Error creating file: ' + decodedFilename;
@@ -154,19 +158,16 @@ export async function createTestSubmissionData(
   }
 
   const question_course = await getQuestionCourse(question, variant_course);
-  const userContext = await buildQuestionUserContext({
-    question,
-    questionCourse: question_course,
-    variantCourse: variant_course,
-    effectiveUserId: user_id,
-    teamId: variant.team_id,
-  });
   const { courseIssues, data } = await questionModule.test(
     variant,
     question,
     question_course,
     test_type,
-    userContext,
+    {
+      effectiveUserId: user_id,
+      teamId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 

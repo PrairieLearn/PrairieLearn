@@ -24,7 +24,6 @@ import {
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
-import { buildQuestionUserContext } from '../question-servers/user-context.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
@@ -143,14 +142,6 @@ async function render({
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
-  const userContext = await buildQuestionUserContext({
-    question,
-    questionCourse: question_course,
-    variantCourse: variant_course,
-    effectiveUserId: user.id,
-    teamId: variant.team_id,
-  });
-
   const { courseIssues, data } = await questionModule.render({
     renderSelection,
     variant,
@@ -159,7 +150,11 @@ async function render({
     submissions,
     course: question_course,
     locals,
-    userContext,
+    caller: {
+      effectiveUserId: user.id,
+      teamId: variant.team_id,
+      variantCourse: variant_course,
+    },
   });
 
   const studentMessage = 'Error rendering question';

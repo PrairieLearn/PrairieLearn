@@ -335,6 +335,11 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
           null,
         ),
       };
+      const caller = {
+        effectiveUserId: null,
+        teamId: null,
+        variantCourse: course,
+      };
       const {
         courseIssues: renderIssues,
         data: { questionHtml },
@@ -350,6 +355,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         submissions: [],
         course,
         locals,
+        caller,
       });
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
@@ -367,7 +373,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
       const {
         data: { raw_submitted_answer },
-      } = await questionModule.test(variant, question, course, 'correct');
+      } = await questionModule.test(variant, question, course, 'correct', caller);
 
       const parseResult = await questionModule.parse(
         {
@@ -378,6 +384,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
 
@@ -393,6 +400,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
 
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via grade+render, add more checks.
