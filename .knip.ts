@@ -157,8 +157,6 @@ const config: KnipConfig = {
     '.': {
       entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
       project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
-      // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts'],
       ignoreDependencies: ['@prairielearn/tsconfig', ...CLI_ONLY_DEPS],
     },
     'apps/prairielearn': {
