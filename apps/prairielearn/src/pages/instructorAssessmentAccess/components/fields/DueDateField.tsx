@@ -1,27 +1,15 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'react';
-import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
-
-import { formatDateFriendly } from '@prairielearn/formatter';
+import { useEffect } from 'react';
+import { Button, Form, InputGroup } from 'react-bootstrap';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { getAssessmentSettingsUrl } from '../../../../lib/client/url.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { isOverrideFieldActive, validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
-
-function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
-  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
-}
-
-function formatCourseLocalDate(value: string, displayTimezone: string): string {
-  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
-    dateOnly: true,
-    includeTz: false,
-  });
-}
 
 function DueDateInput({
   value,
@@ -32,8 +20,6 @@ function DueDateInput({
   dateError,
   creditError,
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   value: DueValue;
   onChange: (value: DueValue) => void;
@@ -43,11 +29,9 @@ function DueDateInput({
   dateError?: string;
   creditError?: string;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const effectiveCredit = value.credit ?? 100;
-  const [highCreditWarningDismissed, setHighCreditWarningDismissed] = useState(false);
 
   const getCreditPeriodText = () => {
     if (!value.date) return null;
@@ -81,6 +65,7 @@ function DueDateInput({
           id={`${idPrefix}-due-never`}
           label="No due date"
           checked={value.date === null}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) onChange({ ...value, date: null });
           }}
@@ -91,6 +76,7 @@ function DueDateInput({
           id={`${idPrefix}-due-on-date`}
           label="Due on date"
           checked={value.date !== null}
+          disabled={!ruleEditable}
           onChange={({ currentTarget }) => {
             if (currentTarget.checked) {
               const latestEarlyDate = earlyDeadlines?.at(-1)?.date;
@@ -119,6 +105,7 @@ function DueDateInput({
             aria-invalid={!!dateError}
             aria-errormessage={dateError ? `${idPrefix}-due-date-error` : undefined}
             value={value.date}
+            disabled={!ruleEditable}
             onChange={({ currentTarget }) => onChange({ ...value, date: currentTarget.value })}
           />
           {dateError && (
@@ -134,18 +121,20 @@ function DueDateInput({
       <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
         {!value.customCredit ? (
           <span className="text-muted small">
-            100% credit (default){' '}
-            <Button
-              variant="link"
-              size="sm"
-              className="p-0 align-baseline"
-              onClick={() => {
-                setHighCreditWarningDismissed(false);
-                onChange({ ...value, customCredit: true, credit: 100 });
-              }}
-            >
-              Change
-            </Button>
+            100% credit (default)
+            {ruleEditable && (
+              <>
+                {' '}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 align-baseline"
+                  onClick={() => onChange({ ...value, customCredit: true, credit: 100 })}
+                >
+                  Change
+                </Button>
+              </>
+            )}
           </span>
         ) : (
           <>
@@ -168,6 +157,7 @@ function DueDateInput({
                 aria-errormessage={creditError ? `${idPrefix}-due-credit-error` : undefined}
                 value={value.credit ?? ''}
                 placeholder="100"
+                disabled={!ruleEditable}
                 onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
@@ -177,14 +167,16 @@ function DueDateInput({
               />
               <InputGroup.Text>%</InputGroup.Text>
             </InputGroup>
-            <Button
-              variant="link"
-              size="sm"
-              className="p-0"
-              onClick={() => onChange({ ...value, customCredit: false, credit: null })}
-            >
-              Reset to default
-            </Button>
+            {ruleEditable && (
+              <Button
+                variant="link"
+                size="sm"
+                className="p-0"
+                onClick={() => onChange({ ...value, customCredit: false, credit: null })}
+              >
+                Reset to default
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -193,21 +185,6 @@ function DueDateInput({
           {creditError}
         </Form.Text>
       )}
-      {value.credit !== null && value.credit > 100 && !highCreditWarningDismissed && (
-        <Alert
-          variant="secondary"
-          className="py-2 mt-2 mb-0"
-          dismissible
-          onClose={() => setHighCreditWarningDismissed(true)}
-        >
-          Configuring a due date percentage above 100% is not recommended: it gives every on-time
-          student this bonus. If you intend students to exceed 100% by doing additional work, use{' '}
-          <Alert.Link href={getAssessmentSettingsUrl({ assessmentId, courseInstanceId })}>
-            bonus points
-          </Alert.Link>{' '}
-          instead. If you intend to reward early submissions, configure an early deadline.
-        </Alert>
-      )}
     </Form.Group>
   );
 }
@@ -215,12 +192,11 @@ function DueDateInput({
 function validateDueDate(
   date: string | null,
   releaseDate: string | null | undefined,
-  displayTimezone: string,
 ): string | undefined {
   if (date === null) return undefined;
   if (!date) return 'Date is required';
   if (releaseDate && new Date(date) <= new Date(releaseDate)) {
-    return `Must be after release date (${formatCourseLocalDate(releaseDate, displayTimezone)})`;
+    return 'Due date must be after the release date';
   }
   return undefined;
 }
@@ -236,15 +212,8 @@ function validateDueCredit(credit: number | null, customCredit: boolean): string
   return undefined;
 }
 
-export function DefaultDueDateField({
-  displayTimezone,
-  assessmentId,
-  courseInstanceId,
-}: {
-  displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
-}) {
+export function DefaultDueDateField({ displayTimezone }: { displayTimezone: string }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
@@ -260,7 +229,8 @@ export function DefaultDueDateField({
   const dateCtrl = useController<AccessControlFormData, 'defaultRule.due.date'>({
     name: 'defaultRule.due.date',
     rules: {
-      validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
+      validate: (value, formValues) =>
+        validateDueDate(value, formValues.defaultRule.release.date) ?? true,
     },
   });
   const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
@@ -276,6 +246,14 @@ export function DefaultDueDateField({
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
+
+  // Re-validate the due date whenever the release date changes so the
+  // cross-field error message updates without the user touching the due
+  // date input.
+  useEffect(() => {
+    void trigger('defaultRule.due.date');
+  }, [releaseDate, trigger]);
+
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {
@@ -295,8 +273,6 @@ export function DefaultDueDateField({
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </div>
@@ -306,14 +282,11 @@ export function DefaultDueDateField({
 export function OverrideDueDateField({
   index,
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
 }: {
   index: number;
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.due'>({
     name: 'defaultRule.due',
   });
@@ -349,14 +322,23 @@ export function OverrideDueDateField({
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
     rules: {
-      validate: (value) => validateDueDate(value, validationReleaseDate, displayTimezone) ?? true,
+      validate: validateActiveOverrideField(index, 'due', (value, formValues) => {
+        const overrideReleaseDate = isOverrideFieldActive(formValues, index, 'release')
+          ? formValues.overrides[index]?.release.date
+          : undefined;
+        return validateDueDate(value, overrideReleaseDate) ?? true;
+      }),
     },
   });
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
     name: `overrides.${index}.due.credit`,
     rules: {
-      validate: (value, formValues) =>
-        validateDueCredit(value, formValues.overrides[index].due.customCredit) ?? true,
+      validate: validateActiveOverrideField(
+        index,
+        'due',
+        (value, formValues) =>
+          validateDueCredit(value, formValues.overrides[index]?.due.customCredit ?? false) ?? true,
+      ),
     },
   });
 
@@ -365,6 +347,14 @@ export function OverrideDueDateField({
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
+
+  // Re-validate the due date whenever the effective release date changes so
+  // the cross-field error message updates without the user touching the due
+  // date input.
+  useEffect(() => {
+    void trigger(`overrides.${index}.due.date`);
+  }, [index, validationReleaseDate, trigger]);
+
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {
@@ -393,8 +383,6 @@ export function OverrideDueDateField({
         dateError={dateCtrl.fieldState.error?.message}
         creditError={creditCtrl.fieldState.error?.message}
         displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
         onChange={handleChange}
       />
     </FieldWrapper>

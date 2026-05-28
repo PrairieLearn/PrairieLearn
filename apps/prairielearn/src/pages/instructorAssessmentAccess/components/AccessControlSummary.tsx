@@ -10,22 +10,28 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { Fragment, type ReactNode, useId, useMemo } from 'react';
-import { Badge, Button } from 'react-bootstrap';
-import { useFormState } from 'react-hook-form';
+import { Fragment, useId, useMemo } from 'react';
+import { Alert, Badge, Button } from 'react-bootstrap';
+import { type FieldErrors, useFormState } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
 import {
+  AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
+  type OverrideRuleFormErrors,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
-  type RuleFormErrors,
+  generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
-  generateRuleSummary,
 } from './RuleSummary.js';
-import type { AccessControlFormData, DefaultRuleData, OverrideData } from './types.js';
+import {
+  type AccessControlFormData,
+  type DefaultRuleData,
+  type OverrideData,
+  isOverrideEditable,
+} from './types.js';
 
 /**
  * Count leaf errors in a react-hook-form errors object. Leaf nodes have a
@@ -46,15 +52,17 @@ function SortableOverrideCard({
   onEdit,
   onRemove,
   isActive,
+  canEdit,
 }: {
   id: string;
   override: OverrideData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: OverrideRuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
   isActive: boolean;
   onEdit: () => void;
   onRemove: () => void;
+  canEdit: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -74,41 +82,11 @@ function SortableOverrideCard({
         displayTimezone={displayTimezone}
         formErrors={formErrors}
         isActive={isActive}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragHandleProps={canEdit ? { ...attributes, ...listeners } : undefined}
+        canEdit={canEdit}
         onEdit={onEdit}
-        onRemove={onRemove}
+        onRemove={canEdit ? onRemove : undefined}
       />
-    </div>
-  );
-}
-
-function SummaryItemChips({
-  items,
-}: {
-  items: { key: string; icon: string; text: ReactNode; error?: string }[];
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <div>
-      <div className="d-flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span
-            key={item.key}
-            className={`d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 ${
-              item.error ? 'border-danger text-danger border' : 'border'
-            }`}
-            style={{ fontSize: '0.875rem' }}
-          >
-            {item.error ? (
-              <i className="bi bi-exclamation-circle" aria-hidden="true" />
-            ) : (
-              <i className={`bi ${item.icon}`} aria-hidden="true" />
-            )}
-            {item.text}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -119,41 +97,53 @@ function DefaultRuleSummaryContent({
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
+  canFetchPrairieTestMetadata,
 }: {
   rule: DefaultRuleData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: FieldErrors<DefaultRuleData> | undefined;
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canFetchPrairieTestMetadata: boolean;
 }) {
-  const summaryItems = generateRuleSummary(rule, displayTimezone, formErrors);
   const dateTableRows = generateDefaultRuleDateTableRows(rule, displayTimezone, formErrors);
-  const hasPrairieTestExams = rule.prairieTestExams.length > 0;
+  const afterCompleteTableRows = generateAfterCompleteTableRows(rule, displayTimezone, formErrors);
+
+  const hasAnyTable =
+    dateTableRows.length > 0 ||
+    rule.prairieTestExams.length > 0 ||
+    afterCompleteTableRows.length > 0;
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-2">
       <DefaultRuleCurrentIndicator rule={rule} displayTimezone={displayTimezone} />
 
-      {dateTableRows.length > 0 && (
-        <div className="mb-2">
-          <DateTableView rows={dateTableRows} />
+      {hasAnyTable && (
+        <div className="access-summary-grid-scroll">
+          <div className="access-summary-grid">
+            {dateTableRows.length > 0 && (
+              <DateTableView rows={dateTableRows} rule={rule} formErrors={formErrors} />
+            )}
+
+            {rule.prairieTestExams.length > 0 && (
+              <PrairieTestExamsTable
+                exams={rule.prairieTestExams}
+                beforeReleaseListed={rule.beforeReleaseListed}
+                initialMetadata={prairieTestExamMetadata}
+                ptHost={ptHost}
+                formErrors={formErrors}
+                canFetchMetadata={canFetchPrairieTestMetadata}
+              />
+            )}
+
+            {afterCompleteTableRows.length > 0 && (
+              <AfterCompleteTableView rows={afterCompleteTableRows} />
+            )}
+          </div>
         </div>
       )}
 
-      {hasPrairieTestExams && (
-        <div className="mb-2">
-          <PrairieTestExamsTable
-            exams={rule.prairieTestExams}
-            initialMetadata={prairieTestExamMetadata}
-            ptHost={ptHost}
-            formErrors={formErrors}
-          />
-        </div>
-      )}
-
-      {summaryItems.length > 0 && <SummaryItemChips items={summaryItems} />}
-
-      {dateTableRows.length === 0 && !hasPrairieTestExams && summaryItems.length === 0 && (
+      {!hasAnyTable && (
         <div
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}
@@ -179,6 +169,11 @@ export function AccessControlSummary({
   displayTimezone,
   prairieTestExamMetadata,
   ptHost,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
+  canFetchPrairieTestMetadata,
+  readOnlyMessage,
+  hiddenEnrollmentRuleCount,
 }: {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
@@ -197,6 +192,11 @@ export function AccessControlSummary({
   displayTimezone: string;
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  canEditAccessSettings: boolean;
+  canEditEnrollmentRules: boolean;
+  canFetchPrairieTestMetadata: boolean;
+  readOnlyMessage: string | null;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const dndId = useId();
   const sensors = useSensors(
@@ -207,6 +207,7 @@ export function AccessControlSummary({
   const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!canEditAccessSettings) return;
     if (!over || active.id === over.id) return;
     const oldIndex = sortableIds.indexOf(String(active.id));
     const newIndex = sortableIds.indexOf(String(over.id));
@@ -223,9 +224,17 @@ export function AccessControlSummary({
   const { errors } = useFormState<AccessControlFormData>();
   const defaultRuleErrorCount = countErrors(errors.defaultRule);
   const overridesErrorCount = countErrors(errors.overrides);
+  const hiddenEnrollmentRuleNoun =
+    hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
+  const hiddenEnrollmentRuleVerb = hiddenEnrollmentRuleCount === 1 ? 'is' : 'are';
 
   return (
     <div>
+      {readOnlyMessage && (
+        <Alert variant="info" className="mb-4">
+          {readOnlyMessage}
+        </Alert>
+      )}
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
           <h5 className="mb-0 d-flex align-items-center">
@@ -240,21 +249,30 @@ export function AccessControlSummary({
             <Button
               variant="outline-primary"
               size="sm"
-              aria-label="Edit"
+              aria-label={canEditAccessSettings ? 'Edit' : 'View'}
+              className="d-inline-flex align-items-center"
               onClick={onEditDefaultRule}
             >
-              <i className="bi bi-pencil" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Edit</span>
+              <i
+                className={canEditAccessSettings ? 'bi bi-pencil' : 'bi bi-eye'}
+                aria-hidden="true"
+              />
+              <span className="toolbar-btn-label ms-1">
+                {canEditAccessSettings ? 'Edit' : 'View'}
+              </span>
             </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              aria-label="Clear"
-              onClick={onClearDefaultRule}
-            >
-              <i className="bi bi-trash" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Clear</span>
-            </Button>
+            {canEditAccessSettings && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                aria-label="Clear"
+                className="d-inline-flex align-items-center"
+                onClick={onClearDefaultRule}
+              >
+                <i className="bi bi-trash" aria-hidden="true" />
+                <span className="toolbar-btn-label ms-1">Clear</span>
+              </Button>
+            )}
           </div>
         </div>
         <small className="text-body-secondary d-block mb-3">
@@ -267,6 +285,7 @@ export function AccessControlSummary({
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
+          canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
         />
       </section>
 
@@ -280,21 +299,46 @@ export function AccessControlSummary({
               </Badge>
             )}
           </h5>
-          <Button variant="primary" size="sm" onClick={onAddOverride}>
-            <i className="bi bi-plus-lg me-1" /> Add override
-          </Button>
+          {canEditAccessSettings && (
+            <Button
+              variant="primary"
+              size="sm"
+              className="d-inline-flex align-items-center"
+              onClick={onAddOverride}
+            >
+              <i className="bi bi-plus-lg me-1" /> Add override
+            </Button>
+          )}
         </div>
         <small className="text-body-secondary d-block mb-3">
-          Customize settings for specific students or groups. Fields not overridden are inherited
-          from the defaults and any earlier overrides.
+          Customize settings for specific students or students with specific labels. Fields not
+          overridden are inherited from the defaults and any earlier overrides.
         </small>
+
+        {canEditAccessSettings && !canEditEnrollmentRules && (
+          <Alert variant="info" className="mb-3">
+            You can edit defaults and overrides for students with specific labels. Student-specific
+            overrides require student data editor permissions.
+          </Alert>
+        )}
+
+        {hiddenEnrollmentRuleCount > 0 && (
+          <Alert variant="info" className="mb-3">
+            This assessment has {hiddenEnrollmentRuleCount} {hiddenEnrollmentRuleNoun} that{' '}
+            {hiddenEnrollmentRuleVerb} hidden because you do not have student data viewer
+            permissions. These overrides remain in place when you save, but visible changes may
+            still affect them through inherited settings.
+          </Alert>
+        )}
 
         {overrides.length === 0 ? (
           <div
             className="rounded text-center py-3 text-body-secondary"
             style={{ border: '2px dashed var(--bs-border-color)' }}
           >
-            No overrides configured.
+            {hiddenEnrollmentRuleCount > 0
+              ? 'No visible overrides configured.'
+              : 'No overrides configured.'}
           </div>
         ) : (
           <DndContext
@@ -312,6 +356,10 @@ export function AccessControlSummary({
                   override.appliesTo.targetType === 'enrollment'
                     ? 'Overrides for specific students'
                     : 'Overrides for student labels';
+                const canEditOverride = isOverrideEditable(override, {
+                  canEditAccessSettings,
+                  canEditEnrollmentRules,
+                });
 
                 return (
                   <Fragment key={sortableIds[index]}>
@@ -329,6 +377,7 @@ export function AccessControlSummary({
                       title={getOverrideName(index)}
                       displayTimezone={displayTimezone}
                       isActive={selectedOverrideIndex === index}
+                      canEdit={canEditOverride}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />

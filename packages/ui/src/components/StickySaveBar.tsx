@@ -54,10 +54,14 @@ export function StickySaveBar({
     <button
       type="submit"
       form={formId}
-      className={clsx('btn btn-sm', isSaveDisabled ? 'btn-outline-secondary' : 'btn-primary')}
+      className={clsx(
+        'btn btn-sm d-inline-flex align-items-center gap-1',
+        isSaveDisabled ? 'btn-outline-secondary' : 'btn-primary',
+      )}
       disabled={isSaveDisabled}
     >
-      <i className="bi bi-floppy" aria-hidden="true" /> {isSaving ? 'Saving...' : 'Save and sync'}
+      <i className="bi bi-floppy" aria-hidden="true" />
+      {isSaving ? 'Saving...' : 'Save and sync'}
     </button>
   );
 

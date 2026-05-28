@@ -161,6 +161,36 @@ describe('getGlobalDateValidationErrors', () => {
     expect(errors.find((e) => e.path === 'overrides.0.release.date')).toBeUndefined();
   });
 
+  it('flags default late deadline credit at 100%', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        due: { date: '2024-04-10T00:00:00', credit: 110, customCredit: true },
+        lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 100 }],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.lateDeadlines.0.credit',
+      message: 'Credit after the due date must be less than 100%.',
+    });
+  });
+
+  it('flags default after-last-deadline credit at 100%', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        due: { date: '2024-04-10T00:00:00', credit: 110, customCredit: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 100 },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.afterLastDeadline.credit',
+      message: 'Credit after the due date must be less than 100%.',
+    });
+  });
+
   it('maps after-complete mechanism errors to visible override fields', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData(
@@ -193,5 +223,45 @@ describe('getGlobalDateValidationErrors', () => {
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility.visibleFromDate')).toBe(
       undefined,
     );
+  });
+
+  it('maps inherited after-complete conflicts to an active override field', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData(
+        [
+          makeOverride({
+            overriddenFields: ['scoreVisibility'],
+            scoreVisibility: { hidden: true },
+          }),
+        ],
+        {
+          questionVisibility: { hidden: false },
+        },
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.scoreVisibility',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
+  });
+
+  it('does not map inherited after-complete conflicts to inactive override fields', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([makeOverride()], {
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: true },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.questionVisibility',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
+    expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
@@ -10,6 +10,7 @@ import type {
   PrairieTestExamMetadata,
 } from '../../../models/assessment-access-control-rules.js';
 
+import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { DefaultRuleForm } from './DefaultRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
@@ -19,6 +20,7 @@ import {
   type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
+  isOverrideEditable,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
@@ -40,18 +42,28 @@ export function AccessControlForm({
   ptHost,
   onSubmit,
   courseInstance,
-  assessmentId,
+  isExam,
   isSaving = false,
   alert,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
+  canFetchPrairieTestMetadata,
+  readOnlyMessage,
+  hiddenEnrollmentRuleCount,
 }: {
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
-  onSubmit: (data: AccessControlJsonWithId[]) => void;
+  onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  assessmentId: string;
+  isExam: boolean;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
+  canEditAccessSettings: boolean;
+  canEditEnrollmentRules: boolean;
+  canFetchPrairieTestMetadata: boolean;
+  readOnlyMessage: string | null;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -84,6 +96,7 @@ export function AccessControlForm({
 
   const {
     append: appendOverride,
+    insert: insertOverride,
     remove: removeOverride,
     move: moveOverride,
   } = useFieldArray({
@@ -94,7 +107,7 @@ export function AccessControlForm({
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
-  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // Sync cross-field validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
@@ -126,14 +139,30 @@ export function AccessControlForm({
     manualErrorPathsRef.current = new Set(nextManualErrors.keys());
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
-  const handleFormSubmit = (data: AccessControlFormData) => {
-    onSubmit(formDataToJson(data));
+  const handleFormSubmit = async (data: AccessControlFormData) => {
+    if (!canEditAccessSettings) return;
+
+    await onSubmit(formDataToJson(data));
+    reset(data);
   };
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
-    appendOverride(newOverride);
-    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    if (!canEditEnrollmentRules) {
+      newOverride.appliesTo.targetType = 'student_label';
+    }
+    if (newOverride.appliesTo.targetType === 'student_label') {
+      const firstEnrollmentIndex = watchedData.overrides.findIndex(
+        (override) => override.appliesTo.targetType === 'enrollment',
+      );
+      const insertIndex =
+        firstEnrollmentIndex === -1 ? watchedData.overrides.length : firstEnrollmentIndex;
+      insertOverride(insertIndex, newOverride);
+      setSelectedRule({ type: 'override', index: insertIndex });
+    } else {
+      appendOverride(newOverride);
+      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    }
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
@@ -180,6 +209,11 @@ export function AccessControlForm({
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    const permissions = { canEditAccessSettings, canEditEnrollmentRules };
+    const fromEditable = isOverrideEditable(watchedData.overrides[fromIndex], permissions);
+    const toEditable = isOverrideEditable(watchedData.overrides[toIndex], permissions);
+    if (!fromEditable || !toEditable) return;
+
     moveOverride(fromIndex, toIndex);
 
     if (selectedRule?.type !== 'override') return;
@@ -246,36 +280,45 @@ export function AccessControlForm({
     </button>
   ) : undefined;
 
+  const selectedRuleCanEdit =
+    selectedRule?.type === 'override'
+      ? isOverrideEditable(watchedData.overrides[selectedRule.index], {
+          canEditAccessSettings,
+          canEditEnrollmentRules,
+        })
+      : canEditAccessSettings;
+
   const rightPanel =
     selectedRule?.type === 'default' ? (
-      <div className="px-3 pb-3">
-        <DefaultRuleForm
-          displayTimezone={displayTimezone}
-          assessmentId={assessmentId}
-          courseInstanceId={courseInstance.id}
-        />
-      </div>
+      <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
+        <div className="px-3 pb-3">
+          <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
+        </div>
+      </AccessControlEditabilityProvider>
     ) : selectedRule?.type === 'override' ? (
       (() => {
         if (selectedRule.index >= watchedData.overrides.length) {
           return null;
         }
         return (
-          <div className="px-3 pb-3">
-            <AppliesToField
-              namePrefix={`overrides.${selectedRule.index}`}
-              courseInstanceId={courseInstance.id}
-              onTargetTypeChange={(targetType) =>
-                handleOverrideTargetTypeChange(selectedRule.index, targetType)
-              }
-            />
-            <OverrideRuleContent
-              index={selectedRule.index}
-              displayTimezone={displayTimezone}
-              assessmentId={assessmentId}
-              courseInstanceId={courseInstance.id}
-            />
-          </div>
+          <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
+            <div className="px-3 pb-3">
+              <AppliesToField
+                namePrefix={`overrides.${selectedRule.index}`}
+                courseInstanceId={courseInstance.id}
+                canEditAccessSettings={canEditAccessSettings}
+                canEditEnrollmentRules={canEditEnrollmentRules}
+                onTargetTypeChange={(targetType) =>
+                  handleOverrideTargetTypeChange(selectedRule.index, targetType)
+                }
+              />
+              <OverrideRuleContent
+                index={selectedRule.index}
+                displayTimezone={displayTimezone}
+                isExam={isExam}
+              />
+            </div>
+          </AccessControlEditabilityProvider>
         );
       })()
     ) : null;
@@ -302,7 +345,17 @@ export function AccessControlForm({
           left={{
             content: (
               <>
-                <div className="p-3">
+                {alert && (
+                  <Alert
+                    className="mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
+                    variant={alert.variant}
+                    dismissible={Boolean(alert.onDismiss)}
+                    onClose={alert.onDismiss}
+                  >
+                    {alert.message}
+                  </Alert>
+                )}
+                <div className="container py-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
                     getOverrideName={getOverrideName}
@@ -313,6 +366,11 @@ export function AccessControlForm({
                     }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
+                    canEditAccessSettings={canEditAccessSettings}
+                    canEditEnrollmentRules={canEditEnrollmentRules}
+                    canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
+                    readOnlyMessage={readOnlyMessage}
+                    hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
                     onMoveOverride={handleMoveOverride}
@@ -332,14 +390,14 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickySaveBar
-                  visible={isDirty}
-                  isSaving={isSaving}
-                  saveDisabledReason={saveDisabledReason}
-                  alert={alert}
-                  fullWidth
-                  onCancel={() => reset()}
-                />
+                {canEditAccessSettings && (
+                  <StickySaveBar
+                    visible={isDirty}
+                    isSaving={isSaving}
+                    saveDisabledReason={saveDisabledReason}
+                    onCancel={() => reset()}
+                  />
+                )}
               </>
             ),
           }}

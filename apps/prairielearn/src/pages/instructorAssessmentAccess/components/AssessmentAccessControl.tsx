@@ -18,27 +18,53 @@ import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
 
+export interface AssessmentAccessControlPermissions {
+  isExampleCourse: boolean;
+  hasCoursePermissionEdit: boolean;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+}
+
 interface AssessmentAccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   origHash: string | null;
   assessmentId: string;
+  isExam: boolean;
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  permissions: AssessmentAccessControlPermissions;
+  hiddenEnrollmentRuleCount: number;
 }
 
 function AssessmentAccessControlInner({
   courseInstance,
-  assessmentId,
   origHash: initialOrigHash,
+  isExam,
   initialData,
   prairieTestExamMetadata,
   ptHost,
+  permissions,
+  hiddenEnrollmentRuleCount,
 }: AssessmentAccessControlProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const queryClient = useQueryClient();
   const trpc = useTRPC();
+  const canEditAccessSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canEditEnrollmentRules =
+    canEditAccessSettings && permissions.hasCourseInstancePermissionEdit;
+  const canFetchPrairieTestMetadata =
+    permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionView;
+  const readOnlyMessage = run(() => {
+    if (permissions.isExampleCourse) {
+      return 'Editing access settings is not permitted for the example course.';
+    }
+    if (!permissions.hasCoursePermissionEdit) {
+      return 'Editing access settings requires course editor permissions.';
+    }
+    return null;
+  });
 
   const saveMutation = useMutation(
     trpc.accessControl.saveAllRules.mutationOptions({
@@ -49,7 +75,7 @@ function AssessmentAccessControlInner({
     }),
   );
 
-  const handleFormSubmit = (data: AccessControlJsonWithId[]) => {
+  const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
@@ -58,10 +84,13 @@ function AssessmentAccessControlInner({
         enrollmentIds: (enrollments ?? []).map((e) => e.enrollmentId),
         ruleJson,
       }));
+    const shouldSyncEnrollmentRules =
+      canEditEnrollmentRules &&
+      (initialData.some((r) => r.ruleType === 'enrollment') || enrollmentRules.length > 0);
 
-    saveMutation.mutate({
+    await saveMutation.mutateAsync({
       rules: jsonRules,
-      enrollmentRules,
+      enrollmentRules: shouldSyncEnrollmentRules ? enrollmentRules : undefined,
       origHash,
     });
   };
@@ -104,12 +133,17 @@ function AssessmentAccessControlInner({
     <div style={{ height: '100%' }} data-split-pane-page>
       <AccessControlForm
         courseInstance={courseInstance}
-        assessmentId={assessmentId}
+        isExam={isExam}
         initialData={initialData}
         prairieTestExamMetadata={prairieTestExamMetadata}
         ptHost={ptHost}
         isSaving={saveMutation.isPending}
         alert={saveAlert}
+        canEditAccessSettings={canEditAccessSettings}
+        canEditEnrollmentRules={canEditEnrollmentRules}
+        canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
+        readOnlyMessage={readOnlyMessage}
+        hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         onSubmit={handleFormSubmit}
       />
     </div>

@@ -1,5 +1,17 @@
 # @prairielearn/flash
 
+## 3.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 3.0.3
 
 ### Patch Changes

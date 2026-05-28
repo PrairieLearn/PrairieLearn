@@ -41,6 +41,7 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
+- In PR descriptions, keep the Testing section high signal. Do not list routine lint/typecheck/test commands just because they were run locally, and do not mention that CI will run. Mention only manual verification, docs rendering, screenshots, special test coverage, or unusual validation that helps reviewers understand the change.
 - In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
@@ -60,7 +61,7 @@ Linting:
 
 - Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
-- Check for dead code with `make check-dependencies`.
+- Check for dead code with `make lint-dependencies`.
 
 Formatting:
 
@@ -140,6 +141,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 - When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
+- When formatting dates and intervals, use the functions from `@prairielearn/formatter` to ensure consistent formatting across the application. The timezone should be retrieved from the course instance, the course, or the institution, in this order of preference, using the values from `res.locals` where available.
 
 ### User interface conventions
 

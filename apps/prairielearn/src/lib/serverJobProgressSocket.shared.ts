@@ -34,6 +34,14 @@ export const JobProgressSchema = z.object({
    * Displayed if num_failed > 0.
    */
   job_failure_message: z.string().optional(),
+  /**
+   * Optional supplemental failure detail. Rendered as a secondary line
+   * underneath the banner's main row when present and num_failed > 0. Use
+   * for surfacing a representative per-item failure cause; the run-level
+   * `job_failure_message` (which replaces the header) is still the right
+   * slot for batch-level fatal reasons (rate limit, credit exhaustion).
+   */
+  job_failure_detail: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
   /**
    * Optional cost tracking for the server job. When `total_cost_milli_dollars`
@@ -47,9 +55,22 @@ export const JobProgressSchema = z.object({
    * succeeds but subsequent persistence fails).
    */
   num_items_incurred_cost: z.number().int().nonnegative().optional(),
+  /** Cancellation state; absent means the job is not being stopped. */
+  stop_state: z.enum(['stopping', 'stopped']).optional(),
 });
 
 export type JobProgress = z.infer<typeof JobProgressSchema>;
+
+export type JobStatus = 'inProgress' | 'stopping' | 'stopped' | 'complete' | 'failed';
+
+export function deriveJobStatus(progress: JobProgress): JobStatus {
+  if (progress.stop_state === 'stopped') return 'stopped';
+  if (progress.num_total > 0 && progress.num_complete >= progress.num_total) {
+    return progress.num_failed > 0 ? 'failed' : 'complete';
+  }
+  if (progress.stop_state === 'stopping') return 'stopping';
+  return 'inProgress';
+}
 
 /**
  * Progress update message sent from the server job progress socket.

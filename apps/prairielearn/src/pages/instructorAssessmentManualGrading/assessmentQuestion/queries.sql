@@ -48,13 +48,32 @@ WITH
       )
     GROUP BY
       ls.instance_question_id
+  ),
+  team_members AS (
+    SELECT
+      tu.team_id,
+      jsonb_agg(
+        to_jsonb(tmu.*)
+        ORDER BY
+          tmu.uid
+      ) AS members
+    FROM
+      team_users AS tu
+      JOIN users AS tmu ON tmu.id = tu.user_id
+    GROUP BY
+      tu.team_id
   )
 SELECT
   to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
+  COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
+  to_jsonb(u.*) AS user,
+  COALESCE(tm.members, '[]'::jsonb) AS group_members,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
+  to_jsonb(agu.*) AS assigned_grader,
+  to_jsonb(lgu.*) AS last_grader,
   to_jsonb(aq.*) AS assessment_question,
   COALESCE(g.name, u.name) AS user_or_group_name,
   ic.open_issue_count,
@@ -78,6 +97,7 @@ FROM
     e.user_id = ai.user_id
     AND e.course_instance_id = a.course_instance_id
   )
+  LEFT JOIN team_members AS tm ON (tm.team_id = g.id)
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
@@ -104,3 +124,33 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_rubric_settings_context_keys
+SELECT DISTINCT
+  ON (v.id) ARRAY(
+    SELECT
+      jsonb_object_keys(v.params)
+  ) AS params_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(v.true_answer)
+  ) AS true_answer_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(s.submitted_answer)
+  ) AS submitted_answer_keys
+FROM
+  instance_questions AS iq
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+ORDER BY
+  v.id ASC,
+  s.date DESC,
+  s.id DESC
+  -- We're only retrieving a small subset of the variants, as we only need to
+  -- know common params/answer keys that are not expected to change
+  -- significantly between variants.
+LIMIT
+  5;

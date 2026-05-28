@@ -3,6 +3,7 @@ import { useFormContext, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
 import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
@@ -22,13 +23,12 @@ const beforeReleasePopoverConfig = {
 
 export function DefaultRuleForm({
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
+  isExam,
 }: {
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
+  isExam: boolean;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const { register } = useFormContext<AccessControlFormData>();
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -53,11 +53,7 @@ export function DefaultRuleForm({
 
   return (
     <div className="d-flex flex-column gap-3">
-      <DefaultDateControlForm
-        displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
-      />
+      <DefaultDateControlForm displayTimezone={displayTimezone} isExam={isExam} />
       <IntegrationsSection />
       <div>
         <div className="d-flex align-items-center section-header mb-3">
@@ -77,6 +73,7 @@ export function DefaultRuleForm({
           type="checkbox"
           id="defaultRule-before-release-listed"
           label={<strong>List before release</strong>}
+          disabled={!ruleEditable}
           {...register('defaultRule.beforeReleaseListed')}
           aria-describedby="defaultRule-before-release-listed-help"
         />

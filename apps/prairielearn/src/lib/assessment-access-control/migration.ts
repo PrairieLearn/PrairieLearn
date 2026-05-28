@@ -25,7 +25,7 @@ import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 import { discoverInfoDirs } from '../discover-info-dirs.js';
 import { formatJsonWithPrettier } from '../prettier.js';
 
-import { validateAccessControlRules } from './validation.js';
+import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './validation.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,6 +56,12 @@ interface CourseInstanceMigrationAnalysis {
 interface QuestionReviewWindow {
   visibleFromDate: string;
   visibleUntilDate?: string;
+}
+
+interface VisibilityMigration {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  beforeRelease: AccessControlJsonInput['beforeRelease'] | undefined;
+  notes: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -262,14 +268,17 @@ function hasPracticeBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
 // Visibility helpers (afterComplete, listBeforeRelease)
 // ---------------------------------------------------------------------------
 
-function buildAfterComplete(
-  rules: AssessmentAccessRuleJson[],
-): AccessControlJsonInput['afterComplete'] | undefined {
+function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
+  afterComplete: AccessControlJsonInput['afterComplete'] | undefined;
+  notes: string[];
+} {
   const hidesAssessment = rules.some((r) => r.showClosedAssessment === false);
   const hidesScore = rules.some((r) => r.showClosedAssessmentScore === false);
   const questionReviewWindows = getQuestionReviewWindows(rules);
 
-  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) return undefined;
+  if (!hidesAssessment && !hidesScore && questionReviewWindows.length === 0) {
+    return { afterComplete: undefined, notes: [] };
+  }
 
   const result: AccessControlJsonInput['afterComplete'] = {};
   if (hidesAssessment || questionReviewWindows.length > 0) result.questions = { hidden: true };
@@ -305,7 +314,36 @@ function buildAfterComplete(
     }
   }
 
-  return result;
+  // Enforce the same afterComplete cross-field invariant used by sync/UI.
+  // If the legacy rules revealed questions before the score, push questions'
+  // reveal forward to match the score's reveal date. The migration only ever
+  // constructs questions/score with hidden=true, so the third issue kind
+  // (score_hidden_requires_questions_hidden) is unreachable here.
+  const notes: string[] = [];
+  if (result.questions !== undefined && result.score !== undefined) {
+    const issue = getAfterCompleteCrossFieldIssue(result.questions, result.score);
+    if (issue?.kind === 'questions_reveal_requires_score_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      delete result.questions.visibleFromDate;
+      delete result.questions.visibleUntilDate;
+      notes.push(
+        `Questions reveal date ${questionsFrom} was removed because score remains hidden after completion.`,
+      );
+    } else if (issue?.kind === 'score_reveal_after_questions_reveal') {
+      const questionsFrom = result.questions.visibleFromDate;
+      const questionsUntil = result.questions.visibleUntilDate;
+      result.questions.visibleFromDate = result.score.visibleFromDate;
+      // The original review-window end is no longer meaningful once the start
+      // is pushed forward; drop it to keep the migrated config valid.
+      delete result.questions.visibleUntilDate;
+      const untilNote = questionsUntil ? ` (review-window end ${questionsUntil} dropped)` : '';
+      notes.push(
+        `Questions reveal date changed from ${questionsFrom} to ${result.score.visibleFromDate} so questions do not become visible while the score is still hidden${untilNote}.`,
+      );
+    }
+  }
+
+  return { afterComplete: result, notes };
 }
 
 function getQuestionReviewWindows(rules: AssessmentAccessRuleJson[]): QuestionReviewWindow[] {
@@ -386,13 +424,19 @@ function shouldListBeforeRelease(rules: AssessmentAccessRuleJson[]): boolean {
   });
 }
 
+function buildVisibilityMigration(rules: AssessmentAccessRuleJson[]): VisibilityMigration {
+  const { afterComplete, notes } = buildAfterComplete(rules);
+  const beforeRelease = shouldListBeforeRelease(rules) ? { listed: true as const } : undefined;
+  return { afterComplete, beforeRelease, notes };
+}
+
 function applyVisibilityMigration(
   accessControl: AccessControlJsonInput,
-  rules: AssessmentAccessRuleJson[],
+  visibilityMigration: VisibilityMigration,
 ): void {
-  const afterComplete = buildAfterComplete(rules);
+  const { afterComplete, beforeRelease } = visibilityMigration;
   if (afterComplete) accessControl.afterComplete = afterComplete;
-  if (shouldListBeforeRelease(rules)) accessControl.beforeRelease = { listed: true };
+  if (beforeRelease) accessControl.beforeRelease = beforeRelease;
 }
 
 // ---------------------------------------------------------------------------
@@ -452,26 +496,44 @@ function normalizeCreditDeadlines(
  * collapsed credit is 100%, or use `due: { date: null, credit: X }` to
  * preserve a non-100% open-ended credit.
  *
- * When early or late deadlines exist, skip the collapse so we don't drop
- * those windows on the floor (the dueDate carries them; collapsing erases
- * the structure they hang off of).
+ * When late deadlines exist, skip the collapse so we don't drop those windows
+ * on the floor. Early deadlines can be preserved with `due: { date: null }`.
+ * If an open-ended full-credit-or-bonus rule follows a higher-credit due
+ * window, preserve the higher-credit due window as an early deadline instead
+ * of emitting post-due credit at or above 100%.
  */
 function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
+  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
   if (
     dateControl.afterLastDeadline &&
-    !dateControl.earlyDeadlines?.length &&
     !dateControl.lateDeadlines?.length &&
-    (dateControl.afterLastDeadline.credit ?? 0) >= dueDateCredit
+    afterLastCredit >= dueDateCredit
   ) {
-    const collapseCredit = dateControl.afterLastDeadline.credit ?? 0;
-    if (collapseCredit === 100) {
+    if (afterLastCredit === 100 && !dateControl.earlyDeadlines?.length) {
       delete dateControl.due;
     } else {
-      dateControl.due = { date: null, credit: collapseCredit };
+      dateControl.due =
+        afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     }
+    delete dateControl.afterLastDeadline;
+  }
+
+  if (
+    dateControl.afterLastDeadline &&
+    !dateControl.lateDeadlines?.length &&
+    afterLastCredit >= 100 &&
+    dateControl.due?.date &&
+    dueDateCredit > afterLastCredit
+  ) {
+    dateControl.earlyDeadlines = [
+      ...(dateControl.earlyDeadlines ?? []),
+      { date: dateControl.due.date, credit: dueDateCredit },
+    ];
+    dateControl.due =
+      afterLastCredit === 100 ? { date: null } : { date: null, credit: afterLastCredit };
     delete dateControl.afterLastDeadline;
   }
 }
@@ -557,15 +619,14 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     return { dateControl, errors, notes };
   }
 
-  // --- Pick dueDate from the highest-credit closed rules ---
-  // Prefer 100% rules if they exist; otherwise use highest credit.
-  const fullCreditRules = closedCreditRules.filter((r) => (r.credit ?? 0) === 100);
+  // --- Pick dueDate from the first drop below full credit ---
+  const fullOrBonusCreditRules = closedCreditRules.filter((r) => (r.credit ?? 0) >= 100);
   let dueDateRules: AssessmentAccessRuleJson[];
   let dueDateCredit: number;
 
-  if (fullCreditRules.length > 0) {
-    dueDateRules = fullCreditRules;
-    dueDateCredit = 100;
+  if (fullOrBonusCreditRules.length > 0) {
+    dueDateCredit = Math.min(...fullOrBonusCreditRules.map((r) => r.credit ?? 0));
+    dueDateRules = fullOrBonusCreditRules.filter((r) => (r.credit ?? 0) === dueDateCredit);
   } else {
     const highestCredit = Math.max(...closedCreditRules.map((r) => r.credit ?? 0));
     dueDateRules = closedCreditRules.filter((r) => (r.credit ?? 0) === highestCredit);
@@ -609,9 +670,9 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
 
   for (const rule of otherClosedRules) {
     const credit = rule.credit ?? 0;
-    if (credit > 100 && credit > dueDateCredit) {
+    if (credit > dueDateCredit) {
       earlyRules.push(rule);
-    } else if (credit < 100 && credit < dueDateCredit) {
+    } else if (credit < dueDateCredit) {
       // Drop late rules whose window ends on or before the chosen due date —
       // the higher-credit due-date rule already covers them at higher credit,
       // so emitting a late deadline before dueDate would be redundant and
@@ -764,6 +825,7 @@ interface AnalysisResults {
   ptExtract: ReturnType<typeof extractPrairieTest>;
   pwExtract: ReturnType<typeof extractPassword>;
   dateControl: AccessControlJsonInput['dateControl'];
+  visibilityMigration: VisibilityMigration;
 }
 
 interface Analysis {
@@ -885,11 +947,14 @@ function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
     }
   }
 
+  const visibilityMigration = buildVisibilityMigration(schedulingRules);
+  notes.push(...visibilityMigration.notes);
+
   return {
     errors: [],
     notes,
     hasUidRules,
-    results: { schedulingRules, ptExtract, pwExtract, dateControl },
+    results: { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration },
   };
 }
 
@@ -903,7 +968,8 @@ export function migrateAllowAccess(
     return { accessControl: {}, errors, notes, hasUidRules };
   }
 
-  const { schedulingRules, ptExtract, pwExtract, dateControl } = analysis.results;
+  const { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration } =
+    analysis.results;
   const { notes, hasUidRules } = analysis;
   const accessControl: AccessControlJsonInput = {};
 
@@ -924,7 +990,7 @@ export function migrateAllowAccess(
     accessControl.dateControl.password = pwExtract.password;
   }
 
-  applyVisibilityMigration(accessControl, schedulingRules);
+  applyVisibilityMigration(accessControl, visibilityMigration);
 
   if (ptExtract) {
     accessControl.integrations = ptExtract.integrations;

@@ -50,7 +50,7 @@ export const calculatedHandler: TransformHandler<QTI12ParsedItem> = {
     const warnings: string[] = [];
     if (toleranceRaw === '' || tolerance === 0) {
       warnings.push(
-        `calculated_question "${item.ident}": answer_tolerance is ${toleranceRaw === '' ? 'missing' : 'zero'}; non-exact answers will be marked wrong. Review tolerance in info.json.`,
+        `answer_tolerance is ${toleranceRaw === '' ? 'missing' : 'zero'}; non-exact answers will be marked wrong. Review tolerance in question.html.`,
       );
     }
 

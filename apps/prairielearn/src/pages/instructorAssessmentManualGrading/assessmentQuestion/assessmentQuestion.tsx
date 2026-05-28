@@ -29,13 +29,17 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
-import { selectInstanceQuestionsForManualGrading } from './queries.js';
+import {
+  selectInstanceQuestionsForManualGrading,
+  selectRubricSettingsContextKeys,
+} from './queries.js';
 
 const router = Router();
 
@@ -81,15 +85,18 @@ router.get(
       res.locals.assessment_question,
     );
 
+    const rubricSettingsContextKeys = await selectRubricSettingsContextKeys({
+      assessment_question: res.locals.assessment_question,
+    });
+
     const initialOngoingJobSequenceTokens = await run(async () => {
       if (!aiGradingEnabled) {
         return null;
       }
 
-      const ongoingJobSequenceIds = await getJobSequenceIds({
-        assessment_question_id: res.locals.assessment_question.id,
-        status: 'Running',
+      const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
         type: 'ai_grading',
+        assessment_question_id: res.locals.assessment_question.id,
       });
 
       const jobSequenceTokens = ongoingJobSequenceIds.reduce(
@@ -197,6 +204,7 @@ router.get(
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
                 aiGradingRelativeCosts={aiGradingRelativeCosts}
+                rubricSettingsContextKeys={rubricSettingsContextKeys}
               />
             </Hydrate>
           </>
@@ -298,7 +306,18 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        res.redirect(req.originalUrl);
+        const updatedAssessmentQuestion = await selectAssessmentQuestionById(
+          res.locals.assessment_question.id,
+        );
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: updatedAssessmentQuestion,
+        });
+        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+        const aiGradingStats =
+          aiGradingEnabled && updatedAssessmentQuestion.ai_grading_mode
+            ? await calculateAiGradingStats(updatedAssessmentQuestion)
+            : null;
+        res.json({ rubric_data, aiGradingStats });
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }

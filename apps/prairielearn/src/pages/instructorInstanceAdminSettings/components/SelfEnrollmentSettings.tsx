@@ -184,8 +184,6 @@ export function SelfEnrollmentSettings({
 
   return (
     <>
-      <h2 className="h4">Self-enrollment</h2>
-
       {!hasModernPublishing ? (
         <div className="alert alert-warning">
           You are using access rules to control who can access the course instance.{' '}
