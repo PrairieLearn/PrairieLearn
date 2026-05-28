@@ -19,14 +19,12 @@ import {
 } from '../../lib/infoAssessment-edits.js';
 import {
   formatBlockedAssessments,
-  selectAssessmentsBlockingDeletion,
+  getQuestionDeletionBlockers,
+  qidsToRemoveForQuestions,
 } from '../../lib/question-deletion-validation.js';
 import { selectAssessmentsReferencingQuestions } from '../../models/assessment.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import {
-  selectLiveQuestionsByIdsAndCourseId,
-  selectQuestionsUsedInOtherCourses,
-} from '../../models/question.js';
+import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
@@ -105,9 +103,7 @@ const previewDeletion = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
-    const qidsToRemove = new Set(
-      selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
-    );
+    const qidsToRemove = qidsToRemoveForQuestions(selectedQuestions);
     if (qidsToRemove.size === 0) return { zones: [] };
 
     const refs = await selectAssessmentsReferencingQuestions({
@@ -201,28 +197,23 @@ const deleteQuestions = t.procedure
         institution_id: ctx.course.institution_id,
       }));
 
-    if (sharingEnabled) {
-      const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
-        question_ids: selectedQuestions.map((q) => q.id),
-        course_id: ctx.course.id,
+    const { usedInOtherCourses, blockedAssessments } = await getQuestionDeletionBlockers({
+      course: ctx.course,
+      questions: selectedQuestions,
+      checkOtherCourses: sharingEnabled,
+    });
+
+    if (usedInOtherCourses.length > 0) {
+      throwAppError<QuestionsError['DeleteQuestions']>({
+        code: 'QUESTIONS_USED_IN_OTHER_COURSES',
+        message:
+          usedInOtherCourses.length === 1
+            ? 'One selected question is used by another course and cannot be deleted.'
+            : `${usedInOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
+        qids: usedInOtherCourses.map((q) => q.qid),
       });
-      if (blockedByOtherCourses.length > 0) {
-        throwAppError<QuestionsError['DeleteQuestions']>({
-          code: 'QUESTIONS_USED_IN_OTHER_COURSES',
-          message:
-            blockedByOtherCourses.length === 1
-              ? 'One selected question is used by another course and cannot be deleted.'
-              : `${blockedByOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
-          qids: blockedByOtherCourses.map((q) => q.qid),
-        });
-      }
     }
 
-    const blockedAssessments = await selectAssessmentsBlockingDeletion({
-      course: ctx.course,
-      questionIds: selectedQuestions.map((q) => q.id),
-      qidsToRemove: new Set(selectedQuestions.flatMap((q) => (q.qid ? [q.qid] : []))),
-    });
     if (blockedAssessments.length > 0) {
       throwAppError<QuestionsError['DeleteQuestions']>({
         code: 'DELETION_BREAKS_ASSESSMENTS',

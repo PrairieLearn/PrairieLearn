@@ -4,49 +4,63 @@ import type {
   ZoneQuestionBlockJsonInput,
 } from '../schemas/infoAssessment.js';
 
+/** Maps a QID reference to its replacement; return the same QID for a no-op, or `null` to drop it. */
+type QidMapper = (qid: string) => string | null;
+
 /**
- * Removes any references to `qidsToRemove` from a single zone-question block.
- * For alternative groups, filters the alternatives list; the block itself is
- * dropped only when all alternatives are removed. For direct QID references,
- * the block is dropped when its QID matches.
+ * Maps every QID reference in a block. An alternative group's block is dropped
+ * only once all its alternatives are dropped. Does not mutate the input.
  */
-function removeQidsFromBlock(
+function mapQidsInBlock(
   block: ZoneQuestionBlockJsonInput,
-  qidsToRemove: Set<string>,
-): { block: ZoneQuestionBlockJsonInput | null; removedCount: number } {
+  mapQid: QidMapper,
+): { block: ZoneQuestionBlockJsonInput | null; changedCount: number } {
   if (block.alternatives) {
-    const alternatives = block.alternatives.filter(
-      (alternative) => !qidsToRemove.has(alternative.id),
-    );
+    let changedCount = 0;
+    const alternatives: typeof block.alternatives = [];
+    for (const alternative of block.alternatives) {
+      const newId = mapQid(alternative.id);
+      if (newId === null) {
+        changedCount += 1;
+        continue;
+      }
+      if (newId !== alternative.id) {
+        changedCount += 1;
+        alternatives.push({ ...alternative, id: newId });
+      } else {
+        alternatives.push(alternative);
+      }
+    }
     return {
       block: alternatives.length > 0 ? { ...block, alternatives } : null,
-      removedCount: block.alternatives.length - alternatives.length,
+      changedCount,
     };
   }
 
-  if (block.id && qidsToRemove.has(block.id)) {
-    return { block: null, removedCount: 1 };
+  if (block.id) {
+    const newId = mapQid(block.id);
+    if (newId === null) {
+      return { block: null, changedCount: 1 };
+    }
+    if (newId !== block.id) {
+      return { block: { ...block, id: newId }, changedCount: 1 };
+    }
   }
-  return { block, removedCount: 0 };
+  return { block, changedCount: 0 };
 }
 
-/**
- * Removes any references to `qidsToRemove` from a single zone's question
- * blocks, returning the surviving blocks alongside a count of removed
- * references. Does not mutate the input.
- */
-function removeQidsFromZone(
+function mapQidsInZone(
   zone: ZoneAssessmentJsonInput,
-  qidsToRemove: Set<string>,
-): { questions: ZoneQuestionBlockJsonInput[]; removedCount: number } {
-  let removedCount = 0;
+  mapQid: QidMapper,
+): { questions: ZoneQuestionBlockJsonInput[]; changedCount: number } {
+  let changedCount = 0;
   const questions: ZoneQuestionBlockJsonInput[] = [];
   for (const block of zone.questions) {
-    const result = removeQidsFromBlock(block, qidsToRemove);
-    removedCount += result.removedCount;
+    const result = mapQidsInBlock(block, mapQid);
+    changedCount += result.changedCount;
     if (result.block) questions.push(result.block);
   }
-  return { questions, removedCount };
+  return { questions, changedCount };
 }
 
 interface EmptiedZone {
@@ -80,6 +94,39 @@ export interface BlockedAssessment {
   blockers: DeletionBlocker[];
 }
 
+interface MapAssessmentQidsResult {
+  assessment: AssessmentJsonInput;
+  /** Number of QID references that were rewritten or dropped. */
+  changedCount: number;
+  /** Zones that were non-empty before but had all their references dropped; removed from `assessment`. */
+  emptiedZones: EmptiedZone[];
+}
+
+/**
+ * The single canonical traversal of an assessment's question references: applies
+ * `mapQid` to every reference across all zones, blocks, and alternative groups.
+ * Deletion maps each removed QID to `null`; renaming maps the old QID to the new
+ * one. Emptied zones are dropped. Does not mutate the input.
+ */
+export function mapAssessmentQids(
+  assessment: AssessmentJsonInput,
+  mapQid: QidMapper,
+): MapAssessmentQidsResult {
+  let changedCount = 0;
+  const emptiedZones: EmptiedZone[] = [];
+  const zones: ZoneAssessmentJsonInput[] = [];
+  for (const [zoneIndex, zone] of (assessment.zones ?? []).entries()) {
+    const { questions, changedCount: zoneChangedCount } = mapQidsInZone(zone, mapQid);
+    changedCount += zoneChangedCount;
+    if (zone.questions.length > 0 && questions.length === 0) {
+      emptiedZones.push({ zoneIndex, zoneTitle: zone.title ?? null });
+      continue;
+    }
+    zones.push({ ...zone, questions });
+  }
+  return { assessment: { ...assessment, zones }, changedCount, emptiedZones };
+}
+
 interface RemoveQidsFromAssessmentResult {
   assessment: AssessmentJsonInput;
   removedCount: number;
@@ -106,32 +153,38 @@ export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
   qidsToRemove: Set<string>,
 ): RemoveQidsFromAssessmentResult {
-  let removedCount = 0;
-  const emptiedZones: EmptiedZone[] = [];
-  const zones: ZoneAssessmentJsonInput[] = [];
-  for (const [zoneIndex, zone] of (assessment.zones ?? []).entries()) {
-    const { questions, removedCount: zoneRemovedCount } = removeQidsFromZone(zone, qidsToRemove);
-    removedCount += zoneRemovedCount;
-    if (zone.questions.length > 0 && questions.length === 0) {
-      emptiedZones.push({ zoneIndex, zoneTitle: zone.title ?? null });
-      continue;
-    }
-    zones.push({ ...zone, questions });
-  }
+  const {
+    assessment: updated,
+    changedCount,
+    emptiedZones,
+  } = mapAssessmentQids(assessment, (qid) => (qidsToRemove.has(qid) ? null : qid));
 
   const originalZones = assessment.zones ?? [];
+  const newZones = updated.zones ?? [];
   const blockers: DeletionBlocker[] = [];
-  if (zones.length === 0 && originalZones.length > 0) {
+  if (newZones.length === 0 && originalZones.length > 0) {
     blockers.push({ code: 'NO_ZONES_REMAINING' });
   }
-  if (zones[0]?.lockpoint && !originalZones[0]?.lockpoint) {
+  if (newZones[0]?.lockpoint && !originalZones[0]?.lockpoint) {
     blockers.push({ code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' });
   }
 
   return {
-    assessment: { ...assessment, zones },
-    removedCount,
+    assessment: updated,
+    removedCount: changedCount,
     emptiedZones,
     blockers,
   };
+}
+
+/** Returns a copy of `assessment` with every reference to `oldQid` rewritten to `newQid`. */
+export function renameQidInAssessment(
+  assessment: AssessmentJsonInput,
+  oldQid: string,
+  newQid: string,
+): { assessment: AssessmentJsonInput; renamedCount: number } {
+  const { assessment: updated, changedCount } = mapAssessmentQids(assessment, (qid) =>
+    qid === oldQid ? newQid : qid,
+  );
+  return { assessment: updated, renamedCount: changedCount };
 }
