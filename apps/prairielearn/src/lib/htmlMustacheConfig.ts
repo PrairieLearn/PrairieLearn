@@ -139,7 +139,7 @@ export const htmlMustacheConfig: Config = {
     },
     {
       id: 'pl-require-img-alt',
-      selector: "img:not([alt]):not([aria-hidden='true']), pl-figure:not([alt])",
+      selector: "img:not([alt]):not([aria-hidden='true']):not(pl-overlay *), pl-figure:not([alt]):not(pl-overlay *)",
       message: 'Images must have alt-text in order to be WCAG 2.1 AA compliant',
       severity: 'warning',
     },
