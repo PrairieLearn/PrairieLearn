@@ -4,7 +4,7 @@ import {
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
-import { type Mathfield, MathfieldElement } from 'mathlive';
+import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -110,13 +110,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const parseLatexForClipboard = (_mf: Mathfield | null, latex: string) =>
-    // The starting = sign is handled separately to avoid ce introducing a "missing operand" error.
-    (latex.startsWith('=') ? '=' : '') +
-    ce.parse(latex.replace(/^=/, ''), { form: 'raw' }).toString();
+  const latexFieldOnExport = (_mf: Mathfield, latex: string) => convertLatexToAsciiMath(latex);
 
-  calculatorInputElement.onExport = parseLatexForClipboard;
-  calculatorOutput.onExport = parseLatexForClipboard;
+  calculatorInputElement.onExport = latexFieldOnExport;
+  calculatorOutput.onExport = latexFieldOnExport;
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
@@ -696,8 +693,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    inputField.onExport = parseLatexForClipboard;
-    outputField.onExport = parseLatexForClipboard;
+    inputField.onExport = latexFieldOnExport;
+    outputField.onExport = latexFieldOnExport;
 
     // Copy buttons
     const inputCopyBtn = ensureElement(
@@ -706,8 +703,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.dataset.clipboardText = parseLatexForClipboard(null, input);
-    outputCopyBtn.dataset.clipboardText = parseLatexForClipboard(null, outputField.value);
+    inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
+    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(outputField.value);
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
