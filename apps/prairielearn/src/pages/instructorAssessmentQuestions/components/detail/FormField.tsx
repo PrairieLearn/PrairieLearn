@@ -23,7 +23,7 @@ export function FormField({
 }: {
   editMode: boolean;
   id: string;
-  label: string;
+  label: React.ReactNode;
   viewValue?: React.ReactNode;
   hideWhenEmpty?: boolean;
   error?: FieldError;
@@ -82,7 +82,7 @@ export function FormCheckField({
 }: {
   editMode: boolean;
   id: string;
-  label: string;
+  label: React.ReactNode;
   viewValue?: boolean;
   hideWhenEmpty?: boolean;
   error?: FieldError;

@@ -24,7 +24,7 @@ import {
   type GroupRoleWithCount,
   type RoleAssignment,
   getGroupRoleReassignmentsAfterLeave,
-} from '../lib/groups.js';
+} from '../lib/groups.shared.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupsRoleJson } from '../schemas/index.js';

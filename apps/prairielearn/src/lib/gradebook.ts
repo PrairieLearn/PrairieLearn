@@ -2,7 +2,8 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   type AuthzDataForAccessControl,
-  resolveModernAssessmentAccessBatch,
+  resolveModernAssessmentAccessResultsBatch,
+  resolverResultToAuthzAssessmentForInstance,
 } from './assessment-access-control/authz.js';
 import { type CourseInstance } from './db-types.js';
 import {
@@ -27,13 +28,18 @@ async function applyModernAccessControl<
     modern_access_control: boolean;
     assessment_id: string;
     show_closed_assessment_score: boolean;
-    assessment_instance: { points: number | null; score_perc: number | null };
+    assessment_instance: {
+      open: boolean | null;
+      date_limit: Date | null;
+      points: number | null;
+      score_perc: number | null;
+    };
   },
 >(rows: T[], params: GetGradebookRowsParams): Promise<void> {
   const hasModern = rows.some((r) => r.modern_access_control);
   if (!hasModern) return;
 
-  const modernResults = await resolveModernAssessmentAccessBatch({
+  const modernAccessByAssessment = await resolveModernAssessmentAccessResultsBatch({
     courseInstance: params.courseInstance,
     userId: params.userId,
     authzData: params.authzData,
@@ -42,10 +48,17 @@ async function applyModernAccessControl<
 
   for (const row of rows) {
     if (!row.modern_access_control) continue;
-    const result = modernResults.get(row.assessment_id);
-    if (result) {
-      row.show_closed_assessment_score = result.show_closed_assessment_score;
-      if (params.auth === 'student' && !result.show_closed_assessment_score) {
+    const assessmentAccess = modernAccessByAssessment.get(row.assessment_id);
+    if (assessmentAccess) {
+      const authzResult = resolverResultToAuthzAssessmentForInstance({
+        result: assessmentAccess,
+        authzMode: params.authzData.mode,
+        displayTimezone: params.courseInstance.display_timezone,
+        assessmentInstance: row.assessment_instance,
+        reqDate: params.reqDate,
+      });
+      row.show_closed_assessment_score = authzResult.show_closed_assessment_score;
+      if (params.auth === 'student' && !authzResult.show_closed_assessment_score) {
         row.assessment_instance.points = null;
         row.assessment_instance.score_perc = null;
       }

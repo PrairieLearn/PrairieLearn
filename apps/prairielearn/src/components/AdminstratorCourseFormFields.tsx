@@ -70,6 +70,7 @@ export function AdministratorCourseFormFields({
   emailDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
+  repositoryRequired,
 }: {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
@@ -78,6 +79,7 @@ export function AdministratorCourseFormFields({
   emailDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
+  repositoryRequired: boolean;
 }) {
   const trpc = useTRPC();
   const {
@@ -135,6 +137,7 @@ export function AdministratorCourseFormFields({
   const repoMatchesShortName =
     !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
 
+  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Keep derived react-hook-form fields synchronized until the admin edits them. */
   useEffect(() => {
     if (!shortName) return;
     if (prefixState.status === 'loading') return;
@@ -166,6 +169,7 @@ export function AdministratorCourseFormFields({
     dirtyFields.repository_short_name,
     setValue,
   ]);
+  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   return (
     <div className="row g-3 mb-3">
@@ -311,7 +315,9 @@ export function AdministratorCourseFormFields({
             aria-errormessage={
               errors.repository_short_name ? 'courseFormRepositoryName-error' : undefined
             }
-            {...register('repository_short_name', { required: 'Enter a repository name' })}
+            {...register('repository_short_name', {
+              required: repositoryRequired && 'Enter a repository name',
+            })}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger

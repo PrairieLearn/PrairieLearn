@@ -18,7 +18,16 @@ SELECT
   (
     SELECT
       jsonb_agg(
-        jsonb_build_object('uuid', acpe.uuid, 'read_only', acpe.read_only)
+        jsonb_build_object(
+          'uuid',
+          acpe.uuid,
+          'read_only',
+          acpe.read_only,
+          'after_complete_questions_hidden',
+          acpe.after_complete_questions_hidden,
+          'after_complete_score_hidden',
+          acpe.after_complete_score_hidden
+        )
         ORDER BY
           acpe.uuid
       )
@@ -72,8 +81,8 @@ ORDER BY
   aacr.assessment_id,
   CASE aacr.target_type
     WHEN 'none' THEN 0
-    WHEN 'enrollment' THEN 1
-    WHEN 'student_label' THEN 2
+    WHEN 'student_label' THEN 1
+    WHEN 'enrollment' THEN 2
   END,
   aacr.number;
 

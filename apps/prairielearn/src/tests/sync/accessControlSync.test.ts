@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 
+import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -8,7 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
-import { resolveAccessControl } from '../../lib/assessment-access-control/resolver.js';
+import type { DefaultRule, OverrideRule } from '../../lib/assessment-access-control/resolver.js';
 import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
@@ -39,13 +40,19 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAccessControlRule(
   overrides: Partial<AccessControlJsonInput> = {},
 ): AccessControlJsonInput {
-  return {
-    dateControl: {
-      releaseDate: '2024-03-14T00:01:00',
-      dueDate: '2024-03-21T23:59:00',
+  if ('dateControl' in overrides && overrides.dateControl === undefined) {
+    const { dateControl: _dateControl, ...rest } = overrides;
+    return { ...rest };
+  }
+  return merge(
+    {
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: '2024-03-21T23:59:00' },
+      },
     },
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 const TARGET_TYPE_ORDER: Record<AssessmentAccessControlRule['target_type'], number> = {
@@ -145,12 +152,12 @@ describe('Access control syncing', () => {
   afterAll(helperDb.after);
 
   describe('Basic rule syncing', () => {
-    it('adds a new main access control rule', () =>
+    it('adds a new default access control rule', () =>
       runInTransactionAndRollback(async () => {
         const { syncedRules } = await syncRulesAndRead([makeAccessControlRule()]);
         assert.equal(syncedRules.length, 1);
         assert.equal(syncedRules[0].number, 0);
-        assert.equal(syncedRules[0].date_control_release_date_overridden, true);
+        assert.isNotNull(syncedRules[0].date_control_release_date);
         assert.equal(syncedRules[0].target_type, 'none');
       }));
 
@@ -186,26 +193,25 @@ describe('Access control syncing', () => {
   //   JSON field null      → overridden=true,  value=NULL  ("explicitly cleared")
   //   JSON field has value → overridden=true,  value=<val> ("explicitly set")
   //
-  // For main rules (number=0), "not configured" simply means the field was
+  // For default rules (number=0), "not configured" simply means the field was
   // absent from the JSON — there is no parent to inherit from.
-  // For overrides (number>0), "not configured" means "inherit from the main
+  // For overrides (number>0), "not configured" means "inherit from the default
   // rule"; the resolver's merge step skips undefined fields.
-  describe('_overridden flag behavior on main rules', () => {
+  describe('_overridden flag behavior on default rules', () => {
     it('fields present in JSON get overridden=true', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             durationMinutes: 90,
             password: 'secret',
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isTrue(row.date_control_release_date_overridden);
         assert.isNotNull(row.date_control_release_date);
-        assert.isTrue(row.date_control_due_date_overridden);
+        assert.isTrue(row.date_control_due_overridden);
         assert.isNotNull(row.date_control_due_date);
         assert.isTrue(row.date_control_duration_minutes_overridden);
         assert.equal(row.date_control_duration_minutes, 90);
@@ -215,23 +221,21 @@ describe('Access control syncing', () => {
 
     it('fields absent from JSON get overridden=false and value=NULL', () =>
       runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule({
+        const rule: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            // dueDate, durationMinutes, password, deadlines all omitted
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+            // durationMinutes, password, deadlines all omitted
           },
-        });
+        };
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_due_date_overridden);
-        assert.isNull(row.date_control_due_date);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isNull(row.date_control_duration_minutes);
         assert.isFalse(row.date_control_password_overridden);
         assert.isNull(row.date_control_password);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
-        assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
         assert.isNull(row.date_control_after_last_deadline_credit);
         assert.isNull(row.date_control_after_last_deadline_allow_submissions);
       }));
@@ -240,15 +244,15 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: null,
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: null },
             password: null,
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
         // Explicitly set to null: overridden=true, value=NULL
-        assert.isTrue(row.date_control_due_date_overridden);
+        assert.isTrue(row.date_control_due_overridden);
         assert.isNull(row.date_control_due_date);
         assert.isTrue(row.date_control_password_overridden);
         assert.isNull(row.date_control_password);
@@ -259,33 +263,32 @@ describe('Access control syncing', () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.isFalse(row.date_control_release_date_overridden);
-        assert.isFalse(row.date_control_due_date_overridden);
+        assert.isNull(row.date_control_release_date);
+        assert.isFalse(row.date_control_due_overridden);
         assert.isFalse(row.date_control_duration_minutes_overridden);
         assert.isFalse(row.date_control_password_overridden);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
-        assert.isFalse(row.date_control_after_last_deadline_credit_overridden);
       }));
 
     it('afterComplete fields follow the same pattern', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2024-04-01T00:00:00',
-            // hideScore and showScoreAgainDate omitted
+            questions: {
+              hidden: true,
+              visibleFromDate: '2024-04-01T00:00:00',
+            },
+            // score omitted
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         const row = syncedRules[0];
-        assert.equal(row.after_complete_hide_questions, true);
-        assert.isTrue(row.after_complete_show_questions_again_date_overridden);
-        assert.isNotNull(row.after_complete_show_questions_again_date);
+        assert.equal(row.after_complete_questions_hidden, true);
+        assert.isNotNull(row.after_complete_questions_visible_from_date);
         // Omitted fields
-        assert.isNull(row.after_complete_hide_score);
-        assert.isFalse(row.after_complete_show_score_again_date_overridden);
-        assert.isNull(row.after_complete_show_score_again_date);
+        assert.isNull(row.after_complete_score_hidden);
+        assert.isNull(row.after_complete_score_visible_from_date);
       }));
   });
 
@@ -293,10 +296,10 @@ describe('Access control syncing', () => {
     it('override with one field: only that field gets overridden=true', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule({
+        const defaultRule = makeAccessControlRule({
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             durationMinutes: 90,
             password: 'secret',
           },
@@ -304,19 +307,18 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           dateControl: {
-            dueDate: '2024-04-01T23:59:00',
+            due: { date: '2024-04-01T23:59:00' },
           },
         };
-        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+        const { syncedRules } = await syncRulesAndRead([defaultRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
-        // Only dueDate was configured on the override
-        assert.isTrue(override.date_control_due_date_overridden);
+        // Only due was configured on the override
+        assert.isTrue(override.date_control_due_overridden);
         assert.isNotNull(override.date_control_due_date);
-        // Everything else should be overridden=false (inherit from main)
-        assert.isFalse(override.date_control_release_date_overridden);
+        // Everything else should be overridden=false (inherit from default)
         assert.isNull(override.date_control_release_date);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isNull(override.date_control_duration_minutes);
@@ -329,125 +331,73 @@ describe('Access control syncing', () => {
     it('override with no dateControl: all flags are overridden=false', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule();
+        const defaultRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           // no dateControl at all — inherit everything
         };
-        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
+        const { syncedRules } = await syncRulesAndRead([defaultRule, overrideRule], {
           studentLabels: [labelName],
         });
         const override = syncedRules.find((r) => r.target_type === 'student_label');
         assert.isOk(override);
-        assert.isFalse(override.date_control_release_date_overridden);
-        assert.isFalse(override.date_control_due_date_overridden);
+        assert.isNull(override.date_control_release_date);
+        assert.isFalse(override.date_control_due_overridden);
         assert.isFalse(override.date_control_duration_minutes_overridden);
         assert.isFalse(override.date_control_password_overridden);
         assert.isFalse(override.date_control_early_deadlines_overridden);
         assert.isFalse(override.date_control_late_deadlines_overridden);
-        assert.isFalse(override.date_control_after_last_deadline_credit_overridden);
-      }));
-
-    it('afterComplete override with one field: only that field is set', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule({
-          afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2024-04-01T00:00:00',
-            hideQuestionsAgainDate: '2024-05-01T00:00:00',
-            hideScore: true,
-            showScoreAgainDate: '2024-04-15T00:00:00',
-          },
-        });
-        const overrideRule: AccessControlJsonInput = {
-          labels: [labelName],
-          afterComplete: {
-            hideQuestions: false,
-          },
-        };
-        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [labelName],
-        });
-        const override = syncedRules.find((r) => r.target_type === 'student_label');
-        assert.isOk(override);
-        assert.equal(override.after_complete_hide_questions, false);
-        // Date fields not set on the override should have overridden=false
-        assert.isFalse(override.after_complete_show_questions_again_date_overridden);
-        assert.isNull(override.after_complete_show_questions_again_date);
-        assert.isFalse(override.after_complete_hide_questions_again_date_overridden);
-        assert.isNull(override.after_complete_hide_questions_again_date);
-        assert.isNull(override.after_complete_hide_score);
-        assert.isFalse(override.after_complete_show_score_again_date_overridden);
-        assert.isNull(override.after_complete_show_score_again_date);
-      }));
-
-    it('override with null releaseDate: overridden=true, value=NULL', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule();
-        const overrideRule: AccessControlJsonInput = {
-          labels: [labelName],
-          dateControl: {
-            releaseDate: null, // explicitly clear — no date-based access for this label
-          },
-        };
-        const { syncedRules } = await syncRulesAndRead([mainRule, overrideRule], {
-          studentLabels: [labelName],
-        });
-        const override = syncedRules.find((r) => r.target_type === 'student_label');
-        assert.isOk(override);
-        assert.isTrue(override.date_control_release_date_overridden);
-        assert.isNull(override.date_control_release_date);
       }));
   });
 
-  describe('listBeforeRelease', () => {
+  describe('beforeRelease', () => {
     it.each([
       { input: true, expected: true },
       { input: false, expected: false },
       { input: undefined, expected: false },
-    ])('syncs listBeforeRelease: $input -> $expected', ({ input, expected }) =>
+    ])('syncs beforeRelease.listed: $input -> $expected', ({ input, expected }) =>
       runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule(input !== undefined ? { listBeforeRelease: input } : {});
+        const rule = makeAccessControlRule(
+          input !== undefined ? { beforeRelease: { listed: input } } : {},
+        );
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].list_before_release, expected);
+        assert.equal(syncedRules[0].before_release_listed, expected);
       }),
     );
 
     it('defaults to false in round-trip when omitted from JSON', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const mainRule: AccessControlJsonInput = {
+        const defaultRuleJson: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.equal(main.rule.listBeforeRelease, false);
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.deepEqual(defaultRule.rule.beforeRelease, { listed: false });
       }));
 
-    it('preserves inheritance for label overrides when listBeforeRelease is omitted', () =>
+    it('preserves inheritance for label overrides when beforeRelease is omitted', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Extended time';
         const { syncedRules } = await syncRulesAndRead(
           [
-            makeAccessControlRule({ listBeforeRelease: true }),
+            makeAccessControlRule({ beforeRelease: { listed: true } }),
             makeAccessControlRule({
               labels: [labelName],
               dateControl: {
-                dueDate: '2024-03-28T23:59:00',
+                due: { date: '2024-03-28T23:59:00' },
               },
             }),
           ],
@@ -459,31 +409,30 @@ describe('Access control syncing', () => {
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((rule) => rule.targetType === 'student_label');
-
         assert.isOk(override);
-        assert.isUndefined(override.rule.listBeforeRelease);
-
+        // `beforeRelease` is statically prohibited on override rule bodies, so
+        // we only need to verify the DB column was left null.
         const overrideRow = syncedRules.find((rule) => rule.target_type === 'student_label');
         assert.isOk(overrideRow);
-        assert.isNull(overrideRow.list_before_release);
+        assert.isNull(overrideRow.before_release_listed);
       }));
 
-    it('rejects listBeforeRelease on label-based overrides', () =>
+    it('rejects beforeRelease on label-based overrides', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Extended time';
         const { errors } = await syncRulesAndRead(
           [
-            makeAccessControlRule({ listBeforeRelease: false }),
+            makeAccessControlRule({ beforeRelease: { listed: false } }),
             makeAccessControlRule({
               labels: [labelName],
-              listBeforeRelease: true,
-              dateControl: { dueDate: '2024-03-28T23:59:00' },
+              beforeRelease: { listed: true },
+              dateControl: { due: { date: '2024-03-28T23:59:00' } },
             }),
           ],
           { studentLabels: [labelName] },
         );
         assert.isTrue(
-          errors.some((e) => e.includes('listBeforeRelease can only be specified on the defaults')),
+          errors.some((e) => e.includes('beforeRelease can only be specified on the defaults')),
         );
       }));
   });
@@ -515,6 +464,33 @@ describe('Access control syncing', () => {
       assert.isNotNull(assessment.sync_errors);
       assert.match(assessment.sync_errors, /must have required property 'title'/);
     }));
+
+  describe('Date ordering validation', () => {
+    it('rejects an override with an early deadline before its own release date', () =>
+      runInTransactionAndRollback(async () => {
+        const groupName = 'Extended time';
+        const courseData = util.getCourseData();
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [
+          makeAccessControlRule(),
+          makeAccessControlRule({
+            labels: [groupName],
+            dateControl: {
+              release: { date: '2024-04-07T00:00:00' },
+              earlyDeadlines: [{ date: '2024-04-06T00:00:00', credit: 120 }],
+            },
+          }),
+        ];
+
+        await util.writeAndSyncCourseData(courseData);
+
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        assert.isNotNull(assessment.sync_errors);
+        assert.match(assessment.sync_errors, /must be after the release date/);
+      }));
+  });
 
   describe('Deadline handling', () => {
     it('syncs early deadlines', () =>
@@ -628,7 +604,7 @@ describe('Access control syncing', () => {
         const { syncedRules } = await syncRulesAndRead(
           [
             makeAccessControlRule({
-              dateControl: { releaseDate: '2024-03-14T00:01:00', durationMinutes: 60 },
+              dateControl: { release: { date: '2024-03-14T00:01:00' }, durationMinutes: 60 },
             }),
             makeAccessControlRule({ labels: [labelName1], dateControl: { durationMinutes: 90 } }),
             makeAccessControlRule({ labels: [labelName2], dateControl: { durationMinutes: 120 } }),
@@ -641,13 +617,14 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[0].date_control_duration_minutes, 60);
         assert.isNotNull(syncedRules[0].date_control_release_date);
 
+        // Override rules inherit release from makeAccessControlRule defaults.
         assert.equal(syncedRules[1].number, 1);
         assert.equal(syncedRules[1].date_control_duration_minutes, 90);
-        assert.isNull(syncedRules[1].date_control_release_date);
+        assert.isNotNull(syncedRules[1].date_control_release_date);
 
         assert.equal(syncedRules[2].number, 2);
         assert.equal(syncedRules[2].date_control_duration_minutes, 120);
-        assert.isNull(syncedRules[2].date_control_release_date);
+        assert.isNotNull(syncedRules[2].date_control_release_date);
       }));
 
     it('maintains number when rules are updated', () =>
@@ -989,52 +966,38 @@ describe('Access control syncing', () => {
   });
 
   describe('After complete settings', () => {
-    it('syncs hideQuestions settings', () =>
+    it('syncs questions hidden and visibility date settings', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2025-03-25T23:59:00',
+            questions: {
+              hidden: true,
+              visibleFromDate: '2025-03-25T23:59:00',
+              visibleUntilDate: '2025-04-15T23:59:00',
+            },
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].after_complete_hide_questions, true);
-        assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
-        assert.isNotNull(syncedRules[0].after_complete_show_questions_again_date);
+        assert.equal(syncedRules[0].after_complete_questions_hidden, true);
+        assert.isNotNull(syncedRules[0].after_complete_questions_visible_from_date);
+        assert.isNotNull(syncedRules[0].after_complete_questions_visible_until_date);
       }));
 
-    it('syncs hideQuestionsAgainDate settings', () =>
+    it('syncs score.hidden settings', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2025-03-25T23:59:00',
-            hideQuestionsAgainDate: '2025-04-15T23:59:00',
+            score: {
+              hidden: true,
+              visibleFromDate: '2025-03-25T23:59:00',
+            },
           },
         });
         const { syncedRules } = await syncRulesAndRead([rule]);
         assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].after_complete_hide_questions, true);
-        assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
-        assert.isNotNull(syncedRules[0].after_complete_show_questions_again_date);
-        assert.equal(syncedRules[0].after_complete_hide_questions_again_date_overridden, true);
-        assert.isNotNull(syncedRules[0].after_complete_hide_questions_again_date);
-      }));
-
-    it('syncs hideScore settings', () =>
-      runInTransactionAndRollback(async () => {
-        const rule = makeAccessControlRule({
-          afterComplete: {
-            hideScore: true,
-            showScoreAgainDate: '2025-03-25T23:59:00',
-          },
-        });
-        const { syncedRules } = await syncRulesAndRead([rule]);
-        assert.equal(syncedRules.length, 1);
-        assert.equal(syncedRules[0].after_complete_hide_score, true);
-        assert.equal(syncedRules[0].after_complete_show_score_again_date_overridden, true);
-        assert.isNotNull(syncedRules[0].after_complete_show_score_again_date);
+        assert.equal(syncedRules[0].after_complete_score_hidden, true);
+        assert.isNotNull(syncedRules[0].after_complete_score_visible_from_date);
       }));
   });
 
@@ -1075,6 +1038,30 @@ describe('Access control syncing', () => {
         ]);
         assert.isTrue(errors.some((e) => e.includes('nonexistent-label')));
         assert.equal(syncedRules.length, 0);
+      }));
+
+    it('syncs an override rule with an empty labels array as an inert label rule', () =>
+      runInTransactionAndRollback(async () => {
+        const { syncedRules, errors } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+          makeAccessControlRule({
+            labels: [],
+            dateControl: { durationMinutes: 90 },
+          }),
+        ]);
+        assert.deepEqual(errors, []);
+        assert.equal(syncedRules.length, 2);
+        assert.equal(syncedRules[1].target_type, 'student_label');
+        assert.equal(syncedRules[1].date_control_duration_minutes, 90);
+
+        const allStudentLabels = await util.dumpTableWithSchema(
+          'assessment_access_control_student_labels',
+          AssessmentAccessControlStudentLabelSchema,
+        );
+        const labelTargets = allStudentLabels.filter((t) =>
+          idsEqual(t.assessment_access_control_rule_id, syncedRules[1].id),
+        );
+        assert.equal(labelTargets.length, 0);
       }));
 
     it('rejects adding a label to a rule that already has individual students', () =>
@@ -1158,58 +1145,12 @@ describe('Access control syncing', () => {
       }));
   });
 
-  describe('Main rule requirement', () => {
-    it('rejects sync when no main rule exists', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const { syncedRules, errors } = await syncRulesAndRead(
-          [
-            makeAccessControlRule({
-              labels: [labelName],
-              dateControl: { durationMinutes: 90 },
-            }),
-          ],
-          { studentLabels: [labelName] },
-        );
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('No defaults found')));
-      }));
-
-    it('rejects sync when multiple main rules exist', () =>
-      runInTransactionAndRollback(async () => {
-        const { syncedRules, errors } = await syncRulesAndRead([
-          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
-          makeAccessControlRule({ dateControl: { durationMinutes: 90 } }),
-        ]);
-        assert.equal(syncedRules.length, 0);
-        assert.isTrue(errors.some((e) => e.includes('defaults entries')));
-      }));
-
-    it('successfully syncs with exactly one main rule', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Test Label';
-        const mainRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        const labelRule = makeAccessControlRule({
-          labels: [labelName],
-          dateControl: { durationMinutes: 90 },
-        });
-        const { syncedRules } = await syncRulesAndRead([mainRule, labelRule], {
-          studentLabels: [labelName],
-        });
-        assert.equal(syncedRules.length, 2);
-        assert.equal(syncedRules[0].date_control_duration_minutes, 60); // main
-        assert.equal(syncedRules[1].date_control_duration_minutes, 90); // label
-      }));
-  });
-
   describe('Validation and errors', () => {
     it('records an error for invalid date formats', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({
           dateControl: {
-            releaseDate: 'not a valid date',
+            release: { date: 'not a valid date' },
           },
         });
         // the rule should not be synced because it has validation errors
@@ -1325,7 +1266,7 @@ describe('Access control syncing', () => {
         const { syncedRules, errors } = await syncRulesAndRead([
           makeAccessControlRule({
             dateControl: {
-              dueDate: '2024-03-21T23:59:00',
+              due: { date: '2024-03-21T23:59:00' },
               earlyDeadlines: [
                 { date: '2024-03-18T23:59:00', credit: 120 },
                 { date: '2024-03-18T23:59:00', credit: 110 },
@@ -1342,7 +1283,7 @@ describe('Access control syncing', () => {
         const { syncedRules, errors } = await syncRulesAndRead([
           makeAccessControlRule({
             dateControl: {
-              dueDate: '2024-03-21T23:59:00',
+              due: { date: '2024-03-21T23:59:00' },
               lateDeadlines: [
                 { date: '2024-03-28T23:59:00', credit: 50 },
                 { date: '2024-03-28T23:59:00', credit: 25 },
@@ -1354,7 +1295,7 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 0);
       }));
 
-    it('rejects sync when non-main rule specifies integrations', () =>
+    it('rejects sync when non-default rule specifies integrations', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
         const { syncedRules, errors } = await syncRulesAndRead(
@@ -1376,7 +1317,7 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules.length, 0);
       }));
 
-    it('allows main rule to specify integrations', () =>
+    it('allows default rule to specify integrations', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Test Label';
         const { syncedRules } = await syncRulesAndRead(
@@ -1579,16 +1520,16 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
-    it('preserves afterLastDeadline.allowSubmissions without credit on override', () =>
+    it('preserves afterLastDeadline allowSubmissions false on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
-        const mainRule = makeAccessControlRule({
+        const defaultRule = makeAccessControlRule({
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             afterLastDeadline: { credit: 50, allowSubmissions: true },
           },
         });
@@ -1601,62 +1542,45 @@ describe('Access control syncing', () => {
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
+        ].accessControl = [defaultRule, overrideRule];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
+        assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
       }));
 
-    it('preserves hideQuestions without hideQuestionsAgainDate on override', () =>
+    it('preserves afterComplete question hidden: true without dates on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const labelName = 'Test Label';
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
-        const mainRule = makeAccessControlRule();
+        const defaultRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
-          afterComplete: { hideQuestions: true },
+          afterComplete: {
+            questions: { hidden: true },
+          },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
+        ].accessControl = [defaultRule, overrideRule];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
-        assert.equal(override.rule.afterComplete?.hideQuestions, true);
-      }));
-
-    it('preserves hideScore without showScoreAgainDate on override', () =>
-      runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const labelName = 'Test Label';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
-
-        const mainRule = makeAccessControlRule();
-        const overrideRule: AccessControlJsonInput = {
-          labels: [labelName],
-          afterComplete: { hideScore: true },
-        };
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
-        await util.writeAndSyncCourseData(courseData);
-
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
-        assert.isOk(override);
-        assert.equal(override.rule.afterComplete?.hideScore, true);
+        const questions = override.rule.afterComplete?.questions;
+        assert.isOk(questions);
+        assert.equal(questions.hidden, true);
+        assert.isNull(questions.visibleFromDate);
+        assert.isNull(questions.visibleUntilDate);
       }));
 
     it('override dateControl round-trips correctly', () =>
@@ -1666,25 +1590,25 @@ describe('Access control syncing', () => {
         const labelName = 'Test Label';
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
-        const mainRule = makeAccessControlRule();
+        const defaultRule = makeAccessControlRule();
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           dateControl: {
-            dueDate: '2024-04-01T23:59:00',
+            due: { date: '2024-04-01T23:59:00' },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
+        ].accessControl = [defaultRule, overrideRule];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.deepEqual(
-          override.rule.dateControl?.dueDate,
+          override.rule.dateControl?.due?.date,
           plainDateTimeStringToDate('2024-04-01T23:59:00', timezone),
         );
       }));
@@ -1695,10 +1619,10 @@ describe('Access control syncing', () => {
         const labelName = 'Test Label';
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
-        const mainRule: AccessControlJsonInput = {
+        const defaultRuleJson: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             durationMinutes: 90,
             password: 'secret123',
             afterLastDeadline: { credit: 10, allowSubmissions: true },
@@ -1709,121 +1633,52 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: null,
+            afterLastDeadline: { allowSubmissions: true },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
+        ].accessControl = [defaultRuleJson, overrideRule];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        assert.strictEqual(override.rule.dateControl.afterLastDeadline, null);
-      }));
-
-    it('explicit null override removals change resolved access behavior', () =>
-      runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const labelName = 'Test Label';
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
-
-        const mainRule: AccessControlJsonInput = {
-          dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
-            durationMinutes: 90,
-            password: 'secret123',
-            afterLastDeadline: { credit: 10, allowSubmissions: true },
-          },
-        };
-        const overrideRule: AccessControlJsonInput = {
-          labels: [labelName],
-          dateControl: {
-            durationMinutes: null,
-            password: null,
-            afterLastDeadline: null,
-          },
-        };
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
-        await util.writeAndSyncCourseData(courseData);
-
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
-        assert.isOk(override);
-        assert.equal(override.targetType, 'student_label');
-        assert.lengthOf(override.studentLabelIds, 1);
-
-        const beforeDueResult = resolveAccessControl({
-          rules,
-          enrollment: {
-            enrollmentId: 'enroll-1',
-            studentLabelIds: override.studentLabelIds,
-          },
-          date: new Date('2024-03-20T12:00:00Z'),
-          displayTimezone: 'America/Chicago',
-          authzMode: 'Public',
-          courseRole: 'None',
-          courseInstanceRole: 'None',
-          prairieTestReservations: [],
-        });
-        assert.isNull(beforeDueResult.timeLimitMin);
-        assert.isNull(beforeDueResult.password);
-
-        const afterDueResult = resolveAccessControl({
-          rules,
-          enrollment: {
-            enrollmentId: 'enroll-1',
-            studentLabelIds: override.studentLabelIds,
-          },
-          date: new Date('2024-03-22T12:00:00Z'),
-          displayTimezone: 'America/Chicago',
-          authzMode: 'Public',
-          courseRole: 'None',
-          courseInstanceRole: 'None',
-          prairieTestReservations: [],
-        });
-        assert.equal(afterDueResult.credit, 0);
-        assert.isFalse(afterDueResult.active);
+        assert.strictEqual(override.rule.dateControl.afterLastDeadline?.credit, null);
       }));
 
     it('only configured fields appear in the round-tripped JSON', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        const mainRule: AccessControlJsonInput = {
+        const defaultRuleJson: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        const dc = main.rule.dateControl;
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        const dc = defaultRule.rule.dateControl;
         assert.isOk(dc);
         assert.deepEqual(
-          dc.releaseDate,
+          dc.release?.date,
           plainDateTimeStringToDate('2024-03-14T00:01:00', timezone),
         );
-        assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
+        assert.deepEqual(dc.due?.date, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
         // Fields not in the original JSON should be absent
         assert.isUndefined(dc.durationMinutes);
         assert.isUndefined(dc.password);
@@ -1835,28 +1690,28 @@ describe('Access control syncing', () => {
     it('no dateControl in JSON produces no dateControl in round-trip', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
-        const mainRule: AccessControlJsonInput = {};
+        const defaultRuleJson: AccessControlJsonInput = {};
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.isUndefined(main.rule.dateControl);
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.isUndefined(defaultRule.rule.dateControl);
       }));
 
     it('all dateControl fields round-trip correctly', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        const mainRule: AccessControlJsonInput = {
+        const defaultRuleJson: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             durationMinutes: 90,
             password: 'secret123',
             earlyDeadlines: [{ date: '2024-03-18T23:59:00', credit: 120 }],
@@ -1864,29 +1719,33 @@ describe('Access control syncing', () => {
             afterLastDeadline: { credit: 10, allowSubmissions: true },
           },
           afterComplete: {
-            hideQuestions: true,
-            showQuestionsAgainDate: '2024-04-01T00:00:00',
-            hideScore: true,
-            showScoreAgainDate: '2024-04-15T00:00:00',
+            questions: {
+              hidden: true,
+              visibleFromDate: '2024-04-15T00:00:00',
+            },
+            score: {
+              hidden: true,
+              visibleFromDate: '2024-04-01T00:00:00',
+            },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        const dc = main.rule.dateControl;
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        const dc = defaultRule.rule.dateControl;
         assert.isOk(dc);
         assert.deepEqual(
-          dc.releaseDate,
+          dc.release?.date,
           plainDateTimeStringToDate('2024-03-14T00:01:00', timezone),
         );
-        assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
+        assert.deepEqual(dc.due?.date, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
         assert.equal(dc.durationMinutes, 90);
         assert.equal(dc.password, 'secret123');
         assert.equal(dc.earlyDeadlines?.length, 1);
@@ -1896,17 +1755,17 @@ describe('Access control syncing', () => {
         assert.equal(dc.afterLastDeadline?.credit, 10);
         assert.equal(dc.afterLastDeadline?.allowSubmissions, true);
 
-        const ac = main.rule.afterComplete;
+        const ac = defaultRule.rule.afterComplete;
         assert.isOk(ac);
-        assert.equal(ac.hideQuestions, true);
+        assert.equal(ac.questions?.hidden, true);
         assert.deepEqual(
-          ac.showQuestionsAgainDate,
-          plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
-        );
-        assert.equal(ac.hideScore, true);
-        assert.deepEqual(
-          ac.showScoreAgainDate,
+          ac.questions?.visibleFromDate,
           plainDateTimeStringToDate('2024-04-15T00:00:00', timezone),
+        );
+        assert.equal(ac.score?.hidden, true);
+        assert.deepEqual(
+          ac.score?.visibleFromDate,
+          plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
         );
       }));
 
@@ -1917,10 +1776,10 @@ describe('Access control syncing', () => {
         const labelName = 'Override Label';
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
 
-        const mainRule: AccessControlJsonInput = {
+        const defaultRuleJson: AccessControlJsonInput = {
           dateControl: {
-            releaseDate: '2024-03-14T00:01:00',
-            dueDate: '2024-03-21T23:59:00',
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
             durationMinutes: 90,
             password: 'secret123',
           },
@@ -1928,32 +1787,32 @@ describe('Access control syncing', () => {
         const overrideRule: AccessControlJsonInput = {
           labels: [labelName],
           dateControl: {
-            dueDate: '2024-04-01T23:59:00',
+            due: { date: '2024-04-01T23:59:00' },
           },
         };
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule, overrideRule];
+        ].accessControl = [defaultRuleJson, overrideRule];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const override = rules.find((r) => r.number > 0);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         const dc = override.rule.dateControl;
         assert.isOk(dc);
-        // Only dueDate was configured on the override
-        assert.deepEqual(dc.dueDate, plainDateTimeStringToDate('2024-04-01T23:59:00', timezone));
-        // Fields from the main rule should NOT appear on the override's own JSON
-        assert.isUndefined(dc.releaseDate);
+        // Only due was configured on the override
+        assert.deepEqual(dc.due?.date, plainDateTimeStringToDate('2024-04-01T23:59:00', timezone));
+        // Fields from the default rule should NOT appear on the override's own JSON
+        assert.isUndefined(dc.release);
         assert.isUndefined(dc.durationMinutes);
         assert.isUndefined(dc.password);
       }));
 
-    it('PrairieTest exam UUIDs round-trip on main rule', () =>
+    it('PrairieTest exam UUIDs round-trip on default rule', () =>
       runInTransactionAndRollback(async () => {
-        const mainRule = makeAccessControlRule({
+        const defaultRuleJson = makeAccessControlRule({
           dateControl: undefined,
           integrations: {
             prairieTest: {
@@ -1965,24 +1824,21 @@ describe('Access control syncing', () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: false }]);
-        assert.deepEqual(main.rule.integrations, {
-          prairieTest: {
-            exams: [{ examUuid: TEST_EXAM_UUID, readOnly: false }],
-          },
-        });
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.deepEqual(defaultRule.rule.prairieTestExams, [
+          { uuid: TEST_EXAM_UUID, readOnly: false, questionsHidden: false, scoreHidden: false },
+        ]);
       }));
 
     it('PrairieTest readOnly flag round-trips correctly', () =>
       runInTransactionAndRollback(async () => {
-        const mainRule = makeAccessControlRule({
+        const defaultRuleJson = makeAccessControlRule({
           dateControl: undefined,
           integrations: {
             prairieTest: {
@@ -1994,14 +1850,16 @@ describe('Access control syncing', () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
-        ].accessControl = [mainRule];
+        ].accessControl = [defaultRuleJson];
         await util.writeAndSyncCourseData(courseData);
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         const rules = await selectAccessControlRulesForAssessment(assessment);
-        const main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.deepEqual(main.prairietestExams, [{ uuid: TEST_EXAM_UUID, readOnly: true }]);
+        const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.deepEqual(defaultRule.rule.prairieTestExams, [
+          { uuid: TEST_EXAM_UUID, readOnly: true, questionsHidden: false, scoreHidden: false },
+        ]);
       }));
 
     it('removes stale PrairieTest exam rows on re-sync', () =>
@@ -2017,58 +1875,61 @@ describe('Access control syncing', () => {
 
         const assessment = await getAssessment(util.ASSESSMENT_ID);
         let rules = await selectAccessControlRulesForAssessment(assessment);
-        let main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.equal(main.prairietestExams.length, 1);
+        let defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.equal(defaultRule.rule.prairieTestExams.length, 1);
 
         // Re-sync without the exam — stale row should be cleaned up.
         await syncRulesAndRead([makeAccessControlRule()], { courseDir });
 
         rules = await selectAccessControlRulesForAssessment(assessment);
-        main = rules.find((r) => r.number === 0);
-        assert.isOk(main);
-        assert.equal(main.prairietestExams.length, 0);
+        defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRule);
+        assert.equal(defaultRule.rule.prairieTestExams.length, 0);
       }));
   });
 });
 
 describe('cleanAccessControlRulesForDisk', () => {
-  it('omits listBeforeRelease: false and empty objects from output', () => {
+  it('omits beforeRelease.listed: false and empty objects from output', () => {
     const rules: AccessControlJsonInput[] = [
-      { listBeforeRelease: false, dateControl: {}, afterComplete: {} },
+      { beforeRelease: { listed: false }, dateControl: {}, afterComplete: {} },
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
     assert.equal(cleaned.length, 1);
-    assert.notProperty(cleaned[0], 'listBeforeRelease');
+    assert.notProperty(cleaned[0], 'beforeRelease');
     assert.notProperty(cleaned[0], 'dateControl');
     assert.notProperty(cleaned[0], 'afterComplete');
   });
 
-  it('preserves listBeforeRelease: true on the main rule only', () => {
+  it('preserves beforeRelease.listed: true on the default rule only', () => {
     const rules: AccessControlJsonInput[] = [
-      makeAccessControlRule({ listBeforeRelease: true }),
-      makeAccessControlRule({ listBeforeRelease: true }),
+      makeAccessControlRule({ beforeRelease: { listed: true } }),
+      makeAccessControlRule({ beforeRelease: { listed: true } }),
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.equal((cleaned[0] as any).listBeforeRelease, true);
-    assert.notProperty(cleaned[1], 'listBeforeRelease');
+    assert.deepEqual(cleaned[0].beforeRelease, { listed: true });
+    assert.notProperty(cleaned[1], 'beforeRelease');
   });
 
   it('includes non-empty dateControl and afterComplete', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({
-        dateControl: { dueDate: '2024-04-01T23:59:00' },
-        afterComplete: { hideQuestions: true },
+        dateControl: { due: { date: '2024-04-01T23:59:00' } },
+        afterComplete: { questions: { hidden: true } },
       }),
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
-    assert.deepEqual((cleaned[0] as any).dateControl, { dueDate: '2024-04-01T23:59:00' });
-    assert.deepEqual((cleaned[0] as any).afterComplete, { hideQuestions: true });
+    assert.deepEqual(cleaned[0].dateControl, {
+      release: { date: '2024-03-14T00:01:00' },
+      due: { date: '2024-04-01T23:59:00' },
+    });
+    assert.deepEqual(cleaned[0].afterComplete, { questions: { hidden: true } });
   });
 });

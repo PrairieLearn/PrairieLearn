@@ -124,10 +124,10 @@ make lint-all    # Additional linters
 
 ## Formatting
 
-You can format files with:
+You can format + autofix lint errors with:
 
 ```sh
-make format-js-cached
+make fix-js-cached
 make format-python
 ```
 

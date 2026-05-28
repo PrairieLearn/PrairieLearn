@@ -1,6 +1,7 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -42,16 +43,26 @@ export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsR
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,
-  statsLastUpdated,
   rows,
   resLocals,
 }: {
   questionStatsCsvFilename: string;
-  statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
   resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
+  // Use assessments.stats_last_updated (the time when we last updated
+  // the _question_ statistics for this assessment). Note that this is
+  // different to assessments.statistics_last_updated_at (the time we last
+  // updated the assessment instance statistics stored in the assessments
+  // row itself).
+  const statsLastUpdated =
+    resLocals.assessment.stats_last_updated == null
+      ? 'never'
+      : formatDate(
+          resLocals.assessment.stats_last_updated,
+          resLocals.course_instance.display_timezone,
+        );
 
   return PageLayout({
     resLocals,

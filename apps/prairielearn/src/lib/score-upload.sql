@@ -29,11 +29,13 @@ SELECT
   s.id AS submission_id,
   iq.id AS instance_question_id,
   COALESCE(g.name, u.uid) AS uid_or_group,
+  c.sharing_name,
   q.qid
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN questions AS q ON (q.id = aq.question_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN teams AS g ON (
     g.id = ai.team_id
@@ -51,6 +53,10 @@ WHERE
       AND COALESCE(g.name, u.uid) = $uid_or_group
       AND ai.number = $ai_number
       AND q.qid = $qid
+      AND (
+        $sharing_name::text IS NULL
+        OR c.sharing_name = $sharing_name
+      )
     )
   )
 ORDER BY

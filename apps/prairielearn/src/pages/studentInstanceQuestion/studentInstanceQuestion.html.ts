@@ -20,19 +20,21 @@ import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { AssessmentTool, User } from '../../lib/db-types.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { getRoleNamesForUser } from '../../lib/groups.shared.js';
+import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function StudentInstanceQuestion({
   resLocals,
+  renderState,
   userCanDeleteAssessmentInstance,
   assignedGrader,
   lastGrader,
   questionCopyTargets,
   enabledTools = [],
 }: {
-  /** TODO: refine type here to ResLocalsForPage<'instance-question'> and fix type errors */
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'instance-question'>;
+  renderState: ResLocalsInstanceQuestionRender | null;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
@@ -79,7 +81,7 @@ export function StudentInstanceQuestion({
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
-      ${resLocals.variant == null
+      ${renderState?.variant == null
         ? ''
         : html`
             ${resLocals.question.type !== 'Freeform'
@@ -90,7 +92,7 @@ export function StudentInstanceQuestion({
                   <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
                 `
               : ''}
-            ${unsafeHtml(resLocals.extraHeadersHtml)}
+            ${unsafeHtml(renderState.extraHeadersHtml)}
           `}
     `,
     preContent: html`
@@ -115,7 +117,7 @@ export function StudentInstanceQuestion({
                 </div>
               `
             : ''}
-          ${resLocals.variant == null
+          ${renderState?.variant == null
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
@@ -137,7 +139,7 @@ export function StudentInstanceQuestion({
                 resLocals,
                 questionContext,
                 questionCopyTargets,
-                showFooter: resLocals.assessment_instance.open,
+                showFooter: resLocals.assessment_instance.open ?? false,
               })}
         </div>
 
@@ -193,18 +195,17 @@ export function StudentInstanceQuestion({
             question: resLocals.question,
             assessment_instance: resLocals.assessment_instance,
             instance_question_info: resLocals.instance_question_info,
-            variant: resLocals.variant,
+            variant: renderState?.variant ?? undefined,
             authz_result: resLocals.authz_result,
             csrfToken: resLocals.__csrf_token,
-            urlPrefix: resLocals.urlPrefix,
-            allowGradeLeftMs: resLocals.allowGradeLeftMs,
+            allowGradeLeftMs: renderState?.allowGradeLeftMs ?? 0,
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,
-            prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question?.id,
-            nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question?.id,
+            prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question.id,
+            nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question.id,
             nextQuestionAccessMode:
-              resLocals.instance_question_info.next_instance_question?.question_access_mode,
+              resLocals.instance_question_info.next_instance_question.question_access_mode,
             prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
             nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
             advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
@@ -219,7 +220,7 @@ export function StudentInstanceQuestion({
                 courseInstanceId: resLocals.course_instance.id,
                 assessment_instance: resLocals.assessment_instance,
                 authz_result: resLocals.authz_result,
-                variantId: resLocals.variant?.id,
+                variantId: renderState?.variant.id,
                 csrfToken: resLocals.__csrf_token,
               })
             : ''}
@@ -233,12 +234,12 @@ export function StudentInstanceQuestion({
             assignedGrader,
             lastGrader,
             question: resLocals.question,
-            variant: resLocals.variant,
+            variant: renderState?.variant ?? undefined,
             instance_group: resLocals.instance_group,
             instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
-            question_is_shared: resLocals.question_is_shared,
+            question_is_shared: renderState?.question_is_shared ?? false,
             questionContext:
               resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
             csrfToken: resLocals.__csrf_token,

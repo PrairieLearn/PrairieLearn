@@ -178,6 +178,14 @@ class InstructorFileEditor {
         ?.addEventListener('click', async () => await this.reformatJSONFile());
     }
 
+    if (element.dataset.lintHtmlMustache === 'true') {
+      document.dispatchEvent(
+        new CustomEvent('pl:html-mustache-linter-attach', {
+          detail: { editor: this.editor },
+        }),
+      );
+    }
+
     // Override the save button click to show confirmation modal if needed
     this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
   }

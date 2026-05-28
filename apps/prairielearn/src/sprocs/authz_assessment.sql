@@ -16,7 +16,8 @@ CREATE FUNCTION
         OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
         OUT access_rules jsonb,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
-        OUT show_before_release boolean -- Always false for the legacy path; the modern path overrides this.
+        OUT show_before_release boolean, -- Always false for the legacy path; the modern path overrides this.
+        OUT access_timeline jsonb    -- Always empty for the legacy path; the modern path populates this.
     )
 AS $$
 DECLARE
@@ -96,5 +97,6 @@ BEGIN
     active := user_result.active;
     next_active_time := user_result.next_active_time;
     show_before_release := false;
+    access_timeline := '[]'::jsonb;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

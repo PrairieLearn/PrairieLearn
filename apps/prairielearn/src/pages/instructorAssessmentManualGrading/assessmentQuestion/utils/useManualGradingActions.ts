@@ -24,10 +24,6 @@ export function useManualGradingActions() {
     trpc.manualGrading.aiGroupInstanceQuestions.mutationOptions(),
   );
 
-  const gradeSubmissionsMutation = useMutation(
-    trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
-  );
-
   const setAssignedGraderMutation = useMutation({
     ...trpc.manualGrading.setAssignedGrader.mutationOptions(),
     onSuccess: () => {
@@ -46,13 +42,17 @@ export function useManualGradingActions() {
     trpc.manualGrading.setAiGradingMode.mutationOptions(),
   );
 
+  const stopAiGradingJobMutation = useMutation(
+    trpc.manualGrading.stopAiGradingJob.mutationOptions(),
+  );
+
   return {
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
     groupSubmissionMutation,
-    gradeSubmissionsMutation,
     setAssignedGraderMutation,
     setRequiresManualGradingMutation,
     setAiGradingModeMutation,
+    stopAiGradingJobMutation,
   };
 }

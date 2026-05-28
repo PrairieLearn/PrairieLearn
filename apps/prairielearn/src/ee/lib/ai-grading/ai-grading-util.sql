@@ -70,24 +70,25 @@ VALUES
 RETURNING
   id;
 
+-- BLOCK select_has_prior_ai_grading_jobs
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      ai_grading_jobs AS agj
+      JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+      JOIN submissions AS s ON s.id = gj.submission_id
+      JOIN variants AS v ON v.id = s.variant_id
+      JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+  ) AS has_prior_ai_grading_jobs;
+
 -- BLOCK select_last_variant_and_submission
 SELECT
   to_jsonb(v.*) AS variant,
   to_jsonb(s.*) AS submission
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
--- BLOCK select_last_submission_id
-SELECT
-  s.id
 FROM
   variants AS v
   JOIN submissions AS s ON (s.variant_id = v.id)
@@ -284,3 +285,41 @@ SET
   ai_grading_mode = $ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_last_selected_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = $model_id
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK select_ai_grading_job_data_for_submission
+SELECT
+  gj.manual_rubric_grading_id,
+  agj.prompt,
+  agj.completion,
+  agj.rotation_correction_degrees
+FROM
+  grading_jobs AS gj
+  LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
+WHERE
+  submission_id = $submission_id
+  AND grading_method = 'AI'
+  AND gj.deleted_at IS NULL
+ORDER BY
+  gj.date DESC
+LIMIT
+  1;
+
+-- BLOCK select_exists_manual_grading_job_for_submission
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      grading_jobs AS gj
+    WHERE
+      gj.submission_id = $submission_id
+      AND gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
+  );

@@ -13,7 +13,10 @@ WITH
     GROUP BY
       i.instance_question_id
   ),
-  latest_submissions AS (
+  -- MATERIALIZED forces these CTEs to be computed once instead of being
+  -- inlined into the outer query's nested loop join, where they would be
+  -- re-executed once per outer row.
+  latest_submissions AS MATERIALIZED (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       s.id AS submission_id,
@@ -28,7 +31,7 @@ WITH
       iq.id ASC,
       s.date DESC
   ),
-  rubric_items_agg AS (
+  rubric_items_agg AS MATERIALIZED (
     SELECT
       ls.instance_question_id,
       COALESCE(
@@ -45,13 +48,32 @@ WITH
       )
     GROUP BY
       ls.instance_question_id
+  ),
+  team_members AS (
+    SELECT
+      tu.team_id,
+      jsonb_agg(
+        to_jsonb(tmu.*)
+        ORDER BY
+          tmu.uid
+      ) AS members
+    FROM
+      team_users AS tu
+      JOIN users AS tmu ON tmu.id = tu.user_id
+    GROUP BY
+      tu.team_id
   )
 SELECT
   to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
+  COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
+  to_jsonb(u.*) AS user,
+  COALESCE(tm.members, '[]'::jsonb) AS group_members,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
+  to_jsonb(agu.*) AS assigned_grader,
+  to_jsonb(lgu.*) AS last_grader,
   to_jsonb(aq.*) AS assessment_question,
   COALESCE(g.name, u.name) AS user_or_group_name,
   ic.open_issue_count,
@@ -75,6 +97,7 @@ FROM
     e.user_id = ai.user_id
     AND e.course_instance_id = a.course_instance_id
   )
+  LEFT JOIN team_members AS tm ON (tm.team_id = g.id)
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)

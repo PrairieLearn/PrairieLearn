@@ -1,8 +1,3 @@
 {
-  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "lib": ["ES2022", "DOM"]
-  }
+  "extends": "@prairielearn/tsconfig/tsconfig.package-browser.json"
 }

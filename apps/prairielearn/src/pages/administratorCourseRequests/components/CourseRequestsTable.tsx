@@ -542,6 +542,7 @@ function CourseRequestApproveModalContent({
             emailDomain={request.work_email?.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
+            repositoryRequired={true}
           />
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
@@ -599,8 +600,7 @@ function MutationError({
           )}
           {appError.githubRepoUrl && (
             <li>
-              A GitHub repository with this name already exists. This can happen if a repository was
-              previously renamed.{' '}
+              A GitHub repository with this name already exists.{' '}
               <a href={appError.githubRepoUrl} target="_blank" rel="noreferrer">
                 Open repo
               </a>
@@ -636,7 +636,7 @@ function CourseRequestDenyForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['Deny']>(mutation.error);
 
   return (
     <>
@@ -711,7 +711,7 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['UpdateNote']>(mutation.error);
 
   const {
     register,

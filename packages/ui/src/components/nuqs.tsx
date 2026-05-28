@@ -1,5 +1,5 @@
 import type { ColumnPinningState, SortingState, VisibilityState } from '@tanstack/table-core';
-import { createParser } from 'nuqs';
+import { createParser, parseAsArrayOf, parseAsString } from 'nuqs';
 import {
   type unstable_AdapterInterface,
   unstable_createAdapterProvider,
@@ -7,6 +7,7 @@ import {
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
 import { createContext, use } from 'react';
 
+import type { MultiSelectFilterValue } from './MultiSelectColumnFilter.js';
 import type { NumericColumnFilterValue } from './NumericInputColumnFilter.js';
 
 const AdapterContext = createContext('');
@@ -228,3 +229,58 @@ export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
     return a.filterValue === b.filterValue && a.emptyOnly === b.emptyOnly;
   },
 });
+
+const EMPTY_MULTI_SELECT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
+const itemArrayParser = parseAsArrayOf(parseAsString);
+
+/**
+ * Returns a parser for `MultiSelectFilterValue` URL state. The mode is encoded
+ * as a leading `!` for exclude. Include mode has no prefix, except that a
+ * leading `!` or `\` in the first value is escaped with a `\` so it isn't
+ * misread as the exclude marker.
+ *
+ * Empty filters are serialized too (not omitted) so an explicitly cleared
+ * filter is distinguishable from a missing param when the parser default is
+ * non-empty. `nuqs`'s `clearOnDefault` still removes the param from the URL
+ * when the value matches the default.
+ *
+ * The values themselves are encoded with `parseAsArrayOf(parseAsString)` so
+ * commas (the value separator) inside values are escaped.
+ *
+ * Example URL values: `joined,invited` (include), `!joined,invited` (exclude),
+ * `''` (empty include), `!` (empty exclude), `\!a,b` (include `['!a', 'b']`).
+ *
+ * If `allowedValues` is provided, parsed values are filtered to that set.
+ */
+export function parseAsMultiSelectFilter<TValue extends string = string>(
+  allowedValues?: readonly TValue[],
+) {
+  const allowed = allowedValues ? new Set<string>(allowedValues) : null;
+  return createParser<MultiSelectFilterValue<TValue>>({
+    parse(queryValue) {
+      if (queryValue == null) return EMPTY_MULTI_SELECT_FILTER as MultiSelectFilterValue<TValue>;
+      const mode: 'include' | 'exclude' = queryValue.startsWith('!') ? 'exclude' : 'include';
+      let body = mode === 'exclude' ? queryValue.slice(1) : queryValue;
+      if (mode === 'include' && body.startsWith('\\')) {
+        body = body.slice(1);
+      }
+      const tokens = (itemArrayParser.parse(body) ?? []).filter((t) => t !== '');
+      const values = (allowed ? tokens.filter((v) => allowed.has(v)) : tokens) as TValue[];
+      return { values, mode };
+    },
+    serialize(value): string {
+      if (value.values.length === 0) {
+        return value.mode === 'exclude' ? '!' : '';
+      }
+      const body = itemArrayParser.serialize(value.values);
+      if (value.mode === 'exclude') return `!${body}`;
+      return body.startsWith('!') || body.startsWith('\\') ? `\\${body}` : body;
+    },
+    eq(a, b) {
+      if (a.mode !== b.mode) return false;
+      if (a.values.length !== b.values.length) return false;
+      return a.values.every((v, i) => v === b.values[i]);
+    },
+  });
+}

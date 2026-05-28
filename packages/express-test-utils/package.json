@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/express-test-utils",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "type": "module",
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1"
+    "@types/node": "^24.12.2",
+    "@typescript/native-preview": "beta"
   }
 }
