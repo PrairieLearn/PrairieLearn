@@ -28,7 +28,7 @@
       ]
     },
     {
-      "title": "Sketching",
+      "title": "Curve sketching",
       "questions": [{ "id": "gallery/sketch", "autoPoints": 1 }]
     }
   ],
