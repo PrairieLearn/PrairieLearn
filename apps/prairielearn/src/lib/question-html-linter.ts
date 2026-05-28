@@ -8,6 +8,13 @@ import {
 
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
+export interface QuestionHtmlDiagnostic extends Omit<
+  Pick<Diagnostic, 'message' | 'severity'>,
+  'severity'
+> {
+  severity: Diagnostic['severity'] | 'info';
+}
+
 const require = createRequire(import.meta.url);
 const wasmPath = require.resolve('@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
 
@@ -23,9 +30,10 @@ function getLinter(): Promise<Linter> {
  * Lint a question.html string against the project's htmlmustache rules.
  * Returns diagnostics as `{ message, severity }` pairs.
  */
-export async function lintQuestionHtml(
-  html: string,
-): Promise<Pick<Diagnostic, 'message' | 'severity'>[]> {
+export async function lintQuestionHtml(html: string): Promise<QuestionHtmlDiagnostic[]> {
   const linter = await getLinter();
-  return linter.lint(html, htmlMustacheConfig);
+  return linter.lint(html, htmlMustacheConfig).map((diagnostic) => ({
+    message: diagnostic.message,
+    severity: diagnostic.ruleName === 'pl-remote-image-url' ? 'info' : diagnostic.severity,
+  }));
 }
