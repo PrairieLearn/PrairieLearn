@@ -77,6 +77,8 @@ router.get(
 
     const showAddQuestionButton =
       authzData.has_course_permission_edit && !course.example_course && courseDirExists;
+    const showImportQuestionsButton =
+      showAddQuestionButton && (await features.enabledFromLocals('qti-content-import', res.locals));
     const showAiGenerateQuestionButton =
       authzData.has_course_permission_edit &&
       !course.example_course &&
@@ -106,6 +108,7 @@ router.get(
               courseId={course.id}
               currentCourseInstanceId={res.locals.course_instance?.id}
               showAddQuestionButton={showAddQuestionButton}
+              showImportQuestionsButton={showImportQuestionsButton}
               showAiGenerateQuestionButton={showAiGenerateQuestionButton}
               showSharingSets={res.locals.question_sharing_enabled}
               urlPrefix={res.locals.urlPrefix}

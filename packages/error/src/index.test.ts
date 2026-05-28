@@ -1,6 +1,14 @@
 import { assert, describe, it } from 'vitest';
 
-import { addData, augmentError, make, makeWithData, makeWithInfo, newMessage } from './index.js';
+import {
+  HttpStatusError,
+  addData,
+  augmentError,
+  make,
+  makeWithData,
+  makeWithInfo,
+  newMessage,
+} from './index.js';
 
 describe('make', () => {
   it('makes an error without data', () => {
@@ -79,5 +87,16 @@ describe('augmentError', () => {
     assert.equal(newErr.data.foo, 'bar');
     assert.equal(newErr.cause, err);
     assert.equal((newErr.cause as any).message, 'Not Found');
+  });
+});
+
+describe('HttpStatusError', () => {
+  it('supports causes like native Error', () => {
+    const cause = new Error('Missing record');
+    const err = new HttpStatusError(404, 'Not Found', { cause });
+
+    assert.equal(err.status, 404);
+    assert.equal(err.message, 'Not Found');
+    assert.equal(err.cause, cause);
   });
 });

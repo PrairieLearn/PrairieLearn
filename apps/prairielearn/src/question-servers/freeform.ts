@@ -833,7 +833,7 @@ export async function generate(
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      options: getContextOptions(context),
       preferences,
     } satisfies ExecutionData;
 

@@ -50,6 +50,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
+import type { RubricSettingsContextKeys } from '../queries.js';
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
@@ -100,6 +101,7 @@ interface AssessmentQuestionTableProps {
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
+  rubricSettingsContextKeys: RubricSettingsContextKeys;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   onRubricSettingsSaved: (data: {
@@ -154,6 +156,7 @@ export function AssessmentQuestionTable({
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
   aiGradingRelativeCosts,
+  rubricSettingsContextKeys,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   onRubricSettingsSaved,
@@ -600,6 +603,7 @@ export function AssessmentQuestionTable({
             course_instance_short_name: courseInstance.short_name,
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
+            ...rubricSettingsContextKeys,
           }}
           onSaved={onRubricSettingsSaved}
         />
@@ -828,8 +832,8 @@ export function AssessmentQuestionTable({
                       tooltip={{
                         body: (
                           <>
-                            Only staff with <strong>Student Data Editor</strong> permissions or
-                            higher can be assigned as graders
+                            Only staff with student data editor permissions can be assigned as
+                            graders
                           </>
                         ),
                         props: { id: 'assign-for-grading-tooltip' },

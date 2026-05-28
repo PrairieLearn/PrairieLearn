@@ -22,7 +22,7 @@ From an assessment, open the **Access** tab. The page has two sections:
 The Access page summarizes the active configuration and lists every override that applies to the assessment.
 ///
 
-The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save and sync** to persist the changes.
+The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save** to persist the changes.
 
 ## Configure defaults
 
@@ -110,7 +110,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-An assessment is complete when students can no longer answer questions, usually after the last late deadline, after a timed assessment closes, or after an instructor closes it.
+An assessment is complete when students can no longer answer questions, usually after the due date and any late deadlines pass, after a timed assessment closes, or after an instructor closes it.
 
 Question visibility options:
 
@@ -181,7 +181,7 @@ The student inherits both overrides on top of the defaults: due date Feb 20, tim
 
 ## Save changes
 
-The page tracks unsaved changes at the bottom of the screen. Click **Save and sync** to write file-backed access control to `infoAssessment.json`, store individual-student overrides in the database, and sync the course.
+The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store individual-student overrides in the database, and sync the course.
 
 Click **Cancel** to discard unsaved UI changes.
 

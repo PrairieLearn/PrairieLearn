@@ -124,7 +124,7 @@ test.describe('Assessment tools', () => {
       expect(parsedZones[1].tools?.calculator?.enabled).toBe(false);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Assessment questions updated successfully')).toBeVisible();
 
     const savedAssessment = await readInfoAssessment(testCoursePath);

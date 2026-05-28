@@ -133,7 +133,7 @@ export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRo
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
@@ -152,7 +152,7 @@ export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 // Result of authz_assessment_instance sproc
 export const SprocAuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema),
+  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
   active: z.boolean(),
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -1153,6 +1153,12 @@ export const InstitutionSchema = z.object({
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
+export const InstitutionSettingsSchema = z.object({
+  course_request_message: z.string().nullable(),
+  institution_id: IdSchema,
+});
+export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;
+
 export const InstitutionAdministratorSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
@@ -1825,6 +1831,7 @@ export const TableNames = [
   'instance_question_groups',
   'institution_administrators',
   'institution_authn_providers',
+  'institution_settings',
   'institutions',
   'issues',
   'job_sequences',

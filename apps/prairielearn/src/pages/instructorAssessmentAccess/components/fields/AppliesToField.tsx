@@ -7,6 +7,7 @@ import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
@@ -14,18 +15,32 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
   onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  /** Whether the user has page-level permission to edit access settings at all. */
+  canEditAccessSettings: boolean;
+  /** Whether the user has permission to edit enrollment-targeted rules. */
+  canEditEnrollmentRules: boolean;
   onTargetTypeChange: (targetType: TargetType) => void;
 }) {
   const trpc = useTRPC();
+  const ruleEditable = useAccessControlRuleEditable();
+  const showStudentLabelOnlyHint = canEditAccessSettings && !canEditEnrollmentRules;
 
-  const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
-
-  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+  const { targetType, enrollments, studentLabels } = useWatch<
+    AccessControlFormData,
+    `overrides.${number}.appliesTo`
+  >({
     name: `${namePrefix}.appliesTo`,
+  });
+
+  const { data: allLabels } = useQuery({
+    ...trpc.accessControl.studentLabels.queryOptions(),
+    enabled: ruleEditable && targetType === 'student_label',
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
@@ -40,8 +55,6 @@ export function AppliesToField({
     replaceEnrollments(students);
   };
 
-  const { targetType, enrollments, studentLabels } = appliesTo;
-
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
     if (index !== -1) removeEnrollment(index);
@@ -55,12 +68,20 @@ export function AppliesToField({
   const excludedUids = new Set(enrollments.map((i) => i.uid));
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+  const targetDescription = targetType === 'enrollment' ? 'student' : 'student label';
+  const studentSpecificPermissionMessageId = `${namePrefix}-student-specific-permission-message`;
 
   return (
     <div className="mb-3">
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
+      {showStudentLabelOnlyHint && (
+        <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
+          Student-specific overrides require student data editor permissions. You can still create
+          or edit overrides for students with specific labels.
+        </Alert>
+      )}
       <fieldset className="mb-3">
         <legend className="visually-hidden">Target type</legend>
         <Form.Check
@@ -69,6 +90,10 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
+          disabled={!ruleEditable || !canEditEnrollmentRules}
+          aria-describedby={
+            showStudentLabelOnlyHint ? studentSpecificPermissionMessageId : undefined
+          }
           onChange={() => onTargetTypeChange('enrollment')}
         />
         <Form.Check
@@ -77,6 +102,7 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
+          disabled={!ruleEditable}
           onChange={() => onTargetTypeChange('student_label')}
         />
       </fieldset>
@@ -93,22 +119,24 @@ export function AppliesToField({
               <span className="small text-muted">
                 {enrollments.length} {enrollments.length === 1 ? 'student' : 'students'}
               </span>
-              <div className="ms-auto">
-                <AddStudentsModal
-                  selectedUids={excludedUids}
-                  renderTrigger={({ onClick }) => (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-decoration-none"
-                      onClick={onClick}
-                    >
-                      Select students…
-                    </Button>
-                  )}
-                  onSaveStudents={handleSaveStudents}
-                />
-              </div>
+              {ruleEditable && (
+                <div className="ms-auto">
+                  <AddStudentsModal
+                    selectedUids={excludedUids}
+                    renderTrigger={({ onClick }) => (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-decoration-none"
+                        onClick={onClick}
+                      >
+                        Select students…
+                      </Button>
+                    )}
+                    onSaveStudents={handleSaveStudents}
+                  />
+                </div>
+              )}
             </div>
             {enrollments.length > 0 && (
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -124,14 +152,16 @@ export function AppliesToField({
                         </a>
                         {s.name && <span className="text-muted small">{s.name}</span>}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={`Remove ${s.name ?? s.uid}`}
-                        onClick={() => handleRemoveEnrollmentByUid(s.uid)}
-                      >
-                        <i className="bi bi-trash text-danger" aria-hidden="true" />
-                      </Button>
+                      {ruleEditable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${s.name ?? s.uid}`}
+                          onClick={() => handleRemoveEnrollmentByUid(s.uid)}
+                        >
+                          <i className="bi bi-trash text-danger" aria-hidden="true" />
+                        </Button>
+                      )}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -141,22 +171,24 @@ export function AppliesToField({
         ) : (
           <div>
             <div className="d-flex flex-wrap align-items-baseline gap-2">
-              <StudentLabelDropdown
-                labels={allLabels ?? []}
-                selectedIds={excludedStudentLabelIds}
-                buttonLabel="Select labels"
-                onToggle={(label) => {
-                  if (excludedStudentLabelIds.has(label.id)) {
-                    handleRemoveStudentLabelById(label.id);
-                  } else {
-                    appendStudentLabel({
-                      studentLabelId: label.id,
-                      name: label.name,
-                      color: label.color,
-                    });
-                  }
-                }}
-              />
+              {ruleEditable && (
+                <StudentLabelDropdown
+                  labels={allLabels ?? []}
+                  selectedIds={excludedStudentLabelIds}
+                  buttonLabel="Select labels"
+                  onToggle={(label) => {
+                    if (excludedStudentLabelIds.has(label.id)) {
+                      handleRemoveStudentLabelById(label.id);
+                    } else {
+                      appendStudentLabel({
+                        studentLabelId: label.id,
+                        name: label.name,
+                        color: label.color,
+                      });
+                    }
+                  }}
+                />
+              )}
               {studentLabels.length === 0 ? (
                 <span className="text-muted small">No student labels selected</span>
               ) : (
@@ -165,14 +197,16 @@ export function AppliesToField({
                     key={sl.studentLabelId}
                     label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    <button
-                      type="button"
-                      className="btn p-0 lh-1"
-                      aria-label={`Remove label "${sl.name}"`}
-                      onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
-                    >
-                      <i className="bi bi-x text-danger" aria-hidden="true" />
-                    </button>
+                    {ruleEditable && (
+                      <button
+                        type="button"
+                        className="btn p-0 lh-1"
+                        aria-label={`Remove label "${sl.name}"`}
+                        onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                      >
+                        <i className="bi bi-x text-danger" aria-hidden="true" />
+                      </button>
+                    )}
                   </StudentLabelBadge>
                 ))
               )}
@@ -185,8 +219,10 @@ export function AppliesToField({
       </div>
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
-          This override has no targets. Add at least one{' '}
-          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
+          This override has no targets.{' '}
+          {ruleEditable
+            ? `Add at least one ${targetDescription} for this rule to take effect.`
+            : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`}
         </Alert>
       )}
     </div>
