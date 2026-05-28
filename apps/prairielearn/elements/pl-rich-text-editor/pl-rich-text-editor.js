@@ -32,11 +32,13 @@
     }
 
     // Quill also occasionally breaks down tables if there is a thead, so we
-    // move its content up to the tbody level and remove it. To avoid having
-    // multiple tbody tags, we do the same for tbody nodes.
-    if (data.tagName.toLowerCase() === 'thead' || data.tagName.toLowerCase() === 'tbody') {
+    // move its content up to the start of the first tbody level and remove it.
+    if (data.tagName.toLowerCase() === 'thead') {
+      const table = node.closest('table');
+      const tbody = table.tBodies[0] || table.createTBody();
+      const firstBodyRow = tbody.rows[0];
       while (node.firstChild) {
-        node.parentElement.insertBefore(node.firstChild, node.nextSibling);
+        tbody.insertBefore(node.firstChild, firstBodyRow);
       }
       node.remove();
     }
