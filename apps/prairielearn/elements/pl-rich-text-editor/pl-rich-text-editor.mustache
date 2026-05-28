@@ -1,30 +1,50 @@
 <script>
-$(function() {
-  // Function is async, but there's no reason to await here.
-  window.PLRTE('{{editor_uuid}}');
-});
+  $(function () {
+    // Function is async, but there's no reason to await here.
+    window.PLRTE("{{editor_uuid}}");
+  });
 </script>
-<input type="hidden" id="rte-input-{{editor_uuid}}"
-       name="{{name}}" value="{{current_file_contents}}"
-       data-deferred-initial-value="true"/>
-<div class="pl-rich-text-editor-container position-relative"
-     data-min-word-count="{{min_word_count}}"
-     data-max-word-count="{{max_word_count}}">
-    {{^clipboard_enabled}}
+<input
+  type="hidden"
+  id="rte-input-{{editor_uuid}}"
+  name="{{name}}"
+  value="{{current_file_contents}}"
+  data-deferred-initial-value="true"
+/>
+<div
+  class="pl-rich-text-editor-container position-relative"
+  data-min-word-count="{{min_word_count}}"
+  data-max-word-count="{{max_word_count}}"
+>
+  {{^clipboard_enabled}}
     <div class="position-absolute end-0 p-3" style="z-index: 11">
-      <div id="rte-clipboard-toast-{{editor_uuid}}" class="toast hide bg-warning" role="alert" aria-live="assertive" aria-atomic="true">
+      <div
+        id="rte-clipboard-toast-{{editor_uuid}}"
+        class="toast hide bg-warning"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
         <div class="d-flex">
           <div class="toast-body">
             Clipboard operations (cut, copy, paste) are not available for this question.
           </div>
-          <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          <button
+            type="button"
+            class="btn-close me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
         </div>
       </div>
     </div>
-    {{/clipboard_enabled}}
-    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
-    {{#footer_enabled}}
-    <div class="pl-rich-text-editor-counter-container align-items-center d-flex justify-content-between">
+  {{/clipboard_enabled}}
+  <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}">
+  </div>
+  {{#footer_enabled}}
+    <div
+      class="pl-rich-text-editor-counter-container align-items-center d-flex justify-content-between"
+    >
       <div class="gap-2">
         <span id="rte-invalid-{{editor_uuid}}" class="small text-danger d-none"></span>
       </div>

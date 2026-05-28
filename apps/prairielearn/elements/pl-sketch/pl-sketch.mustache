@@ -1,6 +1,4 @@
-{{#no_answer}}
-  No answer to display.
-{{/no_answer}}
+{{#no_answer}}No answer to display.{{/no_answer}}
 {{^no_answer}}
   {{^read_only}}
     {{#scored}}
@@ -30,7 +28,11 @@
     {{! Base64-encoded config data for SketchResponse }}
     <div id="{{id}}-sketchresponse-data" style="display:none">{{config}}</div>
     {{! Base64-encoded submission data for SketchResponse (set by the client) }}
-    <input type="hidden" id="{{id}}-sketchresponse-submission" name="{{id}}-sketchresponse-submission" />
+    <input
+      type="hidden"
+      id="{{id}}-sketchresponse-submission"
+      name="{{id}}-sketchresponse-submission"
+    />
     <div id="{{id}}-si-container" class="si-container" tabindex="0">
       Loading SketchInput canvas...
     </div>
@@ -48,13 +50,14 @@
               <span>
                 {{#correct}}<i class="fas fa-check text-success" aria-hidden="true"></i>{{/correct}}
                 {{^correct}}<i class="fas fa-xmark text-danger" aria-hidden="true"></i>{{/correct}}
-              </span>
-              {{feedback_text}}
+              </span> {{feedback_text}}
               {{#debug_mode}}
                 <div class="sketchresponse-debug">
                   <ul>
                     {{#debug}}
-                      <li><div>&gt;&gt; {{message}}</div></li>
+                      <li>
+                        <div>&gt;&gt; {{message}}</div>
+                      </li>
                     {{/debug}}
                   </ul>
                 </div>
