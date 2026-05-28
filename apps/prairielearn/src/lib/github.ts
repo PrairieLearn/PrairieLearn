@@ -43,8 +43,8 @@ export type GithubOrgAccessResult =
   | {
       ok: false;
       reason: 'no_client' | 'no_machine_user' | 'org_unreachable' | 'not_a_member';
-      detail?: string;
-    };
+    }
+  | { ok: false; reason: 'pending_invitation' };
 
 /**
  * Returns true when `value` refers to the same GitHub org as `config.githubCourseOwner`.
@@ -81,10 +81,16 @@ export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccess
       org,
       username: config.githubMachineUser,
     });
+    if (response.data.state === 'pending') {
+      return { ok: false, reason: 'pending_invitation' };
+    }
     if (response.data.state !== 'active') {
-      return { ok: false, reason: 'not_a_member', detail: response.data.state };
+      return { ok: false, reason: 'not_a_member' };
     }
   } catch (err: any) {
+    // 403 from this endpoint means the machine user can't read its own
+    // membership in `org`, which from our perspective is indistinguishable
+    // from not being a member.
     if (err.status === 404 || err.status === 403) {
       return { ok: false, reason: 'not_a_member' };
     }
@@ -92,6 +98,42 @@ export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccess
   }
 
   return { ok: true };
+}
+
+/**
+ * Human-readable message for a failed `checkGithubOrgAccess` result. Suitable for
+ * surfacing to admins/instructors via flash messages or tRPC errors.
+ */
+export function githubOrgAccessErrorMessage(
+  result: Extract<GithubOrgAccessResult, { ok: false }>,
+  org: string,
+): string {
+  switch (result.reason) {
+    case 'no_client':
+      return 'GitHub integration is not configured on this server.';
+    case 'no_machine_user':
+      return 'GitHub machine user is not configured; cannot validate org access.';
+    case 'org_unreachable':
+      return `Could not access GitHub organization '${org}'. Confirm the org exists and the machine account has been invited.`;
+    case 'pending_invitation':
+      return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
+    case 'not_a_member':
+      return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
+  }
+}
+
+/**
+ * Validates that an org is usable as a course owner: either it matches the platform
+ * default (in which case no GitHub API call is made), or the machine account has
+ * verified access to it.
+ */
+export async function validateGithubCourseOwner(
+  org: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (isPlatformDefaultOrg(org)) return { ok: true };
+  const access = await checkGithubOrgAccess(org);
+  if (access.ok) return { ok: true };
+  return { ok: false, message: githubOrgAccessErrorMessage(access, org) };
 }
 
 /**
