@@ -5,6 +5,7 @@ import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function DurationDetails({
@@ -29,7 +30,7 @@ function DurationDetails({
               aria-label="Duration in minutes"
               aria-invalid={!!error}
               placeholder="Duration in minutes"
-              value={value || ''}
+              value={value === 0 ? '' : value}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
               disabled={!ruleEditable}
@@ -124,7 +125,9 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: { validate: validateDuration },
+    rules: {
+      validate: validateActiveOverrideField(index, 'durationMinutes', validateDuration),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

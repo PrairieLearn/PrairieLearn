@@ -1916,6 +1916,18 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.notProperty(cleaned[1], 'beforeRelease');
   });
 
+  it('preserves empty labels arrays on non-default rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({}),
+      makeAccessControlRule({ labels: [] }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.notProperty(cleaned[0], 'labels');
+    assert.deepEqual(cleaned[1].labels, []);
+  });
+
   it('includes non-empty dateControl and afterComplete', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({

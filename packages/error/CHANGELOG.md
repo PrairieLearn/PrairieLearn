@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.8
+
+### Patch Changes
+
+- f7c23f0: Add `cause` support to `HttpStatusError`, matching native `Error` constructor options.
+
 ## 3.0.7
 
 ### Patch Changes

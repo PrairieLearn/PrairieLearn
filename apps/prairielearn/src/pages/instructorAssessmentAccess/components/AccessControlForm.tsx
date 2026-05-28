@@ -107,7 +107,7 @@ export function AccessControlForm({
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
 
-  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // Sync cross-field validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Cross-field date validation must write manual react-hook-form errors. */

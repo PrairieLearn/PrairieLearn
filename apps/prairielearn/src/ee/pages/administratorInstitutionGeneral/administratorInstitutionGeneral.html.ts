@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
+import { COURSE_REQUEST_MESSAGE_MAX_LENGTH } from '../../../models/institution-settings.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export const InstitutionStatisticsSchema = z.object({
@@ -21,12 +22,16 @@ export function AdministratorInstitutionGeneral({
   availableTimezones,
   statistics,
   planGrants,
+  courseRequestMessage,
+  courseRequestMessageHtml,
   resLocals,
 }: {
   institution: Institution;
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
+  courseRequestMessage: string | null;
+  courseRequestMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -186,6 +191,40 @@ export function AdministratorInstitutionGeneral({
         </button>
       </form>
 
+      <h2 class="h4">Course request message</h2>
+      <p>
+        This message is shown to users from this institution on the
+        <a href="/pl/request_course">course request page</a>. Markdown formatting is supported; HTML
+        tags are not rendered.
+      </p>
+      <form method="POST" class="mb-3">
+        <div class="mb-3">
+          <label class="form-label" for="course_request_message"> Message (Markdown) </label>
+          ${CourseRequestMessageTextarea({ courseRequestMessage })}
+          <small id="course_request_message_help" class="form-text text-muted">
+            Leave blank to avoid showing a message on the course request page. Maximum
+            ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.
+          </small>
+        </div>
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          type="submit"
+          name="__action"
+          value="update_course_request_message"
+          class="btn btn-primary"
+        >
+          Save
+        </button>
+      </form>
+      ${courseRequestMessageHtml
+        ? html`
+            <h3 class="h5">Preview</h3>
+            <div class="card mb-4">
+              <div class="card-body">${unsafeHtml(courseRequestMessageHtml)}</div>
+            </div>
+          `
+        : ''}
+
       <h2 class="h4">Plans</h2>
       ${PlanGrantsEditor({
         planGrants,
@@ -205,4 +244,13 @@ function StatisticsCard({ title, value }: { title: string; value: HtmlValue }) {
       <span class="text-muted">${title}</span>
     </div>
   `;
+}
+
+function CourseRequestMessageTextarea({
+  courseRequestMessage,
+}: {
+  courseRequestMessage: string | null;
+}): HtmlValue {
+  // prettier-ignore
+  return html`<textarea class="form-control font-monospace" id="course_request_message" name="course_request_message" rows="10" maxlength="${COURSE_REQUEST_MESSAGE_MAX_LENGTH}" aria-describedby="course_request_message_help">${courseRequestMessage ?? ''}</textarea>`;
 }
