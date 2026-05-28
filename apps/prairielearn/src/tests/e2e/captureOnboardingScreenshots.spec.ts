@@ -240,11 +240,7 @@ async function captureCreateInstanceModal(page: Page, courseUrl: string): Promis
 async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   console.log('Question flow (questions list, create, edit, preview)');
   await page.goto(`${courseInstanceUrl}/instructor/course_admin/questions`);
-  await page.getByRole('heading', { name: 'Questions' }).waitFor();
-  const addQuestion = page
-    .locator('a[href$="/questions/create"], button[name*="add" i]')
-    .filter({ hasText: /Add question/i })
-    .first();
+  const addQuestion = page.getByRole('link', { name: 'Create new question', exact: true });
   await addQuestion.waitFor({ timeout: 60_000 });
   await highlight(addQuestion);
   await shoot(page, '06-questions');
