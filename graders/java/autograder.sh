@@ -78,8 +78,20 @@ DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.
 # or the FFM API to access arbitrary memory or bypass the sandbox.
 DISABLE_RESTRICTED_METHODS="--illegal-native-access=deny"
 
+SANDBOX_PREFIX="landlock_sandbox"
+case "$(findmnt -n -T /grade -o FSTYPE 2> /dev/null)" in
+    virtiofs | fuse.osxfs | 9p)
+        # These filesystems do not support the necessary Landlock features, so
+        # we disable the sandbox in those cases. They are only used in dev
+        # environments (typically in Mac environments), so this should not cause
+        # security issues.
+        echo "Landlock disabled for /grade filesystem type: $GRADE_FS_TYPE"
+        SANDBOX_PREFIX=""
+        ;;
+esac
+
 su - sbuser << EOF
-landlock_sandbox java $DISABLE_JAVA_MANAGEMENT $DISABLE_RESTRICTED_METHODS $JDK_JAVA_OPTIONS -cp "$CLASSPATH" JUnitAutograder
+$SANDBOX_PREFIX java $DISABLE_JAVA_MANAGEMENT $DISABLE_RESTRICTED_METHODS $JDK_JAVA_OPTIONS -cp "$CLASSPATH" JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ]; then

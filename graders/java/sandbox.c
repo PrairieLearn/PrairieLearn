@@ -37,8 +37,11 @@
 
 void add_path_rule(int ruleset_fd, const char *path, __u64 access_mask) {
   int fd = open(path, O_PATH | O_CLOEXEC);
-  if (fd < 0)
+  if (fd < 0) {
+    fprintf(stderr, "Failed to open path %s\n", path);
+    perror("open");
     return;  // Skip directories we can't open (like some system mounts)
+  }
 
   struct landlock_path_beneath_attr path_attr = {
       .allowed_access = access_mask,
