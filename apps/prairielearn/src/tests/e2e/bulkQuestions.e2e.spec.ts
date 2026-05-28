@@ -206,9 +206,7 @@ test.describe('Bulk question table actions', () => {
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
     await expect(
-      deleteModal.getByText(
-        /1 assessment zone will be removed as they contain no questions/,
-      ),
+      deleteModal.getByText(/1 assessment zone will be removed as they contain no questions/),
     ).toBeVisible();
     // Each selected question shows the affected assessment badge with a
     // zone-removal warning (icon prefix + tooltip).
@@ -288,7 +286,11 @@ test.describe('Bulk question table actions', () => {
           ],
           zones: [
             { title: 'First zone', questions: [{ id: qid, autoPoints: 1 }] },
-            { title: 'Locked zone', lockpoint: true, questions: [{ id: 'downloadFile', autoPoints: 1 }] },
+            {
+              title: 'Locked zone',
+              lockpoint: true,
+              questions: [{ id: 'downloadFile', autoPoints: 1 }],
+            },
           ],
         },
         null,
@@ -378,4 +380,3 @@ test.describe('Bulk question table actions', () => {
     expect(after.zones).toHaveLength(1);
   });
 });
-
