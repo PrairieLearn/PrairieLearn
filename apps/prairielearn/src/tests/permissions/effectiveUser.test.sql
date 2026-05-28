@@ -43,9 +43,9 @@ WITH
 INSERT INTO
   pt_reservations (enrollment_id, exam_id, session_id, checked_in)
 SELECT
-  new_pt_enrollment.id,
-  new_pt_exam.id,
-  new_pt_session.id,
+  new_pt_enrollment.id AS enrollment_id,
+  new_pt_exam.id AS exam_id,
+  new_pt_session.id AS session_id,
   NOW() - interval '5 minutes'
 FROM
   new_pt_enrollment,
