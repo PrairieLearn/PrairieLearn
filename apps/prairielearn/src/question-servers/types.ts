@@ -7,9 +7,9 @@ import type { QuestionCaller, QuestionGroup, QuestionUser } from './user-context
 
 export type {
   QuestionCaller,
-  QuestionGroup,
-  QuestionUser,
-  QuestionUserContext,
+  
+  
+  
 } from './user-context.js';
 
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';

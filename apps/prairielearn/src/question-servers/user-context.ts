@@ -48,7 +48,15 @@ const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
  */
 export type VariantLifecyclePhase = 'create' | 'invoke';
 
-function toQuestionUser({ uid, uin, name }: { uid: string; uin: string | null; name: string | null }): QuestionUser {
+function toQuestionUser({
+  uid,
+  uin,
+  name,
+}: {
+  uid: string;
+  uin: string | null;
+  name: string | null;
+}): QuestionUser {
   return { uid, uin, name };
 }
 
