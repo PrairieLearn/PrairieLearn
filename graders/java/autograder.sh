@@ -79,7 +79,8 @@ DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.
 DISABLE_RESTRICTED_METHODS="--illegal-native-access=deny"
 
 SANDBOX_PREFIX="landlock_sandbox"
-case "$(findmnt -n -T /grade -o FSTYPE 2> /dev/null)" in
+GRADE_FS_TYPE=$(findmnt -n -T /grade -o FSTYPE 2> /dev/null)
+case "$GRADE_FS_TYPE" in
     virtiofs | fuse.osxfs | 9p | fakeowner)
         # These filesystems do not support the necessary Landlock features, so
         # we disable the sandbox in those cases. They are only used in dev
