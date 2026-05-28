@@ -352,7 +352,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.dataset.clipboardText = ce.parse(displayed).toString();
+    copyButton.dataset.clipboardText = convertLatexToAsciiMath(displayed);
 
     // Add to history
     if (addToHistory) {
@@ -704,7 +704,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
     inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
-    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(outputField.value);
+    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(
+      outputField.value.replace(/^=/, ''),
+    );
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
