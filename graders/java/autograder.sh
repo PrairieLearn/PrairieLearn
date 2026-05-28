@@ -80,7 +80,7 @@ DISABLE_RESTRICTED_METHODS="--illegal-native-access=deny"
 
 SANDBOX_PREFIX="landlock_sandbox"
 case "$(findmnt -n -T /grade -o FSTYPE 2> /dev/null)" in
-    virtiofs | fuse.osxfs | 9p)
+    virtiofs | fuse.osxfs | 9p | fakeowner)
         # These filesystems do not support the necessary Landlock features, so
         # we disable the sandbox in those cases. They are only used in dev
         # environments (typically in Mac environments), so this should not cause
