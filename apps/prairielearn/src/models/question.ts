@@ -1,5 +1,7 @@
 import assert from 'assert';
 
+import { z } from 'zod';
+
 import {
   execute,
   loadSqlEquiv,
@@ -7,6 +9,7 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type Question, QuestionSchema } from '../lib/db-types.js';
 
@@ -50,6 +53,26 @@ export async function selectLiveQuestionsByIdsAndCourseId({
     sql.select_live_questions_by_ids_and_course_id,
     { question_ids, course_id },
     QuestionSchema,
+  );
+}
+
+/**
+ * Returns the subset of `question_ids` (belonging to `course_id`) that are
+ * referenced by assessments in other courses. Used to block destructive
+ * mutations on shared questions whose deletion would break a consumer course's
+ * sync.
+ */
+export async function selectQuestionsUsedInOtherCourses({
+  question_ids,
+  course_id,
+}: {
+  question_ids: string[];
+  course_id: string;
+}): Promise<{ id: string; qid: string }[]> {
+  return await queryRows(
+    sql.select_questions_used_in_other_courses,
+    { question_ids, course_id },
+    z.object({ id: IdSchema, qid: z.string() }),
   );
 }
 

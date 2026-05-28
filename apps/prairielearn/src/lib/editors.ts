@@ -46,6 +46,7 @@ import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
+import { removeQidsFromAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -1538,21 +1539,52 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
+    const pathsToAdd: string[] = [];
+    const qidsToRemove = new Set(
+      this.questions.flatMap((question) => (question.qid !== null ? [question.qid] : [])),
+    );
+
+    const referencingAssessments = await sqldb.queryRows(
+      sql.select_assessments_with_questions,
+      { question_ids: this.questions.map((q) => q.id) },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+
+    for (const referenced of referencingAssessments) {
+      assert(referenced.assessment_directory !== null, 'assessment_directory is required');
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        referenced.course_instance_directory,
+        'assessments',
+        referenced.assessment_directory,
+        'infoAssessment.json',
+      );
+      const infoJson = await fs.readJson(infoPath);
+      removeQidsFromAssessment(infoJson, qidsToRemove);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+
     for (const question of this.questions) {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      const questionPath = path.join(this.course.path, 'questions', question.qid);
+      await fs.remove(questionPath);
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
+      pathsToAdd.push(questionPath);
     }
 
     return {
-      pathsToAdd: this.questions.flatMap((question) =>
-        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
-      ),
+      pathsToAdd,
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`

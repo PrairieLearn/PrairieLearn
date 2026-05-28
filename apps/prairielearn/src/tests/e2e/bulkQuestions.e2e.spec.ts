@@ -125,7 +125,8 @@ test.describe('Bulk question table actions', () => {
     await openQuestionsTable(page, courseInstance.id, 'add');
     await selectQuestions(page, qids);
 
-    await page.getByRole('button', { name: 'Add to assessment' }).click();
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('menuitem', { name: 'Add to assessment' }).click();
     const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessment' });
     await expect(addModal).toBeVisible();
     await expect(addModal.getByLabel('Course instance')).toHaveValue(courseInstance.id);
@@ -144,9 +145,10 @@ test.describe('Bulk question table actions', () => {
     );
 
     await selectQuestions(page, qids);
-    const removeButton = page.getByRole('button', { name: 'Remove from assessment' });
-    await expect(removeButton).toBeEnabled();
-    await removeButton.click();
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    const removeMenuItem = page.getByRole('menuitem', { name: 'Remove from assessment' });
+    await expect(removeMenuItem).toBeEnabled();
+    await removeMenuItem.click();
 
     const removeModal = page.getByRole('dialog', {
       name: 'Remove selected questions from assessment',
@@ -161,6 +163,85 @@ test.describe('Bulk question table actions', () => {
     const savedAfterRemove = await readInfoAssessment(testCoursePath, assessmentTid);
     expect(
       savedAfterRemove.zones[0].questions.map((question: { id: string }) => question.id),
+    ).toEqual(['downloadFile']);
+  });
+
+  test('removes deleted questions from referencing assessments', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qids = [`bulkdeleteref${suffix}a`, `bulkdeleteref${suffix}b`];
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qids[0],
+      title: 'Bulk cascade first question',
+    });
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addVectors',
+      targetQid: qids[1],
+      title: 'Bulk cascade second question',
+    });
+
+    const assessmentTid = `bulkdeletecascade${suffix}`;
+    const assessmentNumber = `8${suffix.slice(0, 4)}`;
+    await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
+    await fs.writeFile(
+      infoAssessmentPath(testCoursePath, assessmentTid),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Bulk cascade delete target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [
+            {
+              title: 'Mixed zone',
+              questions: [
+                { id: 'downloadFile', autoPoints: 1 },
+                { id: qids[0], autoPoints: 1 },
+                { id: qids[1], autoPoints: 1 },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, `bulkdeleteref${suffix}`);
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
+    await expect(deleteModal).toBeVisible();
+    await expect(
+      deleteModal.getByText('will also be removed from these assessments'),
+    ).toBeVisible();
+    await expect(
+      deleteModal.getByRole('link', { name: `HW${assessmentNumber}`, exact: true }),
+    ).toBeVisible();
+
+    await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
+    await expect(deleteModal).not.toBeVisible();
+
+    for (const qid of qids) {
+      await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
+    }
+
+    const savedAfterDelete = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(
+      savedAfterDelete.zones[0].questions.map((question: { id: string }) => question.id),
     ).toEqual(['downloadFile']);
   });
 
@@ -184,7 +265,8 @@ test.describe('Bulk question table actions', () => {
     await openQuestionsTable(page, courseInstance.id, `bulkdelete${suffix}`);
     await selectQuestions(page, qids);
 
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
     for (const qid of qids) {

@@ -12,6 +12,7 @@ import {
 import type { Question } from '../../lib/db-types.js';
 import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { removeQidsFromBlock } from '../../lib/infoAssessment-edits.js';
 import {
   selectAssessmentById,
   selectAssessments,
@@ -21,7 +22,10 @@ import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
-import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
+import {
+  selectLiveQuestionsByIdsAndCourseId,
+  selectQuestionsUsedInOtherCourses,
+} from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import type {
   AssessmentJsonInput,
@@ -58,7 +62,9 @@ export interface QuestionsError {
   ListZones: never;
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  DeleteQuestions: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  DeleteQuestions:
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
+    | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };
 }
 
 const QuestionIdsInputSchema = z.object({
@@ -174,26 +180,6 @@ function buildQuestionBlock(question: Question): ZoneQuestionBlockJsonInput {
     return { id: question.qid, manualPoints: 1 };
   }
   return { id: question.qid, autoPoints: 1 };
-}
-
-function removeQidsFromBlock(
-  question: ZoneQuestionBlockJsonInput,
-  qidsToRemove: Set<string>,
-): { question: ZoneQuestionBlockJsonInput | null; removedCount: number } {
-  if (question.alternatives) {
-    const alternatives = question.alternatives.filter((alternative) => {
-      return !qidsToRemove.has(alternative.id);
-    });
-    return {
-      question: alternatives.length > 0 ? { ...question, alternatives } : null,
-      removedCount: question.alternatives.length - alternatives.length,
-    };
-  }
-
-  if (question.id && qidsToRemove.has(question.id)) {
-    return { question: null, removedCount: 1 };
-  }
-  return { question, removedCount: 0 };
 }
 
 const listAssessments = t.procedure
@@ -318,8 +304,8 @@ const removeFromAssessment = t.procedure
           for (const question of zone.questions) {
             const result = removeQidsFromBlock(question, qidsToRemove);
             removedCount += result.removedCount;
-            if (result.question) {
-              nextQuestions.push(result.question);
+            if (result.block) {
+              nextQuestions.push(result.block);
             }
           }
           if (zone.questions.length > 0 && nextQuestions.length === 0) {
@@ -358,6 +344,21 @@ const deleteQuestions = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
+
+    const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
+      question_ids: selectedQuestions.map((q) => q.id),
+      course_id: ctx.course.id,
+    });
+    if (blockedByOtherCourses.length > 0) {
+      throwAppError<QuestionsError['DeleteQuestions']>({
+        code: 'QUESTIONS_USED_IN_OTHER_COURSES',
+        message:
+          blockedByOtherCourses.length === 1
+            ? 'One selected question is used by another course and cannot be deleted.'
+            : `${blockedByOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
+        qids: blockedByOtherCourses.map((q) => q.qid),
+      });
+    }
 
     const editor = new QuestionDeleteEditor({
       locals: ctx.locals,

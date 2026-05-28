@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Alert, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -33,7 +33,9 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { AppErrorAlert, getAppError } from '../lib/client/errors.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
+import type { QuestionsError } from '../trpc/course/questions.js';
 import { rankSearchText } from '../lib/client/search.js';
 import {
   QUESTION_TABLE_FILTER_URL_KEYS,
@@ -161,11 +163,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { createCheckboxProps } = useShiftClickCheckbox<SafeQuestionsPageData>();
 
-  const {
-    data: questions = initialQuestions,
-    error: questionsError,
-    isError: isQuestionsError,
-  } = useQuery({
+  const { data: questions = initialQuestions, error: questionsError } = useQuery({
     ...questionsQueryOptions,
     // Provide a no-op queryFn if none was given (e.g. public questions page
     // where data is embedded in the initial HTML and never refetched).
@@ -376,17 +374,19 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       </>
     ) : undefined;
 
+  const appError = getAppError<QuestionsError['List']>(questionsError);
+
   return (
     <>
-      {isQuestionsError && (
-        <Alert variant="danger" className="mb-3">
-          <strong>Error loading questions:</strong> {questionsError.message}
-        </Alert>
-      )}
+      <AppErrorAlert
+        error={appError}
+        className="mb-3"
+        render={{ UNKNOWN: ({ message }) => <>Error loading questions: {message}</> }}
+      />
       <TanstackTableCard
         table={table}
         title="Questions"
-        className={isQuestionsError ? undefined : 'h-100'}
+        className={appError ? undefined : 'h-100'}
         singularLabel="question"
         pluralLabel="questions"
         downloadButtonOptions={{
