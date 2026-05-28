@@ -10,7 +10,7 @@ import type {
  * dropped only when all alternatives are removed. For direct QID references,
  * the block is dropped when its QID matches.
  */
-export function removeQidsFromBlock(
+function removeQidsFromBlock(
   block: ZoneQuestionBlockJsonInput,
   qidsToRemove: Set<string>,
 ): { block: ZoneQuestionBlockJsonInput | null; removedCount: number } {
@@ -35,7 +35,7 @@ export function removeQidsFromBlock(
  * blocks, returning the surviving blocks alongside a count of removed
  * references. Does not mutate the input.
  */
-export function removeQidsFromZone(
+function removeQidsFromZone(
   zone: ZoneAssessmentJsonInput,
   qidsToRemove: Set<string>,
 ): { questions: ZoneQuestionBlockJsonInput[]; removedCount: number } {
@@ -49,13 +49,13 @@ export function removeQidsFromZone(
   return { questions, removedCount };
 }
 
-export interface EmptiedZone {
+interface EmptiedZone {
   /** Zero-based index of the zone in the original `assessment.zones`. */
   zoneIndex: number;
   zoneTitle: string | null;
 }
 
-export interface RemoveQidsFromAssessmentResult {
+interface RemoveQidsFromAssessmentResult {
   assessment: AssessmentJsonInput;
   removedCount: number;
   /**

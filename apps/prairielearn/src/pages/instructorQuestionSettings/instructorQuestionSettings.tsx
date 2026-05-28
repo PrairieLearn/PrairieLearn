@@ -50,7 +50,7 @@ import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
-import { selectQuestionByUuid } from '../../models/question.js';
+import { selectQuestionByUuid, selectQuestionsUsedInOtherCourses } from '../../models/question.js';
 import {
   type QuestionSharingSetRow,
   selectQuestionSharingConstraints,
@@ -560,6 +560,18 @@ router.post(
         });
       }
     } else if (req.body.__action === 'delete_question') {
+      const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
+        question_ids: [res.locals.question.id],
+        course_id: res.locals.course.id,
+      });
+      if (blockedByOtherCourses.length > 0) {
+        flash(
+          'error',
+          'This question is used by another course and cannot be deleted. Unshare it or remove it from those assessments first.',
+        );
+        return res.redirect(req.originalUrl);
+      }
+
       const editor = new QuestionDeleteEditor({
         locals: res.locals,
         questions: res.locals.question,
