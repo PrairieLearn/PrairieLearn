@@ -108,6 +108,11 @@ export async function isLockdownBrowserBlocked({
 }): Promise<boolean> {
   if (ip == null) throw new Error('IP address is required');
 
+  if (session_is_lockdown_browser) return false;
+
+  // Appropriate indexes exist, so this should be fast.
+  // TODO: consider caching this and the ipToMode result
+
   const { requires_lockdown_browser } = await queryRow(
     sql.select_active_prairietest_reservation,
     { ip, date, authn_user_id },
