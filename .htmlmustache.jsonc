@@ -85,6 +85,11 @@
       "exclude": ["apps/prairielearn/elements/**/*.mustache"]
     },
     {
+      "id": "pl-require-img-alt",
+      "selector": "img:not([alt]),img[alt='']",
+      "message": "Images must have alt-text in order to be ADA compliant"
+    },
+    {
       "id": "pl-prefer-pl-figure",
       "selector": "img:not([style]):not([class]):not(pl-overlay img)",
       "message": "Prefer pl-figure over raw <img> tags. See https://docs.prairielearn.com/elements/pl-figure/.",
@@ -253,7 +258,20 @@
         }
       ]
     },
-    { "name": "pl-figure" },
+    {
+      "name": "pl-figure",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-06/schema#",
+        "type": "object",
+        "required": ["alt"],
+        "properties": {
+          "alt": {
+            "type": "string",
+            "minLength": 10
+          }
+        }
+      }
+    },
     { "name": "pl-file-download" },
     { "name": "pl-file-preview" },
     { "name": "pl-matrix-latex" },
