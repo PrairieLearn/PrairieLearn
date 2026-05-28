@@ -36,10 +36,7 @@ export function useAutoSave<T extends FieldValues>({
     return () => subscription.unsubscribe();
   }, [watch]);
 
-  // Save after each render where a form value changed and the form is
-  // dirty. We explicitly trigger() validation rather than relying on
-  // isValid from the render scope, because a watch-triggered re-render
-  // can have stale isValid (true) before validation has completed.
+  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Autosave is intentionally triggered after react-hook-form publishes a watched change. */
   useEffect(() => {
     if (pendingSaveRef.current && isDirty) {
       pendingSaveRef.current = false;
@@ -50,6 +47,7 @@ export function useAutoSave<T extends FieldValues>({
       });
     }
   });
+  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   // Save on unmount in case the deferred effect above hasn't fired yet
   // (React can unmount before a pending useEffect runs).

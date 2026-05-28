@@ -125,15 +125,15 @@ const RichTextEditor = ({
   const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
 
-  // Sync `isGenerating` to editor editable state.
+  /* eslint-disable react-you-might-not-need-an-effect/no-event-handler -- Tiptap exposes editable state as an imperative editor API. */
+  /* eslint-disable react-you-might-not-need-an-effect/no-derived-state -- `useEditor` does not react to `editable` changes after initialization. */
   useEffect(() => {
     if (editor) {
-      // Shut up linter. This is how we have to do this. `useEditor` doesn't react
-      // to changes in the `editable` option after initialization.
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
       editor.setEditable(!isGenerating);
     }
   }, [editor, isGenerating]);
+  /* eslint-enable react-you-might-not-need-an-effect/no-derived-state */
+  /* eslint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   if (htmlContents === null) {
     return null;
