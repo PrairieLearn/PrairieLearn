@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import fg from 'fast-glob';
@@ -9,6 +10,7 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 
@@ -81,12 +83,22 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
-    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+    beforeAll(async () => {
+      await withConfig({ workersCount: os.cpus().length }, async () => {
+        await helperServer.before(EXAMPLE_COURSE_PATH)();
+      });
+    });
 
     afterAll(helperServer.after);
 
-    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
-      helperQuestion.autoTestQuestion(locals, qid),
-    );
+    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) => {
+      it.concurrent(`auto-test ${qid}`, async () => {
+        await helperQuestion.autoTestQuestion({
+          questionBaseUrl: locals.questionBaseUrl,
+          questionPreviewTabUrl: locals.questionPreviewTabUrl,
+          qid,
+        });
+      });
+    });
   });
 });

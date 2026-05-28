@@ -15,7 +15,10 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAssessments } from '../models/assessment.js';
+import {
+  selectAssessmentDirectoriesForQuestions,
+  selectAssessments,
+} from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -46,6 +49,7 @@ import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
+import { blockerDescription, removeQidsFromAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -1538,21 +1542,77 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
+    const pathsToAdd: string[] = [];
+    const qidsToRemove = new Set(
+      this.questions.flatMap((question) => (question.qid !== null ? [question.qid] : [])),
+    );
+
+    // Assessment files are rewritten under this course's repository path, so
+    // shared-question references from other courses must be ignored here.
+    const referencingAssessments = await selectAssessmentDirectoriesForQuestions({
+      course_id: this.course.id,
+      question_ids: this.questions.map((q) => q.id),
+    });
+
+    for (const referenced of referencingAssessments) {
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        referenced.course_instance_directory,
+        'assessments',
+        referenced.assessment_directory,
+        'infoAssessment.json',
+      );
+      let formattedJson: string;
+      try {
+        const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+        const { assessment: updatedInfoJson, blockers } = removeQidsFromAssessment(
+          infoJson,
+          qidsToRemove,
+        );
+        if (blockers.length > 0) {
+          const reasons = blockers.map(blockerDescription).join('; ');
+          throw new AugmentedError(
+            `Deleting these questions would leave assessment ${referenced.course_instance_directory}/${referenced.assessment_directory} in an invalid state: ${reasons}.`,
+            {
+              info: html`
+                <p>
+                  Remove the questions from assessment
+                  <code
+                    >${referenced.course_instance_directory}/${referenced.assessment_directory}</code
+                  >
+                  first.
+                </p>
+              `,
+            },
+          );
+        }
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      } catch (err) {
+        if (err instanceof AugmentedError) throw err;
+        throw new AugmentedError(`Unable to rewrite ${infoPath} while deleting questions.`, {
+          cause: err,
+        });
+      }
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+
     for (const question of this.questions) {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      const questionPath = path.join(this.course.path, 'questions', question.qid);
+      await fs.remove(questionPath);
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
+      pathsToAdd.push(questionPath);
     }
 
     return {
-      pathsToAdd: this.questions.flatMap((question) =>
-        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
-      ),
+      pathsToAdd,
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`
@@ -1604,21 +1664,18 @@ export class QuestionRenameEditor extends Editor {
 
     pathsToAdd.push(oldPath, newPath);
 
-    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_question,
-      { question_id: this.question.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
+    debug(
+      `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
     );
+    const assessments = await selectAssessmentDirectoriesForQuestions({
+      course_id: this.course.id,
+      question_ids: [this.question.id],
+    });
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',

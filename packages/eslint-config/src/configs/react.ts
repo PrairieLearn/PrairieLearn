@@ -37,8 +37,8 @@ export function reactConfig(): TSESLint.FlatConfig.ConfigArray {
             (ruleName: string) => [ruleName, 'error'],
           ),
         ),
-        // This rule was added to the recommended config in a patch release, which
-        // caused package-manager migration PRs to pick up unrelated enforcement.
+        // This rule flags many legitimate effect-based synchronizations with
+        // third-party libraries, DOM APIs, and form state.
         'react-you-might-not-need-an-effect/no-event-handler': 'off',
 
         // eslint-react recommended rules as errors
