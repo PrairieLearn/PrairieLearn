@@ -19,6 +19,7 @@ import {
   AssessmentSetSchema,
   type AssessmentTool,
   AssessmentToolSchema,
+  CourseInstanceSchema,
 } from '../lib/db-types.js';
 import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 
@@ -154,6 +155,36 @@ export async function selectAssessmentToolDefaults({ assessment_id }: { assessme
     // assessment_id and zone_id are exclusive, so we can use null for zone_id to get assessment-level tools.
     { assessment_id, zone_id: null },
     AssessmentToolSchema,
+  );
+}
+
+const AssessmentReferencingQuestionsSchema = z.object({
+  assessment_id: IdSchema,
+  assessment_label: z.string(),
+  assessment_color: z.string(),
+  course_instance_id: IdSchema,
+  course_instance_short_name: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid.unwrap(),
+});
+export type AssessmentReferencingQuestions = z.infer<typeof AssessmentReferencingQuestionsSchema>;
+
+/**
+ * Returns the assessments (in `course_id`) that reference any of
+ * `question_ids` via their synced `assessment_questions`. Includes the
+ * directory names needed to locate the assessment's `infoAssessment.json`
+ * on disk.
+ */
+export async function selectAssessmentsReferencingQuestions({
+  course_id,
+  question_ids,
+}: {
+  course_id: string;
+  question_ids: string[];
+}): Promise<AssessmentReferencingQuestions[]> {
+  return queryRows(
+    sql.select_assessments_referencing_questions,
+    { course_id, question_ids },
+    AssessmentReferencingQuestionsSchema,
   );
 }
 
