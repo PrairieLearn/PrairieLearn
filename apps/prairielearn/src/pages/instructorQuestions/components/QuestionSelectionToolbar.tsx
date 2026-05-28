@@ -20,12 +20,14 @@ export function QuestionSelectionToolbar({
   courseInstances,
   currentCourseInstanceId,
   urlPrefix,
+  onActionSuccess,
 }: {
   selectedQuestions: SafeQuestionsPageData[];
   clearSelection: () => void;
   courseInstances: PublicCourseInstance[];
   currentCourseInstanceId?: string;
   urlPrefix: string;
+  onActionSuccess: (message: string) => void;
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -85,6 +87,7 @@ export function QuestionSelectionToolbar({
         currentCourseInstanceId={currentCourseInstanceId}
         urlPrefix={urlPrefix}
         clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
         onHide={() => setShowAddModal(false)}
       />
       <RemoveFromAssessmentModal
@@ -94,6 +97,7 @@ export function QuestionSelectionToolbar({
         sharedAssessmentTargets={sharedAssessmentTargets}
         urlPrefix={urlPrefix}
         clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
         onHide={() => setShowRemoveModal(false)}
       />
       <DeleteQuestionsModal
@@ -103,6 +107,7 @@ export function QuestionSelectionToolbar({
         courseInstances={courseInstances}
         urlPrefix={urlPrefix}
         clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
         onHide={() => setShowDeleteModal(false)}
       />
     </>

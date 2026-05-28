@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
@@ -48,36 +49,50 @@ function InstructorQuestionsTableInner({
   qidPrefix,
 }: InstructorQuestionsTableInnerProps) {
   const trpc = useTRPC();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   return (
-    <QuestionsTable
-      questions={questions}
-      courseInstances={courseInstances}
-      courseId={courseId}
-      currentCourseInstanceId={currentCourseInstanceId}
-      showAiGenerateQuestionButton={showAiGenerateQuestionButton}
-      showSharingSets={showSharingSets}
-      urlPrefix={urlPrefix}
-      qidPrefix={qidPrefix}
-      questionsQueryOptions={trpc.questions.list.queryOptions()}
-      addQuestionUrl={
-        showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
-      }
-      showImportQuestionsButton={showImportQuestionsButton}
-      renderSelectionToolbar={
-        canEditQuestions
-          ? ({ selectedQuestions, clearSelection }) => (
-              <QuestionSelectionToolbar
-                selectedQuestions={selectedQuestions}
-                clearSelection={clearSelection}
-                courseInstances={courseInstances}
-                currentCourseInstanceId={currentCourseInstanceId}
-                urlPrefix={urlPrefix}
-              />
-            )
-          : undefined
-      }
-    />
+    <>
+      {successMessage && (
+        <Alert
+          variant="success"
+          className="mb-3"
+          dismissible
+          onClose={() => setSuccessMessage(null)}
+        >
+          {successMessage}
+        </Alert>
+      )}
+      <QuestionsTable
+        questions={questions}
+        courseInstances={courseInstances}
+        courseId={courseId}
+        currentCourseInstanceId={currentCourseInstanceId}
+        showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+        showSharingSets={showSharingSets}
+        urlPrefix={urlPrefix}
+        qidPrefix={qidPrefix}
+        questionsQueryOptions={trpc.questions.list.queryOptions()}
+        addQuestionUrl={
+          showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
+        }
+        showImportQuestionsButton={showImportQuestionsButton}
+        renderSelectionToolbar={
+          canEditQuestions
+            ? ({ selectedQuestions, clearSelection }) => (
+                <QuestionSelectionToolbar
+                  selectedQuestions={selectedQuestions}
+                  clearSelection={clearSelection}
+                  courseInstances={courseInstances}
+                  currentCourseInstanceId={currentCourseInstanceId}
+                  urlPrefix={urlPrefix}
+                  onActionSuccess={setSuccessMessage}
+                />
+              )
+            : undefined
+        }
+      />
+    </>
   );
 }
 

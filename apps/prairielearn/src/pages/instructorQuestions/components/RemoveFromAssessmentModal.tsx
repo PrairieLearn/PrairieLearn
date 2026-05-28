@@ -75,6 +75,7 @@ export function RemoveFromAssessmentModal({
   sharedAssessmentTargets,
   urlPrefix,
   clearSelection,
+  onActionSuccess,
 }: {
   show: boolean;
   onHide: () => void;
@@ -83,6 +84,7 @@ export function RemoveFromAssessmentModal({
   sharedAssessmentTargets: AssessmentTarget[];
   urlPrefix: string;
   clearSelection: () => void;
+  onActionSuccess: (message: string) => void;
 }) {
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
@@ -95,8 +97,14 @@ export function RemoveFromAssessmentModal({
 
   const mutation = useMutation({
     ...trpc.questions.removeFromAssessment.mutationOptions(),
-    onSuccess: async () => {
+    onSuccess: async ({ removedCount }) => {
       await invalidateQuestionsList();
+      const assessmentLabel =
+        sharedAssessmentTargets.find((target) => target.assessmentId === effectiveAssessmentId)
+          ?.displayLabel ?? 'assessment';
+      onActionSuccess(
+        `Removed ${removedCount} ${removedCount === 1 ? 'question' : 'questions'} from ${assessmentLabel}.`,
+      );
       clearSelection();
       onHide();
     },

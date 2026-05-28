@@ -21,6 +21,7 @@ export function AddToAssessmentModal({
   currentCourseInstanceId,
   urlPrefix,
   clearSelection,
+  onActionSuccess,
 }: {
   show: boolean;
   onHide: () => void;
@@ -30,6 +31,7 @@ export function AddToAssessmentModal({
   currentCourseInstanceId?: string;
   urlPrefix: string;
   clearSelection: () => void;
+  onActionSuccess: (message: string) => void;
 }) {
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
@@ -63,8 +65,20 @@ export function AddToAssessmentModal({
 
   const mutation = useMutation({
     ...trpc.questions.addToAssessment.mutationOptions(),
-    onSuccess: async () => {
+    onSuccess: async ({ addedCount, skippedCount }) => {
       await invalidateQuestionsList();
+      const assessmentLabel =
+        assessments.find((assessment) => assessment.id === effectiveAssessmentId)?.label ??
+        'assessment';
+      const parts: string[] = [
+        `Added ${addedCount} ${addedCount === 1 ? 'question' : 'questions'} to ${assessmentLabel}.`,
+      ];
+      if (skippedCount > 0) {
+        parts.push(
+          `${skippedCount} ${skippedCount === 1 ? 'question was' : 'questions were'} already in the assessment.`,
+        );
+      }
+      onActionSuccess(parts.join(' '));
       clearSelection();
       onHide();
     },

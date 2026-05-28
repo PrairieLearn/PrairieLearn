@@ -70,6 +70,7 @@ export function DeleteQuestionsModal({
   courseInstances,
   urlPrefix,
   clearSelection,
+  onActionSuccess,
 }: {
   show: boolean;
   onHide: () => void;
@@ -78,13 +79,15 @@ export function DeleteQuestionsModal({
   courseInstances: PublicCourseInstance[];
   urlPrefix: string;
   clearSelection: () => void;
+  onActionSuccess: (message: string) => void;
 }) {
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
   const mutation = useMutation({
     ...trpc.questions.deleteQuestions.mutationOptions(),
-    onSuccess: async () => {
+    onSuccess: async ({ deletedCount }) => {
       await invalidateQuestionsList();
+      onActionSuccess(`Deleted ${deletedCount} ${deletedCount === 1 ? 'question' : 'questions'}.`);
       clearSelection();
       onHide();
     },

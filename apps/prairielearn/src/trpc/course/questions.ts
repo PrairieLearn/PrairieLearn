@@ -236,6 +236,7 @@ const addToAssessment = t.procedure
       assessment,
     });
 
+    let addedCount = 0;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (assessmentInfo) => {
         const zones = assessmentInfo.zones ?? [];
@@ -248,6 +249,7 @@ const addToAssessment = t.procedure
           (question) => question.qid && !existingQids.has(question.qid),
         );
         targetZone.questions.push(...questionsToAdd.map(buildQuestionBlock));
+        addedCount = questionsToAdd.length;
         return assessmentInfo;
       },
       jsonPath,
@@ -263,6 +265,11 @@ const addToAssessment = t.procedure
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
+
+    return {
+      addedCount,
+      skippedCount: selectedQuestions.length - addedCount,
+    };
   });
 
 const removeFromAssessment = t.procedure
@@ -291,10 +298,14 @@ const removeFromAssessment = t.procedure
       assessment,
     });
 
+    let removedCount = 0;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (assessmentInfo) => {
         for (const zone of assessmentInfo.zones ?? []) {
-          const { questions } = removeQidsFromZone(zone, qidsToRemove);
+          const { questions, removedCount: zoneRemovedCount } = removeQidsFromZone(
+            zone,
+            qidsToRemove,
+          );
           if (zone.questions.length > 0 && questions.length === 0) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
@@ -302,6 +313,7 @@ const removeFromAssessment = t.procedure
             });
           }
           zone.questions = questions;
+          removedCount += zoneRemovedCount;
         }
         return assessmentInfo;
       },
@@ -318,6 +330,8 @@ const removeFromAssessment = t.procedure
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
+
+    return { removedCount };
   });
 
 const deleteQuestions = t.procedure
@@ -360,6 +374,8 @@ const deleteQuestions = t.procedure
         jobSequenceId: serverJob.jobSequenceId,
       });
     }
+
+    return { deletedCount: selectedQuestions.length };
   });
 
 export const questionsRouter = t.router({
