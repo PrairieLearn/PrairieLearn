@@ -2,12 +2,18 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import {
+  COURSE_REQUEST_MESSAGE_MAX_LENGTH,
+  selectInstitutionSettings,
+  updateInstitutionCourseRequestMessage,
+} from '../../../models/institution-settings.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForContext,
@@ -34,12 +40,24 @@ router.get(
       InstitutionStatisticsSchema,
     );
     const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
+    const institutionSettings = await selectInstitutionSettings({
+      institution_id: req.params.institution_id,
+    });
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const courseRequestMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
+          allowHtml: false,
+          interpretMath: false,
+        })
+      : '';
     res.send(
       AdministratorInstitutionGeneral({
         institution,
         availableTimezones,
         statistics,
         planGrants,
+        courseRequestMessage,
+        courseRequestMessageHtml,
         resLocals: res.locals,
       }),
     );
@@ -76,6 +94,25 @@ router.post(
         });
       });
       flash('success', 'Successfully updated institution settings.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_course_request_message') {
+      const newMessage =
+        typeof req.body.course_request_message === 'string' &&
+        req.body.course_request_message.trim().length > 0
+          ? req.body.course_request_message
+          : null;
+      if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
+        throw new error.HttpStatusError(
+          400,
+          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+        );
+      }
+      await updateInstitutionCourseRequestMessage({
+        institution_id: req.params.institution_id,
+        course_request_message: newMessage,
+        authn_user_id: res.locals.authn_user.id,
+      });
+      flash('success', 'Successfully updated the course request message.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({
