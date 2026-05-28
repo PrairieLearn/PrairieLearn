@@ -88,6 +88,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # To avoid this node being stripped, we just include the filename as text.
         return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
 
+    parse_error = None
+    if data["panel"] == "submission":
+        format_errors = data.get("format_errors", {})
+        file_errors = format_errors.get("_files", [])
+        if isinstance(file_errors, str):
+            file_errors = [file_errors]
+        parse_error = " ".join([e for e in file_errors if file_name in e])
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
@@ -95,6 +103,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
         "manual_upload_enabled": manual_upload_enabled,
         "retake_menu_enabled": mobile_capture_enabled or manual_upload_enabled,
+        "parse_error": parse_error or None,
     }
 
     image_capture_options = {
