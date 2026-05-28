@@ -1570,13 +1570,13 @@ export class QuestionDeleteEditor extends Editor {
         if (blockers.length > 0) {
           const reasons = blockers.map(blockerDescription).join('; ');
           throw new AugmentedError(
-            `Deleting these questions would leave assessment ${referenced.course_instance_directory}/${referenced.assessment_directory} in an invalid state: ${reasons}.`,
+            `Deleting these questions would leave assessment ${referenced.course_instance_short_name}/${referenced.assessment_directory} in an invalid state: ${reasons}.`,
             {
               info: html`
                 <p>
                   Remove the questions from assessment
                   <code
-                    >${referenced.course_instance_directory}/${referenced.assessment_directory}</code
+                    >${referenced.course_instance_short_name}/${referenced.assessment_directory}</code
                   >
                   first.
                 </p>
