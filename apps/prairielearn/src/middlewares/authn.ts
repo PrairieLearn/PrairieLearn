@@ -175,6 +175,7 @@ export default asyncHandler(async (req, res, next) => {
 
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
+    preserveLockdownBrowser: true,
   });
 
   next();
