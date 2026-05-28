@@ -160,6 +160,9 @@ SELECT DISTINCT
   a.id AS assessment_id,
   aset.abbreviation || a.number AS assessment_label,
   aset.color AS assessment_color,
+  aset.abbreviation AS assessment_set_abbreviation,
+  aset.name AS assessment_set_name,
+  a.number AS assessment_number,
   ci.id AS course_instance_id,
   ci.short_name AS course_instance_short_name,
   a.tid AS assessment_directory

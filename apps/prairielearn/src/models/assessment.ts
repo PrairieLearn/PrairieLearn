@@ -161,7 +161,10 @@ export async function selectAssessmentToolDefaults({ assessment_id }: { assessme
 const AssessmentReferencingQuestionsSchema = z.object({
   assessment_id: IdSchema,
   assessment_label: z.string(),
-  assessment_color: z.string(),
+  assessment_color: AssessmentSetSchema.shape.color,
+  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+  assessment_set_name: AssessmentSetSchema.shape.name,
+  assessment_number: AssessmentSchema.shape.number,
   course_instance_id: IdSchema,
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   assessment_directory: AssessmentSchema.shape.tid.unwrap(),
