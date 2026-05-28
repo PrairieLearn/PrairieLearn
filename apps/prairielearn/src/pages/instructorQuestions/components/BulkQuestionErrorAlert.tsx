@@ -1,7 +1,7 @@
 import { type AppError, AppErrorAlert, syncJobFailedRenderer } from '../../../lib/client/errors.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
-export type BulkQuestionError = QuestionsError['DeleteQuestions'];
+type BulkQuestionError = QuestionsError['DeleteQuestions'];
 
 export function BulkQuestionErrorAlert({
   error,

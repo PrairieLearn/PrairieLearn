@@ -15,10 +15,7 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import {
-  selectAssessmentDirectoriesForQuestions,
-  selectAssessments,
-} from '../models/assessment.js';
+import { selectAssessments, selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -1549,7 +1546,7 @@ export class QuestionDeleteEditor extends Editor {
 
     // Assessment files are rewritten under this course's repository path, so
     // shared-question references from other courses must be ignored here.
-    const referencingAssessments = await selectAssessmentDirectoriesForQuestions({
+    const referencingAssessments = await selectAssessmentsReferencingQuestions({
       course_id: this.course.id,
       question_ids: this.questions.map((q) => q.id),
     });
@@ -1558,7 +1555,7 @@ export class QuestionDeleteEditor extends Editor {
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
-        referenced.course_instance_directory,
+        referenced.course_instance_short_name,
         'assessments',
         referenced.assessment_directory,
         'infoAssessment.json',
@@ -1639,7 +1636,7 @@ export class QuestionRenameEditor extends Editor {
     debug(
       `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
     );
-    const assessments = await selectAssessmentDirectoriesForQuestions({
+    const assessments = await selectAssessmentsReferencingQuestions({
       course_id: this.course.id,
       question_ids: [this.question.id],
     });
@@ -1651,7 +1648,7 @@ export class QuestionRenameEditor extends Editor {
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
-        assessment.course_instance_directory,
+        assessment.course_instance_short_name,
         'assessments',
         assessment.assessment_directory,
         'infoAssessment.json',
