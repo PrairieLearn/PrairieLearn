@@ -2,14 +2,15 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 
+import { selectAssessmentsReferencingQuestions } from '../models/assessment.js';
+import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
+
 import { type Course } from './db-types.js';
 import {
   type BlockedAssessment,
   blockerDescription,
   removeQidsFromAssessment,
 } from './infoAssessment-edits.js';
-import { selectAssessmentsReferencingQuestions } from '../models/assessment.js';
-import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 
 /**
  * For each assessment in `course` that references one of `questionIds`, returns
@@ -44,13 +45,13 @@ export async function selectAssessmentsBlockingDeletion({
       ref.assessment_directory,
       'infoAssessment.json',
     );
-    let parsed: AssessmentJsonInput;
+    let blockers: BlockedAssessment['blockers'];
     try {
-      parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+      const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+      ({ blockers } = removeQidsFromAssessment(parsed, qidsToRemove));
     } catch {
       continue;
     }
-    const { blockers } = removeQidsFromAssessment(parsed, qidsToRemove);
     if (blockers.length > 0) {
       blocked.push({
         assessmentLabel: ref.assessment_label,

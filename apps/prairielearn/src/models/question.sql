@@ -85,6 +85,7 @@ FROM
   JOIN course_instances AS ci ON ci.id = a.course_instance_id
 WHERE
   q.id = ANY ($question_ids::bigint[])
+  AND q.course_id = $course_id
   AND ci.course_id != $course_id
   AND q.deleted_at IS NULL
   AND aq.deleted_at IS NULL

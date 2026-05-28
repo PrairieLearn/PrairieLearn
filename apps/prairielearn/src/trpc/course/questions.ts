@@ -478,9 +478,7 @@ const deleteQuestions = t.procedure
     const blockedAssessments = await selectAssessmentsBlockingDeletion({
       course: ctx.course,
       questionIds: selectedQuestions.map((q) => q.id),
-      qidsToRemove: new Set(
-        selectedQuestions.flatMap((q) => (q.qid ? [q.qid] : [])),
-      ),
+      qidsToRemove: new Set(selectedQuestions.flatMap((q) => (q.qid ? [q.qid] : []))),
     });
     if (blockedAssessments.length > 0) {
       throwAppError<QuestionsError['DeleteQuestions']>({

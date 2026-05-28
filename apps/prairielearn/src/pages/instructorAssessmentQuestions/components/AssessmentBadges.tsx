@@ -13,9 +13,7 @@ function toBadgeProps(assessment: AssessmentForPicker, useSetColor = true) {
   };
 }
 
-const WARNING_PREFIX = (
-  <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-);
+const WARNING_PREFIX = <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />;
 
 function MarkedBadge({
   assessment,
@@ -195,11 +193,7 @@ export function AssessmentBadges({
           >
             {groupHasMarked && WARNING_PREFIX}
             {abbrev} ×{items.length}{' '}
-            <i
-              className="bi bi-caret-down-fill"
-              style={{ fontSize: '0.6em' }}
-              aria-hidden="true"
-            />
+            <i className="bi bi-caret-down-fill" style={{ fontSize: '0.6em' }} aria-hidden="true" />
           </button>
         </OverlayTrigger>
       </span>,

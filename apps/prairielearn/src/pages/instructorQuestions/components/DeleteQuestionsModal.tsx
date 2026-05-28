@@ -8,7 +8,10 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
-import { type QuestionCourseInstanceMembership, SelectedQuestionList } from './SelectedQuestionList.js';
+import {
+  type QuestionCourseInstanceMembership,
+  SelectedQuestionList,
+} from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
 interface PreviewZone {
@@ -191,10 +194,7 @@ export function DeleteQuestionsModal({
             .
           </Alert>
         )}
-        <SelectedQuestionList
-          questions={selectedQuestions}
-          membershipsByQid={membershipsByQid}
-        />
+        <SelectedQuestionList questions={selectedQuestions} membershipsByQid={membershipsByQid} />
         <BulkQuestionErrorAlert error={appError} urlPrefix={urlPrefix} />
       </Modal.Body>
       <Modal.Footer>
