@@ -2,6 +2,9 @@ node_modules
 .claude/worktrees
 .context
 
+# pnpm owns lockfile formatting.
+pnpm-lock.yaml
+
 # Coverage reports
 coverage/
 apps/*/coverage/

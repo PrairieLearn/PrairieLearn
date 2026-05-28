@@ -66,35 +66,5 @@
     "vitest": "^4.1.5",
     "zod": "^3.25.76 <4",
     "zod-to-json-schema": "^3.25.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "@sa11y/common>axe-core": "^4",
-      "@sa11y/format>axe-core": "^4",
-      "@typescript/native-preview": "beta",
-      "linkinator>marked": "^18",
-      "markdownlint-cli2>smol-toml": "^1",
-      "notebookjs>jsdom": "*",
-      "typescript-cp>tar": "*"
-    },
-    "onlyBuiltDependencies": [
-      "@datadog/pprof",
-      "@prairielearn/bind-mount",
-      "@reteps/tree-sitter-htmlmustache",
-      "core-js",
-      "cpu-features",
-      "dtrace-provider",
-      "esbuild",
-      "protobufjs",
-      "sharp",
-      "ssh2",
-      "unrs-resolver"
-    ],
-    "supportedArchitectures": {
-      "libc": [
-        "current",
-        "gnu"
-      ]
-    }
   }
 }

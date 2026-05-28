@@ -1,3 +1,30 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+overrides:
+  '@sa11y/common>axe-core': ^4
+  '@sa11y/format>axe-core': ^4
+  '@typescript/native-preview': beta
+  'linkinator>marked': ^18
+  'markdownlint-cli2>smol-toml': ^1
+  'notebookjs>jsdom': '*'
+  'typescript-cp>tar': '*'
+
+allowBuilds:
+  '@datadog/pprof': true
+  '@prairielearn/bind-mount': true
+  '@reteps/tree-sitter-htmlmustache': true
+  core-js: true
+  cpu-features: true
+  dtrace-provider: true
+  esbuild: true
+  protobufjs: true
+  sharp: true
+  ssh2: true
+  unrs-resolver: true
+
+supportedArchitectures:
+  libc:
+    - current
+    - gnu
