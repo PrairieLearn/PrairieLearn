@@ -21,9 +21,7 @@ interface PreviewZone {
   wouldBeEmpty: boolean;
 }
 
-function buildZoneMembershipsByQid(
-  zones: PreviewZone[],
-): Map<string, QuestionZoneMembership[]> {
+function buildZoneMembershipsByQid(zones: PreviewZone[]): Map<string, QuestionZoneMembership[]> {
   const byQid = new Map<string, QuestionZoneMembership[]>();
   for (const zone of zones) {
     const membership: QuestionZoneMembership = {
