@@ -1,9 +1,12 @@
+import { z } from 'zod';
+
 import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type InstitutionSettings, InstitutionSettingsSchema } from '../lib/db-types.js';
 
@@ -33,8 +36,10 @@ export async function updateInstitutionCourseRequestMessage({
   authn_user_id: string;
 }): Promise<InstitutionSettings> {
   return await runInTransactionAsync(async () => {
+    await queryRow(sql.lock_institution, { institution_id }, z.object({ id: IdSchema }));
+
     const oldSettings = await queryOptionalRow(
-      sql.select_institution_settings_for_update,
+      sql.select_institution_settings,
       { institution_id },
       InstitutionSettingsSchema,
     );

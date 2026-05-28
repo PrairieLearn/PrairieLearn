@@ -6,13 +6,13 @@ FROM
 WHERE
   institution_id = $institution_id;
 
--- BLOCK select_institution_settings_for_update
+-- BLOCK lock_institution
 SELECT
-  *
+  id
 FROM
-  institution_settings
+  institutions
 WHERE
-  institution_id = $institution_id
+  id = $institution_id
 FOR UPDATE;
 
 -- BLOCK upsert_institution_settings

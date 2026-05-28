@@ -39,18 +39,22 @@ describe('institution-settings model', () => {
 
         assert.lengthOf(events, 2);
 
-        assert.equal(events[0].action, 'update');
-        assert.equal(events[0].action_detail, 'course_request_message');
-        assert.equal(events[0].row_id, '1');
-        assert.equal(events[0].agent_authn_user_id, user.id);
-        assert.deepEqual(events[0].old_row, insertedSettings);
-        assert.deepEqual(events[0].new_row, updatedSettings);
+        const insertEvent = events.find((event) => event.action === 'insert');
+        const updateEvent = events.find((event) => event.action === 'update');
 
-        assert.equal(events[1].action, 'insert');
-        assert.equal(events[1].action_detail, 'course_request_message');
-        assert.equal(events[1].row_id, '1');
-        assert.isNull(events[1].old_row);
-        assert.deepEqual(events[1].new_row, insertedSettings);
+        assert.isDefined(insertEvent);
+        assert.equal(insertEvent.action_detail, 'course_request_message');
+        assert.equal(insertEvent.row_id, '1');
+        assert.equal(insertEvent.agent_authn_user_id, user.id);
+        assert.isNull(insertEvent.old_row);
+        assert.deepEqual(insertEvent.new_row, insertedSettings);
+
+        assert.isDefined(updateEvent);
+        assert.equal(updateEvent.action_detail, 'course_request_message');
+        assert.equal(updateEvent.row_id, '1');
+        assert.equal(updateEvent.agent_authn_user_id, user.id);
+        assert.deepEqual(updateEvent.old_row, insertedSettings);
+        assert.deepEqual(updateEvent.new_row, updatedSettings);
       });
     });
   });
