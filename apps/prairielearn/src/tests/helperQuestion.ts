@@ -18,7 +18,11 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
+import { startTestQuestion } from '../lib/question-testing.js';
+import { selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -666,35 +670,17 @@ export async function autoTestQuestion({
       JSON.stringify(previewIssues, null, '    '),
   );
 
-  const settingsUrl = questionBaseUrl + '/' + question.id + '/settings';
-  const settingsResponse = await fetch(settingsUrl);
-  assert.equal(settingsResponse.status, 200);
-  const settings$ = cheerio.load(await settingsResponse.text());
-  const csrfElems = settings$('form[name="question-tests-form"] input[name="__csrf_token"]');
-  assert.lengthOf(csrfElems, 1);
-  const csrfToken = csrfElems[0].attribs.value;
-  assert.isString(csrfToken);
-
-  const testUrl = questionBaseUrl + '/' + question.id + '/settings/test';
-  const testResponse = await fetch(testUrl, {
-    method: 'POST',
-    body: new URLSearchParams({ __action: 'test_once', __csrf_token: csrfToken }),
+  const course = await selectCourseById('1');
+  const jobSequenceId = await startTestQuestion({
+    count: 1,
+    showDetails: true,
+    question,
+    course_instance: null,
+    course,
+    user_id: '1',
+    authn_user_id: '1',
   });
-  assert.equal(testResponse.status, 200);
-
-  const match = testResponse.url.match(/\/jobSequence\/(\d+)/);
-  assert(match, `[${qid}] expected redirect to /jobSequence/<id>, got ${testResponse.url}`);
-  const jobSequenceId = match[1];
-
-  let jobSequence: z.infer<typeof JobSequenceSchema>;
-  do {
-    await sleep(10);
-    jobSequence = await sqldb.queryRow(
-      sql.select_job_sequence,
-      { job_sequence_id: jobSequenceId },
-      JobSequenceSchema,
-    );
-  } while (jobSequence.status === 'Running');
+  const jobSequence = await helperServer.waitForJobSequence(jobSequenceId);
 
   const testIssues = await sqldb.queryRows(
     sql.select_issues_for_question,

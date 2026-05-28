@@ -8,7 +8,6 @@ import { HtmlValidate } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { extractDefaultPreferences } from '../lib/question-preferences.js';
@@ -17,6 +16,7 @@ import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -287,20 +287,13 @@ const accessibilitySkip = new Set([
 ]);
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
-  const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-  const originalWorkersCount = config.workersCount;
-
   beforeAll(async function () {
-    config.features['process-questions-in-server'] = false;
-    config.workersCount = 8;
-    await helperServer.before()();
+    await withConfig({ workersCount: 8 }, async () => {
+      await helperServer.before()();
+    });
   });
 
-  afterAll(async function () {
-    await helperServer.after();
-    config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
-    config.workersCount = originalWorkersCount;
-  });
+  afterAll(helperServer.after);
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it.concurrent(`should succeed for ${relativePath}`, async () => {
