@@ -37,15 +37,15 @@ const TeamWithMembersSchema = z.object({
 });
 
 /**
- * Build the user/group context to expose to `server.py` for a question render.
+ * Build the user/group context to expose to `server.py` for a question phase.
  *
  * Gating rules (all must be true to expose data):
  *   1. The question's owning course has `questions_receive_user_data = true`.
  *   2. The question is rendered in its owning course (`question.course_id === variantCourse.id`).
  *      This excludes public sharing, sharing-set imports, and instructor preview of foreign questions.
- *   3. An effective user is provided.
  *
- * When `teamId` is provided (group-work variant), members of the team are included in `group.members`.
+ * When `effectiveUserId` is provided, that user is included in `user`. When `teamId` is provided
+ * (group-work variant), members of the team are included in `group.members`.
  */
 export async function buildQuestionUserContext({
   question,
@@ -66,14 +66,14 @@ export async function buildQuestionUserContext({
   // (sharing-set import or public-share preview), don't expose user data.
   if (!idsEqual(question.course_id, variantCourse.id)) return EMPTY_CONTEXT;
 
-  if (effectiveUserId == null) return EMPTY_CONTEXT;
-
-  const user = await sqldb.queryOptionalRow(
-    sql.select_question_user,
-    { user_id: effectiveUserId },
-    QuestionUserSchema,
-  );
-  if (user == null) return EMPTY_CONTEXT;
+  const user =
+    effectiveUserId == null
+      ? null
+      : await sqldb.queryOptionalRow(
+          sql.select_question_user,
+          { user_id: effectiveUserId },
+          QuestionUserSchema,
+        );
 
   const group = teamId
     ? await sqldb.queryOptionalRow(
@@ -82,6 +82,8 @@ export async function buildQuestionUserContext({
         TeamWithMembersSchema,
       )
     : null;
+
+  if (user == null && group == null) return EMPTY_CONTEXT;
 
   return { user, group };
 }

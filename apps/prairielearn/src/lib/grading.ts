@@ -426,7 +426,9 @@ export async function gradeVariant({
       question,
       questionCourse: question_course,
       variantCourse: variant_course,
-      effectiveUserId: user_id,
+      // Grading can run from cron jobs or instructor close actions, so the
+      // request actor is not necessarily the assessed student.
+      effectiveUserId: variant.user_id,
       teamId: variant.team_id,
     });
     const { courseIssues, data } = await questionModule.grade(

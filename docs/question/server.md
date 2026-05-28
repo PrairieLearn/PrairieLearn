@@ -407,7 +407,7 @@ The functions in `server.py` can also retrieve the content from various director
 
 ### Accessing the viewing user's identity
 
-Courses can opt in to exposing the viewing user's identity to `server.py`. When enabled, `data["options"]` contains two extra keys, available in every phase (`generate`, `prepare`, `render`, `parse`, `grade`, `test`, `file`):
+Courses can opt in to exposing user and group identity to `server.py`. When enabled, `data["options"]` contains two extra keys, available in every phase (`generate`, `prepare`, `render`, `parse`, `grade`, `test`, `file`):
 
 ```python
 def generate(data):
@@ -422,11 +422,11 @@ def generate(data):
         data["params"]["teammate_uids"] = [m["uid"] for m in group["members"]]
 ```
 
-The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is the **viewing user** — on group assessments this is whichever teammate is rendering the page right now, not a fixed property of the variant.
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the assessed student, and group assessments receive `None` because no single user owns the shared variant.
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
 
-On group assessments, `data["options"]["user"]` is `None` during `generate()` and `prepare()`. These phases run once for the shared variant and persist their results, so using the first teammate who opened the question would give later teammates stale per-viewer data. `data["options"]["group"]` is still available in those phases because the team is stable for the shared variant.
+On group assessments, `data["options"]["user"]` is `None` during `generate()`, `prepare()`, and `grade()`. These phases run on data that is shared by the group or may run outside a student's request, so using a request-specific teammate would give stale or incorrect per-user data. `data["options"]["group"]` is still available in these phases because the team is stable for the shared variant.
 
 User and group data are passed only when **all** of the following are true:
 
