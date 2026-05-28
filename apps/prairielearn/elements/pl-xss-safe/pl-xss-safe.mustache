@@ -18,7 +18,6 @@
     code = DOMPurify.sanitize(code);
     const shadowRoot = element.attachShadow({ mode: "open" });
     shadowRoot.innerHTML = code;
-
     // MathJax includes assistive content that is not visible by default (i.e.,
     // only readable by screen readers). The hiding of this content is found in
     // a style tag in the head, but this tag is not applied to the shadow DOM by
