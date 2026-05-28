@@ -86,7 +86,7 @@
     },
     {
       "id": "pl-require-img-alt",
-      "selector": "img:not([alt]):not([aria-hidden='true'])",
+      "selector": "img:not([alt]):not([aria-hidden='true']), pl-figure:not([alt])",
       "message": "Images must have alt-text in order to be WCAG 2.1 AA compliant",
       "severity": "warning"
     },
@@ -258,20 +258,6 @@
           "name": "pl-variable"
         }
       ]
-    },
-    {
-      "name": "pl-figure",
-      "schema": {
-        "$schema": "http://json-schema.org/draft-06/schema#",
-        "type": "object",
-        "required": ["alt"],
-        "properties": {
-          "alt": {
-            "type": "string",
-            "minLength": 10
-          }
-        }
-      }
     },
     { "name": "pl-file-download" },
     { "name": "pl-file-preview" },
