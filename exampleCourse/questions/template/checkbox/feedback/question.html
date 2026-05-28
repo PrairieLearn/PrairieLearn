@@ -2,12 +2,7 @@
   <p>Which of the following cities are located in {{params.country}}?</p>
 </pl-question-panel>
 
-<pl-checkbox
-  answers-name="cities"
-  number-answers="6"
-  partial-credit="net-correct"
-  min-correct="2"
->
+<pl-checkbox answers-name="cities" number-answers="6" partial-credit="net-correct" min-correct="2">
   {{! Use Mustache sections to iterate over the list of correct_cities. }}
   {{#params.correct_cities}}
     {{! Inside the Mustache section, `.` refers to the current entry of the correct_cities list. }}

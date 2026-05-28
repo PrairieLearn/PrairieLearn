@@ -1,85 +1,99 @@
 <pl-card>
   <pl-question-panel>
-    <p> For the following python code snippet, enter below the resulting string:</p>
-<pl-code language="python">
+    <p>For the following python code snippet, enter below the resulting string:</p>
+    <pl-code language="python">
 a = "{{params.stringname}}"*{{params.a}}
-</pl-code>
+    </pl-code>
   </pl-question-panel>
-  <pl-string-input answers-name="ans1" label="a = ">
-  </pl-string-input>
+  <pl-string-input answers-name="ans1" label="a = "></pl-string-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
-    <p> For the following python code snippet, what is d = b + c?</p>
-<pl-code language="python">
+    <p>For the following python code snippet, what is d = b + c?</p>
+    <pl-code language="python">
 b = "{{params.b}}"
 c = "{{params.c}}"
-</pl-code>
+    </pl-code>
   </pl-question-panel>
-  <pl-string-input answers-name="ans2" label="b + c = ">
-  </pl-string-input>
+  <pl-string-input answers-name="ans2" label="b + c = "></pl-string-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
-    <p> Enter the string below, however include trailing and leading blanks.
-      When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
-      still be evaluated as correct. We also set <code>show-score="false"</code> to hide the
-      score badge. </p>
-    <pl-code language="python">"{{params.d}}"</pl-code>
-  </pl-question-panel>
-  <pl-string-input aria-label="String" answers-name="ans3" remove-leading-trailing="true" show-score="false">
-  </pl-string-input>
-</pl-card>
-
-<pl-card>
-  <pl-question-panel>
-    <p>Enter the string below, however include blank spaces between some of the numbers.
-      When using the attribute <code>remove-spaces="true"</code>, the answer will
-      still be evaluated as correct. This example also uses the attribute
-      <code>placeholder="string"</code>,
-      to add a placeholder indicating the expected input is of type "string".
+    <p>
+      Enter the string below, however include trailing and leading blanks. When using the attribute
+      <code>remove-leading-trailing="true"</code>, the answer will still be evaluated as correct. We
+      also set <code>show-score="false"</code> to hide the score badge.
     </p>
     <pl-code language="python">"{{params.d}}"</pl-code>
   </pl-question-panel>
-  <pl-string-input aria-label="String" answers-name="ans4" remove-spaces="true" placeholder="string">
-  </pl-string-input>
+  <pl-string-input
+    aria-label="String"
+    answers-name="ans3"
+    remove-leading-trailing="true"
+    show-score="false"
+  ></pl-string-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
-    <p>The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
-      receiving the <code>Invalid</code> error. Leave the box below empty, and notice
-      that you will not receive the <code>Invalid</code> feedback (and hence the question is graded). </p>
+    <p>
+      Enter the string below, however include blank spaces between some of the numbers. When using
+      the attribute <code>remove-spaces="true"</code>, the answer will still be evaluated as
+      correct. This example also uses the attribute <code>placeholder="string"</code>, to add a
+      placeholder indicating the expected input is of type "string".
+    </p>
+    <pl-code language="python">"{{params.d}}"</pl-code>
+  </pl-question-panel>
+  <pl-string-input
+    aria-label="String"
+    answers-name="ans4"
+    remove-spaces="true"
+    placeholder="string"
+  ></pl-string-input>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>
+      The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
+      receiving the <code>Invalid</code> error. Leave the box below empty, and notice that you will
+      not receive the <code>Invalid</code> feedback (and hence the question is graded).
+    </p>
   </pl-question-panel>
 
-  <pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true">
-  </pl-string-input>
+  <pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true"></pl-string-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
-    <p> To allow for case insensitivity, use <code>ignore-case="true"</code>.
-      This will autoconvert both the student answer and the correct answer to lower case. Changing the case of
-      any letter in the string below will yield the correct answer as a result. The attribute 
-      <code>initial-value</code> fills the textbox with the attribute's value when 
-      the question is first rendered. This attribute may save students time by not requiring
-      them to copy-paste text into the box.</p>
+    <p>
+      To allow for case insensitivity, use <code>ignore-case="true"</code>. This will autoconvert
+      both the student answer and the correct answer to lower case. Changing the case of any letter
+      in the string below will yield the correct answer as a result. The attribute
+      <code>initial-value</code> fills the textbox with the attribute's value when the question is
+      first rendered. This attribute may save students time by not requiring them to copy-paste text
+      into the box.
+    </p>
 
     <pl-code language="python">"{{params.e}}"</pl-code>
   </pl-question-panel>
 
-  <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true" initial-value="{{params.e}}">
-  </pl-string-input>
+  <pl-string-input
+    answers-name="ans6"
+    label="Input box is case insensitive = "
+    ignore-case="true"
+    initial-value="{{params.e}}"
+  ></pl-string-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
     <p>
       The size of the input box can be set with the attribute <code>size</code>, and the attribute
-      <code>show-help-text="false"</code> removes the button for the help popup. This box below has <code>size=5</code>
-      instead of the default <code>size=35</code>.
+      <code>show-help-text="false"</code> removes the button for the help popup. This box below has
+      <code>size=5</code> instead of the default <code>size=35</code>.
     </p>
     <pl-code language="python">"{{params.f}}"</pl-code>
   </pl-question-panel>
@@ -90,17 +104,18 @@ c = "{{params.c}}"
 <pl-card>
   <pl-question-panel>
     <p>
-      For students using non-latin keyboards, it is possible that non-English characters may be introduced into the
-      box. This can cause confusion if these characters resemble a latin character (e.g., the cyrillic character
-      <strong>&#x0430;</strong> looks a lot like the latin character <strong>a</strong>). Similarly, students may copy
-      from text editors and paste into the answer box, causing characters like fancy quotes to be introduced. The
-      attribute <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character that
-      mostly
-      resembles it.
+      For students using non-latin keyboards, it is possible that non-English characters may be
+      introduced into the box. This can cause confusion if these characters resemble a latin
+      character (e.g., the cyrillic character <strong>&#x0430;</strong> looks a lot like the latin
+      character <strong>a</strong>). Similarly, students may copy from text editors and paste into
+      the answer box, causing characters like fancy quotes to be introduced. The attribute
+      <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character
+      that mostly resembles it.
     </p>
     <p>
-      The box below contains an input using a Greek Epsilon, a Cyrillic ie, and fancy quotes. Copying this text into the
-      answer box below should result in the appropriate text (<code>"Ee"</code>) being accepted.
+      The box below contains an input using a Greek Epsilon, a Cyrillic ie, and fancy quotes.
+      Copying this text into the answer box below should result in the appropriate text
+      (<code>"Ee"</code>) being accepted.
     </p>
     <pl-code copy-code-button="true">{{{params.g}}}</pl-code>
   </pl-question-panel>
@@ -110,15 +125,20 @@ c = "{{params.c}}"
 <pl-card>
   <pl-question-panel>
     <p>
-      The input box can also allow for multiline input, done by setting <code>multiline="true"</code>. For example,
-      this is useful for cases where students are asked for the output of a program. Note that the multiline input
-      converts each newline character to a single <code>\n</code>, so keep this in mind when setting the correct answer.
-      To avoid issues with newlines, they can be ignored completely by setting <code>remove-spaces="true"</code>.
+      The input box can also allow for multiline input, done by setting
+      <code>multiline="true"</code>. For example, this is useful for cases where students are asked
+      for the output of a program. Note that the multiline input converts each newline character to
+      a single <code>\n</code>, so keep this in mind when setting the correct answer. To avoid
+      issues with newlines, they can be ignored completely by setting
+      <code>remove-spaces="true"</code>.
     </p>
-    <p>
-      Run the Python code below and submit the output into the answer box.
-    </p>
+    <p>Run the Python code below and submit the output into the answer box.</p>
     <pl-code copy-code-button="true" language="python">print("I'm\nsorry\nDave.")</pl-code>
   </pl-question-panel>
-  <pl-string-input answers-name="ans9" label="Program output " multiline="true" suffix="Don't worry about trailing newlines."></pl-string-input>
+  <pl-string-input
+    answers-name="ans9"
+    label="Program output "
+    multiline="true"
+    suffix="Don't worry about trailing newlines."
+  ></pl-string-input>
 </pl-card>

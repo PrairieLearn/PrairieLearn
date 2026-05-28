@@ -27,6 +27,10 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+  "[htmlmustache]": {
+    "editor.defaultFormatter": "reteps.htmlmustache-lsp",
+    "editor.formatOnSave": true
+  },
   "[json]": {
     "files.insertFinalNewline": true
   },
