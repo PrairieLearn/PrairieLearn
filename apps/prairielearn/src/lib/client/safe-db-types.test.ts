@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  AdminInstitutionSchema,
+  AdminInstitutionSettingsSchema,
+  AdminInstitutionWithSettingsSchema,
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
   StaffAlternativePoolSchema,
@@ -459,6 +462,30 @@ const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
   short_name: 'TI',
 };
 
+const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
+  course_instance_enrollment_limit: 100,
+  default_authn_provider_id: null,
+  display_timezone: 'UTC',
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+  uid_regexp: null,
+  yearly_enrollment_limit: 1000,
+};
+
+const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
+  institution: minimalAdminInstitution,
+  institution_settings: {
+    github_course_owner: 'PrairieLearn',
+    institution_id: minimalAdminInstitution.id,
+  },
+};
+
+const minimalAdminInstitutionSettings: z.input<typeof AdminInstitutionSettingsSchema> = {
+  github_course_owner: 'PrairieLearn',
+  institution_id: minimalAdminInstitution.id,
+};
+
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
   course_id: '1',
@@ -732,6 +759,21 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffInstitution);
+  });
+
+  it('parses valid AdminInstitution without institution settings fields', () => {
+    const parsed = AdminInstitutionSchema.parse(minimalAdminInstitution);
+    expect(parsed).toMatchObject(minimalAdminInstitution);
+  });
+
+  it('parses valid AdminInstitutionSettings with GitHub course owner', () => {
+    const parsed = AdminInstitutionSettingsSchema.parse(minimalAdminInstitutionSettings);
+    expect(parsed).toMatchObject(minimalAdminInstitutionSettings);
+  });
+
+  it('parses valid AdminInstitutionWithSettings with grouped settings', () => {
+    const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
+    expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
   });
 
   it('parses valid StaffQuestion and drops extra fields', () => {

@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
+import type { AdminInstitutionWithSettings } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
@@ -21,7 +21,7 @@ export function AdministratorCourseRequests({
   showAll,
 }: {
   rows: CourseRequestRow[];
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   defaultGithubCourseOwner: string;

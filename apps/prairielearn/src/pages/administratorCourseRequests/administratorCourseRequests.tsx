@@ -5,12 +5,12 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import { AdminInstitutionWithSettingsSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { selectAllCourseRequests, selectPendingCourseRequests } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { selectAllAdminInstitutions } from '../../models/institution.js';
+import { selectAllAdminInstitutionsWithSettings } from '../../models/institution.js';
 
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
 
@@ -26,9 +26,9 @@ router.get(
     });
     const showAll = req.query.status === 'all';
     const rows = showAll ? await selectAllCourseRequests() : await selectPendingCourseRequests();
-    const institutions = await selectAllAdminInstitutions();
+    const institutions = await selectAllAdminInstitutionsWithSettings();
     const availableTimezones = await getCanonicalTimezones(
-      institutions.map((i) => i.display_timezone),
+      institutions.map(({ institution }) => institution.display_timezone),
     );
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -53,7 +53,7 @@ router.get(
           <Hydrate>
             <AdministratorCourseRequests
               rows={rows}
-              institutions={AdminInstitutionSchema.array().parse(institutions)}
+              institutions={AdminInstitutionWithSettingsSchema.array().parse(institutions)}
               availableTimezones={availableTimezones}
               coursesRoot={config.coursesRoot}
               defaultGithubCourseOwner={config.githubCourseOwner}

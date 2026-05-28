@@ -36,6 +36,7 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
+  InstitutionSettingsSchema as RawInstitutionSettingsSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -412,11 +413,23 @@ export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
   short_name: true,
   uid_regexp: true,
   yearly_enrollment_limit: true,
-}).extend({
-  github_course_owner: z.string().nullable(),
 });
 export const AdminInstitutionSchema = RawAdminInstitutionSchema.brand<'AdminInstitution'>();
 export type AdminInstitution = z.infer<typeof AdminInstitutionSchema>;
+
+export const RawAdminInstitutionSettingsSchema = RawInstitutionSettingsSchema.pick({
+  github_course_owner: true,
+  institution_id: true,
+});
+export const AdminInstitutionSettingsSchema =
+  RawAdminInstitutionSettingsSchema.brand<'AdminInstitutionSettings'>();
+export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSchema>;
+
+export const AdminInstitutionWithSettingsSchema = z.object({
+  institution: AdminInstitutionSchema,
+  institution_settings: AdminInstitutionSettingsSchema.nullable(),
+});
+export type AdminInstitutionWithSettings = z.infer<typeof AdminInstitutionWithSettingsSchema>;
 
 export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
   default_authn_provider_id: true,

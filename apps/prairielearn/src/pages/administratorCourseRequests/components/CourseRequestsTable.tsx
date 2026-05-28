@@ -15,7 +15,10 @@ import {
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
 import { type AppError, getAppError } from '../../../lib/client/errors.js';
-import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
+import type {
+  AdminInstitution,
+  AdminInstitutionWithSettings,
+} from '../../../lib/client/safe-db-types.js';
 import {
   getAdministratorCourseRequestsUrl,
   getAdministratorJobSequenceUrl,
@@ -40,7 +43,7 @@ export function CourseRequestsTable({
   aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   defaultGithubCourseOwner: string;
@@ -291,7 +294,7 @@ function CourseRequestApproveModal({
   defaultGithubCourseOwner,
   aiSecretsConfigured,
 }: ReturnType<typeof useModalState<CourseRequestRow>> & {
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   defaultGithubCourseOwner: string;
@@ -325,7 +328,7 @@ function CourseRequestApproveModalContent({
   onCancel,
 }: {
   request: CourseRequestRow;
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   defaultGithubCourseOwner: string;
@@ -336,7 +339,11 @@ function CourseRequestApproveModalContent({
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
   const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
-  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
+  const adminInstitutions = institutions.map(({ institution }) => institution);
+  const userInstitutionRow = institutions.find(
+    ({ institution }) => institution.id === request.user_institution_id,
+  );
+  const userInstitution = userInstitutionRow?.institution;
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
   const autoFilledInstitutionId =
     userInstitution && !isDefaultInstitution ? userInstitution.id : null;
@@ -344,7 +351,8 @@ function CourseRequestApproveModalContent({
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
   const initialGithubCourseOwner =
-    (autoFilledInstitutionId && userInstitution?.github_course_owner) || defaultGithubCourseOwner;
+    (autoFilledInstitutionId && userInstitutionRow?.institution_settings?.github_course_owner) ||
+    defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
@@ -370,11 +378,16 @@ function CourseRequestApproveModalContent({
     formState: { isSubmitting, dirtyFields },
   } = methods;
   const institutionId = methods.watch('institution_id');
-  const prefixState = useInstitutionPrefix(institutionId, institutions);
+  const prefixState = useInstitutionPrefix(institutionId, adminInstitutions);
 
   const handleInstitutionChange = (institution: AdminInstitution) => {
     if (dirtyFields.github_course_owner) return;
-    setValue('github_course_owner', institution.github_course_owner ?? defaultGithubCourseOwner);
+    const institutionWithSettings = institutions.find((i) => i.institution.id === institution.id);
+    setValue(
+      'github_course_owner',
+      institutionWithSettings?.institution_settings?.github_course_owner ??
+        defaultGithubCourseOwner,
+    );
   };
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
@@ -554,7 +567,7 @@ function CourseRequestApproveModalContent({
             </div>
           </div>
           <AdministratorCourseFormFields
-            institutions={institutions}
+            institutions={adminInstitutions}
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             prefixState={prefixState}
