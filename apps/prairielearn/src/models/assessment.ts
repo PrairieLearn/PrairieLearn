@@ -192,6 +192,36 @@ export async function selectZonesForAssessment({
   return queryRows(sql.select_zones_for_assessment, { assessment_id }, ZoneSchema);
 }
 
+const AssessmentReferencingQuestionsSchema = z.object({
+  assessment_id: IdSchema,
+  assessment_label: z.string(),
+  assessment_color: z.string(),
+  course_instance_id: IdSchema,
+  course_instance_short_name: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid.unwrap(),
+});
+export type AssessmentReferencingQuestions = z.infer<typeof AssessmentReferencingQuestionsSchema>;
+
+/**
+ * Returns the assessments (in `course_id`) that reference any of
+ * `question_ids` via their synced `assessment_questions`. Includes the
+ * directory names needed to locate the assessment's `infoAssessment.json`
+ * on disk.
+ */
+export async function selectAssessmentsReferencingQuestions({
+  course_id,
+  question_ids,
+}: {
+  course_id: string;
+  question_ids: string[];
+}): Promise<AssessmentReferencingQuestions[]> {
+  return queryRows(
+    sql.select_assessments_referencing_questions,
+    { course_id, question_ids },
+    AssessmentReferencingQuestionsSchema,
+  );
+}
+
 export async function selectAssessments({
   course_instance_id,
 }: {

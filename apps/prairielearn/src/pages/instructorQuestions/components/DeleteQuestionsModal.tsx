@@ -1,65 +1,58 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
 import { getAppError } from '../../../lib/client/errors.js';
-import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
-import { SelectedQuestionList } from './SelectedQuestionList.js';
+import { type QuestionZoneMembership, SelectedQuestionList } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
-interface AssessmentReference {
-  assessment_id: string;
-  color: string;
-  label: string;
+interface PreviewZone {
+  assessmentId: string;
+  assessmentLabel: string;
+  courseInstanceShortName: string;
+  zoneIndex: number;
+  zoneTitle: string | null;
+  affectedQids: string[];
+  wouldBeEmpty: boolean;
 }
 
-interface AssessmentsByCourseInstance {
-  courseInstance: PublicCourseInstance;
-  assessments: AssessmentReference[];
-}
-
-function getAssessmentsByCourseInstance(
-  questions: SafeQuestionsPageData[],
-  courseInstances: PublicCourseInstance[],
-): AssessmentsByCourseInstance[] {
-  const courseInstanceById = new Map(courseInstances.map((ci) => [ci.id, ci]));
-  const grouped = new Map<string, Map<string, AssessmentReference>>();
-  for (const question of questions) {
-    for (const entry of question.assessments ?? []) {
-      const ciId = entry.assessment.course_instance_id;
-      let assessmentsById = grouped.get(ciId);
-      if (!assessmentsById) {
-        assessmentsById = new Map();
-        grouped.set(ciId, assessmentsById);
+function buildZoneMembershipsByQid(
+  zones: PreviewZone[],
+): Map<string, QuestionZoneMembership[]> {
+  const byQid = new Map<string, QuestionZoneMembership[]>();
+  for (const zone of zones) {
+    const membership: QuestionZoneMembership = {
+      assessmentId: zone.assessmentId,
+      assessmentLabel: zone.assessmentLabel,
+      courseInstanceShortName: zone.courseInstanceShortName,
+      zoneIndex: zone.zoneIndex,
+      zoneTitle: zone.zoneTitle,
+      wouldEmptyZone: zone.wouldBeEmpty,
+    };
+    for (const qid of zone.affectedQids) {
+      const existing = byQid.get(qid);
+      if (existing) {
+        existing.push(membership);
+      } else {
+        byQid.set(qid, [membership]);
       }
-      assessmentsById.set(entry.assessment.id, {
-        assessment_id: entry.assessment.id,
-        color: entry.assessment_set.color,
-        label: `${entry.assessment_set.abbreviation}${entry.assessment.number}`,
-      });
     }
   }
-
-  return [...grouped.entries()]
-    .flatMap(([ciId, assessmentsById]) => {
-      const courseInstance = courseInstanceById.get(ciId);
-      if (!courseInstance) return [];
-      const assessments = [...assessmentsById.values()].sort((a, b) =>
-        a.label.localeCompare(b.label, undefined, { numeric: true }),
-      );
-      return [{ courseInstance, assessments }];
-    })
-    .sort((a, b) =>
-      a.courseInstance.short_name.localeCompare(b.courseInstance.short_name, undefined, {
-        numeric: true,
-      }),
+  for (const memberships of byQid.values()) {
+    memberships.sort((a, b) =>
+      `${a.courseInstanceShortName}:${a.assessmentLabel}:${a.zoneIndex}`.localeCompare(
+        `${b.courseInstanceShortName}:${b.assessmentLabel}:${b.zoneIndex}`,
+        undefined,
+        { numeric: true },
+      ),
     );
+  }
+  return byQid;
 }
 
 export function DeleteQuestionsModal({
@@ -67,7 +60,6 @@ export function DeleteQuestionsModal({
   onHide,
   selectedQuestions,
   questionIds,
-  courseInstances,
   urlPrefix,
   clearSelection,
   onActionSuccess,
@@ -76,13 +68,25 @@ export function DeleteQuestionsModal({
   onHide: () => void;
   selectedQuestions: SafeQuestionsPageData[];
   questionIds: string[];
-  courseInstances: PublicCourseInstance[];
   urlPrefix: string;
   clearSelection: () => void;
   onActionSuccess: (message: string) => void;
 }) {
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
+
+  const previewQuery = useQuery({
+    ...trpc.questions.previewDeletion.queryOptions(
+      { questionIds },
+      { enabled: show && questionIds.length > 0 },
+    ),
+  });
+  const zoneMembershipsByQid = useMemo(
+    () => buildZoneMembershipsByQid(previewQuery.data?.zones ?? []),
+    [previewQuery.data],
+  );
+  const emptiedZoneCount = previewQuery.data?.zones.filter((zone) => zone.wouldBeEmpty).length ?? 0;
+
   const mutation = useMutation({
     ...trpc.questions.deleteQuestions.mutationOptions(),
     onSuccess: async ({ deletedCount }) => {
@@ -93,10 +97,6 @@ export function DeleteQuestionsModal({
     },
   });
   const appError = getAppError<QuestionsError['DeleteQuestions']>(mutation.error);
-  const assessmentsByCourseInstance = useMemo(
-    () => getAssessmentsByCourseInstance(selectedQuestions, courseInstances),
-    [selectedQuestions, courseInstances],
-  );
   const isPlural = selectedQuestions.length !== 1;
 
   return (
@@ -118,36 +118,18 @@ export function DeleteQuestionsModal({
           </strong>
           ?
         </p>
-        <SelectedQuestionList questions={selectedQuestions} />
-        {assessmentsByCourseInstance.length > 0 && (
-          <>
-            <p className="mt-3 mb-2">
-              {isPlural ? 'These questions' : 'This question'} will also be removed from these
-              assessments:
-            </p>
-            <ul className="list-group mb-0">
-              {assessmentsByCourseInstance.map(({ courseInstance, assessments }) => (
-                <li key={courseInstance.id} className="list-group-item">
-                  <div className="fw-semibold">
-                    {courseInstance.short_name}
-                    {courseInstance.long_name && (
-                      <span className="text-muted fw-normal"> ({courseInstance.long_name})</span>
-                    )}
-                  </div>
-                  <div className="d-flex flex-wrap gap-1 mt-1">
-                    {assessments.map((assessment) => (
-                      <AssessmentBadge
-                        key={assessment.assessment_id}
-                        assessment={assessment}
-                        courseInstanceId={courseInstance.id}
-                      />
-                    ))}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
+        {emptiedZoneCount > 0 && (
+          <p className="text-warning-emphasis mb-2">
+            <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+            {emptiedZoneCount === 1
+              ? 'One assessment zone will be removed because it would contain no questions.'
+              : `${emptiedZoneCount} assessment zones will be removed because they would contain no questions.`}
+          </p>
         )}
+        <SelectedQuestionList
+          questions={selectedQuestions}
+          zoneMembershipsByQid={zoneMembershipsByQid}
+        />
         <BulkQuestionErrorAlert error={appError} urlPrefix={urlPrefix} />
       </Modal.Body>
       <Modal.Footer>

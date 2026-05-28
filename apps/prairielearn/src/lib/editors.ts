@@ -1566,7 +1566,7 @@ export class QuestionDeleteEditor extends Editor {
         'infoAssessment.json',
       );
       const infoJson = await fs.readJson(infoPath);
-      const updatedInfoJson = removeQidsFromAssessment(infoJson, qidsToRemove);
+      const { assessment: updatedInfoJson } = removeQidsFromAssessment(infoJson, qidsToRemove);
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
       await fs.writeFile(infoPath, formattedJson);
       pathsToAdd.push(infoPath);

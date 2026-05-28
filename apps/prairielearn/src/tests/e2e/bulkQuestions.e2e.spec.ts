@@ -225,12 +225,13 @@ test.describe('Bulk question table actions', () => {
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
+    // The zone still has `downloadFile` after deleting the two selected questions,
+    // so the "zone will be removed" warning should NOT appear.
+    await expect(deleteModal.getByText(/Sp15: HW.*Mixed zone/)).toHaveCount(2);
+    await expect(deleteModal.getByText('Zone will be removed')).toHaveCount(0);
     await expect(
-      deleteModal.getByText('will also be removed from these assessments'),
-    ).toBeVisible();
-    await expect(
-      deleteModal.getByRole('link', { name: `HW${assessmentNumber}`, exact: true }),
-    ).toBeVisible();
+      deleteModal.getByText('will be removed because it would contain no questions'),
+    ).toHaveCount(0);
 
     await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
     await expect(deleteModal).not.toBeVisible();
@@ -243,6 +244,83 @@ test.describe('Bulk question table actions', () => {
     expect(
       savedAfterDelete.zones[0].questions.map((question: { id: string }) => question.id),
     ).toEqual(['downloadFile']);
+  });
+
+  test('warns and removes empty zones when deleting all questions in a zone', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qids = [`bulkemptyzone${suffix}a`, `bulkemptyzone${suffix}b`];
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qids[0],
+      title: 'Bulk empty-zone first question',
+    });
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addVectors',
+      targetQid: qids[1],
+      title: 'Bulk empty-zone second question',
+    });
+
+    const assessmentTid = `bulkemptyzone${suffix}`;
+    const assessmentNumber = `7${suffix.slice(0, 4)}`;
+    await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
+    await fs.writeFile(
+      infoAssessmentPath(testCoursePath, assessmentTid),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Bulk empty-zone target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [
+            {
+              title: 'Survivor zone',
+              questions: [{ id: 'downloadFile', autoPoints: 1 }],
+            },
+            {
+              title: 'Doomed zone',
+              questions: [
+                { id: qids[0], autoPoints: 1 },
+                { id: qids[1], autoPoints: 1 },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, `bulkemptyzone${suffix}`);
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
+    await expect(deleteModal).toBeVisible();
+    await expect(
+      deleteModal.getByText(
+        'One assessment zone will be removed because it would contain no questions.',
+      ),
+    ).toBeVisible();
+    await expect(deleteModal.getByText('Zone will be removed')).toHaveCount(2);
+
+    await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
+    await expect(deleteModal).not.toBeVisible();
+
+    const savedAfterDelete = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(savedAfterDelete.zones).toHaveLength(1);
+    expect(savedAfterDelete.zones[0].title).toBe('Survivor zone');
   });
 
   test('can delete selected questions', async ({ page, testCoursePath, courseInstance }) => {

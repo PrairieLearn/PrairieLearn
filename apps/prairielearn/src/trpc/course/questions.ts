@@ -1,6 +1,7 @@
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -14,9 +15,10 @@ import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js
 import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import { removeQidsFromZone } from '../../lib/infoAssessment-edits.js';
+import { removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
 import {
   selectAssessments,
+  selectAssessmentsReferencingQuestions,
   selectOptionalAssessmentInCourse,
   selectZonesForAssessment,
 } from '../../models/assessment.js';
@@ -62,6 +64,7 @@ export interface QuestionsError {
   List: never;
   ListAssessments: never;
   ListZones: never;
+  PreviewDeletion: never;
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteQuestions:
@@ -303,21 +306,18 @@ const removeFromAssessment = t.procedure
     let removedCount = 0;
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (assessmentInfo) => {
-        for (const zone of assessmentInfo.zones ?? []) {
-          const { questions, removedCount: zoneRemovedCount } = removeQidsFromZone(
-            zone,
-            qidsToRemove,
-          );
-          if (zone.questions.length > 0 && questions.length === 0) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Cannot remove questions because it would leave an empty zone',
-            });
-          }
-          zone.questions = questions;
-          removedCount += zoneRemovedCount;
+        const result = removeQidsFromAssessment(assessmentInfo, qidsToRemove);
+        if (result.emptiedZones.length > 0) {
+          const zoneList = result.emptiedZones
+            .map((zone) => (zone.zoneTitle ? `"${zone.zoneTitle}"` : `zone ${zone.zoneIndex + 1}`))
+            .join(', ');
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot remove questions because it would leave ${result.emptiedZones.length === 1 ? 'a zone' : 'zones'} empty (${zoneList}). Add another question to ${result.emptiedZones.length === 1 ? 'that zone' : 'those zones'} or delete ${result.emptiedZones.length === 1 ? 'it' : 'them'} from the assessment first.`,
+          });
         }
-        return assessmentInfo;
+        removedCount = result.removedCount;
+        return result.assessment;
       },
       jsonPath,
       conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
@@ -334,6 +334,94 @@ const removeFromAssessment = t.procedure
     }
 
     return { removedCount };
+  });
+
+/**
+ * For each (assessment, zone) that references one of the selected questions,
+ * returns the QIDs that would be removed from that zone and whether the zone
+ * would become empty if the deletion proceeded. Used by the bulk-delete modal
+ * to warn the user about zones that will be dropped along with the questions.
+ *
+ * Reads each referencing `infoAssessment.json` so the empty-zone calculation
+ * uses the same logic the editor will apply. Files that fail to read are
+ * skipped (the editor will surface the same error during sync).
+ */
+const previewDeletion = t.procedure
+  .use(requireCoursePermissionPreview)
+  .input(QuestionIdsInputSchema)
+  .query(async ({ input, ctx }) => {
+    const selectedQuestions = await selectQuestionsForMutation({
+      questionIds: input.questionIds,
+      courseId: ctx.course.id,
+    });
+    const qidsToRemove = new Set(
+      selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
+    );
+    if (qidsToRemove.size === 0) return { zones: [] };
+
+    const refs = await selectAssessmentsReferencingQuestions({
+      course_id: ctx.course.id,
+      question_ids: selectedQuestions.map((q) => q.id),
+    });
+
+    const zones: {
+      assessmentId: string;
+      assessmentLabel: string;
+      assessmentColor: string;
+      courseInstanceId: string;
+      courseInstanceShortName: string;
+      zoneIndex: number;
+      zoneTitle: string | null;
+      affectedQids: string[];
+      wouldBeEmpty: boolean;
+    }[] = [];
+
+    for (const ref of refs) {
+      const jsonPath = path.join(
+        ctx.course.path,
+        'courseInstances',
+        ref.course_instance_short_name,
+        'assessments',
+        ref.assessment_directory,
+        'infoAssessment.json',
+      );
+      let parsed: AssessmentJsonInput;
+      try {
+        parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+      } catch {
+        continue;
+      }
+
+      const { emptiedZones } = removeQidsFromAssessment(parsed, qidsToRemove);
+      const emptiedIndices = new Set(emptiedZones.map((z) => z.zoneIndex));
+
+      for (const [zoneIndex, zone] of (parsed.zones ?? []).entries()) {
+        const affectedQids: string[] = [];
+        for (const block of zone.questions) {
+          if (block.alternatives) {
+            for (const alternative of block.alternatives) {
+              if (qidsToRemove.has(alternative.id)) affectedQids.push(alternative.id);
+            }
+          } else if (block.id && qidsToRemove.has(block.id)) {
+            affectedQids.push(block.id);
+          }
+        }
+        if (affectedQids.length === 0) continue;
+        zones.push({
+          assessmentId: ref.assessment_id,
+          assessmentLabel: ref.assessment_label,
+          assessmentColor: ref.assessment_color,
+          courseInstanceId: ref.course_instance_id,
+          courseInstanceShortName: ref.course_instance_short_name,
+          zoneIndex,
+          zoneTitle: zone.title ?? null,
+          affectedQids,
+          wouldBeEmpty: emptiedIndices.has(zoneIndex),
+        });
+      }
+    }
+
+    return { zones };
   });
 
 const deleteQuestions = t.procedure
@@ -398,5 +486,6 @@ export const questionsRouter = t.router({
   listZones,
   addToAssessment,
   removeFromAssessment,
+  previewDeletion,
   deleteQuestions,
 });

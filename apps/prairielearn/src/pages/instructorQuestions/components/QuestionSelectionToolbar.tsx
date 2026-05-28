@@ -104,7 +104,6 @@ export function QuestionSelectionToolbar({
         show={showDeleteModal}
         selectedQuestions={selectedQuestions}
         questionIds={questionIds}
-        courseInstances={courseInstances}
         urlPrefix={urlPrefix}
         clearSelection={clearSelection}
         onActionSuccess={onActionSuccess}

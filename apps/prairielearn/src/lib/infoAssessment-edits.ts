@@ -49,19 +49,48 @@ export function removeQidsFromZone(
   return { questions, removedCount };
 }
 
+export interface EmptiedZone {
+  /** Zero-based index of the zone in the original `assessment.zones`. */
+  zoneIndex: number;
+  zoneTitle: string | null;
+}
+
+export interface RemoveQidsFromAssessmentResult {
+  assessment: AssessmentJsonInput;
+  removedCount: number;
+  /**
+   * Zones that were non-empty before the removal and would be empty after.
+   * These zones are dropped from `assessment`; callers that want to refuse
+   * the operation rather than silently discard zone metadata should inspect
+   * this list before persisting.
+   */
+  emptiedZones: EmptiedZone[];
+}
+
 /**
  * Returns a copy of `assessment` with any references to `qidsToRemove`
- * filtered out. Zones whose question list becomes empty are dropped.
+ * filtered out, alongside the list of zones that became empty as a result.
+ * Empty zones are dropped from the returned assessment.
  */
 export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
   qidsToRemove: Set<string>,
-): AssessmentJsonInput {
+): RemoveQidsFromAssessmentResult {
+  let removedCount = 0;
+  const emptiedZones: EmptiedZone[] = [];
   const zones: ZoneAssessmentJsonInput[] = [];
-  for (const zone of assessment.zones ?? []) {
-    const { questions } = removeQidsFromZone(zone, qidsToRemove);
-    if (questions.length === 0) continue;
+  for (const [zoneIndex, zone] of (assessment.zones ?? []).entries()) {
+    const { questions, removedCount: zoneRemovedCount } = removeQidsFromZone(zone, qidsToRemove);
+    removedCount += zoneRemovedCount;
+    if (zone.questions.length > 0 && questions.length === 0) {
+      emptiedZones.push({ zoneIndex, zoneTitle: zone.title ?? null });
+      continue;
+    }
     zones.push({ ...zone, questions });
   }
-  return { ...assessment, zones };
+  return {
+    assessment: { ...assessment, zones },
+    removedCount,
+    emptiedZones,
+  };
 }
