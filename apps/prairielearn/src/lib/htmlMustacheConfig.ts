@@ -139,9 +139,16 @@ export const htmlMustacheConfig: Config = {
     },
     {
       id: 'pl-prefer-pl-figure',
-      selector: 'img:not([style]):not([class]):not(pl-overlay img)',
+      selector:
+        'img:not([style]):not([class]):not(pl-overlay img):not([src^="https://"]):not([src^="http://"]):not([src^="://"])',
       message:
         'Prefer pl-figure over raw <img> tags. See https://docs.prairielearn.com/elements/pl-figure/.',
+      severity: 'warning',
+    },
+    {
+      id: 'pl-remote-image-url',
+      selector: 'img[src^="https://"], img[src^="http://"], img[src^="://"]',
+      message: 'Question contains an image reference to a remote URL.',
       severity: 'warning',
     },
     {

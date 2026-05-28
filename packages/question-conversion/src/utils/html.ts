@@ -52,11 +52,9 @@ const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
  * For images pointing into the question's clientFilesQuestion directory via the
  * Mustache prefix, the directory attribute is set explicitly and the prefix is
  * stripped from file-name. Other relative paths are passed through as file-name
- * without a directory attribute. Images with remote URLs (http://, https://,
- * protocol-relative) are kept as <img> because pl-figure resolves file-name
- * against a local course directory and cannot host remote resources. If they
- * lack a style/class, a responsive max-width style is added so the import
- * linter treats them as intentionally raw images.
+ * without a directory attribute. Images with absolute URLs (http://, https://,
+ * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
+ * file-name against a local course directory and cannot host remote resources.
  * The alt and width attributes are preserved; all others (style, class, etc.)
  * are dropped since pl-figure handles its own layout.
  */
@@ -69,7 +67,7 @@ export function rewriteImagesAsPlFigure(html: string): string {
     }
 
     const src = attrs['src'] ?? '';
-    if (ABSOLUTE_URL_RE.test(src)) return addResponsiveStyleToRemoteImage(tag, attrs);
+    if (ABSOLUTE_URL_RE.test(src)) return tag;
 
     const parts: string[] = [];
 
@@ -87,17 +85,6 @@ export function rewriteImagesAsPlFigure(html: string): string {
 
     return `<pl-figure ${parts.join(' ')}></pl-figure>`;
   });
-}
-
-function addResponsiveStyleToRemoteImage(tag: string, attrs: Record<string, string>): string {
-  const src = attrs['src'] ?? '';
-  if (!/^(?:https?:|\/\/)/i.test(src) || attrs['style'] || attrs['class']) return tag;
-
-  const styleAttr = ' style="max-width: 100%;"';
-  if (tag.endsWith('/>')) {
-    return tag.replace(/\s*\/>$/, `${styleAttr} />`);
-  }
-  return tag.replace(/\s*>$/, `${styleAttr}>`);
 }
 
 const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
@@ -144,7 +131,7 @@ export function resolveImsFileRefs(
   const skippedSourcePaths = new Set<string>();
 
   function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
-    const decodedPath = decodeURIComponent(rawPath);
+    const decodedPath = normalizeImsFilePath(rawPath);
     const base = decodedPath.split('/').pop() ?? decodedPath;
     const dot = base.lastIndexOf('.');
     const stem = dot !== -1 ? base.slice(0, dot) : base;
@@ -165,7 +152,7 @@ export function resolveImsFileRefs(
     // Bare URL fallback (no enclosing tag): rewrite in place.
     if (!match.startsWith('<')) {
       const rawPath = match.slice('$IMS-CC-FILEBASE$/'.length);
-      return `${CLIENT_FILES_QUESTION_URL}/${rewriteUrl(rawPath).filename}`;
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(rewriteUrl(rawPath).filename)}`;
     }
     // Tag match. Only treat the open tag's own attributes as triggering the wrap — refs in the
     // body belong to nested tags and will get their own decision via recursion.
@@ -176,7 +163,7 @@ export function resolveImsFileRefs(
     const openRewritten = openTag.replaceAll(IMS_CC_FILEBASE_RE, (_, rawPath: string) => {
       const { filename, excluded } = rewriteUrl(rawPath);
       if (excluded) openExcluded = true;
-      return `${CLIENT_FILES_QUESTION_URL}/${filename}`;
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(filename)}`;
     });
     const tailRewritten = tail.replaceAll(IMS_REF_OR_TAG_RE, processMatch);
     const rewritten = openRewritten + tailRewritten;
@@ -195,6 +182,19 @@ export function resolveImsFileRefs(
   }
 
   return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
+}
+
+function normalizeImsFilePath(rawPath: string): string {
+  const pathWithoutQuery = rawPath.replace(/[?#].*$/, '');
+  return he.decode(safeDecodeURIComponent(pathWithoutQuery));
+}
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;

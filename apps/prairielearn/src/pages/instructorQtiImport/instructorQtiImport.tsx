@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import path from 'node:path';
 
 import { type RequestHandler, Router } from 'express';
+import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
@@ -439,7 +440,11 @@ async function serializeConversionResult(
       for (const d of await lintQuestionHtml(q.questionHtml)) {
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
-        extraWarnings.push({ questionId, message: d.message, level: 'warn' });
+        extraWarnings.push({
+          questionId,
+          message: d.message,
+          level: d.severity === 'info' ? 'info' : 'warn',
+        });
       }
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
@@ -529,21 +534,51 @@ export async function serializeClientFiles(
     if (Buffer.isBuffer(content)) {
       files[name] = content.toString('base64');
     } else {
-      // Content is a relative path to a file in web_resources.
-      const resolved = path.resolve(webResourcesDir, content);
-      if (!contains(webResourcesDir, resolved)) {
+      const fileContent = await readClientFile(webResourcesDir, content);
+      if (fileContent == null) {
         missingFiles.push(name);
-        continue;
-      }
-      try {
-        const fileContent = await readFile(resolved);
+      } else {
         files[name] = fileContent.toString('base64');
-      } catch {
-        missingFiles.push(name);
       }
     }
   }
   return { files, missingFiles };
+}
+
+async function readClientFile(webResourcesDir: string, content: string): Promise<Buffer | null> {
+  for (const candidate of candidateClientFilePaths(content)) {
+    const resolved = path.resolve(webResourcesDir, candidate);
+    if (!contains(webResourcesDir, resolved)) continue;
+    try {
+      return await readFile(resolved);
+    } catch {
+      // Try the next normalized form before reporting the asset missing.
+    }
+  }
+  return null;
+}
+
+function candidateClientFilePaths(content: string): string[] {
+  const candidates = new Set<string>();
+  const addCandidates = (value: string) => {
+    candidates.add(value);
+    candidates.add(value.replace(/[?#].*$/, ''));
+  };
+
+  addCandidates(content);
+  addCandidates(he.decode(content));
+  addCandidates(safeDecodeURIComponent(content));
+  addCandidates(he.decode(safeDecodeURIComponent(content)));
+
+  return [...candidates];
+}
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function questionFingerprint(question: StoredSerializedConversionResult['questions'][number]) {

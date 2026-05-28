@@ -116,6 +116,40 @@ describe('serializeClientFiles', () => {
     }
   });
 
+  it('falls back to HTML-decoded paths when reading string content', async () => {
+    const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
+    try {
+      await fs.outputFile(path.join(tempDir, 'TemplateINC&CF.jpg'), 'fake asset content');
+
+      const files = new Map<string, Buffer | string>([
+        ['TemplateINC&CF.jpg', 'TemplateINC&amp;CF.jpg?canvas_download=1'],
+      ]);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
+      expect(result['TemplateINC&CF.jpg']).toBe(
+        Buffer.from('fake asset content').toString('base64'),
+      );
+      expect(missingFiles).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('falls back to URL-decoded paths when reading string content', async () => {
+    const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
+    try {
+      await fs.outputFile(path.join(tempDir, 'Quiz Files/asset 1.png'), 'fake asset content');
+
+      const files = new Map<string, Buffer | string>([
+        ['asset 1.png', 'Quiz%20Files/asset%201.png?canvas_download=1'],
+      ]);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
+      expect(result['asset 1.png']).toBe(Buffer.from('fake asset content').toString('base64'));
+      expect(missingFiles).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('reports string paths that escape web_resources directory', async () => {
     const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
     try {

@@ -81,29 +81,13 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.include(result, '<pl-figure');
   });
 
-  it('adds responsive style to unstyled absolute http(s) URLs', () => {
+  it('leaves absolute http(s) URLs as <img>', () => {
     const html = '<img src="https://example.com/img.png" alt="external">';
-    assert.equal(
-      rewriteImagesAsPlFigure(html),
-      '<img src="https://example.com/img.png" alt="external" style="max-width: 100%;">',
-    );
-  });
-
-  it('adds responsive style to unstyled protocol-relative URLs', () => {
-    const html = '<img src="//cdn.example.com/img.png">';
-    assert.equal(
-      rewriteImagesAsPlFigure(html),
-      '<img src="//cdn.example.com/img.png" style="max-width: 100%;">',
-    );
-  });
-
-  it('leaves already styled absolute URLs unchanged', () => {
-    const html = '<img src="https://example.com/img.png" style="width: 300px;">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
-  it('leaves classed absolute URLs unchanged', () => {
-    const html = '<img src="https://example.com/img.png" class="equation_image">';
+  it('leaves protocol-relative URLs as <img>', () => {
+    const html = '<img src="//cdn.example.com/img.png">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
@@ -125,6 +109,16 @@ describe('resolveImsFileRefs', () => {
     assert.equal(result.html, '<img src="{{ options.client_files_question_url }}/image.png">');
     assert.equal(result.fileRefs.get('image.png'), 'Quiz Files/image.png');
     assert.deepEqual(result.skippedFiles, []);
+  });
+
+  it('decodes HTML entities and strips Canvas download query parameters from file references', () => {
+    const html = '<img src="$IMS-CC-FILEBASE$/TemplateINC&amp;CF.jpg?canvas_download=1">';
+    const result = resolveImsFileRefs(html);
+    assert.equal(
+      result.html,
+      '<img src="{{ options.client_files_question_url }}/TemplateINC&amp;CF.jpg">',
+    );
+    assert.equal(result.fileRefs.get('TemplateINC&CF.jpg'), 'TemplateINC&CF.jpg');
   });
 
   it('comments out tags that reference excluded extensions', () => {
