@@ -11,6 +11,7 @@ import {
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
+import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
 import { type AccessControlFormData, formDataToJson, isReleasedNow } from './types.js';
 
 export type AccessControlFormFieldPath =
@@ -78,7 +79,9 @@ function mapIssueToFormFieldPath(
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
-        if (issue.path.length === 2) return `${prefix}.questionVisibility`;
+        if (issue.path.length === 2) {
+          return `${prefix}.questionVisibility`;
+        }
         switch (issue.path[2]) {
           case 'visibleFromDate':
             return `${prefix}.questionVisibility.visibleFromDate`;
@@ -103,6 +106,33 @@ function mapIssueToFormFieldPath(
     default:
       return null;
   }
+}
+
+function mapIssueToEditableFormFieldPath(
+  issue: AccessControlValidationIssue,
+  formData: AccessControlFormData,
+): AccessControlFormFieldPath | null {
+  const path = mapIssueToFormFieldPath(issue);
+  if (!path) return null;
+  if (isFormFieldPathEditable(formData, path)) return path;
+
+  // The "score hidden while questions visible" rule is a cross-field
+  // constraint between question and score visibility. The default mapping
+  // attaches the issue to question visibility, but on an override the user
+  // can resolve it by editing whichever of the two fields they have
+  // overridden. If only score visibility is overridden, redirect the error
+  // there so it lands on an input the user can actually edit.
+  if (
+    issue.path[0] === 'afterComplete' &&
+    issue.path[1] === 'questions' &&
+    issue.path.length === 2 &&
+    issue.ruleIndex > 0
+  ) {
+    const scorePath: AccessControlFormFieldPath = `overrides.${issue.ruleIndex - 1}.scoreVisibility`;
+    if (isFormFieldPathEditable(formData, scorePath)) return scorePath;
+  }
+
+  return null;
 }
 
 /**
@@ -141,7 +171,7 @@ function getReleaseStateValidationErrors(
   }
 
   formData.overrides.forEach((override, index) => {
-    if (override.overriddenFields.includes('release')) {
+    if (isOverrideFieldActive(formData, index, 'release')) {
       checkRule(override.release, `overrides.${index}.release.date`);
     }
   });
@@ -173,7 +203,7 @@ export function getGlobalDateValidationErrors(
     validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
-      const path = mapIssueToFormFieldPath(issue);
+      const path = mapIssueToEditableFormFieldPath(issue, formData);
       if (!path || seenPaths.has(path)) continue;
       seenPaths.add(path);
       results.push({ path, message: issue.message });
@@ -190,7 +220,7 @@ export function getGlobalDateValidationErrors(
     }
     for (const issues of issueGroups) {
       for (const issue of issues) {
-        const path = mapIssueToFormFieldPath(issue);
+        const path = mapIssueToEditableFormFieldPath(issue, formData);
         if (!path || seenPaths.has(path)) continue;
         seenPaths.add(path);
         results.push({ path, message: issue.message });

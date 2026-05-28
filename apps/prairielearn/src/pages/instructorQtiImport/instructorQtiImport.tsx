@@ -1,43 +1,90 @@
+import * as fs from 'node:fs';
 import { stat as fsStat, readFile, readdir } from 'node:fs/promises';
+import * as os from 'node:os';
 import path from 'node:path';
 
-import { Router } from 'express';
+import { type RequestHandler, Router } from 'express';
+import multer from 'multer';
+import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
 import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 import {
   type ConversionResult,
   type ConversionWarning,
   PLEmitter,
-  QTI12AssessmentParser,
+  QTI12ItemContainerParser,
   type QtiFileEntry,
   findQtiFilesFromManifest,
+  findQtiXmlFiles,
   parseAssessment,
   slugify,
 } from '@prairielearn/question-conversion';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
 import { features } from '../../lib/features/index.js';
+import { createQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import { selectAssessments } from '../../models/assessment.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
-import { InstructorQtiImport } from './instructorQtiImport.html.js';
+import { QtiImportForm } from './components/QtiImportForm.js';
 import type {
+  CourseInstanceOption,
   ParseWarning,
   SerializedConversionResult,
+  StoredSerializedConversionResult,
   StrippedAccessRules,
   UploadResponse,
 } from './instructorQtiImport.types.js';
 
 const router = Router();
+
+const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
+  let uploadDir: string | undefined;
+  const qtiImportUpload = multer({
+    storage: multer.diskStorage({
+      destination(_req, _file, callback) {
+        fs.mkdtemp(path.join(os.tmpdir(), 'prairielearn-qti-import-'), (err, folder) => {
+          if (!err) {
+            uploadDir = folder;
+          }
+          callback(err, folder);
+        });
+      },
+    }),
+    limits: {
+      fieldSize: config.fileUploadMaxBytes,
+      fileSize: 100 * 1024 * 1024,
+      parts: config.fileUploadMaxParts,
+    },
+  });
+
+  qtiImportUpload.single('file')(req, res, (err) => {
+    onFinished(res, () => {
+      const destination = uploadDir ?? req.file?.destination;
+      if (!destination) return;
+      fs.promises.rm(destination, { recursive: true, force: true }).catch((err: Error) => {
+        logger.warn(`Failed to remove temporary QTI import upload directory: ${err.message}`);
+      });
+    });
+    next(err);
+  });
+};
 
 // Gate all routes behind the feature flag and require edit permissions.
 router.use(
@@ -59,29 +106,68 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
-    const trpcCsrfToken = generatePrefixCsrfToken(
-      {
-        url: getCourseInstanceTrpcUrl(res.locals.course_instance.id),
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
+    const returnTo = req.query.return_to === 'questions' ? 'questions' : 'assessments';
 
-    // Generate a prefix-based CSRF token for the upload endpoint.
-    // The page URL is a prefix of /upload, so this covers both.
-    const uploadCsrfToken = generatePrefixCsrfToken(
-      {
-        url: req.baseUrl,
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+      requiredRole: ['Previewer'],
+    });
+
+    // Generate per-CI CSRF tokens so the client can switch target CI without
+    // a page reload. Each CI needs its own upload prefix token and tRPC token.
+    const csrfTokensByCourseInstance: Record<string, { upload: string; trpc: string }> = {};
+    for (const ci of courseInstances) {
+      const uploadBase = `/pl/course_instance/${ci.id}/instructor/instance_admin/qti_import`;
+      csrfTokensByCourseInstance[ci.id] = {
+        upload: generatePrefixCsrfToken(
+          { url: uploadBase, authn_user_id: res.locals.authn_user.id },
+          config.secretKey,
+        ),
+        trpc: generatePrefixCsrfToken(
+          { url: getCourseInstanceTrpcUrl(ci.id), authn_user_id: res.locals.authn_user.id },
+          config.secretKey,
+        ),
+      };
+    }
+
+    const ciOptions: CourseInstanceOption[] = courseInstances.map((ci) => ({
+      id: ci.id,
+      shortName: ci.short_name,
+      longName: ci.long_name ?? ci.short_name,
+    }));
 
     res.send(
-      InstructorQtiImport({
+      PageLayout({
         resLocals: res.locals,
-        csrfToken: uploadCsrfToken,
-        trpcCsrfToken,
+        pageTitle: 'Import QTI content',
+        navContext: {
+          type: 'instructor',
+          ...(returnTo === 'questions'
+            ? { page: 'course_admin', subPage: 'questions' }
+            : { page: 'instance_admin', subPage: 'assessments' }),
+        },
+        options: {},
+        headContent: html`
+          <link
+            href="${nodeModulesAssetPath('highlight.js/styles/default.css')}"
+            rel="stylesheet"
+          />
+        `,
+        content: (
+          <Hydrate>
+            <QtiImportForm
+              courseInstanceId={res.locals.course_instance.id}
+              courseInstances={ciOptions}
+              csrfTokensByCourseInstance={csrfTokensByCourseInstance}
+              returnTo={returnTo}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),
@@ -89,6 +175,7 @@ router.get(
 
 router.post(
   '/upload',
+  qtiImportUploadSingle,
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     const file = req.file;
     if (!file) {
@@ -104,18 +191,23 @@ router.post(
     try {
       // Extract the archive to the temp directory.
       try {
-        const directory = await unzipper.Open.buffer(file.buffer);
+        if (!file.path) {
+          throw new Error('Uploaded archive was not written to disk');
+        }
+        const directory = await unzipper.Open.file(file.path);
         await directory.extract({ path: tempDir });
-      } catch {
-        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt');
+      } catch (err) {
+        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt', {
+          cause: err,
+        });
       }
 
-      // Find QTI assessment files from the manifest. If the archive has a
+      // Find QTI content files from the manifest. If the archive has a
       // wrapper directory (e.g. "course-export/imsmanifest.xml" instead of
       // "imsmanifest.xml" at root), descend into it. macOS zip tools add a
       // __MACOSX/ sibling with resource forks, so filter those out first.
       let contentDir = tempDir;
-      let entries = await findQtiFilesFromManifest(contentDir);
+      let entries = await findQtiEntries(contentDir);
       if (entries.length === 0) {
         const children = (await readdir(tempDir)).filter(
           (name) => !name.startsWith('.') && name !== '__MACOSX',
@@ -124,15 +216,12 @@ router.post(
           const child = path.join(tempDir, children[0]);
           if ((await fsStat(child)).isDirectory()) {
             contentDir = child;
-            entries = await findQtiFilesFromManifest(contentDir);
+            entries = await findQtiEntries(contentDir);
           }
         }
       }
       if (entries.length === 0) {
-        throw new HttpStatusError(
-          400,
-          'No QTI assessment files found in the uploaded archive. The archive must include a valid imsmanifest.xml.',
-        );
+        throw new HttpStatusError(400, 'No QTI content files found in the uploaded archive.');
       }
 
       // Try to read rubrics from course_settings/rubrics.xml (not present in quiz-only exports).
@@ -144,19 +233,20 @@ router.post(
         }
       });
 
-      // Convert each assessment, deduplicating slugs so that same-titled
-      // assessments (e.g. two "Quiz 1") don't collide on question prefixes.
+      // Convert each QTI entry, assigning unique slugs so same-titled entries
+      // (e.g. two "Quiz 1") don't collide on question prefixes.
       const usedSlugs = new Set<string>();
-      const results: SerializedConversionResult[] = [];
+      const convertedEntries: SerializedEntryResult[] = [];
       const parseWarnings: ParseWarning[] = [];
       for (const entry of entries) {
         const result = await convertEntry(entry, rubricsXml, usedSlugs);
         if (result.ok) {
-          results.push(result.value);
+          convertedEntries.push(result.value);
         } else {
           parseWarnings.push(result.warning);
         }
       }
+      const results = deduplicateIdenticalQuestions(convertedEntries.map((entry) => entry.result));
 
       // Strip access rules (time limits, passwords, dates) from imported assessments
       // and track what was removed so the UI can inform the user.
@@ -167,6 +257,7 @@ router.post(
       };
 
       for (const result of results) {
+        if (result.sourceType !== 'assessment') continue;
         const rules = result.assessment.infoJson.allowAccess;
         if (rules) {
           for (const rule of rules) {
@@ -195,8 +286,16 @@ router.post(
         selectAssessments({ course_instance_id: res.locals.course_instance.id }),
       ]);
 
-      const response: UploadResponse = {
+      const draftId = await createQtiImportDraft({
+        courseId: res.locals.course.id,
+        courseInstanceId: res.locals.course_instance.id,
+        userId: res.locals.authn_user.id,
         results,
+      });
+      const clientResults = results.map((result) => prepareDraftResultForClient(result, draftId));
+
+      const response: UploadResponse = {
+        results: clientResults,
         parseWarnings,
         existingQuestionDirs,
         strippedAccessRules: stripped,
@@ -215,10 +314,25 @@ router.post(
 );
 
 type ConvertEntryResult =
-  | { ok: true; value: SerializedConversionResult }
+  | { ok: true; value: SerializedEntryResult }
   | { ok: false; warning: ParseWarning };
 
-/** Convert a single QTI assessment entry to a serialized result. */
+interface SerializedEntryResult {
+  result: StoredSerializedConversionResult;
+  webResourcesDir: string;
+}
+
+async function findQtiEntries(contentDir: string): Promise<QtiFileEntry[]> {
+  const manifestEntries = await findQtiFilesFromManifest(contentDir);
+  if (manifestEntries.length > 0) return manifestEntries;
+
+  return (await findQtiXmlFiles(contentDir)).map((qtiPath) => ({
+    qtiPath,
+    assessmentDir: path.dirname(qtiPath),
+  }));
+}
+
+/** Convert a single QTI entry to a serialized result. */
 async function convertEntry(
   entry: QtiFileEntry,
   rubricsXml: string | undefined,
@@ -252,7 +366,7 @@ async function convertEntry(
   // then emit from the already-parsed IR.
   let ir;
   try {
-    ir = await parseAssessment(xmlContent, [new QTI12AssessmentParser()], baseOptions);
+    ir = await parseAssessment(xmlContent, [new QTI12ItemContainerParser()], baseOptions);
   } catch (err) {
     return {
       ok: false,
@@ -263,7 +377,7 @@ async function convertEntry(
     };
   }
 
-  // Deduplicate slugs so same-titled assessments don't collide.
+  // Assign a unique slug so same-titled item containers don't collide.
   let assessmentSlug = slugify(ir.title);
   if (usedSlugs.has(assessmentSlug)) {
     let suffix = 2;
@@ -304,7 +418,7 @@ async function serializeConversionResult(
   result: ConversionResult,
   questionPrefix: string,
   webResourcesDir: string,
-): Promise<SerializedConversionResult> {
+): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
 
   const questions = await Promise.all(
@@ -339,14 +453,56 @@ async function serializeConversionResult(
     }),
   );
 
-  return {
-    assessmentTitle: result.assessmentTitle,
-    assessment: {
-      directoryName: result.assessment.directoryName,
-      infoJson: result.assessment.infoJson,
-    },
+  const common = {
+    sourceId: result.sourceId,
+    title: result.assessmentTitle,
     questions,
     warnings: [...result.warnings, ...extraWarnings],
+  };
+
+  if (result.sourceType === 'question-bank') {
+    return {
+      result: {
+        ...common,
+        sourceType: 'question-bank',
+        directoryName: result.assessment.directoryName,
+      },
+      webResourcesDir,
+    };
+  }
+
+  return {
+    result: {
+      ...common,
+      sourceType: 'assessment',
+      assessment: {
+        directoryName: result.assessment.directoryName,
+        infoJson: result.assessment.infoJson,
+      },
+      unresolvedSourceBankRefs: result.unresolvedSourceBankRefs,
+    },
+    webResourcesDir,
+  };
+}
+
+function prepareDraftResultForClient(
+  result: StoredSerializedConversionResult,
+  draftId: string,
+): SerializedConversionResult {
+  return {
+    ...result,
+    draftId,
+    questions: result.questions.map((question) => ({
+      ...question,
+      draftId,
+      originalDirectoryName: question.directoryName,
+      clientFiles: Object.fromEntries(
+        Object.entries(question.clientFiles).map(([name, content]) => [
+          name,
+          { size: Buffer.byteLength(content, 'base64') },
+        ]),
+      ),
+    })),
   };
 }
 
@@ -388,6 +544,98 @@ export async function serializeClientFiles(
     }
   }
   return { files, missingFiles };
+}
+
+function questionFingerprint(question: StoredSerializedConversionResult['questions'][number]) {
+  return JSON.stringify({
+    title: question.infoJson.title,
+    type: question.infoJson.type,
+    singleVariant: question.infoJson.singleVariant ?? null,
+    gradingMethod: question.infoJson.gradingMethod ?? null,
+    questionHtml: question.questionHtml,
+    serverPy: question.serverPy ?? null,
+    clientFiles: Object.entries(question.clientFiles).sort(([a], [b]) => a.localeCompare(b)),
+    skippedVideos: [...question.skippedVideos].sort(),
+  });
+}
+
+export function deduplicateIdenticalQuestions(
+  results: StoredSerializedConversionResult[],
+): StoredSerializedConversionResult[] {
+  const canonicalByFingerprint = new Map<
+    string,
+    {
+      question: StoredSerializedConversionResult['questions'][number];
+      sourceType: StoredSerializedConversionResult['sourceType'];
+    }
+  >();
+
+  for (const result of results) {
+    for (const question of result.questions) {
+      const fingerprint = questionFingerprint(question);
+      const existing = canonicalByFingerprint.get(fingerprint);
+      if (
+        !existing ||
+        (result.sourceType === 'question-bank' && existing.sourceType === 'assessment')
+      ) {
+        canonicalByFingerprint.set(fingerprint, {
+          question,
+          sourceType: result.sourceType,
+        });
+      }
+    }
+  }
+
+  return results.map((result) => {
+    const canonicalDirectoryNameByOriginal = new Map<string, string>();
+    const canonicalWarningIdByOriginal = new Map<string, string>();
+    const questionsByDirectoryName = new Map<
+      string,
+      StoredSerializedConversionResult['questions'][number]
+    >();
+
+    for (const question of result.questions) {
+      const canonical =
+        canonicalByFingerprint.get(questionFingerprint(question))?.question ?? question;
+      canonicalDirectoryNameByOriginal.set(question.directoryName, canonical.directoryName);
+      canonicalWarningIdByOriginal.set(question.directoryName, canonical.directoryName);
+      canonicalWarningIdByOriginal.set(question.sourceId, canonical.sourceId);
+      if (!questionsByDirectoryName.has(canonical.directoryName)) {
+        questionsByDirectoryName.set(canonical.directoryName, canonical);
+      }
+    }
+
+    const deduped = {
+      ...result,
+      questions: [...questionsByDirectoryName.values()],
+      warnings: result.warnings.map((warning) => ({
+        ...warning,
+        questionId: canonicalWarningIdByOriginal.get(warning.questionId) ?? warning.questionId,
+      })),
+    };
+
+    if (result.sourceType === 'assessment') {
+      return {
+        ...deduped,
+        sourceType: 'assessment' as const,
+        assessment: {
+          ...result.assessment,
+          infoJson: {
+            ...result.assessment.infoJson,
+            zones: result.assessment.infoJson.zones.map((zone) => ({
+              ...zone,
+              questions: zone.questions.map((question) => ({
+                ...question,
+                id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+              })),
+            })),
+          },
+        },
+      };
+    }
+
+    return deduped;
+  });
 }
 
 export default router;

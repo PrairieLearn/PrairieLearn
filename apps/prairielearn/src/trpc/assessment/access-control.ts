@@ -156,13 +156,13 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
     const clean: Record<string, unknown> = {};
 
-    if (rule.labels && rule.labels.length > 0) {
+    if (index > 0 && rule.labels != null) {
       clean.labels = rule.labels;
     }
 

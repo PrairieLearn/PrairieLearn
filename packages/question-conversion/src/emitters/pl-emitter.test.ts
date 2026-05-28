@@ -8,6 +8,7 @@ function makeAssessment(questions: IRQuestion[], meta?: IRAssessmentMeta): IRAss
   return {
     sourceId: 'test-assessment',
     title: 'Test Assessment',
+    sourceType: 'assessment',
     questions,
     meta,
   };
@@ -663,6 +664,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Zoned Assessment',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Part 1', questions: [q] }],
       };
@@ -941,6 +943,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Quiz',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Random Pool', questions: [q], numberChoose: 1 }],
       };
@@ -953,6 +956,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Quiz',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Part 1', questions: [q] }],
       };
@@ -1018,6 +1022,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Test',
+        sourceType: 'assessment',
         questions: [bad, good],
         zones: [{ title: 'Part 1', questions: [bad, good] }],
       };
