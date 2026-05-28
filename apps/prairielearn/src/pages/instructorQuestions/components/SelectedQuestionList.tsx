@@ -1,54 +1,54 @@
-import { Badge } from 'react-bootstrap';
-
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
+import { AssessmentBadges } from '../../instructorAssessmentQuestions/components/AssessmentBadges.js';
+import type { AssessmentForPicker } from '../../instructorAssessmentQuestions/types.js';
 
 const COLLAPSE_THRESHOLD = 5;
 
 /**
- * One place where a question appears in a synced assessment, annotated with
- * whether the zone would become empty if the question were removed.
+ * Assessments that reference a question, grouped by course instance, with the
+ * subset of assessment IDs whose zones would be emptied by the deletion.
  */
-export interface QuestionZoneMembership {
-  assessmentId: string;
-  assessmentLabel: string;
+export interface QuestionCourseInstanceMembership {
+  courseInstanceId: string;
   courseInstanceShortName: string;
-  zoneIndex: number;
-  zoneTitle: string | null;
-  wouldEmptyZone: boolean;
+  assessments: AssessmentForPicker[];
+  emptiedAssessmentIds: ReadonlySet<string>;
 }
 
-function ZoneMembershipList({ memberships }: { memberships: QuestionZoneMembership[] }) {
+function CourseInstanceMemberships({
+  memberships,
+}: {
+  memberships: QuestionCourseInstanceMembership[];
+}) {
   if (memberships.length === 0) return null;
   return (
-    <ul className="list-unstyled mb-0 mt-1 small">
+    <div className="mt-1">
       {memberships.map((membership) => (
-        <li
-          key={`${membership.assessmentId}-${membership.zoneIndex}`}
-          className="d-flex flex-wrap align-items-center gap-1"
+        <div
+          key={membership.courseInstanceId}
+          className="d-flex flex-wrap align-items-center gap-2 mt-1"
         >
-          <span className="text-muted">
-            {membership.courseInstanceShortName}: {membership.assessmentLabel} —{' '}
-            {membership.zoneTitle
-              ? `"${membership.zoneTitle}"`
-              : `zone ${membership.zoneIndex + 1}`}
-          </span>
-          {membership.wouldEmptyZone && (
-            <Badge bg="warning" text="dark">
-              Zone will be removed
-            </Badge>
-          )}
-        </li>
+          <span className="text-muted small">{membership.courseInstanceShortName}:</span>
+          <div className="d-flex flex-wrap align-items-center">
+            <AssessmentBadges
+              assessments={membership.assessments}
+              courseInstanceId={membership.courseInstanceId}
+              markedAssessmentIds={membership.emptiedAssessmentIds}
+              stopGroupClickPropagation={false}
+            />
+          </div>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
 export function SelectedQuestionList({
   questions,
-  zoneMembershipsByQid,
+  membershipsByQid,
 }: {
   questions: SafeQuestionsPageData[];
-  zoneMembershipsByQid?: Map<string, QuestionZoneMembership[]>;
+  membershipsByQid?: Map<string, QuestionCourseInstanceMembership[]>;
 }) {
   const sortedQuestions = [...questions].sort((a, b) =>
     a.qid.localeCompare(b.qid, undefined, { numeric: true }),
@@ -59,7 +59,7 @@ export function SelectedQuestionList({
   const listItems = (
     <ul className="list-group list-group-flush mt-2 mb-0">
       {sortedQuestions.map((question) => {
-        const memberships = zoneMembershipsByQid?.get(question.qid) ?? [];
+        const memberships = membershipsByQid?.get(question.qid) ?? [];
         return (
           <li key={question.id} className="list-group-item">
             {question.title ? (
@@ -75,7 +75,7 @@ export function SelectedQuestionList({
             ) : (
               <div className="font-monospace text-truncate">{question.qid}</div>
             )}
-            <ZoneMembershipList memberships={memberships} />
+            <CourseInstanceMemberships memberships={memberships} />
           </li>
         );
       })}

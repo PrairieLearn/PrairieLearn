@@ -13,7 +13,14 @@ import {
 import { config } from '../../lib/config.js';
 import { QuestionDeleteEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
+import {
+  type BlockedAssessment,
+  removeQidsFromAssessment,
+} from '../../lib/infoAssessment-edits.js';
+import {
+  formatBlockedAssessments,
+  selectAssessmentsBlockingDeletion,
+} from '../../lib/question-deletion-validation.js';
 import { selectAssessmentsReferencingQuestions } from '../../models/assessment.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import {
@@ -51,7 +58,8 @@ export interface QuestionsError {
   PreviewDeletion: never;
   DeleteQuestions:
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
-    | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };
+    | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] }
+    | { code: 'DELETION_BREAKS_ASSESSMENTS'; blockedAssessments: BlockedAssessment[] };
 }
 
 const QuestionIdsInputSchema = z.object({
@@ -111,6 +119,9 @@ const previewDeletion = t.procedure
       assessmentId: string;
       assessmentLabel: string;
       assessmentColor: string;
+      assessmentSetAbbreviation: string;
+      assessmentSetName: string;
+      assessmentNumber: string;
       courseInstanceId: string;
       courseInstanceShortName: string;
       zoneIndex: number;
@@ -154,6 +165,9 @@ const previewDeletion = t.procedure
           assessmentId: ref.assessment_id,
           assessmentLabel: ref.assessment_label,
           assessmentColor: ref.assessment_color,
+          assessmentSetAbbreviation: ref.assessment_set_abbreviation,
+          assessmentSetName: ref.assessment_set_name,
+          assessmentNumber: ref.assessment_number,
           courseInstanceId: ref.course_instance_id,
           courseInstanceShortName: ref.course_instance_short_name,
           zoneIndex,
@@ -202,6 +216,21 @@ const deleteQuestions = t.procedure
           qids: blockedByOtherCourses.map((q) => q.qid),
         });
       }
+    }
+
+    const blockedAssessments = await selectAssessmentsBlockingDeletion({
+      course: ctx.course,
+      questionIds: selectedQuestions.map((q) => q.id),
+      qidsToRemove: new Set(
+        selectedQuestions.flatMap((q) => (q.qid ? [q.qid] : [])),
+      ),
+    });
+    if (blockedAssessments.length > 0) {
+      throwAppError<QuestionsError['DeleteQuestions']>({
+        code: 'DELETION_BREAKS_ASSESSMENTS',
+        message: `Deletion would leave ${blockedAssessments.length === 1 ? 'an assessment' : `${blockedAssessments.length} assessments`} in an invalid state: ${formatBlockedAssessments(blockedAssessments)}`,
+        blockedAssessments,
+      });
     }
 
     const editor = new QuestionDeleteEditor({

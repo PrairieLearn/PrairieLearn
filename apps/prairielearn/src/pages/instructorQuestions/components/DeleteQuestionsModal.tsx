@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Alert, Button, Modal } from 'react-bootstrap';
 
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
 import { getAppError } from '../../../lib/client/errors.js';
@@ -8,49 +8,108 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
 import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
-import { type QuestionZoneMembership, SelectedQuestionList } from './SelectedQuestionList.js';
+import { type QuestionCourseInstanceMembership, SelectedQuestionList } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
 interface PreviewZone {
   assessmentId: string;
   assessmentLabel: string;
+  assessmentColor: string;
+  assessmentSetAbbreviation: string;
+  assessmentSetName: string;
+  assessmentNumber: string;
+  courseInstanceId: string;
   courseInstanceShortName: string;
-  zoneIndex: number;
-  zoneTitle: string | null;
   affectedQids: string[];
   wouldBeEmpty: boolean;
 }
 
-function buildZoneMembershipsByQid(zones: PreviewZone[]): Map<string, QuestionZoneMembership[]> {
-  const byQid = new Map<string, QuestionZoneMembership[]>();
+interface PerCourseInstance {
+  courseInstanceId: string;
+  courseInstanceShortName: string;
+  assessments: Map<
+    string,
+    {
+      assessmentId: string;
+      assessmentLabel: string;
+      assessmentColor: string;
+      assessmentSetAbbreviation: string;
+      assessmentSetName: string;
+      assessmentNumber: string;
+      wouldEmptyAnyZone: boolean;
+    }
+  >;
+}
+
+function buildMembershipsByQid(
+  zones: PreviewZone[],
+): Map<string, QuestionCourseInstanceMembership[]> {
+  const byQid = new Map<string, Map<string, PerCourseInstance>>();
   for (const zone of zones) {
-    const membership: QuestionZoneMembership = {
-      assessmentId: zone.assessmentId,
-      assessmentLabel: zone.assessmentLabel,
-      courseInstanceShortName: zone.courseInstanceShortName,
-      zoneIndex: zone.zoneIndex,
-      zoneTitle: zone.zoneTitle,
-      wouldEmptyZone: zone.wouldBeEmpty,
-    };
     for (const qid of zone.affectedQids) {
-      const existing = byQid.get(qid);
+      let perCi = byQid.get(qid);
+      if (!perCi) {
+        perCi = new Map();
+        byQid.set(qid, perCi);
+      }
+      let ci = perCi.get(zone.courseInstanceId);
+      if (!ci) {
+        ci = {
+          courseInstanceId: zone.courseInstanceId,
+          courseInstanceShortName: zone.courseInstanceShortName,
+          assessments: new Map(),
+        };
+        perCi.set(zone.courseInstanceId, ci);
+      }
+      const existing = ci.assessments.get(zone.assessmentId);
       if (existing) {
-        existing.push(membership);
+        existing.wouldEmptyAnyZone = existing.wouldEmptyAnyZone || zone.wouldBeEmpty;
       } else {
-        byQid.set(qid, [membership]);
+        ci.assessments.set(zone.assessmentId, {
+          assessmentId: zone.assessmentId,
+          assessmentLabel: zone.assessmentLabel,
+          assessmentColor: zone.assessmentColor,
+          assessmentSetAbbreviation: zone.assessmentSetAbbreviation,
+          assessmentSetName: zone.assessmentSetName,
+          assessmentNumber: zone.assessmentNumber,
+          wouldEmptyAnyZone: zone.wouldBeEmpty,
+        });
       }
     }
   }
-  for (const memberships of byQid.values()) {
-    memberships.sort((a, b) =>
-      `${a.courseInstanceShortName}:${a.assessmentLabel}:${a.zoneIndex}`.localeCompare(
-        `${b.courseInstanceShortName}:${b.assessmentLabel}:${b.zoneIndex}`,
-        undefined,
-        { numeric: true },
-      ),
-    );
+  const result = new Map<string, QuestionCourseInstanceMembership[]>();
+  for (const [qid, perCi] of byQid) {
+    const ciList: QuestionCourseInstanceMembership[] = [...perCi.values()]
+      .sort((a, b) =>
+        a.courseInstanceShortName.localeCompare(b.courseInstanceShortName, undefined, {
+          numeric: true,
+        }),
+      )
+      .map((ci) => ({
+        courseInstanceId: ci.courseInstanceId,
+        courseInstanceShortName: ci.courseInstanceShortName,
+        assessments: [...ci.assessments.values()]
+          .sort((a, b) =>
+            a.assessmentLabel.localeCompare(b.assessmentLabel, undefined, { numeric: true }),
+          )
+          .map((a) => ({
+            assessment_id: a.assessmentId,
+            label: a.assessmentLabel,
+            color: a.assessmentColor,
+            assessment_set_abbreviation: a.assessmentSetAbbreviation,
+            assessment_set_name: a.assessmentSetName,
+            assessment_set_color: a.assessmentColor,
+            assessment_number: a.assessmentNumber,
+          })),
+        emptiedAssessmentIds: new Set(
+          [...ci.assessments.values()]
+            .filter((a) => a.wouldEmptyAnyZone)
+            .map((a) => a.assessmentId),
+        ),
+      }));
+    result.set(qid, ciList);
   }
-  return byQid;
+  return result;
 }
 
 export function DeleteQuestionsModal({
@@ -79,11 +138,13 @@ export function DeleteQuestionsModal({
       { enabled: show && questionIds.length > 0 },
     ),
   });
-  const zoneMembershipsByQid = useMemo(
-    () => buildZoneMembershipsByQid(previewQuery.data?.zones ?? []),
-    [previewQuery.data],
+  const zones = previewQuery.data?.zones ?? [];
+  const membershipsByQid = useMemo(() => buildMembershipsByQid(zones), [zones]);
+  const affectedAssessmentCount = useMemo(
+    () => new Set(zones.map((z) => z.assessmentId)).size,
+    [zones],
   );
-  const emptiedZoneCount = previewQuery.data?.zones.filter((zone) => zone.wouldBeEmpty).length ?? 0;
+  const emptiedZoneCount = zones.filter((zone) => zone.wouldBeEmpty).length;
 
   const mutation = useMutation({
     ...trpc.questions.deleteQuestions.mutationOptions(),
@@ -116,17 +177,23 @@ export function DeleteQuestionsModal({
           </strong>
           ?
         </p>
-        {emptiedZoneCount > 0 && (
-          <p className="text-warning-emphasis mb-2">
-            <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-            {emptiedZoneCount === 1
-              ? 'One assessment zone will be removed because it would contain no questions.'
-              : `${emptiedZoneCount} assessment zones will be removed because they would contain no questions.`}
-          </p>
+        {affectedAssessmentCount > 0 && (
+          <Alert variant="info" className="mb-3">
+            <strong>{affectedAssessmentCount}</strong>{' '}
+            {affectedAssessmentCount === 1 ? 'assessment' : 'assessments'} will be affected
+            {emptiedZoneCount > 0 && (
+              <>
+                , and <strong>{emptiedZoneCount}</strong>{' '}
+                {emptiedZoneCount === 1 ? 'assessment zone' : 'assessment zones'} will be removed as
+                they contain no questions
+              </>
+            )}
+            .
+          </Alert>
         )}
         <SelectedQuestionList
           questions={selectedQuestions}
-          zoneMembershipsByQid={zoneMembershipsByQid}
+          membershipsByQid={membershipsByQid}
         />
         <BulkQuestionErrorAlert error={appError} urlPrefix={urlPrefix} />
       </Modal.Body>

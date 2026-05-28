@@ -59,7 +59,7 @@ async function selectQuestions(page: Page, qids: string[]) {
     await page.getByLabel(`Select ${qid}`, { exact: true }).check();
   }
   await expect(
-    page.getByText(new RegExp(`Selected ${qids.length} of \\d+ questions`)),
+    page.getByText(new RegExp(`Selected ${qids.length} of \\d+ questions?`)),
   ).toBeVisible();
 }
 
@@ -122,13 +122,14 @@ test.describe('Bulk question table actions', () => {
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
-    // The zone still has `downloadFile` after deleting the two selected questions,
-    // so the "zone will be removed" warning should NOT appear.
-    await expect(deleteModal.getByText(/Sp15: HW.*Mixed zone/)).toHaveCount(2);
-    await expect(deleteModal.getByText('Zone will be removed')).toHaveCount(0);
+    // Both selected questions share a Mixed zone in this Sp15 assessment, so the
+    // assessment badge appears under each (per-question) row.
+    await expect(deleteModal.getByText('Sp15:')).toHaveCount(2);
     await expect(
-      deleteModal.getByText('will be removed because it would contain no questions'),
-    ).toHaveCount(0);
+      deleteModal.getByRole('link', { name: new RegExp(`^HW${assessmentNumber}$`) }),
+    ).toHaveCount(2);
+    // The zone still has `downloadFile`, so no zones would be emptied.
+    await expect(deleteModal.getByText(/assessment zones will be removed/)).toHaveCount(0);
 
     await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
     await expect(deleteModal).not.toBeVisible();
@@ -206,10 +207,12 @@ test.describe('Bulk question table actions', () => {
     await expect(deleteModal).toBeVisible();
     await expect(
       deleteModal.getByText(
-        'One assessment zone will be removed because it would contain no questions.',
+        /1 assessment zone will be removed as they contain no questions/,
       ),
     ).toBeVisible();
-    await expect(deleteModal.getByText('Zone will be removed')).toHaveCount(2);
+    // Each selected question shows the affected assessment badge with a
+    // zone-removal warning (icon prefix + tooltip).
+    await expect(deleteModal.getByTestId('zone-removal-marker')).toHaveCount(2);
 
     await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
     await expect(deleteModal).not.toBeVisible();
@@ -253,4 +256,126 @@ test.describe('Bulk question table actions', () => {
       await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
     }
   });
+
+  test('blocks deletion when the new first zone would have lockpoint: true', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qid = `bulkblocklockpoint${suffix}`;
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qid,
+      title: 'Lockpoint blocker question',
+    });
+
+    const assessmentTid = `bulkblocklockpoint${suffix}`;
+    const assessmentNumber = `8${suffix.slice(0, 4)}`;
+    await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
+    await fs.writeFile(
+      infoAssessmentPath(testCoursePath, assessmentTid),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Lockpoint blocker target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [
+            { title: 'First zone', questions: [{ id: qid, autoPoints: 1 }] },
+            { title: 'Locked zone', lockpoint: true, questions: [{ id: 'downloadFile', autoPoints: 1 }] },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, qid);
+    await selectQuestions(page, [qid]);
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
+    await expect(deleteModal).toBeVisible();
+    await deleteModal.getByRole('button', { name: 'Delete 1 question' }).click();
+
+    await expect(
+      deleteModal.getByText(
+        'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
+      ),
+    ).toBeVisible();
+    await expect(
+      deleteModal.getByRole('listitem').filter({
+        hasText: `Sp15: HW${assessmentNumber} — the new first zone has lockpoint: true`,
+      }),
+    ).toBeVisible();
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
+    const after = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(after.zones).toHaveLength(2);
+  });
+
+  test('blocks deletion when every zone would be empty', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qid = `bulkblocknozones${suffix}`;
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qid,
+      title: 'No-zones blocker question',
+    });
+
+    const assessmentTid = `bulkblocknozones${suffix}`;
+    const assessmentNumber = `9${suffix.slice(0, 4)}`;
+    await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
+    await fs.writeFile(
+      infoAssessmentPath(testCoursePath, assessmentTid),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'No-zones blocker target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [{ title: 'Only zone', questions: [{ id: qid, autoPoints: 1 }] }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, qid);
+    await selectQuestions(page, [qid]);
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
+    await expect(deleteModal).toBeVisible();
+    await deleteModal.getByRole('button', { name: 'Delete 1 question' }).click();
+
+    await expect(
+      deleteModal.getByText(
+        'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
+      ),
+    ).toBeVisible();
+    await expect(
+      deleteModal.getByRole('listitem').filter({
+        hasText: `Sp15: HW${assessmentNumber} — all zones would be empty`,
+      }),
+    ).toBeVisible();
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
+    const after = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(after.zones).toHaveLength(1);
+  });
 });
+
