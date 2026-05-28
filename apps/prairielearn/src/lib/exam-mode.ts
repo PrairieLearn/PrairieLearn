@@ -41,7 +41,8 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
  *
  * Throws an `HttpStatusError(403)` when the user has an in-progress
  * LockDown-Browser-required reservation but the current session was not
- * established from inside LockDown Browser.
+ * established from inside LockDown Browser and `enforce_lockdown_browser` is
+ * true.
  *
  * Attack vector this guards against:
  *
@@ -60,17 +61,22 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
  * the policy that an LDB-required reservation confines the user to LDB
  * for its full duration. A student in a non-LDB browser would otherwise
  * be free to look up answers in other course pages while the exam runs.
+ *
+ * Callers that rebuild authorization for a staff-requested effective user can
+ * disable enforcement after the authenticated user has already been checked.
  */
 export async function ipToMode({
   ip,
   date,
   authn_user_id,
   session_is_lockdown_browser,
+  enforce_lockdown_browser = true,
 }: {
   ip: string | null | undefined;
   date: Date;
   authn_user_id: string;
   session_is_lockdown_browser: boolean;
+  enforce_lockdown_browser?: boolean;
 }): Promise<EnumMode> {
   // Express's types indicate that `ip` may be undefined in some cases. We want
   // to ensure that we don't try to proceed without one.
@@ -82,7 +88,7 @@ export async function ipToMode({
     ActiveReservationInfoSchema,
   );
 
-  if (requires_lockdown_browser && !session_is_lockdown_browser) {
+  if (enforce_lockdown_browser && requires_lockdown_browser && !session_is_lockdown_browser) {
     throw new HttpStatusError(
       403,
       'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',

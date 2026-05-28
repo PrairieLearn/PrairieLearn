@@ -556,6 +556,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         ? effectiveUserData.is_administrator
         : res.locals.is_administrator,
       session_is_lockdown_browser: req.session.lockdown_browser ?? false,
+      // The authenticated-user pass above already enforced LDB. This pass may
+      // be for a staff-requested effective user, so only compute their mode.
+      enforce_lockdown_browser: false,
       overrides: overrideResult.data,
     });
 
