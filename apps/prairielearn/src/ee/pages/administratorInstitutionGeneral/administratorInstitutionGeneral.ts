@@ -16,6 +16,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
+  COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
   updateInstitutionCourseRequestMessage,
   updateInstitutionGithubCourseOwner,
@@ -109,6 +110,12 @@ router.post(
         req.body.course_request_message.trim().length > 0
           ? req.body.course_request_message
           : null;
+      if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
+        throw new error.HttpStatusError(
+          400,
+          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+        );
+      }
       await updateInstitutionCourseRequestMessage({
         institution_id: req.params.institution_id,
         course_request_message: newMessage,
