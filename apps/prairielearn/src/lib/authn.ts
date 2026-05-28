@@ -65,6 +65,11 @@ interface LoadUserOptions {
    * downstream enforcement can require LDB for LDB-only reservations.
    */
   lockdownBrowser?: boolean;
+  /**
+   * Preserve any existing LockDown Browser state. This should only be used by
+   * authentication middleware that is reloading the current session.
+   */
+  preserveLockdownBrowser?: boolean;
 }
 
 export async function loadUser(
@@ -166,9 +171,9 @@ export async function loadUser(
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
 
-  if (options.lockdownBrowser !== undefined) {
-    req.session.lockdown_browser = options.lockdownBrowser;
-  }
+  req.session.lockdown_browser =
+    options.lockdownBrowser ??
+    (options.preserveLockdownBrowser ? req.session.lockdown_browser : false);
 
   // After explicitly authenticating, clear the cookie that disables
   // automatic authentication.
