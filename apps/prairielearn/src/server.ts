@@ -489,6 +489,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
+  // Deny all access to a user with an active LockDown-Browser-required
+  // reservation whose session was not established inside LockDown Browser. Must
+  // come after authentication so it can read `res.locals.authn_user`.
+  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
+
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
   //

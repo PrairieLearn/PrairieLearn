@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
-import { getAppError } from '../../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
@@ -150,6 +150,8 @@ export function DeleteQuestionsModal({
     [zones],
   );
   const emptiedZoneCount = zones.filter((zone) => zone.wouldBeEmpty).length;
+  const previewError = getAppError<QuestionsError['PreviewDeletion']>(previewQuery.error);
+  const previewLoaded = previewQuery.isSuccess && !previewQuery.isFetching;
 
   const mutation = useMutation({
     ...trpc.questions.deleteQuestions.mutationOptions(),
@@ -197,6 +199,13 @@ export function DeleteQuestionsModal({
           </Alert>
         )}
         <SelectedQuestionList questions={selectedQuestions} membershipsByQid={membershipsByQid} />
+        <AppErrorAlert
+          error={previewError}
+          className="mt-3 mb-0"
+          render={{
+            UNKNOWN: ({ message }) => <>Failed to load deletion preview: {message}</>,
+          }}
+        />
         <BulkQuestionErrorAlert error={appError} urlPrefix={urlPrefix} />
       </Modal.Body>
       <Modal.Footer>
@@ -205,11 +214,16 @@ export function DeleteQuestionsModal({
         </Button>
         <Button
           variant="danger"
-          disabled={mutation.isPending}
+          disabled={!previewLoaded || mutation.isPending}
           onClick={() => mutation.mutate({ questionIds })}
         >
-          Delete {selectedQuestions.length}{' '}
-          {selectedQuestions.length === 1 ? 'question' : 'questions'}
+          {mutation.isPending
+            ? 'Deleting...'
+            : previewQuery.isFetching
+              ? 'Loading preview...'
+              : `Delete ${selectedQuestions.length} ${
+                  selectedQuestions.length === 1 ? 'question' : 'questions'
+                }`}
         </Button>
       </Modal.Footer>
     </Modal>

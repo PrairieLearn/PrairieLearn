@@ -3,9 +3,21 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionDeleteEditor } from '../../../../lib/editors.js';
+import {
+  formatBlockedAssessments,
+  selectAssessmentsBlockingDeletion,
+} from '../../../../lib/question-deletion-validation.js';
+import { type ServerJobExecutor } from '../../../../lib/server-jobs.js';
 import { selectCourseById } from '../../../../models/course.js';
-import { selectQuestionsByIdsAndCourseId } from '../../../../models/question.js';
+import {
+  selectQuestionsByIdsAndCourseId,
+  selectQuestionsUsedInOtherCourses,
+} from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
+
+async function failServerJob(serverJob: ServerJobExecutor, message: string) {
+  await serverJob.execute(async (job) => job.fail(message));
+}
 
 export const batchDeleteQuestions = privateProcedure
   .input(
@@ -57,6 +69,40 @@ export const batchDeleteQuestions = privateProcedure
     });
 
     const serverJob = await editor.prepareServerJob();
+
+    const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
+      question_ids: questions.map((question) => question.id),
+      course_id: course.id,
+    });
+    if (blockedByOtherCourses.length > 0) {
+      await failServerJob(
+        serverJob,
+        'One or more questions are used by another course and cannot be deleted. Unshare them or remove them from those assessments first.',
+      );
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
+    }
+
+    const qidsToRemove = new Set(
+      questions.flatMap((question) => (question.qid !== null ? [question.qid] : [])),
+    );
+    const blockedAssessments = await selectAssessmentsBlockingDeletion({
+      course,
+      questionIds: questions.map((question) => question.id),
+      qidsToRemove,
+    });
+    if (blockedAssessments.length > 0) {
+      await failServerJob(
+        serverJob,
+        `Deleting these questions would leave the following assessments in an invalid state: ${formatBlockedAssessments(blockedAssessments)}. Remove the questions from these assessments first.`,
+      );
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
+    }
 
     try {
       await editor.executeWithServerJob(serverJob);

@@ -54,7 +54,10 @@ export async function selectAssessmentsBlockingDeletion({
     }
     if (blockers.length > 0) {
       blocked.push({
+        assessmentId: ref.assessment_id,
         assessmentLabel: ref.assessment_label,
+        assessmentColor: ref.assessment_color,
+        courseInstanceId: ref.course_instance_id,
         courseInstanceShortName: ref.course_instance_short_name,
         blockers,
       });

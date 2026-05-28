@@ -67,12 +67,15 @@ export function blockerDescription(blocker: DeletionBlocker): string {
     case 'NO_ZONES_REMAINING':
       return 'all zones would be empty';
     case 'NEW_FIRST_ZONE_HAS_LOCKPOINT':
-      return 'the new first zone has lockpoint: true';
+      return 'the new first zone would be a lockpoint';
   }
 }
 
 export interface BlockedAssessment {
+  assessmentId: string;
   assessmentLabel: string;
+  assessmentColor: string;
+  courseInstanceId: string;
   courseInstanceShortName: string;
   blockers: DeletionBlocker[];
 }

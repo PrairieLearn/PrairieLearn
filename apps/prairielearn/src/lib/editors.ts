@@ -46,7 +46,7 @@ import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
-import { removeQidsFromAssessment } from './infoAssessment-edits.js';
+import { blockerDescription, removeQidsFromAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -1560,9 +1560,37 @@ export class QuestionDeleteEditor extends Editor {
         referenced.assessment_directory,
         'infoAssessment.json',
       );
-      const infoJson = await fs.readJson(infoPath);
-      const { assessment: updatedInfoJson } = removeQidsFromAssessment(infoJson, qidsToRemove);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      let formattedJson: string;
+      try {
+        const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+        const { assessment: updatedInfoJson, blockers } = removeQidsFromAssessment(
+          infoJson,
+          qidsToRemove,
+        );
+        if (blockers.length > 0) {
+          const reasons = blockers.map(blockerDescription).join('; ');
+          throw new AugmentedError(
+            `Deleting these questions would leave assessment ${referenced.course_instance_short_name}/${referenced.assessment_directory} in an invalid state: ${reasons}.`,
+            {
+              info: html`
+                <p>
+                  Remove the questions from assessment
+                  <code
+                    >${referenced.course_instance_short_name}/${referenced.assessment_directory}</code
+                  >
+                  first.
+                </p>
+              `,
+            },
+          );
+        }
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      } catch (err) {
+        if (err instanceof AugmentedError) throw err;
+        throw new AugmentedError(`Unable to rewrite ${infoPath} while deleting questions.`, {
+          cause: err,
+        });
+      }
       await fs.writeFile(infoPath, formattedJson);
       pathsToAdd.push(infoPath);
     }
