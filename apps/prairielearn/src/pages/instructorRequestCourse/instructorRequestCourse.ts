@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
@@ -20,6 +21,7 @@ import {
   checkCourseShortNameInInstitution,
   checkCourseTitleInInstitution,
 } from '../../models/course.js';
+import { selectInstitutionSettings } from '../../models/institution-settings.js';
 import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
 import { RequestCourse } from './instructorRequestCourse.html.js';
@@ -34,11 +36,10 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const rows = await queryRows(
-      sql.get_requests,
-      { user_id: res.locals.authn_user.id },
-      CourseRequestRowSchema,
-    );
+    const [rows, institutionSettings] = await Promise.all([
+      queryRows(sql.get_requests, { user_id: res.locals.authn_user.id }, CourseRequestRowSchema),
+      selectInstitutionSettings({ institution_id: res.locals.authn_institution.id }),
+    ]);
 
     let lti13Info: Lti13CourseRequestInput = null;
     if (isEnterprise() && 'lti13_claims' in req.session) {
@@ -62,7 +63,15 @@ router.get(
       }
     }
 
-    res.send(RequestCourse({ rows, lti13Info, resLocals: res.locals }));
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const institutionMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
+          allowHtml: false,
+          interpretMath: false,
+        })
+      : '';
+
+    res.send(RequestCourse({ rows, lti13Info, institutionMessageHtml, resLocals: res.locals }));
   }),
 );
 

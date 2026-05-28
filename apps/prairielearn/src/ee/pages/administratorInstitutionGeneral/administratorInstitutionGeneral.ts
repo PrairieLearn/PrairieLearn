@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
@@ -14,6 +15,11 @@ import {
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import {
+  selectInstitutionSettings,
+  updateInstitutionCourseRequestMessage,
+  updateInstitutionGithubCourseOwner,
+} from '../../../models/institution-settings.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForContext,
@@ -40,12 +46,25 @@ router.get(
       InstitutionStatisticsSchema,
     );
     const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
+    const institutionSettings = await selectInstitutionSettings({
+      institution_id: req.params.institution_id,
+    });
+    const courseRequestMessage = institutionSettings?.course_request_message ?? null;
+    const courseRequestMessageHtml = courseRequestMessage
+      ? markdownToHtml(courseRequestMessage, {
+          allowHtml: false,
+          interpretMath: false,
+        })
+      : '';
     res.send(
       AdministratorInstitutionGeneral({
         institution,
         availableTimezones,
         statistics,
         planGrants,
+        courseRequestMessage,
+        courseRequestMessageHtml,
+        githubCourseOwner: institutionSettings?.github_course_owner ?? null,
         defaultGithubCourseOwner: config.githubCourseOwner,
         resLocals: res.locals,
       }),
@@ -84,6 +103,19 @@ router.post(
       });
       flash('success', 'Successfully updated institution settings.');
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_course_request_message') {
+      const newMessage =
+        typeof req.body.course_request_message === 'string' &&
+        req.body.course_request_message.trim().length > 0
+          ? req.body.course_request_message
+          : null;
+      await updateInstitutionCourseRequestMessage({
+        institution_id: req.params.institution_id,
+        course_request_message: newMessage,
+        authn_user_id: res.locals.authn_user.id,
+      });
+      flash('success', 'Successfully updated the course request message.');
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({
         body: req.body,
@@ -112,25 +144,10 @@ router.post(
         }
       }
 
-      await runInTransactionAsync(async () => {
-        const institution = await getInstitution(req.params.institution_id);
-        const updatedInstitution = await queryRow(
-          sql.update_github_course_owner,
-          {
-            institution_id: req.params.institution_id,
-            github_course_owner: newValue,
-          },
-          InstitutionSchema,
-        );
-        await insertAuditLog({
-          authn_user_id: res.locals.authn_user.id,
-          table_name: 'institutions',
-          action: 'update',
-          institution_id: req.params.institution_id,
-          old_state: institution,
-          new_state: updatedInstitution,
-          row_id: req.params.institution_id,
-        });
+      await updateInstitutionGithubCourseOwner({
+        institution_id: req.params.institution_id,
+        github_course_owner: newValue,
+        authn_user_id: res.locals.authn_user.id,
       });
       flash('success', 'Successfully updated default GitHub organization.');
       res.redirect(req.originalUrl);

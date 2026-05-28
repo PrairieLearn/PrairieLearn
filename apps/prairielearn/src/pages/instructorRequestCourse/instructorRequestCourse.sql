@@ -26,11 +26,11 @@ SELECT
 SELECT
   co.institution_id,
   co.display_timezone,
-  i.github_course_owner AS institution_github_course_owner
+  ist.github_course_owner AS institution_github_course_owner
 FROM
   course_permissions AS cp
   JOIN courses AS co ON co.id = cp.course_id
-  JOIN institutions AS i ON i.id = co.institution_id
+  LEFT JOIN institution_settings AS ist ON ist.institution_id = co.institution_id
 WHERE
   (
     cp.user_id = $user_id

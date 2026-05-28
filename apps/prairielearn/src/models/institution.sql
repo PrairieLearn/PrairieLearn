@@ -27,6 +27,18 @@ ORDER BY
   i.long_name,
   i.id;
 
+-- BLOCK select_all_admin_institutions
+SELECT
+  i.*,
+  ist.github_course_owner
+FROM
+  institutions AS i
+  LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id
+ORDER BY
+  i.short_name,
+  i.long_name,
+  i.id;
+
 -- BLOCK insert_institution
 INSERT INTO
   institutions (

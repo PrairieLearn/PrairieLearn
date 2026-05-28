@@ -49,12 +49,3 @@ WHERE
   id = $institution_id
 RETURNING
   institutions.*;
-
--- BLOCK update_github_course_owner
-UPDATE institutions
-SET
-  github_course_owner = $github_course_owner
-WHERE
-  id = $institution_id
-RETURNING
-  institutions.*;

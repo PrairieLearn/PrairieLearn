@@ -1,0 +1,10 @@
+columns
+    course_request_message: text
+    github_course_owner: text
+    institution_id: bigint not null
+
+indexes
+    institution_settings_pkey: PRIMARY KEY (institution_id) USING btree (institution_id)
+
+foreign-key constraints
+    institution_settings_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE

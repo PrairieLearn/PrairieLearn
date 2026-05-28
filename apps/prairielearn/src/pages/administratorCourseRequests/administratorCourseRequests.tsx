@@ -10,7 +10,7 @@ import { config } from '../../lib/config.js';
 import { selectAllCourseRequests, selectPendingCourseRequests } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { selectAllInstitutions } from '../../models/institution.js';
+import { selectAllAdminInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
 
@@ -26,7 +26,7 @@ router.get(
     });
     const showAll = req.query.status === 'all';
     const rows = showAll ? await selectAllCourseRequests() : await selectPendingCourseRequests();
-    const institutions = await selectAllInstitutions();
+    const institutions = await selectAllAdminInstitutions();
     const availableTimezones = await getCanonicalTimezones(
       institutions.map((i) => i.display_timezone),
     );

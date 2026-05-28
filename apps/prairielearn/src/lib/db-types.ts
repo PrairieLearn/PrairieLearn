@@ -1145,7 +1145,6 @@ export const InstitutionSchema = z.object({
   course_instance_enrollment_limit: z.number(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
-  github_course_owner: z.string().nullable(),
   id: IdSchema,
   long_name: z.string(),
   short_name: z.string(),
@@ -1153,6 +1152,13 @@ export const InstitutionSchema = z.object({
   yearly_enrollment_limit: z.number(),
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
+
+export const InstitutionSettingsSchema = z.object({
+  course_request_message: z.string().nullable(),
+  github_course_owner: z.string().nullable(),
+  institution_id: IdSchema,
+});
+export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;
 
 export const InstitutionAdministratorSchema = z.object({
   id: IdSchema,
@@ -1826,6 +1832,7 @@ export const TableNames = [
   'instance_question_groups',
   'institution_administrators',
   'institution_authn_providers',
+  'institution_settings',
   'institutions',
   'issues',
   'job_sequences',
