@@ -5,25 +5,30 @@ import * as helperDb from '../tests/helperDb.js';
 
 import { loadUser } from './authn.js';
 
-function attachSession(req: Partial<Request>, data: Partial<Request['session']> = {}) {
+function attachSession(
+  req: Partial<Request>,
+  data: Partial<Request['session']> = {},
+  onRegenerate?: () => void,
+) {
   req.session = {
     id: 'test-session',
     ...data,
     destroy: async () => {},
     regenerate: async () => {
-      attachSession(req);
+      onRegenerate?.();
+      attachSession(req, {}, onRegenerate);
     },
     setExpiration: () => {},
     getExpirationDate: () => new Date(Date.now() + 60_000),
   };
 }
 
-function makeReq() {
+function makeReq(onRegenerate?: () => void) {
   const req: Partial<Request> = {
     cookies: {},
     ip: '127.0.0.1',
   };
-  attachSession(req);
+  attachSession(req, {}, onRegenerate);
   return req as Request;
 }
 
@@ -81,6 +86,31 @@ describe('loadUser', () => {
       { preserveLockdownBrowser: true },
     );
 
+    assert.equal(req.session.lockdown_browser, true);
+  });
+
+  it('regenerates the session when elevating to LockDown Browser state', async () => {
+    let regenerateCount = 0;
+    const req = makeReq(() => {
+      regenerateCount += 1;
+    });
+    const res = makeRes();
+
+    await loadTestUser(req, res);
+    assert.equal(regenerateCount, 1);
+    assert.equal(req.session.lockdown_browser, false);
+
+    await loadUser(
+      req,
+      res,
+      {
+        user_id: req.session.user_id,
+        provider: 'PrairieTest',
+      },
+      { lockdownBrowser: true },
+    );
+
+    assert.equal(regenerateCount, 2);
     assert.equal(req.session.lockdown_browser, true);
   });
 });

@@ -141,12 +141,16 @@ export async function loadUser(
   }
 
   // Regenerate the session on any identity transition to prevent session
-  // fixation. The authn middleware re-enters this function on every request
-  // with the existing session's user_id, so the guard keeps it a no-op there.
-  if (req.session.user_id !== user_id) {
+  // fixation. Also regenerate when elevating an existing session into a
+  // LockDown Browser session, since that flag grants stronger exam access.
+  // The authn middleware re-enters this function on every request with the
+  // existing session's user_id, so the guard keeps it a no-op there.
+  const lockdownBrowserElevation =
+    options.lockdownBrowser === true && req.session.lockdown_browser !== true;
+  if (req.session.user_id !== user_id || lockdownBrowserElevation) {
     // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
     // in the session before authentication completes and consumes them afterward.
-    // These must be carried forward across the session regeneration triggered by an identity transition.
+    // These must be carried forward across this session regeneration.
 
     const inLti13Launch =
       authnParams.provider === 'LTI 1.3' ||
