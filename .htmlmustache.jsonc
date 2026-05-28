@@ -87,7 +87,8 @@
     {
       "id": "pl-require-img-alt",
       "selector": "img:not([alt]):not([aria-hidden='true'])",
-      "message": "Images must have alt-text in order to be WCAG 2.1 AA compliant"
+      "message": "Images must have alt-text in order to be WCAG 2.1 AA compliant",
+      "severity": "warning"
     },
     {
       "id": "pl-prefer-pl-figure",
