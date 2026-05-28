@@ -27,6 +27,8 @@ interface PreviewZone {
   wouldBeEmpty: boolean;
 }
 
+const EMPTY_PREVIEW_ZONES: PreviewZone[] = [];
+
 interface PerCourseInstance {
   courseInstanceId: string;
   courseInstanceShortName: string;
@@ -141,7 +143,7 @@ export function DeleteQuestionsModal({
       { enabled: show && questionIds.length > 0 },
     ),
   });
-  const zones = previewQuery.data?.zones ?? [];
+  const zones = previewQuery.data?.zones ?? EMPTY_PREVIEW_ZONES;
   const membershipsByQid = useMemo(() => buildMembershipsByQid(zones), [zones]);
   const affectedAssessmentCount = useMemo(
     () => new Set(zones.map((z) => z.assessmentId)).size,
