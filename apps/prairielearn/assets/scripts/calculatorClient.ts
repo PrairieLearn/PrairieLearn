@@ -4,7 +4,7 @@ import {
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
-import { MathfieldElement } from 'mathlive';
+import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -110,11 +110,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) => {
-    return ce.parse(latex).toString();
-  };
-  calculatorInputElement.onExport = onExport;
-  calculatorOutput.onExport = onExport;
+  const latexFieldOnExport = (_mf: Mathfield, latex: string) => convertLatexToAsciiMath(latex);
+
+  calculatorInputElement.onExport = latexFieldOnExport;
+  calculatorOutput.onExport = latexFieldOnExport;
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
@@ -311,16 +310,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   function showCalculationError() {
     calculatorInputGroup.classList.add('error');
     calculatorOutput.value = '';
-    copyButton.onclick = null;
+    copyButton.dataset.clipboardText = '';
   }
 
   function calculate(addToHistory = false) {
     const input = calculatorInputElement.value;
     if (input.length === 0) {
       calculatorOutput.value = '';
-      copyButton.onclick = function () {
-        void navigator.clipboard.writeText('');
-      };
+      copyButton.dataset.clipboardText = '';
       calculatorInputGroup.classList.remove('error');
       return;
     }
@@ -355,10 +352,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.onclick = function () {
-      window.bootstrap.Tooltip.getInstance(copyButton)?.hide();
-      void navigator.clipboard.writeText(ce.parse(displayed).toString());
-    };
+    copyButton.dataset.clipboardText = convertLatexToAsciiMath(displayed);
 
     // Add to history
     if (addToHistory) {
@@ -699,10 +693,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) => ce.parse(latex).toString();
-    const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
-    inputField.onExport = historyOnExport;
-    outputField.onExport = historyOnExport;
+    inputField.onExport = latexFieldOnExport;
+    outputField.onExport = latexFieldOnExport;
 
     // Copy buttons
     const inputCopyBtn = ensureElement(
@@ -711,14 +703,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(inputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(input));
-    });
-    outputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(outputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(outputField.value.replace(/^=/, '')));
-    });
+    inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
+    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(
+      outputField.value.replace(/^=/, ''),
+    );
 
     // Insert buttons
     const inputInsertBtn = ensureElement(

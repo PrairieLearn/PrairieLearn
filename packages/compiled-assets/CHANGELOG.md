@@ -1,5 +1,18 @@
 # @prairielearn/compiled-assets
 
+## 4.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.1.4
+
+### Patch Changes
+
+- 54a4c6d: Use OS-assigned ports for esbuild development asset servers.
+- 382dbd8: Bump dependencies
+
 ## 4.1.3
 
 ### Patch Changes

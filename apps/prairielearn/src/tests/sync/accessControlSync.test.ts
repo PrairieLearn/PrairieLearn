@@ -1721,11 +1721,11 @@ describe('Access control syncing', () => {
           afterComplete: {
             questions: {
               hidden: true,
-              visibleFromDate: '2024-04-01T00:00:00',
+              visibleFromDate: '2024-04-15T00:00:00',
             },
             score: {
               hidden: true,
-              visibleFromDate: '2024-04-15T00:00:00',
+              visibleFromDate: '2024-04-01T00:00:00',
             },
           },
         };
@@ -1760,12 +1760,12 @@ describe('Access control syncing', () => {
         assert.equal(ac.questions?.hidden, true);
         assert.deepEqual(
           ac.questions?.visibleFromDate,
-          plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
+          plainDateTimeStringToDate('2024-04-15T00:00:00', timezone),
         );
         assert.equal(ac.score?.hidden, true);
         assert.deepEqual(
           ac.score?.visibleFromDate,
-          plainDateTimeStringToDate('2024-04-15T00:00:00', timezone),
+          plainDateTimeStringToDate('2024-04-01T00:00:00', timezone),
         );
       }));
 
@@ -1914,6 +1914,18 @@ describe('cleanAccessControlRulesForDisk', () => {
 
     assert.deepEqual(cleaned[0].beforeRelease, { listed: true });
     assert.notProperty(cleaned[1], 'beforeRelease');
+  });
+
+  it('preserves empty labels arrays on non-default rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({}),
+      makeAccessControlRule({ labels: [] }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.notProperty(cleaned[0], 'labels');
+    assert.deepEqual(cleaned[1].labels, []);
   });
 
   it('includes non-empty dateControl and afterComplete', () => {

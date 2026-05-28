@@ -135,7 +135,7 @@ export interface OverrideData {
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue;
+  afterLastDeadline: AfterLastDeadlineValue | null;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -145,6 +145,36 @@ export interface OverrideData {
 export interface AccessControlFormData {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+}
+
+export function isOverrideEditable(
+  override: OverrideData | null | undefined,
+  permissions: { canEditAccessSettings: boolean; canEditEnrollmentRules: boolean },
+): boolean {
+  if (!permissions.canEditAccessSettings) return false;
+  if (override?.appliesTo.targetType === 'enrollment') return permissions.canEditEnrollmentRules;
+  return true;
+}
+
+/**
+ * The default rule has a completion mechanism when something can actually
+ * close the assessment: a due date, a late deadline, a duration limit, or a
+ * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
+ * with only a release date or password has date control "on" but nothing to
+ * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
+ * in `validation.ts`. Used to gate after-complete UI and serialization on
+ * the default rule.
+ */
+export function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  >,
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
 }
 
 /**
@@ -302,7 +332,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
+  let afterLastDeadline: AfterLastDeadlineValue | null = null;
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -429,13 +459,16 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false).
+  // (questions.hidden: true, score.hidden: false) AND there is a
+  // completion mechanism (dateControl or PrairieTest). Without one,
+  // after-complete settings are meaningless and would fail validation.
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasNonDefaultQuestions || hasNonDefaultScore) {
+  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
@@ -555,9 +588,7 @@ export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): Ov
       : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: defaultRule?.afterLastDeadline
-      ? { ...defaultRule.afterLastDeadline }
-      : { allowSubmissions: false },
+    afterLastDeadline: defaultRule?.afterLastDeadline ? { ...defaultRule.afterLastDeadline } : null,
     durationMinutes: defaultRule?.durationMinutes ?? null,
     password: defaultRule?.password ?? null,
     questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },

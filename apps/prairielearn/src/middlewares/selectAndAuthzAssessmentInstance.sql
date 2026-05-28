@@ -18,20 +18,12 @@ WITH
       AND f.deleted_at IS NULL
   )
 SELECT
-  jsonb_set(
-    to_jsonb(ai),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (ai.date, ci.display_timezone)
-    )
-  ) AS assessment_instance,
+  to_jsonb(ai) AS assessment_instance,
   CASE
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
       ) * 1000
     )
   END AS assessment_instance_remaining_ms,
@@ -39,9 +31,7 @@ SELECT
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - ai.date
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - ai.date
       ) * 1000
     )
   END AS assessment_instance_time_limit_ms,

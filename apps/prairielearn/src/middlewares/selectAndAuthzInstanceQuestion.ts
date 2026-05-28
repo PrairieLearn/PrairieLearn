@@ -51,9 +51,7 @@ const InstanceQuestionInfoSchema = z.object({
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string(),
-  }),
+  assessment_instance: AssessmentInstanceSchema,
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),

@@ -132,6 +132,11 @@ export interface IRQuestion {
   points?: number;
   feedback?: IRFeedback;
   assets: Map<string, AssetReference>;
+  /**
+   * Source paths the parser chose not to emit. Their referencing tags have been commented out
+   * in `promptHtml` and the files are not included in `assets`.
+   */
+  skippedFiles?: string[];
   metadata?: Record<string, string>;
   shuffleAnswers?: boolean;
   gradingMethod: IRQuestionGradingMethod;
@@ -147,10 +152,22 @@ export interface IRZoneQuestion {
 /** A group of questions within an assessment (maps to a PL zone). */
 export interface IRZone {
   title: string;
-  /** Question references; full question data lives in IRAssessment.questions. */
+  /** Question references; full question data lives in the parent item container's questions. */
   questions: IRZoneQuestion[];
   /** If set, only this many questions are randomly chosen from the zone. */
   numberChoose?: number;
+}
+
+export interface IRSourceBankRef {
+  /** Source-system identifier for the unresolved bank reference. */
+  sourceBankRef: string;
+  /** Source-system export identifier, when the LMS provides a separate export ID. */
+  sourceBankExportId?: string;
+  title: string;
+  numberChoose?: number;
+  points?: number;
+  /** Source course identifier, when the LMS provides one for the missing bank. */
+  externalCourseId?: string;
 }
 
 /** Assessment-level metadata extracted from QTI. */
@@ -194,20 +211,39 @@ export interface IRParseWarning {
   questionId: string;
   message: string;
   level?: 'warn' | 'info';
+  /** When set, the warning is about an external question bank from another source course. */
+  externalCourseId?: string;
 }
 
-/** A collection of questions from one source (e.g., one assessment). */
-export interface IRAssessment {
+/** Common fields for one parsed collection of questions. */
+interface IRItemContainerBase {
   sourceId: string;
   title: string;
-  /** Flat list of all questions (for backward compat / simple use). */
   questions: IRQuestion[];
+  /** Warnings produced during parsing (e.g., unsupported question types). */
+  parseWarnings?: IRParseWarning[];
+}
+
+/** An assessment with questions and assessment-level metadata. */
+export interface IRAssessment extends IRItemContainerBase {
+  sourceType: 'assessment';
   /** Questions organized by sections/zones. If present, preferred over flat `questions`. */
   zones?: IRZone[];
+  /** Bank references that could not be resolved from the item content in this export. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
   /** Assessment-level metadata. */
   meta?: IRAssessmentMeta;
   /** Assessment-level rubric (resolved from course_settings/rubrics.xml when provided). */
   rubric?: IRRubric;
-  /** Warnings produced during parsing (e.g., unsupported question types). */
-  parseWarnings?: IRParseWarning[];
 }
+
+/** A question bank/object bank with questions but no assessment-level metadata. */
+export interface IRQuestionBank extends IRItemContainerBase {
+  sourceType: 'question-bank';
+  zones?: undefined;
+  unresolvedSourceBankRefs?: undefined;
+  meta?: undefined;
+  rubric?: undefined;
+}
+
+export type IRItemContainer = IRAssessment | IRQuestionBank;

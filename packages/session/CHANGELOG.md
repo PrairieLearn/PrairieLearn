@@ -1,5 +1,23 @@
 # @prairielearn/session
 
+## 4.0.6
+
+### Patch Changes
+
+- e4a5a84: Persist regenerated sessions to the store immediately, mirroring `loadSession()`'s behavior for new sessions. This ensures the new session ID is available to other queries within the same request after `req.session.regenerate()`.
+
+## 4.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 4.0.3
 
 ### Patch Changes

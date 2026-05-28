@@ -1,6 +1,7 @@
 -- BLOCK course_assessments
 SELECT
   a.id AS assessment_id,
+  a.tid,
   a.number AS assessment_number,
   aset.number AS assessment_set_number,
   aset.id AS assessment_set_id,

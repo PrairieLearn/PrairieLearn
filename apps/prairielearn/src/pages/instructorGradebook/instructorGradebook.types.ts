@@ -14,6 +14,7 @@ import {
 
 export const CourseAssessmentRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
+  tid: AssessmentSchema.shape.tid,
   assessment_number: AssessmentSchema.shape.number,
   assessment_set_number: AssessmentSetSchema.shape.number,
   assessment_set_id: AssessmentSetSchema.shape.id,
@@ -47,13 +48,15 @@ export const GradebookRowSchema = z.object({
   enrollment: StaffEnrollmentSchema.nullable(),
   scores: z.record(
     AssessmentSchema.shape.id,
-    z.object({
-      score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
-      points: AssessmentInstanceSchema.shape.points.nullable(),
-      max_points: AssessmentInstanceSchema.shape.max_points.nullable(),
-      assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
-      uid_other_users_group: OtherGroupUserSchema.array(),
-    }),
+    z
+      .object({
+        score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
+        points: AssessmentInstanceSchema.shape.points.nullable(),
+        max_points: AssessmentInstanceSchema.shape.max_points.nullable(),
+        assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
+        uid_other_users_group: OtherGroupUserSchema.array(),
+      })
+      .optional(),
   ),
   student_label_ids: IdSchema.array(),
 });

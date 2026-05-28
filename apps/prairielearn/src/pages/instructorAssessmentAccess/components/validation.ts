@@ -1,13 +1,17 @@
 import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
+  validateAfterCompleteCrossFieldIssues,
+  validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
+  validateRuleCreditOrderingIssues,
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
 
+import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
 import { type AccessControlFormData, formDataToJson, isReleasedNow } from './types.js';
 
 export type AccessControlFormFieldPath =
@@ -15,21 +19,27 @@ export type AccessControlFormFieldPath =
   | 'defaultRule.due.date'
   | 'defaultRule.due.credit'
   | `defaultRule.earlyDeadlines.${number}.date`
+  | `defaultRule.earlyDeadlines.${number}.credit`
   | `defaultRule.lateDeadlines.${number}.date`
   | `defaultRule.lateDeadlines.${number}.credit`
   | 'defaultRule.afterLastDeadline.credit'
+  | 'defaultRule.questionVisibility'
   | 'defaultRule.questionVisibility.visibleFromDate'
   | 'defaultRule.questionVisibility.visibleUntilDate'
+  | 'defaultRule.scoreVisibility'
   | 'defaultRule.scoreVisibility.visibleFromDate'
   | `overrides.${number}.release.date`
   | `overrides.${number}.due.date`
   | `overrides.${number}.due.credit`
   | `overrides.${number}.earlyDeadlines.${number}.date`
+  | `overrides.${number}.earlyDeadlines.${number}.credit`
   | `overrides.${number}.lateDeadlines.${number}.date`
   | `overrides.${number}.lateDeadlines.${number}.credit`
   | `overrides.${number}.afterLastDeadline.credit`
+  | `overrides.${number}.questionVisibility`
   | `overrides.${number}.questionVisibility.visibleFromDate`
   | `overrides.${number}.questionVisibility.visibleUntilDate`
+  | `overrides.${number}.scoreVisibility`
   | `overrides.${number}.scoreVisibility.visibleFromDate`;
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
@@ -54,7 +64,9 @@ function mapIssueToFormFieldPath(
         case 'due':
           return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
         case 'earlyDeadlines':
-          return `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+          return issue.path[3] === 'credit'
+            ? `${prefix}.earlyDeadlines.${issue.path[2]}.credit`
+            : `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
         case 'lateDeadlines':
           return issue.path[3] === 'credit'
             ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
@@ -67,6 +79,9 @@ function mapIssueToFormFieldPath(
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
+        if (issue.path.length === 2) {
+          return `${prefix}.questionVisibility`;
+        }
         switch (issue.path[2]) {
           case 'visibleFromDate':
             return `${prefix}.questionVisibility.visibleFromDate`;
@@ -78,6 +93,7 @@ function mapIssueToFormFieldPath(
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (issue.path[1] === 'score') {
+        if (issue.path.length === 2) return `${prefix}.scoreVisibility`;
         switch (issue.path[2]) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           case 'visibleFromDate':
@@ -90,6 +106,33 @@ function mapIssueToFormFieldPath(
     default:
       return null;
   }
+}
+
+function mapIssueToEditableFormFieldPath(
+  issue: AccessControlValidationIssue,
+  formData: AccessControlFormData,
+): AccessControlFormFieldPath | null {
+  const path = mapIssueToFormFieldPath(issue);
+  if (!path) return null;
+  if (isFormFieldPathEditable(formData, path)) return path;
+
+  // The "score hidden while questions visible" rule is a cross-field
+  // constraint between question and score visibility. The default mapping
+  // attaches the issue to question visibility, but on an override the user
+  // can resolve it by editing whichever of the two fields they have
+  // overridden. If only score visibility is overridden, redirect the error
+  // there so it lands on an input the user can actually edit.
+  if (
+    issue.path[0] === 'afterComplete' &&
+    issue.path[1] === 'questions' &&
+    issue.path.length === 2 &&
+    issue.ruleIndex > 0
+  ) {
+    const scorePath: AccessControlFormFieldPath = `overrides.${issue.ruleIndex - 1}.scoreVisibility`;
+    if (isFormFieldPathEditable(formData, scorePath)) return scorePath;
+  }
+
+  return null;
 }
 
 /**
@@ -128,7 +171,7 @@ function getReleaseStateValidationErrors(
   }
 
   formData.overrides.forEach((override, index) => {
-    if (override.overriddenFields.includes('release')) {
+    if (isOverrideFieldActive(formData, index, 'release')) {
       checkRule(override.release, `overrides.${index}.release.date`);
     }
   });
@@ -152,9 +195,15 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
+    // Run the "no completion mechanism" check before the cross-field check —
+    // both target the same questionVisibility path, but the mechanism error
+    // is more fundamental (cross-field consistency is moot when there's no
+    // mechanism at all).
+    validateGlobalAfterCompleteIssues(validationRules),
+    validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
-      const path = mapIssueToFormFieldPath(issue);
+      const path = mapIssueToEditableFormFieldPath(issue, formData);
       if (!path || seenPaths.has(path)) continue;
       seenPaths.add(path);
       results.push({ path, message: issue.message });
@@ -162,12 +211,16 @@ export function getGlobalDateValidationErrors(
   }
 
   for (const validationRule of validationRules) {
-    for (const issues of [
-      validateRuleStructuralDependencyIssues(validationRule),
-      validateRuleDateOrderingIssues(validationRule),
-    ]) {
+    const dateIssues = validateRuleDateOrderingIssues(validationRule);
+    const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
+    // Credit ordering assumes deadlines are chronological; skip if dates are
+    // out of order to avoid misleading "credits must strictly decrease" errors.
+    if (dateIssues.length === 0) {
+      issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
+    }
+    for (const issues of issueGroups) {
       for (const issue of issues) {
-        const path = mapIssueToFormFieldPath(issue);
+        const path = mapIssueToEditableFormFieldPath(issue, formData);
         if (!path || seenPaths.has(path)) continue;
         seenPaths.add(path);
         results.push({ path, message: issue.message });

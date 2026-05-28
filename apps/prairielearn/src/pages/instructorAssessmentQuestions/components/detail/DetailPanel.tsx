@@ -1,4 +1,6 @@
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
+import type { AppError } from '../../../../lib/client/errors.js';
+import type { AssessmentQuestionsError } from '../../../../trpc/assessment/assessment-questions.js';
 import {
   type CourseQuestionForPicker,
   type DetailActions,
@@ -43,7 +45,7 @@ export function DetailPanel({
   currentChangeQid?: string;
   currentAssessmentId: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
 }) {
