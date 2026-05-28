@@ -6,6 +6,15 @@ FROM
 WHERE
   id = $question_id;
 
+-- BLOCK select_questions_by_ids_and_course_id
+SELECT
+  *
+FROM
+  questions
+WHERE
+  id = ANY ($question_ids::bigint[])
+  AND course_id = $course_id;
+
 -- BLOCK select_question_by_qid
 SELECT
   *
@@ -53,6 +62,23 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
   iq.id = $instance_question_id;
+
+-- BLOCK select_questions_used_in_other_courses
+SELECT DISTINCT
+  q.id,
+  q.qid
+FROM
+  questions AS q
+  JOIN assessment_questions AS aq ON aq.question_id = q.id
+  JOIN assessments AS a ON a.id = aq.assessment_id
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id
+WHERE
+  q.id = ANY ($question_ids::bigint[])
+  AND ci.course_id != $course_id
+  AND q.deleted_at IS NULL
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
 
 -- BLOCK select_questions_for_course_instance_copy
 SELECT DISTINCT
