@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { getCourseFilesClient } from '../lib/course-files-api.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectQuestionByQid } from '../models/question.js';
 
@@ -139,6 +140,23 @@ describe('QuestionDeleteEditor rewrites infoAssessment.json', { timeout: 20_000 
   });
 
   afterAll(helperServer.after);
+
+  it('blocks bulk deletion when it would invalidate referencing assessments', async () => {
+    const targetQuestion = await selectQuestionByQid({ qid: TARGET_QID, course_id: COURSE_ID });
+    const otherQuestion = await selectQuestionByQid({ qid: OTHER_QID, course_id: COURSE_ID });
+
+    const result = await getCourseFilesClient().batchDeleteQuestions.mutate({
+      course_id: COURSE_ID,
+      user_id: '1',
+      authn_user_id: '1',
+      has_course_permission_edit: true,
+      question_ids: [targetQuestion.id, otherQuestion.id],
+    });
+
+    assert.equal(result.status, 'error');
+    assert.isTrue(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', TARGET_QID)));
+    assert.isTrue(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', OTHER_QID)));
+  });
 
   it('removes the deleted qid from every referencing assessment', async () => {
     const targetQuestion = await selectQuestionByQid({ qid: TARGET_QID, course_id: COURSE_ID });
