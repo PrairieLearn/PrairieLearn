@@ -13,12 +13,12 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@prairielearn/html": "workspace:^",
+    "@prairielearn/html": "^5.0.5",
     "csv-stringify": "^6.7.0",
     "js-base64": "^3.7.8"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/tsconfig": "^2.1.0",
     "@typescript/native-preview": "beta"
   },
   "sideEffects": false

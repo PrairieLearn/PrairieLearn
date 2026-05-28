@@ -20,8 +20,8 @@
     "es-toolkit": "^1.46.1"
   },
   "devDependencies": {
-    "@prairielearn/html": "workspace:^",
-    "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/html": "^5.0.5",
+    "@prairielearn/tsconfig": "^2.1.0",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",

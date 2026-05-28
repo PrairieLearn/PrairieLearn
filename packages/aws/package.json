@@ -20,7 +20,7 @@
     "@smithy/types": "^4.14.1"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/tsconfig": "^2.1.0",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta"
   }

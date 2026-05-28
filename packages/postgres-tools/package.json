@@ -20,7 +20,7 @@
     "dev": "tsgo --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
-    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/postgres": "^6.0.4",
     "async": "^3.2.6",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
@@ -30,7 +30,7 @@
     "postgres-array": "^3.0.4"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/tsconfig": "^2.1.0",
     "@types/async": "^3.2.25",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.12.2",

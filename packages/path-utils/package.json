@@ -18,7 +18,7 @@
     "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/tsconfig": "^2.1.0",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.5",
