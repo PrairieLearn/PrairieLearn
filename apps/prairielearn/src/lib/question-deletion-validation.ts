@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 
-import { selectAssessmentDirectoriesForQuestions } from '../models/assessment.js';
+import { selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 
 import { type Course } from './db-types.js';
