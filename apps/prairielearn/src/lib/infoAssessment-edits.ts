@@ -55,6 +55,30 @@ interface EmptiedZone {
   zoneTitle: string | null;
 }
 
+/**
+ * A reason the deletion cannot proceed because the resulting assessment would
+ * fail sync validation. Detected only when the deletion *introduces* the
+ * problem (i.e. the pre-deletion file was syncable in this respect).
+ */
+export type DeletionBlocker =
+  | { code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' }
+  | { code: 'NO_ZONES_REMAINING' };
+
+export function blockerDescription(blocker: DeletionBlocker): string {
+  switch (blocker.code) {
+    case 'NO_ZONES_REMAINING':
+      return 'all zones would be empty';
+    case 'NEW_FIRST_ZONE_HAS_LOCKPOINT':
+      return 'the new first zone has lockpoint: true';
+  }
+}
+
+export interface BlockedAssessment {
+  assessmentLabel: string;
+  courseInstanceShortName: string;
+  blockers: DeletionBlocker[];
+}
+
 interface RemoveQidsFromAssessmentResult {
   assessment: AssessmentJsonInput;
   removedCount: number;
@@ -65,6 +89,11 @@ interface RemoveQidsFromAssessmentResult {
    * this list before persisting.
    */
   emptiedZones: EmptiedZone[];
+  /**
+   * Sync-validation problems newly introduced by the deletion. Callers should
+   * refuse to persist when this is non-empty.
+   */
+  blockers: DeletionBlocker[];
 }
 
 /**
@@ -88,9 +117,20 @@ export function removeQidsFromAssessment(
     }
     zones.push({ ...zone, questions });
   }
+
+  const originalZones = assessment.zones ?? [];
+  const blockers: DeletionBlocker[] = [];
+  if (zones.length === 0 && originalZones.length > 0) {
+    blockers.push({ code: 'NO_ZONES_REMAINING' });
+  }
+  if (zones[0]?.lockpoint && !originalZones[0]?.lockpoint) {
+    blockers.push({ code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' });
+  }
+
   return {
     assessment: { ...assessment, zones },
     removedCount,
     emptiedZones,
+    blockers,
   };
 }
