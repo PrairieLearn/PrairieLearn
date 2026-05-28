@@ -343,6 +343,12 @@ export function getNavPageTabs() {
     ],
     institution_admin: [
       {
+        activeSubPage: 'general',
+        urlSuffix: '',
+        iconClasses: 'fa fa-gear',
+        tabLabel: 'General',
+      },
+      {
         activeSubPage: 'admins',
         urlSuffix: '/admins',
         iconClasses: 'fa fa-user-shield',

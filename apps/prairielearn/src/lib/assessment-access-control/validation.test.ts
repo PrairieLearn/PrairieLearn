@@ -882,6 +882,22 @@ describe('Empty accessControl array', () => {
       ),
     );
   });
+
+  it('allows inert student-label rules with no labels by default', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: [],
+          dateControl: {
+            durationMinutes: 90,
+          },
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.errors, []);
+  });
 });
 
 describe('Global temporal validation', () => {
