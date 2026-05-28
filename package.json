@@ -89,6 +89,12 @@
       "sharp",
       "ssh2",
       "unrs-resolver"
-    ]
+    ],
+    "supportedArchitectures": {
+      "libc": [
+        "current",
+        "gnu"
+      ]
+    }
   }
 }
