@@ -87,19 +87,19 @@ export function ManageGroupWorkCard({
   courseInstanceId,
   assessmentId,
   disableAccess,
-  membershipSummary,
+  assignmentSummary,
   onDisable,
 }: {
   origHash: string | null;
   hasAssessmentInstances: boolean;
   courseInstanceId: string;
   assessmentId: string;
-  disableAccess: ActionAccess;
-  membershipSummary?: { groupCount: number; unassignedStudentCount: number };
+  disableAccess?: ActionAccess;
+  assignmentSummary?: { totalStudentCount: number; unassignedStudentCount: number };
   onDisable: (result: { origHash: string }) => void;
 }) {
   const [showDisableModal, setShowDisableModal] = useState(false);
-  const canDisable = disableAccess.status === 'allowed';
+  const canDisable = disableAccess?.status === 'allowed';
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.disableGroupWork.mutationOptions());
   const appError = getAppError<AssessmentGroupsError['DisableGroupWork']>(mutation.error);
@@ -110,29 +110,31 @@ export function ManageGroupWorkCard({
 
   return (
     <div className="card">
-      <DisableGroupWorkModal
-        show={showDisableModal}
-        isPending={mutation.isPending}
-        hasAssessmentInstances={hasAssessmentInstances}
-        courseInstanceId={courseInstanceId}
-        assessmentId={assessmentId}
-        error={appError}
-        onDismissError={() => mutation.reset()}
-        onHide={hideDisableModal}
-        onConfirm={() =>
-          mutation.mutate(
-            { origHash },
-            {
-              onSuccess: (result) => {
-                hideDisableModal();
-                onDisable(result);
+      {disableAccess && (
+        <DisableGroupWorkModal
+          show={showDisableModal}
+          isPending={mutation.isPending}
+          hasAssessmentInstances={hasAssessmentInstances}
+          courseInstanceId={courseInstanceId}
+          assessmentId={assessmentId}
+          error={appError}
+          onDismissError={() => mutation.reset()}
+          onHide={hideDisableModal}
+          onConfirm={() =>
+            mutation.mutate(
+              { origHash },
+              {
+                onSuccess: (result) => {
+                  hideDisableModal();
+                  onDisable(result);
+                },
               },
-            },
-          )
-        }
-      />
+            )
+          }
+        />
+      )}
       <div className="card-body py-2">
-        {disableAccess.status === 'denied' && (
+        {disableAccess?.status === 'denied' && (
           <Alert variant="info" className="mb-2">
             {disableAccess.reason}
           </Alert>
@@ -143,21 +145,25 @@ export function ManageGroupWorkCard({
               <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
               <span className="fw-semibold">Group work is enabled</span>
             </div>
-            {membershipSummary && (
+            {assignmentSummary && assignmentSummary.totalStudentCount > 0 && (
               <div className="text-muted small">
-                {`${membershipSummary.groupCount} group${membershipSummary.groupCount === 1 ? '' : 's'} · ${membershipSummary.unassignedStudentCount} student${membershipSummary.unassignedStudentCount === 1 ? '' : 's'} unassigned`}
+                {assignmentSummary.unassignedStudentCount === 0
+                  ? 'All students assigned'
+                  : `${assignmentSummary.unassignedStudentCount} student${assignmentSummary.unassignedStudentCount === 1 ? '' : 's'} unassigned`}
               </div>
             )}
           </div>
-          <Button
-            size="sm"
-            variant="outline-danger"
-            className="text-nowrap align-self-start align-self-lg-center"
-            disabled={mutation.isPending || !canDisable}
-            onClick={() => setShowDisableModal(true)}
-          >
-            Disable group work
-          </Button>
+          {disableAccess && (
+            <Button
+              size="sm"
+              variant="outline-danger"
+              className="text-nowrap align-self-start align-self-lg-center"
+              disabled={mutation.isPending || !canDisable}
+              onClick={() => setShowDisableModal(true)}
+            >
+              Disable group work
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -197,7 +197,7 @@ function InstructorAssessmentGroupsInner({
   const canViewStudentData = permissions.hasCourseInstancePermissionView;
   const canEditStudentData =
     permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
-  const showManageGroupWork =
+  const showDisableGroupWorkAction =
     permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -215,6 +215,18 @@ function InstructorAssessmentGroupsInner({
   const refreshGroupMembership = () => {
     void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey });
   };
+  const assignmentSummary = run(() => {
+    if (!canViewStudentData || !groupMembershipQuery.data) return undefined;
+    const unassignedStudentCount = groupMembershipQuery.data.notAssigned.length;
+    const assignedStudentCount = groupMembershipQuery.data.groups.reduce(
+      (sum, group) => sum + group.size,
+      0,
+    );
+    return {
+      totalStudentCount: assignedStudentCount + unassignedStudentCount,
+      unassignedStudentCount,
+    };
+  });
 
   if (!groupConfigInfo) {
     return (
@@ -250,59 +262,44 @@ function InstructorAssessmentGroupsInner({
   return (
     <>
       <div className="container d-flex flex-column gap-3 py-3">
-        {showManageGroupWork && (
-          <ManageGroupWorkCard
-            origHash={origHash}
-            hasAssessmentInstances={hasAssessmentInstances}
-            courseInstanceId={courseInstanceId}
-            assessmentId={assessment.id}
-            membershipSummary={
-              canViewStudentData && groupMembershipQuery.data
-                ? {
-                    groupCount: groupMembershipQuery.data.groups.length,
-                    unassignedStudentCount: groupMembershipQuery.data.notAssigned.length,
+        <ManageGroupWorkCard
+          origHash={origHash}
+          hasAssessmentInstances={hasAssessmentInstances}
+          courseInstanceId={courseInstanceId}
+          assessmentId={assessment.id}
+          assignmentSummary={assignmentSummary}
+          disableAccess={
+            showDisableGroupWorkAction
+              ? run<ActionAccess>(() => {
+                  if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
+                  if (permissions.isExampleCourse) {
+                    return {
+                      status: 'denied',
+                      reason: 'Disabling group work is not permitted for the example course.',
+                    };
                   }
-                : undefined
-            }
-            disableAccess={run<ActionAccess>(() => {
-              if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
-              if (permissions.isExampleCourse) {
-                return {
-                  status: 'denied',
-                  reason: 'Disabling group work is not permitted for the example course.',
-                };
-              }
-              if (
-                !permissions.hasCoursePermissionEdit &&
-                !permissions.hasCourseInstancePermissionEdit
-              ) {
-                return {
-                  status: 'denied',
-                  reason:
-                    'Disabling group work requires both course editor and student data editor permissions because it changes group settings and permanently removes group memberships.',
-                };
-              }
-              if (!permissions.hasCoursePermissionEdit) {
-                return {
-                  status: 'denied',
-                  reason:
-                    'Disabling group work requires course editor permissions because it changes group settings.',
-                };
-              }
-              return {
-                status: 'denied',
-                reason:
-                  'Disabling group work requires student data editor permissions because it permanently removes group memberships.',
-              };
-            })}
-            onDisable={({ origHash: newHash }) => {
-              setOrigHash(newHash);
-              setGroupSettingsDefaults(null);
-              setGroupConfigInfo(undefined);
-              queryClient.removeQueries({ queryKey: groupMembershipQueryKey });
-            }}
-          />
-        )}
+                  if (!permissions.hasCoursePermissionEdit) {
+                    return {
+                      status: 'denied',
+                      reason:
+                        'Disabling group work requires course editor permissions because it changes group settings.',
+                    };
+                  }
+                  return {
+                    status: 'denied',
+                    reason:
+                      'Disabling group work requires student data editor permissions because it permanently removes group memberships.',
+                  };
+                })
+              : undefined
+          }
+          onDisable={({ origHash: newHash }) => {
+            setOrigHash(newHash);
+            setGroupSettingsDefaults(null);
+            setGroupConfigInfo(undefined);
+            queryClient.removeQueries({ queryKey: groupMembershipQueryKey });
+          }}
+        />
         <GroupSettingsCard
           groupConfigInfo={groupConfigInfo}
           groupSettingsDefaults={groupSettingsDefaults}
