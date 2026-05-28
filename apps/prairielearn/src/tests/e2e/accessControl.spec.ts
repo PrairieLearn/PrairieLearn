@@ -104,7 +104,7 @@ test.describe('Access control UI', () => {
     await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
     // Save bar is hidden when there are no unsaved changes
-    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
   });
 
   test('can add a student-label override, configure it, and save', async ({
@@ -140,7 +140,7 @@ test.describe('Access control UI', () => {
     await expect(getOverrideCard(page, 'Extra time')).toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB: new rule with labels
@@ -183,7 +183,7 @@ test.describe('Access control UI', () => {
     await expect(page.getByText('No overrides configured')).toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB: override count decreased
@@ -238,7 +238,7 @@ test.describe('Access control UI', () => {
     await expect(page.getByText('Hidden after completion')).toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB state

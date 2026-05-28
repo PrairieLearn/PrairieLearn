@@ -125,7 +125,7 @@ async function prepareScreenshotDom(page: Page, replacements: ScreenshotTextRepl
         return (
           rect.height > 0 &&
           (text.includes('No unsaved changes') || text.includes('You have unsaved changes')) &&
-          text.includes('Save and sync')
+          text.includes('Save')
         );
       })
       .sort((a, b) => a.getBoundingClientRect().height - b.getBoundingClientRect().height)
