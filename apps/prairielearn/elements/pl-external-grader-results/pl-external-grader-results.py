@@ -68,8 +68,10 @@ def normalize_images(images: list[Any]) -> list[dict[str, Any]]:
     for image in images:
         if isinstance(image, str):
             normalized_image = {"url": image}
-        else:
+        elif isinstance(image, dict):
             normalized_image = dict(image)
+        else:
+            continue
 
         normalized_images.append(normalized_image)
 

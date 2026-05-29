@@ -10,7 +10,7 @@ Displays results from externally-graded questions.
 
 ## Details
 
-It expects results to follow [the reference schema for external grading results](../externalGrading.md#grading-results). Image entries may include an optional `alt` field for alternative text; if omitted, PrairieLearn falls back to the image label or "Figure".
+It expects results to follow [the reference schema for external grading results](../externalGrading.md#grading-results).
 
 ## Example Implementations
 
