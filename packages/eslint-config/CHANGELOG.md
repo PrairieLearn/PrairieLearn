@@ -1,5 +1,11 @@
 # @prairielearn/eslint-config
 
+## 3.0.2
+
+### Patch Changes
+
+- 8e04917: Update eslint-plugin-react-you-might-not-need-an-effect to 0.10.2.
+
 ## 3.0.1
 
 ### Patch Changes
