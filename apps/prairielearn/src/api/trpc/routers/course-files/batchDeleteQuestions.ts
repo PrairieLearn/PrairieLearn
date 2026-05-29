@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionDeleteEditor } from '../../../../lib/editors.js';
-import {
-  formatBlockedAssessments,
-  getQuestionDeletionBlockers,
-} from '../../../../lib/question-deletion-validation.js';
+import { selectQuestionsBlockingDeletion } from '../../../../lib/question-deletion-validation.js';
 import { type ServerJobExecutor } from '../../../../lib/server-jobs.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionsByIdsAndCourseId } from '../../../../models/question.js';
@@ -67,26 +64,12 @@ export const batchDeleteQuestions = privateProcedure
 
     const serverJob = await editor.prepareServerJob();
 
-    const { usedInOtherCourses, blockedAssessments } = await getQuestionDeletionBlockers({
-      course,
-      questions,
-    });
+    const usedInOtherCourses = await selectQuestionsBlockingDeletion({ course, questions });
 
     if (usedInOtherCourses.length > 0) {
       await failServerJob(
         serverJob,
         'One or more questions are used by another course and cannot be deleted. Unshare them or remove them from those assessments first.',
-      );
-      return {
-        status: 'error',
-        job_sequence_id: serverJob.jobSequenceId,
-      };
-    }
-
-    if (blockedAssessments.length > 0) {
-      await failServerJob(
-        serverJob,
-        `Deleting these questions would leave the following assessments in an invalid state: ${formatBlockedAssessments(blockedAssessments)}. Remove the questions from these assessments first.`,
       );
       return {
         status: 'error',

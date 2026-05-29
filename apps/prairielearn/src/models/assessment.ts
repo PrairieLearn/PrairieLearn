@@ -19,6 +19,7 @@ import {
   AssessmentSetSchema,
   type AssessmentTool,
   AssessmentToolSchema,
+  type CourseInstance,
   CourseInstanceSchema,
 } from '../lib/db-types.js';
 import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
@@ -33,6 +34,29 @@ export async function selectOptionalAssessmentById(
   assessment_id: string,
 ): Promise<Assessment | null> {
   return await queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
+}
+
+/**
+ * Returns the assessment together with its course instance, scoped to the
+ * given course. Returns `null` when the assessment does not exist, has been
+ * deleted, belongs to a deleted course instance, or belongs to a different
+ * course.
+ */
+export async function selectOptionalAssessmentInCourse({
+  assessment_id,
+  course_id,
+}: {
+  assessment_id: string;
+  course_id: string;
+}): Promise<{ assessment: Assessment; course_instance: CourseInstance } | null> {
+  return await queryOptionalRow(
+    sql.select_assessment_in_course,
+    { assessment_id, course_id },
+    z.object({
+      assessment: AssessmentSchema,
+      course_instance: CourseInstanceSchema,
+    }),
+  );
 }
 
 export async function selectAssessmentByTid({
@@ -188,6 +212,26 @@ export async function selectAssessmentsReferencingQuestions({
     sql.select_assessments_referencing_questions,
     { course_id, question_ids },
     AssessmentReferencingQuestionsSchema,
+  );
+}
+
+/**
+ * Returns, for each assessment in `course_instance_id` that references any of
+ * `question_ids` via its synced `assessment_questions`, the number of distinct
+ * `question_ids` it references. Assessments referencing none of the questions
+ * are omitted.
+ */
+export async function selectAssessmentReferencedQuestionCounts({
+  course_instance_id,
+  question_ids,
+}: {
+  course_instance_id: string;
+  question_ids: string[];
+}): Promise<{ assessment_id: string; referenced_count: number }[]> {
+  return queryRows(
+    sql.select_assessment_referenced_question_counts,
+    { course_instance_id, question_ids },
+    z.object({ assessment_id: IdSchema, referenced_count: z.coerce.number() }),
   );
 }
 

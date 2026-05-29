@@ -6,13 +6,14 @@ const COLLAPSE_THRESHOLD = 5;
 
 /**
  * Assessments that reference a question, grouped by course instance, with the
- * subset of assessment IDs whose zones would be emptied by the deletion.
+ * IDs of the assessments whose zones would be emptied by the deletion. Produced
+ * by the `previewDeletion` procedure.
  */
 export interface QuestionCourseInstanceMembership {
   courseInstanceId: string;
   courseInstanceShortName: string;
   assessments: AssessmentForPicker[];
-  emptiedAssessmentIds: ReadonlySet<string>;
+  emptiedAssessmentIds: readonly string[];
 }
 
 function CourseInstanceMemberships({
@@ -33,7 +34,7 @@ function CourseInstanceMemberships({
             <AssessmentBadges
               assessments={membership.assessments}
               courseInstanceId={membership.courseInstanceId}
-              markedAssessmentIds={membership.emptiedAssessmentIds}
+              markedAssessmentIds={new Set(membership.emptiedAssessmentIds)}
               stopGroupClickPropagation={false}
             />
           </div>
