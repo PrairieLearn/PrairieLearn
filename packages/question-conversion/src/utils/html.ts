@@ -184,12 +184,18 @@ export function resolveImsFileRefs(
   return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
 }
 
-function normalizeImsFilePath(rawPath: string): string {
+/**
+ * Normalize an IMS/Canvas file reference to the on-disk filename: strip any
+ * `?query`/`#fragment`, then URL- and HTML-decode. This is the canonical form
+ * stored in `fileRefs`; consumers that read the referenced asset back off disk
+ * must resolve against this same normalization.
+ */
+export function normalizeImsFilePath(rawPath: string): string {
   const pathWithoutQuery = rawPath.replace(/[?#].*$/, '');
   return he.decode(safeDecodeURIComponent(pathWithoutQuery));
 }
 
-function safeDecodeURIComponent(value: string): string {
+export function safeDecodeURIComponent(value: string): string {
   try {
     return decodeURIComponent(value);
   } catch {

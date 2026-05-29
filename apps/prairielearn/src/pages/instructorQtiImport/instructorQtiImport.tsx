@@ -22,7 +22,9 @@ import {
   type QtiFileEntry,
   findQtiFilesFromManifest,
   findQtiXmlFiles,
+  normalizeImsFilePath,
   parseAssessment,
+  safeDecodeURIComponent,
   slugify,
 } from '@prairielearn/question-conversion';
 import { Hydrate } from '@prairielearn/react/server';
@@ -444,11 +446,7 @@ export async function serializeConversionResult(
       for (const d of await lintQuestionHtml(q.questionHtml)) {
         if (seenMessages.has(d.message)) continue;
         seenMessages.add(d.message);
-        extraWarnings.push({
-          questionId,
-          message: d.message,
-          level: 'warn',
-        });
+        extraWarnings.push({ questionId, message: d.message, level: 'warn' });
       }
       return {
         directoryName: `${questionPrefix}/${q.directoryName}`,
@@ -572,17 +570,10 @@ function candidateClientFilePaths(content: string): string[] {
   addCandidates(content);
   addCandidates(he.decode(content));
   addCandidates(safeDecodeURIComponent(content));
-  addCandidates(he.decode(safeDecodeURIComponent(content)));
+  // The canonical form the conversion package wrote into the file reference.
+  candidates.add(normalizeImsFilePath(content));
 
   return [...candidates];
-}
-
-function safeDecodeURIComponent(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 function questionFingerprint(question: StoredSerializedConversionResult['questions'][number]) {
