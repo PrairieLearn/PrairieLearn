@@ -7,8 +7,9 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema, UserSchema } from '../../lib/db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../../tests/helperDb.js';
 
 import { selectActiveLockdownBrowserReservation } from './endExam.js';
