@@ -18,7 +18,6 @@ const PrairieTestJwtPayloadSchema = z.object({
   course_instance_id: z.string().optional(),
   assessment_id: z.string().optional(),
   lockdown_browser: z.boolean().optional(),
-  reservation_id: z.string().optional(),
 });
 
 router.post(
@@ -57,7 +56,7 @@ router.post(
         cause: err,
       });
     }
-    const { user_id, course_instance_id, assessment_id, lockdown_browser, reservation_id } =
+    const { user_id, course_instance_id, assessment_id, lockdown_browser } =
       PrairieTestJwtPayloadSchema.parse(payload);
 
     if ((course_instance_id === undefined) !== (assessment_id === undefined)) {
@@ -78,9 +77,6 @@ router.post(
     // Record whether the student authenticated through the LockDown Browser
     // flow so PrairieLearn pages can conditionally hide navigation elements.
     req.session.lockdown_browser = lockdown_browser ?? false;
-    // The PT reservation_id is captured so PL can call back to PT to end the
-    // reservation (and exit LDB) without a roundtrip through the PT window.
-    req.session.reservation_id = reservation_id;
 
     await authnLib.loadUser(
       req,

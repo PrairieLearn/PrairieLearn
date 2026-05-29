@@ -133,19 +133,28 @@ export async function loadUser(
   // fixation. The authn middleware re-enters this function on every request
   // with the existing session's user_id, so the guard keeps it a no-op there.
   if (req.session.user_id !== user_id) {
-    // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
-    // in the session before authentication completes and consumes them afterward.
-    // These must be carried forward across the session regeneration triggered by an identity transition.
+    // Some launch flows stash pre-auth values on the session that
+    // downstream code expects to find after the identity transition:
+    // - LTI 1.3 stores `lti13_claims` and `authn_lti13_instance_id` to
+    //   complete the launch handshake after authn.
+    // - PrairieTest stores `lockdown_browser` to gate the End exam
+    //   control. TODO: drop this branch once #15087 lands — it moves
+    //   `lockdown_browser` to a `loadUser` option that's written after
+    //   regenerate, making this preservation entry redundant.
 
     const inLti13Launch =
       authnParams.provider === 'LTI 1.3' ||
       Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
+    const inPrairieTestLaunch = authnParams.provider === 'PrairieTest';
 
-    const preservedSessionData = inLti13Launch
-      ? ['lti13_claims', 'authn_lti13_instance_id']
-          .map((key) => [key, req.session[key]] as const)
-          .filter(([_, v]) => v !== undefined)
-      : [];
+    const preservedSessionKeys = [
+      ...(inLti13Launch ? ['lti13_claims', 'authn_lti13_instance_id'] : []),
+      ...(inPrairieTestLaunch ? ['lockdown_browser'] : []),
+    ];
+
+    const preservedSessionData = preservedSessionKeys
+      .map((key) => [key, req.session[key]] as const)
+      .filter(([_, v]) => v !== undefined);
 
     await req.session.regenerate();
 

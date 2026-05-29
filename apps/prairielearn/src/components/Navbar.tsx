@@ -141,17 +141,17 @@ export function Navbar({
 /**
  * Renders an "End exam" control when the user is in a LockDown Browser
  * session. The button opens a confirmation modal whose form POSTs to
- * `/pl/end-exam`; that handler mints a short-lived JWT and bridges the
- * student to PrairieTest's end-exam callback, which closes the
- * reservation and exits LockDown Browser. Mirrors PrairieTest's
- * `endExamModal` pattern on its reservation page.
+ * `/pl/end-exam`; that handler looks up the student's active
+ * LDB-required reservation, mints a short-lived JWT, calls PT
+ * server-to-server to end the reservation, and redirects into PT's
+ * close flow to exit LockDown Browser.
  *
  * PL's CSRF token is bound to the request URL, so we mint one specifically
  * for `/pl/end-exam` rather than reusing `resLocals.__csrf_token` (which
  * is bound to the current page's URL and would be rejected on submit).
  */
 function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
-  if (!resLocals.lockdown_browser || !resLocals.reservation_id) return '';
+  if (!resLocals.lockdown_browser) return '';
   const endExamCsrfToken = generateCsrfToken({
     url: '/pl/end-exam',
     authnUserId: resLocals.authn_user.id,

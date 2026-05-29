@@ -32,7 +32,6 @@ const BasePageContextSchema = z.object({
   is_administrator: z.boolean(),
   is_institution_administrator: z.boolean(),
   lockdown_browser: z.boolean(),
-  reservation_id: z.string().optional(),
   navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,

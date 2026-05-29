@@ -181,11 +181,6 @@ export default asyncHandler(async (req, res, next) => {
   // Surface the LockDown Browser flag recorded on the session at PT->PL
   // login so pages can conditionally hide navigation elements.
   res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
-  // The PT reservation_id, when present, gates the LDB end-exam control
-  // in the navbar and is read off the session by the /pl/end-exam handler
-  // when the student clicks it. The cross-origin JWT is minted there at
-  // submit time, not here, so it never sits on res.locals.
-  res.locals.reservation_id = req.session.reservation_id;
 
   next();
 });
