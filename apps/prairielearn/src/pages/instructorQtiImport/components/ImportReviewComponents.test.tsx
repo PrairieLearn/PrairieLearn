@@ -7,6 +7,7 @@ import {
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
   buildQuestionWarningsByDirectoryName,
+  fileSizeWarning,
 } from './ImportReviewComponents.js';
 
 const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
@@ -66,6 +67,21 @@ describe('QuestionBankDeduplicationWarning', () => {
 
     expect(html).toContain('2 questions appeared in multiple question banks');
     expect(html).toContain('will only be imported once');
+  });
+});
+
+describe('fileSizeWarning', () => {
+  it('allows files up to the QTI import upload limit', () => {
+    expect(fileSizeWarning(new File(['x'], 'small.imscc'))).toBeNull();
+  });
+
+  it('warns for files over the QTI import upload limit', () => {
+    const largeFile = new File([], 'large.imscc');
+    Object.defineProperty(largeFile, 'size', { value: 101 * 1024 * 1024 });
+
+    expect(fileSizeWarning(largeFile)).toBe(
+      'This file is 101 MB. The maximum upload size is 100 MB.',
+    );
   });
 });
 

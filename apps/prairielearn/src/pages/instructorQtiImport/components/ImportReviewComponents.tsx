@@ -31,7 +31,7 @@ const QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
   standard: 'jedec',
 });
 
-function fileSizeWarning(file: File | undefined): string | null {
+export function fileSizeWarning(file: File | undefined): string | null {
   if (!file || file.size <= QTI_IMPORT_MAX_UPLOAD_BYTES) return null;
   const fileSizeLabel = filesize(file.size, { round: 0, standard: 'jedec' });
   return `This file is ${fileSizeLabel}. The maximum upload size is ${QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.`;

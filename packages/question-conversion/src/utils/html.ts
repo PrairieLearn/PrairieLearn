@@ -44,7 +44,7 @@ export function extractInlineImages(html: string): {
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
 const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
-const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.

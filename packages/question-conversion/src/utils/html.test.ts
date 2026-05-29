@@ -91,6 +91,11 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
+  it('leaves malformed remote URLs as <img>', () => {
+    const html = '<img src="://example.com/img.png">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
+  });
+
   it('leaves data: URLs as <img>', () => {
     const html = '<img src="data:image/png;base64,AAAA">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
