@@ -5,7 +5,7 @@ import { run } from '@prairielearn/run';
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import type { CourseRouter } from '../../../trpc/course/trpc.js';
 
-export type AssessmentChecklistItem =
+type AssessmentChecklistItem =
   inferRouterOutputs<CourseRouter>['questions']['listAssessments'][number];
 
 /**

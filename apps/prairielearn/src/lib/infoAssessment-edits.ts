@@ -70,7 +70,7 @@ interface EmptiedZone {
   zoneTitle: string | null;
 }
 
-export interface AffectedZone {
+interface AffectedZone {
   /** Zero-based index of the zone in the original `assessment.zones`. */
   zoneIndex: number;
   zoneTitle: string | null;
