@@ -156,6 +156,16 @@ router.post(
       courseInfoEdit.title = req.body.title;
       courseInfoEdit.timezone = req.body.display_timezone;
 
+      // Keep `infoCourse.json` consistent with the database value. Otherwise, the
+      // sync triggered by writing the file would overwrite the database column
+      // from the (stale) JSON value in dev mode, and would emit a divergence
+      // warning in production.
+      if (questions_receive_user_data) {
+        courseInfoEdit.options = { ...courseInfoEdit.options, questionsReceiveUserData: true };
+      } else {
+        delete courseInfoEdit.options?.questionsReceiveUserData;
+      }
+
       const editor = new FileModifyEditor({
         locals: res.locals,
         container: {
