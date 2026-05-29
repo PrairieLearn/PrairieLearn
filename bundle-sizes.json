@@ -290,9 +290,9 @@
     "brotli": 304661
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
-    "raw": 1261634,
-    "gzip": 377600,
-    "brotli": 308949
+    "raw": 1264067,
+    "gzip": 378453,
+    "brotli": 309705
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
     "raw": 1335628,
@@ -350,9 +350,9 @@
     "brotli": 355655
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
-    "raw": 948400,
-    "gzip": 283989,
-    "brotli": 245026
+    "raw": 948551,
+    "gzip": 284204,
+    "brotli": 245190
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
     "raw": 259931,
