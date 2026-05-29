@@ -105,7 +105,8 @@ export function QuestionSelectionToolbar({
         show={showRemoveModal}
         selectedQuestions={selectedQuestions}
         questionIds={questionIds}
-        sharedAssessmentTargets={sharedAssessmentTargets}
+        courseInstances={courseInstances}
+        currentCourseInstanceId={currentCourseInstanceId}
         urlPrefix={urlPrefix}
         clearSelection={clearSelection}
         onActionSuccess={onActionSuccess}

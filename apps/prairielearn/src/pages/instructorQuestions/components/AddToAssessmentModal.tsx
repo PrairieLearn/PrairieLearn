@@ -43,14 +43,16 @@ export function AddToAssessmentModal({
 
   const assessmentsQuery = useQuery({
     ...trpc.questions.listAssessments.queryOptions(
-      { courseInstanceId },
+      { courseInstanceId, questionIds },
       { enabled: show && courseInstanceId !== '' },
     ),
   });
   const assessments = assessmentsQuery.data ?? [];
-  const effectiveAssessmentId = assessments.some((assessment) => assessment.id === assessmentId)
+  const effectiveAssessmentId = assessments.some(
+    (assessment) => assessment.id === assessmentId && !assessment.allQuestionsPresent,
+  )
     ? assessmentId
-    : (assessments.at(0)?.id ?? '');
+    : (assessments.find((assessment) => !assessment.allQuestionsPresent)?.id ?? '');
 
   const zonesQuery = useQuery({
     ...trpc.questions.listZones.queryOptions(
@@ -145,7 +147,11 @@ export function AddToAssessmentModal({
             }}
           >
             {assessments.map((assessment) => (
-              <option key={assessment.id} value={assessment.id}>
+              <option
+                key={assessment.id}
+                value={assessment.id}
+                disabled={assessment.allQuestionsPresent}
+              >
                 {assessment.label}
                 {assessment.title ? `: ${assessment.title}` : ''}
               </option>

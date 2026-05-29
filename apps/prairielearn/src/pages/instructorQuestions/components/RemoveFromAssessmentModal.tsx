@@ -1,9 +1,9 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
-import { getAppError } from '../../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
@@ -72,7 +72,8 @@ export function RemoveFromAssessmentModal({
   onHide,
   selectedQuestions,
   questionIds,
-  sharedAssessmentTargets,
+  courseInstances,
+  currentCourseInstanceId,
   urlPrefix,
   clearSelection,
   onActionSuccess,
@@ -81,27 +82,39 @@ export function RemoveFromAssessmentModal({
   onHide: () => void;
   selectedQuestions: SafeQuestionsPageData[];
   questionIds: string[];
-  sharedAssessmentTargets: AssessmentTarget[];
+  courseInstances: PublicCourseInstance[];
+  currentCourseInstanceId?: string;
   urlPrefix: string;
   clearSelection: () => void;
   onActionSuccess: (message: string) => void;
 }) {
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
+  const [courseInstanceId, setCourseInstanceId] = useState(
+    () => currentCourseInstanceId ?? courseInstances.at(0)?.id ?? '',
+  );
   const [assessmentId, setAssessmentId] = useState('');
-  const effectiveAssessmentId = sharedAssessmentTargets.some(
-    (target) => target.assessmentId === assessmentId,
+
+  const assessmentsQuery = useQuery({
+    ...trpc.questions.listAssessments.queryOptions(
+      { courseInstanceId, questionIds },
+      { enabled: show && courseInstanceId !== '' },
+    ),
+  });
+  const assessments = assessmentsQuery.data ?? [];
+  const effectiveAssessmentId = assessments.some(
+    (assessment) => assessment.id === assessmentId && assessment.allQuestionsPresent,
   )
     ? assessmentId
-    : (sharedAssessmentTargets[0]?.assessmentId ?? '');
+    : (assessments.find((assessment) => assessment.allQuestionsPresent)?.id ?? '');
 
   const mutation = useMutation({
     ...trpc.questions.removeFromAssessment.mutationOptions(),
     onSuccess: async ({ removedCount }) => {
       await invalidateQuestionsList();
       const assessmentLabel =
-        sharedAssessmentTargets.find((target) => target.assessmentId === effectiveAssessmentId)
-          ?.displayLabel ?? 'assessment';
+        assessments.find((assessment) => assessment.id === effectiveAssessmentId)?.label ??
+        'assessment';
       onActionSuccess(
         `Removed ${removedCount} ${removedCount === 1 ? 'question' : 'questions'} from ${assessmentLabel}.`,
       );
@@ -110,6 +123,7 @@ export function RemoveFromAssessmentModal({
     },
   });
   const appError = getAppError<QuestionsError['RemoveFromAssessment']>(mutation.error);
+  const canSubmit = effectiveAssessmentId !== '';
 
   return (
     <Modal
@@ -125,6 +139,31 @@ export function RemoveFromAssessmentModal({
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        <AppErrorAlert
+          error={getAppError<QuestionsError['ListAssessments']>(assessmentsQuery.error)}
+          render={{ UNKNOWN: ({ message }) => <>Error loading assessments: {message}</> }}
+        />
+        <div className="mb-3">
+          <label className="form-label" htmlFor="bulk-remove-course-instance">
+            Course instance
+          </label>
+          <select
+            id="bulk-remove-course-instance"
+            className="form-select"
+            value={courseInstanceId}
+            onChange={(e) => {
+              setCourseInstanceId(e.target.value);
+              setAssessmentId('');
+            }}
+          >
+            {courseInstances.map((courseInstance) => (
+              <option key={courseInstance.id} value={courseInstance.id}>
+                {courseInstance.short_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="mb-3">
           <label className="form-label" htmlFor="bulk-remove-assessment">
             Assessment
@@ -133,11 +172,17 @@ export function RemoveFromAssessmentModal({
             id="bulk-remove-assessment"
             className="form-select"
             value={effectiveAssessmentId}
+            disabled={assessmentsQuery.isLoading || assessments.length === 0}
             onChange={(e) => setAssessmentId(e.target.value)}
           >
-            {sharedAssessmentTargets.map((target) => (
-              <option key={target.assessmentId} value={target.assessmentId}>
-                {target.displayLabel}
+            {assessments.map((assessment) => (
+              <option
+                key={assessment.id}
+                value={assessment.id}
+                disabled={!assessment.allQuestionsPresent}
+              >
+                {assessment.label}
+                {assessment.title ? `: ${assessment.title}` : ''}
               </option>
             ))}
           </select>
@@ -152,7 +197,7 @@ export function RemoveFromAssessmentModal({
         </Button>
         <Button
           variant="danger"
-          disabled={effectiveAssessmentId === '' || mutation.isPending}
+          disabled={!canSubmit || mutation.isPending}
           onClick={() => mutation.mutate({ questionIds, assessmentId: effectiveAssessmentId })}
         >
           Remove {selectedQuestions.length}{' '}

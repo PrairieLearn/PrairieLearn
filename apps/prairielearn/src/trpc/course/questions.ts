@@ -25,6 +25,7 @@ import {
   qidsToRemoveForQuestions,
 } from '../../lib/question-deletion-validation.js';
 import {
+  selectAssessmentReferencedQuestionCounts,
   selectAssessments,
   selectAssessmentsReferencingQuestions,
   selectOptionalAssessmentInCourse,
@@ -191,19 +192,31 @@ function buildQuestionBlock(question: Question): ZoneQuestionBlockJsonInput {
 
 const listAssessments = t.procedure
   .use(requireCoursePermissionPreview)
-  .input(z.object({ courseInstanceId: IdSchema }))
+  .input(QuestionIdsInputSchema.extend({ courseInstanceId: IdSchema }))
   .query(async ({ input, ctx }) => {
     await assertCourseInstanceBelongsToCourse({
       courseInstanceId: input.courseInstanceId,
       courseId: ctx.course.id,
     });
 
-    const assessments = await selectAssessments({ course_instance_id: input.courseInstanceId });
+    const uniqueQuestionIds = [...new Set(input.questionIds)];
+    const [assessments, referencedCounts] = await Promise.all([
+      selectAssessments({ course_instance_id: input.courseInstanceId }),
+      selectAssessmentReferencedQuestionCounts({
+        course_instance_id: input.courseInstanceId,
+        question_ids: uniqueQuestionIds,
+      }),
+    ]);
+    const referencedCountById = new Map(
+      referencedCounts.map((row) => [row.assessment_id, row.referenced_count]),
+    );
     return assessments.map((assessment) => ({
       id: assessment.id,
       label: assessment.label,
       title: assessment.title,
       type: assessment.type,
+      allQuestionsPresent:
+        (referencedCountById.get(assessment.id) ?? 0) >= uniqueQuestionIds.length,
     }));
   });
 

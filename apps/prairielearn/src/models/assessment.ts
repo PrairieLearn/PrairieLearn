@@ -225,6 +225,26 @@ export async function selectAssessmentsReferencingQuestions({
   );
 }
 
+/**
+ * Returns, for each assessment in `course_instance_id` that references any of
+ * `question_ids` via its synced `assessment_questions`, the number of distinct
+ * `question_ids` it references. Assessments referencing none of the questions
+ * are omitted.
+ */
+export async function selectAssessmentReferencedQuestionCounts({
+  course_instance_id,
+  question_ids,
+}: {
+  course_instance_id: string;
+  question_ids: string[];
+}): Promise<{ assessment_id: string; referenced_count: number }[]> {
+  return queryRows(
+    sql.select_assessment_referenced_question_counts,
+    { course_instance_id, question_ids },
+    z.object({ assessment_id: IdSchema, referenced_count: z.coerce.number() }),
+  );
+}
+
 export async function selectAssessments({
   course_instance_id,
 }: {

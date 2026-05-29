@@ -203,6 +203,21 @@ WHERE
   AND a.deleted_at IS NULL
   AND ci.deleted_at IS NULL;
 
+-- BLOCK select_assessment_referenced_question_counts
+SELECT
+  aq.assessment_id,
+  count(DISTINCT aq.question_id)::bigint AS referenced_count
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND aq.question_id = ANY ($question_ids::bigint[])
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+GROUP BY
+  aq.assessment_id;
+
 -- BLOCK select_assessment_zone_points_range
 WITH
   -- For each alternative group, rank questions by max_points (best and worst).
