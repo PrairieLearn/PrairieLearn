@@ -8,8 +8,6 @@ import {
 
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
-export type QuestionHtmlDiagnostic = Pick<Diagnostic, 'message' | 'severity'>;
-
 const require = createRequire(import.meta.url);
 const wasmPath = require.resolve('@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
 
@@ -25,10 +23,9 @@ function getLinter(): Promise<Linter> {
  * Lint a question.html string against the project's htmlmustache rules.
  * Returns diagnostics as `{ message, severity }` pairs.
  */
-export async function lintQuestionHtml(html: string): Promise<QuestionHtmlDiagnostic[]> {
+export async function lintQuestionHtml(
+  html: string,
+): Promise<Pick<Diagnostic, 'message' | 'severity'>[]> {
   const linter = await getLinter();
-  return linter.lint(html, htmlMustacheConfig).map((diagnostic) => ({
-    message: diagnostic.message,
-    severity: diagnostic.severity,
-  }));
+  return linter.lint(html, htmlMustacheConfig);
 }
