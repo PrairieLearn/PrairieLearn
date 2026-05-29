@@ -244,16 +244,25 @@ router.post(
       z.boolean(),
     );
 
+    // Fields shared across the Slack notifications below.
+    const detailLines = [
+      `Course rubric: ${short_name}`,
+      `Course title: ${title}`,
+      `Institution: ${institution}`,
+      `Requested by: ${first_name} ${last_name} (${work_email})`,
+    ];
+    const requesterLines = [
+      `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})`,
+      `GitHub username: ${github_user || 'not provided'}`,
+    ];
+
     // Each outcome below sends a single Slack notification; this is the default
     // when the request is not auto-approved.
-    let courseRequestSlackMessage =
-      '*Incoming course request*\n' +
-      `Course rubric: ${short_name}\n` +
-      `Course title: ${title}\n` +
-      `Institution: ${institution}\n` +
-      `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-      `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-      `GitHub username: ${github_user || 'not provided'}`;
+    let courseRequestSlackMessage = [
+      '*Incoming course request*',
+      ...detailLines,
+      ...requesterLines,
+    ].join('\n');
 
     if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
       // Automatically fill in institution ID and display timezone from the user's other courses.
@@ -286,15 +295,12 @@ router.post(
           },
           res.locals.authn_user,
         );
-        courseRequestSlackMessage =
-          '*Automatically creating course*\n' +
-          `Course repo: ${repo_short_name}\n` +
-          `Course rubric: ${short_name}\n` +
-          `Course title: ${title}\n` +
-          `Institution: ${institution}\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-          `GitHub username: ${github_user || 'not provided'}`;
+        courseRequestSlackMessage = [
+          '*Automatically creating course*',
+          `Course repo: ${repo_short_name}`,
+          ...detailLines,
+          ...requesterLines,
+        ].join('\n');
       } else {
         logger.error(
           `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${blockReason})`,
@@ -305,13 +311,11 @@ router.post(
             { extra: { reason: blockReason, course_request_id } },
           );
         }
-        courseRequestSlackMessage =
-          '*Auto-approval skipped — GitHub org access check failed*\n' +
-          `Course rubric: ${short_name}\n` +
-          `Course title: ${title}\n` +
-          `Institution: ${institution}\n` +
-          `Target org: ${githubCourseOwner} (${blockReason})\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})`;
+        courseRequestSlackMessage = [
+          '*Auto-approval skipped — GitHub org access check failed*',
+          ...detailLines,
+          `Target org: ${githubCourseOwner} (${blockReason})`,
+        ].join('\n');
       }
     }
 

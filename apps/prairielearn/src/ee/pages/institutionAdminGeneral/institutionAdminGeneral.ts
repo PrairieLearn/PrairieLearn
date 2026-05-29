@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -8,6 +7,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
+  CourseRequestMessageSchema,
   selectInstitutionSettings,
   updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
@@ -16,14 +16,6 @@ import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import { InstitutionAdminGeneral } from './institutionAdminGeneral.html.js';
 
 const router = Router({ mergeParams: true });
-
-const BodySchema = z.object({
-  __action: z.literal('update_course_request_message'),
-  course_request_message: z
-    .string()
-    .max(COURSE_REQUEST_MESSAGE_MAX_LENGTH)
-    .transform((value) => value.trim()),
-});
 
 router.get(
   '/',
@@ -65,18 +57,24 @@ router.post(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    const parsed = BodySchema.safeParse(req.body);
+    if (req.body.__action !== 'update_course_request_message') {
+      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
+
+    const parsed = CourseRequestMessageSchema.safeParse(req.body.course_request_message);
     if (!parsed.success) {
-      throw new HttpStatusError(
-        400,
-        `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+      flash(
+        'error',
+        `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.`,
       );
+      res.redirect(req.originalUrl);
+      return;
     }
 
     await updateInstitutionSetting({
       institution_id: institution.id,
       field: 'course_request_message',
-      value: parsed.data.course_request_message,
+      value: parsed.data,
       authn_user_id: res.locals.authn_user.id,
     });
 

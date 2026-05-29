@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -14,6 +13,7 @@ import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
+  CourseRequestMessageSchema,
   selectInstitutionSettings,
   updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
@@ -101,16 +101,14 @@ router.post(
       flash('success', 'Successfully updated institution settings.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_course_request_message') {
-      const parsed = z
-        .string()
-        .max(COURSE_REQUEST_MESSAGE_MAX_LENGTH)
-        .transform((value) => value.trim())
-        .safeParse(req.body.course_request_message);
+      const parsed = CourseRequestMessageSchema.safeParse(req.body.course_request_message);
       if (!parsed.success) {
-        throw new error.HttpStatusError(
-          400,
-          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+        flash(
+          'error',
+          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.`,
         );
+        res.redirect(req.originalUrl);
+        return;
       }
       await updateInstitutionSetting({
         institution_id: req.params.institution_id,
