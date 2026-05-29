@@ -20,11 +20,7 @@ import {
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import {
-  type AffectedZone,
-  collectAssessmentQids,
-  removeQidsFromAssessment,
-} from '../../lib/infoAssessment-edits.js';
+import { collectAssessmentQids, removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
 import {
   qidsToRemoveForQuestions,
   selectQuestionsBlockingDeletion,
@@ -36,8 +32,8 @@ import {
   selectOptionalAssessmentInCourse,
 } from '../../models/assessment.js';
 import {
-  selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
+  selectOptionalCourseInstanceById,
 } from '../../models/course-instances.js';
 import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
@@ -93,8 +89,12 @@ async function assertCourseInstanceBelongsToCourse({
   courseInstanceId: string;
   courseId: string;
 }) {
-  const courseInstance = await selectCourseInstanceById(courseInstanceId);
-  if (!idsEqual(courseInstance.course_id, courseId) || courseInstance.deleted_at !== null) {
+  const courseInstance = await selectOptionalCourseInstanceById(courseInstanceId);
+  if (
+    courseInstance === null ||
+    !idsEqual(courseInstance.course_id, courseId) ||
+    courseInstance.deleted_at !== null
+  ) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid course instance' });
   }
   return courseInstance;
@@ -441,15 +441,15 @@ const previewDeletion = t.procedure
         ref.assessment_directory,
         'infoAssessment.json',
       );
-      let affectedZones: AffectedZone[];
-      try {
-        const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
-        const result = removeQidsFromAssessment(parsed, qidsToRemove);
-        affectedZones = result.affectedZones;
-        lockpointsMovedOrRemoved += result.lockpointsMovedOrRemoved;
-      } catch {
-        continue;
-      }
+      // Fail closed: a file we can't read or parse here would also break the
+      // actual deletion, so let the error propagate rather than silently
+      // undercounting affected assessments in the preview.
+      const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+      const { affectedZones, lockpointsMovedOrRemoved: lockpoints } = removeQidsFromAssessment(
+        parsed,
+        qidsToRemove,
+      );
+      lockpointsMovedOrRemoved += lockpoints;
       if (affectedZones.length > 0) affectedAssessmentIds.add(ref.assessment_id);
 
       for (const zone of affectedZones) {

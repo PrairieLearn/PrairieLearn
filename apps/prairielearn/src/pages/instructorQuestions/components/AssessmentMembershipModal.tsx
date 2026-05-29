@@ -88,10 +88,14 @@ export function AssessmentMembershipModal({
   const config = MODE_CONFIG[mode];
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
-  const [courseInstanceId, setCourseInstanceId] = useState(
-    () => currentCourseInstanceId ?? courseInstances.at(0)?.id ?? '',
-  );
+  const initialCourseInstanceId = currentCourseInstanceId ?? courseInstances.at(0)?.id ?? '';
+  const [courseInstanceId, setCourseInstanceId] = useState(() => initialCourseInstanceId);
   const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<Set<string>>(() => new Set());
+
+  const resetModalState = () => {
+    setCourseInstanceId(initialCourseInstanceId);
+    setSelectedAssessmentIds(new Set());
+  };
 
   const assessmentsQuery = useQuery({
     ...trpc.questions.listAssessments.queryOptions(
@@ -153,7 +157,10 @@ export function AssessmentMembershipModal({
       size="lg"
       aria-labelledby={`${config.idPrefix}-modal-title`}
       onHide={onHide}
-      onExited={() => mutation.reset()}
+      onExited={() => {
+        mutation.reset();
+        resetModalState();
+      }}
     >
       <Modal.Header closeButton>
         <Modal.Title id={`${config.idPrefix}-modal-title`}>{config.title}</Modal.Title>
