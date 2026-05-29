@@ -4889,7 +4889,7 @@ __metadata:
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-perfectionist: "npm:^5.9.0"
     eslint-plugin-react-hooks: "npm:^7.1.1"
-    eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.10.0"
+    eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.10.2"
     eslint-plugin-unicorn: "npm:^64.0.0"
     eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     globals: "npm:^17.6.0"
@@ -12243,14 +12243,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-you-might-not-need-an-effect@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "eslint-plugin-react-you-might-not-need-an-effect@npm:0.10.0"
+"eslint-plugin-react-you-might-not-need-an-effect@npm:^0.10.2":
+  version: 0.10.2
+  resolution: "eslint-plugin-react-you-might-not-need-an-effect@npm:0.10.2"
   dependencies:
     globals: "npm:^16.2.0"
   peerDependencies:
     eslint: ">=8.40.0"
-  checksum: 10c0/04573515d6a43bd96c0e8e6b35ebd632ecd01d2114feafa941bdc93afc1b37ce850272eae68768347c99f073e072806d3dec03c61f246d8961cf865dd1abc0c2
+  checksum: 10c0/82373ff9c3015b92665a6d3c14e202ba78cfb6ff03ad75ac0178cede9d636c26593ae9df984d084efa35fbdcce6ae19d805ab9592bb2f35334132ff0492fd055
   languageName: node
   linkType: hard
 

@@ -1,73 +1,34 @@
-import * as path from 'path';
+import { selectQuestionsUsedInOtherCourses } from '../models/question.js';
 
-import fs from 'fs-extra';
+import { type Course, type Question } from './db-types.js';
 
-import { selectAssessmentDirectoriesForQuestions } from '../models/assessment.js';
-import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
-
-import { type Course } from './db-types.js';
-import {
-  type BlockedAssessment,
-  blockerDescription,
-  removeQidsFromAssessment,
-} from './infoAssessment-edits.js';
-
-/**
- * For each assessment in `course` that references one of `questionIds`, returns
- * the assessments whose `infoAssessment.json` would become invalid after the
- * deletion (e.g. losing all zones, or promoting a lockpoint zone to first).
- * Assessments whose files are unreadable are skipped — sync will surface that
- * error separately if the deletion proceeds.
- */
-export async function selectAssessmentsBlockingDeletion({
-  course,
-  questionIds,
-  qidsToRemove,
-}: {
-  course: Pick<Course, 'id' | 'path'>;
-  questionIds: string[];
-  qidsToRemove: Set<string>;
-}): Promise<BlockedAssessment[]> {
-  if (qidsToRemove.size === 0) return [];
-
-  const refs = await selectAssessmentDirectoriesForQuestions({
-    course_id: course.id,
-    question_ids: questionIds,
-  });
-
-  const blocked: BlockedAssessment[] = [];
-  for (const ref of refs) {
-    const jsonPath = path.join(
-      course.path,
-      'courseInstances',
-      ref.course_instance_directory,
-      'assessments',
-      ref.assessment_directory,
-      'infoAssessment.json',
-    );
-    let blockers: BlockedAssessment['blockers'];
-    try {
-      const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
-      ({ blockers } = removeQidsFromAssessment(parsed, qidsToRemove));
-    } catch {
-      continue;
-    }
-    if (blockers.length > 0) {
-      blocked.push({
-        assessmentLabel: ref.assessment_directory,
-        courseInstanceShortName: ref.course_instance_directory,
-        blockers,
-      });
-    }
-  }
-  return blocked;
+/** Derives the set of QIDs to remove from assessment files when `questions` are deleted. */
+export function qidsToRemoveForQuestions(questions: Pick<Question, 'qid'>[]): Set<string> {
+  return new Set(questions.flatMap((question) => (question.qid ? [question.qid] : [])));
 }
 
-export function formatBlockedAssessments(blocked: BlockedAssessment[]): string {
-  return blocked
-    .map((a) => {
-      const reasons = a.blockers.map(blockerDescription).join('; ');
-      return `${a.courseInstanceShortName}/${a.assessmentLabel} (${reasons})`;
-    })
-    .join(', ');
+/**
+ * Returns the selected questions that are referenced by *other* courses'
+ * assessments and therefore cannot be deleted. Assessments within this course
+ * are repaired automatically when their questions are deleted (emptied zones
+ * are dropped and lockpoints relocated), so they never block deletion.
+ *
+ * `checkOtherCourses` lets callers skip the cross-course check when sharing
+ * isn't validated at sync time (see `deleteQuestions` in
+ * `trpc/course/questions.ts`).
+ */
+export async function selectQuestionsBlockingDeletion({
+  course,
+  questions,
+  checkOtherCourses = true,
+}: {
+  course: Pick<Course, 'id'>;
+  questions: Pick<Question, 'id' | 'qid'>[];
+  checkOtherCourses?: boolean;
+}): Promise<{ id: string; qid: string }[]> {
+  if (!checkOtherCourses) return [];
+  return selectQuestionsUsedInOtherCourses({
+    question_ids: questions.map((question) => question.id),
+    course_id: course.id,
+  });
 }

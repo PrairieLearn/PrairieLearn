@@ -145,9 +145,9 @@ type SystemRole = 'System';
 
 type StudentCourseInstanceRole = 'Student';
 
-export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
 
-export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
+type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
 export type Role =
   | SystemRole

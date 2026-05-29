@@ -20,7 +20,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
   };
 }
 
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
+export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
@@ -42,6 +42,16 @@ export const requireCoursePermissionPreview = t.middleware(async (opts) => {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course previewer)',
+    });
+  }
+  return opts.next();
+});
+
+export const requireCoursePermissionEdit = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.has_course_permission_edit) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (must be a course editor)',
     });
   }
   return opts.next();
