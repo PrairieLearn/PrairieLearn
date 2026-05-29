@@ -10,22 +10,23 @@ type QidMapper = (qid: string) => string | null;
 /**
  * Maps every QID reference in a block. An alternative group's block is dropped
  * only once all its alternatives are dropped. Does not mutate the input.
+ * `changedQids` lists the original QIDs that `mapQid` rewrote or dropped.
  */
 function mapQidsInBlock(
   block: ZoneQuestionBlockJsonInput,
   mapQid: QidMapper,
-): { block: ZoneQuestionBlockJsonInput | null; changedCount: number } {
+): { block: ZoneQuestionBlockJsonInput | null; changedQids: string[] } {
   if (block.alternatives) {
-    let changedCount = 0;
+    const changedQids: string[] = [];
     const alternatives: typeof block.alternatives = [];
     for (const alternative of block.alternatives) {
       const newId = mapQid(alternative.id);
       if (newId === null) {
-        changedCount += 1;
+        changedQids.push(alternative.id);
         continue;
       }
       if (newId !== alternative.id) {
-        changedCount += 1;
+        changedQids.push(alternative.id);
         alternatives.push({ ...alternative, id: newId });
       } else {
         alternatives.push(alternative);
@@ -33,34 +34,34 @@ function mapQidsInBlock(
     }
     return {
       block: alternatives.length > 0 ? { ...block, alternatives } : null,
-      changedCount,
+      changedQids,
     };
   }
 
   if (block.id) {
     const newId = mapQid(block.id);
     if (newId === null) {
-      return { block: null, changedCount: 1 };
+      return { block: null, changedQids: [block.id] };
     }
     if (newId !== block.id) {
-      return { block: { ...block, id: newId }, changedCount: 1 };
+      return { block: { ...block, id: newId }, changedQids: [block.id] };
     }
   }
-  return { block, changedCount: 0 };
+  return { block, changedQids: [] };
 }
 
 function mapQidsInZone(
   zone: ZoneAssessmentJsonInput,
   mapQid: QidMapper,
-): { questions: ZoneQuestionBlockJsonInput[]; changedCount: number } {
-  let changedCount = 0;
+): { questions: ZoneQuestionBlockJsonInput[]; changedQids: string[] } {
+  const changedQids: string[] = [];
   const questions: ZoneQuestionBlockJsonInput[] = [];
   for (const block of zone.questions) {
     const result = mapQidsInBlock(block, mapQid);
-    changedCount += result.changedCount;
+    changedQids.push(...result.changedQids);
     if (result.block) questions.push(result.block);
   }
-  return { questions, changedCount };
+  return { questions, changedQids };
 }
 
 interface EmptiedZone {
@@ -69,12 +70,24 @@ interface EmptiedZone {
   zoneTitle: string | null;
 }
 
+export interface AffectedZone {
+  /** Zero-based index of the zone in the original `assessment.zones`. */
+  zoneIndex: number;
+  zoneTitle: string | null;
+  /** The original QIDs in this zone that `mapQid` rewrote or dropped. */
+  affectedQids: string[];
+  /** Whether the zone was non-empty before but had all its references dropped. */
+  wouldBeEmpty: boolean;
+}
+
 interface MapAssessmentQidsResult {
   assessment: AssessmentJsonInput;
   /** Number of QID references that were rewritten or dropped. */
   changedCount: number;
   /** Zones that were non-empty before but had all their references dropped; removed from `assessment`. */
   emptiedZones: EmptiedZone[];
+  /** Per-zone breakdown of changed references; only includes zones with at least one change. */
+  affectedZones: AffectedZone[];
 }
 
 /**
@@ -89,17 +102,41 @@ function mapAssessmentQids(
 ): MapAssessmentQidsResult {
   let changedCount = 0;
   const emptiedZones: EmptiedZone[] = [];
+  const affectedZones: AffectedZone[] = [];
   const zones: ZoneAssessmentJsonInput[] = [];
   for (const [zoneIndex, zone] of (assessment.zones ?? []).entries()) {
-    const { questions, changedCount: zoneChangedCount } = mapQidsInZone(zone, mapQid);
-    changedCount += zoneChangedCount;
-    if (zone.questions.length > 0 && questions.length === 0) {
+    const { questions, changedQids } = mapQidsInZone(zone, mapQid);
+    changedCount += changedQids.length;
+    const wouldBeEmpty = zone.questions.length > 0 && questions.length === 0;
+    if (changedQids.length > 0) {
+      affectedZones.push({
+        zoneIndex,
+        zoneTitle: zone.title ?? null,
+        affectedQids: changedQids,
+        wouldBeEmpty,
+      });
+    }
+    if (wouldBeEmpty) {
       emptiedZones.push({ zoneIndex, zoneTitle: zone.title ?? null });
       continue;
     }
     zones.push({ ...zone, questions });
   }
-  return { assessment: { ...assessment, zones }, changedCount, emptiedZones };
+  return { assessment: { ...assessment, zones }, changedCount, emptiedZones, affectedZones };
+}
+
+/**
+ * Collects every QID referenced by `assessment` across its zones, blocks, and
+ * alternative groups, reusing the canonical traversal so callers never re-walk
+ * the structure themselves.
+ */
+export function collectAssessmentQids(assessment: AssessmentJsonInput): Set<string> {
+  const qids = new Set<string>();
+  mapAssessmentQids(assessment, (qid) => {
+    qids.add(qid);
+    return qid;
+  });
+  return qids;
 }
 
 interface RemoveQidsFromAssessmentResult {
@@ -120,6 +157,8 @@ interface RemoveQidsFromAssessmentResult {
   lockpointsMovedOrRemoved: number;
   /** The subset of `qidsToRemove` actually referenced by this assessment. */
   matchedQids: string[];
+  /** Per-zone breakdown of which references were removed; only zones that lost a reference. */
+  affectedZones: AffectedZone[];
 }
 
 /**
@@ -186,6 +225,7 @@ export function removeQidsFromAssessment(
     assessment: updated,
     changedCount,
     emptiedZones,
+    affectedZones,
   } = mapAssessmentQids(assessment, (qid) => {
     if (qidsToRemove.has(qid)) {
       matchedQids.add(qid);
@@ -206,6 +246,7 @@ export function removeQidsFromAssessment(
     emptiedZones,
     lockpointsMovedOrRemoved,
     matchedQids: [...matchedQids],
+    affectedZones,
   };
 }
 

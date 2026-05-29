@@ -20,7 +20,11 @@ import {
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import { removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
+import {
+  type AffectedZone,
+  collectAssessmentQids,
+  removeQidsFromAssessment,
+} from '../../lib/infoAssessment-edits.js';
 import {
   qidsToRemoveForQuestions,
   selectQuestionsBlockingDeletion,
@@ -37,14 +41,15 @@ import {
 } from '../../models/course-instances.js';
 import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
+import type { AssessmentForPicker } from '../../pages/instructorAssessmentQuestions/types.js';
 import type {
   AssessmentJsonInput,
-  ZoneAssessmentJsonInput,
   ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
+  type TRPCContext,
   requireCoursePermissionEdit,
   requireCoursePermissionPreview,
   requireNotExampleCourse,
@@ -158,22 +163,6 @@ function assessmentInfoPath({
   );
 }
 
-function collectQids(zones: ZoneAssessmentJsonInput[]) {
-  const qids = new Set<string>();
-  for (const zone of zones) {
-    for (const question of zone.questions) {
-      if (question.alternatives) {
-        for (const alternative of question.alternatives) {
-          qids.add(alternative.id);
-        }
-      } else if (question.id) {
-        qids.add(question.id);
-      }
-    }
-  }
-  return qids;
-}
-
 function buildQuestionBlock(question: Question): ZoneQuestionBlockJsonInput {
   if (!question.qid) {
     throw new TRPCError({
@@ -230,6 +219,89 @@ const listAssessments = t.procedure
     });
   });
 
+/**
+ * Prepares and commits a batch of `infoAssessment.json` edits — one per
+ * assessment in `assessmentIds` — under a single `MultiEditor` so they sync
+ * atomically. `apply` mutates one assessment's JSON and reports how many of the
+ * selected questions it changed; an assessment whose file is unchanged is left
+ * out of the batch. Used by both the add-to-assessment and
+ * remove-from-assessment mutations, which differ only in `apply`.
+ */
+async function mutateAssessmentMembership({
+  ctx,
+  assessmentIds,
+  selectedCount,
+  apply,
+  describe,
+  syncFailureMessage,
+}: {
+  ctx: TRPCContext;
+  assessmentIds: string[];
+  selectedCount: number;
+  apply: (assessmentInfo: AssessmentJsonInput) => {
+    assessment: AssessmentJsonInput;
+    changedCount: number;
+  };
+  describe: (affectedAssessmentCount: number) => string;
+  syncFailureMessage: string;
+}) {
+  // Each assessment's edit is prepared (but not executed) independently, then
+  // the whole batch commits and syncs once via the MultiEditor below.
+  const results: { assessmentId: string; changedCount: number; skippedCount: number }[] = [];
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessmentId of new Set(assessmentIds)) {
+    const { assessment, courseInstance } = await selectAssessmentForEdit({
+      assessmentId,
+      courseId: ctx.course.id,
+    });
+    const jsonPath = assessmentInfoPath({
+      coursePath: ctx.course.path,
+      courseInstance,
+      assessment,
+    });
+
+    let changedCount = 0;
+    const result = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (assessmentInfo) => {
+        const applied = apply(assessmentInfo);
+        changedCount = applied.changedCount;
+        return applied.assessment;
+      },
+      jsonPath,
+      conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
+      locals: ctx.locals,
+      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
+    });
+
+    // `origHash` is null, so `result` is always a success; only bundle an
+    // editor when the file actually changed.
+    if (result.success && changedCount > 0) editors.push(result.editor);
+    results.push({ assessmentId, changedCount, skippedCount: selectedCount - changedCount });
+  }
+
+  const affectedAssessmentCount = editors.length;
+
+  if (affectedAssessmentCount > 0) {
+    const editor = new MultiEditor(
+      { locals: ctx.locals, description: describe(affectedAssessmentCount) },
+      editors,
+    );
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<QuestionsError['AddToAssessment']>({
+        code: 'SYNC_JOB_FAILED',
+        message: syncFailureMessage,
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+  }
+
+  return { results, affectedAssessmentCount };
+}
+
 const addToAssessment = t.procedure
   .use(requireCoursePermissionEdit)
   .use(requireNotExampleCourse)
@@ -244,77 +316,26 @@ const addToAssessment = t.procedure
       courseId: ctx.course.id,
     });
 
-    const results: { assessmentId: string; addedCount: number; skippedCount: number }[] = [];
-    // Each assessment's edit is prepared but not executed, so the whole batch
-    // commits and syncs once via the MultiEditor below.
-    const editors: FileModifyEditor[] = [];
-
-    for (const assessmentId of new Set(input.assessmentIds)) {
-      const { assessment, courseInstance } = await selectAssessmentForEdit({
-        assessmentId,
-        courseId: ctx.course.id,
-      });
-      const jsonPath = assessmentInfoPath({
-        coursePath: ctx.course.path,
-        courseInstance,
-        assessment,
-      });
-
-      let addedCount = 0;
-      const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
-        applyChanges: (assessmentInfo) => {
-          const zones = assessmentInfo.zones ?? [];
-          const existingQids = collectQids(zones);
-          const questionsToAdd = selectedQuestions.filter(
-            (question) => question.qid && !existingQids.has(question.qid),
-          );
-          if (questionsToAdd.length > 0) {
-            zones.push({ questions: questionsToAdd.map(buildQuestionBlock) });
-            assessmentInfo.zones = zones;
-          }
-          addedCount = questionsToAdd.length;
-          return assessmentInfo;
-        },
-        jsonPath,
-        conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
-        locals: ctx.locals,
-        container: { rootPath: ctx.course.path, invalidRootPaths: [] },
-      });
-
-      // `origHash` is null, so `prepared` is always a success; only bundle an
-      // editor when the file actually changed.
-      if (prepared.success && addedCount > 0) {
-        editors.push(prepared.editor);
-      }
-      results.push({
-        assessmentId,
-        addedCount,
-        skippedCount: selectedQuestions.length - addedCount,
-      });
-    }
-
-    const addedAssessmentCount = editors.length;
-    if (addedAssessmentCount > 0) {
-      const editor = new MultiEditor(
-        {
-          locals: ctx.locals,
-          description: `Add questions to ${addedAssessmentCount} ${addedAssessmentCount === 1 ? 'assessment' : 'assessments'}`,
-        },
-        editors,
-      );
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        throwAppError<QuestionsError['AddToAssessment']>({
-          code: 'SYNC_JOB_FAILED',
-          message: 'Failed to add questions to assessments',
-          jobSequenceId: serverJob.jobSequenceId,
-        });
-      }
-    }
-
-    return { results, addedAssessmentCount };
+    return mutateAssessmentMembership({
+      ctx,
+      assessmentIds: input.assessmentIds,
+      selectedCount: selectedQuestions.length,
+      describe: (count) =>
+        `Add questions to ${count} ${count === 1 ? 'assessment' : 'assessments'}`,
+      syncFailureMessage: 'Failed to add questions to assessments',
+      apply: (assessmentInfo) => {
+        const zones = assessmentInfo.zones ?? [];
+        const existingQids = collectAssessmentQids(assessmentInfo);
+        const questionsToAdd = selectedQuestions.filter(
+          (question) => question.qid && !existingQids.has(question.qid),
+        );
+        if (questionsToAdd.length > 0) {
+          zones.push({ questions: questionsToAdd.map(buildQuestionBlock) });
+          assessmentInfo.zones = zones;
+        }
+        return { assessment: assessmentInfo, changedCount: questionsToAdd.length };
+      },
+    });
   });
 
 const removeFromAssessment = t.procedure
@@ -330,85 +351,62 @@ const removeFromAssessment = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
-    const qidsToRemove = new Set(
-      selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
-    );
+    const qidsToRemove = qidsToRemoveForQuestions(selectedQuestions);
 
-    const results: { assessmentId: string; removedCount: number; skippedCount: number }[] = [];
-    // Each assessment's edit is prepared but not executed, so the whole batch
-    // commits and syncs once via the MultiEditor below.
-    const editors: FileModifyEditor[] = [];
-
-    for (const assessmentId of new Set(input.assessmentIds)) {
-      const { assessment, courseInstance } = await selectAssessmentForEdit({
-        assessmentId,
-        courseId: ctx.course.id,
-      });
-      const jsonPath = assessmentInfoPath({
-        coursePath: ctx.course.path,
-        courseInstance,
-        assessment,
-      });
-
-      let removedCount = 0;
-      const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
-        applyChanges: (assessmentInfo) => {
-          const result = removeQidsFromAssessment(assessmentInfo, qidsToRemove);
-          removedCount = result.matchedQids.length;
-          return result.assessment;
-        },
-        jsonPath,
-        conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
-        locals: ctx.locals,
-        container: { rootPath: ctx.course.path, invalidRootPaths: [] },
-      });
-
-      // `origHash` is null, so `prepared` is always a success; only bundle an
-      // editor when the file actually changed.
-      if (prepared.success && removedCount > 0) {
-        editors.push(prepared.editor);
-      }
-      results.push({
-        assessmentId,
-        removedCount,
-        skippedCount: selectedQuestions.length - removedCount,
-      });
-    }
-
-    const removedAssessmentCount = editors.length;
-    if (removedAssessmentCount > 0) {
-      const editor = new MultiEditor(
-        {
-          locals: ctx.locals,
-          description: `Remove questions from ${removedAssessmentCount} ${removedAssessmentCount === 1 ? 'assessment' : 'assessments'}`,
-        },
-        editors,
-      );
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        throwAppError<QuestionsError['RemoveFromAssessment']>({
-          code: 'SYNC_JOB_FAILED',
-          message: 'Failed to remove questions from assessments',
-          jobSequenceId: serverJob.jobSequenceId,
-        });
-      }
-    }
-
-    return { results, removedAssessmentCount };
+    return mutateAssessmentMembership({
+      ctx,
+      assessmentIds: input.assessmentIds,
+      selectedCount: selectedQuestions.length,
+      describe: (count) =>
+        `Remove questions from ${count} ${count === 1 ? 'assessment' : 'assessments'}`,
+      syncFailureMessage: 'Failed to remove questions from assessments',
+      apply: (assessmentInfo) => {
+        const result = removeQidsFromAssessment(assessmentInfo, qidsToRemove);
+        return { assessment: result.assessment, changedCount: result.matchedQids.length };
+      },
+    });
   });
 
+type AssessmentRef = Awaited<ReturnType<typeof selectAssessmentsReferencingQuestions>>[number];
+
+function refToAssessmentForPicker(ref: AssessmentRef): AssessmentForPicker {
+  return {
+    assessment_id: ref.assessment_id,
+    label: ref.assessment_label,
+    // An assessment's badge color is its set's color, so the same value
+    // populates both color fields the picker reads.
+    color: ref.assessment_color,
+    assessment_set_color: ref.assessment_color,
+    assessment_set_abbreviation: ref.assessment_set_abbreviation,
+    assessment_set_name: ref.assessment_set_name,
+    assessment_number: ref.assessment_number,
+  };
+}
+
+interface MembershipAssessment {
+  assessment: AssessmentForPicker;
+  /** Whether deleting the selected questions would empty a zone in this assessment. */
+  wouldEmpty: boolean;
+}
+
+interface MembershipCourseInstance {
+  courseInstanceId: string;
+  courseInstanceShortName: string;
+  /** Keyed by assessment id so an assessment referenced from several zones is recorded once. */
+  assessments: Map<string, MembershipAssessment>;
+}
+
 /**
- * For each (assessment, zone) that references one of the selected questions,
- * returns the QIDs that would be removed from that zone and whether the zone
- * would become empty if the deletion proceeded, plus a total count of zone
- * lockpoints that would be moved or removed. Used by the bulk-delete modal to
- * warn the user about zones and lockpoints affected along with the questions.
+ * Computes what would change if the selected questions were deleted: which
+ * zones lose references, which would be emptied, and how many lockpoints move
+ * or drop. Reads each referencing `infoAssessment.json` and reuses the canonical
+ * `removeQidsFromAssessment` traversal, so the preview matches what the editor
+ * will apply. Files that fail to read are skipped (the editor will surface the
+ * same error during sync).
  *
- * Reads each referencing `infoAssessment.json` so the calculation uses the same
- * logic the editor will apply. Files that fail to read are skipped (the editor
- * will surface the same error during sync).
+ * Returns, for each affected QID, the course instances and assessments that
+ * reference it (flagging assessments whose zones would be emptied), plus the
+ * aggregate counts the bulk-delete modal summarizes.
  */
 const previewDeletion = t.procedure
   .use(requireCoursePermissionPreview)
@@ -419,28 +417,20 @@ const previewDeletion = t.procedure
       courseId: ctx.course.id,
     });
     const qidsToRemove = qidsToRemoveForQuestions(selectedQuestions);
-    if (qidsToRemove.size === 0) return { zones: [], lockpointsMovedOrRemoved: 0 };
 
-    const refs = await selectAssessmentsReferencingQuestions({
-      course_id: ctx.course.id,
-      question_ids: selectedQuestions.map((q) => q.id),
-    });
-
-    const zones: {
-      assessmentId: string;
-      assessmentLabel: string;
-      assessmentColor: string;
-      assessmentSetAbbreviation: string;
-      assessmentSetName: string;
-      assessmentNumber: string;
-      courseInstanceId: string;
-      courseInstanceShortName: string;
-      zoneIndex: number;
-      zoneTitle: string | null;
-      affectedQids: string[];
-      wouldBeEmpty: boolean;
-    }[] = [];
+    // qid -> course instance id -> course instance (with its referencing assessments).
+    const membershipsByQid = new Map<string, Map<string, MembershipCourseInstance>>();
+    const affectedAssessmentIds = new Set<string>();
+    let emptiedZoneCount = 0;
     let lockpointsMovedOrRemoved = 0;
+
+    const refs =
+      qidsToRemove.size === 0
+        ? []
+        : await selectAssessmentsReferencingQuestions({
+            course_id: ctx.course.id,
+            question_ids: selectedQuestions.map((q) => q.id),
+          });
 
     for (const ref of refs) {
       const jsonPath = path.join(
@@ -451,50 +441,73 @@ const previewDeletion = t.procedure
         ref.assessment_directory,
         'infoAssessment.json',
       );
-      let parsed: AssessmentJsonInput;
+      let affectedZones: AffectedZone[];
       try {
-        parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+        const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
+        const result = removeQidsFromAssessment(parsed, qidsToRemove);
+        affectedZones = result.affectedZones;
+        lockpointsMovedOrRemoved += result.lockpointsMovedOrRemoved;
       } catch {
         continue;
       }
+      if (affectedZones.length > 0) affectedAssessmentIds.add(ref.assessment_id);
 
-      const { emptiedZones, lockpointsMovedOrRemoved: lockpoints } = removeQidsFromAssessment(
-        parsed,
-        qidsToRemove,
-      );
-      lockpointsMovedOrRemoved += lockpoints;
-      const emptiedIndices = new Set(emptiedZones.map((z) => z.zoneIndex));
-
-      for (const [zoneIndex, zone] of (parsed.zones ?? []).entries()) {
-        const affectedQids: string[] = [];
-        for (const block of zone.questions) {
-          if (block.alternatives) {
-            for (const alternative of block.alternatives) {
-              if (qidsToRemove.has(alternative.id)) affectedQids.push(alternative.id);
-            }
-          } else if (block.id && qidsToRemove.has(block.id)) {
-            affectedQids.push(block.id);
+      for (const zone of affectedZones) {
+        if (zone.wouldBeEmpty) emptiedZoneCount += 1;
+        for (const qid of zone.affectedQids) {
+          let perCourseInstance = membershipsByQid.get(qid);
+          if (!perCourseInstance) {
+            perCourseInstance = new Map();
+            membershipsByQid.set(qid, perCourseInstance);
+          }
+          let courseInstance = perCourseInstance.get(ref.course_instance_id);
+          if (!courseInstance) {
+            courseInstance = {
+              courseInstanceId: ref.course_instance_id,
+              courseInstanceShortName: ref.course_instance_short_name,
+              assessments: new Map(),
+            };
+            perCourseInstance.set(ref.course_instance_id, courseInstance);
+          }
+          const assessment = courseInstance.assessments.get(ref.assessment_id);
+          if (assessment) {
+            assessment.wouldEmpty ||= zone.wouldBeEmpty;
+          } else {
+            courseInstance.assessments.set(ref.assessment_id, {
+              assessment: refToAssessmentForPicker(ref),
+              wouldEmpty: zone.wouldBeEmpty,
+            });
           }
         }
-        if (affectedQids.length === 0) continue;
-        zones.push({
-          assessmentId: ref.assessment_id,
-          assessmentLabel: ref.assessment_label,
-          assessmentColor: ref.assessment_color,
-          assessmentSetAbbreviation: ref.assessment_set_abbreviation,
-          assessmentSetName: ref.assessment_set_name,
-          assessmentNumber: ref.assessment_number,
-          courseInstanceId: ref.course_instance_id,
-          courseInstanceShortName: ref.course_instance_short_name,
-          zoneIndex,
-          zoneTitle: zone.title ?? null,
-          affectedQids,
-          wouldBeEmpty: emptiedIndices.has(zoneIndex),
-        });
       }
     }
 
-    return { zones, lockpointsMovedOrRemoved };
+    const collator = new Intl.Collator(undefined, { numeric: true });
+    const questionMemberships = [...membershipsByQid].map(([qid, perCourseInstance]) => ({
+      qid,
+      courseInstances: [...perCourseInstance.values()]
+        .sort((a, b) => collator.compare(a.courseInstanceShortName, b.courseInstanceShortName))
+        .map((courseInstance) => {
+          const assessments = [...courseInstance.assessments.values()].sort((a, b) =>
+            collator.compare(a.assessment.label, b.assessment.label),
+          );
+          return {
+            courseInstanceId: courseInstance.courseInstanceId,
+            courseInstanceShortName: courseInstance.courseInstanceShortName,
+            assessments: assessments.map((a) => a.assessment),
+            emptiedAssessmentIds: assessments
+              .filter((a) => a.wouldEmpty)
+              .map((a) => a.assessment.assessment_id),
+          };
+        }),
+    }));
+
+    return {
+      questionMemberships,
+      affectedAssessmentCount: affectedAssessmentIds.size,
+      emptiedZoneCount,
+      lockpointsMovedOrRemoved,
+    };
   });
 
 const deleteQuestions = t.procedure

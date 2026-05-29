@@ -14,109 +14,6 @@ import {
 } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
-interface PreviewZone {
-  assessmentId: string;
-  assessmentLabel: string;
-  assessmentColor: string;
-  assessmentSetAbbreviation: string;
-  assessmentSetName: string;
-  assessmentNumber: string;
-  courseInstanceId: string;
-  courseInstanceShortName: string;
-  affectedQids: string[];
-  wouldBeEmpty: boolean;
-}
-
-const EMPTY_PREVIEW_ZONES: PreviewZone[] = [];
-
-interface PerCourseInstance {
-  courseInstanceId: string;
-  courseInstanceShortName: string;
-  assessments: Map<
-    string,
-    {
-      assessmentId: string;
-      assessmentLabel: string;
-      assessmentColor: string;
-      assessmentSetAbbreviation: string;
-      assessmentSetName: string;
-      assessmentNumber: string;
-      wouldEmptyAnyZone: boolean;
-    }
-  >;
-}
-
-function buildMembershipsByQid(
-  zones: PreviewZone[],
-): Map<string, QuestionCourseInstanceMembership[]> {
-  const byQid = new Map<string, Map<string, PerCourseInstance>>();
-  for (const zone of zones) {
-    for (const qid of zone.affectedQids) {
-      let perCi = byQid.get(qid);
-      if (!perCi) {
-        perCi = new Map();
-        byQid.set(qid, perCi);
-      }
-      let ci = perCi.get(zone.courseInstanceId);
-      if (!ci) {
-        ci = {
-          courseInstanceId: zone.courseInstanceId,
-          courseInstanceShortName: zone.courseInstanceShortName,
-          assessments: new Map(),
-        };
-        perCi.set(zone.courseInstanceId, ci);
-      }
-      const existing = ci.assessments.get(zone.assessmentId);
-      if (existing) {
-        existing.wouldEmptyAnyZone = existing.wouldEmptyAnyZone || zone.wouldBeEmpty;
-      } else {
-        ci.assessments.set(zone.assessmentId, {
-          assessmentId: zone.assessmentId,
-          assessmentLabel: zone.assessmentLabel,
-          assessmentColor: zone.assessmentColor,
-          assessmentSetAbbreviation: zone.assessmentSetAbbreviation,
-          assessmentSetName: zone.assessmentSetName,
-          assessmentNumber: zone.assessmentNumber,
-          wouldEmptyAnyZone: zone.wouldBeEmpty,
-        });
-      }
-    }
-  }
-  const result = new Map<string, QuestionCourseInstanceMembership[]>();
-  for (const [qid, perCi] of byQid) {
-    const ciList: QuestionCourseInstanceMembership[] = [...perCi.values()]
-      .sort((a, b) =>
-        a.courseInstanceShortName.localeCompare(b.courseInstanceShortName, undefined, {
-          numeric: true,
-        }),
-      )
-      .map((ci) => ({
-        courseInstanceId: ci.courseInstanceId,
-        courseInstanceShortName: ci.courseInstanceShortName,
-        assessments: [...ci.assessments.values()]
-          .sort((a, b) =>
-            a.assessmentLabel.localeCompare(b.assessmentLabel, undefined, { numeric: true }),
-          )
-          .map((a) => ({
-            assessment_id: a.assessmentId,
-            label: a.assessmentLabel,
-            color: a.assessmentColor,
-            assessment_set_abbreviation: a.assessmentSetAbbreviation,
-            assessment_set_name: a.assessmentSetName,
-            assessment_set_color: a.assessmentColor,
-            assessment_number: a.assessmentNumber,
-          })),
-        emptiedAssessmentIds: new Set(
-          [...ci.assessments.values()]
-            .filter((a) => a.wouldEmptyAnyZone)
-            .map((a) => a.assessmentId),
-        ),
-      }));
-    result.set(qid, ciList);
-  }
-  return result;
-}
-
 export function DeleteQuestionsModal({
   show,
   onHide,
@@ -143,14 +40,14 @@ export function DeleteQuestionsModal({
       { enabled: show && questionIds.length > 0 },
     ),
   });
-  const zones = previewQuery.data?.zones ?? EMPTY_PREVIEW_ZONES;
-  const lockpointsMovedOrRemoved = previewQuery.data?.lockpointsMovedOrRemoved ?? 0;
-  const membershipsByQid = useMemo(() => buildMembershipsByQid(zones), [zones]);
-  const affectedAssessmentCount = useMemo(
-    () => new Set(zones.map((z) => z.assessmentId)).size,
-    [zones],
+  const preview = previewQuery.data;
+  const affectedAssessmentCount = preview?.affectedAssessmentCount ?? 0;
+  const emptiedZoneCount = preview?.emptiedZoneCount ?? 0;
+  const lockpointsMovedOrRemoved = preview?.lockpointsMovedOrRemoved ?? 0;
+  const membershipsByQid = useMemo<Map<string, QuestionCourseInstanceMembership[]>>(
+    () => new Map((preview?.questionMemberships ?? []).map((m) => [m.qid, m.courseInstances])),
+    [preview],
   );
-  const emptiedZoneCount = zones.filter((zone) => zone.wouldBeEmpty).length;
   const previewError = getAppError<QuestionsError['PreviewDeletion']>(previewQuery.error);
   const previewLoaded = previewQuery.isSuccess && !previewQuery.isFetching;
 

@@ -13,7 +13,57 @@ import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
 import { SelectedQuestionList } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
 
-export function RemoveFromAssessmentModal({
+type Mode = 'add' | 'remove';
+
+interface ModeConfig {
+  idPrefix: string;
+  title: string;
+  submitVariant: 'primary' | 'danger';
+  submitVerb: string;
+  emptyMessage: string;
+  /** Whether to offer assessments the selected questions are not yet in. */
+  includeAssessmentsWithoutQuestions: boolean;
+  /** Message when no assessment was actually changed. */
+  noChangeMessage: string;
+  /** Leading clause of the success message, completed with the affected count. */
+  successVerb: string;
+  /** Appended when some assessments skipped some questions. */
+  partialSkipMessage: string;
+}
+
+const MODE_CONFIG: Record<Mode, ModeConfig> = {
+  add: {
+    idPrefix: 'bulk-add-assessment',
+    title: 'Add selected questions to assessments',
+    submitVariant: 'primary',
+    submitVerb: 'Add to',
+    emptyMessage: 'This course instance has no assessments.',
+    includeAssessmentsWithoutQuestions: true,
+    noChangeMessage: 'All selected questions were already present in the chosen assessments.',
+    successVerb: 'Added selected questions to',
+    partialSkipMessage: 'Some questions were already present in one or more assessments.',
+  },
+  remove: {
+    idPrefix: 'bulk-remove-assessment',
+    title: 'Remove selected questions from assessments',
+    submitVariant: 'danger',
+    submitVerb: 'Remove from',
+    emptyMessage: 'None of the selected questions are in an assessment in this course instance.',
+    includeAssessmentsWithoutQuestions: false,
+    noChangeMessage: 'None of the selected questions were in the chosen assessments.',
+    successVerb: 'Removed selected questions from',
+    partialSkipMessage: 'Some questions were not present in one or more assessments.',
+  },
+};
+
+/**
+ * Add or remove the selected questions to/from assessments in a chosen course
+ * instance. The add and remove flows are structurally identical — they differ
+ * only in which mutation runs, which assessments are offered, and the wording —
+ * so they share this component, parameterized by `mode`.
+ */
+export function AssessmentMembershipModal({
+  mode,
   show,
   onHide,
   selectedQuestions,
@@ -24,6 +74,7 @@ export function RemoveFromAssessmentModal({
   clearSelection,
   onActionSuccess,
 }: {
+  mode: Mode;
   show: boolean;
   onHide: () => void;
   selectedQuestions: SafeQuestionsPageData[];
@@ -34,6 +85,7 @@ export function RemoveFromAssessmentModal({
   clearSelection: () => void;
   onActionSuccess: (message: string) => void;
 }) {
+  const config = MODE_CONFIG[mode];
   const trpc = useTRPC();
   const invalidateQuestionsList = useInvalidateQuestionsList();
   const [courseInstanceId, setCourseInstanceId] = useState(
@@ -47,10 +99,11 @@ export function RemoveFromAssessmentModal({
       { enabled: show && courseInstanceId !== '' },
     ),
   });
-  const assessments = assessmentsQuery.data ?? [];
-  // A question can only be removed from an assessment it is actually in, so only
-  // offer assessments that reference at least one of the selected questions.
-  const availableAssessments = assessments.filter((assessment) => assessment.referencedCount > 0);
+  // For removal, only offer assessments that reference at least one selected
+  // question, since a question can only be removed from an assessment it is in.
+  const assessments = (assessmentsQuery.data ?? []).filter(
+    (assessment) => config.includeAssessmentsWithoutQuestions || assessment.referencedCount > 0,
+  );
 
   const toggleAssessment = (assessmentId: string) => {
     setSelectedAssessmentIds((prev) => {
@@ -64,19 +117,23 @@ export function RemoveFromAssessmentModal({
     });
   };
 
+  const mutationOptions =
+    mode === 'add'
+      ? trpc.questions.addToAssessment.mutationOptions()
+      : trpc.questions.removeFromAssessment.mutationOptions();
   const mutation = useMutation({
-    ...trpc.questions.removeFromAssessment.mutationOptions(),
-    onSuccess: async ({ results, removedAssessmentCount }) => {
+    ...mutationOptions,
+    onSuccess: async ({ results, affectedAssessmentCount }) => {
       await invalidateQuestionsList();
       const parts: string[] = [];
-      if (removedAssessmentCount === 0) {
-        parts.push('None of the selected questions were in the chosen assessments.');
+      if (affectedAssessmentCount === 0) {
+        parts.push(config.noChangeMessage);
       } else {
         parts.push(
-          `Removed selected questions from ${removedAssessmentCount} ${removedAssessmentCount === 1 ? 'assessment' : 'assessments'}.`,
+          `${config.successVerb} ${affectedAssessmentCount} ${affectedAssessmentCount === 1 ? 'assessment' : 'assessments'}.`,
         );
         if (results.some((result) => result.skippedCount > 0)) {
-          parts.push('Some questions were not present in one or more assessments.');
+          parts.push(config.partialSkipMessage);
         }
       }
       onActionSuccess(parts.join(' '));
@@ -84,7 +141,9 @@ export function RemoveFromAssessmentModal({
       onHide();
     },
   });
-  const appError = getAppError<QuestionsError['RemoveFromAssessment']>(mutation.error);
+  const appError = getAppError<
+    QuestionsError['AddToAssessment'] | QuestionsError['RemoveFromAssessment']
+  >(mutation.error);
   const selectedCount = selectedAssessmentIds.size;
   const canSubmit = selectedCount > 0;
 
@@ -92,14 +151,12 @@ export function RemoveFromAssessmentModal({
     <Modal
       show={show}
       size="lg"
-      aria-labelledby="bulk-remove-assessment-modal-title"
+      aria-labelledby={`${config.idPrefix}-modal-title`}
       onHide={onHide}
       onExited={() => mutation.reset()}
     >
       <Modal.Header closeButton>
-        <Modal.Title id="bulk-remove-assessment-modal-title">
-          Remove selected questions from assessments
-        </Modal.Title>
+        <Modal.Title id={`${config.idPrefix}-modal-title`}>{config.title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <AppErrorAlert
@@ -107,11 +164,11 @@ export function RemoveFromAssessmentModal({
           render={{ UNKNOWN: ({ message }) => <>Error loading assessments: {message}</> }}
         />
         <div className="mb-3">
-          <label className="form-label" htmlFor="bulk-remove-course-instance">
+          <label className="form-label" htmlFor={`${config.idPrefix}-course-instance`}>
             Course instance
           </label>
           <select
-            id="bulk-remove-course-instance"
+            id={`${config.idPrefix}-course-instance`}
             className="form-select"
             value={courseInstanceId}
             onChange={(e) => {
@@ -128,11 +185,11 @@ export function RemoveFromAssessmentModal({
         </div>
 
         <AssessmentChecklist
-          idPrefix="bulk-remove-assessment"
-          assessments={availableAssessments}
+          idPrefix={config.idPrefix}
+          assessments={assessments}
           isLoading={assessmentsQuery.isLoading}
           selectedAssessmentIds={selectedAssessmentIds}
-          emptyMessage="None of the selected questions are in an assessment in this course instance."
+          emptyMessage={config.emptyMessage}
           onToggle={toggleAssessment}
         />
 
@@ -144,13 +201,13 @@ export function RemoveFromAssessmentModal({
           Cancel
         </Button>
         <Button
-          variant="danger"
+          variant={config.submitVariant}
           disabled={!canSubmit || mutation.isPending}
           onClick={() =>
             mutation.mutate({ questionIds, assessmentIds: [...selectedAssessmentIds] })
           }
         >
-          Remove from {selectedCount} {selectedCount === 1 ? 'assessment' : 'assessments'}
+          {config.submitVerb} {selectedCount} {selectedCount === 1 ? 'assessment' : 'assessments'}
         </Button>
       </Modal.Footer>
     </Modal>

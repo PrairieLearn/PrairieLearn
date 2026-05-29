@@ -7,9 +7,8 @@ import {
 } from '../../../components/QuestionsTable.shared.js';
 import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js';
 
-import { AddToAssessmentModal } from './AddToAssessmentModal.js';
+import { AssessmentMembershipModal } from './AssessmentMembershipModal.js';
 import { DeleteQuestionsModal } from './DeleteQuestionsModal.js';
-import { RemoveFromAssessmentModal } from './RemoveFromAssessmentModal.js';
 
 export function QuestionSelectionToolbar({
   selectedQuestions,
@@ -75,7 +74,8 @@ export function QuestionSelectionToolbar({
         </DropdownButton>
       </div>
 
-      <AddToAssessmentModal
+      <AssessmentMembershipModal
+        mode="add"
         show={showAddModal}
         selectedQuestions={selectedQuestions}
         questionIds={questionIds}
@@ -86,7 +86,8 @@ export function QuestionSelectionToolbar({
         onActionSuccess={onActionSuccess}
         onHide={() => setShowAddModal(false)}
       />
-      <RemoveFromAssessmentModal
+      <AssessmentMembershipModal
+        mode="remove"
         show={showRemoveModal}
         selectedQuestions={selectedQuestions}
         questionIds={questionIds}
