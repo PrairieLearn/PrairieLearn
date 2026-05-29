@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Badge, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { Badge, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import {
   MAX_BULK_QUESTION_SELECTION,
@@ -19,6 +19,7 @@ export function QuestionSelectionToolbar({
   clearSelection,
   courseInstances,
   currentCourseInstanceId,
+  trimSelection,
   urlPrefix,
   onActionSuccess,
 }: {
@@ -26,6 +27,7 @@ export function QuestionSelectionToolbar({
   clearSelection: () => void;
   courseInstances: PublicCourseInstance[];
   currentCourseInstanceId?: string;
+  trimSelection: (count: number) => void;
   urlPrefix: string;
   onActionSuccess: (message: string) => void;
 }) {
@@ -44,9 +46,18 @@ export function QuestionSelectionToolbar({
     <>
       <div className="d-flex align-items-center gap-2">
         {selectionLimitExceeded && (
-          <Badge bg="warning" text="dark">
-            {selectionLimitMessage}
-          </Badge>
+          <>
+            <Badge bg="warning" text="dark">
+              {selectionLimitMessage}
+            </Badge>
+            <Button
+              size="sm"
+              variant="link"
+              onClick={() => trimSelection(MAX_BULK_QUESTION_SELECTION)}
+            >
+              Trim selection to {MAX_BULK_QUESTION_SELECTION}
+            </Button>
+          </>
         )}
         <DropdownButton
           as={ButtonGroup}

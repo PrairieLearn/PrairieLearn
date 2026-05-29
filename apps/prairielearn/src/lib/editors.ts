@@ -46,10 +46,15 @@ import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
-import { blockerDescription, removeQidsFromAssessment } from './infoAssessment-edits.js';
+import {
+  blockerDescription,
+  removeQidsFromAssessment,
+  renameQidInAssessment,
+} from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
+import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -1540,9 +1545,7 @@ export class QuestionDeleteEditor extends Editor {
     debug('QuestionDeleteEditor: write()');
 
     const pathsToAdd: string[] = [];
-    const qidsToRemove = new Set(
-      this.questions.flatMap((question) => (question.qid !== null ? [question.qid] : [])),
-    );
+    const qidsToRemove = qidsToRemoveForQuestions(this.questions);
 
     // Assessment files are rewritten under this course's repository path, so
     // shared-question references from other courses must be ignored here.
@@ -1684,30 +1687,19 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+      const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false as boolean;
-      infoJson.zones?.forEach((zone: any) => {
-        zone.questions?.forEach((question: any) => {
-          if (question.alternatives) {
-            question.alternatives?.forEach((alternative: any) => {
-              if (alternative.id === this.question.qid) {
-                alternative.id = this.qid_new;
-                found = true;
-              }
-            });
-          } else if (question.id === this.question.qid) {
-            question.id = this.qid_new;
-            found = true;
-          }
-        });
-      });
-      if (!found) {
-        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+      const { assessment: updatedInfoJson, renamedCount } = renameQidInAssessment(
+        infoJson,
+        existingQid,
+        this.qid_new,
+      );
+      if (renamedCount === 0) {
+        logger.info(`Should have but did not find ${existingQid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
       await fs.writeFile(infoPath, formattedJson);
     }
 

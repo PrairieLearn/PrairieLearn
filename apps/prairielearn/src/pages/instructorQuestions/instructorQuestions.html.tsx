@@ -79,12 +79,13 @@ function InstructorQuestionsTableInner({
         showImportQuestionsButton={showImportQuestionsButton}
         renderSelectionToolbar={
           canEditQuestions
-            ? ({ selectedQuestions, clearSelection }) => (
+            ? ({ selectedQuestions, clearSelection, trimSelection }) => (
                 <QuestionSelectionToolbar
                   selectedQuestions={selectedQuestions}
                   clearSelection={clearSelection}
                   courseInstances={courseInstances}
                   currentCourseInstanceId={currentCourseInstanceId}
+                  trimSelection={trimSelection}
                   urlPrefix={urlPrefix}
                   onActionSuccess={setSuccessMessage}
                 />

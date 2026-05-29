@@ -101,6 +101,7 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   renderSelectionToolbar?: (props: {
     selectedQuestions: SafeQuestionsPageData[];
     clearSelection: () => void;
+    trimSelection: (count: number) => void;
   }) => ReactNode;
 }
 
@@ -313,6 +314,10 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       ? renderSelectionToolbar({
           selectedQuestions,
           clearSelection: () => setRowSelection({}),
+          trimSelection: (count) => {
+            const kept = table.getFilteredSelectedRowModel().rows.slice(0, count);
+            setRowSelection(Object.fromEntries(kept.map((row) => [row.id, true])));
+          },
         })
       : null;
 
