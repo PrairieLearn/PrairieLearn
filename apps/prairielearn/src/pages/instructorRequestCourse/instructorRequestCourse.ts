@@ -33,6 +33,28 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
+type AutoApprovalBlockReason = github.GithubOrgAccessFailureReason | 'unexpected_error';
+
+/**
+ * For auto-approval, verify the institution's configured GitHub org is still reachable
+ * before creating a repository in it. Returns the failure reason if access should block
+ * auto-approval (so an admin can investigate via the manual path), or `null` if creation
+ * may proceed. The platform default org is always considered accessible and skips the API call.
+ */
+async function checkAutoApprovalOrgAccess(
+  githubCourseOwner: string,
+  course_request_id: string,
+): Promise<AutoApprovalBlockReason | null> {
+  if (github.isPlatformDefaultOrg(githubCourseOwner)) return null;
+  try {
+    const access = await github.checkGithubOrgAccess(githubCourseOwner);
+    return access.ok ? null : access.reason;
+  } catch (err) {
+    Sentry.captureException(err, { extra: { course_request_id, githubCourseOwner } });
+    return 'unexpected_error';
+  }
+}
+
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -222,9 +244,17 @@ router.post(
       z.boolean(),
     );
 
-    let autoApproved = false;
-    let autoApprovalBlockedMessage: string | null = null;
-    let autoApprovedRepoShortName: string | null = null;
+    // Each outcome below sends a single Slack notification; this is the default
+    // when the request is not auto-approved.
+    let courseRequestSlackMessage =
+      '*Incoming course request*\n' +
+      `Course rubric: ${short_name}\n` +
+      `Course title: ${title}\n` +
+      `Institution: ${institution}\n` +
+      `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+      `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+      `GitHub username: ${github_user || 'not provided'}`;
+
     if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await queryRow(
@@ -238,24 +268,9 @@ router.post(
       );
       const githubCourseOwner =
         existingSettingsResult.institution_github_course_owner ?? config.githubCourseOwner;
+      const blockReason = await checkAutoApprovalOrgAccess(githubCourseOwner, course_request_id);
 
-      // Verify org access before auto-creating. If the institution's configured org has
-      // become unreachable since it was saved, fall through to the manual-approval path
-      // so an admin can investigate instead of failing in a background job.
-      let githubOrgAccessFailureReason: string | null = null;
-      if (!github.isPlatformDefaultOrg(githubCourseOwner)) {
-        try {
-          const access = await github.checkGithubOrgAccess(githubCourseOwner);
-          if (!access.ok) {
-            githubOrgAccessFailureReason = access.reason;
-          }
-        } catch (err) {
-          githubOrgAccessFailureReason = 'unexpected_error';
-          Sentry.captureException(err, { extra: { course_request_id, githubCourseOwner } });
-        }
-      }
-
-      if (githubOrgAccessFailureReason == null) {
+      if (blockReason == null) {
         const repo_short_name = github.reponameFromShortname(short_name);
         await github.createCourseRepoJob(
           {
@@ -271,24 +286,31 @@ router.post(
           },
           res.locals.authn_user,
         );
-        autoApproved = true;
-        autoApprovedRepoShortName = repo_short_name;
+        courseRequestSlackMessage =
+          '*Automatically creating course*\n' +
+          `Course repo: ${repo_short_name}\n` +
+          `Course rubric: ${short_name}\n` +
+          `Course title: ${title}\n` +
+          `Institution: ${institution}\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+          `GitHub username: ${github_user || 'not provided'}`;
       } else {
         logger.error(
-          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${githubOrgAccessFailureReason})`,
+          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${blockReason})`,
         );
-        if (githubOrgAccessFailureReason !== 'unexpected_error') {
+        if (blockReason !== 'unexpected_error') {
           Sentry.captureMessage(
             `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
-            { extra: { reason: githubOrgAccessFailureReason, course_request_id } },
+            { extra: { reason: blockReason, course_request_id } },
           );
         }
-        autoApprovalBlockedMessage =
+        courseRequestSlackMessage =
           '*Auto-approval skipped — GitHub org access check failed*\n' +
           `Course rubric: ${short_name}\n` +
           `Course title: ${title}\n` +
           `Institution: ${institution}\n` +
-          `Target org: ${githubCourseOwner} (${githubOrgAccessFailureReason})\n` +
+          `Target org: ${githubCourseOwner} (${blockReason})\n` +
           `Requested by: ${first_name} ${last_name} (${work_email})`;
       }
     }
@@ -296,33 +318,9 @@ router.post(
     // Redirect on success so that refreshing doesn't create another request.
     res.redirect(req.originalUrl);
 
-    // Do remaining work in the background once we've redirected the response.
+    // Send the Slack notification in the background once we've redirected the response.
     try {
-      if (autoApprovalBlockedMessage) {
-        await opsbot.sendCourseRequestMessage(autoApprovalBlockedMessage);
-      }
-      if (autoApproved) {
-        await opsbot.sendCourseRequestMessage(
-          '*Automatically creating course*\n' +
-            `Course repo: ${autoApprovedRepoShortName}\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Institution: ${institution}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-        );
-      } else {
-        await opsbot.sendCourseRequestMessage(
-          '*Incoming course request*\n' +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Institution: ${institution}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-        );
-      }
+      await opsbot.sendCourseRequestMessage(courseRequestSlackMessage);
     } catch (err) {
       logger.error('Error sending course request message to Slack', err);
       Sentry.captureException(err);

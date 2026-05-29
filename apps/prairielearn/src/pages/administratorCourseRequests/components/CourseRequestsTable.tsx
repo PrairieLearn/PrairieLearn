@@ -372,7 +372,7 @@ function CourseRequestApproveModalContent({
     register,
     handleSubmit,
     setValue,
-    formState: { isSubmitting, dirtyFields },
+    formState: { isSubmitting, dirtyFields, errors },
   } = methods;
   const institutionId = methods.watch('institution_id');
   const prefixState = useInstitutionPrefix(institutionId, adminInstitutions);
@@ -579,14 +579,26 @@ function CourseRequestApproveModalContent({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.github_course_owner && 'is-invalid')}
               id="courseRequestAddInputGithubCourseOwner"
               defaultValue={initialGithubCourseOwner}
+              aria-invalid={errors.github_course_owner ? true : undefined}
+              aria-errormessage={
+                errors.github_course_owner
+                  ? 'courseRequestAddInputGithubCourseOwner-error'
+                  : undefined
+              }
               aria-describedby="courseRequestAddInputGithubCourseOwnerHelp"
               {...register('github_course_owner', {
                 required: 'GitHub organization is required',
+                validate: (value) => value.trim().length > 0 || 'GitHub organization is required',
               })}
             />
+            {errors.github_course_owner && (
+              <div id="courseRequestAddInputGithubCourseOwner-error" className="invalid-feedback">
+                {errors.github_course_owner.message}
+              </div>
+            )}
             <small id="courseRequestAddInputGithubCourseOwnerHelp" className="form-text text-muted">
               The repository will be created in this GitHub organization. Pre-filled from the
               selected institution's default; can be overridden for this course.

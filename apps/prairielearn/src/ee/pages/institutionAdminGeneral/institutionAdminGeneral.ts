@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -15,6 +16,14 @@ import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import { InstitutionAdminGeneral } from './institutionAdminGeneral.html.js';
 
 const router = Router({ mergeParams: true });
+
+const BodySchema = z.object({
+  __action: z.literal('update_course_request_message'),
+  course_request_message: z
+    .string()
+    .max(COURSE_REQUEST_MESSAGE_MAX_LENGTH)
+    .transform((value) => value.trim()),
+});
 
 router.get(
   '/',
@@ -56,32 +65,23 @@ router.post(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    if (req.body.__action === 'update_course_request_message') {
-      const newMessage =
-        typeof req.body.course_request_message === 'string' &&
-        req.body.course_request_message.trim().length > 0
-          ? req.body.course_request_message
-          : null;
-
-      if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
-        throw new HttpStatusError(
-          400,
-          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
-        );
-      }
-
-      await updateInstitutionSetting({
-        institution_id: institution.id,
-        field: 'course_request_message',
-        value: newMessage,
-        authn_user_id: res.locals.authn_user.id,
-      });
-
-      flash('success', 'Successfully updated the course request message.');
-      res.redirect(req.originalUrl);
-    } else {
-      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    const parsed = BodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new HttpStatusError(
+        400,
+        `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+      );
     }
+
+    await updateInstitutionSetting({
+      institution_id: institution.id,
+      field: 'course_request_message',
+      value: parsed.data.course_request_message,
+      authn_user_id: res.locals.authn_user.id,
+    });
+
+    flash('success', 'Successfully updated the course request message.');
+    res.redirect(req.originalUrl);
   }),
 );
 

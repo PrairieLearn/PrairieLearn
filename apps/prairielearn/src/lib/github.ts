@@ -29,13 +29,14 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
   - config.githubMachineUser (required to validate org access)
 */
 
-type GithubOrgAccessResult =
-  | { ok: true }
-  | {
-      ok: false;
-      reason: 'no_client' | 'no_machine_user' | 'org_unreachable' | 'not_a_member';
-    }
-  | { ok: false; reason: 'pending_invitation' };
+export type GithubOrgAccessFailureReason =
+  | 'no_client'
+  | 'no_machine_user'
+  | 'org_unreachable'
+  | 'not_a_member'
+  | 'pending_invitation';
+
+type GithubOrgAccessResult = { ok: true } | { ok: false; reason: GithubOrgAccessFailureReason };
 
 /**
  * Returns true when `value` refers to the same GitHub org as `config.githubCourseOwner`.
