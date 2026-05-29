@@ -56,7 +56,6 @@ const list = t.procedure.use(requireCoursePermissionPreview).query(async ({ ctx 
   const courseInstances = await selectCourseInstancesWithStaffAccess({
     course: ctx.course,
     authzData: ctx.authz_data,
-    requiredRole: ['Previewer'],
   });
 
   const rawQuestions = await selectQuestionsForCourse(
