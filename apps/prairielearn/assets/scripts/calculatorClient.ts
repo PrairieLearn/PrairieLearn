@@ -4,7 +4,7 @@ import {
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
-import { MathfieldElement } from 'mathlive';
+import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -110,11 +110,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) => {
-    return ce.parse(latex).toString();
-  };
-  calculatorInputElement.onExport = onExport;
-  calculatorOutput.onExport = onExport;
+  const latexFieldOnExport = (_mf: Mathfield, latex: string) => convertLatexToAsciiMath(latex);
+
+  calculatorInputElement.onExport = latexFieldOnExport;
+  calculatorOutput.onExport = latexFieldOnExport;
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
@@ -353,7 +352,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.dataset.clipboardText = ce.parse(displayed).toString();
+    copyButton.dataset.clipboardText = convertLatexToAsciiMath(displayed);
 
     // Add to history
     if (addToHistory) {
@@ -694,10 +693,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) => ce.parse(latex).toString();
-    const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
-    inputField.onExport = historyOnExport;
-    outputField.onExport = historyOnExport;
+    inputField.onExport = latexFieldOnExport;
+    outputField.onExport = latexFieldOnExport;
 
     // Copy buttons
     const inputCopyBtn = ensureElement(
@@ -706,8 +703,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.dataset.clipboardText = normalizeLatex(input);
-    outputCopyBtn.dataset.clipboardText = normalizeLatex(outputField.value.replace(/^=/, ''));
+    inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
+    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(
+      outputField.value.replace(/^=/, ''),
+    );
 
     // Insert buttons
     const inputInsertBtn = ensureElement(

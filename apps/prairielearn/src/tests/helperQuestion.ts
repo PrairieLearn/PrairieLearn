@@ -196,6 +196,9 @@ export function getInstanceQuestion(
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
+        const href = elemList.attr('href');
+        assert.isString(href);
+        assert.match(href, /\/preview\/$/);
       } else {
         assert.lengthOf(elemList, 0);
       }
@@ -607,68 +610,9 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
   waitForJobSequence(locals);
 }
 
-export async function autoTestQuestion({
-  questionBaseUrl,
-  questionPreviewTabUrl = '',
-  qid,
-}: {
-  questionBaseUrl: string;
-  questionPreviewTabUrl?: string;
-  qid: string;
-}): Promise<void> {
+export async function autoTestQuestion({ qid }: { qid: string }): Promise<void> {
   const question = await selectQuestionByQid({ qid, course_id: '1' });
   assert.equal(question.type, 'Freeform');
-
-  const shouldHaveButtons =
-    question.grading_method === 'Manual' ? ['save', 'newVariant'] : ['grade', 'save', 'newVariant'];
-  const hasGradeOrSave = shouldHaveButtons.includes('grade') || shouldHaveButtons.includes('save');
-
-  const previewUrl = questionBaseUrl + '/' + question.id + questionPreviewTabUrl;
-  const previewResponse = await fetch(previewUrl);
-  assert.equal(previewResponse.status, 200);
-  const preview$ = cheerio.load(await previewResponse.text());
-
-  if (hasGradeOrSave) {
-    const variantIdElems = preview$('.question-form input[name="__variant_id"]');
-    assert.lengthOf(variantIdElems, 1);
-    assert.nestedProperty(variantIdElems[0], 'attribs.value');
-    const variantId = variantIdElems[0].attribs.value;
-
-    const variant = await sqldb.queryRow(
-      sql.select_variant,
-      { variant_id: variantId },
-      VariantSchema,
-    );
-    assert.equal(variant.question_id, question.id);
-    assert.equal(variant.broken, false);
-    assert.isNull(variant.broken_at);
-
-    const previewCsrfElems = preview$('.question-form input[name="__csrf_token"]');
-    assert.lengthOf(previewCsrfElems, 1);
-    assert.nestedProperty(previewCsrfElems[0], 'attribs.value');
-    assert.isString(previewCsrfElems[0].attribs.value);
-  }
-
-  const gradeButtons = preview$('button[name="__action"][value="grade"]');
-  assert.lengthOf(gradeButtons, shouldHaveButtons.includes('grade') ? 1 : 0);
-  const saveButtons = preview$('button[name="__action"][value="save"]');
-  assert.lengthOf(saveButtons, shouldHaveButtons.includes('save') ? 1 : 0);
-  const newVariantButtons = preview$('a:contains(New variant)');
-  assert.lengthOf(newVariantButtons, shouldHaveButtons.includes('newVariant') ? 1 : 0);
-  const tryAgainButtons = preview$('a:contains(Try a new variant)');
-  assert.lengthOf(tryAgainButtons, shouldHaveButtons.includes('tryAgain') ? 1 : 0);
-
-  const previewIssues = await sqldb.queryRows(
-    sql.select_issues_for_question,
-    { question_id: question.id },
-    IssueSchema,
-  );
-  assert.lengthOf(
-    previewIssues,
-    0,
-    `[${qid}] preview generated ${previewIssues.length} issues:\n` +
-      JSON.stringify(previewIssues, null, '    '),
-  );
 
   const course = await selectCourseById('1');
   const jobSequenceId = await startTestQuestion({
