@@ -1097,11 +1097,11 @@ function validateNodeModulesDependency({
   if (!nodeModuleDependencyExists(file)) {
     if (config.devMode) {
       warnings.push(
-        `Missing dependency file: node_modules/${file} ` +
+        `Missing dependency file: node_modules/${file}. ` +
           'Check the filename or add the file to node_modules.',
       );
     } else {
-      warnings.push(`Missing dependency file: node_modules/${file}`);
+      warnings.push(`Missing dependency file: node_modules/${file}.`);
     }
     return;
   }
