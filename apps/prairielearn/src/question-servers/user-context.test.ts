@@ -35,7 +35,7 @@ function call({
 }) {
   return buildQuestionUserContext({
     question: makeQuestion(questionCourseId),
-    courseOptedIn,
+    course: { questions_receive_user_data: courseOptedIn },
     caller: {
       effectiveUserId,
       groupId,

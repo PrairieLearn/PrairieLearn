@@ -70,17 +70,17 @@ function toQuestionUser({
  */
 export async function buildQuestionUserContext({
   question,
-  courseOptedIn,
+  course,
   caller,
   phase,
 }: {
   question: Pick<Question, 'course_id'>;
-  /** `courses.questions_receive_user_data` for the question's owning course. */
-  courseOptedIn: boolean;
+  /** The question's owning course; `questions_receive_user_data` is the opt-in switch. */
+  course: Pick<Course, 'questions_receive_user_data'>;
   caller: QuestionCaller;
   phase: VariantLifecyclePhase;
 }): Promise<QuestionUserContext> {
-  if (!courseOptedIn) return EMPTY_USER_CONTEXT;
+  if (!course.questions_receive_user_data) return EMPTY_USER_CONTEXT;
   if (!idsEqual(question.course_id, caller.variantCourse.id)) return EMPTY_USER_CONTEXT;
 
   // Group variants persist generate/prepare output, so don't bake a single

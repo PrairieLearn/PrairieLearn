@@ -428,26 +428,22 @@ export async function updateCourseQuestionsReceiveUserData({
   questions_receive_user_data: boolean;
   authn_user_id: string;
   user_id: string;
-  /** Previous value observed before saving infoCourse.json. */
-  old_questions_receive_user_data?: boolean;
+  /**
+   * The value observed before this save began. A sync triggered by saving
+   * `infoCourse.json` may have already written the column in dev mode, so we
+   * compare against this rather than a fresh read to detect the real change.
+   */
+  old_questions_receive_user_data: boolean;
 }): Promise<Course> {
+  if (old_questions_receive_user_data === questions_receive_user_data) {
+    return await selectCourseById(course_id);
+  }
   return await runInTransactionAsync(async () => {
-    const oldCourse = await selectCourseById(course_id);
-    if (
-      oldCourse.questions_receive_user_data === questions_receive_user_data &&
-      (old_questions_receive_user_data === undefined ||
-        old_questions_receive_user_data === questions_receive_user_data)
-    ) {
-      return oldCourse;
-    }
-    const newCourse =
-      oldCourse.questions_receive_user_data === questions_receive_user_data
-        ? oldCourse
-        : await queryRow(
-            sql.update_course_questions_receive_user_data,
-            { course_id, questions_receive_user_data },
-            CourseSchema,
-          );
+    const newCourse = await queryRow(
+      sql.update_course_questions_receive_user_data,
+      { course_id, questions_receive_user_data },
+      CourseSchema,
+    );
     await insertAuditEvent({
       tableName: 'courses',
       action: 'update',
@@ -457,10 +453,7 @@ export async function updateCourseQuestionsReceiveUserData({
       agentUserId: user_id,
       courseId: course_id,
       institutionId: newCourse.institution_id,
-      oldRow: {
-        questions_receive_user_data:
-          old_questions_receive_user_data ?? oldCourse.questions_receive_user_data,
-      },
+      oldRow: { questions_receive_user_data: old_questions_receive_user_data },
       newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
     });
     return newCourse;

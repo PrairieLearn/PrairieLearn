@@ -50,29 +50,11 @@ import {
   type RenderSelection,
   type TestResultData,
 } from './types.js';
-import {
-  type QuestionUserContext,
-  type VariantLifecyclePhase,
-  buildQuestionUserContext,
-} from './user-context.js';
+import { type QuestionUserContext, buildQuestionUserContext } from './user-context.js';
 
 const debug = debugfn('prairielearn:freeform');
 
 type Phase = 'generate' | 'prepare' | 'render' | 'parse' | 'grade' | 'test' | 'file';
-
-function buildUserContextForCaller(
-  question: Pick<Question, 'course_id'>,
-  course: Pick<Course, 'questions_receive_user_data'>,
-  caller: QuestionCaller,
-  phase: VariantLifecyclePhase,
-): Promise<QuestionUserContext> {
-  return buildQuestionUserContext({
-    question,
-    courseOptedIn: course.questions_receive_user_data,
-    caller,
-    phase,
-  });
-}
 
 interface QuestionProcessingContext {
   course: Course;
@@ -849,7 +831,12 @@ export async function generate(
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-    const userContext = await buildUserContextForCaller(question, course, caller, 'create');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'create',
+    });
 
     const data = {
       params: {},
@@ -892,7 +879,12 @@ export async function prepare(
     if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
-    const userContext = await buildUserContextForCaller(question, course, caller, 'create');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'create',
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1154,7 +1146,12 @@ export async function render({
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
-    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'invoke',
+    });
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
@@ -1570,7 +1567,12 @@ export async function file(
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
-    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'invoke',
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1629,7 +1631,12 @@ export async function parse(
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
-    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'invoke',
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1689,12 +1696,12 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
-    const userContext = await buildUserContextForCaller(
+    const userContext = await buildQuestionUserContext({
       question,
-      question_course,
+      course: question_course,
       caller,
-      'invoke',
-    );
+      phase: 'invoke',
+    });
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
@@ -1759,7 +1766,12 @@ export async function test(
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
-    const userContext = await buildUserContextForCaller(question, course, caller, 'invoke');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+      phase: 'invoke',
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.

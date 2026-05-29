@@ -282,9 +282,11 @@ async function makeAndInsertVariant({
 
   // Pre-fetch the group for instance-question-backed variants so we can build
   // the user/group context before the transaction. The group on an assessment
-  // instance is set at instance creation and does not change.
+  // instance is set at instance creation and does not change. This is only
+  // needed when the course exposes user data to questions; otherwise the
+  // context is empty regardless of the group, so we skip the extra query.
   let group_id: string | null = null;
-  if (instance_question_id != null) {
+  if (instance_question_id != null && question_course.questions_receive_user_data) {
     const instance_question = await sqldb.queryOptionalRow(
       sql.select_instance_question_data,
       { instance_question_id },

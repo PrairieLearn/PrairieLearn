@@ -89,6 +89,7 @@ describe('Editing course settings', () => {
       questions_receive_user_data: true,
       authn_user_id: '1',
       user_id: '1',
+      old_questions_receive_user_data: false,
     });
 
     const user = await getOrCreateUser({
