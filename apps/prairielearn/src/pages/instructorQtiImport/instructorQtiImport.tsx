@@ -44,13 +44,14 @@ import { selectAssessments } from '../../models/assessment.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { QtiImportForm } from './components/QtiImportForm.js';
-import type {
-  CourseInstanceOption,
-  ParseWarning,
-  SerializedConversionResult,
-  StoredSerializedConversionResult,
-  StrippedAccessRules,
-  UploadResponse,
+import {
+  type CourseInstanceOption,
+  type ParseWarning,
+  QTI_IMPORT_MAX_UPLOAD_BYTES,
+  type SerializedConversionResult,
+  type StoredSerializedConversionResult,
+  type StrippedAccessRules,
+  type UploadResponse,
 } from './instructorQtiImport.types.js';
 
 const router = Router();
@@ -70,7 +71,7 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
     }),
     limits: {
       fieldSize: config.fileUploadMaxBytes,
-      fileSize: 100 * 1024 * 1024,
+      fileSize: QTI_IMPORT_MAX_UPLOAD_BYTES,
       parts: config.fileUploadMaxParts,
     },
   });
@@ -247,7 +248,10 @@ router.post(
           parseWarnings.push(result.warning);
         }
       }
-      const results = deduplicateIdenticalQuestions(convertedEntries.map((entry) => entry.result));
+      const convertedResults = convertedEntries.map((entry) => entry.result);
+      const deduplicatedQuestionBankQuestionCount =
+        countDeduplicatedQuestionBankQuestions(convertedResults);
+      const results = deduplicateIdenticalQuestions(convertedResults);
 
       // Strip access rules (time limits, passwords, dates) from imported assessments
       // and track what was removed so the UI can inform the user.
@@ -305,6 +309,7 @@ router.post(
           set: r.assessment_set.name,
           number: r.number,
         })),
+        deduplicatedQuestionBankQuestionCount,
       };
 
       res.json(response);
@@ -387,18 +392,16 @@ async function convertEntry(
   }
   usedSlugs.add(assessmentSlug);
 
-  const questionPrefix = `imported/${assessmentSlug}`;
-
   const emitter = new PLEmitter();
   const result = emitter.emit(ir, {
     ...baseOptions,
     tags: ['imported'],
-    questionIdPrefix: questionPrefix,
+    questionIdPrefix: `imported/${assessmentSlug}`,
   });
 
   return {
     ok: true,
-    value: await serializeConversionResult(result, questionPrefix, webResourcesDir),
+    value: await serializeConversionResult(result, assessmentSlug, webResourcesDir),
   };
 }
 
@@ -415,12 +418,13 @@ async function resolveWebResourcesDir(assessmentDir: string): Promise<string> {
 }
 
 /** Serialize a ConversionResult for JSON transport. */
-async function serializeConversionResult(
+export async function serializeConversionResult(
   result: ConversionResult,
-  questionPrefix: string,
+  assessmentSlug: string,
   webResourcesDir: string,
 ): Promise<SerializedEntryResult> {
   const extraWarnings: ConversionWarning[] = [];
+  const questionPrefix = `imported/${assessmentSlug}`;
 
   const questions = await Promise.all(
     result.questions.map(async (q) => {
@@ -443,7 +447,7 @@ async function serializeConversionResult(
         extraWarnings.push({
           questionId,
           message: d.message,
-          level: d.severity === 'info' ? 'info' : 'warn',
+          level: 'warn',
         });
       }
       return {
@@ -470,7 +474,7 @@ async function serializeConversionResult(
       result: {
         ...common,
         sourceType: 'question-bank',
-        directoryName: result.assessment.directoryName,
+        directoryName: assessmentSlug,
       },
       webResourcesDir,
     };
@@ -481,7 +485,7 @@ async function serializeConversionResult(
       ...common,
       sourceType: 'assessment',
       assessment: {
-        directoryName: result.assessment.directoryName,
+        directoryName: assessmentSlug,
         infoJson: result.assessment.infoJson,
       },
       unresolvedSourceBankRefs: result.unresolvedSourceBankRefs,
@@ -671,6 +675,25 @@ export function deduplicateIdenticalQuestions(
 
     return deduped;
   });
+}
+
+export function countDeduplicatedQuestionBankQuestions(
+  results: StoredSerializedConversionResult[],
+): number {
+  const questionBankSourceIdsByFingerprint = new Map<string, Set<string>>();
+
+  for (const result of results) {
+    if (result.sourceType !== 'question-bank') continue;
+    for (const question of result.questions) {
+      const fingerprint = questionFingerprint(question);
+      const sourceIds = questionBankSourceIdsByFingerprint.get(fingerprint) ?? new Set<string>();
+      sourceIds.add(result.sourceId);
+      questionBankSourceIdsByFingerprint.set(fingerprint, sourceIds);
+    }
+  }
+
+  return [...questionBankSourceIdsByFingerprint.values()].filter((sourceIds) => sourceIds.size > 1)
+    .length;
 }
 
 export default router;
