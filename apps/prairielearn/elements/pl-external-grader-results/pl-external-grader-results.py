@@ -33,8 +33,6 @@ ansi2html_style.SCHEME["iterm"] = (
 
 conv: Ansi2HTMLConverter = Ansi2HTMLConverter(inline=True, scheme="iterm")
 
-_DEFAULT_ALT_TEXT = "Report missing alt-text using the report an issue button"
-
 
 def ansi_to_html(output: str | None) -> str | None:
     if output is None:
@@ -73,7 +71,6 @@ def normalize_images(images: list[Any]) -> list[dict[str, Any]]:
         else:
             normalized_image = dict(image)
 
-        normalized_image.setdefault("alt", _DEFAULT_ALT_TEXT)
         normalized_images.append(normalized_image)
 
     return normalized_images
