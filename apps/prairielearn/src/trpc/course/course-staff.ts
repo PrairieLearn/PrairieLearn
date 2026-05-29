@@ -76,7 +76,6 @@ async function getAccessibleInstances(ctx: Awaited<ReturnType<typeof createConte
   return selectCourseInstancesWithStaffAccess({
     course: ctx.course,
     authzData: ctx.authz_data,
-    requiredRole: ['Owner'],
   });
 }
 

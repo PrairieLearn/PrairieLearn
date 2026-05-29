@@ -64,7 +64,6 @@ router.get(
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer'],
     });
 
     const rawQuestions = await selectQuestionsForCourse(

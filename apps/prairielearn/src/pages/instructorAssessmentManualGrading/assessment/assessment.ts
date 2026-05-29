@@ -49,8 +49,6 @@ router.get(
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
       courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      requiredRole: ['Student Data Viewer'],
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -84,8 +82,6 @@ router.post(
         (
           await selectCourseInstanceGraderStaff({
             courseInstance: res.locals.course_instance,
-            authzData: res.locals.authz_data,
-            requiredRole: ['Student Data Editor'],
           })
         ).map((user) => user.id),
       );
