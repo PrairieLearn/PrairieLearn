@@ -308,7 +308,7 @@ test.describe('Bulk question table actions', () => {
 
     await expect(
       deleteModal.getByText(
-        'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
+        'This deletion would leave the following assessment in an invalid state. Remove the question from it first, or skip it and delete the rest.',
       ),
     ).toBeVisible();
     const lockpointItem = deleteModal.getByRole('listitem').filter({
@@ -367,7 +367,7 @@ test.describe('Bulk question table actions', () => {
 
     await expect(
       deleteModal.getByText(
-        'This deletion would leave the following assessments in an invalid state. Remove the questions from these assessments first, then try again.',
+        'This deletion would leave the following assessment in an invalid state. Remove the question from it first, or skip it and delete the rest.',
       ),
     ).toBeVisible();
     const emptyZonesItem = deleteModal.getByRole('listitem').filter({
