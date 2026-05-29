@@ -66,9 +66,9 @@ INSERT INTO
     access_end
   )
 SELECT
-  e.id,
-  x.id,
-  s.id,
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id,
   NOW() - interval '5 minutes',
   NOW() + ($hours_until_end || ' hour')::interval
 FROM
@@ -107,9 +107,9 @@ INSERT INTO
     access_end
   )
 SELECT
-  e.id,
-  x.id,
-  s.id,
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id,
   NOW() - interval '5 minutes',
   NOW() + interval '1 hour'
 FROM
@@ -160,9 +160,9 @@ INSERT INTO
     access_end
   )
 SELECT
-  e.id,
-  x.id,
-  s.id,
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id,
   NOW() - interval '5 minutes',
   NOW() + interval '1 hour'
 FROM
@@ -210,9 +210,9 @@ INSERT INTO
     access_end
   )
 SELECT
-  e.id,
-  x.id,
-  s.id,
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id,
   NOW() - interval '2 hours',
   NOW() - interval '1 hour'
 FROM
