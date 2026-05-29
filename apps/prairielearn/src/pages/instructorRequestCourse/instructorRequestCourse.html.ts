@@ -112,11 +112,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
               let details = '';
               switch (course_request.approved_status) {
                 case 'approved':
-                  if (approved_by_user) {
-                    details = `Approved by ${approved_by_user.name}`;
-                  } else {
-                    details = 'Automatically approved';
-                  }
+                  details = `Approved by ${approved_by_user?.name ?? 'unknown'}`;
                   break;
                 case 'denied':
                   details = `Denied by ${approved_by_user?.name ?? 'unknown'}`;

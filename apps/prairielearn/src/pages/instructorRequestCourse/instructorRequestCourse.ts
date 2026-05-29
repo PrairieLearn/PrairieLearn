@@ -1,19 +1,14 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import { IdSchema } from '@prairielearn/zod';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
-import { config } from '../../lib/config.js';
 import { insertCourseRequest } from '../../lib/course-request.js';
-import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -202,8 +197,7 @@ router.post(
       return;
     }
 
-    // Otherwise, insert the course request and send a Slack message.
-    const course_request_id = await insertCourseRequest({
+    await insertCourseRequest({
       short_name,
       title,
       user_id: res.locals.authn_user.id,
@@ -215,74 +209,22 @@ router.post(
       referral_source,
     });
 
-    // Check if we can automatically approve and create the course.
-    const canAutoCreateCourse = await queryScalar(
-      sql.can_auto_create_course,
-      { user_id: res.locals.authn_user.id },
-      z.boolean(),
-    );
+    res.redirect(req.originalUrl);
 
-    if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
-      // Automatically fill in institution ID and display timezone from the user's other courses.
-      const existingSettingsResult = await queryRow(
-        sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.id },
-        z.object({
-          institution_id: IdSchema,
-          display_timezone: z.string(),
-        }),
+    // Do this in the background once we've redirected the response.
+    try {
+      await opsbot.sendCourseRequestMessage(
+        '*Incoming course request*\n' +
+          `Course rubric: ${short_name}\n` +
+          `Course title: ${title}\n` +
+          `Institution: ${institution}\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+          `GitHub username: ${github_user || 'not provided'}`,
       );
-      const repo_short_name = github.reponameFromShortname(short_name);
-      const repo_options = {
-        short_name,
-        title,
-        institution_id: existingSettingsResult.institution_id,
-        display_timezone: existingSettingsResult.display_timezone,
-        path: path.join(config.coursesRoot, repo_short_name),
-        repo_short_name,
-        github_user,
-        course_request_id,
-      };
-      await github.createCourseRepoJob(repo_options, res.locals.authn_user);
-
-      // Redirect on success so that refreshing doesn't create another request
-      res.redirect(req.originalUrl);
-
-      // Do this in the background once we've redirected the response.
-      try {
-        await opsbot.sendCourseRequestMessage(
-          '*Automatically creating course*\n' +
-            `Course repo: ${repo_short_name}\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Institution: ${institution}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
-    } else {
-      // Not automatically created.
-      res.redirect(req.originalUrl);
-
-      // Do this in the background once we've redirected the response.
-      try {
-        await opsbot.sendCourseRequestMessage(
-          '*Incoming course request*\n' +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Institution: ${institution}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
+    } catch (err) {
+      logger.error('Error sending course request message to Slack', err);
+      Sentry.captureException(err);
     }
   }),
 );
