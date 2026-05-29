@@ -419,14 +419,14 @@ def generate(data):
 
     if group is not None:
         # group["members"] entries have the same shape as `user`.
-        data["params"]["teammate_uids"] = [m["uid"] for m in group["members"]]
+        data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
 
 The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the assessed student, and group assessments receive `None` because no single user owns the shared variant.
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
 
-On group assessments, `data["options"]["user"]` is `None` during `generate()`, `prepare()`, and `grade()`. These phases run on data that is shared by the group or may run outside a student's request, so using a request-specific teammate would give stale or incorrect per-user data. `data["options"]["group"]` is still available in these phases because the team is stable for the shared variant.
+On group assessments, `data["options"]["user"]` is `None` during `generate()`, `prepare()`, and `grade()`. These phases run on data that is shared by the group or may run outside a student's request, so using a request-specific group member would give stale or incorrect per-user data. `data["options"]["group"]` is still available in these phases because the group is stable for the shared variant.
 
 User and group data are passed only when **all** of the following are true:
 

@@ -152,7 +152,7 @@ async function render({
     locals,
     caller: {
       effectiveUserId: user.id,
-      teamId: variant.team_id,
+      groupId: variant.team_id,
       variantCourse: variant_course,
     },
   });

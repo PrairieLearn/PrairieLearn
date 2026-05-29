@@ -315,7 +315,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant_seed: null,
         preferences,
         effective_user_id: null,
-        team_id: null,
+        group_id: null,
       });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
@@ -337,7 +337,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       };
       const caller = {
         effectiveUserId: null,
-        teamId: null,
+        groupId: null,
         variantCourse: course,
       };
       const {

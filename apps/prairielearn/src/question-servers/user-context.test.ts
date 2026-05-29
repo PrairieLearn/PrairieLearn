@@ -23,14 +23,14 @@ function call({
   variantCourseId = '1',
   courseOptedIn,
   effectiveUserId,
-  teamId,
+  groupId,
   phase = 'invoke',
 }: {
   questionCourseId?: string;
   variantCourseId?: string;
   courseOptedIn: boolean;
   effectiveUserId: string | null;
-  teamId: string | null;
+  groupId: string | null;
   phase?: VariantLifecyclePhase;
 }) {
   return buildQuestionUserContext({
@@ -38,7 +38,7 @@ function call({
     courseOptedIn,
     caller: {
       effectiveUserId,
-      teamId,
+      groupId,
       variantCourse: makeVariantCourse(variantCourseId),
     },
     phase,
@@ -64,7 +64,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
   });
 
   it('returns null user/group when course is not opted in', async () => {
-    const ctx = await call({ courseOptedIn: false, effectiveUserId: userId, teamId: null });
+    const ctx = await call({ courseOptedIn: false, effectiveUserId: userId, groupId: null });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
@@ -73,31 +73,31 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
       variantCourseId: '2',
       courseOptedIn: true,
       effectiveUserId: userId,
-      teamId: null,
+      groupId: null,
     });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
   it('returns null user/group when no effective user is provided', async () => {
-    const ctx = await call({ courseOptedIn: true, effectiveUserId: null, teamId: null });
+    const ctx = await call({ courseOptedIn: true, effectiveUserId: null, groupId: null });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
   it('returns user info when fully gated through', async () => {
-    const ctx = await call({ courseOptedIn: true, effectiveUserId: userId, teamId: null });
+    const ctx = await call({ courseOptedIn: true, effectiveUserId: userId, groupId: null });
     assert.isNotNull(ctx.user);
     assert.isString(ctx.user.uid);
     assert.isNull(ctx.group);
   });
 
   it('returns null user when the user does not exist', async () => {
-    const ctx = await call({ courseOptedIn: true, effectiveUserId: '999999999', teamId: null });
+    const ctx = await call({ courseOptedIn: true, effectiveUserId: '999999999', groupId: null });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
   it('returns user and group together when both are provided', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
-    const groupName = `testteam${u1.id}`;
+    const groupName = `testgroup${u1.id}`;
 
     const group = await createGroup({
       course_instance: groupCourseInstance,
@@ -111,7 +111,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     const ctx = await call({
       courseOptedIn: true,
       effectiveUserId: u1.id,
-      teamId: group.id,
+      groupId: group.id,
     });
     assert.equal(ctx.user?.uid, u1.uid);
     assert.equal(ctx.group?.name, groupName);
@@ -120,9 +120,9 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.deepEqual(memberUids, [u1.uid, u2.uid].sort());
   });
 
-  it('returns group with members when a team_id is provided without an effective user', async () => {
+  it('returns group with members when a group_id is provided without an effective user', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
-    const groupName = `testteam${u1.id}`;
+    const groupName = `testgroup${u1.id}`;
 
     const group = await createGroup({
       course_instance: groupCourseInstance,
@@ -136,7 +136,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     const ctx = await call({
       courseOptedIn: true,
       effectiveUserId: null,
-      teamId: group.id,
+      groupId: group.id,
     });
     assert.isNull(ctx.user);
     assert.equal(ctx.group?.name, groupName);
@@ -149,7 +149,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     const group = await createGroup({
       course_instance: groupCourseInstance,
       assessment: groupAssessment,
-      group_name: `testteam${u1.id}`,
+      group_name: `testgroup${u1.id}`,
       uids: [u1.uid, u2.uid],
       authn_user_id: '1',
       authzData: dangerousFullSystemAuthz(),
@@ -158,7 +158,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     const ctx = await call({
       courseOptedIn: true,
       effectiveUserId: u1.id,
-      teamId: group.id,
+      groupId: group.id,
       phase: 'create',
     });
     assert.isNull(ctx.user);

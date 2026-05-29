@@ -27,8 +27,8 @@ export interface QuestionUserContext {
 export interface QuestionCaller {
   /** The user making the request, or `null` when none applies (e.g. grading a group variant). */
   effectiveUserId: string | null;
-  /** The team owning the variant, or `null` for individual variants. */
-  teamId: string | null;
+  /** The group owning the variant, or `null` for individual variants. */
+  groupId: string | null;
   /** The course in which the variant lives. Differs from the question's course for shared questions. */
   variantCourse: Pick<Course, 'id'>;
 }
@@ -37,12 +37,12 @@ const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
 
 /**
  * Stage of a variant's lifecycle. Determines whether the caller's user
- * identity may flow into output that other teammates will see.
+ * identity may flow into output that other group members will see.
  *
  * - `'create'`: `generate`/`prepare` — produce variant state that is persisted
  *   and reused for every subsequent invocation on the variant. On group
- *   variants, that output is visible to every teammate, so we don't expose
- *   one teammate's identity there.
+ *   variants, that output is visible to every group member, so we don't expose
+ *   one member's identity there.
  * - `'invoke'`: `render`/`parse`/`grade`/`test`/`file` — produce per-call
  *   output for the current caller only.
  */
@@ -84,23 +84,23 @@ export async function buildQuestionUserContext({
   if (!idsEqual(question.course_id, caller.variantCourse.id)) return EMPTY_USER_CONTEXT;
 
   // Group variants persist generate/prepare output, so don't bake a single
-  // teammate's identity into that shared state.
-  const includeUser = !(phase === 'create' && caller.teamId != null);
+  // member's identity into that shared state.
+  const includeUser = !(phase === 'create' && caller.groupId != null);
 
   const user =
     includeUser && caller.effectiveUserId != null
       ? await selectOptionalUserById(caller.effectiveUserId)
       : null;
 
-  const group = caller.teamId != null ? await selectActiveQuestionGroup(caller.teamId) : null;
+  const group = caller.groupId != null ? await selectActiveQuestionGroup(caller.groupId) : null;
 
   if (user == null && group == null) return EMPTY_USER_CONTEXT;
   return { user: user != null ? toQuestionUser(user) : null, group };
 }
 
-async function selectActiveQuestionGroup(team_id: string): Promise<QuestionGroup | null> {
-  const group = await selectOptionalGroupById(team_id);
+async function selectActiveQuestionGroup(group_id: string): Promise<QuestionGroup | null> {
+  const group = await selectOptionalGroupById(group_id);
   if (group == null || group.deleted_at != null) return null;
-  const members = await selectGroupMembers(team_id);
+  const members = await selectGroupMembers(group_id);
   return { name: group.name, members: members.map(toQuestionUser) };
 }

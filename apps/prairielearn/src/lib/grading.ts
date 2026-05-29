@@ -249,7 +249,7 @@ export async function saveSubmission(
     question_course,
     {
       effectiveUserId: submission.user_id,
-      teamId: variant.team_id,
+      groupId: variant.team_id,
       variantCourse: variant_course,
     },
   );
@@ -428,7 +428,7 @@ export async function gradeVariant({
         // request actor is not necessarily the assessed student. Use
         // `variant.user_id` (NULL on group variants) rather than the actor.
         effectiveUserId: variant.user_id,
-        teamId: variant.team_id,
+        groupId: variant.team_id,
         variantCourse: variant_course,
       },
     );

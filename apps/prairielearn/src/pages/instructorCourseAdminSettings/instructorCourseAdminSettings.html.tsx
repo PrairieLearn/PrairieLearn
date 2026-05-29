@@ -231,14 +231,19 @@ export function InstructorCourseAdminSettings({
               disabled={!authzData.has_course_permission_own || course.example_course}
             />
             <label className="form-check-label" htmlFor="questions_receive_user_data">
-              Expose user data to <code>server.py</code>
+              Allow questions to access user identity
             </label>
             <div className="small text-muted">
-              When enabled, questions in this course receive the viewing user's identity (uid, uin,
-              name) via <code>data['options']['user']</code>, and on group assessments the team
-              members via <code>data['options']['group']</code>. Only course owners can change this
-              setting. Questions imported from other courses via sharing never receive user data,
-              regardless of this setting.
+              When enabled, questions in this course can read the viewing user's identity (and group
+              members on group assessments). Only course owners can change this setting. See the{' '}
+              <a
+                href="https://docs.prairielearn.com/question/server/#accessing-the-viewing-users-identity"
+                target="_blank"
+                rel="noreferrer"
+              >
+                documentation on exposing user identity
+              </a>
+              .
             </div>
           </div>
           {aiQuestionGenerationCourseToggleEnabled && (
