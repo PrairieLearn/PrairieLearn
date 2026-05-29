@@ -36,6 +36,7 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
+  InstitutionSettingsSchema as RawInstitutionSettingsSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -416,10 +417,22 @@ export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
 export const AdminInstitutionSchema = RawAdminInstitutionSchema.brand<'AdminInstitution'>();
 export type AdminInstitution = z.infer<typeof AdminInstitutionSchema>;
 
-// Extended admin-institution shape that includes joined institution_settings
-// columns. Not branded: structurally usable anywhere AdminInstitution is.
-export const AdminInstitutionWithSettingsSchema = RawAdminInstitutionSchema.extend({
-  github_course_owner: z.string().nullable(),
+export const RawAdminInstitutionSettingsSchema = RawInstitutionSettingsSchema.pick({
+  course_request_message: true,
+  github_course_owner: true,
+  institution_id: true,
+});
+export const AdminInstitutionSettingsSchema =
+  RawAdminInstitutionSettingsSchema.brand<'AdminInstitutionSettings'>();
+export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSchema>;
+
+// An admin institution paired with its institution_settings, as returned by
+// `selectAllAdminInstitutionsWithSettings`. Keeping the institution and its
+// settings as distinct fields lets the institution stay a branded
+// `AdminInstitution` rather than a flattened look-alike.
+export const AdminInstitutionWithSettingsSchema = z.object({
+  institution: AdminInstitutionSchema,
+  institution_settings: AdminInstitutionSettingsSchema,
 });
 export type AdminInstitutionWithSettings = z.infer<typeof AdminInstitutionWithSettingsSchema>;
 

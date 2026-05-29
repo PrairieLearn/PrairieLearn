@@ -30,7 +30,14 @@ ORDER BY
 -- BLOCK select_all_admin_institutions_with_settings
 SELECT
   i.*,
-  ist.github_course_owner
+  jsonb_build_object(
+    'institution_id',
+    i.id,
+    'course_request_message',
+    ist.course_request_message,
+    'github_course_owner',
+    ist.github_course_owner
+  ) AS institution_settings
 FROM
   institutions AS i
   LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id

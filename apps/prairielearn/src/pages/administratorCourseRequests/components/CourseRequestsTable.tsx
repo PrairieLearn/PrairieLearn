@@ -17,7 +17,6 @@ import { JobStatus } from '../../../components/JobStatus.js';
 import { type AppError, getAppError } from '../../../lib/client/errors.js';
 import {
   type AdminInstitution,
-  AdminInstitutionSchema,
   type AdminInstitutionWithSettings,
 } from '../../../lib/client/safe-db-types.js';
 import {
@@ -340,8 +339,9 @@ function CourseRequestApproveModalContent({
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
   const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
-  const adminInstitutions = institutions.map((i) => AdminInstitutionSchema.parse(i));
-  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
+  const adminInstitutions = institutions.map((i) => i.institution);
+  const userRow = institutions.find((i) => i.institution.id === request.user_institution_id);
+  const userInstitution = userRow?.institution;
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
   const autoFilledInstitutionId =
     userInstitution && !isDefaultInstitution ? userInstitution.id : null;
@@ -349,7 +349,8 @@ function CourseRequestApproveModalContent({
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
   const initialGithubCourseOwner =
-    (autoFilledInstitutionId && userInstitution?.github_course_owner) || defaultGithubCourseOwner;
+    (autoFilledInstitutionId && userRow?.institution_settings.github_course_owner) ||
+    defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
@@ -379,10 +380,10 @@ function CourseRequestApproveModalContent({
 
   const handleInstitutionChange = (institution: AdminInstitution) => {
     if (dirtyFields.github_course_owner) return;
-    const institutionWithSettings = institutions.find((i) => i.id === institution.id);
+    const row = institutions.find((i) => i.institution.id === institution.id);
     setValue(
       'github_course_owner',
-      institutionWithSettings?.github_course_owner ?? defaultGithubCourseOwner,
+      row?.institution_settings.github_course_owner ?? defaultGithubCourseOwner,
     );
   };
 

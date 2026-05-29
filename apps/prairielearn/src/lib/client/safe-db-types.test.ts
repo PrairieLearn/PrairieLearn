@@ -473,8 +473,12 @@ const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
 };
 
 const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
-  ...minimalAdminInstitution,
-  github_course_owner: 'PrairieLearn',
+  institution: minimalAdminInstitution,
+  institution_settings: {
+    course_request_message: null,
+    github_course_owner: 'PrairieLearn',
+    institution_id: '1',
+  },
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {

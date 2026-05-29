@@ -33,6 +33,8 @@ WHERE
   (
     c.repository ILIKE '%github.com:' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
     OR c.repository ILIKE '%github.com:' || $owner || '/' || $repo_name ESCAPE '\'
+    OR c.repository ILIKE '%github.com:/' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
+    OR c.repository ILIKE '%github.com:/' || $owner || '/' || $repo_name ESCAPE '\'
     OR c.repository ILIKE '%github.com/' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
     OR c.repository ILIKE '%github.com/' || $owner || '/' || $repo_name ESCAPE '\'
   )
