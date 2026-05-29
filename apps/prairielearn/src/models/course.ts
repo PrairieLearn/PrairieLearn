@@ -421,31 +421,46 @@ export async function updateCourseQuestionsReceiveUserData({
   course_id,
   questions_receive_user_data,
   authn_user_id,
+  user_id,
+  old_questions_receive_user_data,
 }: {
   course_id: string;
   questions_receive_user_data: boolean;
   authn_user_id: string;
+  user_id: string;
+  /** Previous value observed before saving infoCourse.json. */
+  old_questions_receive_user_data?: boolean;
 }): Promise<Course> {
   return await runInTransactionAsync(async () => {
     const oldCourse = await selectCourseById(course_id);
-    if (oldCourse.questions_receive_user_data === questions_receive_user_data) {
+    if (
+      oldCourse.questions_receive_user_data === questions_receive_user_data &&
+      (old_questions_receive_user_data === undefined ||
+        old_questions_receive_user_data === questions_receive_user_data)
+    ) {
       return oldCourse;
     }
-    const newCourse = await queryRow(
-      sql.update_course_questions_receive_user_data,
-      { course_id, questions_receive_user_data },
-      CourseSchema,
-    );
+    const newCourse =
+      oldCourse.questions_receive_user_data === questions_receive_user_data
+        ? oldCourse
+        : await queryRow(
+            sql.update_course_questions_receive_user_data,
+            { course_id, questions_receive_user_data },
+            CourseSchema,
+          );
     await insertAuditEvent({
       tableName: 'courses',
       action: 'update',
       actionDetail: 'questions_receive_user_data',
       rowId: course_id,
       agentAuthnUserId: authn_user_id,
-      agentUserId: authn_user_id,
+      agentUserId: user_id,
       courseId: course_id,
       institutionId: newCourse.institution_id,
-      oldRow: { questions_receive_user_data: oldCourse.questions_receive_user_data },
+      oldRow: {
+        questions_receive_user_data:
+          old_questions_receive_user_data ?? oldCourse.questions_receive_user_data,
+      },
       newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
     });
     return newCourse;

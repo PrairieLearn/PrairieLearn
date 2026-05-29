@@ -120,19 +120,16 @@ router.post(
       }
 
       const questions_receive_user_data = req.body.questions_receive_user_data === 'on';
+      const questions_receive_user_data_changed =
+        res.locals.course.questions_receive_user_data !== questions_receive_user_data;
 
-      if (res.locals.course.questions_receive_user_data !== questions_receive_user_data) {
+      if (questions_receive_user_data_changed) {
         if (!res.locals.authz_data.has_course_permission_own) {
           throw new error.HttpStatusError(
             403,
             'Only course owners can change whether questions receive user data',
           );
         }
-        await updateCourseQuestionsReceiveUserData({
-          course_id: res.locals.course.id,
-          questions_receive_user_data,
-          authn_user_id: res.locals.authn_user.id,
-        });
       }
 
       const context = {
@@ -187,6 +184,16 @@ router.post(
           'Course configuration was modified elsewhere. Please reload the page and try again.',
         );
         return res.redirect(req.originalUrl);
+      }
+
+      if (questions_receive_user_data_changed) {
+        await updateCourseQuestionsReceiveUserData({
+          course_id: res.locals.course.id,
+          questions_receive_user_data,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          old_questions_receive_user_data: res.locals.course.questions_receive_user_data,
+        });
       }
 
       flash('success', 'Course configuration updated successfully');
