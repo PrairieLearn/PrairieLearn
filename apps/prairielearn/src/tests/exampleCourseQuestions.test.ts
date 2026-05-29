@@ -5,21 +5,11 @@ import * as path from 'node:path';
 import fg from 'fast-glob';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
-import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 import { withConfig } from './utils/config.js';
-
-const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
-
-locals.baseUrl = locals.siteUrl + '/pl';
-locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
-locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-locals.questionPreviewTabUrl = '/preview';
-locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
-locals.isStudentPage = false;
 
 const qidsExampleCourse = [
   'demo/calculation',
@@ -93,11 +83,7 @@ describe('Auto-test questions in exampleCourse', () => {
 
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) => {
       it.concurrent(`auto-test ${qid}`, async () => {
-        await helperQuestion.autoTestQuestion({
-          questionBaseUrl: locals.questionBaseUrl,
-          questionPreviewTabUrl: locals.questionPreviewTabUrl,
-          qid,
-        });
+        await helperQuestion.autoTestQuestion({ qid });
       });
     });
   });
