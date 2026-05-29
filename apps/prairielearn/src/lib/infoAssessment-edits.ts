@@ -92,6 +92,8 @@ export interface BlockedAssessment {
   courseInstanceId: string;
   courseInstanceShortName: string;
   blockers: DeletionBlocker[];
+  /** The QIDs being deleted that this assessment references; the questions to skip to unblock it. */
+  affectedQids: string[];
 }
 
 interface MapAssessmentQidsResult {
@@ -108,7 +110,7 @@ interface MapAssessmentQidsResult {
  * Deletion maps each removed QID to `null`; renaming maps the old QID to the new
  * one. Emptied zones are dropped. Does not mutate the input.
  */
-export function mapAssessmentQids(
+function mapAssessmentQids(
   assessment: AssessmentJsonInput,
   mapQid: QidMapper,
 ): MapAssessmentQidsResult {
@@ -142,6 +144,8 @@ interface RemoveQidsFromAssessmentResult {
    * refuse to persist when this is non-empty.
    */
   blockers: DeletionBlocker[];
+  /** The subset of `qidsToRemove` actually referenced by this assessment. */
+  matchedQids: string[];
 }
 
 /**
@@ -153,11 +157,18 @@ export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
   qidsToRemove: Set<string>,
 ): RemoveQidsFromAssessmentResult {
+  const matchedQids = new Set<string>();
   const {
     assessment: updated,
     changedCount,
     emptiedZones,
-  } = mapAssessmentQids(assessment, (qid) => (qidsToRemove.has(qid) ? null : qid));
+  } = mapAssessmentQids(assessment, (qid) => {
+    if (qidsToRemove.has(qid)) {
+      matchedQids.add(qid);
+      return null;
+    }
+    return qid;
+  });
 
   const originalZones = assessment.zones ?? [];
   const newZones = updated.zones ?? [];
@@ -174,6 +185,7 @@ export function removeQidsFromAssessment(
     removedCount: changedCount,
     emptiedZones,
     blockers,
+    matchedQids: [...matchedQids],
   };
 }
 

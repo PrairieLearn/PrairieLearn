@@ -51,9 +51,10 @@ async function selectAssessmentsBlockingDeletion({
       'infoAssessment.json',
     );
     let blockers: BlockedAssessment['blockers'];
+    let matchedQids: string[];
     try {
       const parsed = (await fs.readJson(jsonPath)) as AssessmentJsonInput;
-      ({ blockers } = removeQidsFromAssessment(parsed, qidsToRemove));
+      ({ blockers, matchedQids } = removeQidsFromAssessment(parsed, qidsToRemove));
     } catch {
       continue;
     }
@@ -65,6 +66,7 @@ async function selectAssessmentsBlockingDeletion({
         courseInstanceId: ref.course_instance_id,
         courseInstanceShortName: ref.course_instance_short_name,
         blockers,
+        affectedQids: matchedQids,
       });
     }
   }

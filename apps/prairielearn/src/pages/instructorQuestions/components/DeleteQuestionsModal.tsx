@@ -2,8 +2,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
+import { assertNever } from '@prairielearn/utils';
+
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { type AppError, AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
@@ -28,6 +30,29 @@ interface PreviewZone {
 }
 
 const EMPTY_PREVIEW_ZONES: PreviewZone[] = [];
+
+/**
+ * The QIDs that must be left behind for the rest of the selection to delete
+ * cleanly, or `null` when the error isn't resolvable by skipping questions.
+ * Removing these can only unblock the remaining assessments, never block new
+ * ones, so the reduced deletion is guaranteed to be valid.
+ */
+function questionsToSkip(
+  error: AppError<QuestionsError['DeleteQuestions']> | null,
+): Set<string> | null {
+  if (error === null) return null;
+  switch (error.code) {
+    case 'QUESTIONS_USED_IN_OTHER_COURSES':
+      return new Set(error.qids);
+    case 'DELETION_BREAKS_ASSESSMENTS':
+      return new Set(error.blockedAssessments.flatMap((a) => a.affectedQids));
+    case 'SYNC_JOB_FAILED':
+    case 'UNKNOWN':
+      return null;
+    default:
+      assertNever(error);
+  }
+}
 
 interface PerCourseInstance {
   courseInstanceId: string;
@@ -165,6 +190,16 @@ export function DeleteQuestionsModal({
   const appError = getAppError<QuestionsError['DeleteQuestions']>(mutation.error);
   const isPlural = selectedQuestions.length !== 1;
 
+  const skipQids = questionsToSkip(appError);
+  const remainingAfterSkip = skipQids
+    ? selectedQuestions.filter((question) => !skipQids.has(question.qid))
+    : [];
+  const canSkip =
+    remainingAfterSkip.length > 0 && remainingAfterSkip.length < selectedQuestions.length;
+  // Deleting the full selection can't succeed while a skippable blocker stands,
+  // so hide that action and steer the user to skip the blocked questions instead.
+  const isBlocked = skipQids !== null;
+
   return (
     <Modal
       show={show}
@@ -212,19 +247,33 @@ export function DeleteQuestionsModal({
         <Button variant="secondary" onClick={onHide}>
           Cancel
         </Button>
-        <Button
-          variant="danger"
-          disabled={!previewLoaded || mutation.isPending}
-          onClick={() => mutation.mutate({ questionIds })}
-        >
-          {mutation.isPending
-            ? 'Deleting...'
-            : previewQuery.isFetching
-              ? 'Loading preview...'
-              : `Delete ${selectedQuestions.length} ${
-                  selectedQuestions.length === 1 ? 'question' : 'questions'
-                }`}
-        </Button>
+        {canSkip && (
+          <Button
+            variant="danger"
+            disabled={mutation.isPending}
+            onClick={() =>
+              mutation.mutate({ questionIds: remainingAfterSkip.map((question) => question.id) })
+            }
+          >
+            Delete the other {remainingAfterSkip.length}{' '}
+            {remainingAfterSkip.length === 1 ? 'question' : 'questions'}
+          </Button>
+        )}
+        {!isBlocked && (
+          <Button
+            variant="danger"
+            disabled={!previewLoaded || mutation.isPending}
+            onClick={() => mutation.mutate({ questionIds })}
+          >
+            {mutation.isPending
+              ? 'Deleting...'
+              : previewQuery.isFetching
+                ? 'Loading preview...'
+                : `Delete ${selectedQuestions.length} ${
+                    selectedQuestions.length === 1 ? 'question' : 'questions'
+                  }`}
+          </Button>
+        )}
       </Modal.Footer>
     </Modal>
   );

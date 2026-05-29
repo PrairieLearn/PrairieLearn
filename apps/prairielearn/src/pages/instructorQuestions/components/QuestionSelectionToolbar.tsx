@@ -11,11 +11,13 @@ import { DeleteQuestionsModal } from './DeleteQuestionsModal.js';
 export function QuestionSelectionToolbar({
   selectedQuestions,
   clearSelection,
+  trimSelection,
   urlPrefix,
   onActionSuccess,
 }: {
   selectedQuestions: SafeQuestionsPageData[];
   clearSelection: () => void;
+  trimSelection: (count: number) => void;
   urlPrefix: string;
   onActionSuccess: (message: string) => void;
 }) {
@@ -28,9 +30,18 @@ export function QuestionSelectionToolbar({
     <>
       <div className="d-flex align-items-center gap-2">
         {selectionLimitExceeded && (
-          <Badge bg="warning" text="dark">
-            {selectionLimitMessage}
-          </Badge>
+          <>
+            <Badge bg="warning" text="dark">
+              {selectionLimitMessage}
+            </Badge>
+            <Button
+              size="sm"
+              variant="link"
+              onClick={() => trimSelection(MAX_BULK_QUESTION_SELECTION)}
+            >
+              Trim selection to {MAX_BULK_QUESTION_SELECTION}
+            </Button>
+          </>
         )}
         <Button
           size="sm"
