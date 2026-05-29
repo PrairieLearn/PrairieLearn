@@ -2,10 +2,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { assertNever } from '@prairielearn/utils';
-
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
-import { type AppError, AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
@@ -30,29 +28,6 @@ interface PreviewZone {
 }
 
 const EMPTY_PREVIEW_ZONES: PreviewZone[] = [];
-
-/**
- * The QIDs that must be left behind for the rest of the selection to delete
- * cleanly, or `null` when the error isn't resolvable by skipping questions.
- * Removing these can only unblock the remaining assessments, never block new
- * ones, so the reduced deletion is guaranteed to be valid.
- */
-function questionsToSkip(
-  error: AppError<QuestionsError['DeleteQuestions']> | null,
-): Set<string> | null {
-  if (error === null) return null;
-  switch (error.code) {
-    case 'QUESTIONS_USED_IN_OTHER_COURSES':
-      return new Set(error.qids);
-    case 'DELETION_BREAKS_ASSESSMENTS':
-      return new Set(error.blockedAssessments.flatMap((a) => a.affectedQids));
-    case 'SYNC_JOB_FAILED':
-    case 'UNKNOWN':
-      return null;
-    default:
-      assertNever(error);
-  }
-}
 
 interface PerCourseInstance {
   courseInstanceId: string;
@@ -169,6 +144,7 @@ export function DeleteQuestionsModal({
     ),
   });
   const zones = previewQuery.data?.zones ?? EMPTY_PREVIEW_ZONES;
+  const lockpointsMovedOrRemoved = previewQuery.data?.lockpointsMovedOrRemoved ?? 0;
   const membershipsByQid = useMemo(() => buildMembershipsByQid(zones), [zones]);
   const affectedAssessmentCount = useMemo(
     () => new Set(zones.map((z) => z.assessmentId)).size,
@@ -190,15 +166,10 @@ export function DeleteQuestionsModal({
   const appError = getAppError<QuestionsError['DeleteQuestions']>(mutation.error);
   const isPlural = selectedQuestions.length !== 1;
 
-  const skipQids = questionsToSkip(appError);
-  const remainingAfterSkip = skipQids
-    ? selectedQuestions.filter((question) => !skipQids.has(question.qid))
-    : [];
-  const canSkip =
-    remainingAfterSkip.length > 0 && remainingAfterSkip.length < selectedQuestions.length;
-  // Deleting the full selection can't succeed while a skippable blocker stands,
-  // so hide that action and steer the user to skip the blocked questions instead.
-  const isBlocked = skipQids !== null;
+  // Questions used by other courses can never be deleted, so once that error
+  // stands the deletion can't succeed; hide the delete action and steer the
+  // user to deselect those questions.
+  const isBlocked = appError?.code === 'QUESTIONS_USED_IN_OTHER_COURSES';
 
   return (
     <Modal
@@ -222,15 +193,22 @@ export function DeleteQuestionsModal({
         {affectedAssessmentCount > 0 && (
           <Alert variant="info" className="mb-3">
             <strong>{affectedAssessmentCount}</strong>{' '}
-            {affectedAssessmentCount === 1 ? 'assessment' : 'assessments'} will be affected
+            {affectedAssessmentCount === 1 ? 'assessment' : 'assessments'} will be affected.
             {emptiedZoneCount > 0 && (
               <>
-                , and <strong>{emptiedZoneCount}</strong>{' '}
-                {emptiedZoneCount === 1 ? 'assessment zone' : 'assessment zones'} will be removed as
-                they contain no questions
+                {' '}
+                <strong>{emptiedZoneCount}</strong> empty{' '}
+                {emptiedZoneCount === 1 ? 'zone' : 'zones'} will be removed.
               </>
             )}
-            .
+            {lockpointsMovedOrRemoved > 0 && (
+              <>
+                {' '}
+                <strong>{lockpointsMovedOrRemoved}</strong>{' '}
+                {lockpointsMovedOrRemoved === 1 ? 'lockpoint' : 'lockpoints'} will be moved or
+                removed.
+              </>
+            )}
           </Alert>
         )}
         <SelectedQuestionList questions={selectedQuestions} membershipsByQid={membershipsByQid} />
@@ -247,18 +225,6 @@ export function DeleteQuestionsModal({
         <Button variant="secondary" onClick={onHide}>
           Cancel
         </Button>
-        {canSkip && (
-          <Button
-            variant="danger"
-            disabled={mutation.isPending}
-            onClick={() =>
-              mutation.mutate({ questionIds: remainingAfterSkip.map((question) => question.id) })
-            }
-          >
-            Delete the other {remainingAfterSkip.length}{' '}
-            {remainingAfterSkip.length === 1 ? 'question' : 'questions'}
-          </Button>
-        )}
         {!isBlocked && (
           <Button
             variant="danger"

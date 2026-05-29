@@ -168,17 +168,6 @@ WHERE
   AND a.deleted_at IS NULL
   AND ci.deleted_at IS NULL;
 
--- BLOCK select_zones_for_assessment
-SELECT
-  *
-FROM
-  zones
-WHERE
-  assessment_id = $assessment_id
-ORDER BY
-  number,
-  id;
-
 -- BLOCK select_assessments_referencing_questions
 SELECT DISTINCT
   a.id AS assessment_id,

@@ -12,24 +12,24 @@ import {
 } from '../../components/QuestionsTable.shared.js';
 import { config } from '../../lib/config.js';
 import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
-import { QuestionDeleteEditor, saveJsonFile } from '../../lib/editors.js';
+import {
+  type FileModifyEditor,
+  MultiEditor,
+  QuestionDeleteEditor,
+  prepareJsonFileEditor,
+} from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
 import {
-  type BlockedAssessment,
-  removeQidsFromAssessment,
-} from '../../lib/infoAssessment-edits.js';
-import {
-  formatBlockedAssessments,
-  getQuestionDeletionBlockers,
   qidsToRemoveForQuestions,
+  selectQuestionsBlockingDeletion,
 } from '../../lib/question-deletion-validation.js';
 import {
   selectAssessmentReferencedQuestionCounts,
   selectAssessments,
   selectAssessmentsReferencingQuestions,
   selectOptionalAssessmentInCourse,
-  selectZonesForAssessment,
 } from '../../models/assessment.js';
 import {
   selectCourseInstanceById,
@@ -69,14 +69,12 @@ const list = t.procedure.use(requireCoursePermissionPreview).query(async ({ ctx 
 export interface QuestionsError {
   List: never;
   ListAssessments: never;
-  ListZones: never;
   PreviewDeletion: never;
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteQuestions:
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
-    | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] }
-    | { code: 'DELETION_BREAKS_ASSESSMENTS'; blockedAssessments: BlockedAssessment[] };
+    | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };
 }
 
 const QuestionIdsInputSchema = z.object({
@@ -210,30 +208,26 @@ const listAssessments = t.procedure
     const referencedCountById = new Map(
       referencedCounts.map((row) => [row.assessment_id, row.referenced_count]),
     );
-    return assessments.map((assessment) => ({
-      id: assessment.id,
-      label: assessment.label,
-      title: assessment.title,
-      type: assessment.type,
-      allQuestionsPresent:
-        (referencedCountById.get(assessment.id) ?? 0) >= uniqueQuestionIds.length,
-    }));
-  });
-
-const listZones = t.procedure
-  .use(requireCoursePermissionPreview)
-  .input(z.object({ assessmentId: IdSchema }))
-  .query(async ({ input, ctx }) => {
-    await selectAssessmentForEdit({
-      assessmentId: input.assessmentId,
-      courseId: ctx.course.id,
+    return assessments.map((assessment) => {
+      const referencedCount = referencedCountById.get(assessment.id) ?? 0;
+      return {
+        id: assessment.id,
+        label: assessment.label,
+        title: assessment.title,
+        type: assessment.type,
+        referencedCount,
+        allQuestionsPresent: referencedCount >= uniqueQuestionIds.length,
+        set: {
+          id: assessment.assessment_set.id,
+          name: assessment.assessment_set.name,
+          heading: assessment.assessment_set.heading,
+          implicit: assessment.assessment_set.implicit,
+          abbreviation: assessment.assessment_set.abbreviation,
+          color: assessment.assessment_set.color,
+          number: assessment.assessment_set.number,
+        },
+      };
     });
-
-    const zones = await selectZonesForAssessment({ assessment_id: input.assessmentId });
-    return zones.map((zone) => ({
-      number: zone.number,
-      title: zone.title,
-    }));
   });
 
 const addToAssessment = t.procedure
@@ -241,8 +235,7 @@ const addToAssessment = t.procedure
   .use(requireNotExampleCourse)
   .input(
     QuestionIdsInputSchema.extend({
-      assessmentId: IdSchema,
-      zoneNumber: z.number().int().positive(),
+      assessmentIds: z.array(IdSchema).min(1),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -250,50 +243,78 @@ const addToAssessment = t.procedure
       questionIds: input.questionIds,
       courseId: ctx.course.id,
     });
-    const { assessment, courseInstance } = await selectAssessmentForEdit({
-      assessmentId: input.assessmentId,
-      courseId: ctx.course.id,
-    });
-    const jsonPath = assessmentInfoPath({
-      coursePath: ctx.course.path,
-      courseInstance,
-      assessment,
-    });
 
-    let addedCount = 0;
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
-      applyChanges: (assessmentInfo) => {
-        const zones = assessmentInfo.zones ?? [];
-        const targetZone = zones.at(input.zoneNumber - 1);
-        if (!targetZone) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid assessment zone' });
-        }
-        const existingQids = collectQids(zones);
-        const questionsToAdd = selectedQuestions.filter(
-          (question) => question.qid && !existingQids.has(question.qid),
-        );
-        targetZone.questions.push(...questionsToAdd.map(buildQuestionBlock));
-        addedCount = questionsToAdd.length;
-        return assessmentInfo;
-      },
-      jsonPath,
-      conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
-      locals: ctx.locals,
-      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
-    });
+    const results: { assessmentId: string; addedCount: number; skippedCount: number }[] = [];
+    // Each assessment's edit is prepared but not executed, so the whole batch
+    // commits and syncs once via the MultiEditor below.
+    const editors: FileModifyEditor[] = [];
 
-    if (!saveResult.success && saveResult.reason === 'sync_failed') {
-      throwAppError<QuestionsError['AddToAssessment']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to add questions to assessment',
-        jobSequenceId: saveResult.jobSequenceId,
+    for (const assessmentId of new Set(input.assessmentIds)) {
+      const { assessment, courseInstance } = await selectAssessmentForEdit({
+        assessmentId,
+        courseId: ctx.course.id,
+      });
+      const jsonPath = assessmentInfoPath({
+        coursePath: ctx.course.path,
+        courseInstance,
+        assessment,
+      });
+
+      let addedCount = 0;
+      const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+        applyChanges: (assessmentInfo) => {
+          const zones = assessmentInfo.zones ?? [];
+          const existingQids = collectQids(zones);
+          const questionsToAdd = selectedQuestions.filter(
+            (question) => question.qid && !existingQids.has(question.qid),
+          );
+          if (questionsToAdd.length > 0) {
+            zones.push({ questions: questionsToAdd.map(buildQuestionBlock) });
+            assessmentInfo.zones = zones;
+          }
+          addedCount = questionsToAdd.length;
+          return assessmentInfo;
+        },
+        jsonPath,
+        conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
+        locals: ctx.locals,
+        container: { rootPath: ctx.course.path, invalidRootPaths: [] },
+      });
+
+      // `origHash` is null, so `prepared` is always a success; only bundle an
+      // editor when the file actually changed.
+      if (prepared.success && addedCount > 0) {
+        editors.push(prepared.editor);
+      }
+      results.push({
+        assessmentId,
+        addedCount,
+        skippedCount: selectedQuestions.length - addedCount,
       });
     }
 
-    return {
-      addedCount,
-      skippedCount: selectedQuestions.length - addedCount,
-    };
+    const addedAssessmentCount = editors.length;
+    if (addedAssessmentCount > 0) {
+      const editor = new MultiEditor(
+        {
+          locals: ctx.locals,
+          description: `Add questions to ${addedAssessmentCount} ${addedAssessmentCount === 1 ? 'assessment' : 'assessments'}`,
+        },
+        editors,
+      );
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        throwAppError<QuestionsError['AddToAssessment']>({
+          code: 'SYNC_JOB_FAILED',
+          message: 'Failed to add questions to assessments',
+          jobSequenceId: serverJob.jobSequenceId,
+        });
+      }
+    }
+
+    return { results, addedAssessmentCount };
   });
 
 const removeFromAssessment = t.procedure
@@ -301,7 +322,7 @@ const removeFromAssessment = t.procedure
   .use(requireNotExampleCourse)
   .input(
     QuestionIdsInputSchema.extend({
-      assessmentId: IdSchema,
+      assessmentIds: z.array(IdSchema).min(1),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -312,58 +333,82 @@ const removeFromAssessment = t.procedure
     const qidsToRemove = new Set(
       selectedQuestions.flatMap((question) => (question.qid ? [question.qid] : [])),
     );
-    const { assessment, courseInstance } = await selectAssessmentForEdit({
-      assessmentId: input.assessmentId,
-      courseId: ctx.course.id,
-    });
-    const jsonPath = assessmentInfoPath({
-      coursePath: ctx.course.path,
-      courseInstance,
-      assessment,
-    });
 
-    let removedCount = 0;
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
-      applyChanges: (assessmentInfo) => {
-        const result = removeQidsFromAssessment(assessmentInfo, qidsToRemove);
-        if (result.emptiedZones.length > 0) {
-          const zoneList = result.emptiedZones
-            .map((zone) => (zone.zoneTitle ? `"${zone.zoneTitle}"` : `zone ${zone.zoneIndex + 1}`))
-            .join(', ');
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Cannot remove questions because it would leave ${result.emptiedZones.length === 1 ? 'a zone' : 'zones'} empty (${zoneList}). Add another question to ${result.emptiedZones.length === 1 ? 'that zone' : 'those zones'} or delete ${result.emptiedZones.length === 1 ? 'it' : 'them'} from the assessment first.`,
-          });
-        }
-        removedCount = result.removedCount;
-        return result.assessment;
-      },
-      jsonPath,
-      conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
-      locals: ctx.locals,
-      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
-    });
+    const results: { assessmentId: string; removedCount: number; skippedCount: number }[] = [];
+    // Each assessment's edit is prepared but not executed, so the whole batch
+    // commits and syncs once via the MultiEditor below.
+    const editors: FileModifyEditor[] = [];
 
-    if (!saveResult.success && saveResult.reason === 'sync_failed') {
-      throwAppError<QuestionsError['RemoveFromAssessment']>({
-        code: 'SYNC_JOB_FAILED',
-        message: 'Failed to remove questions from assessment',
-        jobSequenceId: saveResult.jobSequenceId,
+    for (const assessmentId of new Set(input.assessmentIds)) {
+      const { assessment, courseInstance } = await selectAssessmentForEdit({
+        assessmentId,
+        courseId: ctx.course.id,
+      });
+      const jsonPath = assessmentInfoPath({
+        coursePath: ctx.course.path,
+        courseInstance,
+        assessment,
+      });
+
+      let removedCount = 0;
+      const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+        applyChanges: (assessmentInfo) => {
+          const result = removeQidsFromAssessment(assessmentInfo, qidsToRemove);
+          removedCount = result.matchedQids.length;
+          return result.assessment;
+        },
+        jsonPath,
+        conflictCheck: { origHash: null, scope: (json) => json.zones ?? [] },
+        locals: ctx.locals,
+        container: { rootPath: ctx.course.path, invalidRootPaths: [] },
+      });
+
+      // `origHash` is null, so `prepared` is always a success; only bundle an
+      // editor when the file actually changed.
+      if (prepared.success && removedCount > 0) {
+        editors.push(prepared.editor);
+      }
+      results.push({
+        assessmentId,
+        removedCount,
+        skippedCount: selectedQuestions.length - removedCount,
       });
     }
 
-    return { removedCount };
+    const removedAssessmentCount = editors.length;
+    if (removedAssessmentCount > 0) {
+      const editor = new MultiEditor(
+        {
+          locals: ctx.locals,
+          description: `Remove questions from ${removedAssessmentCount} ${removedAssessmentCount === 1 ? 'assessment' : 'assessments'}`,
+        },
+        editors,
+      );
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        throwAppError<QuestionsError['RemoveFromAssessment']>({
+          code: 'SYNC_JOB_FAILED',
+          message: 'Failed to remove questions from assessments',
+          jobSequenceId: serverJob.jobSequenceId,
+        });
+      }
+    }
+
+    return { results, removedAssessmentCount };
   });
 
 /**
  * For each (assessment, zone) that references one of the selected questions,
  * returns the QIDs that would be removed from that zone and whether the zone
- * would become empty if the deletion proceeded. Used by the bulk-delete modal
- * to warn the user about zones that will be dropped along with the questions.
+ * would become empty if the deletion proceeded, plus a total count of zone
+ * lockpoints that would be moved or removed. Used by the bulk-delete modal to
+ * warn the user about zones and lockpoints affected along with the questions.
  *
- * Reads each referencing `infoAssessment.json` so the empty-zone calculation
- * uses the same logic the editor will apply. Files that fail to read are
- * skipped (the editor will surface the same error during sync).
+ * Reads each referencing `infoAssessment.json` so the calculation uses the same
+ * logic the editor will apply. Files that fail to read are skipped (the editor
+ * will surface the same error during sync).
  */
 const previewDeletion = t.procedure
   .use(requireCoursePermissionPreview)
@@ -374,7 +419,7 @@ const previewDeletion = t.procedure
       courseId: ctx.course.id,
     });
     const qidsToRemove = qidsToRemoveForQuestions(selectedQuestions);
-    if (qidsToRemove.size === 0) return { zones: [] };
+    if (qidsToRemove.size === 0) return { zones: [], lockpointsMovedOrRemoved: 0 };
 
     const refs = await selectAssessmentsReferencingQuestions({
       course_id: ctx.course.id,
@@ -395,6 +440,7 @@ const previewDeletion = t.procedure
       affectedQids: string[];
       wouldBeEmpty: boolean;
     }[] = [];
+    let lockpointsMovedOrRemoved = 0;
 
     for (const ref of refs) {
       const jsonPath = path.join(
@@ -412,7 +458,11 @@ const previewDeletion = t.procedure
         continue;
       }
 
-      const { emptiedZones } = removeQidsFromAssessment(parsed, qidsToRemove);
+      const { emptiedZones, lockpointsMovedOrRemoved: lockpoints } = removeQidsFromAssessment(
+        parsed,
+        qidsToRemove,
+      );
+      lockpointsMovedOrRemoved += lockpoints;
       const emptiedIndices = new Set(emptiedZones.map((z) => z.zoneIndex));
 
       for (const [zoneIndex, zone] of (parsed.zones ?? []).entries()) {
@@ -444,7 +494,7 @@ const previewDeletion = t.procedure
       }
     }
 
-    return { zones };
+    return { zones, lockpointsMovedOrRemoved };
   });
 
 const deleteQuestions = t.procedure
@@ -467,7 +517,7 @@ const deleteQuestions = t.procedure
         institution_id: ctx.course.institution_id,
       }));
 
-    const { usedInOtherCourses, blockedAssessments } = await getQuestionDeletionBlockers({
+    const usedInOtherCourses = await selectQuestionsBlockingDeletion({
       course: ctx.course,
       questions: selectedQuestions,
       checkOtherCourses: sharingEnabled,
@@ -481,14 +531,6 @@ const deleteQuestions = t.procedure
             ? 'One selected question is used by another course and cannot be deleted.'
             : `${usedInOtherCourses.length} selected questions are used by other courses and cannot be deleted.`,
         qids: usedInOtherCourses.map((q) => q.qid),
-      });
-    }
-
-    if (blockedAssessments.length > 0) {
-      throwAppError<QuestionsError['DeleteQuestions']>({
-        code: 'DELETION_BREAKS_ASSESSMENTS',
-        message: `Deletion would leave ${blockedAssessments.length === 1 ? 'an assessment' : `${blockedAssessments.length} assessments`} in an invalid state: ${formatBlockedAssessments(blockedAssessments)}`,
-        blockedAssessments,
       });
     }
 
@@ -514,7 +556,6 @@ const deleteQuestions = t.procedure
 export const questionsRouter = t.router({
   list,
   listAssessments,
-  listZones,
   addToAssessment,
   removeFromAssessment,
   previewDeletion,

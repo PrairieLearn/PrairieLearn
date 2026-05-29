@@ -139,13 +139,13 @@ test.describe('Question settings', () => {
   });
 });
 
-test.describe('Question deletion blockers', () => {
-  test('blocks deletion when it would leave an assessment with no zones', async ({
+test.describe('Question deletion', () => {
+  test('deletes a question whose removal would leave an assessment with no zones', async ({
     page,
     testCoursePath,
   }) => {
     const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
-    const qid = `singleblock${suffix}`;
+    const qid = `singledelete${suffix}`;
     const assessmentNumber = `5${suffix.slice(0, 4)}`;
 
     const sourcePath = path.join(testCoursePath, 'questions', 'addNumbers');
@@ -154,10 +154,10 @@ test.describe('Question deletion blockers', () => {
     const infoPath = path.join(targetPath, 'info.json');
     const infoJson = JSON.parse(await fs.readFile(infoPath, 'utf-8'));
     infoJson.uuid = randomUUID();
-    infoJson.title = 'Single delete blocker';
+    infoJson.title = 'Single delete fix';
     await fs.writeFile(infoPath, `${JSON.stringify(infoJson, null, 2)}\n`);
 
-    const assessmentTid = `singleblock${suffix}`;
+    const assessmentTid = `singledelete${suffix}`;
     const assessmentDir = path.join(
       testCoursePath,
       'courseInstances',
@@ -166,13 +166,14 @@ test.describe('Question deletion blockers', () => {
       assessmentTid,
     );
     await fs.mkdir(assessmentDir, { recursive: true });
+    const assessmentInfoPath = path.join(assessmentDir, 'infoAssessment.json');
     await fs.writeFile(
-      path.join(assessmentDir, 'infoAssessment.json'),
+      assessmentInfoPath,
       `${JSON.stringify(
         {
           uuid: randomUUID(),
           type: 'Homework',
-          title: 'Single delete blocker target',
+          title: 'Single delete fix target',
           set: 'Homework',
           number: assessmentNumber,
           allowAccess: [
@@ -193,11 +194,9 @@ test.describe('Question deletion blockers', () => {
     await expect(modal).toBeVisible();
     await modal.getByRole('button', { name: 'Delete', exact: true }).click();
 
-    await expect(
-      page.getByText(
-        `Deleting this question would leave the following assessments in an invalid state: Sp15: HW${assessmentNumber} (all zones would be empty). Remove the question from these assessments first.`,
-      ),
-    ).toBeVisible();
-    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
+    await page.waitForURL(/\/course_admin\/questions$/);
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
+    const after = JSON.parse(await fs.readFile(assessmentInfoPath, 'utf-8'));
+    expect(after.zones).toHaveLength(0);
   });
 });

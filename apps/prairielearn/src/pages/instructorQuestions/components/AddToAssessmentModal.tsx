@@ -8,6 +8,7 @@ import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js'
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';
 
+import { AssessmentChecklist } from './AssessmentChecklist.js';
 import { BulkQuestionErrorAlert } from './BulkQuestionErrorAlert.js';
 import { SelectedQuestionList } from './SelectedQuestionList.js';
 import { useInvalidateQuestionsList } from './useInvalidateQuestionsList.js';
@@ -38,8 +39,7 @@ export function AddToAssessmentModal({
   const [courseInstanceId, setCourseInstanceId] = useState(
     () => currentCourseInstanceId ?? courseInstances.at(0)?.id ?? '',
   );
-  const [assessmentId, setAssessmentId] = useState('');
-  const [zoneNumber, setZoneNumber] = useState('');
+  const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<Set<string>>(() => new Set());
 
   const assessmentsQuery = useQuery({
     ...trpc.questions.listAssessments.queryOptions(
@@ -48,37 +48,33 @@ export function AddToAssessmentModal({
     ),
   });
   const assessments = assessmentsQuery.data ?? [];
-  const effectiveAssessmentId = assessments.some(
-    (assessment) => assessment.id === assessmentId && !assessment.allQuestionsPresent,
-  )
-    ? assessmentId
-    : (assessments.find((assessment) => !assessment.allQuestionsPresent)?.id ?? '');
 
-  const zonesQuery = useQuery({
-    ...trpc.questions.listZones.queryOptions(
-      { assessmentId: effectiveAssessmentId },
-      { enabled: show && effectiveAssessmentId !== '' },
-    ),
-  });
-  const zones = zonesQuery.data ?? [];
-  const effectiveZoneNumber = zones.some((zone) => String(zone.number) === zoneNumber)
-    ? Number(zoneNumber)
-    : zones.at(0)?.number;
+  const toggleAssessment = (assessmentId: string) => {
+    setSelectedAssessmentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(assessmentId)) {
+        next.delete(assessmentId);
+      } else {
+        next.add(assessmentId);
+      }
+      return next;
+    });
+  };
 
   const mutation = useMutation({
     ...trpc.questions.addToAssessment.mutationOptions(),
-    onSuccess: async ({ addedCount, skippedCount }) => {
+    onSuccess: async ({ results, addedAssessmentCount }) => {
       await invalidateQuestionsList();
-      const assessmentLabel =
-        assessments.find((assessment) => assessment.id === effectiveAssessmentId)?.label ??
-        'assessment';
-      const parts: string[] = [
-        `Added ${addedCount} ${addedCount === 1 ? 'question' : 'questions'} to ${assessmentLabel}.`,
-      ];
-      if (skippedCount > 0) {
+      const parts: string[] = [];
+      if (addedAssessmentCount === 0) {
+        parts.push('All selected questions were already present in the chosen assessments.');
+      } else {
         parts.push(
-          `${skippedCount} ${skippedCount === 1 ? 'question was' : 'questions were'} already in the assessment.`,
+          `Added selected questions to ${addedAssessmentCount} ${addedAssessmentCount === 1 ? 'assessment' : 'assessments'}.`,
         );
+        if (results.some((result) => result.skippedCount > 0)) {
+          parts.push('Some questions were already present in one or more assessments.');
+        }
       }
       onActionSuccess(parts.join(' '));
       clearSelection();
@@ -86,7 +82,8 @@ export function AddToAssessmentModal({
     },
   });
   const appError = getAppError<QuestionsError['AddToAssessment']>(mutation.error);
-  const canSubmit = effectiveAssessmentId !== '' && effectiveZoneNumber != null;
+  const selectedCount = selectedAssessmentIds.size;
+  const canSubmit = selectedCount > 0;
 
   return (
     <Modal
@@ -98,17 +95,13 @@ export function AddToAssessmentModal({
     >
       <Modal.Header closeButton>
         <Modal.Title id="bulk-add-assessment-modal-title">
-          Add selected questions to assessment
+          Add selected questions to assessments
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <AppErrorAlert
           error={getAppError<QuestionsError['ListAssessments']>(assessmentsQuery.error)}
           render={{ UNKNOWN: ({ message }) => <>Error loading assessments: {message}</> }}
-        />
-        <AppErrorAlert
-          error={getAppError<QuestionsError['ListZones']>(zonesQuery.error)}
-          render={{ UNKNOWN: ({ message }) => <>Error loading zones: {message}</> }}
         />
         <div className="mb-3">
           <label className="form-label" htmlFor="bulk-add-course-instance">
@@ -120,8 +113,7 @@ export function AddToAssessmentModal({
             value={courseInstanceId}
             onChange={(e) => {
               setCourseInstanceId(e.target.value);
-              setAssessmentId('');
-              setZoneNumber('');
+              setSelectedAssessmentIds(new Set());
             }}
           >
             {courseInstances.map((courseInstance) => (
@@ -132,51 +124,14 @@ export function AddToAssessmentModal({
           </select>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label" htmlFor="bulk-add-assessment">
-            Assessment
-          </label>
-          <select
-            id="bulk-add-assessment"
-            className="form-select"
-            value={effectiveAssessmentId}
-            disabled={assessmentsQuery.isLoading || assessments.length === 0}
-            onChange={(e) => {
-              setAssessmentId(e.target.value);
-              setZoneNumber('');
-            }}
-          >
-            {assessments.map((assessment) => (
-              <option
-                key={assessment.id}
-                value={assessment.id}
-                disabled={assessment.allQuestionsPresent}
-              >
-                {assessment.label}
-                {assessment.title ? `: ${assessment.title}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label" htmlFor="bulk-add-zone">
-            Zone
-          </label>
-          <select
-            id="bulk-add-zone"
-            className="form-select"
-            value={effectiveZoneNumber?.toString() ?? ''}
-            disabled={zonesQuery.isLoading || zones.length === 0}
-            onChange={(e) => setZoneNumber(e.target.value)}
-          >
-            {zones.map((zone) => (
-              <option key={zone.number} value={zone.number}>
-                {zone.title || `Zone ${zone.number}`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <AssessmentChecklist
+          idPrefix="bulk-add-assessment"
+          assessments={assessments}
+          isLoading={assessmentsQuery.isLoading}
+          selectedAssessmentIds={selectedAssessmentIds}
+          emptyMessage="This course instance has no assessments."
+          onToggle={toggleAssessment}
+        />
 
         <SelectedQuestionList questions={selectedQuestions} />
         <BulkQuestionErrorAlert error={appError} urlPrefix={urlPrefix} />
@@ -189,15 +144,10 @@ export function AddToAssessmentModal({
           variant="primary"
           disabled={!canSubmit || mutation.isPending}
           onClick={() => {
-            if (effectiveZoneNumber === undefined) return;
-            mutation.mutate({
-              questionIds,
-              assessmentId: effectiveAssessmentId,
-              zoneNumber: effectiveZoneNumber,
-            });
+            mutation.mutate({ questionIds, assessmentIds: [...selectedAssessmentIds] });
           }}
         >
-          Add {selectedQuestions.length} {selectedQuestions.length === 1 ? 'question' : 'questions'}
+          Add to {selectedCount} {selectedCount === 1 ? 'assessment' : 'assessments'}
         </Button>
       </Modal.Footer>
     </Modal>

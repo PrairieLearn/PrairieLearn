@@ -69,33 +69,6 @@ interface EmptiedZone {
   zoneTitle: string | null;
 }
 
-/**
- * A reason the deletion cannot proceed because the resulting assessment would
- * fail sync validation. Detected only when the deletion *introduces* the
- * problem (i.e. the pre-deletion file was syncable in this respect).
- */
-type DeletionBlocker = { code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' } | { code: 'NO_ZONES_REMAINING' };
-
-export function blockerDescription(blocker: DeletionBlocker): string {
-  switch (blocker.code) {
-    case 'NO_ZONES_REMAINING':
-      return 'all zones would be empty';
-    case 'NEW_FIRST_ZONE_HAS_LOCKPOINT':
-      return 'the new first zone would be a lockpoint';
-  }
-}
-
-export interface BlockedAssessment {
-  assessmentId: string;
-  assessmentLabel: string;
-  assessmentColor: string;
-  courseInstanceId: string;
-  courseInstanceShortName: string;
-  blockers: DeletionBlocker[];
-  /** The QIDs being deleted that this assessment references; the questions to skip to unblock it. */
-  affectedQids: string[];
-}
-
 interface MapAssessmentQidsResult {
   assessment: AssessmentJsonInput;
   /** Number of QID references that were rewritten or dropped. */
@@ -134,24 +107,73 @@ interface RemoveQidsFromAssessmentResult {
   removedCount: number;
   /**
    * Zones that were non-empty before the removal and would be empty after.
-   * These zones are dropped from `assessment`; callers that want to refuse
-   * the operation rather than silently discard zone metadata should inspect
-   * this list before persisting.
+   * These zones are dropped from `assessment`. An assessment with no zones is
+   * valid, so callers can persist this result without further checks.
    */
   emptiedZones: EmptiedZone[];
   /**
-   * Sync-validation problems newly introduced by the deletion. Callers should
-   * refuse to persist when this is non-empty.
+   * How many zone lockpoints the removal relocated to a later zone or dropped.
+   * A lockpoint on a dropped zone shifts to the next surviving zone (or is
+   * removed if there is no later zone), and a lockpoint that would land on the
+   * new first zone is removed (the first zone cannot be a lockpoint).
    */
-  blockers: DeletionBlocker[];
+  lockpointsMovedOrRemoved: number;
   /** The subset of `qidsToRemove` actually referenced by this assessment. */
   matchedQids: string[];
 }
 
 /**
+ * Keeps the surviving zones' lockpoints valid after empty zones are dropped:
+ * a lockpoint on a dropped zone shifts to the next surviving zone (or is
+ * removed if it was the last zone), and a lockpoint that ends up on the first
+ * zone is removed (the first zone cannot be a lockpoint). Returns the adjusted
+ * zones and how many lockpoints were moved or removed as a result.
+ */
+function reconcileLockpoints({
+  originalZones,
+  survivingZones,
+  emptiedZones,
+}: {
+  originalZones: ZoneAssessmentJsonInput[];
+  survivingZones: ZoneAssessmentJsonInput[];
+  emptiedZones: EmptiedZone[];
+}): { zones: ZoneAssessmentJsonInput[]; lockpointsMovedOrRemoved: number } {
+  const emptiedIndices = new Set(emptiedZones.map((zone) => zone.zoneIndex));
+  const survivingOriginalIndices = originalZones
+    .map((_, index) => index)
+    .filter((index) => !emptiedIndices.has(index));
+
+  const zones = survivingZones.map((zone) => ({ ...zone }));
+  let lockpointsMovedOrRemoved = 0;
+
+  for (const { zoneIndex } of emptiedZones) {
+    if (!originalZones[zoneIndex]?.lockpoint) continue;
+    lockpointsMovedOrRemoved += 1;
+    const targetIndex = survivingOriginalIndices.findIndex((index) => index > zoneIndex);
+    if (targetIndex !== -1) {
+      zones[targetIndex] = { ...zones[targetIndex], lockpoint: true };
+    }
+  }
+
+  if (zones[0]?.lockpoint) {
+    // A surviving zone promoted to first while carrying its own lockpoint has
+    // that lockpoint removed here; a lockpoint that merely shifted onto it was
+    // already counted above, and a pre-existing first-zone lockpoint isn't
+    // something this deletion introduced.
+    const firstOriginalIndex = survivingOriginalIndices[0];
+    if (firstOriginalIndex !== 0 && originalZones[firstOriginalIndex]?.lockpoint) {
+      lockpointsMovedOrRemoved += 1;
+    }
+    zones[0] = { ...zones[0], lockpoint: false };
+  }
+
+  return { zones, lockpointsMovedOrRemoved };
+}
+
+/**
  * Returns a copy of `assessment` with any references to `qidsToRemove`
- * filtered out, alongside the list of zones that became empty as a result.
- * Empty zones are dropped from the returned assessment.
+ * filtered out. Zones emptied by the removal are dropped, and the lockpoints of
+ * surviving zones are kept valid (see {@link reconcileLockpoints}).
  */
 export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
@@ -170,21 +192,17 @@ export function removeQidsFromAssessment(
     return qid;
   });
 
-  const originalZones = assessment.zones ?? [];
-  const newZones = updated.zones ?? [];
-  const blockers: DeletionBlocker[] = [];
-  if (newZones.length === 0 && originalZones.length > 0) {
-    blockers.push({ code: 'NO_ZONES_REMAINING' });
-  }
-  if (newZones[0]?.lockpoint && !originalZones[0]?.lockpoint) {
-    blockers.push({ code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' });
-  }
+  const { zones, lockpointsMovedOrRemoved } = reconcileLockpoints({
+    originalZones: assessment.zones ?? [],
+    survivingZones: updated.zones ?? [],
+    emptiedZones,
+  });
 
   return {
-    assessment: updated,
+    assessment: { ...updated, zones },
     removedCount: changedCount,
     emptiedZones,
-    blockers,
+    lockpointsMovedOrRemoved,
     matchedQids: [...matchedQids],
   };
 }

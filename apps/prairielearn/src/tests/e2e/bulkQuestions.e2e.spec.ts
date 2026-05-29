@@ -5,7 +5,6 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 
 import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
@@ -115,10 +114,6 @@ test.describe('Bulk question table actions', () => {
     const assessmentNumber = `9${suffix.slice(0, 4)}`;
     await writeBulkAssessment({ testCoursePath, tid: assessmentTid, number: assessmentNumber });
 
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: assessmentTid,
-    });
     const assessmentLabel = `HW${assessmentNumber}`;
     const qids = ['addNumbers', 'addVectors'];
 
@@ -126,36 +121,39 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Add to assessment' }).click();
-    const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessment' });
+    await page.getByRole('button', { name: 'Add to assessment' }).click();
+    const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessments' });
     await expect(addModal).toBeVisible();
     await expect(addModal.getByLabel('Course instance')).toHaveValue(courseInstance.id);
-    await expect(addModal.getByLabel('Assessment')).toContainText('Bulk question table target');
-    await addModal.getByLabel('Assessment').selectOption(assessment.id);
-    await expect(addModal.getByLabel('Zone')).toContainText('Bulk target zone');
-    await addModal.getByLabel('Zone').selectOption('1');
-    await addModal.getByRole('button', { name: 'Add 2 questions' }).click();
+    await addModal.getByRole('checkbox', { name: assessmentLabel }).check();
+    await addModal.getByRole('button', { name: 'Add to 1 assessment' }).click();
 
     await expect(addModal).not.toBeVisible();
     await expect(page.getByRole('link', { name: assessmentLabel, exact: true })).toHaveCount(2);
 
+    // The added questions go into a new zone appended to the end of the
+    // assessment; the existing zone is left untouched.
     const savedAfterAdd = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(savedAfterAdd.zones).toHaveLength(2);
     expect(savedAfterAdd.zones[0].questions.map((question: { id: string }) => question.id)).toEqual(
-      ['downloadFile', ...qids],
+      ['downloadFile'],
+    );
+    expect(savedAfterAdd.zones[1].questions.map((question: { id: string }) => question.id)).toEqual(
+      qids,
     );
 
     await selectQuestions(page, qids);
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    const removeMenuItem = page.getByRole('menuitem', { name: 'Remove from assessment' });
+    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessment' });
     await expect(removeMenuItem).toBeEnabled();
     await removeMenuItem.click();
 
     const removeModal = page.getByRole('dialog', {
-      name: 'Remove selected questions from assessment',
+      name: 'Remove selected questions from assessments',
     });
     await expect(removeModal).toBeVisible();
-    await removeModal.getByLabel('Assessment').selectOption(assessment.id);
-    await removeModal.getByRole('button', { name: 'Remove 2 questions' }).click();
+    await removeModal.getByRole('checkbox', { name: assessmentLabel }).check();
+    await removeModal.getByRole('button', { name: 'Remove from 1 assessment' }).click();
 
     await expect(removeModal).not.toBeVisible();
     await expect(page.getByRole('link', { name: assessmentLabel, exact: true })).toHaveCount(0);
@@ -164,6 +162,183 @@ test.describe('Bulk question table actions', () => {
     expect(
       savedAfterRemove.zones[0].questions.map((question: { id: string }) => question.id),
     ).toEqual(['downloadFile']);
+  });
+
+  test('can add selected questions to multiple assessments at once', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const tidA = `hw-bulk-multi-a-${suffix}`;
+    const tidB = `hw-bulk-multi-b-${suffix}`;
+    const numberA = `7${suffix.slice(0, 4)}`;
+    const numberB = `6${suffix.slice(0, 4)}`;
+    await writeBulkAssessment({ testCoursePath, tid: tidA, number: numberA });
+    await writeBulkAssessment({ testCoursePath, tid: tidB, number: numberB });
+
+    const qids = ['addNumbers', 'addVectors'];
+
+    await openQuestionsTable(page, courseInstance.id, 'add');
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Add to assessment' }).click();
+    const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessments' });
+    await expect(addModal).toBeVisible();
+    await addModal.getByRole('checkbox', { name: `HW${numberA}` }).check();
+    await addModal.getByRole('checkbox', { name: `HW${numberB}` }).check();
+    await addModal.getByRole('button', { name: 'Add to 2 assessments' }).click();
+
+    await expect(addModal).not.toBeVisible();
+
+    // Each assessment gets the questions appended in a new trailing zone, in a
+    // single sync.
+    for (const tid of [tidA, tidB]) {
+      const saved = await readInfoAssessment(testCoursePath, tid);
+      expect(saved.zones).toHaveLength(2);
+      expect(saved.zones[0].questions.map((question: { id: string }) => question.id)).toEqual([
+        'downloadFile',
+      ]);
+      expect(saved.zones[1].questions.map((question: { id: string }) => question.id)).toEqual(qids);
+    }
+  });
+
+  test('removes questions present in an assessment and reports the rest as skipped', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const assessmentTid = `hw-bulk-remove-skip-${suffix}`;
+    const assessmentNumber = `6${suffix.slice(0, 4)}`;
+    // The assessment references `addNumbers` but not `addVectors`, so removing
+    // both selected questions should skip `addVectors`.
+    await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
+    await fs.writeFile(
+      infoAssessmentPath(testCoursePath, assessmentTid),
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Bulk remove skip target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [
+            {
+              title: 'Bulk target zone',
+              questions: [
+                { id: 'downloadFile', autoPoints: 1 },
+                { id: 'addNumbers', autoPoints: 1 },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    const assessmentLabel = `HW${assessmentNumber}`;
+
+    await openQuestionsTable(page, courseInstance.id, 'add');
+    await selectQuestions(page, ['addNumbers', 'addVectors']);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessment' });
+    await expect(removeMenuItem).toBeEnabled();
+    await removeMenuItem.click();
+
+    const removeModal = page.getByRole('dialog', {
+      name: 'Remove selected questions from assessments',
+    });
+    await expect(removeModal).toBeVisible();
+    await removeModal.getByRole('checkbox', { name: assessmentLabel }).check();
+    await removeModal.getByRole('button', { name: 'Remove from 1 assessment' }).click();
+
+    await expect(removeModal).not.toBeVisible();
+    await expect(
+      page.getByText(
+        'Removed selected questions from 1 assessment. Some questions were not present in one or more assessments.',
+      ),
+    ).toBeVisible();
+
+    const savedAfterRemove = await readInfoAssessment(testCoursePath, assessmentTid);
+    expect(
+      savedAfterRemove.zones[0].questions.map((question: { id: string }) => question.id),
+    ).toEqual(['downloadFile']);
+  });
+
+  test('can remove selected questions from multiple assessments at once', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qids = ['addNumbers', 'addVectors'];
+    const tids = [`hw-bulk-remove-multi-a-${suffix}`, `hw-bulk-remove-multi-b-${suffix}`];
+    const numbers = [`5${suffix.slice(0, 4)}`, `4${suffix.slice(0, 4)}`];
+
+    for (const [index, tid] of tids.entries()) {
+      // Each assessment keeps `downloadFile` alongside the selected questions, so
+      // removing the selected questions never empties the zone.
+      await fs.mkdir(assessmentPath(testCoursePath, tid), { recursive: true });
+      await fs.writeFile(
+        infoAssessmentPath(testCoursePath, tid),
+        `${JSON.stringify(
+          {
+            uuid: randomUUID(),
+            type: 'Homework',
+            title: 'Bulk remove multi target',
+            set: 'Homework',
+            number: numbers[index],
+            allowAccess: [
+              { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+            ],
+            zones: [
+              {
+                title: 'Bulk target zone',
+                questions: [
+                  { id: 'downloadFile', autoPoints: 1 },
+                  { id: qids[0], autoPoints: 1 },
+                  { id: qids[1], autoPoints: 1 },
+                ],
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, 'add');
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Remove from assessment' }).click();
+    const removeModal = page.getByRole('dialog', {
+      name: 'Remove selected questions from assessments',
+    });
+    await expect(removeModal).toBeVisible();
+    await removeModal.getByRole('checkbox', { name: `HW${numbers[0]}` }).check();
+    await removeModal.getByRole('checkbox', { name: `HW${numbers[1]}` }).check();
+    await removeModal.getByRole('button', { name: 'Remove from 2 assessments' }).click();
+
+    await expect(removeModal).not.toBeVisible();
+    await expect(page.getByText('Removed selected questions from 2 assessments.')).toBeVisible();
+
+    for (const tid of tids) {
+      const saved = await readInfoAssessment(testCoursePath, tid);
+      expect(saved.zones[0].questions.map((question: { id: string }) => question.id)).toEqual([
+        'downloadFile',
+      ]);
+    }
   });
 
   test('removes deleted questions from referencing assessments', async ({
@@ -222,7 +397,7 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
     // Both selected questions share a Mixed zone in this Sp15 assessment, so the
@@ -232,7 +407,7 @@ test.describe('Bulk question table actions', () => {
       deleteModal.getByRole('link', { name: new RegExp(`^HW${assessmentNumber}$`) }),
     ).toHaveCount(2);
     // The zone still has `downloadFile`, so no zones would be emptied.
-    await expect(deleteModal.getByText(/assessment zones will be removed/)).toHaveCount(0);
+    await expect(deleteModal.getByText(/empty zones? will be removed/)).toHaveCount(0);
 
     await deleteModal.getByRole('button', { name: 'Delete 2 questions' }).click();
     await expect(deleteModal).not.toBeVisible();
@@ -306,12 +481,10 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
-    await expect(
-      deleteModal.getByText(/1 assessment zone will be removed as they contain no questions/),
-    ).toBeVisible();
+    await expect(deleteModal.getByText(/1 empty zone will be removed/)).toBeVisible();
     // Each selected question shows the affected assessment badge with a
     // zone-removal warning (icon prefix + tooltip).
     await expect(deleteModal.getByTestId('zone-removal-marker')).toHaveCount(2);
@@ -345,7 +518,7 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
     for (const qid of qids) {
@@ -360,21 +533,21 @@ test.describe('Bulk question table actions', () => {
     }
   });
 
-  test('blocks deletion when the new first zone would have lockpoint: true', async ({
+  test('removes the lockpoint when deleting promotes a lockpoint zone to first', async ({
     page,
     testCoursePath,
     courseInstance,
   }) => {
     const suffix = uniqueSuffix();
-    const qid = `bulkblocklockpoint${suffix}`;
+    const qid = `bulkfixlockpoint${suffix}`;
     await copyQuestion({
       testCoursePath,
       sourceQid: 'addNumbers',
       targetQid: qid,
-      title: 'Lockpoint blocker question',
+      title: 'Lockpoint fix question',
     });
 
-    const assessmentTid = `bulkblocklockpoint${suffix}`;
+    const assessmentTid = `bulkfixlockpoint${suffix}`;
     const assessmentNumber = `8${suffix.slice(0, 4)}`;
     await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
     await fs.writeFile(
@@ -383,7 +556,7 @@ test.describe('Bulk question table actions', () => {
         {
           uuid: randomUUID(),
           type: 'Homework',
-          title: 'Lockpoint blocker target',
+          title: 'Lockpoint fix target',
           set: 'Homework',
           number: assessmentNumber,
           allowAccess: [
@@ -407,41 +580,35 @@ test.describe('Bulk question table actions', () => {
     await openQuestionsTable(page, courseInstance.id, qid);
     await selectQuestions(page, [qid]);
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
+    await expect(deleteModal.getByText(/1 lockpoint will be moved or removed/)).toBeVisible();
     await deleteModal.getByRole('button', { name: 'Delete 1 question' }).click();
+    await expect(deleteModal).not.toBeVisible();
 
-    await expect(
-      deleteModal.getByText(
-        'This deletion would leave the following assessment in an invalid state. Remove the question from it first, or skip it and delete the rest.',
-      ),
-    ).toBeVisible();
-    const lockpointItem = deleteModal.getByRole('listitem').filter({
-      hasText: 'the new first zone would be a lockpoint',
-    });
-    await expect(lockpointItem).toBeVisible();
-    await expect(lockpointItem.getByRole('link', { name: `HW${assessmentNumber}` })).toBeVisible();
-    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
     const after = await readInfoAssessment(testCoursePath, assessmentTid);
-    expect(after.zones).toHaveLength(2);
+    expect(after.zones).toHaveLength(1);
+    expect(after.zones[0].title).toBe('Locked zone');
+    expect(after.zones[0].lockpoint).toBeFalsy();
   });
 
-  test('blocks deletion when every zone would be empty', async ({
+  test('deletes the question when every zone would be empty, leaving no zones', async ({
     page,
     testCoursePath,
     courseInstance,
   }) => {
     const suffix = uniqueSuffix();
-    const qid = `bulkblocknozones${suffix}`;
+    const qid = `bulkfixnozones${suffix}`;
     await copyQuestion({
       testCoursePath,
       sourceQid: 'addNumbers',
       targetQid: qid,
-      title: 'No-zones blocker question',
+      title: 'No-zones fix question',
     });
 
-    const assessmentTid = `bulkblocknozones${suffix}`;
+    const assessmentTid = `bulkfixnozones${suffix}`;
     const assessmentNumber = `9${suffix.slice(0, 4)}`;
     await fs.mkdir(assessmentPath(testCoursePath, assessmentTid), { recursive: true });
     await fs.writeFile(
@@ -450,7 +617,7 @@ test.describe('Bulk question table actions', () => {
         {
           uuid: randomUUID(),
           type: 'Homework',
-          title: 'No-zones blocker target',
+          title: 'No-zones fix target',
           set: 'Homework',
           number: assessmentNumber,
           allowAccess: [
@@ -467,23 +634,14 @@ test.describe('Bulk question table actions', () => {
     await openQuestionsTable(page, courseInstance.id, qid);
     await selectQuestions(page, [qid]);
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
     const deleteModal = page.getByRole('dialog', { name: 'Delete selected questions' });
     await expect(deleteModal).toBeVisible();
     await deleteModal.getByRole('button', { name: 'Delete 1 question' }).click();
+    await expect(deleteModal).not.toBeVisible();
 
-    await expect(
-      deleteModal.getByText(
-        'This deletion would leave the following assessment in an invalid state. Remove the question from it first, or skip it and delete the rest.',
-      ),
-    ).toBeVisible();
-    const emptyZonesItem = deleteModal.getByRole('listitem').filter({
-      hasText: 'all zones would be empty',
-    });
-    await expect(emptyZonesItem).toBeVisible();
-    await expect(emptyZonesItem.getByRole('link', { name: `HW${assessmentNumber}` })).toBeVisible();
-    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
     const after = await readInfoAssessment(testCoursePath, assessmentTid);
-    expect(after.zones).toHaveLength(1);
+    expect(after.zones).toHaveLength(0);
   });
 });
