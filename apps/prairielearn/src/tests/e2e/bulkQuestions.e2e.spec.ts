@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { syncCourse } from '../helperCourse.js';
@@ -94,6 +94,17 @@ async function openQuestionsTable(page: Page, courseInstanceId: string, search: 
   await searchInput.fill(search);
 }
 
+// The assessment checklist groups assessments under collapsed `<details>`
+// blocks, so their checkboxes are hidden until each group is expanded. The
+// assessments load asynchronously, so wait for the first group to render.
+async function expandAssessmentGroups(modal: Locator) {
+  const summaries = modal.locator('summary');
+  await summaries.first().waitFor();
+  for (const summary of await summaries.all()) {
+    await summary.click();
+  }
+}
+
 async function selectQuestions(page: Page, qids: string[]) {
   for (const qid of qids) {
     await page.getByLabel(`Select ${qid}`, { exact: true }).check();
@@ -121,10 +132,11 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('button', { name: 'Add to assessment' }).click();
+    await page.getByRole('button', { name: 'Add to assessments' }).click();
     const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessments' });
     await expect(addModal).toBeVisible();
     await expect(addModal.getByLabel('Course instance')).toHaveValue(courseInstance.id);
+    await expandAssessmentGroups(addModal);
     await addModal.getByRole('checkbox', { name: assessmentLabel }).check();
     await addModal.getByRole('button', { name: 'Add to 1 assessment' }).click();
 
@@ -144,7 +156,7 @@ test.describe('Bulk question table actions', () => {
 
     await selectQuestions(page, qids);
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessment' });
+    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessments' });
     await expect(removeMenuItem).toBeEnabled();
     await removeMenuItem.click();
 
@@ -152,6 +164,7 @@ test.describe('Bulk question table actions', () => {
       name: 'Remove selected questions from assessments',
     });
     await expect(removeModal).toBeVisible();
+    await expandAssessmentGroups(removeModal);
     await removeModal.getByRole('checkbox', { name: assessmentLabel }).check();
     await removeModal.getByRole('button', { name: 'Remove from 1 assessment' }).click();
 
@@ -183,9 +196,10 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('button', { name: 'Add to assessment' }).click();
+    await page.getByRole('button', { name: 'Add to assessments' }).click();
     const addModal = page.getByRole('dialog', { name: 'Add selected questions to assessments' });
     await expect(addModal).toBeVisible();
+    await expandAssessmentGroups(addModal);
     await addModal.getByRole('checkbox', { name: `HW${numberA}` }).check();
     await addModal.getByRole('checkbox', { name: `HW${numberB}` }).check();
     await addModal.getByRole('button', { name: 'Add to 2 assessments' }).click();
@@ -249,7 +263,7 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, ['addNumbers', 'addVectors']);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessment' });
+    const removeMenuItem = page.getByRole('button', { name: 'Remove from assessments' });
     await expect(removeMenuItem).toBeEnabled();
     await removeMenuItem.click();
 
@@ -257,6 +271,7 @@ test.describe('Bulk question table actions', () => {
       name: 'Remove selected questions from assessments',
     });
     await expect(removeModal).toBeVisible();
+    await expandAssessmentGroups(removeModal);
     await removeModal.getByRole('checkbox', { name: assessmentLabel }).check();
     await removeModal.getByRole('button', { name: 'Remove from 1 assessment' }).click();
 
@@ -321,11 +336,12 @@ test.describe('Bulk question table actions', () => {
     await selectQuestions(page, qids);
 
     await page.getByRole('button', { name: 'Manage questions' }).click();
-    await page.getByRole('button', { name: 'Remove from assessment' }).click();
+    await page.getByRole('button', { name: 'Remove from assessments' }).click();
     const removeModal = page.getByRole('dialog', {
       name: 'Remove selected questions from assessments',
     });
     await expect(removeModal).toBeVisible();
+    await expandAssessmentGroups(removeModal);
     await removeModal.getByRole('checkbox', { name: `HW${numbers[0]}` }).check();
     await removeModal.getByRole('checkbox', { name: `HW${numbers[1]}` }).check();
     await removeModal.getByRole('button', { name: 'Remove from 2 assessments' }).click();
