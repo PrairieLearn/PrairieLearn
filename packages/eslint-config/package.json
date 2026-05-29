@@ -38,7 +38,7 @@
     "eslint-plugin-no-floating-promise": "^2.0.0",
     "eslint-plugin-perfectionist": "^5.9.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-you-might-not-need-an-effect": "^0.10.0",
+    "eslint-plugin-react-you-might-not-need-an-effect": "^0.10.2",
     "eslint-plugin-unicorn": "^64.0.0",
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
     "globals": "^17.6.0",

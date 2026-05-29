@@ -17,6 +17,9 @@ const PrairieTestJwtPayloadSchema = z.object({
   user_id: z.string(),
   course_instance_id: z.string().optional(),
   assessment_id: z.string().optional(),
+  // True when PrairieTest minted this JWT from inside a LockDown Browser
+  // session. PrairieLearn persists this on the session so downstream
+  // enforcement can require LDB for LDB-only reservations.
   lockdown_browser: z.boolean().optional(),
 });
 
@@ -74,15 +77,11 @@ router.post(
         ? getStudentAssessmentUrl(course_instance_id, assessment_id)
         : undefined;
 
-    // Record whether the student authenticated through the LockDown Browser
-    // flow so PrairieLearn pages can conditionally hide navigation elements.
-    req.session.lockdown_browser = lockdown_browser ?? false;
-
     await authnLib.loadUser(
       req,
       res,
       { user_id, provider: 'PrairieTest' },
-      { redirect: true, redirectUrl },
+      { redirect: true, redirectUrl, lockdownBrowser: lockdown_browser ?? false },
     );
   }),
 );

@@ -28,8 +28,9 @@ for bin in /usr/lib/postgresql/16/bin/*; do
     ln -sf "$bin" /usr/local/bin/
 done
 
+apt-get update -qq
 # We need graphviz for the python dependencies.
-apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
+apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector
 
 # Load nvm
 . /opt/nvm/nvm.sh
@@ -39,9 +40,8 @@ nvm install 24
 nvm alias default 24
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
-# https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
+# Self-update w/o using pip fails: https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188
 (cd /tmp && uv pip install --system --reinstall uv)
-rm /root/.local/bin/uv # Uninstall the outdated uv binary.
 
 # Run commands independently for better timeout control
 make python-deps

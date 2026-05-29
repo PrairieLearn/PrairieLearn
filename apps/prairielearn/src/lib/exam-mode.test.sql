@@ -150,6 +150,18 @@ WHERE
 RETURNING
   *;
 
+-- BLOCK enable_lockdown_browser_on_location
+UPDATE pt_locations
+SET
+  lockdown_browser_enabled = TRUE;
+
+-- BLOCK enable_lockdown_browser_on_course_session
+UPDATE pt_sessions
+SET
+  lockdown_browser_enabled = TRUE
+WHERE
+  location_id IS NULL;
+
 -- BLOCK check_in_reservations
 UPDATE pt_reservations
 SET

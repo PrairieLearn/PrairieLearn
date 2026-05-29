@@ -100,7 +100,7 @@ test.describe('Assessment questions', () => {
         ['partialCredit3', 'partialCredit2', 'partialCredit4_v2'],
       ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -150,7 +150,7 @@ test.describe('Assessment questions', () => {
         ['partialCredit2', 'partialCredit3'],
       ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -213,7 +213,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].bestQuestions).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -285,7 +285,7 @@ test.describe('Assessment questions', () => {
     await expect(page.getByLabel('QID', { exact: true })).toHaveValue('differentiatePolynomial');
     await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -342,7 +342,7 @@ test.describe('Assessment questions', () => {
 
       await page.getByRole('button', { name: 'Done' }).click();
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -406,7 +406,7 @@ test.describe('Assessment questions', () => {
     await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
-    const saveButton = page.getByRole('button', { name: 'Save and sync' });
+    const saveButton = page.getByRole('button', { name: 'Save' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
@@ -492,7 +492,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -544,7 +544,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(5);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -591,7 +591,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(

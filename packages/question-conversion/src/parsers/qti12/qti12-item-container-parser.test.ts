@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { assert, describe, it } from 'vitest';
 
-import { QTI12AssessmentParser } from './qti12-assessment-parser.js';
+import { QTI12ItemContainerParser } from './qti12-item-container-parser.js';
 
 const FIXTURES = path.join(import.meta.dirname, '../../test-fixtures/qti12');
 
@@ -11,9 +11,9 @@ function readFixture(name: string): string {
   return readFileSync(path.join(FIXTURES, name), 'utf-8');
 }
 
-const parser = new QTI12AssessmentParser();
+const parser = new QTI12ItemContainerParser();
 
-describe('QTI12AssessmentParser', async () => {
+describe('QTI12ItemContainerParser', async () => {
   describe('HTML entity decoding in titles', async () => {
     it('decodes &amp; in assessment title', async () => {
       const xml = `<?xml version="1.0"?>
@@ -60,13 +60,110 @@ describe('QTI12AssessmentParser', async () => {
   });
 
   describe('canParse', async () => {
-    it('returns true for QTI 1.2 assessment XML', async () => {
+    it('returns true for QTI 1.2 XML with an assessment', async () => {
       assert.isTrue(parser.canParse(readFixture('canvas-mc.xml')));
+    });
+
+    it('returns true for QTI 1.2 object bank XML', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank"/>
+</questestinterop>`;
+      assert.isTrue(parser.canParse(xml));
     });
 
     it('returns false for non-QTI XML', async () => {
       assert.isFalse(parser.canParse('<html><body>hello</body></html>'));
     });
+  });
+
+  it('parses object banks as question collections', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank">
+    <section ident="root_section">
+      <item ident="q1" title="Bank question">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;</mattext></material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+              <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+            <setvar varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </objectbank>
+</questestinterop>`;
+    const result = await parser.parse(xml);
+    assert.equal(result.title, 'Question Bank');
+    assert.equal(result.sourceType, 'question-bank');
+    assert.lengthOf(result.questions, 1);
+    assert.equal(result.questions[0].title, 'Bank question');
+  });
+
+  it('parses Canvas object banks with direct items and bank_title metadata', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1">
+    <qtimetadata>
+      <qtimetadatafield><fieldlabel>bank_title</fieldlabel><fieldentry>Syllabus Quiz</fieldentry></qtimetadatafield>
+    </qtimetadata>
+    <item ident="q1" title="1">
+      <itemmetadata><qtimetadata>
+        <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+      </qtimetadata></itemmetadata>
+      <presentation>
+        <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;</mattext></material>
+        <response_lid ident="response1" rcardinality="Single">
+          <render_choice>
+            <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+            <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+          </render_choice>
+        </response_lid>
+      </presentation>
+      <resprocessing>
+        <respcondition continue="No">
+          <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+          <setvar varname="SCORE">100</setvar>
+        </respcondition>
+      </resprocessing>
+    </item>
+  </objectbank>
+</questestinterop>`;
+    const result = await parser.parse(xml);
+    assert.equal(result.title, 'Syllabus Quiz');
+    assert.equal(result.sourceType, 'question-bank');
+    assert.lengthOf(result.questions, 1);
+    assert.equal(result.questions[0].title, '1');
+  });
+
+  it('does not apply assessment-only metadata to object banks', async () => {
+    const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <objectbank ident="bank1" title="Question Bank">
+    <section ident="root_section"/>
+  </objectbank>
+</questestinterop>`;
+    const itemContainerParser = new QTI12ItemContainerParser();
+    const result = await itemContainerParser.parse(xml, {
+      assessmentMetaXml: '<quiz><time_limit>30</time_limit></quiz>',
+    });
+
+    assert.equal(result.sourceType, 'question-bank');
+    assert.isFalse('meta' in result);
+    assert.isFalse('zones' in result);
+    assert.isFalse('unresolvedSourceBankRefs' in result);
   });
 
   describe('correct condition parsing', async () => {
@@ -775,6 +872,43 @@ describe('QTI12AssessmentParser', async () => {
     });
   });
 
+  describe('source bank references', async () => {
+    it('captures Canvas sourcebank_export_id for matching external bank exports', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <section ident="pool" title="External Pool">
+        <selection_ordering>
+          <selection>
+            <sourcebank_ref>105415</sourcebank_ref>
+            <sourcebank_export_id>g664f76fdc719931d67b65146ba8654ee</sourcebank_export_id>
+            <selection_number>4</selection_number>
+            <selection_extension>
+              <points_per_item>1.0</points_per_item>
+              <sourcebank_context>course_67263</sourcebank_context>
+              <sourcebank_is_external>true</sourcebank_is_external>
+            </selection_extension>
+          </selection>
+        </selection_ordering>
+      </section>
+    </section>
+      </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      assert.deepEqual(result.unresolvedSourceBankRefs, [
+        {
+          sourceBankRef: '105415',
+          sourceBankExportId: 'g664f76fdc719931d67b65146ba8654ee',
+          title: 'External Pool',
+          numberChoose: 4,
+          points: 1,
+          externalCourseId: '67263',
+        },
+      ]);
+    });
+  });
+
   describe('allowed_extensions → file-upload allowedExtensions', async () => {
     const FILE_UPLOAD_QTI = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
@@ -840,7 +974,7 @@ describe('QTI12AssessmentParser', async () => {
       assert.isDefined(result.parseWarnings);
       assert.equal(result.parseWarnings!.length, 1);
       assert.equal(result.parseWarnings![0].questionId, 'q1');
-      assert.include(result.parseWarnings![0].message, 'magic_question');
+      assert.equal(result.parseWarnings![0].message, 'Unsupported question type "magic_question"');
     });
 
     it('still parses valid questions when some are unsupported', async () => {

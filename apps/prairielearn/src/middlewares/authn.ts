@@ -176,6 +176,7 @@ export default asyncHandler(async (req, res, next) => {
 
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
+    preserveLockdownBrowser: true,
   });
 
   // Surface the LockDown Browser flag recorded on the session at PT->PL
