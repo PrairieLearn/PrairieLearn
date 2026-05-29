@@ -57,7 +57,7 @@ export function AssessmentChecklist({
           return <div className="text-muted">{emptyMessage}</div>;
         }
         return setGroups.map((group) => (
-          <details key={group.set.id} className="mb-2" open>
+          <details key={group.set.id} className="mb-2">
             <summary className="fw-bold">
               <AssessmentSetHeading assessmentSet={group.set} />
             </summary>

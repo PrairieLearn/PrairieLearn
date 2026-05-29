@@ -60,11 +60,11 @@ export function QuestionSelectionToolbar({
         >
           <Dropdown.Item onClick={() => setShowAddModal(true)}>
             <i className="bi bi-plus-square me-2" aria-hidden="true" />
-            Add to assessment
+            Add to assessments
           </Dropdown.Item>
           <Dropdown.Item onClick={() => setShowRemoveModal(true)}>
             <i className="bi bi-dash-square me-2" aria-hidden="true" />
-            Remove from assessment
+            Remove from assessments
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Item className="text-danger" onClick={() => setShowDeleteModal(true)}>
