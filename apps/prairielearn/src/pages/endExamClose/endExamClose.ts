@@ -31,7 +31,10 @@ router.get(
               <meta name="robots" content="noindex" />
             </head>
             <body>
-              <p>You may now close this window.</p>
+              <main>
+                <h1>LockDown Browser closed</h1>
+                <p>You may now close this window.</p>
+              </main>
             </body>
           </html>`.toString(),
       );
@@ -48,10 +51,12 @@ router.get(
             <meta http-equiv="refresh" content="0;url=${CLOSE_URL}" />
           </head>
           <body>
-            <p>Closing LockDown Browser…</p>
-            <p>
-              <a href="${CLOSE_URL}">Click here if the browser does not close automatically.</a>
-            </p>
+            <main>
+              <h1>Closing LockDown Browser…</h1>
+              <p>
+                <a href="${CLOSE_URL}">Click here if the browser does not close automatically.</a>
+              </p>
+            </main>
           </body>
         </html>`.toString(),
     );
