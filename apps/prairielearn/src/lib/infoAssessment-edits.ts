@@ -114,8 +114,8 @@ interface RemoveQidsFromAssessmentResult {
   /**
    * How many zone lockpoints the removal relocated to a later zone or dropped.
    * A lockpoint on a dropped zone shifts to the next surviving zone (or is
-   * removed if there is no later zone), and a lockpoint that would land on the
-   * new first zone is removed (the first zone cannot be a lockpoint).
+   * removed if there is no later selectable zone), and a lockpoint that would
+   * land on the new first zone is removed (the first zone cannot be a lockpoint).
    */
   lockpointsMovedOrRemoved: number;
   /** The subset of `qidsToRemove` actually referenced by this assessment. */
@@ -124,8 +124,8 @@ interface RemoveQidsFromAssessmentResult {
 
 /**
  * Keeps the surviving zones' lockpoints valid after empty zones are dropped:
- * a lockpoint on a dropped zone shifts to the next surviving zone (or is
- * removed if it was the last zone), and a lockpoint that ends up on the first
+ * a lockpoint on a dropped zone shifts to the next surviving selectable zone
+ * (or is removed if there is none), and a lockpoint that ends up on the first
  * zone is removed (the first zone cannot be a lockpoint). Returns the adjusted
  * zones and how many lockpoints were moved or removed as a result.
  */
@@ -149,7 +149,9 @@ function reconcileLockpoints({
   for (const { zoneIndex } of emptiedZones) {
     if (!originalZones[zoneIndex]?.lockpoint) continue;
     lockpointsMovedOrRemoved += 1;
-    const targetIndex = survivingOriginalIndices.findIndex((index) => index > zoneIndex);
+    const targetIndex = survivingOriginalIndices.findIndex(
+      (index, survivingIndex) => index > zoneIndex && zones[survivingIndex].numberChoose !== 0,
+    );
     if (targetIndex !== -1) {
       zones[targetIndex] = { ...zones[targetIndex], lockpoint: true };
     }

@@ -92,6 +92,50 @@ describe('removeQidsFromAssessment', () => {
     assert.equal(lockpointsMovedOrRemoved, 1);
   });
 
+  it('skips unselectable zones when shifting a lockpoint', () => {
+    const assessment = makeAssessment([
+      { title: 'first', questions: [{ id: 'a', points: 5 }] },
+      { title: 'locked', lockpoint: true, questions: [{ id: 'b', points: 5 }] },
+      { title: 'unselectable', numberChoose: 0, questions: [{ id: 'c', points: 5 }] },
+      { title: 'selectable', questions: [{ id: 'd', points: 5 }] },
+    ]);
+
+    const { assessment: updated, lockpointsMovedOrRemoved } = removeQidsFromAssessment(
+      assessment,
+      new Set(['b']),
+    );
+
+    assert.deepEqual(
+      (updated.zones ?? []).map((zone) => zone.title),
+      ['first', 'unselectable', 'selectable'],
+    );
+    assert.isNotTrue(updated.zones?.[0].lockpoint);
+    assert.isNotTrue(updated.zones?.[1].lockpoint);
+    assert.isTrue(updated.zones?.[2].lockpoint);
+    assert.equal(lockpointsMovedOrRemoved, 1);
+  });
+
+  it('drops a shifted lockpoint when only unselectable zones remain later', () => {
+    const assessment = makeAssessment([
+      { title: 'first', questions: [{ id: 'a', points: 5 }] },
+      { title: 'locked', lockpoint: true, questions: [{ id: 'b', points: 5 }] },
+      { title: 'unselectable', numberChoose: 0, questions: [{ id: 'c', points: 5 }] },
+    ]);
+
+    const { assessment: updated, lockpointsMovedOrRemoved } = removeQidsFromAssessment(
+      assessment,
+      new Set(['b']),
+    );
+
+    assert.deepEqual(
+      (updated.zones ?? []).map((zone) => zone.title),
+      ['first', 'unselectable'],
+    );
+    assert.isNotTrue(updated.zones?.[0].lockpoint);
+    assert.isNotTrue(updated.zones?.[1].lockpoint);
+    assert.equal(lockpointsMovedOrRemoved, 1);
+  });
+
   it('drops a lockpoint when its zone is the last and is emptied', () => {
     const assessment = makeAssessment([
       { title: 'first', questions: [{ id: 'a', points: 5 }] },
