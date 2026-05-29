@@ -8,12 +8,7 @@ import {
 
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
-export interface QuestionHtmlDiagnostic extends Omit<
-  Pick<Diagnostic, 'message' | 'severity'>,
-  'severity'
-> {
-  severity: Diagnostic['severity'] | 'info';
-}
+export type QuestionHtmlDiagnostic = Pick<Diagnostic, 'message' | 'severity'>;
 
 const require = createRequire(import.meta.url);
 const wasmPath = require.resolve('@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
@@ -34,6 +29,6 @@ export async function lintQuestionHtml(html: string): Promise<QuestionHtmlDiagno
   const linter = await getLinter();
   return linter.lint(html, htmlMustacheConfig).map((diagnostic) => ({
     message: diagnostic.message,
-    severity: diagnostic.ruleName === 'pl-remote-image-url' ? 'info' : diagnostic.severity,
+    severity: diagnostic.severity,
   }));
 }

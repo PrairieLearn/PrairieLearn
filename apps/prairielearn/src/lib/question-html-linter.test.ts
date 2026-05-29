@@ -34,18 +34,18 @@ describe('lintQuestionHtml', () => {
   it('warns on remote image URLs without suggesting pl-figure', async () => {
     const html = '<img src="https://example.com/image.png">';
     const diagnostics = await lintQuestionHtml(html);
-    expect(diagnostics.some((d) => d.message.includes('remote URL') && d.severity === 'info')).toBe(
-      true,
-    );
+    expect(
+      diagnostics.some((d) => d.message.includes('remote URL') && d.severity === 'warning'),
+    ).toBe(true);
     expect(diagnostics.some((d) => d.message.includes('pl-figure'))).toBe(false);
   });
 
   it('warns on malformed remote image URLs without suggesting pl-figure', async () => {
     const html = '<img src="://example.com/image.png">';
     const diagnostics = await lintQuestionHtml(html);
-    expect(diagnostics.some((d) => d.message.includes('remote URL') && d.severity === 'info')).toBe(
-      true,
-    );
+    expect(
+      diagnostics.some((d) => d.message.includes('remote URL') && d.severity === 'warning'),
+    ).toBe(true);
     expect(diagnostics.some((d) => d.message.includes('pl-figure'))).toBe(false);
   });
 
