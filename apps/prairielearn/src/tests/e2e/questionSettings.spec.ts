@@ -146,6 +146,7 @@ test.describe('Question deletion blockers', () => {
   }) => {
     const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
     const qid = `singleblock${suffix}`;
+    const assessmentNumber = `5${suffix.slice(0, 4)}`;
 
     const sourcePath = path.join(testCoursePath, 'questions', 'addNumbers');
     const targetPath = path.join(testCoursePath, 'questions', qid);
@@ -173,7 +174,7 @@ test.describe('Question deletion blockers', () => {
           type: 'Homework',
           title: 'Single delete blocker target',
           set: 'Homework',
-          number: `5${suffix.slice(0, 4)}`,
+          number: assessmentNumber,
           allowAccess: [
             { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
           ],
@@ -194,7 +195,7 @@ test.describe('Question deletion blockers', () => {
 
     await expect(
       page.getByText(
-        `Deleting this question would leave the following assessments in an invalid state: Sp15/${assessmentTid} (all zones would be empty). Remove the question from these assessments first.`,
+        `Deleting this question would leave the following assessments in an invalid state: Sp15: HW${assessmentNumber} (all zones would be empty). Remove the question from these assessments first.`,
       ),
     ).toBeVisible();
     await expect(fs.access(path.join(testCoursePath, 'questions', qid))).resolves.toBeUndefined();

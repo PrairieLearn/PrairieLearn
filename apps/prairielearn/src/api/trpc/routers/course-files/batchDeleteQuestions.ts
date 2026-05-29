@@ -5,14 +5,11 @@ import { IdSchema } from '@prairielearn/zod';
 import { QuestionDeleteEditor } from '../../../../lib/editors.js';
 import {
   formatBlockedAssessments,
-  selectAssessmentsBlockingDeletion,
+  getQuestionDeletionBlockers,
 } from '../../../../lib/question-deletion-validation.js';
 import { type ServerJobExecutor } from '../../../../lib/server-jobs.js';
 import { selectCourseById } from '../../../../models/course.js';
-import {
-  selectQuestionsByIdsAndCourseId,
-  selectQuestionsUsedInOtherCourses,
-} from '../../../../models/question.js';
+import { selectQuestionsByIdsAndCourseId } from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
 
 async function failServerJob(serverJob: ServerJobExecutor, message: string) {
@@ -70,11 +67,12 @@ export const batchDeleteQuestions = privateProcedure
 
     const serverJob = await editor.prepareServerJob();
 
-    const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
-      question_ids: questions.map((question) => question.id),
-      course_id: course.id,
+    const { usedInOtherCourses, blockedAssessments } = await getQuestionDeletionBlockers({
+      course,
+      questions,
     });
-    if (blockedByOtherCourses.length > 0) {
+
+    if (usedInOtherCourses.length > 0) {
       await failServerJob(
         serverJob,
         'One or more questions are used by another course and cannot be deleted. Unshare them or remove them from those assessments first.',
@@ -85,14 +83,6 @@ export const batchDeleteQuestions = privateProcedure
       };
     }
 
-    const qidsToRemove = new Set(
-      questions.flatMap((question) => (question.qid !== null ? [question.qid] : [])),
-    );
-    const blockedAssessments = await selectAssessmentsBlockingDeletion({
-      course,
-      questionIds: questions.map((question) => question.id),
-      qidsToRemove,
-    });
     if (blockedAssessments.length > 0) {
       await failServerJob(
         serverJob,

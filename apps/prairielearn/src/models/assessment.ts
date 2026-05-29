@@ -158,6 +158,39 @@ export async function selectAssessmentToolDefaults({ assessment_id }: { assessme
   );
 }
 
+const AssessmentReferencingQuestionsSchema = z.object({
+  assessment_id: IdSchema,
+  assessment_label: z.string(),
+  assessment_color: AssessmentSetSchema.shape.color,
+  assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+  assessment_set_name: AssessmentSetSchema.shape.name,
+  assessment_number: AssessmentSchema.shape.number,
+  course_instance_id: IdSchema,
+  course_instance_short_name: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid.unwrap(),
+});
+type AssessmentReferencingQuestions = z.infer<typeof AssessmentReferencingQuestionsSchema>;
+
+/**
+ * Returns the assessments (in `course_id`) that reference any of
+ * `question_ids` via their synced `assessment_questions`. Includes the
+ * directory names needed to locate the assessment's `infoAssessment.json`
+ * on disk.
+ */
+export async function selectAssessmentsReferencingQuestions({
+  course_id,
+  question_ids,
+}: {
+  course_id: string;
+  question_ids: string[];
+}): Promise<AssessmentReferencingQuestions[]> {
+  return queryRows(
+    sql.select_assessments_referencing_questions,
+    { course_id, question_ids },
+    AssessmentReferencingQuestionsSchema,
+  );
+}
+
 export async function selectAssessments({
   course_instance_id,
 }: {
@@ -186,28 +219,6 @@ export function selectAssessmentsCursor({
     sql.select_assessments_for_course_instance,
     { course_instance_id },
     AssessmentRowSchema,
-  );
-}
-
-/**
- * Returns the directory names of assessments (in `course_id`) that reference
- * any of `question_ids` via their synced `assessment_questions`. Used to
- * locate each assessment's `infoAssessment.json` on disk.
- */
-export async function selectAssessmentDirectoriesForQuestions({
-  course_id,
-  question_ids,
-}: {
-  course_id: string;
-  question_ids: string[];
-}) {
-  return await queryRows(
-    sql.select_assessment_directories_for_questions,
-    { course_id, question_ids },
-    z.object({
-      course_instance_directory: CourseInstanceSchema.shape.short_name,
-      assessment_directory: AssessmentSchema.shape.tid.unwrap(),
-    }),
   );
 }
 

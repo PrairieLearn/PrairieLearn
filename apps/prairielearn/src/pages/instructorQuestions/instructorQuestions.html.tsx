@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
@@ -10,6 +11,8 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 
+import { QuestionSelectionToolbar } from './components/QuestionSelectionToolbar.js';
+
 interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
@@ -19,16 +22,17 @@ interface InstructorQuestionsTableProps {
   showImportQuestionsButton: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
+  canEditQuestions: boolean;
   urlPrefix: string;
   qidPrefix?: string;
-  csrfToken: string;
+  trpcCsrfToken: string;
   search: string;
   isDevMode: boolean;
 }
 
 type InstructorQuestionsTableInnerProps = Omit<
   InstructorQuestionsTableProps,
-  'search' | 'isDevMode' | 'csrfToken'
+  'search' | 'isDevMode' | 'trpcCsrfToken'
 >;
 
 function InstructorQuestionsTableInner({
@@ -40,39 +44,68 @@ function InstructorQuestionsTableInner({
   showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
+  canEditQuestions,
   urlPrefix,
   qidPrefix,
 }: InstructorQuestionsTableInnerProps) {
   const trpc = useTRPC();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   return (
-    <QuestionsTable
-      questions={questions}
-      courseInstances={courseInstances}
-      courseId={courseId}
-      currentCourseInstanceId={currentCourseInstanceId}
-      showAiGenerateQuestionButton={showAiGenerateQuestionButton}
-      showSharingSets={showSharingSets}
-      urlPrefix={urlPrefix}
-      qidPrefix={qidPrefix}
-      questionsQueryOptions={trpc.questions.list.queryOptions()}
-      addQuestionUrl={
-        showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
-      }
-      showImportQuestionsButton={showImportQuestionsButton}
-    />
+    <>
+      {successMessage && (
+        <Alert
+          variant="success"
+          className="mb-3"
+          dismissible
+          onClose={() => setSuccessMessage(null)}
+        >
+          {successMessage}
+        </Alert>
+      )}
+      <QuestionsTable
+        questions={questions}
+        courseInstances={courseInstances}
+        courseId={courseId}
+        currentCourseInstanceId={currentCourseInstanceId}
+        showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+        showSharingSets={showSharingSets}
+        urlPrefix={urlPrefix}
+        qidPrefix={qidPrefix}
+        questionsQueryOptions={trpc.questions.list.queryOptions()}
+        addQuestionUrl={
+          showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
+        }
+        showImportQuestionsButton={showImportQuestionsButton}
+        renderSelectionToolbar={
+          canEditQuestions
+            ? ({ selectedQuestions, clearSelection, trimSelection }) => (
+                <QuestionSelectionToolbar
+                  selectedQuestions={selectedQuestions}
+                  clearSelection={clearSelection}
+                  trimSelection={trimSelection}
+                  urlPrefix={urlPrefix}
+                  onActionSuccess={setSuccessMessage}
+                />
+              )
+            : undefined
+        }
+      />
+    </>
   );
 }
 
 export function InstructorQuestionsTable({
   search,
   isDevMode,
-  csrfToken,
+  trpcCsrfToken,
   courseId,
   ...innerProps
 }: InstructorQuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createCourseTrpcClient({ csrfToken, courseId }));
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ csrfToken: trpcCsrfToken, courseId }),
+  );
 
   return (
     <NuqsAdapter search={search}>
