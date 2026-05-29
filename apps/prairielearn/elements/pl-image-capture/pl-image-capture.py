@@ -102,7 +102,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         file_errors = format_errors.get("_files", [])
         if isinstance(file_errors, str):
             file_errors = [file_errors]
-        parse_error = " ".join([e for e in file_errors if f" {file_name}" in e or e.endswith(file_name)])
+        parse_error = " ".join([
+            e for e in file_errors if f" {file_name}" in e or e.endswith(file_name)
+        ])
 
     html_params = {
         "uuid": pl.get_uuid(),
