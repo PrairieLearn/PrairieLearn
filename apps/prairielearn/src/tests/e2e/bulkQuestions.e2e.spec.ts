@@ -94,9 +94,11 @@ async function openQuestionsTable(page: Page, courseInstanceId: string, search: 
   await searchInput.fill(search);
 }
 
-// The assessment checklist groups assessments under collapsed `<details>`
-// blocks, so their checkboxes are hidden until each group is expanded. The
-// assessments load asynchronously, so wait for the first group to render.
+/**
+ * The assessment checklist groups assessments under collapsed `<details>`
+ * blocks, so their checkboxes are hidden until each group is expanded. The
+ * assessments load asynchronously, so wait for the first group to render.
+ */
 async function expandAssessmentGroups(modal: Locator) {
   const summaries = modal.locator('summary');
   await summaries.first().waitFor();

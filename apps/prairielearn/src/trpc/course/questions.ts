@@ -291,7 +291,7 @@ async function mutateAssessmentMembership({
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      throwAppError<QuestionsError['AddToAssessment']>({
+      throwAppError<QuestionsError['AddToAssessment'] | QuestionsError['RemoveFromAssessment']>({
         code: 'SYNC_JOB_FAILED',
         message: syncFailureMessage,
         jobSequenceId: serverJob.jobSequenceId,
