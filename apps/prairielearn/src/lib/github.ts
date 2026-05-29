@@ -17,7 +17,7 @@ import { getGithubClient } from './github-client.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
-import { type ServerJob, createServerJob } from './server-jobs.js';
+import { type ServerJob, type ServerJobLogger, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -237,6 +237,27 @@ async function addUserToRepo(
   });
 }
 
+export async function addMachineAccessToRepo(
+  client: Octokit,
+  owner: string,
+  repo: string,
+  job: ServerJobLogger,
+) {
+  if (isPlatformDefaultOrg(owner)) {
+    job.info('Adding machine team to repo');
+    await addTeamToRepo(client, owner, repo, config.githubMachineTeam, 'admin');
+    job.info(`Added team ${config.githubMachineTeam} as administrator of repo ${repo}`);
+  } else {
+    if (config.githubMachineUser === null) {
+      throw new Error('GitHub machine user is not configured; cannot grant repository access.');
+    }
+
+    job.info('Adding machine user to repo');
+    await addUserToRepo(client, owner, repo, config.githubMachineUser, 'admin');
+    job.info(`Added user ${config.githubMachineUser} as administrator of repo ${repo}`);
+  }
+}
+
 /**
  * Starts a new server job to create a course GitHub repo, add it to the database, and then sync it locally.
  * @param options Options for creating the course, should contain the following keys:
@@ -329,21 +350,7 @@ export async function createCourseRepoJob(
     job.info(`Main branch for new repository: "${branch}"`);
 
     // Add machine and instructor to the repo
-    if (isPlatformDefaultOrg(owner)) {
-      job.info('Adding machine team to repo');
-      await addTeamToRepo(
-        client,
-        owner,
-        options.repo_short_name,
-        config.githubMachineTeam,
-        'admin',
-      );
-      job.info(
-        `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
-      );
-    } else {
-      job.info('Skipping machine team grant for custom GitHub organization');
-    }
+    await addMachineAccessToRepo(client, owner, options.repo_short_name, job);
 
     if (options.github_user) {
       job.info('Adding instructor to repo');

@@ -4,6 +4,7 @@ import { withConfig } from '../tests/utils/config.js';
 
 import * as githubClient from './github-client.js';
 import {
+  addMachineAccessToRepo,
   checkGithubOrgAccess,
   courseRepoContentUrl,
   httpPrefixForCourseRepo,
@@ -12,6 +13,8 @@ import {
 
 const orgsGet = vi.fn();
 const orgsGetMembershipForUser = vi.fn();
+const reposAddCollaborator = vi.fn();
+const teamsAddOrUpdateRepoPermissionsInOrg = vi.fn();
 
 /**
  * Replaces the real Octokit client with one whose `orgs` methods we control.
@@ -32,6 +35,8 @@ beforeEach(() => {
   vi.restoreAllMocks();
   orgsGet.mockReset();
   orgsGetMembershipForUser.mockReset();
+  reposAddCollaborator.mockReset();
+  teamsAddOrUpdateRepoPermissionsInOrg.mockReset();
 });
 
 describe('isPlatformDefaultOrg', () => {
@@ -116,6 +121,92 @@ describe('checkGithubOrgAccess', () => {
     await withConfig({ githubClientToken: 'token', githubMachineUser: 'pl-bot' }, async () => {
       await expect(checkGithubOrgAccess('SomeOrg')).rejects.toThrow('upstream broken');
     });
+  });
+});
+
+describe('addMachineAccessToRepo', () => {
+  function mockRepoAccessClient() {
+    return {
+      repos: {
+        addCollaborator: reposAddCollaborator,
+      },
+      teams: {
+        addOrUpdateRepoPermissionsInOrg: teamsAddOrUpdateRepoPermissionsInOrg,
+      },
+    } as unknown as Parameters<typeof addMachineAccessToRepo>[0];
+  }
+
+  function mockJob() {
+    return {
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+      verbose: vi.fn(),
+    };
+  }
+
+  it('adds the machine team for the platform default org', async () => {
+    await withConfig(
+      {
+        githubCourseOwner: 'PrairieLearn',
+        githubMachineTeam: 'machine',
+        githubMachineUser: 'pl-bot',
+      },
+      async () => {
+        await addMachineAccessToRepo(
+          mockRepoAccessClient(),
+          'prairielearn',
+          'test-course',
+          mockJob(),
+        );
+      },
+    );
+
+    expect(reposAddCollaborator).not.toHaveBeenCalled();
+    expect(teamsAddOrUpdateRepoPermissionsInOrg).toHaveBeenCalledWith({
+      owner: 'prairielearn',
+      org: 'prairielearn',
+      repo: 'test-course',
+      team_slug: 'machine',
+      permission: 'admin',
+    });
+  });
+
+  it('adds the machine user directly for a custom org', async () => {
+    await withConfig(
+      {
+        githubCourseOwner: 'PrairieLearn',
+        githubMachineUser: 'pl-bot',
+      },
+      async () => {
+        await addMachineAccessToRepo(mockRepoAccessClient(), 'CustomOrg', 'test-course', mockJob());
+      },
+    );
+
+    expect(teamsAddOrUpdateRepoPermissionsInOrg).not.toHaveBeenCalled();
+    expect(reposAddCollaborator).toHaveBeenCalledWith({
+      owner: 'CustomOrg',
+      repo: 'test-course',
+      username: 'pl-bot',
+      permission: 'admin',
+    });
+  });
+
+  it('rejects custom org access grants when the machine user is not configured', async () => {
+    await withConfig(
+      {
+        githubCourseOwner: 'PrairieLearn',
+        githubMachineUser: null,
+      },
+      async () => {
+        await expect(
+          addMachineAccessToRepo(mockRepoAccessClient(), 'CustomOrg', 'test-course', mockJob()),
+        ).rejects.toThrow('GitHub machine user is not configured');
+      },
+    );
+
+    expect(reposAddCollaborator).not.toHaveBeenCalled();
+    expect(teamsAddOrUpdateRepoPermissionsInOrg).not.toHaveBeenCalled();
   });
 });
 
