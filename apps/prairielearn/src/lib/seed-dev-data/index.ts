@@ -1,11 +1,11 @@
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectOptionalCourseByPath } from '../../models/course.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
+import { selectInstanceQuestionForAssessmentInstance } from '../../models/instance-question.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectCompleteRubric } from '../../models/rubrics.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
@@ -13,12 +13,7 @@ import { syncOrCreateDiskToSql } from '../../sync/syncFromDisk.js';
 import { selectAssessmentQuestions } from '../assessment-question.js';
 import { makeAssessmentInstance } from '../assessment.js';
 import { dangerousFullSystemAuthz } from '../authz-data-lib.js';
-import {
-  type Course,
-  type CourseInstance,
-  InstanceQuestionSchema,
-  type Question,
-} from '../db-types.js';
+import { type Course, type CourseInstance, type Question } from '../db-types.js';
 import { saveSubmission } from '../grading.js';
 import { updateAssessmentQuestionRubric, updateInstanceQuestionScore } from '../manualGrading.js';
 import { TEST_COURSE_PATH } from '../paths.js';
@@ -34,8 +29,6 @@ import {
   seedStudentUid,
 } from './constants.js';
 import { generateFakeRubric } from './rubric.js';
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export interface SeedResult {
   /** True when seeding was skipped (already seeded, or no manual question). */
@@ -220,11 +213,10 @@ async function seedStudentSubmission({
     client_fingerprint_id: null,
   });
 
-  const instanceQuestion = await queryRow(
-    sql.select_instance_question,
-    { assessment_instance_id: assessmentInstanceId, assessment_question_id: assessmentQuestionId },
-    InstanceQuestionSchema,
-  );
+  const instanceQuestion = await selectInstanceQuestionForAssessmentInstance({
+    assessment_instance_id: assessmentInstanceId,
+    assessment_question_id: assessmentQuestionId,
+  });
 
   const variant = await ensureVariant({
     question_id: question.id,

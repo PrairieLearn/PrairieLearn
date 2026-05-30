@@ -24,3 +24,12 @@ WHERE
   AND aq.grade_rate_minutes IS NOT NULL
   AND gj.gradable
   AND gj.grading_method NOT IN ('Manual', 'AI');
+
+-- BLOCK select_instance_question_for_assessment_instance
+SELECT
+  iq.*
+FROM
+  instance_questions AS iq
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND iq.assessment_question_id = $assessment_question_id;
