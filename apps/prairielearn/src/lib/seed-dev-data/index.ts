@@ -8,7 +8,7 @@ import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import { selectInstanceQuestionForAssessmentInstance } from '../../models/instance-question.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectCompleteRubric } from '../../models/rubrics.js';
-import { selectOrInsertUserByUid } from '../../models/user.js';
+import { generateUser, selectOrInsertUserByUid } from '../../models/user.js';
 import { syncOrCreateDiskToSql } from '../../sync/syncFromDisk.js';
 import { selectAssessmentQuestions } from '../assessment-question.js';
 import { makeAssessmentInstance } from '../assessment.js';
@@ -26,7 +26,6 @@ import {
   SEED_STUDENT_COUNT,
   TARGET_ASSESSMENT_TID,
   TARGET_COURSE_INSTANCE_SHORT_NAME,
-  seedStudentUid,
 } from './constants.js';
 import { generateFakeRubric } from './rubric.js';
 
@@ -96,9 +95,8 @@ export async function seedDevData(): Promise<SeedResult> {
   logger.info(`[seed-dev-data] Seeding ${SEED_STUDENT_COUNT} students on ${TARGET_ASSESSMENT_TID}`);
 
   const submissionsByInstanceQuestion = new Map<string, string>();
-  for (let i = 1; i <= SEED_STUDENT_COUNT; i++) {
+  for (let i = 0; i < SEED_STUDENT_COUNT; i++) {
     const submission = await seedStudentSubmission({
-      index: i,
       assessment,
       assessmentQuestionId,
       course,
@@ -175,26 +173,24 @@ export async function seedDevData(): Promise<SeedResult> {
 }
 
 /**
- * Creates one seed student, enrolls them, opens an assessment instance, and
- * saves a single (ungraded) submission on the manual question. Returns the
- * instance question and submission ids.
+ * Generates one student with a realistic fake name/email, enrolls them, opens
+ * an assessment instance, and saves a single (ungraded) submission on the
+ * manual question. Returns the instance question and submission ids.
  */
 async function seedStudentSubmission({
-  index,
   assessment,
   assessmentQuestionId,
   course,
   courseInstance,
   question,
 }: {
-  index: number;
   assessment: Awaited<ReturnType<typeof selectAssessmentByTid>>;
   assessmentQuestionId: string;
   course: Course;
   courseInstance: CourseInstance;
   question: Question;
 }): Promise<{ instanceQuestionId: string; submissionId: string }> {
-  const student = await selectOrInsertUserByUid(seedStudentUid(index));
+  const student = await generateUser();
   await ensureUncheckedEnrollment({
     courseInstance,
     userId: student.id,

@@ -14,19 +14,11 @@ export const TARGET_COURSE_INSTANCE_SHORT_NAME = 'Sp15';
 export const TARGET_ASSESSMENT_TID = 'hw10-aiGrading';
 
 /**
- * Prefix used to build deterministic seed-student uids, e.g.
- * `seed-student-001@example.com`. Deterministic uids make the seed idempotent
- * across restarts via `selectOrInsertUserByUid`.
- */
-export const SEED_STUDENT_UID_PREFIX = 'seed-student-';
-
-/**
  * uid of the dev administrator user (created by `insertDevUser`), used as the
  * acting/grader user for rubric creation and grading.
+ *
+ * Seed students themselves are generated with realistic fake names/emails via
+ * `generateUser`; the seed is kept idempotent by the top-level
+ * `selectAssessmentHasInstances` gate rather than by deterministic uids.
  */
 export const DEV_USER_UID = 'dev@example.com';
-
-/** Builds the deterministic uid for the i-th (1-based) seed student. */
-export function seedStudentUid(index: number): string {
-  return `${SEED_STUDENT_UID_PREFIX}${String(index).padStart(3, '0')}@example.com`;
-}
