@@ -526,11 +526,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
 
     submitted_answer = data["submitted_answers"].get(name, None)
     raw_mathjson = data["submitted_answers"].get(f"{name}-json")
     use_mathjson = (
-        raw_mathjson.strip() != "" if isinstance(raw_mathjson, str) else False
+        formula_editor and isinstance(raw_mathjson, str) and raw_mathjson.strip() != ""
     )
 
     if submitted_answer is None:

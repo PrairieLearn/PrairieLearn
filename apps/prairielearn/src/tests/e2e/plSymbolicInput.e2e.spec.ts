@@ -167,12 +167,8 @@ function getFormulaEditor(page: Page): Locator {
   return page.locator('#symbolic-input-editor');
 }
 
-async function setHiddenMathJson(
-  page: Page,
-  answersName: 'editor' | 'raw',
-  rawMathJson: string,
-): Promise<void> {
-  await page.locator(`input[name="${answersName}-json"]`).evaluate((el, rawMathJson) => {
+async function setHiddenMathJson(page: Page, rawMathJson: string): Promise<void> {
+  await page.locator('input[name="editor-json"]').evaluate((el, rawMathJson) => {
     (el as HTMLInputElement).value = rawMathJson;
   }, rawMathJson);
 }
@@ -183,21 +179,15 @@ async function showSubmittedErrorDetails(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'More info…' }).first().click();
 }
 
-async function submitRawMathJson(page: Page, rawMathJson: string): Promise<void> {
-  await page.getByLabel('Raw symbolic expression').fill('x');
-  await setHiddenMathJson(page, 'raw', rawMathJson);
-  await showSubmittedErrorDetails(page);
-}
-
 async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Promise<void> {
   await page.getByLabel('Raw symbolic expression').fill('x');
   await fillFormulaEditor(getFormulaEditor(page), 'x');
-  await setHiddenMathJson(page, 'editor', rawMathJson);
+  await setHiddenMathJson(page, rawMathJson);
   await showSubmittedErrorDetails(page);
 }
 
 test.describe('pl-symbolic-input', () => {
-  test('reports and clears client-side MathJSON parse errors', async ({
+  test('reports and clears formula editor client-side MathJSON parse errors', async ({
     page,
     testCoursePath,
     courseInstance,
@@ -209,14 +199,8 @@ test.describe('pl-symbolic-input', () => {
     });
 
     try {
-      const rawInput = page.getByLabel('Raw symbolic expression');
-      for (const { latex, message } of parseErrorCases) {
-        await rawInput.fill(latex);
-        await expect(page.getByText(message)).toBeVisible();
-
-        await rawInput.fill('x + 1');
-        await expect(page.getByText(message)).toBeHidden();
-      }
+      await expect(page.locator('input[name="raw-json"]')).toHaveCount(0);
+      await expect(page.locator('input[name="editor-json"]')).toHaveCount(1);
 
       const formulaEditor = getFormulaEditor(page);
       await expect(formulaEditor).toBeVisible();
@@ -241,31 +225,11 @@ test.describe('pl-symbolic-input', () => {
       });
 
       try {
-        await submitRawMathJson(page, JSON.stringify(mathJson));
+        await submitFormulaEditorMathJson(page, JSON.stringify(mathJson));
         await expect(page.getByText(message)).toBeVisible();
       } finally {
         await cleanupQuestion();
       }
     });
   }
-
-  test('reports backend formula editor MathJSON errors on submit', async ({
-    page,
-    testCoursePath,
-    courseInstance,
-  }) => {
-    const cleanupQuestion = await openSymbolicInputPreview({
-      courseInstance,
-      page,
-      testCoursePath,
-    });
-
-    try {
-      const { mathJson, message } = backendErrorCases[0];
-      await submitFormulaEditorMathJson(page, JSON.stringify(mathJson));
-      await expect(page.getByText(message)).toBeVisible();
-    } finally {
-      await cleanupQuestion();
-    }
-  });
 });
