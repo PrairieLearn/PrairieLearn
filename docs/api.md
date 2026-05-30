@@ -135,3 +135,33 @@ GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
 ```
 
 Returns the status and output of the sync job.
+
+### Course issues
+
+#### List course issues
+
+```text
+GET /pl/api/v1/course/:course_id/issues
+```
+
+Returns the course-caused issues that have been reported in this course, ordered by date descending. Only issues with `course_caused = true` are exposed (the same filter the instructor issues page uses by default).
+
+Each result includes the issue metadata, the reporting user (UID, name, email), and the question / assessment / course-instance the issue was filed against. The large `system_data` and `course_data` JSONB blobs are omitted from the list response — fetch them via the single-issue endpoint below if needed.
+
+Supported query parameters (all optional):
+
+| Parameter            | Type      | Description                                                                    |
+| -------------------- | --------- | ------------------------------------------------------------------------------ |
+| `open`               | `boolean` | Only return issues with the given open/closed state. `true` or `false`.        |
+| `manually_reported`  | `boolean` | Only return issues that were (or were not) manually reported by a student.     |
+| `since`              | ISO 8601  | Only return issues whose `date` is at or after this timestamp.                 |
+
+Requires course editor permissions (the same access level as the existing `POST /sync` endpoint).
+
+#### Get single course issue
+
+```text
+GET /pl/api/v1/course/:course_id/issues/:issue_id
+```
+
+Returns the same fields as the list endpoint plus `system_data` and `course_data` (the JSONB blobs containing stack traces and variant params). Returns 404 if the issue does not exist, does not belong to the given course, or is not course-caused.
