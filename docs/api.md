@@ -165,3 +165,17 @@ GET /pl/api/v1/course/:course_id/issues/:issue_id
 ```
 
 Returns the same fields as the list endpoint plus `system_data` and `course_data` (the JSONB blobs containing stack traces and variant params). Returns 404 if the issue does not exist, does not belong to the given course, or is not course-caused.
+
+#### Open or close a course issue
+
+```text
+PATCH /pl/api/v1/course/:course_id/issues/:issue_id
+```
+
+Request body (JSON):
+
+```json
+{ "open": false }
+```
+
+Toggles the `open` field of the given issue. The change is recorded in `audit_logs` attributed to the API token's user, identical to closing the issue from the instructor UI. Idempotent: PATCHing `{"open": false}` on an already-closed issue is a no-op (200). Returns the updated issue in the same shape as the single-issue GET. 400 if the body is malformed, 403 if the issue does not exist in the given course or is not course-caused.

@@ -2,7 +2,7 @@ import * as async from 'async';
 import { type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -162,4 +162,34 @@ export async function reportIssueFromForm(
     authnUserId: res.locals.authn_user.id,
   });
   return variant.id;
+}
+
+/**
+ * Open or close a course-caused issue, writing an audit_logs entry so the
+ * change is attributable. Throws 403 if the issue does not exist in the
+ * given course (or is not course-caused) — the same surface the instructor
+ * UI presents.
+ */
+export async function updateIssueOpen({
+  issue_id,
+  new_open,
+  course_id,
+  authn_user_id,
+}: {
+  issue_id: string;
+  new_open: boolean;
+  course_id: string;
+  authn_user_id: string;
+}): Promise<void> {
+  const updated_issue_id = await queryOptionalScalar(
+    sql.update_issue_open,
+    { issue_id, new_open, course_id, authn_user_id },
+    IdSchema,
+  );
+  if (!updated_issue_id) {
+    throw new HttpStatusError(
+      403,
+      `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
+    );
+  }
 }

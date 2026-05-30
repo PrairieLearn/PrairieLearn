@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IssueSchema } from '../../../../lib/db-types.js';
+import { updateIssueOpen } from '../../../../lib/issues.js';
 import { typedAsyncHandler } from '../../../../lib/res-locals.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -85,6 +86,51 @@ router.get(
       CourseIssueDetailSchema,
     );
 
+    if (!issue) {
+      throw new error.HttpStatusError(404, 'Issue not found');
+    }
+
+    res.status(200).json(issue);
+  }),
+);
+
+const PatchBodySchema = z.object({
+  open: z.boolean(),
+});
+
+router.patch(
+  '/:issue_id(\\d+)',
+  typedAsyncHandler<'course'>(async (req, res) => {
+    const body = PatchBodySchema.safeParse(req.body);
+    if (!body.success) {
+      throw new error.HttpStatusError(
+        400,
+        'Request body must be a JSON object with shape { "open": boolean }',
+      );
+    }
+
+    // updateIssueOpen throws 403 if the issue does not exist in this course
+    // or is not course-caused — same surface the instructor UI presents. The
+    // helper also writes an audit_logs entry attributed to the calling user.
+    await updateIssueOpen({
+      issue_id: req.params.issue_id,
+      new_open: body.data.open,
+      course_id: res.locals.course.id,
+      authn_user_id: res.locals.authz_data.authn_user.id,
+    });
+
+    const issue = await sqldb.queryOptionalRow(
+      sql.select_issue_by_id,
+      {
+        course_id: res.locals.course.id,
+        issue_id: req.params.issue_id,
+      },
+      CourseIssueDetailSchema,
+    );
+
+    // Should never happen: updateIssueOpen would have thrown above if the
+    // issue weren't in this course. But the row read is a fresh query so a
+    // concurrent delete could in principle race — guard defensively.
     if (!issue) {
       throw new error.HttpStatusError(404, 'Issue not found');
     }
