@@ -58,8 +58,9 @@ functions, and brings back **only** the Python element `test()` fallbacks
 | Target | One known manual-grading assessment: `Sp15` / `hw10-aiGrading` |
 | Architecture | New seed lib composing existing model functions; resurrect Python `test()` fallbacks |
 | Element set | **Both PRs' full set** (8 input elements + 3 file/text elements) |
-| Data shape | ~30 students, closed instances, rubric attached, ~50% rubric-graded / ~50% pending |
+| Data shape | ~30 students, **open** instances, rubric attached, ~50% rubric-graded / ~50% pending |
 | Course sync | Seed syncs the test course from disk first (self-contained on a fresh DB) |
+| Close instances? | **No.** `autoFinishExams` only touches Exams, and closing does not affect the manual-grading queue, so closing a Homework instance buys nothing. Leave instances open (realistic for Homework). Avoids restoring `closeAssessmentInstance` / `unsetGradingNeeded` and refactoring `gradeAssessmentInstance`. |
 
 ## Target assessment
 
@@ -95,25 +96,12 @@ helpers already encapsulate, and no resurrection of the admin-query files:
 - `ensureVariant` — `lib/question-variant.ts`
 - `createTestSubmissionData` — `lib/question-testing.ts`
 - `saveSubmission` — `lib/grading.ts`
-- `closeAssessmentInstance` — `lib/assessment.ts` **(must also be restored; see below)**
-- `unsetGradingNeeded` — `models/assessment-instance.ts` **(must also be restored; see below)**
 - `updateAssessmentQuestionRubric`, `updateInstanceQuestionScore` — `lib/manualGrading.ts`
 - `selectCompleteRubric` — `models/rubrics.ts`
 
-### Supporting functions to restore
-
-`closeAssessmentInstance` and `unsetGradingNeeded` were introduced in the closed
-PRs and are not in the repo today. Restore them as part of this work:
-
-- **`closeAssessmentInstance({ assessment_instance_id, authn_user_id, client_fingerprint_id })`**
-  in `lib/assessment.ts` — extracted from `gradeAssessmentInstance`'s existing
-  close path (locks the instance, throws if missing/not-open, runs the
-  `close_assessment_instance` SQL inside a transaction). Refactor
-  `gradeAssessmentInstance` to call it (the behavior-preserving extraction from
-  #14694), so we don't duplicate the close logic.
-- **`unsetGradingNeeded(assessment_instance_id)`** in `models/assessment-instance.ts`
-  — sets `grading_needed = false` for the instance, so the `autoFinishExams`
-  cron does not pick up these synthetic closed instances.
+Instances are **left open** (see decision table), so no instance-closing
+functions are restored and `gradeAssessmentInstance` is not touched. This keeps
+the feature off the core grading hot path entirely.
 
 ### Startup hook: `apps/prairielearn/src/server.ts`
 
@@ -164,12 +152,13 @@ proceeds regardless.
      small seed-local helper that upserts each user by uid (ON CONFLICT) and
      enrolls them.
 
-5. Per student — create a graded-ready instance:
+5. Per student — create a submission-ready instance (left open):
    - makeAssessmentInstance (Homework, mode 'Public', authn_user_id = dev user).
    - ensureVariant for the manual question.
    - createTestSubmissionData(variant, question, course, 'correct', ...).
-   - saveSubmission (credit 100, not auto-graded — manual question).
-   - closeAssessmentInstance + unsetGradingNeeded.
+   - saveSubmission (credit 100, not auto-graded — manual question). This sets
+     status='saved' and requires_manual_grading=true, which is exactly what the
+     manual-grading queue keys on.
 
 6. Attach rubric (once, to the assessment_question):
    - generateFakeRubric({ maxPoints: max_manual_points }).
@@ -188,10 +177,30 @@ proceeds regardless.
 
 ### Idempotency marker
 
-Deterministic seed-student uids are the marker. The fast-path in step 1 treats
-"a seed student already has an assessment instance on the target assessment" as
-"already seeded". This is robust on a fresh DB (no seed instances → seed runs)
-and cheap on subsequent boots (one indexed lookup → early return).
+The marker is **`selectAssessmentHasInstances(assessment_id)`** on the resolved
+target assessment: if `hw10-aiGrading` has any assessment instance, treat the
+test course as already seeded and return early. This needs no new model
+function (decision (A)). Guarded by course/instance/assessment existence (a
+fresh DB has none → seed runs). Accepted trade-off: if a human manually starts
+that assessment in dev, the seed silently skips; acceptable for a fixture
+assessment nobody normally touches. Deterministic seed-student uids
+(`seed-student-001@example.com` …) still provide idempotency for the user
+upserts themselves via `selectOrInsertUserByUid`.
+
+### Reused model functions (confirmed to exist)
+
+`selectAssessmentByTid`, `selectCourseInstanceByShortName`,
+`selectOptionalCourseByPath` / `selectOrInsertCourseByPath`,
+`selectOrInsertUserByUid`, `selectAssessmentHasInstances`,
+`selectAssessmentQuestions` (filter `max_manual_points > 0` in the seed),
+`makeAssessmentInstance`, `ensureVariant`, `createTestSubmissionData`,
+`saveSubmission`, `updateAssessmentQuestionRubric`, `updateInstanceQuestionScore`,
+`selectCompleteRubric`. Enrollment uses `ensureUncheckedEnrollment` with
+`requiredRole: ['System']`, `authzData: dangerousFullSystemAuthz()`,
+`actionDetail: 'implicit_joined'` — the exact idempotent pattern
+`generateAndEnrollUsers` already uses (enrollment.ts:356), but with our
+deterministic `selectOrInsertUserByUid` users instead of random ones. No raw SQL
+is expected in the seed module beyond what these encapsulate.
 
 ## Python element changes (required prerequisite)
 
@@ -236,6 +245,22 @@ questions, so those fields are null and there is nothing to compare). Thread
 "test question" admin action passing for manual questions whose `test()` now
 produces a submission.
 
+**Blast radius & guard scope (decision 3).** The `test()` fallbacks change the
+"Test question" behavior repo-wide for any question with no fixed correct
+answer. `exampleCourseQuestionsComplete.test.ts` auto-tests every non-External
+v3 example question, so it is the main regression surface. The restored guard is
+deliberately **narrow** (`grading_method === 'Manual'` only); note it does NOT
+cover `Internal`-with-`max_auto_points = 0` questions like `aiGradingRubrics`
+(which is not in any auto-test CI list, so it is unaffected). Mitigation, not
+speculative broadening:
+
+- Keep the narrow guard as #14694 wrote it.
+- **Hard acceptance gate:** run `exampleCourseQuestionsComplete.test.ts` and each
+  touched element's Python `*_test.py` and confirm green.
+- Only if a regression surfaces, broaden the guard to "skip when the question is
+  not auto-gradable" (e.g. `max_auto_points === 0` or the submission was not
+  auto-graded).
+
 ## Error handling
 
 - Startup hook wraps `seedDevData()` in try/catch; failures are logged via
@@ -243,10 +268,13 @@ produces a submission.
 - Inside `seedDevData()`, "expected" missing-data conditions (assessment not
   found, no manual question) log a warning and return early rather than throw.
 - All work uses existing model functions, which manage their own transactions;
-  the seed does not introduce a new top-level transaction spanning all students
-  (a partial failure mid-seed simply leaves fewer students, and the next boot
-  re-runs because the fast-path marker check counts existing seed instances —
-  note this means a partial seed is considered "seeded"; acceptable for dev).
+  the seed does not introduce a new top-level transaction spanning all students.
+- **Partial-seed is accepted (decision 4).** Because the marker is "the target
+  assessment has any instance", a crash mid-seed leaves a half-populated
+  assessment that the next boot will treat as already seeded and skip. This is
+  acceptable for a dev fixture: the failure mode is "fewer than 30 students",
+  and recovery is wiping the dev DB. We explicitly do NOT make the seed
+  resumable/atomic, to keep it a simple composer with a one-query marker.
 
 ## Testing
 
@@ -272,9 +300,6 @@ produces a submission.
 
 **Modified**
 - `apps/prairielearn/src/server.ts` — call `seedDevData()` in the devMode block
-- `apps/prairielearn/src/lib/assessment.ts` — restore/extract `closeAssessmentInstance`
-- `apps/prairielearn/src/lib/assessment.sql` — supporting blocks if needed for the extraction
-- `apps/prairielearn/src/models/assessment-instance.ts` (+`.sql`) — restore `unsetGradingNeeded`
 - `apps/prairielearn/src/lib/question-testing.ts` — `compareTestResults` manual skip
 - 11 element controllers under `apps/prairielearn/elements/` (+ their `*_test.py`)
 - Documentation for any element whose documented options change (none expected —
