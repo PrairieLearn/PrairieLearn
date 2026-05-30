@@ -1,12 +1,13 @@
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectAssessmentInstancesForTable } from '../../trpc/assessment/assessment-instances.js';
@@ -21,19 +22,22 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  typedAsyncHandler<'assessment'>(async (req, res) => {
+  asyncHandler(async (req, res) => {
+    const { assessment, assessment_set, course_instance, authn_user, authz_data } =
+      extractPageContext(res.locals, { pageType: 'assessment', accessType: 'instructor' });
+
     const initialRows = await selectAssessmentInstancesForTable({
-      assessment_id: res.locals.assessment.id,
-      timezone: res.locals.course_instance.display_timezone,
+      assessment_id: assessment.id,
+      timezone: course_instance.display_timezone,
     });
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({
-          courseInstanceId: res.locals.course_instance.id,
-          assessmentId: res.locals.assessment.id,
+          courseInstanceId: course_instance.id,
+          assessmentId: assessment.id,
         }),
-        authn_user_id: res.locals.authn_user.id,
+        authn_user_id: authn_user.id,
       },
       config.secretKey,
     );
@@ -55,15 +59,10 @@ router.get(
           <Hydrate fullHeight>
             <InstructorAssessmentInstances
               initialRows={initialRows}
-              courseInstanceId={res.locals.course_instance.id}
-              assessmentId={res.locals.assessment.id}
-              urlPrefix={res.locals.urlPrefix}
-              assessmentSetAbbr={res.locals.assessment_set.abbreviation}
-              assessmentNumber={res.locals.assessment.number}
-              groupWork={res.locals.assessment.team_work}
-              multipleInstance={res.locals.assessment.multiple_instance}
-              timezone={res.locals.course_instance.display_timezone}
-              canEdit={res.locals.authz_data.has_course_instance_permission_edit}
+              assessment={assessment}
+              assessmentSet={assessment_set}
+              courseInstance={course_instance}
+              canEdit={authz_data.has_course_instance_permission_edit}
               trpcCsrfToken={trpcCsrfToken}
               search={getUrl(req).search}
               isDevMode={config.devMode}

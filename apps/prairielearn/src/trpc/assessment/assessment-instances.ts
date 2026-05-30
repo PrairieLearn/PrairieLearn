@@ -17,6 +17,7 @@ import {
 import {
   type AssessmentInstanceRow,
   AssessmentInstanceRowQuerySchema,
+  PendingRegradeQuestionSchema,
 } from '../../pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import {
@@ -26,6 +27,16 @@ import {
 } from './init.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export interface AssessmentInstancesError {
+  list: never;
+  setTimeLimit: never;
+  delete: never;
+  grade: never;
+  gradeAndClose: never;
+  regrade: never;
+  regradePreview: never;
+}
 
 /**
  * Loads the assessment instances for the table, formatting dates/durations in
@@ -187,6 +198,21 @@ const regrade = t.procedure
     return { jobSequenceId };
   });
 
+const regradePreview = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .input(AssessmentInstanceIdsInputSchema)
+  .query(
+    async ({ input, ctx }) =>
+      await sqldb.queryRows(
+        sql.select_pending_regrade_questions,
+        {
+          assessment_id: ctx.assessment.id,
+          assessment_instance_ids: input.assessmentInstanceIds,
+        },
+        PendingRegradeQuestionSchema,
+      ),
+  );
+
 export const assessmentInstancesRouter = t.router({
   list,
   setTimeLimit,
@@ -194,4 +220,5 @@ export const assessmentInstancesRouter = t.router({
   grade,
   gradeAndClose,
   regrade,
+  regradePreview,
 });

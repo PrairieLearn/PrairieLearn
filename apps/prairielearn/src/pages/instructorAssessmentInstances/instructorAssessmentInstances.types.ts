@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   StaffAssessmentInstanceSchema,
   StaffGroupSchema,
@@ -14,6 +16,7 @@ import {
 export const AssessmentInstanceRowQuerySchema = z.object({
   assessment_instance: StaffAssessmentInstanceSchema,
   user: StaffUserSchema.nullable(),
+  enrollment_id: IdSchema.nullable(),
   group: StaffGroupSchema.nullable(),
   assessment_label: z.string(),
   role: z.enum(['Staff', 'Student', 'None']),
@@ -32,3 +35,15 @@ export type AssessmentInstanceRow = AssessmentInstanceRowQuery & {
   date_formatted: string;
   duration_formatted: string;
 };
+
+// A question that a regrade of the selected instances would set to full credit:
+// its assessment question has `forceMaxPoints` and at least one selected instance
+// is currently below the maximum. `instance_count` is how many of the selected
+// instances would change for this question.
+export const PendingRegradeQuestionSchema = z.object({
+  id: IdSchema,
+  qid: z.string().nullable(),
+  title: z.string().nullable(),
+  instance_count: z.coerce.number(),
+});
+export type PendingRegradeQuestion = z.infer<typeof PendingRegradeQuestionSchema>;

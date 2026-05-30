@@ -1,27 +1,30 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert, Button, Modal } from 'react-bootstrap';
+import { Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 
-import { getAppError } from '../../../lib/client/errors.js';
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
+import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
+import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
 
+import { PendingRegradeQuestionList } from './PendingRegradeQuestionList.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
-type JobAction = 'grade' | 'gradeAndClose' | 'regrade';
-type OpenModal = JobAction | 'delete' | 'timeLimit' | null;
+type JobAction = 'grade' | 'gradeAndClose';
+type OpenModal = JobAction | 'regrade' | 'delete' | 'timeLimit' | null;
 
 export function InstanceSelectionToolbar({
   selectedRows,
   clearSelection,
-  urlPrefix,
+  courseInstanceId,
   timezone,
   onActionSuccess,
 }: {
   selectedRows: AssessmentInstanceRow[];
   clearSelection: () => void;
-  urlPrefix: string;
+  courseInstanceId: string;
   timezone: string;
   onActionSuccess: (message: string) => void;
 }) {
@@ -40,21 +43,29 @@ export function InstanceSelectionToolbar({
   return (
     <>
       <div className="d-flex align-items-center gap-2">
-        <Button size="sm" variant="light" onClick={() => setOpenModal('grade')}>
-          <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
-          Grade
-        </Button>
-        <Button size="sm" variant="light" onClick={() => setOpenModal('gradeAndClose')}>
-          <i className="bi bi-slash-circle me-2" aria-hidden="true" />
-          Grade &amp; close
-        </Button>
+        <Dropdown>
+          <Dropdown.Toggle size="sm" variant="light" id="grade-actions">
+            <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
+            Grade
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item onClick={() => setOpenModal('grade')}>
+              <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
+              Grade
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => setOpenModal('gradeAndClose')}>
+              <i className="bi bi-slash-circle me-2" aria-hidden="true" />
+              Grade &amp; close
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => setOpenModal('regrade')}>
+              <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
+              Regrade
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
         <Button size="sm" variant="light" onClick={() => setOpenModal('timeLimit')}>
           <i className="bi bi-clock me-2" aria-hidden="true" />
           Change time limit
-        </Button>
-        <Button size="sm" variant="light" onClick={() => setOpenModal('regrade')}>
-          <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
-          Regrade
         </Button>
         <Button
           size="sm"
@@ -67,33 +78,45 @@ export function InstanceSelectionToolbar({
         </Button>
       </div>
 
-      {(openModal === 'grade' || openModal === 'gradeAndClose' || openModal === 'regrade') && (
-        <JobActionModalWithIds
-          action={openModal}
-          assessmentInstanceIds={assessmentInstanceIds}
-          urlPrefix={urlPrefix}
-          onHide={() => setOpenModal(null)}
-        />
-      )}
+      <JobActionModalWithIds
+        action="grade"
+        show={openModal === 'grade'}
+        assessmentInstanceIds={assessmentInstanceIds}
+        courseInstanceId={courseInstanceId}
+        onHide={() => setOpenModal(null)}
+      />
+      <JobActionModalWithIds
+        action="gradeAndClose"
+        show={openModal === 'gradeAndClose'}
+        assessmentInstanceIds={assessmentInstanceIds}
+        courseInstanceId={courseInstanceId}
+        onHide={() => setOpenModal(null)}
+      />
 
-      {openModal === 'delete' && (
-        <DeleteInstancesModal
-          assessmentInstanceIds={assessmentInstanceIds}
-          onHide={() => setOpenModal(null)}
-          onSuccess={() => {
-            onActionSuccess(`Deleted ${count} ${count === 1 ? 'instance' : 'instances'}.`);
-            clearSelection();
-            setOpenModal(null);
-          }}
-        />
-      )}
+      <RegradeInstancesModal
+        show={openModal === 'regrade'}
+        assessmentInstanceIds={assessmentInstanceIds}
+        courseInstanceId={courseInstanceId}
+        onHide={() => setOpenModal(null)}
+      />
 
-      {openModal === 'timeLimit' && (
-        <Modal show onHide={() => setOpenModal(null)}>
-          <Modal.Header closeButton>
-            <Modal.Title>Change time limit</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
+      <DeleteInstancesModal
+        show={openModal === 'delete'}
+        assessmentInstanceIds={assessmentInstanceIds}
+        onHide={() => setOpenModal(null)}
+        onSuccess={() => {
+          onActionSuccess(`Deleted ${count} ${count === 1 ? 'instance' : 'instances'}.`);
+          clearSelection();
+          setOpenModal(null);
+        }}
+      />
+
+      <Modal show={openModal === 'timeLimit'} onHide={() => setOpenModal(null)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Change time limit</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {openModal === 'timeLimit' && (
             <TimeLimitEditForm
               mode="bulk"
               assessmentInstanceIds={assessmentInstanceIds}
@@ -110,9 +133,9 @@ export function InstanceSelectionToolbar({
                 setOpenModal(null);
               }}
             />
-          </Modal.Body>
-        </Modal>
-      )}
+          )}
+        </Modal.Body>
+      </Modal>
     </>
   );
 }
@@ -120,19 +143,20 @@ export function InstanceSelectionToolbar({
 function JobActionModalWithIds({
   action,
   assessmentInstanceIds,
-  urlPrefix,
+  courseInstanceId,
+  show,
   onHide,
 }: {
   action: JobAction;
   assessmentInstanceIds: string[];
-  urlPrefix: string;
+  courseInstanceId: string;
+  show: boolean;
   onHide: () => void;
 }) {
   const trpc = useTRPC();
   const mutationOptions = {
     grade: trpc.assessmentInstances.grade.mutationOptions(),
     gradeAndClose: trpc.assessmentInstances.gradeAndClose.mutationOptions(),
-    regrade: trpc.assessmentInstances.regrade.mutationOptions(),
   }[action];
   const labels = {
     grade: {
@@ -145,20 +169,19 @@ function JobActionModalWithIds({
       body: 'grade and close',
       confirm: 'Grade and close',
     },
-    regrade: { title: 'Regrade selected instances', body: 'regrade', confirm: 'Regrade' },
   }[action];
 
   const mutation = useMutation({
     ...mutationOptions,
     onSuccess: ({ jobSequenceId }) => {
-      window.location.assign(`${urlPrefix}/jobSequence/${jobSequenceId}`);
+      window.location.assign(getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId));
     },
   });
-  const appError = getAppError<never>(mutation.error);
+  const appError = getAppError<AssessmentInstancesError[JobAction]>(mutation.error);
   const count = assessmentInstanceIds.length;
 
   return (
-    <Modal show onHide={onHide} onExited={() => mutation.reset()}>
+    <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
         <Modal.Title>{labels.title}</Modal.Title>
       </Modal.Header>
@@ -170,7 +193,11 @@ function JobActionModalWithIds({
           </strong>
           ? This cannot be undone.
         </p>
-        {appError ? <Alert variant="danger">{appError.message}</Alert> : null}
+        <AppErrorAlert
+          error={appError}
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => mutation.reset()}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
@@ -188,12 +215,91 @@ function JobActionModalWithIds({
   );
 }
 
+function RegradeInstancesModal({
+  assessmentInstanceIds,
+  courseInstanceId,
+  show,
+  onHide,
+}: {
+  assessmentInstanceIds: string[];
+  courseInstanceId: string;
+  show: boolean;
+  onHide: () => void;
+}) {
+  const trpc = useTRPC();
+  const previewQuery = useQuery({
+    ...trpc.assessmentInstances.regradePreview.queryOptions({ assessmentInstanceIds }),
+    enabled: show,
+  });
+  const mutation = useMutation({
+    ...trpc.assessmentInstances.regrade.mutationOptions(),
+    onSuccess: ({ jobSequenceId }) => {
+      window.location.assign(getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId));
+    },
+  });
+  const appError = getAppError<AssessmentInstancesError['regrade']>(mutation.error);
+  const count = assessmentInstanceIds.length;
+  const questions = previewQuery.data ?? [];
+
+  return (
+    <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
+      <Modal.Header closeButton>
+        <Modal.Title>Regrade selected instances</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>
+          Regrading recomputes the score for{' '}
+          <strong>
+            {count} {count === 1 ? 'instance' : 'instances'}
+          </strong>{' '}
+          and awards full credit for questions configured with <code>forceMaxPoints</code>. Student
+          submissions are not re-graded.
+        </p>
+        {previewQuery.isPending ? (
+          <div className="d-flex align-items-center gap-2 text-muted">
+            <Spinner animation="border" size="sm" /> Checking which questions will change…
+          </div>
+        ) : previewQuery.isError ? (
+          <p className="text-muted mb-0">Couldn't load the list of affected questions.</p>
+        ) : questions.length > 0 ? (
+          <PendingRegradeQuestionList questions={questions} />
+        ) : (
+          <p className="text-muted mb-0">
+            None of the selected instances have questions awaiting full credit.
+          </p>
+        )}
+        <p className="mt-3 mb-0">This cannot be undone.</p>
+        <AppErrorAlert
+          error={appError}
+          className="mt-3 mb-0"
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => mutation.reset()}
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate({ assessmentInstanceIds })}
+        >
+          {mutation.isPending ? 'Working...' : 'Regrade'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
 function DeleteInstancesModal({
   assessmentInstanceIds,
+  show,
   onHide,
   onSuccess,
 }: {
   assessmentInstanceIds: string[];
+  show: boolean;
   onHide: () => void;
   onSuccess: () => void;
 }) {
@@ -206,11 +312,11 @@ function DeleteInstancesModal({
       onSuccess();
     },
   });
-  const appError = getAppError<never>(mutation.error);
+  const appError = getAppError<AssessmentInstancesError['delete']>(mutation.error);
   const count = assessmentInstanceIds.length;
 
   return (
-    <Modal show onHide={onHide} onExited={() => mutation.reset()}>
+    <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
       <Modal.Header closeButton>
         <Modal.Title>Delete selected instances</Modal.Title>
       </Modal.Header>
@@ -222,7 +328,11 @@ function DeleteInstancesModal({
           </strong>
           ? This cannot be undone.
         </p>
-        {appError ? <Alert variant="danger">{appError.message}</Alert> : null}
+        <AppErrorAlert
+          error={appError}
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => mutation.reset()}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>

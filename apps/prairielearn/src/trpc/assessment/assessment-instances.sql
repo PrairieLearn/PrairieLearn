@@ -24,6 +24,7 @@ WITH
 SELECT
   to_jsonb(ai.*) AS assessment_instance,
   to_jsonb(u.*) AS "user",
+  e.id AS enrollment_id,
   to_jsonb(g.*) AS "group",
   (aset.name || ' ' || a.number) AS assessment_label,
   users_get_displayed_role (u.id, ci.id) AS role,
@@ -104,6 +105,10 @@ FROM
   )
   LEFT JOIN group_user_lists AS gul ON (gul.id = ai.team_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = u.id
+    AND e.course_instance_id = ci.id
+  )
 WHERE
   a.id = $assessment_id
   -- Filter out group instances that don't have an undeleted group
@@ -116,3 +121,25 @@ ORDER BY
   u.id,
   ai.number,
   ai.id;
+
+-- BLOCK select_pending_regrade_questions
+SELECT
+  q.id,
+  q.qid,
+  q.title,
+  count(DISTINCT iq.assessment_instance_id) AS instance_count
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+  aq.assessment_id = $assessment_id
+  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  AND aq.force_max_points
+  AND iq.points < aq.max_points
+GROUP BY
+  q.id,
+  q.qid,
+  q.title
+ORDER BY
+  q.qid;

@@ -1,4 +1,4 @@
-import { type QueryFunction, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   type ColumnDef,
   type ColumnPinningState,
@@ -13,32 +13,52 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
-import { type ReactNode, useMemo, useState } from 'react';
-import { Button, ButtonGroup, Modal } from 'react-bootstrap';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useMemo, useState } from 'react';
+import { Alert, Modal } from 'react-bootstrap';
 
 import {
+  type ColumnFilterEntry,
   IndeterminateCheckbox,
+  type MultiSelectFilterValue,
+  PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
+  applyMultiSelectFilter,
   extractLeafColumnIds,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsSortingState,
+  useColumnFilters,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { Scorebar } from '../../../components/Scorebar.js';
+import type {
+  StaffAssessment,
+  StaffAssessmentSet,
+  StaffCourseInstance,
+} from '../../../lib/client/safe-db-types.js';
+import { getAssessmentInstanceUrl, getStudentEnrollmentUrl } from '../../../lib/client/url.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
 
 import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
-import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 const columnHelper = createColumnHelper<AssessmentInstanceRow>();
 const DEFAULT_SORT: SortingState = [];
+
+const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
+type RoleValue = (typeof ROLE_VALUES)[number];
+const STUDENTS_ONLY_FILTER: MultiSelectFilterValue<RoleValue> = {
+  values: ['Student'],
+  mode: 'include',
+};
+const ALL_ROLES_FILTER: MultiSelectFilterValue<RoleValue> = { values: [], mode: 'include' };
 
 function listText(list: (string | null)[] | null): string {
   if (!list?.[0]) return '(empty)';
@@ -104,43 +124,42 @@ const globalFilterFn: FilterFn<AssessmentInstanceRow> = (row, _columnId, value) 
   return haystack.some((field) => field?.toLowerCase().includes(search));
 };
 
-export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
+export function AssessmentInstancesTable({
   initialRows,
-  listQueryOptions,
-  urlPrefix,
-  assessmentSetAbbr,
-  assessmentNumber,
-  groupWork,
-  multipleInstance,
-  timezone,
+  assessment,
+  assessmentSet,
+  courseInstance,
   canEdit,
-  onActionSuccess,
 }: {
   initialRows: AssessmentInstanceRow[];
-  listQueryOptions: {
-    queryKey: TQueryKey;
-    queryFn?: QueryFunction<AssessmentInstanceRow[], TQueryKey>;
-  };
-  urlPrefix: string;
-  assessmentSetAbbr: string;
-  assessmentNumber: string;
-  groupWork: boolean;
-  multipleInstance: boolean;
-  timezone: string;
+  assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  courseInstance: StaffCourseInstance;
   canEdit: boolean;
-  onActionSuccess: (message: string) => void;
 }) {
-  const invalidateList = useInvalidateAssessmentInstancesList();
+  const trpc = useTRPC();
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  const [studentsOnly, setStudentsOnly] = useQueryState(
-    'studentsOnly',
-    parseAsBoolean.withDefault(false),
-  );
+
+  // The role column to filter on differs between individual and group assessments.
+  const roleColumnId = assessment.team_work ? 'group_roles' : 'role';
+  const filterRegistry = useMemo(() => {
+    const registry: Record<string, ColumnFilterEntry<MultiSelectFilterValue<RoleValue>>> = {
+      [roleColumnId]: {
+        urlKey: 'role',
+        parser: parseAsMultiSelectFilter(ROLE_VALUES),
+        defaultValue: STUDENTS_ONLY_FILTER,
+      },
+    };
+    return registry;
+  }, [roleColumnId]);
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -148,19 +167,11 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
   const [timeLimitRow, setTimeLimitRow] = useState<AssessmentInstanceRow | null>(null);
   const { createCheckboxProps } = useShiftClickCheckbox<AssessmentInstanceRow>();
 
-  const { data: rows = initialRows } = useQuery({
-    ...listQueryOptions,
-    queryFn: listQueryOptions.queryFn ?? (() => Promise.resolve(initialRows)),
+  const { data = initialRows } = useQuery({
+    ...trpc.assessmentInstances.list.queryOptions(),
     staleTime: Infinity,
     initialData: initialRows,
   });
-
-  const data = useMemo(() => {
-    if (!studentsOnly) return rows;
-    return rows.filter((row) =>
-      groupWork ? row.group_roles?.includes('Student') : row.role === 'Student',
-    );
-  }, [rows, studentsOnly, groupWork]);
 
   const columns = useMemo(() => {
     const cols: ColumnDef<AssessmentInstanceRow, any>[] = [];
@@ -194,18 +205,22 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
         enableHiding: false,
         cell: (info) => {
           const row = info.row.original;
-          const name = groupWork ? row.group?.name : row.user?.uid;
+          const name = assessment.team_work ? row.group?.name : row.user?.uid;
           let number = '';
-          if (!multipleInstance) {
-            number = row.assessment_instance.number === 1 ? '' : `#${row.assessment_instance.number}`;
+          if (!assessment.multiple_instance) {
+            number =
+              row.assessment_instance.number === 1 ? '' : `#${row.assessment_instance.number}`;
           }
           return (
             <a
               className="text-nowrap"
-              href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
+              href={getAssessmentInstanceUrl({
+                courseInstanceId: courseInstance.id,
+                assessmentInstanceId: row.assessment_instance.id,
+              })}
             >
-              {assessmentSetAbbr}
-              {assessmentNumber}
+              {assessmentSet.abbreviation}
+              {assessment.number}
               {number} for {name}
             </a>
           );
@@ -213,10 +228,10 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
         sortingFn: (rowA, rowB) => {
           const a = rowA.original;
           const b = rowB.original;
-          const nameA = (groupWork ? a.group?.name : a.user?.uid) ?? '';
-          const nameB = (groupWork ? b.group?.name : b.user?.uid) ?? '';
-          const idA = (groupWork ? a.group?.id : a.user?.id) ?? '';
-          const idB = (groupWork ? b.group?.id : b.user?.id) ?? '';
+          const nameA = (assessment.team_work ? a.group?.name : a.user?.uid) ?? '';
+          const nameB = (assessment.team_work ? b.group?.name : b.user?.uid) ?? '';
+          const idA = (assessment.team_work ? a.group?.id : a.user?.id) ?? '';
+          const idB = (assessment.team_work ? b.group?.id : b.user?.id) ?? '';
           let compare = nameA.localeCompare(nameB);
           if (!compare) compare = Number.parseInt(idA) - Number.parseInt(idB);
           if (!compare) compare = a.assessment_instance.number - b.assessment_instance.number;
@@ -230,7 +245,7 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
       }),
     );
 
-    if (groupWork) {
+    if (assessment.team_work) {
       cols.push(
         columnHelper.accessor((row) => row.group?.name ?? null, {
           id: 'group_name',
@@ -257,6 +272,10 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
           header: () => <HelpHeader label="Roles" modalId="roles" onShowHelp={setHelpModal} />,
           cell: (info) => <small>{info.getValue()}</small>,
           meta: { label: 'Roles' },
+          filterFn: (row, _columnId, filter: MultiSelectFilterValue<RoleValue>) =>
+            applyMultiSelectFilter(filter, (values) =>
+              values.some((value) => row.original.group_roles?.includes(value) ?? false),
+            ),
           size: 150,
         }),
       );
@@ -272,7 +291,13 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
         columnHelper.accessor((row) => row.user?.name ?? null, {
           id: 'name',
           header: 'Name',
-          cell: (info) => info.getValue(),
+          cell: (info) => {
+            const name = info.getValue();
+            const enrollmentId = info.row.original.enrollment_id;
+            if (name == null) return null;
+            if (enrollmentId == null) return name;
+            return <a href={getStudentEnrollmentUrl(courseInstance.id, enrollmentId)}>{name}</a>;
+          },
           size: 200,
         }),
         columnHelper.accessor((row) => row.role, {
@@ -280,6 +305,10 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
           header: () => <HelpHeader label="Role" modalId="roles" onShowHelp={setHelpModal} />,
           cell: (info) => info.getValue(),
           meta: { label: 'Role' },
+          filterFn: (row, columnId, filter: MultiSelectFilterValue<RoleValue>) =>
+            applyMultiSelectFilter(filter, (values) =>
+              values.includes(row.getValue<RoleValue>(columnId)),
+            ),
           size: 120,
         }),
       );
@@ -310,9 +339,7 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
       columnHelper.accessor((row) => row.assessment_instance.duration, {
         id: 'duration',
         header: () => <HelpHeader label="Duration" modalId="duration" onShowHelp={setHelpModal} />,
-        cell: (info) => (
-          <span className="text-nowrap">{info.row.original.duration_formatted}</span>
-        ),
+        cell: (info) => <span className="text-nowrap">{info.row.original.duration_formatted}</span>,
         meta: { label: 'Duration' },
         size: 130,
       }),
@@ -371,23 +398,32 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
     return cols;
   }, [
     canEdit,
-    groupWork,
-    multipleInstance,
-    urlPrefix,
-    assessmentSetAbbr,
-    assessmentNumber,
+    assessment.team_work,
+    assessment.multiple_instance,
+    assessment.number,
+    assessmentSet.abbreviation,
+    courseInstance.id,
     createCheckboxProps,
   ]);
 
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
   const defaultColumnVisibility = useMemo(() => {
-    const hidden = new Set(['uid', 'number', 'total_time', 'group_name', 'user_name_list']);
-    if (groupWork) hidden.add('client_fingerprint_id_change_count');
+    // The role column is hidden by default since the "Students only" filter is
+    // active by default, making the column redundant.
+    const hidden = new Set([
+      'uid',
+      'number',
+      'total_time',
+      'group_name',
+      'user_name_list',
+      roleColumnId,
+    ]);
+    if (assessment.team_work) hidden.add('client_fingerprint_id_change_count');
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) visibility[id] = !hidden.has(id);
     return visibility;
-  }, [allColumnIds, groupWork]);
+  }, [allColumnIds, assessment.team_work, roleColumnId]);
 
   const columnVisibilityParser = useMemo(
     () =>
@@ -415,6 +451,7 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
     state: {
       sorting,
       globalFilter,
+      columnFilters,
       columnSizing,
       columnVisibility,
       columnPinning,
@@ -426,6 +463,7 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
@@ -450,47 +488,49 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
       <InstanceSelectionToolbar
         selectedRows={selectedRows}
         clearSelection={() => setRowSelection({})}
-        urlPrefix={urlPrefix}
-        timezone={timezone}
-        onActionSuccess={onActionSuccess}
+        courseInstanceId={courseInstance.id}
+        timezone={courseInstance.display_timezone}
+        onActionSuccess={setSuccessMessage}
       />
     ) : null;
 
-  const headerButtons: ReactNode = (
-    <>
-      {selectionToolbar}
-      <ButtonGroup>
-        <Button
-          size="sm"
-          variant={studentsOnly ? 'primary' : 'light'}
-          active={studentsOnly}
-          onClick={() => setStudentsOnly(!studentsOnly)}
-        >
-          <i className="bi bi-mortarboard me-2" aria-hidden="true" />
-          Students only
-        </Button>
-        <Button
-          size="sm"
-          variant="light"
-          aria-label="Refresh instances"
-          onClick={() => invalidateList()}
-        >
-          <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
-          Refresh
-        </Button>
-      </ButtonGroup>
-    </>
-  );
-
   return (
     <>
+      {successMessage && (
+        <Alert
+          variant="success"
+          className="mb-3"
+          dismissible
+          onClose={() => setSuccessMessage(null)}
+        >
+          {successMessage}
+        </Alert>
+      )}
       <TanstackTableCard
         table={table}
         title="Students"
         className="h-100"
         singularLabel="instance"
         pluralLabel="instances"
-        headerButtons={headerButtons}
+        headerButtons={selectionToolbar}
+        columnManager={{
+          buttons: (
+            <PresetFilterDropdown
+              table={table}
+              label="Filter"
+              options={{
+                'Students only': [{ id: roleColumnId, value: STUDENTS_ONLY_FILTER }],
+                All: [{ id: roleColumnId, value: ALL_ROLES_FILTER }],
+              }}
+              onSelect={(optionName) =>
+                void setColumnVisibility((prev) => ({
+                  ...prev,
+                  [roleColumnId]: optionName === 'All',
+                }))
+              }
+            />
+          ),
+        }}
         downloadButtonOptions={{
           filenameBase: 'assessment_instances',
           hasSelection: canEdit,
@@ -534,7 +574,9 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
           }),
         }}
         globalFilter={{
-          placeholder: groupWork ? 'Search by group, member, role...' : 'Search by UID, name...',
+          placeholder: assessment.team_work
+            ? 'Search by group, member, role...'
+            : 'Search by UID, name...',
         }}
         tableOptions={{
           emptyState: (
@@ -548,6 +590,7 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
             </TanstackTableEmptyState>
           ),
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
 
       <HelpModals show={helpModal} onHide={() => setHelpModal(null)} />
@@ -555,10 +598,10 @@ export function AssessmentInstancesTable<TQueryKey extends readonly unknown[]>({
       {timeLimitRow ? (
         <TimeLimitModal
           row={timeLimitRow}
-          timezone={timezone}
+          timezone={courseInstance.display_timezone}
           onHide={() => setTimeLimitRow(null)}
           onSuccess={() => {
-            onActionSuccess('Updated the time limit.');
+            setSuccessMessage('Updated the time limit.');
             setTimeLimitRow(null);
           }}
         />
