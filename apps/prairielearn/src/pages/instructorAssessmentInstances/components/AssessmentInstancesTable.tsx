@@ -42,6 +42,7 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { Scorebar } from '../../../components/Scorebar.js';
 import type {
   StaffAssessment,
@@ -119,6 +120,21 @@ function makeMinutesFilterFn(rawUnitsPerMinute: number): FilterFn<AssessmentInst
 
 const durationMinutesFilterFn = makeMinutesFilterFn(MS_PER_MINUTE);
 const secondsMinutesFilterFn = makeMinutesFilterFn(SECONDS_PER_MINUTE);
+
+const AUTO_SIZE_SAMPLE_COUNT = 10;
+
+// Returns the indices of the rows with the widest content (by the given measure),
+// so `useAutoSizeColumns` measures the cells most likely to need the most space.
+function autoSizeSampleByMeasure(
+  rows: AssessmentInstanceRow[],
+  measure: (row: AssessmentInstanceRow) => number,
+): number[] {
+  return rows
+    .map((row, index) => ({ measure: measure(row), index }))
+    .sort((a, b) => b.measure - a.measure)
+    .slice(0, AUTO_SIZE_SAMPLE_COUNT)
+    .map(({ index }) => index);
+}
 
 function listText(list: (string | null)[] | null): string {
   if (!list?.[0]) return '(empty)';
@@ -404,10 +420,23 @@ export function AssessmentInstancesTable({
       columnHelper.accessor((row) => row.assessment_instance.date, {
         id: 'date',
         header: 'Date started',
-        cell: (info) => <span className="text-nowrap">{info.row.original.date_formatted}</span>,
+        cell: (info) => {
+          const date = info.getValue();
+          if (!date) return null;
+          return (
+            <span className="text-nowrap">
+              <FriendlyDate date={date} timezone={courseInstance.display_timezone} tooltip />
+            </span>
+          );
+        },
         sortingFn: 'datetime',
-        meta: { label: 'Date started' },
-        size: 180,
+        meta: {
+          label: 'Date started',
+          autoSize: true,
+          autoSizeSample: (rows) => autoSizeSampleByMeasure(rows, (r) => r.date_formatted.length),
+        },
+        minSize: 120,
+        maxSize: 300,
       }),
       columnHelper.accessor((row) => row.assessment_instance.duration, {
         id: 'duration',
@@ -430,7 +459,7 @@ export function AssessmentInstancesTable({
               {canEdit ? (
                 <button
                   type="button"
-                  className="btn btn-secondary btn-xs ms-1"
+                  className="btn btn-xs btn-ghost text-muted ms-1"
                   aria-label="Change time limit"
                   onClick={() => setTimeLimitRow(row)}
                 >
@@ -448,9 +477,14 @@ export function AssessmentInstancesTable({
             (a.time_remaining_sec ?? 0) - (b.time_remaining_sec ?? 0)
           );
         },
-        meta: { label: 'Remaining' },
+        meta: {
+          label: 'Remaining',
+          autoSize: true,
+          autoSizeSample: (rows) => autoSizeSampleByMeasure(rows, (r) => r.time_remaining.length),
+        },
         filterFn: secondsMinutesFilterFn,
-        size: 130,
+        minSize: 120,
+        maxSize: 300,
       }),
       columnHelper.accessor((row) => row.total_time_sec, {
         id: 'total_time',
@@ -480,6 +514,7 @@ export function AssessmentInstancesTable({
     assessment.number,
     assessmentSet.abbreviation,
     courseInstance.id,
+    courseInstance.display_timezone,
     createCheckboxProps,
   ]);
 

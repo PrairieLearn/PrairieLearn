@@ -71,7 +71,10 @@ export function NumericInputColumnFilter<TData, TValue>({
       <Dropdown.Menu className="p-0">
         <div className="p-3" style={{ minWidth: '240px' }}>
           <div className="d-flex align-items-center justify-content-between mb-2">
-            <label className="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
+            <label
+              className="form-label fw-semibold mb-0 text-nowrap"
+              id={`${columnId}-filter-label`}
+            >
               {label}
               {unit ? <span className="fw-normal text-muted"> (in {unit})</span> : null}
             </label>
