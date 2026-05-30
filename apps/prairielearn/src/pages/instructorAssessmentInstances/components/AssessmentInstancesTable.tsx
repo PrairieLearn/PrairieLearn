@@ -4,6 +4,7 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type FilterFn,
+  type Header,
   type RowSelectionState,
   type SortingState,
   type Table,
@@ -14,23 +15,29 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
+  MultiSelectColumnFilter,
   type MultiSelectFilterValue,
+  type NumericColumnFilterValue,
+  NumericInputColumnFilter,
   PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
   TanstackTableEmptyState,
   applyMultiSelectFilter,
   extractLeafColumnIds,
+  numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsMultiSelectFilter,
+  parseAsNumericFilter,
   parseAsSortingState,
+  parseNumericFilter,
   useColumnFilters,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
@@ -59,6 +66,59 @@ const STUDENTS_ONLY_FILTER: MultiSelectFilterValue<RoleValue> = {
   mode: 'include',
 };
 const ALL_ROLES_FILTER: MultiSelectFilterValue<RoleValue> = { values: [], mode: 'include' };
+
+const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
+
+// Numeric columns that support comparison-operator filtering (e.g. `>0`, `<=5`).
+const NUMERIC_COLUMN_IDS = [
+  'number',
+  'score_perc',
+  'duration',
+  'time_remaining',
+  'total_time',
+  'client_fingerprint_id_change_count',
+] as const;
+
+// Time columns whose filter values are entered in minutes. Their raw cell values
+// are in other units (duration in milliseconds, the rest in seconds), so the
+// filter functions convert before comparing.
+const MINUTES_COLUMN_IDS = new Set<string>(['duration', 'time_remaining', 'total_time']);
+
+const MS_PER_MINUTE = 60_000;
+const SECONDS_PER_MINUTE = 60;
+
+/**
+ * Builds a numeric filter function that compares the cell value in minutes,
+ * dividing the raw value by `rawUnitsPerMinute` (e.g. 60000 for milliseconds,
+ * 60 for seconds) before applying the operator.
+ */
+function makeMinutesFilterFn(rawUnitsPerMinute: number): FilterFn<AssessmentInstanceRow> {
+  return (row, columnId, value: NumericColumnFilterValue) => {
+    const raw = row.getValue<number | null>(columnId);
+    if (value.emptyOnly) return raw == null;
+    const parsed = parseNumericFilter(value.filterValue);
+    if (!parsed) return true;
+    if (raw == null) return false;
+    const minutes = raw / rawUnitsPerMinute;
+    switch (parsed.operator) {
+      case '<':
+        return minutes < parsed.value;
+      case '>':
+        return minutes > parsed.value;
+      case '<=':
+        return minutes <= parsed.value;
+      case '>=':
+        return minutes >= parsed.value;
+      case '=':
+        return minutes === parsed.value;
+      default:
+        return true;
+    }
+  };
+}
+
+const durationMinutesFilterFn = makeMinutesFilterFn(MS_PER_MINUTE);
+const secondsMinutesFilterFn = makeMinutesFilterFn(SECONDS_PER_MINUTE);
 
 function listText(list: (string | null)[] | null): string {
   if (!list?.[0]) return '(empty)';
@@ -149,13 +209,23 @@ export function AssessmentInstancesTable({
   // The role column to filter on differs between individual and group assessments.
   const roleColumnId = assessment.team_work ? 'group_roles' : 'role';
   const filterRegistry = useMemo(() => {
-    const registry: Record<string, ColumnFilterEntry<MultiSelectFilterValue<RoleValue>>> = {
+    const registry: Record<
+      string,
+      | ColumnFilterEntry<MultiSelectFilterValue<RoleValue>>
+      | ColumnFilterEntry<NumericColumnFilterValue>
+    > = {
       [roleColumnId]: {
         urlKey: 'role',
         parser: parseAsMultiSelectFilter(ROLE_VALUES),
         defaultValue: STUDENTS_ONLY_FILTER,
       },
     };
+    for (const id of NUMERIC_COLUMN_IDS) {
+      registry[id] = {
+        parser: parseAsNumericFilter,
+        defaultValue: EMPTY_NUMERIC_FILTER,
+      };
+    }
     return registry;
   }, [roleColumnId]);
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
@@ -320,12 +390,15 @@ export function AssessmentInstancesTable({
         header: 'Instance #',
         cell: (info) => info.getValue(),
         meta: { label: 'Instance #' },
+        filterFn: numericColumnFilterFn,
         size: 100,
       }),
       columnHelper.accessor((row) => row.assessment_instance.score_perc, {
         id: 'score_perc',
         header: 'Score',
         cell: (info) => <Scorebar score={info.getValue()} />,
+        meta: { label: 'Score' },
+        filterFn: numericColumnFilterFn,
         size: 150,
       }),
       columnHelper.accessor((row) => row.assessment_instance.date, {
@@ -341,6 +414,7 @@ export function AssessmentInstancesTable({
         header: () => <HelpHeader label="Duration" modalId="duration" onShowHelp={setHelpModal} />,
         cell: (info) => <span className="text-nowrap">{info.row.original.duration_formatted}</span>,
         meta: { label: 'Duration' },
+        filterFn: durationMinutesFilterFn,
         size: 130,
       }),
       columnHelper.accessor((row) => row.time_remaining_sec, {
@@ -375,6 +449,7 @@ export function AssessmentInstancesTable({
           );
         },
         meta: { label: 'Remaining' },
+        filterFn: secondsMinutesFilterFn,
         size: 130,
       }),
       columnHelper.accessor((row) => row.total_time_sec, {
@@ -382,6 +457,7 @@ export function AssessmentInstancesTable({
         header: 'Total time limit',
         cell: (info) => <span className="text-nowrap">{info.row.original.total_time}</span>,
         meta: { label: 'Total time limit' },
+        filterFn: secondsMinutesFilterFn,
         size: 150,
       }),
       columnHelper.accessor((row) => row.assessment_instance.client_fingerprint_id_change_count, {
@@ -391,6 +467,7 @@ export function AssessmentInstancesTable({
         ),
         cell: (info) => info.getValue(),
         meta: { label: 'Fingerprint changes' },
+        filterFn: numericColumnFilterFn,
         size: 150,
       }),
     );
@@ -440,6 +517,22 @@ export function AssessmentInstancesTable({
     'frozen',
     parseAsColumnPinningState.withDefault(defaultPinning),
   );
+
+  const filters = useMemo(() => {
+    const map: Record<
+      string,
+      (props: { header: Header<AssessmentInstanceRow, unknown> }) => ReactNode
+    > = {
+      [roleColumnId]: ({ header }) => (
+        <MultiSelectColumnFilter column={header.column} allColumnValues={ROLE_VALUES} />
+      ),
+    };
+    for (const id of NUMERIC_COLUMN_IDS) {
+      const unit = MINUTES_COLUMN_IDS.has(id) ? 'minutes' : undefined;
+      map[id] = ({ header }) => <NumericInputColumnFilter column={header.column} unit={unit} />;
+    }
+    return map;
+  }, [roleColumnId]);
 
   const table = useReactTable({
     data,
@@ -579,6 +672,7 @@ export function AssessmentInstancesTable({
             : 'Search by UID, name...',
         }}
         tableOptions={{
+          filters,
           emptyState: (
             <TanstackTableEmptyState iconName="bi-person">
               No assessment instances yet.
