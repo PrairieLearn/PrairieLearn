@@ -74,6 +74,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { seedDevData } from './lib/seed-dev-data/index.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
@@ -2582,6 +2583,11 @@ if (shouldStartServer) {
 
     if (config.devMode) {
       await insertDevUser();
+      try {
+        await seedDevData();
+      } catch (err) {
+        logger.error('Failed to seed dev data', err);
+      }
     }
 
     logger.verbose('Starting server...');
