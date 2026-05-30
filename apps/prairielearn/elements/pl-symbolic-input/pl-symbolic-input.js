@@ -642,19 +642,6 @@
   }
 
   /**
-   * @param {HTMLInputElement} el
-   * @param {HTMLInputElement} jsonEl
-   * @param {HTMLElement | null} [errorEl]
-   */
-  // @ts-expect-error - Window assignment
-  window.syncMathJSON = function (el, jsonEl, errorEl) {
-    const ls = createSyntax(el);
-    const mathJSON = parseLatex(ls, el.value);
-    jsonEl.value = JSON.stringify(mathJSON);
-    syncClientParseError(el, errorEl, mathJSON);
-  };
-
-  /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
    * @param {string} name Name of the element to look up the tag

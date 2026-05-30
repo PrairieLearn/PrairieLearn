@@ -4,14 +4,14 @@
         {{#label}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
-        {{! shared hidden input for formula editor to submit MathJSON of the answer }}
+        {{#formula_editor}}
+        {{! hidden input for formula editor to submit MathJSON of the answer }}
         <input
             name="{{name}}-json"
             id="symbolic-input-json-{{name}}"
             type="hidden"
             value=""
         />
-        {{#formula_editor}}
         <script>
             $(function() {
                 window.PLSymbolicInput("{{name}}");
@@ -46,15 +46,6 @@
         </math-field>
         {{/formula_editor}}
         {{^formula_editor}}
-        <script>
-            $(function() {
-                const el = document.getElementById("raw-input-{{name}}");
-                const jsonEl = document.getElementById("symbolic-input-json-{{name}}");
-                const errorEl = document.getElementById("pl-symbolic-input-client-error-{{name}}");
-                window.syncMathJSON(el, jsonEl, errorEl);
-                el.addEventListener('input', () => void window.syncMathJSON(el, jsonEl, errorEl));
-            });
-        </script>
         <input
             id="raw-input-{{name}}"
             name="{{name}}"
@@ -99,11 +90,13 @@
             </span>
         {{/incorrect}}
     </span>
+    {{#formula_editor}}
     <span
         id="pl-symbolic-input-client-error-{{name}}"
         class="invalid-feedback d-none"
         aria-live="polite"
     ></span>
+    {{/formula_editor}}
     {{#parse_error}}
         <span class="invalid-feedback d-block">
             <span class="badge text-bg-danger">

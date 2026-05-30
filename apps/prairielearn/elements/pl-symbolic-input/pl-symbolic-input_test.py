@@ -269,7 +269,7 @@ def test_formula_editor_test_submission_includes_mathjson() -> None:
 
 
 def test_mathjson_submission_reapplies_variable_checks() -> None:
-    element_html = build_element_html('variables="x"')
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
     data = make_question_data(submitted_answers={"test": "y", "test-json": '"y"'})
 
     symbolic_input.parse(element_html, data)
@@ -279,7 +279,7 @@ def test_mathjson_submission_reapplies_variable_checks() -> None:
 
 
 def test_mathjson_submission_reapplies_custom_function_checks() -> None:
-    element_html = build_element_html('variables="x"')
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
     data = make_question_data(
         submitted_answers={"test": "f(x)", "test-json": '["Apply", "f", "x"]'}
     )
@@ -294,7 +294,7 @@ def test_mathjson_submission_reapplies_custom_function_checks() -> None:
 def test_blank_mathjson_submission_falls_back_to_string_parser(
     raw_mathjson: str,
 ) -> None:
-    element_html = build_element_html('variables="x"')
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
     data = make_question_data(
         submitted_answers={"test": "x + 1", "test-json": raw_mathjson}
     )
@@ -305,8 +305,18 @@ def test_blank_mathjson_submission_falls_back_to_string_parser(
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x") + 1
 
 
+def test_raw_input_ignores_mathjson_submission() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(submitted_answers={"test": "x", "test-json": '"y"'})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x")
+
+
 def test_mathjson_student_errors_are_shown_directly() -> None:
-    element_html = build_element_html('allow-sets="true"')
+    element_html = build_element_html('formula-editor="true"', 'allow-sets="true"')
     data = make_question_data(
         submitted_answers={"test": "{1} + 2", "test-json": '["Add", ["Set", 1], 2]'}
     )
@@ -320,7 +330,7 @@ def test_mathjson_student_errors_are_shown_directly() -> None:
 
 
 def test_unexpected_mathjson_composition_errors_use_generic_message() -> None:
-    element_html = build_element_html('variables="x"')
+    element_html = build_element_html('formula-editor="true"', 'variables="x"')
     data = make_question_data(
         submitted_answers={"test": "x", "test-json": '["Rational", "x"]'}
     )
@@ -335,7 +345,9 @@ def test_unexpected_mathjson_composition_errors_use_generic_message() -> None:
 
 
 def test_mathjson_submission_respects_blank_value() -> None:
-    element_html = build_element_html('allow-blank="true"', 'blank-value="0"')
+    element_html = build_element_html(
+        'formula-editor="true"', 'allow-blank="true"', 'blank-value="0"'
+    )
     data = make_question_data(submitted_answers={"test": "", "test-json": '"x"'})
 
     symbolic_input.parse(element_html, data)
