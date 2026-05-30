@@ -13,7 +13,7 @@ level** (`manualPoints` on the assessment question → `max_manual_points`).
 
 - "Auto-graded points" = `assessment_questions.max_auto_points`.
 - "Manually graded points" = `assessment_questions.max_manual_points`.
-- A question is *manually gradable* when `max_manual_points > 0`, regardless of
+- A question is _manually gradable_ when `max_manual_points > 0`, regardless of
   `grading_method`.
 
 Example: `testCourse` `hw10-aiGrading` → question `aiGradingRubrics` is a

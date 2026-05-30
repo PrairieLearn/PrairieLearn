@@ -51,15 +51,15 @@ functions, and brings back **only** the Python element `test()` fallbacks
 
 ## Decisions (from brainstorming)
 
-| Question | Decision |
-| --- | --- |
-| Primary goal | Manual-grading + assessment-instance-grading pages; extensible for more later |
-| Trigger | Always in `devMode`, idempotent (no opt-in flag) |
-| Target | One known manual-grading assessment: `Sp15` / `hw10-aiGrading` |
-| Architecture | New seed lib composing existing model functions; resurrect Python `test()` fallbacks |
-| Element set | **Both PRs' full set** (8 input elements + 3 file/text elements) |
-| Data shape | ~30 students, **open** instances, rubric attached, ~50% rubric-graded / ~50% pending |
-| Course sync | Seed syncs the test course from disk first (self-contained on a fresh DB) |
+| Question         | Decision                                                                                                                                                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Primary goal     | Manual-grading + assessment-instance-grading pages; extensible for more later                                                                                                                                                                                                                                |
+| Trigger          | Always in `devMode`, idempotent (no opt-in flag)                                                                                                                                                                                                                                                             |
+| Target           | One known manual-grading assessment: `Sp15` / `hw10-aiGrading`                                                                                                                                                                                                                                               |
+| Architecture     | New seed lib composing existing model functions; resurrect Python `test()` fallbacks                                                                                                                                                                                                                         |
+| Element set      | **Both PRs' full set** (8 input elements + 3 file/text elements)                                                                                                                                                                                                                                             |
+| Data shape       | ~30 students, **open** instances, rubric attached, ~50% rubric-graded / ~50% pending                                                                                                                                                                                                                         |
+| Course sync      | Seed syncs the test course from disk first (self-contained on a fresh DB)                                                                                                                                                                                                                                    |
 | Close instances? | **No.** `autoFinishExams` only touches Exams, and closing does not affect the manual-grading queue, so closing a Homework instance buys nothing. Leave instances open (realistic for Homework). Avoids restoring `closeAssessmentInstance` / `unsetGradingNeeded` and refactoring `gradeAssessmentInstance`. |
 
 ## Target assessment
@@ -207,8 +207,15 @@ is expected in the seed module beyond what these encapsulate.
 `createTestSubmissionData` invokes each element's `test()` to synthesize a
 submission. For manually-graded questions with **no `correct-answer`**, the
 current `test()` functions bail out with `return`, producing no submission.
-Restore the manual-grading fallbacks from the two closed PRs for the **full set
-of 11 elements**:
+
+**Implementation finding (already-merged work).** PR #14473 ("Improve element
+test coverage", merged) already landed the `compareTestResults` `Manual` guard
+_and_ working `test()` implementations for the three file/text elements
+(`pl-file-upload` incl. `generate_filename_from_pattern` + its
+`pl_file_upload_test.py`, `pl-file-editor`, `pl-rich-text-editor`) — with better
+versions than the closed #14694. So the only element work this feature needs is
+restoring the no-correct-answer fallback for the **8 input elements** below.
+`pl-string-input` and the other 7 still had the old `return` and were updated.
 
 **Input elements (from #14636):** when `answers-name` has no entry in
 `data["correct_answers"]`, synthesize a gradable dummy answer instead of
@@ -224,26 +231,13 @@ type-appropriate sentinel for `correct` vs `incorrect`):
 - `pl-units-input` — restore the #14636 fallback
 - `pl-drawing` — submit a single point at canvas center so `parse()` sees a non-empty list
 
-**File/text elements (from #14694):** add a `test()` that emits valid
-base64-encoded file content for `correct`/`incorrect` and a format error (or
-valid content when blank is allowed) for `invalid`:
+**File/text elements:** already present from #14473 (no change needed).
 
-- `pl-file-upload` (plus its `generate_filename_from_pattern` helper and the
-  `pl_file_upload_test.py` coverage from #14694)
-- `pl-file-editor`
-- `pl-rich-text-editor`
+### `question-testing.ts` adjustment — ALREADY MERGED (#14473)
 
-Each change is the exact diff from the corresponding closed PR; restore them
-verbatim and re-run each element's existing Python tests.
-
-### `question-testing.ts` adjustment (from #14694)
-
-`compareTestResults` must skip the `partial_scores` / `score` comparison when
-`question.grading_method === 'Manual'` (auto-grading is skipped for manual
-questions, so those fields are null and there is nothing to compare). Thread
-`question` into `compareTestResults` as #14694 did. This keeps the existing
-"test question" admin action passing for manual questions whose `test()` now
-produces a submission.
+The `compareTestResults` `Manual` guard (skip `partial_scores` / `score`
+comparison when `question.grading_method === 'Manual'`, with `question` threaded
+in) is already in the repo (question-testing.ts:221-227). No change needed.
 
 **Blast radius & guard scope (decision 3).** The `test()` fallbacks change the
 "Test question" behavior repo-wide for any question with no fixed correct
@@ -278,32 +272,43 @@ speculative broadening:
 
 ## Testing
 
-- **Vitest integration test** (`index.test.ts`): with the test course synced,
-  call `seedDevData()` then assert: `SEED_STUDENT_COUNT` closed instances exist
-  on the target assessment, the manual question has a rubric with the expected
-  item count, and roughly `SEED_GRADED_FRACTION` of instance questions are
-  graded (assert a count > 0 and < total rather than an exact split, since
-  grading is random). Call `seedDevData()` a second time and assert the counts
-  are unchanged (idempotent no-op).
-- **Python element tests:** restore/extend each element's existing
-  `*_test.py` for the manual-only fallback, including the
-  `pl_file_upload_test.py` cases for `generate_filename_from_pattern` from
-  #14694.
+- **Vitest integration test** (`index.test.ts`): with the test course synced
+  (via `helperServer.before()`), call `seedDevData()` then assert: it returns
+  `{ skipped: false, studentsSeeded: SEED_STUDENT_COUNT }`, `0 < graded <
+SEED_STUDENT_COUNT` (random split, strict interior bound is safe at n=30), the
+  assessment now has instances, and the manual question has a rubric with > 0
+  items. Call `seedDevData()` a second time and assert `{ skipped: true,
+studentsSeeded: 0 }` (idempotent no-op). **Status: passing.**
+- **Acceptance gate — `exampleCourseQuestionsComplete.test.ts`:** 177/177
+  passing after the fallbacks; no regression in the repo-wide "Test question"
+  pipeline. **Status: passing.**
+- **Element Python tests:** 459 passing across the changed elements. **Status:
+  passing.**
 
 ## Files touched
 
 **New**
+
 - `apps/prairielearn/src/lib/seed-dev-data/index.ts`
 - `apps/prairielearn/src/lib/seed-dev-data/index.test.ts`
 - `apps/prairielearn/src/lib/seed-dev-data/constants.ts`
 - `apps/prairielearn/src/lib/seed-dev-data/rubric.ts`
+- `apps/prairielearn/src/lib/seed-dev-data/index.sql` — `select_instance_question`
+  block (no model function exists for instance-question-by-instance+question)
 
 **Modified**
+
 - `apps/prairielearn/src/server.ts` — call `seedDevData()` in the devMode block
-- `apps/prairielearn/src/lib/question-testing.ts` — `compareTestResults` manual skip
-- 11 element controllers under `apps/prairielearn/elements/` (+ their `*_test.py`)
-- Documentation for any element whose documented options change (none expected —
-  these are `test()`-only changes), per the repo rule on element docs.
+- 8 input element controllers under `apps/prairielearn/elements/`
+  (`pl-string-input`, `pl-integer-input`, `pl-number-input`, `pl-symbolic-input`,
+  `pl-big-o-input`, `pl-matrix-component-input`, `pl-units-input`, `pl-drawing`)
+  — restore the no-correct-answer `test()` fallback. `test()`-only changes, no
+  documented options change, so no element docs update.
+
+**Already merged (no change needed), via #14473**
+
+- `apps/prairielearn/src/lib/question-testing.ts` — `compareTestResults` Manual guard
+- `pl-file-upload`, `pl-file-editor`, `pl-rich-text-editor` `test()` functions
 
 ## Open considerations / risks
 
