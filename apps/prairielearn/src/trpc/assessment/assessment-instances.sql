@@ -22,13 +22,11 @@ WITH
       g.id
   )
 SELECT
+  to_jsonb(ai.*) AS assessment_instance,
+  to_jsonb(u.*) AS "user",
+  to_jsonb(g.*) AS "group",
   (aset.name || ' ' || a.number) AS assessment_label,
-  u.id AS user_id,
-  u.uid,
-  u.name,
   users_get_displayed_role (u.id, ci.id) AS role,
-  g.id AS group_id,
-  g.name AS group_name,
   gul.uid_list,
   gul.user_name_list,
   gul.user_roles_list AS group_roles,
@@ -37,12 +35,6 @@ SELECT
     FROM
       '^[^@]+'
   ) AS username,
-  ai.score_perc,
-  ai.points,
-  ai.max_points,
-  ai.number,
-  ai.id AS assessment_instance_id,
-  ai.open,
   CASE
     WHEN ai.open
     AND ai.date_limit IS NOT NULL
@@ -91,19 +83,16 @@ SELECT
     AND ai.date_limit IS NOT NULL THEN greatest(0, DATE_PART('epoch', (ai.date_limit - ai.date)))
     ELSE NULL
   END AS total_time_sec,
-  ai.date,
-  ai.duration,
   (
     row_number() OVER (
       PARTITION BY
         u.id
       ORDER BY
-        score_perc DESC,
+        ai.score_perc DESC,
         ai.number DESC,
         ai.id DESC
     )
-  ) = 1 AS highest_score,
-  ai.client_fingerprint_id_change_count
+  ) = 1 AS highest_score
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -127,102 +116,3 @@ ORDER BY
   u.id,
   ai.number,
   ai.id;
-
--- BLOCK set_time_limit
-WITH
-  results AS (
-    UPDATE assessment_instances AS ai
-    SET
-      open = TRUE,
-      auto_close = FALSE,
-      date_limit = CASE
-        WHEN $base_time = 'null' THEN NULL
-        WHEN $base_time = 'exact_date' THEN $exact_date
-        ELSE GREATEST(
-          current_timestamp,
-          (
-            CASE
-              WHEN $base_time = 'start_date' THEN ai.date
-              WHEN $base_time = 'current_date' THEN current_timestamp
-              ELSE ai.date_limit
-            END
-          ) + make_interval(mins => $time_add)
-        )
-      END,
-      modified_at = now()
-    WHERE
-      ai.id = $assessment_instance_id
-      AND ai.assessment_id = $assessment_id
-    RETURNING
-      ai.open,
-      ai.id AS assessment_instance_id,
-      ai.date_limit
-  )
-INSERT INTO
-  assessment_state_logs AS asl (
-    open,
-    assessment_instance_id,
-    date_limit,
-    auth_user_id
-  ) (
-    SELECT
-      TRUE,
-      results.assessment_instance_id,
-      results.date_limit,
-      $authn_user_id
-    FROM
-      results
-  );
-
--- BLOCK set_time_limit_all
-WITH
-  results AS (
-    UPDATE assessment_instances AS ai
-    SET
-      open = TRUE,
-      auto_close = FALSE,
-      date_limit = CASE
-        WHEN $base_time = 'null' THEN NULL
-        WHEN $base_time = 'exact_date' THEN $exact_date
-        ELSE GREATEST(
-          current_timestamp,
-          (
-            CASE
-              WHEN $base_time = 'start_date' THEN ai.date
-              WHEN $base_time = 'current_date' THEN current_timestamp
-              ELSE ai.date_limit
-            END
-          ) + make_interval(mins => $time_add)
-        )
-      END,
-      modified_at = now()
-    WHERE
-      (
-        ai.open
-        OR $reopen_closed
-      )
-      AND ai.assessment_id = $assessment_id
-      AND (
-        ai.date_limit IS NOT NULL
-        OR $base_time != 'date_limit'
-      )
-    RETURNING
-      ai.open,
-      ai.id AS assessment_instance_id,
-      ai.date_limit
-  )
-INSERT INTO
-  assessment_state_logs AS asl (
-    open,
-    assessment_instance_id,
-    date_limit,
-    auth_user_id
-  ) (
-    SELECT
-      TRUE,
-      results.assessment_instance_id,
-      results.date_limit,
-      $authn_user_id
-    FROM
-      results
-  );

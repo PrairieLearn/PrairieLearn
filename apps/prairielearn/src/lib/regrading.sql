@@ -35,6 +35,10 @@ FROM
 WHERE
   a.id = $assessment_id
   AND g.deleted_at IS NULL
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR ai.id = ANY ($assessment_instance_ids::bigint[])
+  )
 ORDER BY
   u.uid,
   u.id,

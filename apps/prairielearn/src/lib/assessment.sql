@@ -401,7 +401,11 @@ FROM
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
-  AND ai.open;
+  AND ai.open
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR ai.id = ANY ($assessment_instance_ids::bigint[])
+  );
 
 -- BLOCK close_assessment_instance
 WITH
@@ -1850,6 +1854,10 @@ WITH
     DELETE FROM assessment_instances AS ai
     WHERE
       ai.assessment_id = $assessment_id
+      AND (
+        $assessment_instance_ids::bigint[] IS NULL
+        OR ai.id = ANY ($assessment_instance_ids::bigint[])
+      )
     RETURNING
       ai.*
   )

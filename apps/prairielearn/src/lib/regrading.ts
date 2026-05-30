@@ -109,6 +109,7 @@ export async function regradeAllAssessmentInstances(
   assessment_id: string,
   user_id: string,
   authn_user_id: string,
+  assessment_instance_ids: string[] | null = null,
 ): Promise<string> {
   const { assessment_label, course_instance_id, course_id } =
     await selectAssessmentInfoForJob(assessment_id);
@@ -128,7 +129,7 @@ export async function regradeAllAssessmentInstances(
 
     const assessment_instances = await queryRows(
       sql.select_regrade_assessment_instances,
-      { assessment_id },
+      { assessment_id, assessment_instance_ids },
       RegradeAssessmentInstancesSchema,
     );
 
