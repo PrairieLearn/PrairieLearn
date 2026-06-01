@@ -31,6 +31,7 @@ const BasePageContextSchema = z.object({
   access_as_administrator: z.boolean(),
   is_administrator: z.boolean(),
   is_institution_administrator: z.boolean(),
+  lockdown_browser: z.boolean(),
   navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,

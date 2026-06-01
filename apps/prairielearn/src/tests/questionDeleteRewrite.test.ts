@@ -141,23 +141,6 @@ describe('QuestionDeleteEditor rewrites infoAssessment.json', { timeout: 20_000 
 
   afterAll(helperServer.after);
 
-  it('blocks bulk deletion when it would invalidate referencing assessments', async () => {
-    const targetQuestion = await selectQuestionByQid({ qid: TARGET_QID, course_id: COURSE_ID });
-    const otherQuestion = await selectQuestionByQid({ qid: OTHER_QID, course_id: COURSE_ID });
-
-    const result = await getCourseFilesClient().batchDeleteQuestions.mutate({
-      course_id: COURSE_ID,
-      user_id: '1',
-      authn_user_id: '1',
-      has_course_permission_edit: true,
-      question_ids: [targetQuestion.id, otherQuestion.id],
-    });
-
-    assert.equal(result.status, 'error');
-    assert.isTrue(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', TARGET_QID)));
-    assert.isTrue(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', OTHER_QID)));
-  });
-
   it('removes the deleted qid from every referencing assessment', async () => {
     const targetQuestion = await selectQuestionByQid({ qid: TARGET_QID, course_id: COURSE_ID });
 
@@ -207,5 +190,38 @@ describe('QuestionDeleteEditor rewrites infoAssessment.json', { timeout: 20_000 
       await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', TARGET_QID)),
     );
     assert.isTrue(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', OTHER_QID)));
+  });
+
+  it('bulk deletion that empties referencing assessments succeeds and repairs them', async () => {
+    // After the previous test, `other` is the only remaining reference in each
+    // assessment, so deleting it empties every zone. Same-course deletions are
+    // no longer blocked: the emptied zones are dropped and the deletion proceeds.
+    const otherQuestion = await selectQuestionByQid({ qid: OTHER_QID, course_id: COURSE_ID });
+
+    const result = await getCourseFilesClient().batchDeleteQuestions.mutate({
+      course_id: COURSE_ID,
+      user_id: '1',
+      authn_user_id: '1',
+      has_course_permission_edit: true,
+      question_ids: [otherQuestion.id],
+    });
+
+    assert.equal(result.status, 'success');
+
+    await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
+
+    const assessmentsDir = path.join(
+      courseRepo.courseDevDir,
+      'courseInstances',
+      COURSE_INSTANCE_SHORT_NAME,
+      'assessments',
+    );
+
+    for (const aid of [DIRECT_AID, MIXED_ALT_AID, ONLY_ALT_AID]) {
+      const json = await fs.readJson(path.join(assessmentsDir, aid, 'infoAssessment.json'));
+      assert.deepEqual(json.zones, []);
+    }
+
+    assert.isFalse(await fs.pathExists(path.join(courseRepo.courseDevDir, 'questions', OTHER_QID)));
   });
 });

@@ -142,10 +142,6 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
     enrollment,
-    // Our current authzData would say we can't access this, but we are actually building up
-    // authzData with this function, so we use system auth to get the latest extension.
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
   });
 
   // Check if we have access via extension.
