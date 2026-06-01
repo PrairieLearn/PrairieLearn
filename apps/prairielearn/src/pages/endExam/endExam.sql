@@ -1,17 +1,4 @@
 -- BLOCK select_active_lockdown_browser_reservation
--- Find the user's currently-active LDB-required reservation. Used by the
--- End exam handler to look up the reservation_id at click time, so the
--- session no longer has to persist a PT-supplied id across PL's
--- session-regeneration on identity transition.
---
--- "Active" here is the strict in-window definition (access_start <= now
--- <= access_end), which matches what the LDB session is bound to. PT
--- enforces at most one such reservation per user, so a `LIMIT 1` is
--- safe; the helper returns null when none is found.
---
--- The join shape mirrors `exam-mode.sql`: a course-run session carries
--- the LDB flag on `pt_sessions`, a center-managed session carries it on
--- `pt_locations`; COALESCE collapses both cases.
 SELECT
   r.id
 FROM

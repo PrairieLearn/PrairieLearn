@@ -7,7 +7,7 @@ import { config } from '../../lib/config.js';
 /**
  * Short-lived JWT used to authenticate the LockDown Browser "End exam"
  * control rendered in PrairieLearn back to PrairieTest's
- * `/pt/auth/prairielearn/end-exam` callback. Signed with the same
+ * `/pt/lockdown-browser/end-exam` callback. Signed with the same
  * `prairieTestSharedAuthSecret` PT uses for the reverse direction.
  *
  * Five minutes is plenty for a click-and-submit; tokens are minted fresh

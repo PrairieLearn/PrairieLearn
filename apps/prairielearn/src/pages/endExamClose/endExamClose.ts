@@ -3,9 +3,11 @@ import asyncHandler from 'express-async-handler';
 
 import { html } from '@prairielearn/html';
 
+import { getEndExamExitUrl } from '../../lib/client/url.js';
+
 const router = Router();
 
-const CLOSE_URL = '/pl/end-exam-close?rldbxb=1&rldbqn=1';
+const CLOSE_URL = getEndExamExitUrl();
 
 /**
  * PL-hosted two-hop LDB exit handshake. `/pl/end-exam` redirects here

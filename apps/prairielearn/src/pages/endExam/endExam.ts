@@ -7,6 +7,7 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { generateEndExamJwt } from '../../ee/auth/endExamJwt.js';
+import { getEndExamCloseUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 
 const router = Router();
@@ -14,6 +15,13 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const PT_END_EXAM_TIMEOUT_MS = 10_000;
 
+/**
+ * Finds the user's currently-active LDB-required reservation, looked up at
+ * End exam click time so the session needn't persist a PT-supplied id across
+ * PL's session regeneration. The LDB flag sits on `pt_sessions` for a
+ * course-run session and on `pt_locations` for a center session (COALESCE
+ * collapses both); returns null when none is active.
+ */
 export async function selectActiveLockdownBrowserReservation({
   authn_user_id,
   date,
@@ -45,26 +53,34 @@ router.post(
       authn_user_id: user_id,
       date: new Date(),
     });
+
+    // Nothing active to protect, so it's safe to exit LDB. Also the exit path
+    // after a proctor ends the reservation from PT: the next click finds
+    // nothing and closes LDB.
     if (!reservation) {
-      throw new HttpStatusError(400, 'No active LockDown Browser reservation found for this user.');
+      res.redirect(303, getEndExamCloseUrl());
+      return;
     }
 
     const jwt = await generateEndExamJwt({ user_id, reservation_id: reservation.id });
 
-    // Drive the LDB close regardless of PT's response. Leaving the student
-    // stuck inside LDB on a transient PT error is worse than the
-    // reservation not being ended — they can retry from a regular browser
-    // once they're out. We log so operators can chase the failure.
+    // Only exit LDB once PT confirms the reservation ended — releasing the
+    // student while it's still active would let them browse and return. On
+    // failure, keep them in LDB with a retryable error (a proctor can end it
+    // from PT).
+    let ended = false;
     try {
       const ptResponse = await fetch(
-        new URL('/pt/auth/prairielearn/end-exam', config.ptHost).toString(),
+        new URL('/pt/lockdown-browser/end-exam', config.ptHost).toString(),
         {
           method: 'POST',
           body: new URLSearchParams({ jwt }),
           signal: AbortSignal.timeout(PT_END_EXAM_TIMEOUT_MS),
         },
       );
-      if (!ptResponse.ok) {
+      if (ptResponse.ok) {
+        ended = true;
+      } else {
         logger.error('PrairieTest end-exam call returned non-ok', {
           status: ptResponse.status,
           statusText: ptResponse.statusText,
@@ -80,7 +96,14 @@ router.post(
       });
     }
 
-    res.redirect(303, '/pl/end-exam-close?rldbsm=1&rldbqn=1');
+    if (!ended) {
+      throw new HttpStatusError(
+        502,
+        'Unable to end the exam. Please try again, or ask your proctor to end it for you.',
+      );
+    }
+
+    res.redirect(303, getEndExamCloseUrl());
   }),
 );
 

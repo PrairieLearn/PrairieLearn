@@ -1,12 +1,6 @@
-/**
- * NOTE: These tests depend on the `lockdown_browser_enabled` columns on
- * `pt_locations` / `pt_sessions`, which are added by PR #15087's
- * migrations. Once #15087 lands and this branch picks up those
- * migrations, the suite runs cleanly against `helperDb.before()`.
- */
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { UserSchema } from '../../lib/db-types.js';
@@ -17,6 +11,44 @@ import { selectActiveLockdownBrowserReservation } from './endExam.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 let user_id: string;
+
+function minutesFromNow(minutes: number): Date {
+  return new Date(Date.now() + minutes * 60 * 1000);
+}
+
+async function insertLocation({
+  lockdown_browser_enabled,
+}: {
+  lockdown_browser_enabled: boolean;
+}): Promise<string> {
+  return await queryScalar(sql.insert_location, { lockdown_browser_enabled }, IdSchema);
+}
+
+async function insertSession({
+  location_id,
+  lockdown_browser_enabled,
+}: {
+  location_id: string | null;
+  lockdown_browser_enabled: boolean | null;
+}): Promise<string> {
+  return await queryScalar(sql.insert_session, { location_id, lockdown_browser_enabled }, IdSchema);
+}
+
+async function insertReservation({
+  session_id,
+  access_start,
+  access_end,
+}: {
+  session_id: string;
+  access_start: Date;
+  access_end: Date;
+}): Promise<string> {
+  return await queryScalar(
+    sql.insert_reservation,
+    { user_id, session_id, access_start, access_end },
+    IdSchema,
+  );
+}
 
 describe('selectActiveLockdownBrowserReservation', () => {
   beforeAll(async () => {
@@ -36,11 +68,14 @@ describe('selectActiveLockdownBrowserReservation', () => {
 
   it('returns the reservation when one is active and LDB-required', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const id = await queryScalar(
-        sql.create_active_ldb_center_reservation,
-        { user_id, hours_until_end: 1 },
-        IdSchema,
-      );
+      const location_id = await insertLocation({ lockdown_browser_enabled: true });
+      const session_id = await insertSession({ location_id, lockdown_browser_enabled: null });
+      const id = await insertReservation({
+        session_id,
+        access_start: minutesFromNow(-5),
+        access_end: minutesFromNow(60),
+      });
+
       const result = await selectActiveLockdownBrowserReservation({
         authn_user_id: user_id,
         date: new Date(),
@@ -51,16 +86,28 @@ describe('selectActiveLockdownBrowserReservation', () => {
 
   it('returns the soonest-ending reservation when multiple match', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const sooner = await queryScalar(
-        sql.create_active_ldb_center_reservation,
-        { user_id, hours_until_end: 1 },
-        IdSchema,
-      );
-      await queryScalar(
-        sql.create_active_ldb_center_reservation,
-        { user_id, hours_until_end: 3 },
-        IdSchema,
-      );
+      const soonerLocation = await insertLocation({ lockdown_browser_enabled: true });
+      const soonerSession = await insertSession({
+        location_id: soonerLocation,
+        lockdown_browser_enabled: null,
+      });
+      const sooner = await insertReservation({
+        session_id: soonerSession,
+        access_start: minutesFromNow(-5),
+        access_end: minutesFromNow(60),
+      });
+
+      const laterLocation = await insertLocation({ lockdown_browser_enabled: true });
+      const laterSession = await insertSession({
+        location_id: laterLocation,
+        lockdown_browser_enabled: null,
+      });
+      await insertReservation({
+        session_id: laterSession,
+        access_start: minutesFromNow(-5),
+        access_end: minutesFromNow(180),
+      });
+
       const result = await selectActiveLockdownBrowserReservation({
         authn_user_id: user_id,
         date: new Date(),
@@ -71,7 +118,14 @@ describe('selectActiveLockdownBrowserReservation', () => {
 
   it('excludes reservations whose access window does not contain now', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      await execute(sql.create_expired_ldb_reservation, { user_id });
+      const location_id = await insertLocation({ lockdown_browser_enabled: true });
+      const session_id = await insertSession({ location_id, lockdown_browser_enabled: null });
+      await insertReservation({
+        session_id,
+        access_start: minutesFromNow(-120),
+        access_end: minutesFromNow(-60),
+      });
+
       const result = await selectActiveLockdownBrowserReservation({
         authn_user_id: user_id,
         date: new Date(),
@@ -82,7 +136,14 @@ describe('selectActiveLockdownBrowserReservation', () => {
 
   it('excludes reservations whose location/session do not require LDB', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      await execute(sql.create_active_non_ldb_reservation, { user_id });
+      const location_id = await insertLocation({ lockdown_browser_enabled: false });
+      const session_id = await insertSession({ location_id, lockdown_browser_enabled: false });
+      await insertReservation({
+        session_id,
+        access_start: minutesFromNow(-5),
+        access_end: minutesFromNow(60),
+      });
+
       const result = await selectActiveLockdownBrowserReservation({
         authn_user_id: user_id,
         date: new Date(),
@@ -93,7 +154,16 @@ describe('selectActiveLockdownBrowserReservation', () => {
 
   it('returns a course-run reservation when its session has LDB enabled', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const id = await queryScalar(sql.create_active_ldb_course_reservation, { user_id }, IdSchema);
+      const session_id = await insertSession({
+        location_id: null,
+        lockdown_browser_enabled: true,
+      });
+      const id = await insertReservation({
+        session_id,
+        access_start: minutesFromNow(-5),
+        access_end: minutesFromNow(60),
+      });
+
       const result = await selectActiveLockdownBrowserReservation({
         authn_user_id: user_id,
         date: new Date(),

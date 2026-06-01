@@ -180,7 +180,9 @@ export default asyncHandler(async (req, res, next) => {
   });
 
   // Surface the LockDown Browser flag recorded on the session at PT->PL
-  // login so pages can conditionally hide navigation elements.
+  // login so pages can gate LDB-specific UI: showing the navbar "End exam"
+  // control and hiding the file-picker form whose OS dialog would let
+  // students open desktop files.
   res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
 
   next();

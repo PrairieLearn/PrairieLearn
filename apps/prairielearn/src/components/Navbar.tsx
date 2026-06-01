@@ -174,14 +174,43 @@ function EndExamModal({ csrfToken }: { csrfToken: string }) {
     title: 'End exam',
     id: 'endExamModal',
     formAction: '/pl/end-exam',
-    body: html`<p>
-      Are you sure you want to end your exam? Only do this after you have completed your entire
-      exam. This will close LockDown Browser.
-    </p>`,
+    formClass: 'js-end-exam-form',
+    body: html`
+      <p class="js-end-exam-confirm">
+        Are you sure you want to end your exam? Only do this after you have completed your entire
+        exam. This will close LockDown Browser.
+      </p>
+      <div
+        class="js-end-exam-loading d-none d-flex align-items-center text-muted"
+        aria-live="polite"
+      >
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Ending exam…
+      </div>
+      <div class="js-end-exam-error alert alert-danger d-flex mb-0 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5" aria-hidden="true"></i>
+        <div>
+          <strong>We couldn't end your exam.</strong>
+          <div>
+            This can happen if PrairieTest is temporarily unavailable. Try again, or ask your
+            proctor to end the exam for you.
+          </div>
+        </div>
+      </div>
+    `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-danger">End exam</button>
+      <button type="button" class="btn btn-secondary js-end-exam-cancel" data-bs-dismiss="modal">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger js-end-exam-submit">
+        <span
+          class="spinner-border spinner-border-sm me-1 js-end-exam-submit-spinner d-none"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <span class="js-end-exam-submit-label">End exam</span>
+      </button>
     `,
   });
 }
