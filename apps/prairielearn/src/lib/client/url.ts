@@ -322,11 +322,11 @@ export function getQuestionSettingsUrl({
 // marks each as quiz-sequence navigation.
 
 export function getEndExamCloseUrl(): string {
-  return '/pl/end-exam-close?rldbsm=1&rldbqn=1';
+  return '/pl/end-exam?rldbsm=1&rldbqn=1';
 }
 
 export function getEndExamExitUrl(): string {
-  return '/pl/end-exam-close?rldbxb=1&rldbqn=1';
+  return '/pl/end-exam?rldbxb=1&rldbqn=1';
 }
 
 // tRPC scope URLs

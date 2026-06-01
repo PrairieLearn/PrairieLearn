@@ -10,10 +10,8 @@ import { config } from '../../lib/config.js';
  * `/pt/lockdown-browser/end-exam` callback. Signed with the same
  * `prairieTestSharedAuthSecret` PT uses for the reverse direction.
  *
- * Five minutes is plenty for a click-and-submit; tokens are minted fresh
- * per page render, so the only risk window is a student leaving a page
- * idle and then clicking End exam more than 5 minutes later — in which
- * case the page reload re-mints the token.
+ * Tokens are minted on submit, immediately before PL calls PT, so the
+ * short lifetime primarily bounds the replay window if one is exposed.
  */
 const END_EXAM_JWT_LIFETIME = '5m';
 
