@@ -169,6 +169,19 @@ export const RawHtml = Node.create({
   renderHTML({ node }) {
     const template = document.createElement('template');
     template.innerHTML = node.attrs.html;
-    return template.content.firstChild! as HTMLElement;
+
+    // This function must return a single HTMLElement, so we'll filter out any
+    // whitespace-only nodes and assert that there's exactly one left.
+    const nodes = Array.from(template.content.childNodes).filter(
+      (childNode) =>
+        childNode.nodeName !== '#text' || (childNode.textContent?.trim().length ?? 0) > 0,
+    );
+
+    const htmlNode = nodes[0];
+    if (nodes.length !== 1 || !(htmlNode instanceof HTMLElement)) {
+      throw new Error('Raw HTML nodes must serialize to exactly one HTML element.');
+    }
+
+    return htmlNode;
   },
 });
