@@ -8,11 +8,6 @@ import {
 
 import { isBooleanValue, isFalseValue } from '../htmlmustache-plugin-utils.ts';
 
-function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
-  const value = attr(element, attribute).literal();
-  return value !== undefined && isFalseValue(value);
-}
-
 function requireDropdownDisplay(element: TagElement, context: ValidatorContext, attribute: string) {
   if (!attr(element, attribute).present()) return;
   const display = attr(element, 'display').literal();
@@ -87,7 +82,8 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
   },
 
   'pl/multiple-choice-builtin-grading'(element, context) {
-    if (!hasLiteralFalseAttribute(element, 'builtin-grading')) return;
+    const builtinGrading = attr(element, 'builtin-grading').literal();
+    if (builtinGrading === undefined || !isFalseValue(builtinGrading)) return;
 
     if (attr(element, 'weight').present()) {
       context.reportAttribute(
