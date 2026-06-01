@@ -235,16 +235,18 @@ export const QuestionJsonSchema = z
     authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client.')
+      .describe(
+        '[DEPRECATED] The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.',
+      )
       .optional()
       .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
-      .describe('List of client-accessible templates to render server-side.')
+      .describe('[DEPRECATED] List of client-accessible templates to render server-side.')
       .optional(),
     template: z
       .string()
-      .describe('The QID of a question that serves at the template for this question.')
+      .describe('[DEPRECATED] The QID of a question that serves as the template for this question.')
       .optional(),
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
@@ -271,7 +273,7 @@ export const QuestionJsonSchema = z
       .object({})
       .catchall(z.any())
       .describe(
-        'Options that define how the question will work, specific to the individual question type.',
+        '[DEPRECATED] Options that define how the question will work, specific to the individual question type (not supported for v3 questions).',
       )
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),

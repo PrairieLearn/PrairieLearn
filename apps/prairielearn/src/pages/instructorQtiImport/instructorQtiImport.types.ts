@@ -1,31 +1,83 @@
 import type {
   ConversionWarning,
+  IRSourceBankRef,
   PLAssessmentInfoJson,
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
 
-/** Serialized version of PLQuestionOutput with clientFiles as base64 strings. */
+/** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
+  draftId: string;
+  originalDirectoryName: string;
   directoryName: string;
   sourceId: string;
   infoJson: PLQuestionInfoJson;
   questionHtml: string;
   serverPy?: string;
-  clientFiles: Record<string, string>;
+  clientFiles: Record<string, { size: number }>;
   /** Video files that were excluded from this question's assets. */
   skippedVideos: string[];
 }
 
-/** Serialized version of ConversionResult. */
-export interface SerializedConversionResult {
-  assessmentTitle: string;
+interface StoredSerializedQuestionOutput extends Omit<
+  SerializedQuestionOutput,
+  'draftId' | 'originalDirectoryName' | 'clientFiles'
+> {
+  clientFiles: Record<string, string>;
+}
+
+interface SerializedConversionResultCommon {
+  draftId: string;
+  sourceId: string;
+  /** Display title of the source item container (assessment or question bank). */
+  title: string;
+  questions: SerializedQuestionOutput[];
+  warnings: ConversionWarning[];
+}
+
+interface SerializedAssessmentConversionResult extends SerializedConversionResultCommon {
+  sourceType: 'assessment';
+  /** PrairieLearn assessment to create on import. */
   assessment: {
     directoryName: string;
     infoJson: PLAssessmentInfoJson;
   };
-  questions: SerializedQuestionOutput[];
-  warnings: ConversionWarning[];
+  /** Question bank references that still need supplemental content before import. */
+  unresolvedSourceBankRefs?: IRSourceBankRef[];
 }
+
+interface SerializedQuestionBankConversionResult extends SerializedConversionResultCommon {
+  sourceType: 'question-bank';
+  /** Directory name for organizing questions in this bank. */
+  directoryName: string;
+}
+
+/** Conversion result sent to the browser for review. */
+export type SerializedConversionResult =
+  | SerializedAssessmentConversionResult
+  | SerializedQuestionBankConversionResult;
+
+type StoredSerializedConversionResultCommon = Omit<
+  SerializedConversionResultCommon,
+  'draftId' | 'questions'
+> & {
+  questions: StoredSerializedQuestionOutput[];
+};
+
+/** Conversion result stored server-side while the user reviews an import. */
+export type StoredSerializedConversionResult =
+  | (StoredSerializedConversionResultCommon & {
+      sourceType: 'assessment';
+      assessment: {
+        directoryName: string;
+        infoJson: PLAssessmentInfoJson;
+      };
+      unresolvedSourceBankRefs?: IRSourceBankRef[];
+    })
+  | (StoredSerializedConversionResultCommon & {
+      sourceType: 'question-bank';
+      directoryName: string;
+    });
 
 /** Access rule properties that were present but stripped during import. */
 export interface StrippedAccessRules {
@@ -66,6 +118,21 @@ export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>
     n++;
   }
   return candidate;
+}
+
+export function getUnresolvedSourceBankRefs(result: SerializedConversionResult): IRSourceBankRef[] {
+  return result.sourceType === 'assessment' ? (result.unresolvedSourceBankRefs ?? []) : [];
+}
+
+export function hasCanvasUnresolvedSourceBankRefs(refs: IRSourceBankRef[]): boolean {
+  return refs.some((ref) => ref.sourceBankExportId != null || ref.externalCourseId != null);
+}
+
+/** A selectable course instance for the import target picker. */
+export interface CourseInstanceOption {
+  id: string;
+  shortName: string;
+  longName: string;
 }
 
 /** Response shape of the upload endpoint. */

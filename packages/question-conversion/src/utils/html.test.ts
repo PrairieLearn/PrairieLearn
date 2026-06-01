@@ -121,7 +121,7 @@ describe('resolveImsFileRefs', () => {
         '-->',
     );
     assert.equal(result.fileRefs.size, 0);
-    assert.deepEqual(result.skippedFiles, ['clip.mp4']);
+    assert.deepEqual(result.skippedFiles, ['media/clip.mp4']);
   });
 
   it('comments out self-closing tags that reference excluded extensions', () => {
