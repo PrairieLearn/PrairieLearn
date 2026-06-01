@@ -511,7 +511,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                     if drop_privileges:
                         # Kill all processes started by `executor`.
                         subprocess.run(
-                            ["pkill", "-u", "executor", "--signal", "SIGKILL"],
+                            ["/usr/bin/pkill", "-u", "executor", "--signal", "SIGKILL"],
                             check=False,
                         )
 
