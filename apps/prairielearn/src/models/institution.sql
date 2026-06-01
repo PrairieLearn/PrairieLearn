@@ -30,17 +30,7 @@ ORDER BY
 -- BLOCK select_all_institutions_with_settings
 SELECT
   to_jsonb(i.*) AS institution,
-  CASE
-    WHEN ist.institution_id IS NULL THEN jsonb_build_object(
-      'institution_id',
-      i.id,
-      'course_request_message',
-      NULL,
-      'github_course_owner',
-      NULL
-    )
-    ELSE to_jsonb(ist.*)
-  END AS institution_settings
+  to_jsonb(ist.*) || jsonb_build_object('institution_id', i.id) AS institution_settings
 FROM
   institutions AS i
   LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id

@@ -23,7 +23,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 /**
  * Creates an octokit client from the client token specified in the config.
  */
-export function getGithubClient(): Octokit | null {
+function getGithubClient(): Octokit | null {
   if (config.githubClientToken === null) {
     return null;
   }
@@ -38,7 +38,7 @@ export function getGithubClient(): Octokit | null {
   - config.githubMachineUser (required to validate org access)
 */
 
-export type GithubOrgAccessFailureReason =
+type GithubOrgAccessFailureReason =
   | 'no_client'
   | 'no_machine_user'
   | 'org_unreachable'
