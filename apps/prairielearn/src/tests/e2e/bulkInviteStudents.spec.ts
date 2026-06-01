@@ -6,7 +6,7 @@ import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
+import { waitForJobAndCheckOutput } from './utils/jobSequence.js';
 
 async function openInviteModal(page: Page) {
   await page.getByRole('button', { name: 'Manage enrollments' }).click();

@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import { selectQuestionByQid } from '../../models/question.js';
 
-import { getAceEditorContent, setAceEditorContent } from './aceUtils.js';
 import { expect, test } from './fixtures.js';
+import { getAceEditorContent, setAceEditorContent } from './utils/ace.js';
 
 /**
  * The course-admin file editor rejects anything under `questions/`, so file

@@ -19,8 +19,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
-import { getAceEditorContent, setAceEditorContent } from './aceUtils.js';
 import { test } from './fixtures.js';
+import { getAceEditorContent, setAceEditorContent } from './utils/ace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

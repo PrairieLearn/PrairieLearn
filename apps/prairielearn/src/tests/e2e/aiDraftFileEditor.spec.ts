@@ -6,8 +6,8 @@ import type { Page } from '@playwright/test';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 
-import { setAceEditorContentAt } from './aceUtils.js';
 import { createTest, expect } from './fixtures.js';
+import { setAceEditorContentAt } from './utils/ace.js';
 
 // The AI draft editor is an enterprise-only page.
 const test = createTest({ isEnterprise: true });
