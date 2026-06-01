@@ -8,7 +8,7 @@ import {
 import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
+import { waitForJobAndCheckOutput } from './utils/jobSequence.js';
 
 test.describe('Sync students', () => {
   test('allows deselecting previewed students before syncing', async ({ page, courseInstance }) => {

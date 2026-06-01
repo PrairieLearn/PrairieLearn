@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { expect } from './fixtures.js';
+import { expect } from '../fixtures.js';
 
 /**
  * Waits for the job sequence page to show completion and checks for expected text in the job output.
