@@ -411,7 +411,9 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 By default, questions cannot see who is viewing them. A course can opt in to passing the viewing user's identity (uid, uin, name) into `server.py` through `data["options"]["user"]`, and the group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-the-viewing-users-identity) for the exact shape and access patterns.
 
-To enable this for a course, add the following to `infoCourse.json`:
+To enable this for a course, on the course settings page, check "Allow questions to access user identity".
+
+If you are running in development mode, you can also add the following to `infoCourse.json`:
 
 ```json title="infoCourse.json"
 {
@@ -421,9 +423,7 @@ To enable this for a course, add the following to `infoCourse.json`:
 }
 ```
 
-In **dev mode**, this JSON value is the source of truth and is written into the database on every sync. In **production**, the setting is stored in the database and managed only via the course settings page by a user with the `Owner` role. If the JSON value diverges from the database value, sync emits a non-fatal warning and does not change the database.
-
-Questions imported from another course (via public sharing or a sharing set) never receive user data, regardless of either course's settings.
+The JSON value is only used in development mode. Questions imported from another course (via public sharing or a sharing set) never receive user data, regardless of either course's settings.
 
 ## Comments in JSON files
 
@@ -446,7 +446,9 @@ You can add comments to JSON files using the `"comment"` key on any object. You 
 
 Comments can be strings, arrays, or JSON objects, but for most uses strings are recommended.
 
-**Warning:** if you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
+??? warning "Warning"
+
+    If you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
 
 ## Colors
 
