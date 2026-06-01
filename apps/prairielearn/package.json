@@ -289,7 +289,7 @@
     "@types/debug": "^4.1.13",
     "@types/dockerode": "^4.0.1",
     "@types/express": "^4.17.25 <5",
-    "@types/express-serve-static-core": "^4.19.8 <5",
+    "@types/express-serve-static-core": "^4.19.8 <6",
     "@types/folder-hash": "^4.0.4",
     "@types/fs-extra": "^11.0.4",
     "@types/he": "^1.2.3",
