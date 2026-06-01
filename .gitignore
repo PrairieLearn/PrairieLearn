@@ -133,3 +133,6 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
+
+## Superpowers brainstorming artifacts
+.superpowers/

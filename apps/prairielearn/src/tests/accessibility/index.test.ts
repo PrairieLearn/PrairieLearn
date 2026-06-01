@@ -270,7 +270,6 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download/*',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics/:filename',
   '/pl/course_instance/:course_instance_id/instructor/cacheableElementExtensions/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/cacheableElements/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse/*',

@@ -151,12 +151,6 @@ export function getNavPageTabs() {
         tabLabel: 'Questions',
       },
       {
-        activeSubPage: 'question_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/question_statistics`,
-        iconClasses: 'fas fa-table',
-        tabLabel: 'Question stats',
-      },
-      {
         activeSubPage: 'manual_grading',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',

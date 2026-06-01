@@ -1,5 +1,7 @@
+import { type ReactNode } from 'react';
+
 interface StatDescription {
-  title: string;
+  title: ReactNode;
   non_html_title: string;
   description: string;
 }
@@ -46,13 +48,21 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(some nonzero submission percentage): The percentage of students that submitted some answer that got some auto-graded credit.',
   },
   AVERAGE_FIRST_SUBMISSION_SCORE: {
-    title: 'μ<sub>First Sub. Score</sub>',
+    title: (
+      <>
+        μ<sub>First Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'First sub. score average',
     description:
       '(first submission score average): The average auto-graded score on the first submission over students that had at least one submission.',
   },
   FIRST_SUBMISSION_SCORE_VARIANCE: {
-    title: 'σ<sub>First Sub. Score</sub>',
+    title: (
+      <>
+        σ<sub>First Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'First sub. score SD',
     description:
       '(first submission score standard deviation): The standard deviation of first submission auto-graded scores.',
@@ -64,13 +74,21 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(first submission score histogram): The histogram of first submission auto-graded scores.',
   },
   AVERAGE_LAST_SUBMISSION_SCORE: {
-    title: 'μ<sub>Last Sub. Score</sub>',
+    title: (
+      <>
+        μ<sub>Last Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Last Sub. Score Average',
     description:
       '(last submission score average): The average auto-graded score on last submission over students that had at least one submission.',
   },
   LAST_SUBMISSION_SCORE_VARIANCE: {
-    title: 'σ<sub>Last Sub. Score</sub>',
+    title: (
+      <>
+        σ<sub>Last Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Last Sub. Score SD',
     description:
       '(last submission score standard deviation): The standard deviation of last submission auto-graded scores.',
@@ -82,13 +100,21 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(last submission score histogram): The histogram of last submission auto-graded scores.',
   },
   AVERAGE_MAX_SUBMISSION_SCORE: {
-    title: 'μ<sub>Max Sub. Score</sub>',
+    title: (
+      <>
+        μ<sub>Max Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Max Sub. Score average',
     description:
       '(max submission score average): The average best-submission score over students that had at least one submission.',
   },
   MAX_SUBMISSION_SCORE_VARIANCE: {
-    title: 'σ<sub>Max Sub. Score</sub>',
+    title: (
+      <>
+        σ<sub>Max Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Max Sub. Score SD',
     description:
       '(max submission score standard deviation): The standard deviation of best-submission auto-graded scores.',
@@ -100,13 +126,21 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(max submission score histogram): The histogram of best-submission auto-graded scores.',
   },
   AVERAGE_AVERAGE_SUBMISSION_SCORE: {
-    title: 'μ<sub>Avg. Sub. Score</sub>',
+    title: (
+      <>
+        μ<sub>Avg. Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Avg. Sub. Score average',
     description:
       '(average of submission score averages): The average of average submission auto-graded scores over students that had at least one submission.',
   },
   AVERAGE_SUBMISSION_SCORE_VARIANCE: {
-    title: 'σ<sub>Avg. Sub. Score</sub>',
+    title: (
+      <>
+        σ<sub>Avg. Sub. Score</sub>
+      </>
+    ),
     non_html_title: 'Avg. Sub. Score SD',
     description:
       '(variance of submission score averages): The variance of average submission auto-graded scores over students that had at least one submission.',
@@ -118,30 +152,50 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(submission score averages histogram): The histogram of average submission auto-graded scores over students that had at least one submission.',
   },
   SUBMISSION_SCORE_ARRAY_AVERAGES: {
-    title: 'μ<sub>Sub. Score Array</sub>',
+    title: (
+      <>
+        μ<sub>Sub. Score Array</sub>
+      </>
+    ),
     non_html_title: 'Sub. Score Array average',
     description:
       '(submission score array): The average submission auto-graded scores (over students that had at least one submission) for the 1st submission, 2nd submission, etc. Submission score arrays are padded with zeros when some students have more submissions than others.',
   },
   INCREMENTAL_SUBMISSION_SCORE_ARRAY_AVERAGES: {
-    title: 'μ<sub>Incr. Sub. Score Array</sub>',
+    title: (
+      <>
+        μ<sub>Incr. Sub. Score Array</sub>
+      </>
+    ),
     non_html_title: 'Incr. Sub. Score Array average',
     description:
       '(incremental submission score array): The average incremental submission auto-graded score gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental score gain from submitting the nth submission.',
   },
   INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES: {
-    title: 'μ<sub>Incr. Sub. Points Array</sub>',
+    title: (
+      <>
+        μ<sub>Incr. Sub. Points Array</sub>
+      </>
+    ),
     non_html_title: 'Incr. Sub. Points Array average',
     description:
       '(incremental submission points array): The average incremental submission auto-graded points gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental points gained by submitting the nth submission. Only available for exams.',
   },
   AVERAGE_NUMBER_SUBMISSIONS: {
-    title: 'μ<sub>Num. Sub.</sub>',
+    title: (
+      <>
+        μ<sub>Num. Sub.</sub>
+      </>
+    ),
     non_html_title: 'Num. Sub. average',
     description: '(average number of submissions): The average number of auto-graded submissions.',
   },
   NUMBER_SUBMISSIONS_VARIANCE: {
-    title: 'σ<sub>Num. Sub.</sub>',
+    title: (
+      <>
+        σ<sub>Num. Sub.</sub>
+      </>
+    ),
     non_html_title: 'Num. Sub. SD',
     description:
       '(number of submissions standard deviation): The standard deviation of the number of auto-graded submissions.',
