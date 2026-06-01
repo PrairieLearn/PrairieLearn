@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "esbuild": "^0.28.0",
     "express-static-gzip": "^2.2.0 <3",
     "fs-extra": "^11.3.5",

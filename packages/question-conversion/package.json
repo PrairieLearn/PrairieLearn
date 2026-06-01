@@ -23,7 +23,7 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "fast-xml-parser": "^5.8.0",
     "he": "^1.2.0",
     "mime": "^4.1.0",
