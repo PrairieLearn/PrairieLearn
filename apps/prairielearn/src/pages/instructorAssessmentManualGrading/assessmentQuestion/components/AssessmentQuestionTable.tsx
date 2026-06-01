@@ -50,6 +50,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
+import type { RubricSettingsContextKeys } from '../queries.js';
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
@@ -100,6 +101,7 @@ interface AssessmentQuestionTableProps {
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
+  rubricSettingsContextKeys: RubricSettingsContextKeys;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   onRubricSettingsSaved: (data: {
@@ -154,6 +156,7 @@ export function AssessmentQuestionTable({
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
   aiGradingRelativeCosts,
+  rubricSettingsContextKeys,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   onRubricSettingsSaved,
@@ -348,7 +351,7 @@ export function AssessmentQuestionTable({
         added = true;
       }
     }
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     if (added) setHasUnacknowledgedReview(true);
   }, [serverJobProgress.jobsProgress]);
 
@@ -600,6 +603,7 @@ export function AssessmentQuestionTable({
             course_instance_short_name: courseInstance.short_name,
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
+            ...rubricSettingsContextKeys,
           }}
           onSaved={onRubricSettingsSaved}
         />

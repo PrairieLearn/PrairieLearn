@@ -99,7 +99,7 @@ export function InstructorAiGenerateDraftEditor({
         <meta
           name="htmlmustache-grammar-wasm"
           content="${nodeModulesAssetPath(
-            '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+            '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
           )}"
         />
       `,

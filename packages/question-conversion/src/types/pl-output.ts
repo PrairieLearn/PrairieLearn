@@ -19,7 +19,7 @@ export interface PLQuestionOutput {
   questionHtml: string;
   serverPy?: string;
   clientFiles: Map<string, Buffer | string>;
-  /** Filenames excluded from clientFiles by extension filtering (e.g. video files). */
+  /** Source paths excluded from clientFiles by extension filtering (e.g. video files). */
   skippedFiles: string[];
 }
 

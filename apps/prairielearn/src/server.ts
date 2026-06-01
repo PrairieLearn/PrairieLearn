@@ -320,11 +320,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
-  app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import/upload',
-    upload.single('file'),
-  );
-
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
   // globally for the entire server.
@@ -502,6 +497,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
+  // Deny all access to a user with an active LockDown-Browser-required
+  // reservation whose session was not established inside LockDown Browser. Must
+  // come after authentication so it can read `res.locals.authn_user`.
+  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
+
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
   //
@@ -553,6 +553,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.

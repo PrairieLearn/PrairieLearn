@@ -1053,11 +1053,15 @@ function validateQuestion({
   }
 
   if (question.options) {
-    try {
-      const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
-      schema.parse(question.options);
-    } catch (err: any) {
-      errors.push(`Error validating question options: ${err.message}`);
+    if (question.type === 'v3') {
+      errors.push('"options" is not supported for v3 questions.');
+    } else {
+      try {
+        const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
+        schema.parse(question.options);
+      } catch (err: any) {
+        errors.push(`Error validating question options: ${err.message}`);
+      }
     }
   }
 
