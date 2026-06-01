@@ -1,5 +1,11 @@
 # @prairielearn/eslint-config
 
+## 3.0.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.0.2
 
 ### Patch Changes
