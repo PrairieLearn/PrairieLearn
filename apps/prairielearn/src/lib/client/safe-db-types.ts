@@ -432,7 +432,7 @@ export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSc
 // `AdminInstitution` rather than a flattened look-alike.
 export const AdminInstitutionWithSettingsSchema = z.object({
   institution: AdminInstitutionSchema,
-  institution_settings: AdminInstitutionSettingsSchema,
+  institution_settings: AdminInstitutionSettingsSchema.nullable(),
 });
 export type AdminInstitutionWithSettings = z.infer<typeof AdminInstitutionWithSettingsSchema>;
 

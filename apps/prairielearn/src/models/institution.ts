@@ -12,7 +12,7 @@ import {
 
 const AdminInstitutionWithSettingsRowSchema = z.object({
   institution: InstitutionSchema,
-  institution_settings: InstitutionSettingsSchema,
+  institution_settings: InstitutionSettingsSchema.nullable(),
 });
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -49,7 +49,7 @@ export async function selectAllInstitutions() {
 }
 
 export async function selectAllInstitutionsWithSettings(): Promise<
-  { institution: Institution; institution_settings: InstitutionSettings }[]
+  { institution: Institution; institution_settings: InstitutionSettings | null }[]
 > {
   return await queryRows(
     sql.select_all_institutions_with_settings,

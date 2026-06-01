@@ -349,7 +349,7 @@ function CourseRequestApproveModalContent({
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
   const initialGithubCourseOwner =
-    (autoFilledInstitutionId && userRow?.institution_settings.github_course_owner) ||
+    (autoFilledInstitutionId && userRow?.institution_settings?.github_course_owner) ||
     defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
@@ -383,7 +383,7 @@ function CourseRequestApproveModalContent({
     const row = institutions.find((i) => i.institution.id === institution.id);
     setValue(
       'github_course_owner',
-      row?.institution_settings.github_course_owner ?? defaultGithubCourseOwner,
+      row?.institution_settings?.github_course_owner ?? defaultGithubCourseOwner,
     );
   };
 
