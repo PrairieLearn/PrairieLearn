@@ -75,6 +75,12 @@ updates:
       # compatibility, so we don't want to upgrade.
       - dependency-name: 'jquery'
         versions: ['>=4']
+      # quill 2.0.3 regressed getSemanticHTML() by converting spaces to &nbsp;,
+      # which breaks wrapping and stored HTML from pl-rich-text-editor:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/11281
+      # https://github.com/slab/quill/issues/4509
+      - dependency-name: 'quill'
+        versions: ['>2.0.2']
     cooldown:
       # Dependabot does not understand the npmMinimalAgeGate setting in
       # .yarnrc.yml, so we set a cooldown here to obtain the same effect. Once
