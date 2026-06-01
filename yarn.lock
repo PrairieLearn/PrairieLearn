@@ -4087,7 +4087,7 @@ __metadata:
     "@types/node": "npm:^24.12.4"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
-    commander: "npm:^14.0.3"
+    commander: "npm:^15.0.0"
     esbuild: "npm:^0.28.0"
     express: "npm:^4.22.1 <5"
     express-static-gzip: "npm:^2.2.0 <3"
@@ -4486,7 +4486,7 @@ __metadata:
     "@typescript/native-preview": "npm:beta"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
-    commander: "npm:^14.0.3"
+    commander: "npm:^15.0.0"
     diff: "npm:^9.0.0"
     es-toolkit: "npm:^1.47.0"
     fs-extra: "npm:^11.3.5"
@@ -4581,6 +4581,7 @@ __metadata:
     "@prairielearn/session": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/sketchresponse": "npm:^0.1.4"
+    "@prairielearn/tree-sitter-htmlmustache": "npm:^1.4.3"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/ui": "workspace:^"
     "@prairielearn/utils": "workspace:^"
@@ -4588,7 +4589,6 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.4.1"
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.14.2"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -4846,7 +4846,7 @@ __metadata:
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
     "@vscode/vscode-languagedetection": "npm:^1.0.23"
-    commander: "npm:^14.0.3"
+    commander: "npm:^15.0.0"
     fast-xml-parser: "npm:^5.8.0"
     he: "npm:^1.2.0"
     mime: "npm:^4.1.0"
@@ -4977,6 +4977,39 @@ __metadata:
     stylelint-scss: "npm:^6.12.0"
     sweetalert2: "npm:^11.22.0"
   checksum: 10c0/91bf66159fb0e241f1cba26d8073bd0ba409656c59e6cb30cb6293e8a44250d03ce641ec1f2b65804762826055bf9d48dc8752248bb636d5475d62379284924b
+  languageName: node
+  linkType: hard
+
+"@prairielearn/tree-sitter-htmlmustache@npm:^1.4.3":
+  version: 1.4.3
+  resolution: "@prairielearn/tree-sitter-htmlmustache@npm:1.4.3"
+  dependencies:
+    ajv: "npm:^8.20.0"
+    ajv-errors: "npm:^3.0.0"
+    ajv-i18n: "npm:^4.2.0"
+    chalk: "npm:^5.6.2"
+    editorconfig: "npm:^3.0.1"
+    node-gyp: "npm:latest"
+    vscode-languageserver-textdocument: "npm:^1.0.12"
+    web-tree-sitter: "npm:^0.26.5"
+    zod: "npm:^4.4.3"
+  peerDependencies:
+    node-addon-api: ^8.2.2
+    node-gyp-build: ^4.8.2
+    prettier: ^3.0.0
+    tree-sitter: ^0.25.0
+  peerDependenciesMeta:
+    node-addon-api:
+      optional: true
+    node-gyp-build:
+      optional: true
+    prettier:
+      optional: true
+    tree-sitter:
+      optional: true
+  bin:
+    htmlmustache: dist/cli/main.js
+  checksum: 10c0/7845ac21470e0f70dd3b97e36e5dcc68aabc707d76d775b1b865b82c26c9997893bff15fc5f522c4269f6736005b86af5ad07ad9a75c27ebfd225f6ee22cfa86
   languageName: node
   linkType: hard
 
@@ -5260,39 +5293,6 @@ __metadata:
   version: 0.5.2
   resolution: "@reteps/dockerfmt@npm:0.5.2"
   checksum: 10c0/c0af5dcc9c8c9d51c9eec4cfb454c85f31c760373288b9254054709b29a4accc1df10bd765712128dd173e53bfb8b880a94b0aa8b6c2d4294866d800dbdd14e1
-  languageName: node
-  linkType: hard
-
-"@reteps/tree-sitter-htmlmustache@npm:^1.4.1":
-  version: 1.4.1
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:1.4.1"
-  dependencies:
-    ajv: "npm:^8.20.0"
-    ajv-errors: "npm:^3.0.0"
-    ajv-i18n: "npm:^4.2.0"
-    chalk: "npm:^5.6.2"
-    editorconfig: "npm:^3.0.1"
-    node-gyp: "npm:latest"
-    vscode-languageserver-textdocument: "npm:^1.0.12"
-    web-tree-sitter: "npm:^0.26.5"
-    zod: "npm:^4.4.3"
-  peerDependencies:
-    node-addon-api: ^8.2.2
-    node-gyp-build: ^4.8.2
-    prettier: ^3.0.0
-    tree-sitter: ^0.25.0
-  peerDependenciesMeta:
-    node-addon-api:
-      optional: true
-    node-gyp-build:
-      optional: true
-    prettier:
-      optional: true
-    tree-sitter:
-      optional: true
-  bin:
-    htmlmustache: dist/cli/main.js
-  checksum: 10c0/c28e738dd2544f33ffc960968879223394b37054922f3af80417cac6d7776237d26065a8459891ed8c03b55bff2c0c3648d9c0cb4ac0106e754c5e048e135cf6
   languageName: node
   linkType: hard
 
@@ -9167,6 +9167,13 @@ __metadata:
   version: 10.0.1
   resolution: "commander@npm:10.0.1"
   checksum: 10c0/53f33d8927758a911094adadda4b2cbac111a5b377d8706700587650fd8f45b0bbe336de4b5c3fe47fd61f420a3d9bd452b6e0e6e5600a7e74d7bf0174f6efe3
+  languageName: node
+  linkType: hard
+
+"commander@npm:^15.0.0":
+  version: 15.0.0
+  resolution: "commander@npm:15.0.0"
+  checksum: 10c0/539229c171914ea1ccd45ee5f10d924289a12a684ea3a7a44147abe54003c35ed6de9ae4ad198d88c29fdf403dca0428451a388234e6dc01b6faa978fb207206
   languageName: node
   linkType: hard
 
@@ -16063,8 +16070,8 @@ __metadata:
     "@postgres-language-server/cli": "npm:^0.25.0"
     "@prairielearn/eslint-config": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
+    "@prairielearn/tree-sitter-htmlmustache": "npm:^1.4.3"
     "@prairielearn/tsconfig": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^1.4.1"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
     async: "npm:^3.2.6"
