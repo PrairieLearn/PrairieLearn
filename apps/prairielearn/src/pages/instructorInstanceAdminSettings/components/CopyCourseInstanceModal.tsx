@@ -269,7 +269,7 @@ function SettingsStep({
           aria-describedby="copy-long-name-help"
           aria-invalid={!!errors.long_name}
           aria-errormessage={errors.long_name ? 'copy-long-name-error' : undefined}
-          placeholder={courseInstance.long_name ?? undefined}
+          defaultValue=""
           {...register('long_name', {
             required: 'Long name is required',
           })}
@@ -297,7 +297,7 @@ function SettingsStep({
           aria-describedby="copy-short-name-help"
           aria-invalid={!!errors.short_name}
           aria-errormessage={errors.short_name ? 'copy-short-name-error' : undefined}
-          placeholder={courseInstance.short_name}
+          defaultValue=""
           {...register('short_name', {
             required: 'Short name is required',
             validate: (value) => {
