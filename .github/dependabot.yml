@@ -75,6 +75,16 @@ updates:
       # compatibility, so we don't want to upgrade.
       - dependency-name: 'jquery'
         versions: ['>=4']
+    cooldown:
+      # Dependabot does not understand the npmMinimalAgeGate setting in
+      # .yarnrc.yml, so we set a cooldown here to obtain the same effect. Once
+      # https://github.com/dependabot/dependabot-core/issues/13678 is resolved,
+      # we can remove this cooldown and rely on dependabot respecting the
+      # npmMinimalAgeGate setting.
+      #
+      # This also affects PNPM:
+      # https://github.com/dependabot/dependabot-core/issues/13405
+      default-days: 3
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
