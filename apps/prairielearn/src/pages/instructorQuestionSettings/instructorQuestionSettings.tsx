@@ -43,10 +43,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import {
-  formatBlockedAssessments,
-  selectAssessmentsBlockingDeletion,
-} from '../../lib/question-deletion-validation.js';
+import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -54,7 +51,7 @@ import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
-import { selectQuestionByUuid, selectQuestionsUsedInOtherCourses } from '../../models/question.js';
+import { selectQuestionByUuid } from '../../models/question.js';
 import {
   type QuestionSharingSetRow,
   selectQuestionSharingConstraints,
@@ -564,31 +561,17 @@ router.post(
         });
       }
     } else if (req.body.__action === 'delete_question') {
-      const blockedByOtherCourses = await selectQuestionsUsedInOtherCourses({
-        question_ids: [res.locals.question.id],
-        course_id: res.locals.course.id,
+      const usedInOtherCourses = await selectQuestionsBlockingDeletion({
+        course: res.locals.course,
+        questions: [res.locals.question],
       });
-      if (blockedByOtherCourses.length > 0) {
+
+      if (usedInOtherCourses.length > 0) {
         flash(
           'error',
           'This question is used by another course and cannot be deleted. Unshare it or remove it from those assessments first.',
         );
         return res.redirect(req.originalUrl);
-      }
-
-      if (res.locals.question.qid) {
-        const blockedAssessments = await selectAssessmentsBlockingDeletion({
-          course: res.locals.course,
-          questionIds: [res.locals.question.id],
-          qidsToRemove: new Set([res.locals.question.qid]),
-        });
-        if (blockedAssessments.length > 0) {
-          flash(
-            'error',
-            `Deleting this question would leave the following assessments in an invalid state: ${formatBlockedAssessments(blockedAssessments)}. Remove the question from these assessments first.`,
-          );
-          return res.redirect(req.originalUrl);
-        }
       }
 
       const editor = new QuestionDeleteEditor({

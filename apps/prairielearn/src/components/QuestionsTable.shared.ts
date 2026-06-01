@@ -7,6 +7,8 @@ import {
 } from '../lib/client/safe-db-types.js';
 import { QuestionsPageDataSchema } from '../models/questions.types.js';
 
+export const MAX_BULK_QUESTION_SELECTION = 200;
+
 /**
  * Client-safe schema for question data. Replaces full TopicSchema/TagSchema/SharingSetSchema
  * with their public counterparts, stripping fields like `id` and `course_id` that

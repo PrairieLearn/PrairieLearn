@@ -21,6 +21,7 @@ SELECT
       cr.user_id = $user_id
       AND LOWER(BTRIM(cr.short_name)) = LOWER(BTRIM($short_name))
   ) AS has_existing_request;
+<<<<<<< HEAD
 
 -- BLOCK get_existing_owner_course_settings
 SELECT
@@ -75,3 +76,5 @@ FROM
 WHERE
   cr.user_id = $user_id
   AND cr.created_at BETWEEN NOW() - interval '24 HOURS' AND NOW();
+=======
+>>>>>>> origin/master

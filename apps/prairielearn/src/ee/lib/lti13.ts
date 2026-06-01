@@ -19,7 +19,6 @@ import {
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
-import type { AuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -838,13 +837,11 @@ class Lti13ContextMembership {
 
 export async function updateLti13Scores({
   courseInstance,
-  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
   courseInstance: CourseInstance;
-  authzData: AuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -879,8 +876,6 @@ export async function updateLti13Scores({
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
     courseInstance,
-    authzData,
-    requiredRole: ['Student Data Viewer'],
     minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));

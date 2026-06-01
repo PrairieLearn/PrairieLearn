@@ -115,7 +115,6 @@ router.get(
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer'],
     });
 
     // Generate per-CI CSRF tokens so the client can switch target CI without

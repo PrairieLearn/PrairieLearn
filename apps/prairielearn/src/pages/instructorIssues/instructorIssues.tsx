@@ -170,7 +170,6 @@ router.get(
     const course_instances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Student Data Viewer', 'Previewer'],
     });
     const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 

@@ -316,6 +316,19 @@ export function getQuestionSettingsUrl({
   return `${urlPrefix}/question/${questionId}/settings`;
 }
 
+// LockDown Browser exit handshake URLs. The rldb* params are LDB magic stems
+// that must stay mirrored wherever the close flow is driven: rldbsm lowers the
+// session to medium security (hop 1), rldbxb tells LDB to exit (hop 2), rldbqn
+// marks each as quiz-sequence navigation.
+
+export function getEndExamCloseUrl(): string {
+  return '/pl/end-exam?rldbsm=1&rldbqn=1';
+}
+
+export function getEndExamExitUrl(): string {
+  return '/pl/end-exam?rldbxb=1&rldbqn=1';
+}
+
 // tRPC scope URLs
 
 export function getAdministratorTrpcUrl(): string {

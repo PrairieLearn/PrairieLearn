@@ -14,7 +14,6 @@
         { "id": "demo/workspace/jupyterlab-r", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "demo/workspace/xtermjs", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "demo/workspace/xtermjsPython", "autoPoints": 1, "maxAutoPoints": 5 },
-        { "id": "demo/workspace/desktop", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "demo/workspace/rstudio", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "demo/workspace/dynamicFiles", "autoPoints": 1, "maxAutoPoints": 5 }
       ]
