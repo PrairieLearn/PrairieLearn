@@ -70,7 +70,6 @@ export async function checkGithubRepositoryExists(repoName: string): Promise<boo
 async function createEmptyRepository(client: Octokit, repo: string) {
   await client.repos.createInOrg({
     org: config.githubCourseOwner,
-    owner: config.githubCourseOwner,
     name: repo,
     private: true,
   });
