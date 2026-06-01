@@ -107,7 +107,9 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(
-      messages.some((m) => m.includes('if using all-of-the-above-feedback, you must also use all-of-the-above')),
+      messages.some((m) =>
+        m.includes('if using all-of-the-above-feedback, you must also use all-of-the-above'),
+      ),
     );
   });
 

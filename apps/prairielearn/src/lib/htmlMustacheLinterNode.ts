@@ -9,7 +9,6 @@ import {
 import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
-
 const require = createRequire(import.meta.url);
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
