@@ -165,13 +165,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@arnog/colors@npm:^0.5.0":
-  version: 0.5.0
-  resolution: "@arnog/colors@npm:0.5.0"
-  checksum: 10c0/24405b0313b09ac695a2ac97b527c981c4a438b2e25740619e6d813f0ca7aaccfeee04e123c96420e66a6ce8b3d4d9b22b7b108ef187c039cdf3a5d9a728fa99
-  languageName: node
-  linkType: hard
-
 "@asamuzakjp/css-color@npm:^5.1.11":
   version: 5.1.11
   resolution: "@asamuzakjp/css-color@npm:5.1.11"
@@ -1310,7 +1303,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cortex-js/compute-engine@npm:0.55.6":
+"@cortex-js/compute-engine@npm:0.55.6, @cortex-js/compute-engine@npm:^0.55.6":
   version: 0.55.6
   resolution: "@cortex-js/compute-engine@npm:0.55.6"
   dependencies:
@@ -1318,17 +1311,6 @@ __metadata:
     complex-esm: "npm:^2.1.1-esm1"
     decimal.js: "npm:^10.6.0"
   checksum: 10c0/8488783520289f42eb5f37cf54e7c20f39735de2222062cd2df507a7281b66253b93b81335c4193217a0682ff6dee54fd56c4dff530666fdf5bfbe11f937457c
-  languageName: node
-  linkType: hard
-
-"@cortex-js/compute-engine@npm:^0.58.0":
-  version: 0.58.0
-  resolution: "@cortex-js/compute-engine@npm:0.58.0"
-  dependencies:
-    "@arnog/colors": "npm:^0.5.0"
-    complex-esm: "npm:^2.1.1-esm1"
-    decimal.js: "npm:^10.6.0"
-  checksum: 10c0/9b699bb9c288be0a6152fb8aa7c6a11c4f55c23b878f777a210caf075ac068e1b028e9cc01547d57cf428e8fa808d40f1cd57d03aecb25ad6d1afe4dab6f4564
   languageName: node
   linkType: hard
 
@@ -4555,7 +4537,7 @@ __metadata:
     "@aws-sdk/client-sqs": "npm:^3.1057.0"
     "@aws-sdk/credential-providers": "npm:^3.1057.0"
     "@aws-sdk/lib-storage": "npm:^3.1057.0"
-    "@cortex-js/compute-engine": "npm:^0.58.0"
+    "@cortex-js/compute-engine": "npm:^0.55.6"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
