@@ -240,6 +240,11 @@ describe('Editing course settings', () => {
         `${siteUrl}/pl/course/1/course_admin/settings`,
       );
 
+      // Earlier tests save settings through the server, which commits to the
+      // live course and pushes to origin. Pull those commits into the dev repo
+      // so the push below fast-forwards instead of being rejected.
+      await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
+
       const courseInfoPath = path.join(courseRepo.courseDevDir, 'infoCourse.json');
       const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
       const newCourseInfo = { ...courseInfo, name: 'TEST 107' };
