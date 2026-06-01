@@ -86,7 +86,7 @@ case "$GRADE_FS_TYPE" in
         # we disable the sandbox in those cases. They are only used in dev
         # environments (typically in Mac environments), so this should not cause
         # security issues.
-        echo "Landlock disabled for /grade filesystem type: $GRADE_FS_TYPE"
+        echo "Landlock disabled because /grade uses an unsupported filesystem type: $GRADE_FS_TYPE"
         SANDBOX_PREFIX=""
         ;;
 esac
