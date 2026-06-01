@@ -35,6 +35,7 @@ type AccessControlJsonWithRequiredId = Required<Pick<AccessControlJsonWithId, 'i
 
 export interface EnrollmentAccessControlRuleData {
   id?: string;
+  number?: number;
   beforeReleaseListed: boolean | null;
   releaseDate: string | null;
   dueOverridden: boolean;
@@ -101,7 +102,7 @@ function dbBaseRowToAccessControlJson(
     z.infer<typeof RuleRowSchema>,
     'access_control_rule' | 'early_deadlines' | 'late_deadlines'
   >,
-): AccessControlJson & { id: string } {
+): AccessControlJsonWithRequiredId {
   const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
@@ -200,6 +201,7 @@ function dbBaseRowToAccessControlJson(
 
   return {
     id: rule.id,
+    number: rule.number,
     ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
@@ -304,6 +306,7 @@ export async function syncEnrollmentAccessControl(
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
+    number: ruleData.number ?? null,
     before_release_listed: ruleData.beforeReleaseListed,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_overridden: ruleData.dueOverridden,
@@ -348,6 +351,14 @@ export async function syncEnrollmentAccessControl(
     ],
     IdSchema,
   );
+}
+
+export async function moveEnrollmentAccessControlsToTemporaryNumbers(
+  assessment: Assessment,
+): Promise<void> {
+  await execute(sql.move_enrollment_rules_to_temporary_numbers, {
+    assessment_id: assessment.id,
+  });
 }
 
 export async function deleteEnrollmentAccessControlsByIds(

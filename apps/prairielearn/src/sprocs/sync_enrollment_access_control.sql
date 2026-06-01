@@ -12,6 +12,7 @@ AS $$
 DECLARE
     existing_rule_id bigint;
     new_rule_id bigint;
+    desired_number integer;
     next_number integer;
     ci_timezone text;
 BEGIN
@@ -22,10 +23,16 @@ BEGIN
 
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;
+    desired_number := (rule_data ->> 'number')::integer;
+
+    IF desired_number IS NOT NULL AND desired_number <= 0 THEN
+        RAISE EXCEPTION 'Enrollment access control rule number must be positive, got %', desired_number;
+    END IF;
 
     IF existing_rule_id IS NOT NULL THEN
         -- Update existing enrollment rule
         UPDATE assessment_access_control_rules SET
+            number = COALESCE(desired_number, assessment_access_control_rules.number),
             before_release_listed = (rule_data ->> 'before_release_listed')::boolean,
             date_control_release_date = input_date(rule_data ->> 'date_control_release_date', ci_timezone),
             date_control_due_overridden = (rule_data ->> 'date_control_due_overridden')::boolean,
@@ -69,9 +76,13 @@ BEGIN
     ELSE
         -- Get next available number for enrollment rules. Starts at 1 (not 0)
         -- because check_first_rule_is_none requires number=0 ⟺ target_type='none'.
-        SELECT COALESCE(MAX(number), 0) + 1 INTO next_number
-        FROM assessment_access_control_rules
-        WHERE assessment_id = syncing_assessment_id AND target_type = 'enrollment';
+        IF desired_number IS NULL THEN
+            SELECT COALESCE(MAX(number), 0) + 1 INTO next_number
+            FROM assessment_access_control_rules
+            WHERE assessment_id = syncing_assessment_id AND target_type = 'enrollment' AND number > 0;
+        ELSE
+            next_number := desired_number;
+        END IF;
 
         -- Insert new enrollment rule
         INSERT INTO assessment_access_control_rules (

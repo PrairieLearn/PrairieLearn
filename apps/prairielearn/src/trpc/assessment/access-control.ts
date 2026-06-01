@@ -15,6 +15,7 @@ import { saveJsonFile } from '../../lib/editors.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
+  moveEnrollmentAccessControlsToTemporaryNumbers,
   selectAccessControlRules,
   selectPrairieTestExamMetadataByUuids,
   syncEnrollmentAccessControl,
@@ -301,10 +302,12 @@ const saveAllRules = t.procedure
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
 
         if (enrollmentRules.length > 0) {
+          await moveEnrollmentAccessControlsToTemporaryNumbers(opts.ctx.assessment);
           // TODO: Add audit logging for enrollment rule changes. Label/default rules
           // are tracked in git; only enrollment rules need separate audit logs.
-          for (const enrollmentRule of enrollmentRules) {
+          for (const [index, enrollmentRule] of enrollmentRules.entries()) {
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+            ruleData.number = index + 1;
             if (enrollmentRule.id) {
               ruleData.id = enrollmentRule.id;
             }
