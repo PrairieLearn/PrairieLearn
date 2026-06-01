@@ -29,7 +29,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0 <1",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^24.12.4",
+    "@types/node": "^25.9.1",
     "@types/on-headers": "^1.0.4",
     "@types/uid-safe": "^2.1.5",
     "@typescript/native-preview": "beta",

@@ -24,7 +24,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^24.12.4",
+    "@types/node": "^25.9.1",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.7"

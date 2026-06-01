@@ -33,7 +33,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/async": "^3.2.25",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.12.4",
+    "@types/node": "^25.9.1",
     "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9"
   }

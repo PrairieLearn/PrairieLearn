@@ -304,7 +304,7 @@
     "@types/minimist": "^1.2.5",
     "@types/multer": "^2.1.0",
     "@types/mustache": "^4.2.6",
-    "@types/node": "^24.12.4",
+    "@types/node": "^25.9.1",
     "@types/node-jose": "^1.1.13",
     "@types/oauth-signature": "^1.5.2",
     "@types/object-hash": "^3.0.6",
