@@ -249,8 +249,6 @@ function CopyAssessmentModal({
   const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
   const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
 
-  const placeholderAid = assessment.tid ?? '';
-  const placeholderTitle = assessment.title ?? '';
   const placeholderNumber = assessment.number;
   const defaultSet = assessmentSet.name;
 
@@ -306,7 +304,6 @@ function CopyAssessmentModal({
               className={clsx('form-control', errors.title && 'is-invalid')}
               aria-invalid={errors.title ? 'true' : 'false'}
               {...(errors.title ? { 'aria-errormessage': 'copy-assessment-title-error' } : {})}
-              placeholder={placeholderTitle}
               defaultValue=""
               {...register('title', {
                 validate: (value) => (value.trim() === '' ? 'Title is required' : true),
@@ -329,7 +326,6 @@ function CopyAssessmentModal({
               aria-describedby="copy-assessment-aid-help"
               aria-invalid={errors.aid ? 'true' : 'false'}
               {...(errors.aid ? { 'aria-errormessage': 'copy-assessment-aid-error' } : {})}
-              placeholder={placeholderAid}
               defaultValue=""
               {...register('aid', {
                 validate: (value) => {
