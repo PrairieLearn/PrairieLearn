@@ -4633,7 +4633,7 @@ __metadata:
     "@types/bootstrap": "npm:^5.2.10"
     "@types/byline": "npm:^4.2.36"
     "@types/cookie": "npm:^0.6.0 <1"
-    "@types/cookie-parser": "npm:^1.4.10"
+    "@types/cookie-parser": "npm:^1.4.10 <2"
     "@types/crypto-js": "npm:^4.2.2"
     "@types/d3": "npm:^7.4.3"
     "@types/debug": "npm:^4.1.13"
@@ -4668,7 +4668,7 @@ __metadata:
     "@types/react": "npm:^19.2.15"
     "@types/react-dom": "npm:^19.2.3"
     "@types/serve-favicon": "npm:^2.5.7"
-    "@types/serve-static": "npm:^2.2.0"
+    "@types/serve-static": "npm:^2.2.0 <3"
     "@types/streamifier": "npm:^0.1.2"
     "@types/tmp": "npm:^0.2.6"
     "@types/ua-parser-js": "npm:^0.7.39"
@@ -4700,7 +4700,7 @@ __metadata:
     clipboard: "npm:^2.0.11"
     clsx: "npm:^2.1.1"
     cookie: "npm:^0.7.2 <1"
-    cookie-parser: "npm:^1.4.7"
+    cookie-parser: "npm:^1.4.7 <2"
     cropperjs: "npm:^2.1.1"
     crypto-js: "npm:^4.2.0"
     csv-parse: "npm:^6.2.1"
@@ -6335,7 +6335,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie-parser@npm:^1.4.10":
+"@types/cookie-parser@npm:^1.4.10 <2":
   version: 1.4.10
   resolution: "@types/cookie-parser@npm:1.4.10"
   peerDependencies:
@@ -7191,7 +7191,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/serve-static@npm:^2.2.0":
+"@types/serve-static@npm:^2.2.0 <3":
   version: 2.2.0
   resolution: "@types/serve-static@npm:2.2.0"
   dependencies:
@@ -9281,7 +9281,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie-parser@npm:^1.4.7":
+"cookie-parser@npm:^1.4.7 <2":
   version: 1.4.7
   resolution: "cookie-parser@npm:1.4.7"
   dependencies:
