@@ -28,28 +28,6 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-type AutoApprovalBlockReason = github.GithubOrgAccessFailureReason | 'unexpected_error';
-
-/**
- * For auto-approval, verify the institution's configured GitHub org is still reachable
- * before creating a repository in it. Returns the failure reason if access should block
- * auto-approval (so an admin can investigate via the manual path), or `null` if creation
- * may proceed. The platform default org is always considered accessible and skips the API call.
- */
-async function checkAutoApprovalOrgAccess(
-  githubCourseOwner: string,
-  course_request_id: string,
-): Promise<AutoApprovalBlockReason | null> {
-  if (github.isPlatformDefaultOrg(githubCourseOwner)) return null;
-  try {
-    const access = await github.checkGithubOrgAccess(github.getGithubClient(), githubCourseOwner);
-    return access.ok ? null : access.reason;
-  } catch (err) {
-    Sentry.captureException(err, { extra: { course_request_id, githubCourseOwner } });
-    return 'unexpected_error';
-  }
-}
-
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -233,81 +211,6 @@ router.post(
 
     res.redirect(req.originalUrl);
 
-<<<<<<< HEAD
-    // Fields shared across the Slack notifications below.
-    const detailLines = [
-      `Course rubric: ${short_name}`,
-      `Course title: ${title}`,
-      `Institution: ${institution}`,
-      `Requested by: ${first_name} ${last_name} (${work_email})`,
-    ];
-    const requesterLines = [
-      `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})`,
-      `GitHub username: ${github_user || 'not provided'}`,
-    ];
-
-    // Each outcome below sends a single Slack notification; this is the default
-    // when the request is not auto-approved.
-    let courseRequestSlackMessage = [
-      '*Incoming course request*',
-      ...detailLines,
-      ...requesterLines,
-    ].join('\n');
-
-    if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
-      // Automatically fill in institution ID and display timezone from the user's other courses.
-      const existingSettingsResult = await queryRow(
-        sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.id },
-        z.object({
-          institution_id: IdSchema,
-          display_timezone: z.string(),
-          institution_github_course_owner: z.string().nullable(),
-        }),
-      );
-      const githubCourseOwner =
-        existingSettingsResult.institution_github_course_owner ?? config.githubCourseOwner;
-      const blockReason = await checkAutoApprovalOrgAccess(githubCourseOwner, course_request_id);
-
-      if (blockReason == null) {
-        const repo_short_name = github.reponameFromShortname(short_name);
-        await github.createCourseRepoJob(
-          {
-            short_name,
-            title,
-            institution_id: existingSettingsResult.institution_id,
-            display_timezone: existingSettingsResult.display_timezone,
-            path: path.join(config.coursesRoot, repo_short_name),
-            repo_short_name,
-            github_course_owner: githubCourseOwner,
-            github_user,
-            course_request_id,
-          },
-          res.locals.authn_user,
-        );
-        courseRequestSlackMessage = [
-          '*Automatically creating course*',
-          `Course repo: ${repo_short_name}`,
-          ...detailLines,
-          ...requesterLines,
-        ].join('\n');
-      } else {
-        logger.error(
-          `Auto-approval blocked for course request ${course_request_id}: GitHub org access check failed for '${githubCourseOwner}' (${blockReason})`,
-        );
-        if (blockReason !== 'unexpected_error') {
-          Sentry.captureMessage(
-            `Auto-approval blocked: GitHub org access check failed for '${githubCourseOwner}'`,
-            { extra: { reason: blockReason, course_request_id } },
-          );
-        }
-        courseRequestSlackMessage = [
-          '*Auto-approval skipped — GitHub org access check failed*',
-          ...detailLines,
-          `Target org: ${githubCourseOwner} (${blockReason})`,
-        ].join('\n');
-      }
-=======
     // Do this in the background once we've redirected the response.
     try {
       await opsbot.sendCourseRequestMessage(
@@ -319,18 +222,6 @@ router.post(
           `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
           `GitHub username: ${github_user || 'not provided'}`,
       );
-    } catch (err) {
-      logger.error('Error sending course request message to Slack', err);
-      Sentry.captureException(err);
->>>>>>> origin/master
-    }
-
-    // Redirect on success so that refreshing doesn't create another request.
-    res.redirect(req.originalUrl);
-
-    // Send the Slack notification in the background once we've redirected the response.
-    try {
-      await opsbot.sendCourseRequestMessage(courseRequestSlackMessage);
     } catch (err) {
       logger.error('Error sending course request message to Slack', err);
       Sentry.captureException(err);

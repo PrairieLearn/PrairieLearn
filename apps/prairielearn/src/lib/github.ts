@@ -477,15 +477,6 @@ export async function createCourseRepoJob(
   return serverJob.jobSequenceId;
 }
 
-/**
-<<<<<<< HEAD
- * Slugs a course shortname into a GitHub repository name.
- * @param short_name Course shortname
- */
-export function reponameFromShortname(short_name: string) {
-  return 'pl-' + short_name.replaceAll(' ', '').toLowerCase();
-}
-
 const GITHUB_REPOSITORY_REGEX =
   /^(?:git@github\.com:\/?|https?:\/\/github\.com\/)([^/]+)\/([^/]+?)(?:\.git)?\/?$/i;
 
@@ -497,8 +488,6 @@ export function parseGithubRepository(repository: string): { owner: string; repo
 }
 
 /**
-=======
->>>>>>> origin/master
  * Returns the HTTPS URL for the course page on GitHub, based on the course's
  * repository. Assumes that the repository is set using the SSH URL for GitHub.
  * Returns null if the URL cannot be retrieved from the repository.
