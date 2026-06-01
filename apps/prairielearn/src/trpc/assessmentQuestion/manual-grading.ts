@@ -218,13 +218,11 @@ const setAssignedGraderMutation = t.procedure
     if (assigned_grader !== null) {
       const courseStaff = await selectCourseInstanceGraderStaff({
         courseInstance: opts.ctx.course_instance,
-        requiredRole: ['Student Data Editor'],
-        authzData: opts.ctx.authz_data,
       });
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'The assigned grader does not have Student Data Editor permission.',
+          message: 'The assigned grader does not have student data editor permissions.',
         });
       }
     }

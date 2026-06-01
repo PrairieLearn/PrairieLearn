@@ -98,8 +98,6 @@ async function prepareLocalsForRender(
 
   const graders = await selectCourseInstanceGraderStaff({
     courseInstance: resLocals.course_instance,
-    authzData: resLocals.authz_data,
-    requiredRole: ['Student Data Viewer'],
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -702,13 +700,11 @@ router.post(
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
           courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
-          requiredRole: ['Student Data Editor'],
         });
         if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
-            'Assigned grader does not have Student Data Editor permission',
+            'The assigned grader does not have student data editor permissions.',
           );
         }
       }

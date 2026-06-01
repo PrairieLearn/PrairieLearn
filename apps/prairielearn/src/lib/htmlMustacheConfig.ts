@@ -1,4 +1,4 @@
-import type { Config, CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 // This should be kept in sync with `.htmlmustache.jsonc`
 const drawingObjectTags: CustomTag[] = [

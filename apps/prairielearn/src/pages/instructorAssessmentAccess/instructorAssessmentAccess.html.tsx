@@ -19,7 +19,10 @@ import type {
   PrairieTestExamMetadata,
 } from '../../models/assessment-access-control-rules.js';
 
-import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
+import {
+  AssessmentAccessControl,
+  type AssessmentAccessControlPermissions,
+} from './components/AssessmentAccessControl.js';
 
 export const AssessmentAccessRuleRowSchema = z.object({
   rule: AssessmentAccessRuleSchema,
@@ -150,7 +153,7 @@ export function InstructorAssessmentAccess({
                               data-bs-container="body"
                               data-bs-placement="auto"
                               data-bs-title="Hidden UIDs"
-                              data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
+                              data-bs-content="This access rule is specific to individual students. You need student data viewer permissions to see which ones."
                             >
                               Hidden
                             </button>
@@ -381,6 +384,8 @@ export function InstructorAssessmentAccessNew({
   initialData,
   prairieTestExamMetadata,
   ptHost,
+  permissions,
+  hiddenEnrollmentRuleCount,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string | null;
@@ -388,6 +393,8 @@ export function InstructorAssessmentAccessNew({
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  permissions: AssessmentAccessControlPermissions;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const pageContext = extractPageContext(resLocals, {
     pageType: 'courseInstance',
@@ -421,6 +428,8 @@ export function InstructorAssessmentAccessNew({
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
+          permissions={permissions}
+          hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         />
       </Hydrate>
     ),

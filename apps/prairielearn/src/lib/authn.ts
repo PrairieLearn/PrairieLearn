@@ -59,6 +59,17 @@ interface LoadUserOptions {
   redirect?: boolean;
   /** Override the post-auth redirect target. Only used when `redirect` is true. */
   redirectUrl?: string;
+  /**
+   * Whether the user authenticated from within LockDown Browser. Only the
+   * PrairieTest auth flow sets this; it is persisted on the session so
+   * downstream enforcement can require LDB for LDB-only reservations.
+   */
+  lockdownBrowser?: boolean;
+  /**
+   * Preserve any existing LockDown Browser state. This should only be used by
+   * authentication middleware that is reloading the current session.
+   */
+  preserveLockdownBrowser?: boolean;
 }
 
 export async function loadUser(
@@ -129,11 +140,44 @@ export async function loadUser(
     });
   }
 
+  // Regenerate the session on any identity transition to prevent session
+  // fixation. Also regenerate when elevating an existing session into a
+  // LockDown Browser session, since that flag grants stronger exam access.
+  // The authn middleware re-enters this function on every request with the
+  // existing session's user_id, so the guard keeps it a no-op there.
+  const lockdownBrowserElevation =
+    options.lockdownBrowser === true && req.session.lockdown_browser !== true;
+  if (req.session.user_id !== user_id || lockdownBrowserElevation) {
+    // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
+    // in the session before authentication completes and consumes them afterward.
+    // These must be carried forward across this session regeneration.
+
+    const inLti13Launch =
+      authnParams.provider === 'LTI 1.3' ||
+      Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
+
+    const preservedSessionData = inLti13Launch
+      ? ['lti13_claims', 'authn_lti13_instance_id']
+          .map((key) => [key, req.session[key]] as const)
+          .filter(([_, v]) => v !== undefined)
+      : [];
+
+    await req.session.regenerate();
+
+    for (const [key, value] of preservedSessionData) {
+      req.session[key] = value;
+    }
+  }
+
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
   req.session.user_id = user_id;
 
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
+
+  req.session.lockdown_browser =
+    options.lockdownBrowser ??
+    (options.preserveLockdownBrowser ? req.session.lockdown_browser : false);
 
   // After explicitly authenticating, clear the cookie that disables
   // automatic authentication.

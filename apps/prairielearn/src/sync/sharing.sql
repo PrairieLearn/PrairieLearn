@@ -46,22 +46,6 @@ WHERE
     )
   );
 
--- BLOCK select_renames_used_in_other_courses
-SELECT DISTINCT
-  q.qid
-FROM
-  questions AS q
-  JOIN assessment_questions AS aq ON aq.question_id = q.id
-  JOIN assessments AS a ON a.id = aq.assessment_id
-  JOIN course_instances AS ci ON ci.id = a.course_instance_id
-WHERE
-  q.id = ANY ($question_ids::bigint[])
-  AND ci.course_id != $course_id
-  AND q.deleted_at IS NULL
-  AND aq.deleted_at IS NULL
-  AND a.deleted_at IS NULL
-  AND ci.deleted_at IS NULL;
-
 -- BLOCK select_in_use_question_sharing_set_removals
 SELECT DISTINCT
   q.qid,
