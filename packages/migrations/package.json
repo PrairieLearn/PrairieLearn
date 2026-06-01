@@ -21,18 +21,18 @@
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
-    "fs-extra": "^11.3.4",
+    "fs-extra": "^11.3.5",
     "serialize-error": "^13.0.1",
     "zod": "^3.25.76 <4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.7",
     "tmp-promise": "^3.0.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.7"
   }
 }
