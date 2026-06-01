@@ -470,6 +470,10 @@
       "enum": ["S3", "FileSystem"],
       "default": "S3"
     },
+    "workflowsActive": {
+      "type": "boolean",
+      "default": false
+    },
     "cronActive": {
       "type": "boolean",
       "default": true

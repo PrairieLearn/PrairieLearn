@@ -54,6 +54,7 @@ import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
+import * as workflows from '@prairielearn/workflows';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -2388,6 +2389,22 @@ if (shouldStartServer) {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
 
+    if (config.workflowsActive) {
+      // Workflows execute question code (e.g. AI grading renders the
+      // question to feed it to the LLM), which only works on chunk
+      // consumers. Fail fast on non-chunk fleets so a misconfigured
+      // deployment doesn't silently start the engine on a server that
+      // can't actually run workflows.
+      if (!config.chunksConsumer) {
+        throw new Error(
+          'config.workflowsActive is true but config.chunksConsumer is false; workflows must run on chunk servers because they execute question code',
+        );
+      }
+      // Workflow engine uses its own connection pool to isolate workflow
+      // traffic from request-serving queries on the main pool.
+      await workflows.init(pgConfig, idleErrorHandler);
+    }
+
     logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {
@@ -2622,6 +2639,9 @@ if (shouldStartServer) {
     }
 
     await cron.init();
+    if (config.workflowsActive) {
+      workflows.startRecoveryLoop();
+    }
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
     // When HMR is active, we'll defer this error logging to the Vite plugin, which can
@@ -2670,6 +2690,7 @@ if (shouldStartServer) {
       assets.close(),
       codeCaller.finish(),
       stopBatchedMigrations(),
+      workflows.close(),
     ]);
     serviceResults.forEach((r) => {
       if (r.status === 'rejected') {
