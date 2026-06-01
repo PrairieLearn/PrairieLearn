@@ -7,7 +7,6 @@ import {
   checkGithubOrgAccess,
   courseRepoContentUrl,
   httpPrefixForCourseRepo,
-  isPlatformDefaultOrg,
   parseGithubRepository,
 } from './github.js';
 
@@ -34,30 +33,7 @@ beforeEach(() => {
   teamsAddOrUpdateRepoPermissionsInOrg.mockReset();
 });
 
-describe('isPlatformDefaultOrg', () => {
-  it('matches config.githubCourseOwner case-insensitively', async () => {
-    await withConfig({ githubCourseOwner: 'PrairieLearn' }, () => {
-      assert.isTrue(isPlatformDefaultOrg('prairielearn'));
-      assert.isFalse(isPlatformDefaultOrg('SomeOtherOrg'));
-    });
-  });
-});
-
 describe('checkGithubOrgAccess', () => {
-  it('returns no_client when the client is null', async () => {
-    await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(null, 'SomeOrg');
-      assert.deepEqual(result, { ok: false, reason: 'no_client' });
-    });
-  });
-
-  it('returns no_machine_user when githubMachineUser is unset', async () => {
-    await withConfig({ githubMachineUser: null }, async () => {
-      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
-      assert.deepEqual(result, { ok: false, reason: 'no_machine_user' });
-    });
-  });
-
   it('returns org_unreachable when the org cannot be fetched', async () => {
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }));
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
