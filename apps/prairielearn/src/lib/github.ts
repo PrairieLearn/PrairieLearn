@@ -51,7 +51,7 @@ type GithubOrgAccessResult = { ok: true } | { ok: false; reason: GithubOrgAccess
  * Returns true when `value` refers to the same GitHub org as `config.githubCourseOwner`.
  * GitHub org names are case-insensitive.
  */
-export function isPlatformDefaultOrg(value: string): boolean {
+function isPlatformDefaultOrg(value: string): boolean {
   return value.toLowerCase() === config.githubCourseOwner.toLowerCase();
 }
 
