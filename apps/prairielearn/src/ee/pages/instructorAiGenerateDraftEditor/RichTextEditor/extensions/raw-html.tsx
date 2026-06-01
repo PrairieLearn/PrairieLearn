@@ -169,6 +169,6 @@ export const RawHtml = Node.create({
   renderHTML({ node }) {
     const template = document.createElement('template');
     template.innerHTML = node.attrs.html;
-    return template.content.firstChild!;
+    return template.content.firstChild! as HTMLElement;
   },
 });
