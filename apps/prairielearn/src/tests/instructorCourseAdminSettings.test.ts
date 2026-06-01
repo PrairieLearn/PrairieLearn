@@ -84,61 +84,72 @@ describe('Editing course settings', () => {
   });
 
   test.sequential('editor can save when questions receive user data is locked on', async () => {
+    const originalCourse = await selectCourseById('1');
     await updateCourseQuestionsReceiveUserData({
       course_id: '1',
       questions_receive_user_data: true,
       authn_user_id: '1',
       user_id: '1',
-      old_questions_receive_user_data: false,
+      old_questions_receive_user_data: originalCourse.questions_receive_user_data,
     });
 
-    const user = await getOrCreateUser({
-      uid: 'editor@example.com',
-      name: 'Editor User',
-      uin: 'editor',
-      email: 'editor@example.com',
-    });
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: 'editor@example.com',
-      course_role: 'Editor',
-      authn_user_id: '1',
-    });
-
-    await withUser(user, async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course/1/course_admin/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
-      assert.equal(
-        settingsPageResponse.$('input[type="hidden"][name="questions_receive_user_data"]').val(),
-        'on',
-      );
-      assert.isDefined(
-        settingsPageResponse
-          .$('input[type="checkbox"][name="questions_receive_user_data"]')
-          .attr('disabled'),
-      );
-
-      const courseInfo = JSON.parse(
-        await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
-      );
-
-      const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_configuration',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          short_name: courseInfo.name,
-          title: courseInfo.title,
-          display_timezone: courseInfo.timezone,
-          questions_receive_user_data: 'on',
-        }),
+    try {
+      const user = await getOrCreateUser({
+        uid: 'editor@example.com',
+        name: 'Editor User',
+        uin: 'editor',
+        email: 'editor@example.com',
       });
-      assert.equal(response.status, 200);
-      assert.match(response.url, /\/pl\/course\/1\/course_admin\/settings$/);
-    });
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: 'editor@example.com',
+        course_role: 'Editor',
+        authn_user_id: '1',
+      });
+
+      await withUser(user, async () => {
+        const settingsPageResponse = await fetchCheerio(
+          `${siteUrl}/pl/course/1/course_admin/settings`,
+        );
+        assert.equal(settingsPageResponse.status, 200);
+        assert.equal(
+          settingsPageResponse.$('input[type="hidden"][name="questions_receive_user_data"]').val(),
+          'on',
+        );
+        assert.isDefined(
+          settingsPageResponse
+            .$('input[type="checkbox"][name="questions_receive_user_data"]')
+            .attr('disabled'),
+        );
+
+        const courseInfo = JSON.parse(
+          await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
+        );
+
+        const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_configuration',
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+            short_name: courseInfo.name,
+            title: courseInfo.title,
+            display_timezone: courseInfo.timezone,
+            questions_receive_user_data: 'on',
+          }),
+        });
+        assert.equal(response.status, 200);
+        assert.match(response.url, /\/pl\/course\/1\/course_admin\/settings$/);
+      });
+    } finally {
+      await updateCourseQuestionsReceiveUserData({
+        course_id: '1',
+        questions_receive_user_data: originalCourse.questions_receive_user_data,
+        authn_user_id: '1',
+        user_id: '1',
+        old_questions_receive_user_data: true,
+      });
+    }
   });
 
   // try submitting without being an authorized user
