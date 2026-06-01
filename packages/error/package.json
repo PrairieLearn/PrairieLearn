@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "3.0.7",
+  "version": "3.0.9",
   "type": "module",
   "repository": {
     "type": "git",
@@ -17,14 +17,14 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "es-toolkit": "^1.46.1"
+    "es-toolkit": "^1.47.0"
   },
   "devDependencies": {
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.5",
-    "vitest": "^4.1.5"
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }
