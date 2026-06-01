@@ -86,8 +86,9 @@ updates:
       - dependency-name: 'express-static-gzip'
         versions: ['>=3']
 
-      # Dropzone 6 made significant breaking changes, and we're holding off
-      # until we can test it separately.
+      # PrairieLearn itself no longer uses `dropzone`, but there are a variety
+      # of course elements that use it, so we leave it installed at a pinned
+      # version so as not to break them.
       - dependency-name: 'dropzone'
         versions: ['>=6']
 
