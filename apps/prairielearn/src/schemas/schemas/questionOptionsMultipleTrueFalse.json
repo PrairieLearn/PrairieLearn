@@ -7,19 +7,9 @@
   "required": ["trueStatements", "falseStatements"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
+      "allOf": [
         {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "$ref": "#/definitions/CommentJsonSchema"
         }
       ]
     },
@@ -40,6 +30,25 @@
       "items": {
         "type": "string"
       }
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

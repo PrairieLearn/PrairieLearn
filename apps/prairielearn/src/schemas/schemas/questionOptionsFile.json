@@ -6,6 +6,19 @@
   "additionalProperties": false,
   "properties": {
     "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    },
+    "fileName": {
+      "description": "Filename of the file to download",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
         {
@@ -21,10 +34,6 @@
           "properties": {}
         }
       ]
-    },
-    "fileName": {
-      "description": "Filename of the file to download",
-      "type": "string"
     }
   }
 }

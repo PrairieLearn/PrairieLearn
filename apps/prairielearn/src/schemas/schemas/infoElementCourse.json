@@ -7,19 +7,9 @@
   "required": ["controller"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
+      "allOf": [
         {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "$ref": "#/definitions/CommentJsonSchema"
         }
       ]
     },
@@ -33,19 +23,9 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -123,19 +103,9 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -170,6 +140,25 @@
           }
         }
       }
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

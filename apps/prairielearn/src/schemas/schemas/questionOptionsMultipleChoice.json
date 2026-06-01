@@ -7,19 +7,9 @@
   "required": ["text", "correctAnswers", "incorrectAnswers"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
+      "allOf": [
         {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "$ref": "#/definitions/CommentJsonSchema"
         }
       ]
     },
@@ -47,6 +37,25 @@
       "type": "integer",
       "minimum": -9007199254740991,
       "maximum": 9007199254740991
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

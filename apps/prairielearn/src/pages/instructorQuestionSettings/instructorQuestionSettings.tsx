@@ -27,7 +27,7 @@ import {
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
-import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import { EnumGradingMethodSchema, type QuestionPreferencesSchemaJson } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -59,7 +59,6 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {

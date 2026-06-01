@@ -7,19 +7,9 @@
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
+      "allOf": [
         {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "$ref": "#/definitions/CommentJsonSchema"
         }
       ]
     },
@@ -140,19 +130,9 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -220,19 +200,9 @@
       "default": {},
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -311,19 +281,9 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -419,12 +379,8 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["type", "default"],
+        "required": ["default", "type"],
         "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["string", "number", "boolean"]
-          },
           "default": {
             "anyOf": [
               {
@@ -450,6 +406,10 @@
                 }
               ]
             }
+          },
+          "type": {
+            "type": "string",
+            "enum": ["boolean", "number", "string"]
           }
         }
       },
@@ -457,6 +417,25 @@
         "type": "string",
         "minLength": 1
       }
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

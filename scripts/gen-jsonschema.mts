@@ -16,8 +16,33 @@ import {
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 
-const configToJsonSchema = (schema: z.ZodType) =>
-  z.toJSONSchema(schema, { target: 'draft-07', io: 'input', unrepresentable: 'any' });
+// Zod 4's `z.toJSONSchema` only emits `additionalProperties: false` for strict
+// objects, but the runtime config schema is a plain (non-strict) `z.object` that
+// silently strips unknown keys. The *published* config schemas should still flag
+// unknown/misspelled keys for editors validating against them, so we close plain
+// objects here (records keep their own `additionalProperties`). This restores the
+// prior `zod-to-json-schema` output without making the runtime schema strict.
+const closeObjectsForDocs = (node: unknown): void => {
+  if (Array.isArray(node)) {
+    node.forEach(closeObjectsForDocs);
+  } else if (node !== null && typeof node === 'object') {
+    const obj = node as Record<string, any>;
+    if (obj.type === 'object' && obj.properties && obj.additionalProperties === undefined) {
+      obj.additionalProperties = false;
+    }
+    Object.values(obj).forEach(closeObjectsForDocs);
+  }
+};
+
+const configToJsonSchema = (schema: z.ZodType) => {
+  const jsonSchema = z.toJSONSchema(schema, {
+    target: 'draft-07',
+    io: 'input',
+    unrepresentable: 'any',
+  });
+  closeObjectsForDocs(jsonSchema);
+  return jsonSchema;
+};
 
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';

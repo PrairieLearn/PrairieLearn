@@ -7,19 +7,9 @@
   "required": ["name", "title", "topics"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
+      "allOf": [
         {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "$ref": "#/definitions/CommentJsonSchema"
         }
       ]
     },
@@ -48,19 +38,9 @@
       "default": {},
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "array",
-              "items": {}
-            },
-            {
-              "type": "object",
-              "additionalProperties": {},
-              "properties": {}
+              "$ref": "#/definitions/CommentJsonSchema"
             }
           ]
         },
@@ -102,19 +82,9 @@
         "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "object",
-                "additionalProperties": {},
-                "properties": {}
+                "$ref": "#/definitions/CommentJsonSchema"
               }
             ]
           },
@@ -131,40 +101,7 @@
             "type": "string"
           },
           "color": {
-            "description": "A color name.",
-            "type": "string",
-            "enum": [
-              "red1",
-              "red2",
-              "red3",
-              "pink1",
-              "pink2",
-              "pink3",
-              "purple1",
-              "purple2",
-              "purple3",
-              "blue1",
-              "blue2",
-              "blue3",
-              "turquoise1",
-              "turquoise2",
-              "turquoise3",
-              "green1",
-              "green2",
-              "green3",
-              "yellow1",
-              "yellow2",
-              "yellow3",
-              "orange1",
-              "orange2",
-              "orange3",
-              "brown1",
-              "brown2",
-              "brown3",
-              "gray1",
-              "gray2",
-              "gray3"
-            ]
+            "$ref": "#/definitions/ColorJsonSchema"
           }
         }
       }
@@ -197,19 +134,9 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "object",
-                "additionalProperties": {},
-                "properties": {}
+                "$ref": "#/definitions/CommentJsonSchema"
               }
             ]
           },
@@ -218,40 +145,7 @@
             "type": "string"
           },
           "color": {
-            "description": "A color name.",
-            "type": "string",
-            "enum": [
-              "red1",
-              "red2",
-              "red3",
-              "pink1",
-              "pink2",
-              "pink3",
-              "purple1",
-              "purple2",
-              "purple3",
-              "blue1",
-              "blue2",
-              "blue3",
-              "turquoise1",
-              "turquoise2",
-              "turquoise3",
-              "green1",
-              "green2",
-              "green3",
-              "yellow1",
-              "yellow2",
-              "yellow3",
-              "orange1",
-              "orange2",
-              "orange3",
-              "brown1",
-              "brown2",
-              "brown3",
-              "gray1",
-              "gray2",
-              "gray3"
-            ]
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the topic.",
@@ -269,19 +163,9 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "object",
-                "additionalProperties": {},
-                "properties": {}
+                "$ref": "#/definitions/CommentJsonSchema"
               }
             ]
           },
@@ -294,40 +178,7 @@
             "type": "string"
           },
           "color": {
-            "description": "A color name.",
-            "type": "string",
-            "enum": [
-              "red1",
-              "red2",
-              "red3",
-              "pink1",
-              "pink2",
-              "pink3",
-              "purple1",
-              "purple2",
-              "purple3",
-              "blue1",
-              "blue2",
-              "blue3",
-              "turquoise1",
-              "turquoise2",
-              "turquoise3",
-              "green1",
-              "green2",
-              "green3",
-              "yellow1",
-              "yellow2",
-              "yellow3",
-              "orange1",
-              "orange2",
-              "orange3",
-              "brown1",
-              "brown2",
-              "brown3",
-              "gray1",
-              "gray2",
-              "gray3"
-            ]
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the tag.",
@@ -354,6 +205,61 @@
           }
         }
       }
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
+    },
+    "ColorJsonSchema": {
+      "description": "A color name.",
+      "type": "string",
+      "enum": [
+        "red1",
+        "red2",
+        "red3",
+        "pink1",
+        "pink2",
+        "pink3",
+        "purple1",
+        "purple2",
+        "purple3",
+        "blue1",
+        "blue2",
+        "blue3",
+        "turquoise1",
+        "turquoise2",
+        "turquoise3",
+        "green1",
+        "green2",
+        "green3",
+        "yellow1",
+        "yellow2",
+        "yellow3",
+        "orange1",
+        "orange2",
+        "orange3",
+        "brown1",
+        "brown2",
+        "brown3",
+        "gray1",
+        "gray2",
+        "gray3"
+      ]
     }
   }
 }

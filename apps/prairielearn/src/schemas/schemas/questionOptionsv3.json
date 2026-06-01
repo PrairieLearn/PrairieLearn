@@ -6,6 +6,15 @@
   "additionalProperties": {},
   "properties": {
     "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
         {

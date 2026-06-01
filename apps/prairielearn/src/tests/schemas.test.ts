@@ -90,12 +90,18 @@ describe('infoAssessment Zod schema', () => {
   });
 
   it('does not deprecate zone and question permissions in JSON Schema', () => {
-    const zone = ajvSchemas.infoAssessment.properties?.zones?.items;
+    const root = ajvSchemas.infoAssessment;
+    const resolveRef = (node: any) =>
+      node && typeof node.$ref === 'string'
+        ? root.definitions[node.$ref.replace('#/definitions/', '')]
+        : node;
+
+    const zone = resolveRef(root.properties?.zones?.items);
     assert.isObject(zone);
     assert.notProperty(zone.properties.canView, 'deprecated');
     assert.notInclude(zone.properties.canView.description, 'DEPRECATED');
 
-    const question = zone.properties.questions.items;
+    const question = resolveRef(zone.properties.questions.items);
     assert.notProperty(question.properties.canSubmit, 'deprecated');
     assert.notInclude(question.properties.canSubmit.description, 'DEPRECATED');
   });

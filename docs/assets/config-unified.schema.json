@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "maxConcurrentJobs": {
       "type": "number",
@@ -996,6 +997,7 @@
     },
     "shibLinkColors": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["normal", "hover", "active", "focus"],
       "default": {
         "normal": {
@@ -1020,6 +1022,7 @@
       "properties": {
         "normal": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["background", "border", "text"],
           "properties": {
             "background": {
@@ -1035,6 +1038,7 @@
         },
         "hover": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["background", "border", "text"],
           "properties": {
             "background": {
@@ -1050,6 +1054,7 @@
         },
         "active": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["background", "border", "text"],
           "properties": {
             "background": {
@@ -1065,6 +1070,7 @@
         },
         "focus": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["shadow"],
           "properties": {
             "shadow": {
@@ -1164,6 +1170,7 @@
       "default": [],
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["platform"],
         "properties": {
           "platform": {
@@ -1519,6 +1526,7 @@
       "default": [],
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["key", "iv"],
         "properties": {
           "key": {
@@ -1704,6 +1712,7 @@
     },
     "aiGradingCreditPoolLimits": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["add", "deduct", "setTransferable", "setNonTransferable"],
       "default": {
         "add": {
@@ -1726,6 +1735,7 @@
       "properties": {
         "add": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
@@ -1742,6 +1752,7 @@
         },
         "deduct": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
@@ -1758,6 +1769,7 @@
         },
         "setTransferable": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
@@ -1774,6 +1786,7 @@
         },
         "setNonTransferable": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
@@ -1928,6 +1941,7 @@
     },
     "costPerMillionTokens": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "gpt-4o-2024-11-20",
         "gpt-5-2025-08-07",
@@ -2012,6 +2026,7 @@
       "properties": {
         "gpt-4o-2024-11-20": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2034,6 +2049,7 @@
         },
         "gpt-5-2025-08-07": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2056,6 +2072,7 @@
         },
         "gpt-5.2-2025-12-11": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2078,6 +2095,7 @@
         },
         "gpt-5.4-mini-2026-03-17": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2100,6 +2118,7 @@
         },
         "gpt-5.4-2026-03-05": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2122,6 +2141,7 @@
         },
         "gemini-3.5-flash": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2144,6 +2164,7 @@
         },
         "gemini-3-flash-preview": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2166,6 +2187,7 @@
         },
         "gemini-3.1-pro-preview": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2188,6 +2210,7 @@
         },
         "claude-haiku-4-5": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2210,6 +2233,7 @@
         },
         "claude-sonnet-4-6": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
@@ -2232,6 +2256,7 @@
         },
         "claude-opus-4-7": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {

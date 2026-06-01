@@ -77,7 +77,11 @@ const namedDefinitions = {
 };
 
 for (const [id, schema] of Object.entries(namedDefinitions)) {
-  schema.meta({ id });
+  // `.meta()` returns a *new* registered instance and leaves the original
+  // (the one embedded in the parent schemas) unregistered, so register the
+  // existing instance directly. Merge with any current metadata to preserve
+  // descriptions etc.
+  z.globalRegistry.add(schema, { ...z.globalRegistry.get(schema), id });
 }
 
 /**

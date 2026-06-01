@@ -1,9 +1,9 @@
 import { type ZodSchema, z } from 'zod';
 
+import { EnumAssessmentToolSchema } from '../lib/db-types.js';
+
 import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
-
-const EnumAssessmentToolSchema = z.enum(['calculator']);
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
