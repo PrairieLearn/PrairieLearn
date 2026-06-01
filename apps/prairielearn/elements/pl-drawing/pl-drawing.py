@@ -385,7 +385,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
-    if data["panel"] == "submission":
+    if data["panel"] == "question" or data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
         show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
