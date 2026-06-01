@@ -234,8 +234,8 @@ export function InstructorCourseAdminSettings({
               Allow questions to access user identity
             </label>
             <div className="small text-muted">
-              When enabled, questions in this course can read the viewing user's identity (and group
-              members on group assessments). Only course owners can change this setting. See the{' '}
+              When enabled, questions in this course can read the user's identity (and group
+              members). See the{' '}
               <a
                 href="https://docs.prairielearn.com/question/server/#accessing-the-viewing-users-identity"
                 target="_blank"

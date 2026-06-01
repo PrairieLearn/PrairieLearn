@@ -9,7 +9,8 @@ import { flash } from '@prairielearn/flash';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { CourseInfoCreateEditor, saveJsonFile } from '../../lib/editors.js';
+import { config } from '../../lib/config.js';
+import { CourseInfoCreateEditor, prepareJsonFileEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -147,7 +148,7 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
 
-      const saveResult = await saveJsonFile<CourseJsonInput>({
+      const preparedEditor = await prepareJsonFileEditor<CourseJsonInput>({
         jsonPath: path.join(res.locals.course.path, 'infoCourse.json'),
         conflictCheck: { origHash: req.body.orig_hash, scope: (courseInfo) => courseInfo },
         applyChanges: (courseInfo) => {
@@ -155,10 +156,7 @@ router.post(
           courseInfo.title = req.body.title;
           courseInfo.timezone = req.body.display_timezone;
 
-          // Keep `infoCourse.json` consistent with the database value. Otherwise, the
-          // sync triggered by writing the file would overwrite the database column
-          // from the (stale) JSON value in dev mode, and would emit a divergence
-          // warning in production.
+          // Only persist settings to JSON when in development mode.
           if (questions_receive_user_data) {
             courseInfo.options = { ...courseInfo.options, questionsReceiveUserData: true };
           } else {
@@ -175,10 +173,7 @@ router.post(
         container: { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths },
       });
 
-      if (!saveResult.success) {
-        if (saveResult.reason === 'sync_failed') {
-          return res.redirect(res.locals.urlPrefix + '/edit_error/' + saveResult.jobSequenceId);
-        }
+      if (!preparedEditor.success) {
         flash(
           'error',
           'Course configuration was modified elsewhere. Please reload the page and try again.',
@@ -186,7 +181,29 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      if (questions_receive_user_data_changed) {
+      // In production, sync treats the database as the source of truth for this
+      // setting and warns if infoCourse.json disagrees. Update the DB before
+      // executing the file edit so the sync triggered by the edit sees the new
+      // value. Risk: if the later file edit fails, the DB setting has still
+      // changed and the JSON mirror may be stale until the next successful save.
+      if (questions_receive_user_data_changed && !config.devMode) {
+        await updateCourseQuestionsReceiveUserData({
+          course_id: res.locals.course.id,
+          questions_receive_user_data,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          old_questions_receive_user_data: res.locals.course.questions_receive_user_data,
+        });
+      }
+
+      const serverJob = await preparedEditor.editor.prepareServerJob();
+      try {
+        await preparedEditor.editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      if (questions_receive_user_data_changed && config.devMode) {
         await updateCourseQuestionsReceiveUserData({
           course_id: res.locals.course.id,
           questions_receive_user_data,

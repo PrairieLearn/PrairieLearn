@@ -8,7 +8,7 @@ import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import * as helperServer from '../tests/helperServer.js';
 
-import { type VariantLifecyclePhase, buildQuestionUserContext } from './user-context.js';
+import { buildQuestionUserContext } from './user-context.js';
 
 function makeQuestion(course_id: string): Pick<Question, 'course_id'> {
   return { course_id };
@@ -24,14 +24,14 @@ function call({
   courseOptedIn,
   effectiveUserId,
   groupId,
-  phase = 'invoke',
+  persistsSharedState = false,
 }: {
   questionCourseId?: string;
   variantCourseId?: string;
   courseOptedIn: boolean;
   effectiveUserId: string | null;
   groupId: string | null;
-  phase?: VariantLifecyclePhase;
+  persistsSharedState?: boolean;
 }) {
   return buildQuestionUserContext({
     question: makeQuestion(questionCourseId),
@@ -41,7 +41,7 @@ function call({
       groupId,
       variantCourse: makeVariantCourse(variantCourseId),
     },
-    phase,
+    persistsSharedState,
   });
 }
 
@@ -144,7 +144,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.deepEqual(memberUids, [u1.uid, u2.uid].sort());
   });
 
-  it('omits the user in the create phase on group variants', async () => {
+  it('omits the user when persisting shared state on group variants', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
     const group = await createGroup({
       course_instance: groupCourseInstance,
@@ -159,7 +159,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
       courseOptedIn: true,
       effectiveUserId: u1.id,
       groupId: group.id,
-      phase: 'create',
+      persistsSharedState: true,
     });
     assert.isNull(ctx.user);
     assert.isNotNull(ctx.group);

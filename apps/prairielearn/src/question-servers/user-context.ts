@@ -20,9 +20,9 @@ export interface QuestionUserContext {
 }
 
 /**
- * Identity and surrounding-course context for a single question-server phase
- * invocation. The question-server uses this to construct the user/group data
- * that `server.py` sees in `data['options']`.
+ * Identity and surrounding-course context for a single question-server call.
+ * The question-server uses this to construct the user/group data that
+ * `server.py` sees in `data['options']`.
  */
 export interface QuestionCaller {
   /** The user making the request, or `null` when none applies (e.g. grading a group variant). */
@@ -34,19 +34,6 @@ export interface QuestionCaller {
 }
 
 const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
-
-/**
- * Stage of a variant's lifecycle. Determines whether the caller's user
- * identity may flow into output that other group members will see.
- *
- * - `'create'`: `generate`/`prepare` — produce variant state that is persisted
- *   and reused for every subsequent invocation on the variant. On group
- *   variants, that output is visible to every group member, so we don't expose
- *   one member's identity there.
- * - `'invoke'`: `render`/`parse`/`grade`/`test`/`file` — produce per-call
- *   output for the current caller only.
- */
-export type VariantLifecyclePhase = 'create' | 'invoke';
 
 function toQuestionUser({
   uid,
@@ -72,20 +59,26 @@ export async function buildQuestionUserContext({
   question,
   course,
   caller,
-  phase,
+  persistsSharedState,
 }: {
   question: Pick<Question, 'course_id'>;
   /** The question's owning course; `questions_receive_user_data` is the opt-in switch. */
   course: Pick<Course, 'questions_receive_user_data'>;
   caller: QuestionCaller;
-  phase: VariantLifecyclePhase;
+  /**
+   * Whether this call's output is persisted on the variant and reused for every
+   * later call. True for `generate`/`prepare`, which bake their result into the
+   * variant's stored state; false for `render`/`parse`/`grade`/`test`/`file`,
+   * which produce fresh per-call output. On group variants that stored state is
+   * shown to every member, so we withhold the caller's identity when it's true.
+   */
+  persistsSharedState: boolean;
 }): Promise<QuestionUserContext> {
   if (!course.questions_receive_user_data) return EMPTY_USER_CONTEXT;
   if (!idsEqual(question.course_id, caller.variantCourse.id)) return EMPTY_USER_CONTEXT;
 
-  // Group variants persist generate/prepare output, so don't bake a single
-  // member's identity into that shared state.
-  const includeUser = !(phase === 'create' && caller.groupId != null);
+  // Don't bake a single member's identity into state that the whole group sees.
+  const includeUser = !(persistsSharedState && caller.groupId != null);
 
   const user =
     includeUser && caller.effectiveUserId != null
