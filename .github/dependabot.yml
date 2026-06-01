@@ -67,8 +67,8 @@ updates:
       - dependency-name: '@types/express-serve-static-core'
         versions: ['>=5']
 
-      # body-parser 2.x and cookie 1.x are intended for Express 5, which
-      # we are not yet ready to upgrade to.
+      # Keep Express-adjacent packages on versions compatible with our current
+      # Express 4 stack until we intentionally migrate to Express 5.
       - dependency-name: 'body-parser'
         versions: ['>=2']
       - dependency-name: '@types/body-parser'
