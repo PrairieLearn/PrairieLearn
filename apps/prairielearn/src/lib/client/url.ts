@@ -71,7 +71,7 @@ export function getAssessmentStatisticsDownloadUrl({
   assessmentId: string;
   filename: string;
 }): string {
-  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/assessment_statistics/${filename}`;
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/statistics/${filename}`;
 }
 
 export function getManualGradingAssessmentQuestionUrl({

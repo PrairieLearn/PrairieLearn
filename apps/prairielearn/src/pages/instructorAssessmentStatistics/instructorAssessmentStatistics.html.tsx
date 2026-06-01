@@ -107,7 +107,7 @@ export function InstructorAssessmentStatistics({
     navContext: {
       type: 'instructor',
       page: 'assessment',
-      subPage: 'assessment_statistics',
+      subPage: 'statistics',
     },
     options: {
       fullWidth: true,
@@ -363,6 +363,7 @@ export function InstructorAssessmentStatistics({
           </details>
         </div>
 
+        <hr className="my-4" />
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
           <h2 className="h4 mb-0">Question statistics</h2>
           {resLocals.authz_data.has_course_permission_edit ? (

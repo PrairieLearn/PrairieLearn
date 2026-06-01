@@ -264,7 +264,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/:filename',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics/:filename',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/statistics/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment/*',
