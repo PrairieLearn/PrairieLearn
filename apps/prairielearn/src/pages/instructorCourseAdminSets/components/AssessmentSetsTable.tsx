@@ -337,7 +337,7 @@ export function AssessmentSetsPage({
                   />
                   <button className="btn btn-sm btn-light mx-1" type="submit">
                     <i className="fa fa-save" aria-hidden="true" />
-                    Save and sync
+                    Save
                   </button>
                   <button
                     className="btn btn-sm btn-light"

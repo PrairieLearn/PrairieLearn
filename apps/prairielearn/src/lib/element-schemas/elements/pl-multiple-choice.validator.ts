@@ -4,7 +4,7 @@ import {
   type ValidatorContext,
   attr,
   defineTagValidators,
-} from '@reteps/tree-sitter-htmlmustache/linter';
+} from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { isBooleanValue, isFalseValue } from '../htmlmustache-plugin-utils.ts';
 

@@ -1,4 +1,4 @@
-import type { CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { elementModules } from './registry.generated.js';
 import type { ElementSchemaModule } from './types.js';

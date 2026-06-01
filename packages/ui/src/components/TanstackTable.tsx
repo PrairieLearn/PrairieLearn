@@ -246,8 +246,6 @@ export function TanstackTable<RowDataModel>({
   // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
     if (hasAutoSized) {
-      // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
@@ -498,6 +496,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
  * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
+ * @param params.onResetColumnFilters - Callback that if provided, adds a clear filters control.
  */
 export function TanstackTableCard<RowDataModel>({
   table,
@@ -510,6 +509,7 @@ export function TanstackTableCard<RowDataModel>({
   tableOptions,
   downloadButtonOptions,
   statusContent,
+  onResetColumnFilters,
   className,
   ...divProps
 }: {
@@ -531,6 +531,7 @@ export function TanstackTableCard<RowDataModel>({
     'table' | 'singularLabel' | 'pluralLabel'
   > & { pluralLabel?: string; singularLabel?: string };
   statusContent?: ReactNode;
+  onResetColumnFilters?: () => void;
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -616,7 +617,19 @@ export function TanstackTableCard<RowDataModel>({
           <ColumnManager table={table} topContent={columnManager?.topContent} />
           {columnManager?.buttons}
         </div>
-        <div className="ms-auto text-muted text-nowrap">
+        <div className="ms-auto d-flex align-items-center gap-1 text-muted text-nowrap">
+          {onResetColumnFilters && (
+            <OverlayTrigger overlay={<Tooltip>Clear filters</Tooltip>}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-muted p-0"
+                aria-label="Clear filters"
+                onClick={onResetColumnFilters}
+              >
+                <i className="bi bi-x-circle" aria-hidden="true" />
+              </button>
+            </OverlayTrigger>
+          )}
           {statusContent ?? (
             <>
               Showing {displayedCount} of {totalCount}{' '}

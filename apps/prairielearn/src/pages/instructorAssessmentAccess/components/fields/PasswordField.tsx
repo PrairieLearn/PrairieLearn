@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function PasswordToggle({
@@ -16,11 +18,13 @@ function PasswordToggle({
   onChange: (value: string | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <ToggleTitle
       id={`${idPrefix}-password-enabled`}
       label="Password"
       checked={value !== null}
+      disabled={!ruleEditable}
       onChange={(checked) => onChange(checked ? '' : null)}
     />
   );
@@ -35,6 +39,7 @@ function PasswordDetails({
   onChange: (value: string | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const [showPassword, setShowPassword] = useState(false);
   const isInvalid = value !== null && value === '';
   const errorId = `${idPrefix}-password-error`;
@@ -55,6 +60,7 @@ function PasswordDetails({
               placeholder="Password"
               value={value}
               isInvalid={isInvalid}
+              disabled={!ruleEditable}
               data-1p-ignore
               onChange={({ currentTarget }) => onChange(currentTarget.value)}
             />
@@ -103,7 +109,13 @@ export function OverridePasswordField({ index }: { index: number }) {
 
   const { field } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
-    rules: { validate: (v) => v !== '' || 'Password is required' },
+    rules: {
+      validate: validateActiveOverrideField(
+        index,
+        'password',
+        (value) => value !== '' || 'Password is required',
+      ),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');

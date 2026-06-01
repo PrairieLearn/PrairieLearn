@@ -1,4 +1,4 @@
-import type { SchemaFormat } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { SchemaFormat } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 export const BOOLEAN_TRUE_VALUES = [
   'true',

@@ -16,6 +16,7 @@ export const requiredTableFields = {
   assessment_instances: ['assessment_instance_id'],
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
+  institution_settings: ['institution_id'],
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
   student_label_enrollments: ['enrollment_id', 'action_detail'],
@@ -65,6 +66,10 @@ export type SupportedTableActionCombination =
   | {
       tableName: 'institutions';
       actionDetail?: null;
+    }
+  | {
+      tableName: 'institution_settings';
+      actionDetail?: 'course_request_message' | null;
     }
   | {
       tableName: 'enrollments';

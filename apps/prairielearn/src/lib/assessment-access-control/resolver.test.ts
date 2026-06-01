@@ -541,7 +541,7 @@ describe('resolveAccessControl', () => {
           authorized: false,
           showBeforeRelease: true,
           submittable: false,
-          showClosedAssessment: false,
+          visibility: { showQuestions: true, showScore: true },
         },
       },
       {
@@ -910,7 +910,12 @@ describe('resolveAccessControl', () => {
         rules: [ptDefaultRule],
         authzMode: 'Public',
         reservations: [validReservation],
-        expect: { authorized: false, submittable: false, credit: 0, showClosedAssessment: false },
+        expect: {
+          authorized: false,
+          submittable: false,
+          credit: 0,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'reservation UUID does not match: denied',
@@ -1077,7 +1082,11 @@ describe('resolveAccessControl', () => {
           rules: [cheatSheetRule],
           authzMode: 'Public',
           date: new Date('2025-03-15T00:00:00Z'),
-          expect: { authorized: true, submittable: false, showClosedAssessment: true },
+          expect: {
+            authorized: true,
+            submittable: false,
+            visibility: { showQuestions: true, showScore: true },
+          },
         },
         {
           name: 'Exam mode with readOnly reservation: review-only',
@@ -1085,7 +1094,11 @@ describe('resolveAccessControl', () => {
           authzMode: 'Exam',
           date: new Date('2025-03-15T00:00:00Z'),
           reservations: [{ examUuid: 'exam-uuid-1', accessEnd: new Date('2025-04-01T00:00:00Z') }],
-          expect: { authorized: true, submittable: false, showClosedAssessment: true },
+          expect: {
+            authorized: true,
+            submittable: false,
+            visibility: { showQuestions: true, showScore: true },
+          },
         },
       ])('$name', (c) => {
         expect(runCase(c)).toMatchObject(c.expect);
@@ -1107,8 +1120,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: true,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
         {
@@ -1124,8 +1136,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: true,
-            showClosedAssessment: false,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: false, showScore: true },
           },
         },
         {
@@ -1145,8 +1156,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: true,
-            showClosedAssessment: false,
-            showClosedAssessmentScore: false,
+            visibility: { showQuestions: false, showScore: false },
           },
         },
         {
@@ -1159,8 +1169,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: false,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
         {
@@ -1179,8 +1188,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: true,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
         {
@@ -1196,8 +1204,7 @@ describe('resolveAccessControl', () => {
           expect: {
             authorized: true,
             submittable: false,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
       ])('$name', (c) => {
@@ -1232,8 +1239,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: true,
               submittable: true,
-              showClosedAssessment: false,
-              showClosedAssessmentScore: false,
+              visibility: { showQuestions: false, showScore: false },
             },
           },
           {
@@ -1247,8 +1253,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: false,
               submittable: false,
-              showClosedAssessment: false,
-              showClosedAssessmentScore: false,
+              visibility: { showQuestions: false, showScore: false },
             },
           },
           {
@@ -1270,8 +1275,7 @@ describe('resolveAccessControl', () => {
               examAccessEnd: null,
               showBeforeRelease: false,
               nextActiveDate: null,
-              showClosedAssessment: true,
-              showClosedAssessmentScore: true,
+              visibility: { showQuestions: true, showScore: true },
             },
           },
           {
@@ -1291,8 +1295,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: false,
               submittable: false,
-              showClosedAssessment: false,
-              showClosedAssessmentScore: false,
+              visibility: { showQuestions: false, showScore: false },
             },
           },
         ])('$name', (c) => {
@@ -1319,8 +1322,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: true,
               submittable: true,
-              showClosedAssessment: true,
-              showClosedAssessmentScore: true,
+              visibility: { showQuestions: true, showScore: true },
             },
           },
           {
@@ -1333,8 +1335,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: false,
               submittable: false,
-              showClosedAssessment: false,
-              showClosedAssessmentScore: false,
+              visibility: { showQuestions: false, showScore: false },
             },
           },
         ])('$name', (c) => {
@@ -1354,8 +1355,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: true,
               submittable: false,
-              showClosedAssessment: true,
-              showClosedAssessmentScore: true,
+              visibility: { showQuestions: true, showScore: true },
             },
           },
           {
@@ -1373,8 +1373,7 @@ describe('resolveAccessControl', () => {
             expect: {
               authorized: false,
               submittable: false,
-              showClosedAssessment: false,
-              showClosedAssessmentScore: false,
+              visibility: { showQuestions: false, showScore: false },
               showBeforeRelease: false,
               examAccessEnd: null,
             },
@@ -1562,8 +1561,7 @@ describe('resolveAccessControl', () => {
             authorized: true,
             submittable: false,
             showBeforeRelease: false,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
         {
@@ -1591,8 +1589,7 @@ describe('resolveAccessControl', () => {
             authorized: true,
             submittable: false,
             showBeforeRelease: false,
-            showClosedAssessment: true,
-            showClosedAssessmentScore: true,
+            visibility: { showQuestions: true, showScore: true },
           },
         },
       ])('$name', (c) => {
@@ -1785,43 +1782,66 @@ describe('resolveAccessControl', () => {
   });
 
   describe('after-complete visibility (top-level)', () => {
+    const completedRule = (rule: AccessControlJson = {}) =>
+      makeDefaultRule({
+        ...rule,
+        dateControl: {
+          release: { date: '2025-03-01T00:00:00Z' },
+          // The `baseInput` date that `makeDefaultRule` will apply is after this due date.
+          due: { date: '2025-03-10T00:00:00Z' },
+          afterLastDeadline: { allowSubmissions: false },
+          ...rule.dateControl,
+        },
+      });
+
     it.each<ResolveCase>([
       {
-        name: 'no afterComplete: questions hidden by default',
-        rules: [makeDefaultRule({})],
-        expect: { authorized: false, submittable: false, showClosedAssessment: false },
+        name: 'no afterComplete: defaults to questions hidden and score visible',
+        rules: [completedRule()],
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'questions.hidden=false: questions visible',
-        rules: [makeDefaultRule({ afterComplete: { questions: { hidden: false } } })],
-        expect: { authorized: false, submittable: false, showClosedAssessment: true },
-      },
-      {
-        name: 'no afterComplete: score visible by default',
-        rules: [makeDefaultRule({})],
-        expect: { authorized: false, submittable: false, showClosedAssessmentScore: true },
+        rules: [completedRule({ afterComplete: { questions: { hidden: false } } })],
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
       },
       {
         name: 'questions.hidden=true: questions hidden',
-        rules: [makeDefaultRule({ afterComplete: { questions: { hidden: true } } })],
-        expect: { authorized: false, submittable: false, showClosedAssessment: false },
+        rules: [completedRule({ afterComplete: { questions: { hidden: true } } })],
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'questions.visibleFromDate elapsed: questions visible',
         rules: [
-          makeDefaultRule({
+          completedRule({
             afterComplete: {
               questions: { hidden: true, visibleFromDate: '2025-03-10T00:00:00Z' },
             },
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, submittable: false, showClosedAssessment: true },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
       },
       {
         name: 'questions.visibleUntilDate elapsed: questions hidden again',
         rules: [
-          makeDefaultRule({
+          completedRule({
             afterComplete: {
               questions: {
                 hidden: true,
@@ -1832,24 +1852,36 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, submittable: false, showClosedAssessment: false },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         name: 'score.hidden=true: score hidden',
-        rules: [makeDefaultRule({ afterComplete: { score: { hidden: true } } })],
-        expect: { authorized: false, submittable: false, showClosedAssessmentScore: false },
+        rules: [completedRule({ afterComplete: { score: { hidden: true } } })],
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: false },
+        },
       },
       {
         name: 'score.visibleFromDate elapsed: score visible',
         rules: [
-          makeDefaultRule({
+          completedRule({
             afterComplete: {
               score: { hidden: true, visibleFromDate: '2025-03-10T00:00:00Z' },
             },
           }),
         ],
         date: new Date('2025-03-15T12:00:00Z'),
-        expect: { authorized: false, submittable: false, showClosedAssessmentScore: true },
+        expect: {
+          authorized: true,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: true },
+        },
       },
       {
         // Per-rule validation forbids `score.hidden: true` alongside
@@ -1860,7 +1892,7 @@ describe('resolveAccessControl', () => {
         // without a score.
         name: 'merged default + override produces hidden-score: questions also hidden',
         rules: [
-          makeDefaultRule({ afterComplete: { questions: { hidden: false } } }),
+          completedRule({ afterComplete: { questions: { hidden: false } } }),
           makeOverrideRule(
             1,
             { afterComplete: { score: { hidden: true } } },
@@ -1868,10 +1900,95 @@ describe('resolveAccessControl', () => {
           ),
         ],
         expect: {
-          authorized: false,
+          authorized: true,
           submittable: false,
-          showClosedAssessmentScore: false,
-          showClosedAssessment: false,
+          visibility: { showQuestions: false, showScore: false },
+        },
+      },
+    ])('$name', (c) => {
+      expect(runCase(c)).toMatchObject(c.expect);
+    });
+
+    it.each<ResolveCase>([
+      {
+        name: 'active before due: afterComplete score policy is not applied yet',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-20T00:00:00Z' },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
+      },
+      {
+        name: 'late deadline window: afterComplete score policy is not applied yet',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
+              afterLastDeadline: { allowSubmissions: false },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
+        },
+      },
+      {
+        name: 'after last late deadline: afterComplete score policy is applied',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              lateDeadlines: [{ date: '2025-03-20T00:00:00Z', credit: 80 }],
+              afterLastDeadline: { allowSubmissions: false },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-21T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: false,
+          complete: true,
+          visibility: { showQuestions: false, showScore: false },
+        },
+      },
+      {
+        name: 'afterLastDeadline submissions allowed: afterComplete score policy is not applied',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+              afterLastDeadline: { allowSubmissions: true, credit: 10 },
+            },
+            afterComplete: { score: { hidden: true } },
+          }),
+        ],
+        date: new Date('2025-03-21T12:00:00Z'),
+        expect: {
+          authorized: true,
+          submittable: true,
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
         },
       },
     ])('$name', (c) => {

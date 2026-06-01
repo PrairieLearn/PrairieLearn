@@ -4,7 +4,7 @@ import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/linter';
+} from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
@@ -21,7 +21,7 @@ function getLinter(): Promise<Linter> {
   linterPromise ??= createLinter({
     locateWasm: (name) => {
       if (name === GRAMMAR_WASM_FILENAME) {
-        return require.resolve('@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
+        return require.resolve('@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
       }
       if (name === RUNTIME_WASM_FILENAME) {
         return require.resolve('web-tree-sitter/web-tree-sitter.wasm');

@@ -4,13 +4,14 @@ import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/linter';
+} from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
 const require = createRequire(import.meta.url);
-const wasmPath = require.resolve('@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
+const wasmPath =
+  require.resolve('@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
 
 let linterPromise: Promise<Linter> | null = null;
 

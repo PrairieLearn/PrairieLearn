@@ -1,4 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { type UseQueryResult, useMutation } from '@tanstack/react-query';
+import type { TRPCClientErrorLike } from '@trpc/client';
+import type { inferRouterOutputs } from '@trpc/server';
 import clsx from 'clsx';
 import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -25,17 +27,21 @@ import {
 import type { GroupUsersRow } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { AssessmentRouter } from '../../../trpc/assessment/trpc.js';
+import type { ActionAccess } from '../types.js';
+
+type MembershipData = inferRouterOutputs<AssessmentRouter>['assessmentGroups']['membership'];
 
 function EditGroupModal({
   row,
   show,
   onHide,
-  onGroupEdited,
+  onGroupMembershipChanged,
 }: {
   row: GroupUsersRow;
   show: boolean;
   onHide: () => void;
-  onGroupEdited: (group: GroupUsersRow, notAssigned: string[]) => void;
+  onGroupMembershipChanged: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.editGroup.mutationOptions());
@@ -55,8 +61,8 @@ function EditGroupModal({
     mutation.mutate(
       { groupId: row.group_id, uids: data.uids },
       {
-        onSuccess: ({ group, notAssigned, failures }) => {
-          onGroupEdited(group, notAssigned);
+        onSuccess: ({ failures }) => {
+          onGroupMembershipChanged();
           if (failures.length === 0) {
             reset();
             mutation.reset();
@@ -157,12 +163,12 @@ function DeleteGroupModal({
   row,
   show,
   onHide,
-  onGroupDeleted,
+  onGroupMembershipChanged,
 }: {
   row: GroupUsersRow;
   show: boolean;
   onHide: () => void;
-  onGroupDeleted: (groupId: string, notAssigned: string[]) => void;
+  onGroupMembershipChanged: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteGroup.mutationOptions());
@@ -181,9 +187,10 @@ function DeleteGroupModal({
           mutation.mutate(
             { groupId: row.group_id },
             {
-              onSuccess: ({ notAssigned }) => {
-                onGroupDeleted(row.group_id, notAssigned);
+              onSuccess: () => {
+                onGroupMembershipChanged();
                 mutation.reset();
+                onHide();
               },
             },
           );
@@ -228,7 +235,7 @@ function UploadAssessmentGroupsModal({
     <Modal show={show} onHide={onHide}>
       <form method="POST" encType="multipart/form-data">
         <Modal.Header>
-          <Modal.Title>Upload new group assignments</Modal.Title>
+          <Modal.Title>Upload group memberships</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>Upload a CSV file in the format of:</p>
@@ -420,11 +427,11 @@ function RandomAssessmentGroupsModal({
 function AddGroupModal({
   show,
   onHide,
-  onGroupAdded,
+  onGroupMembershipChanged,
 }: {
   show: boolean;
   onHide: () => void;
-  onGroupAdded: (group: GroupUsersRow, notAssigned: string[]) => void;
+  onGroupMembershipChanged: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.addGroup.mutationOptions());
@@ -441,10 +448,11 @@ function AddGroupModal({
 
   const onSubmit = (data: { groupName: string; uids: string }) => {
     mutation.mutate(data, {
-      onSuccess: ({ group, notAssigned }) => {
-        onGroupAdded(group, notAssigned);
+      onSuccess: () => {
+        onGroupMembershipChanged();
         reset();
         mutation.reset();
+        onHide();
       },
     });
   };
@@ -545,13 +553,13 @@ function DeleteAllGroupsModal({
   assessmentNumber,
   show,
   onHide,
-  onAllGroupsDeleted,
+  onGroupMembershipChanged,
 }: {
   assessmentSetName: string;
   assessmentNumber: string;
   show: boolean;
   onHide: () => void;
-  onAllGroupsDeleted: (notAssigned: string[]) => void;
+  onGroupMembershipChanged: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
@@ -568,9 +576,10 @@ function DeleteAllGroupsModal({
         onSubmit={(e) => {
           e.preventDefault();
           mutation.mutate(undefined, {
-            onSuccess: ({ notAssigned }) => {
-              onAllGroupsDeleted(notAssigned);
+            onSuccess: () => {
+              onGroupMembershipChanged();
               mutation.reset();
+              onHide();
             },
           });
         }}
@@ -665,43 +674,30 @@ function GroupRow({
 
 export function GroupsCard({
   groupsCsvFilename,
-  initialGroups,
-  initialNotAssigned,
+  membershipQuery,
   assessment,
   assessmentSet,
   courseInstanceId,
   csrfToken,
-  canEdit,
+  editAccess,
   minGroupSize,
   maxGroupSize,
+  onRefresh,
 }: {
-  groupsCsvFilename?: string;
-  initialGroups?: GroupUsersRow[];
-  initialNotAssigned?: string[];
+  groupsCsvFilename: string;
+  membershipQuery: UseQueryResult<MembershipData, TRPCClientErrorLike<AssessmentRouter>>;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
   courseInstanceId: string;
   csrfToken: string;
-  canEdit: boolean;
+  editAccess: ActionAccess;
   minGroupSize: number;
   maxGroupSize: number;
+  onRefresh: () => void;
 }) {
-  const [groups, setGroups] = useState(initialGroups);
-  const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState(() => Date.now());
+  const { groups, notAssigned } = membershipQuery.data ?? { groups: [], notAssigned: [] };
   const [now, setNow] = useState(() => Date.now());
-  const trpc = useTRPC();
-  const refreshMutation = useMutation(
-    trpc.assessmentGroups.refreshGroups.mutationOptions({
-      onSuccess: ({ groups: newGroups, notAssigned: newNotAssigned }) => {
-        const refreshedAt = Date.now();
-        setGroups(newGroups);
-        setNotAssigned(newNotAssigned);
-        setLastRefreshedAt(refreshedAt);
-        setNow(refreshedAt);
-      },
-    }),
-  );
+  const canEdit = editAccess.status === 'allowed';
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
@@ -714,25 +710,18 @@ export function GroupsCard({
   const editModal = useModalState<GroupUsersRow>();
   const deleteModal = useModalState<GroupUsersRow>();
 
-  const handleGroupAdded = (group: GroupUsersRow, newNotAssigned: string[]) => {
-    setGroups((prev) => [...(prev ?? []), group]);
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleGroupUpdated = (group: GroupUsersRow, newNotAssigned: string[]) => {
-    setGroups((prev) => prev?.map((g) => (g.group_id === group.group_id ? group : g)));
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleGroupDeleted = (groupId: string, newNotAssigned: string[]) => {
-    setGroups((prev) => prev?.filter((g) => g.group_id !== groupId));
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleAllGroupsDeleted = (newNotAssigned: string[]) => {
-    setGroups([]);
-    setNotAssigned(newNotAssigned);
-  };
+  const groupCount = groups.length;
+  const assignmentSummary = run(() => {
+    const unassignedCount = notAssigned.length;
+    const assignedCount = groups.reduce((sum, g) => sum + g.size, 0);
+    const totalStudents = unassignedCount + assignedCount;
+    if (totalStudents === 0) return null;
+    if (unassignedCount === 0) return 'All students are assigned';
+    if (assignedCount === 0) {
+      return `${unassignedCount} student${unassignedCount === 1 ? '' : 's'} unassigned`;
+    }
+    return `${assignedCount} assigned · ${unassignedCount} unassigned`;
+  });
 
   return (
     <>
@@ -753,20 +742,14 @@ export function GroupsCard({
           <AddGroupModal
             show={addModal.show}
             onHide={addModal.hide}
-            onGroupAdded={(group, notAssigned) => {
-              handleGroupAdded(group, notAssigned);
-              addModal.hide();
-            }}
+            onGroupMembershipChanged={onRefresh}
           />
           <DeleteAllGroupsModal
             assessmentSetName={assessmentSet.name}
             assessmentNumber={assessment.number}
             show={deleteAllModal.show}
             onHide={deleteAllModal.hide}
-            onAllGroupsDeleted={(notAssigned) => {
-              handleAllGroupsDeleted(notAssigned);
-              deleteAllModal.hide();
-            }}
+            onGroupMembershipChanged={onRefresh}
           />
           {editModal.data && (
             <EditGroupModal
@@ -774,7 +757,7 @@ export function GroupsCard({
               row={editModal.data}
               show={editModal.show}
               onHide={editModal.hide}
-              onGroupEdited={handleGroupUpdated}
+              onGroupMembershipChanged={onRefresh}
             />
           )}
           {deleteModal.data && (
@@ -783,10 +766,7 @@ export function GroupsCard({
               row={deleteModal.data}
               show={deleteModal.show}
               onHide={deleteModal.hide}
-              onGroupDeleted={(groupId, newNotAssigned) => {
-                handleGroupDeleted(groupId, newNotAssigned);
-                deleteModal.hide();
-              }}
+              onGroupMembershipChanged={onRefresh}
             />
           )}
         </>
@@ -797,21 +777,25 @@ export function GroupsCard({
             <div>
               <h5 className="mb-1">Groups</h5>
               <div className="text-muted small">
-                {groups?.length ?? 0} group{(groups?.length ?? 0) === 1 ? '' : 's'}
-                {' · '}
-                {run(() => {
-                  const unassignedCount = notAssigned?.length ?? 0;
-                  const assignedCount = groups?.reduce((sum, g) => sum + g.size, 0) ?? 0;
-                  const totalStudents = unassignedCount + assignedCount;
-                  if (totalStudents === 0) return 'No students enrolled';
-                  if (unassignedCount === 0) return 'All students are assigned';
-                  if (assignedCount === 0) {
-                    return `${unassignedCount} student${unassignedCount === 1 ? '' : 's'} unassigned`;
-                  }
-                  return `${assignedCount} assigned · ${unassignedCount} unassigned`;
-                })}
-                {' · Updated '}
-                {formatDistance(lastRefreshedAt, now, { addSuffix: true })}
+                {groupCount} group{groupCount === 1 ? '' : 's'}
+                {assignmentSummary && (
+                  <>
+                    {' · '}
+                    {assignmentSummary}
+                  </>
+                )}
+                {membershipQuery.data ? (
+                  <>
+                    {' · Updated '}
+                    {formatDistance(
+                      membershipQuery.dataUpdatedAt,
+                      Math.max(now, membershipQuery.dataUpdatedAt),
+                      { addSuffix: true },
+                    )}
+                  </>
+                ) : (
+                  membershipQuery.isFetching && <> · Refreshing...</>
+                )}
               </div>
             </div>
             <div className="d-flex gap-2">
@@ -825,45 +809,49 @@ export function GroupsCard({
                 </button>
               )}
               <DropdownButton as={ButtonGroup} title="Actions" variant="outline-secondary">
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => uploadModal.showWithData(null)}
-                >
-                  <i className="bi bi-upload me-2" aria-hidden="true" />
-                  Import CSV
-                </Dropdown.Item>
+                {canEdit && (
+                  <Dropdown.Item
+                    as="button"
+                    type="button"
+                    onClick={() => uploadModal.showWithData(null)}
+                  >
+                    <i className="bi bi-upload me-2" aria-hidden="true" />
+                    Import CSV
+                  </Dropdown.Item>
+                )}
                 <Dropdown.Item
                   as="a"
                   href={getAssessmentDownloadUrl({
                     courseInstanceId,
                     assessmentId: assessment.id,
-                    filename: groupsCsvFilename ?? '',
+                    filename: groupsCsvFilename,
                   })}
                 >
                   <i className="bi bi-download me-2" aria-hidden="true" />
                   Export CSV
                 </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  disabled={!canEdit}
-                  className="text-danger"
-                  onClick={() => deleteAllModal.showWithData(null)}
-                >
-                  <i className="bi bi-trash me-2" aria-hidden="true" />
-                  Delete all
-                </Dropdown.Item>
+                {canEdit && (
+                  <>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      as="button"
+                      type="button"
+                      className="text-danger"
+                      onClick={() => deleteAllModal.showWithData(null)}
+                    >
+                      <i className="bi bi-trash me-2" aria-hidden="true" />
+                      Delete all
+                    </Dropdown.Item>
+                  </>
+                )}
               </DropdownButton>
               <Button
                 variant="outline-secondary"
                 aria-label="Refresh groups"
-                disabled={refreshMutation.isPending}
-                onClick={() => refreshMutation.mutate()}
+                disabled={membershipQuery.isFetching}
+                onClick={onRefresh}
               >
-                {refreshMutation.isPending ? (
+                {membershipQuery.isFetching ? (
                   <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
                 ) : (
                   <i className="bi bi-arrow-clockwise" aria-hidden="true" />
@@ -872,7 +860,19 @@ export function GroupsCard({
             </div>
           </div>
 
-          {notAssigned && notAssigned.length > 0 && (
+          {editAccess.status === 'denied' && (
+            <Alert variant="info" className="mb-3">
+              {editAccess.reason}
+            </Alert>
+          )}
+
+          {membershipQuery.isError && (
+            <Alert variant="danger" className="mb-3">
+              Could not refresh group memberships. {membershipQuery.error.message}
+            </Alert>
+          )}
+
+          {notAssigned.length > 0 && (
             <Alert
               variant="warning"
               className="d-flex flex-column flex-md-row justify-content-md-between align-items-md-baseline gap-3"
@@ -913,7 +913,7 @@ export function GroupsCard({
                 </tr>
               </thead>
               <tbody>
-                {groups && groups.length > 0 ? (
+                {groups.length > 0 ? (
                   groups.map((row) => (
                     <GroupRow
                       key={row.group_id}

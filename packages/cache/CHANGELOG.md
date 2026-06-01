@@ -1,5 +1,17 @@
 # @prairielearn/cache
 
+## 2.1.12
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.1.11
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 2.1.10
 
 ### Patch Changes

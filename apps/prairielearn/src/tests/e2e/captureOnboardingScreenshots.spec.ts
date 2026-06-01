@@ -120,6 +120,7 @@ async function highlight(locator: Locator, opts?: { offset?: number }) {
       `left: ${left}px`,
       `width: ${right - left}px`,
       `height: ${bottom - top}px`,
+      'box-sizing: border-box',
       'border: 3px solid #d6336c',
       'border-radius: 6px',
       'z-index: 2147483647',
@@ -201,7 +202,6 @@ async function captureCourseLanding(page: Page, courseUrl: string) {
 
 async function captureStaffPage(page: Page, courseUrl: string) {
   console.log('Staff page (Add users modal with Fa25 → Student data editor)');
-  await page.setViewportSize(TALL_VIEWPORT);
   await page.goto(`${courseUrl}/course_admin/staff`);
   await page.getByRole('button', { name: /Add users/ }).waitFor();
 
@@ -216,7 +216,6 @@ async function captureStaffPage(page: Page, courseUrl: string) {
 
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'hidden' });
-  await page.setViewportSize(VIEWPORT);
 }
 
 async function captureCreateInstanceModal(page: Page, courseUrl: string): Promise<string> {
@@ -240,11 +239,7 @@ async function captureCreateInstanceModal(page: Page, courseUrl: string): Promis
 async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   console.log('Question flow (questions list, create, edit, preview)');
   await page.goto(`${courseInstanceUrl}/instructor/course_admin/questions`);
-  await page.getByRole('heading', { name: 'Questions' }).waitFor();
-  const addQuestion = page
-    .locator('a[href$="/questions/create"], button[name*="add" i]')
-    .filter({ hasText: /Add question/i })
-    .first();
+  const addQuestion = page.getByRole('link', { name: 'Create new question', exact: true });
   await addQuestion.waitFor({ timeout: 60_000 });
   await highlight(addQuestion);
   await shoot(page, '06-questions');
@@ -255,19 +250,8 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
 
   // The page defaults to "PrairieLearn template" with the gallery shown.
   // Capture it before switching to "Empty question" for the tutorial flow.
-  await page.setViewportSize(TALL_VIEWPORT);
   await page.getByRole('heading', { name: 'Basic questions', exact: true }).waitFor();
-  const templatesBottom = await page.evaluate(() => {
-    const groups = Array.from(document.querySelectorAll('[role="group"]'));
-    const advancedGroup = groups.find((g) =>
-      /Advanced questions/i.test(g.querySelector('h3')?.textContent ?? ''),
-    );
-    return advancedGroup ? Math.ceil(advancedGroup.getBoundingClientRect().bottom) : null;
-  });
-  await shoot(page, '11-question-templates', {
-    clip: { x: 0, y: 0, width: TALL_VIEWPORT.width, height: (templatesBottom ?? 1200) + 24 },
-  });
-  await page.setViewportSize(VIEWPORT);
+  await shoot(page, '11-question-templates');
 
   await page.getByText('Empty question', { exact: true }).click();
   await page.getByText("You'll start with empty").waitFor();
@@ -298,7 +282,7 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
     .click();
   await page.waitForURL(/\/file_edit\/.*question\.html/);
   await setAceEditorContent(page, QUESTION_HTML);
-  await highlight(page.getByRole('button', { name: /Save and sync/ }));
+  await highlight(page.getByRole('button', { name: 'Save' }));
   const editorCardBottom = await page.evaluate(() => {
     const card = document.querySelector('#file-editor-draft .card');
     return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
@@ -307,7 +291,7 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
     clip: { x: 0, y: 0, width: VIEWPORT.width, height: (editorCardBottom ?? 600) + 24 },
   });
 
-  await page.getByRole('button', { name: /Save and sync/ }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
   await page.waitForLoadState('networkidle');
 
   await page.getByRole('link', { name: 'Preview' }).click();
@@ -340,7 +324,7 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
   await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`);
   await page.waitForURL(/\/assessment\/\d+\/questions$/);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
-  await page.getByRole('button', { name: 'Save and sync' }).waitFor();
+  await page.getByRole('button', { name: 'Save' }).waitFor();
   await page.getByRole('button', { name: 'Add zone', exact: true }).click();
   await page.getByRole('button', { name: 'Add question', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Add question', exact: true }).click();
@@ -366,7 +350,7 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
     clip: { x: 0, y: 0, width: VIEWPORT.width, height: (zoneCardBottom ?? 700) + 24 },
   });
 
-  await page.getByRole('button', { name: 'Save and sync' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
   await page.waitForLoadState('networkidle');
   await editAssessmentJsonViaUI(page, courseInstanceUrl, assessmentId);
 
@@ -401,7 +385,7 @@ async function editAssessmentJsonViaUI(
     },
   ];
   await setAceEditorContent(page, JSON.stringify(json, null, 2) + '\n');
-  await page.getByRole('button', { name: /Save and sync/ }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
   await page.waitForLoadState('networkidle');
 }
 

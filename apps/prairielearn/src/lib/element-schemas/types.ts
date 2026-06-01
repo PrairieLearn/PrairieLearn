@@ -1,4 +1,4 @@
-import type { TagValidator } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { TagValidator } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 /**
  * The schema definition for a single PrairieLearn element, discovered by

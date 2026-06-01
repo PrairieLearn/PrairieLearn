@@ -1,5 +1,26 @@
 # @prairielearn/eslint-config
 
+## 3.0.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 8e04917: Update eslint-plugin-react-you-might-not-need-an-effect to 0.10.2.
+
+## 3.0.1
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- Updated dependencies [9717de9]
+- Updated dependencies [3927197]
+  - @prairielearn/eslint-plugin@4.3.0
+
 ## 3.0.0
 
 ### Major Changes

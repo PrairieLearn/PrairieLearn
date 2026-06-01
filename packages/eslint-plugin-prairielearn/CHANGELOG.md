@@ -1,5 +1,27 @@
 # @prairielearn/eslint-plugin
 
+## 4.3.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.3.1
+
+### Patch Changes
+
+- 0f10d5b: Recognize course/course-instance permission OR-combination middleware in the tRPC permission lint rule.
+
+## 4.3.0
+
+### Minor Changes
+
+- 9717de9: Add a new rule `@prairielearn/html-no-duplicate-id`. It's a variant of `@html-eslint/no-duplicate-id` that ignores tags whose names start with `pl-`, since the `id` attribute on PrairieLearn elements (e.g. `<pl-sketch-tool id="fd">`) is an element-scoped identifier consumed by the parent element, not a DOM id. It also ignores `id` values that contain mustache template parameters.
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 4.2.0
 
 ### Minor Changes

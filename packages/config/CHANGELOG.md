@@ -1,5 +1,17 @@
 # @prairielearn/config
 
+## 4.2.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.2.2
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 4.2.1
 
 ### Patch Changes

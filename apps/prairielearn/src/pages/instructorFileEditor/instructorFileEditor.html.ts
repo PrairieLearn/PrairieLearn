@@ -70,7 +70,7 @@ export function InstructorFileEditor({
             <meta
               name="htmlmustache-grammar-wasm"
               content="${nodeModulesAssetPath(
-                '@reteps/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+                '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
               )}"
             />
             ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
@@ -179,7 +179,7 @@ export function InstructorFileEditor({
                   disabled
                 >
                   <i class="fas fa-save" aria-hidden="true"></i>
-                  Save and sync
+                  Save
                 </button>
               </div>
             </div>
@@ -187,8 +187,8 @@ export function InstructorFileEditor({
           <div class="collapse" id="help">
             <div class="card-body">
               You are editing the file <code>${editorData.normalizedFileName}</code>. To save
-              changes, click <strong>Save and sync</strong> or use
-              <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
+              changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or
+              <strong>Cmd-S</strong> (Mac).
               ${config.fileEditorUseGit
                 ? html`
                     Doing so will write your changes to disk, will push them to the remote GitHub
@@ -218,7 +218,7 @@ export function InstructorFileEditor({
                             ? draftEdit.didSync
                               ? 'File was both saved and synced successfully.'
                               : 'File was saved, but failed to sync.'
-                            : 'Failed to save and sync file.'}
+                            : 'Failed to save file.'}
                         </div>
                         ${draftEdit.jobSequence != null
                           ? html`
@@ -268,10 +268,10 @@ export function InstructorFileEditor({
                         : 'Both you and another user made changes to this file.'}
                       You may choose either to continue editing your draft or to discard your
                       changes. In particular, if you click
-                      <strong>Choose my version</strong> and then click
-                      <strong>Save and sync</strong>, you will overwrite the version of this file
-                      that is on disk. If you instead click <strong>Choose their version</strong>,
-                      any changes you have made to this file will be lost.
+                      <strong>Choose my version</strong> and then click <strong>Save</strong>, you
+                      will overwrite the version of this file that is on disk. If you instead click
+                      <strong>Choose their version</strong>, any changes you have made to this file
+                      will be lost.
                       <button
                         type="button"
                         class="btn-close"
