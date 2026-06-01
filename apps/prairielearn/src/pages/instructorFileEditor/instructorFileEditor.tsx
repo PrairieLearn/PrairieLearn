@@ -11,8 +11,7 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
-import { renderHtml } from '@prairielearn/react';
-import { Hydrate } from '@prairielearn/react/server';
+import { hydrateHtml } from '@prairielearn/react/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -251,39 +250,35 @@ router.get(
               : ''}
             <h1 class="visually-hidden">File editor</h1>
 
-            ${renderHtml(
-              <Hydrate>
-                <FileEditor
-                  editorData={editorData}
-                  draftContents={draftEdit?.contents}
-                  versionChoice={
-                    draftEdit?.alertChoice
-                      ? { hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash }
-                      : null
-                  }
-                  draftEditResult={
-                    draftEdit != null
-                      ? {
-                          didSave: draftEdit.didSave ?? false,
-                          didSync: draftEdit.didSync ?? false,
-                          jobSequence: draftEdit.jobSequence
-                            ? StaffJobSequenceWithJobsSchema.parse(draftEdit.jobSequence)
-                            : null,
-                        }
-                      : null
-                  }
-                  timeZone={course.display_timezone}
-                  csrfToken={__csrf_token}
-                  fileEditorUseGit={config.fileEditorUseGit}
-                  branch={paths.branch.map((dir) => ({
-                    name: dir.name,
-                    path: dir.path,
-                    href: dir.canView
-                      ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}`
-                      : null,
-                  }))}
-                />
-              </Hydrate>,
+            ${hydrateHtml(
+              <FileEditor
+                editorData={editorData}
+                draftContents={draftEdit?.contents}
+                versionChoice={
+                  draftEdit?.alertChoice
+                    ? { hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash }
+                    : null
+                }
+                draftEditResult={
+                  draftEdit != null
+                    ? {
+                        didSave: draftEdit.didSave ?? false,
+                        didSync: draftEdit.didSync ?? false,
+                        jobSequence: draftEdit.jobSequence
+                          ? StaffJobSequenceWithJobsSchema.parse(draftEdit.jobSequence)
+                          : null,
+                      }
+                    : null
+                }
+                timeZone={course.display_timezone}
+                csrfToken={__csrf_token}
+                fileEditorUseGit={config.fileEditorUseGit}
+                branch={paths.branch.map((dir) => ({
+                  name: dir.name,
+                  path: dir.path,
+                  href: dir.canView ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}` : null,
+                }))}
+              />,
             )}
           `,
         }),

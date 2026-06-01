@@ -11,7 +11,6 @@
  * PrairieLearnInc/sysconf#1487.
  */
 import type { Course, Question, User } from '../db-types.js';
-import { getOriginalHash } from '../editorUtil.js';
 import {
   type Editor,
   FileDeleteEditor,
@@ -49,25 +48,6 @@ export function editJobFailedAppError(
   message: string = err.message,
 ): { code: 'SYNC_JOB_FAILED'; message: string; jobSequenceId: string } {
   return { code: 'SYNC_JOB_FAILED', message, jobSequenceId: err.jobSequenceId };
-}
-
-/**
- * Returns the content hash of a draft question file as it currently exists on
- * disk, or `null` if the file is missing. Callers compare this against the hash
- * the editor was opened with to detect a stale edit before saving.
- */
-export async function getDraftQuestionFileHash({
-  course,
-  question,
-  filePath,
-}: {
-  course: Course;
-  question: Question;
-  filePath: string;
-}): Promise<string | null> {
-  const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
-  const fullPath = resolveWithinQuestionRoot(questionRootPath, filePath);
-  return await getOriginalHash(fullPath);
 }
 
 interface DraftQuestionFileMutationContext {
@@ -110,10 +90,11 @@ function editorLocals({
  * the same editor `instructorFileEditor` and the JSON settings editors use.
  *
  * `origHash` is the hash of the contents the editor was opened with (from
- * `readEditableTextFile`). `FileModifyEditor` rejects the save if the file on
- * disk no longer matches it, so a stale tab can't silently clobber another
- * writer's changes; callers that want to surface that as a typed conflict
- * should pre-check with {@link getDraftQuestionFileHash}.
+ * `readEditableTextFile`). `FileModifyEditor` checks it under the course lock at
+ * write time, so a stale tab can't silently clobber another writer's changes: if
+ * the file changed or was deleted since it was opened, this throws a
+ * `FileModifyConflictError`. Pass `force` to overwrite the conflicting change
+ * (and recreate the file if it was deleted).
  *
  * `filePath` is relative to the question root; callers validate it (e.g. via
  * `ModifiableQuestionFilePathSchema`) before calling. `encodedContents` is the
@@ -128,10 +109,12 @@ export async function saveDraftQuestionFile({
   filePath,
   encodedContents,
   origHash,
+  force,
 }: DraftQuestionFileMutationContext & {
   filePath: string;
   encodedContents: string;
   origHash: string;
+  force?: boolean;
 }): Promise<void> {
   const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
   const fullPath = resolveWithinQuestionRoot(questionRootPath, filePath);
@@ -143,6 +126,7 @@ export async function saveDraftQuestionFile({
       filePath: fullPath,
       editContents: encodedContents,
       origHash,
+      force,
     }),
   );
 }

@@ -408,7 +408,8 @@ function findEditUrl(name: string, selector: string, url: string, expectedEditUr
 // Verifies the structure of the editor page. The editor renders its file
 // contents client-side with ACE, which a cheerio test cannot see; on-disk
 // contents are asserted separately with `verifyFileOnLiveDisk`, and the
-/** client-side editor behavior is covered by `tests/e2e/fileEditor.spec.ts`. */
+// client-side editor behavior is covered by `tests/e2e/fileEditor.spec.ts`.
+
 function verifyEdit(expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
