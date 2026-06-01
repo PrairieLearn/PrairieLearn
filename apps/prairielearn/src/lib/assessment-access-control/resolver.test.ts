@@ -1294,10 +1294,16 @@ describe('resolveAccessControl', () => {
             },
           },
           {
-            // During the post-reservation Exam-mode grace period, hide review
-            // visibility unless there is still a matching active PT reservation.
-            // Otherwise a student taking one PT exam could review other
-            // released assessments while still in Exam mode.
+            // Regression test for this issue:
+            // https://github.com/PrairieLearn/PrairieLearn/issues/12579
+            //
+            // After a student finishes a PT exam and the reservation is explicitly
+            // ended, PrairieLearn keeps them in Exam mode for a short grace period
+            // (~30 min). There is no active matching reservation, so access is
+            // denied, but the gradebook still renders the completed assessment row.
+            // The deny path must keep completed-work visibility hidden instead of
+            // falling back to defaults that would reveal the score for that
+            // just-finished assessment.
             name: 'grace-period Exam mode after reservation ended: hides review visibility',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Exam',
