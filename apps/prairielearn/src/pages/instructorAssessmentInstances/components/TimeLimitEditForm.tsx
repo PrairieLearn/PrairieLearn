@@ -66,6 +66,7 @@ export interface TimeLimitSingleRow {
 export function TimeLimitEditForm({
   mode,
   assessmentInstanceIds,
+  targetDescription,
   hasOpenInstance,
   hasClosedInstance,
   hasTimeLimitInstance,
@@ -75,7 +76,8 @@ export function TimeLimitEditForm({
   onCancel,
 }: {
   mode: 'single' | 'bulk';
-  assessmentInstanceIds: string[];
+  assessmentInstanceIds: string[] | null;
+  targetDescription?: string;
   /** Whether the targeted instances include at least one open instance. */
   hasOpenInstance: boolean;
   /** Whether the targeted instances include at least one closed instance. */
@@ -218,10 +220,7 @@ export function TimeLimitEditForm({
           Remaining time: {singleRow.time_remaining}
         </p>
       ) : (
-        <p>
-          {assessmentInstanceIds.length}{' '}
-          {assessmentInstanceIds.length === 1 ? 'instance' : 'instances'} selected
-        </p>
+        <p>{targetDescription}</p>
       )}
       {showTimeLimitOptions ? (
         <p>

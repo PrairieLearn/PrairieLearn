@@ -63,7 +63,7 @@ export async function selectAssessmentInstancesForTable({
 }
 
 const AssessmentInstanceIdsInputSchema = z.object({
-  assessmentInstanceIds: z.array(IdSchema).min(1),
+  assessmentInstanceIds: z.array(IdSchema).min(1).nullable(),
 });
 
 const TimeLimitActionSchema = z.enum([

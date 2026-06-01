@@ -134,7 +134,10 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
   aq.assessment_id = $assessment_id
-  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  )
   AND aq.force_max_points
   AND iq.points < aq.max_points
 GROUP BY

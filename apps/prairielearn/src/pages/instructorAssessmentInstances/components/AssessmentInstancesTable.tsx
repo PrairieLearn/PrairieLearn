@@ -123,8 +123,10 @@ const secondsMinutesFilterFn = makeMinutesFilterFn(SECONDS_PER_MINUTE);
 
 const AUTO_SIZE_SAMPLE_COUNT = 10;
 
-// Returns the indices of the rows with the widest content (by the given measure),
-// so `useAutoSizeColumns` measures the cells most likely to need the most space.
+/**
+ * Returns the indices of the rows with the widest content (by the given measure),
+ * so `useAutoSizeColumns` measures the cells most likely to need the most space.
+ */
 function autoSizeSampleByMeasure(
   rows: AssessmentInstanceRow[],
   measure: (row: AssessmentInstanceRow) => number,
@@ -611,16 +613,16 @@ export function AssessmentInstancesTable({
 
   const selectedRows = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
 
-  const selectionToolbar =
-    canEdit && selectedRows.length > 0 ? (
-      <InstanceSelectionToolbar
-        selectedRows={selectedRows}
-        clearSelection={() => setRowSelection({})}
-        courseInstanceId={courseInstance.id}
-        timezone={courseInstance.display_timezone}
-        onActionSuccess={setSuccessMessage}
-      />
-    ) : null;
+  const selectionToolbar = canEdit ? (
+    <InstanceSelectionToolbar
+      selectedRows={selectedRows}
+      allRows={data}
+      clearSelection={() => setRowSelection({})}
+      courseInstanceId={courseInstance.id}
+      timezone={courseInstance.display_timezone}
+      onActionSuccess={setSuccessMessage}
+    />
+  ) : null;
 
   return (
     <>
