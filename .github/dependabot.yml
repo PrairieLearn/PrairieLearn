@@ -36,7 +36,6 @@ updates:
   - package-ecosystem: npm
     directories:
       - '/'
-      - '/workspaces/desktop/server'
       - '/workspaces/xtermjs/src'
     schedule:
       interval: monthly
