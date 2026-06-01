@@ -9,9 +9,8 @@ import {
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
 const require = createRequire(import.meta.url);
-const wasmPath = require.resolve(
-  '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
-);
+const wasmPath =
+  require.resolve('@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
 
 let linterPromise: Promise<Linter> | null = null;
 
