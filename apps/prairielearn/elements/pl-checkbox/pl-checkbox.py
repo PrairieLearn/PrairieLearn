@@ -110,6 +110,10 @@ def generate_options_range_text(
     """Generate text for the allowable number of selections."""
     if min_options_to_select != max_options_to_select:
         options_range_text = f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
+    elif min_options_to_select == 1:
+        options_range_text = (
+            f"You must select exactly <b>{min_options_to_select}</b> option"
+        )
     else:
         options_range_text = (
             f"You must select exactly <b>{min_options_to_select}</b> options"
@@ -164,12 +168,20 @@ def generate_insert_text(
     if detailed_help_text or (show_min_select and show_max_select):
         if min_options_to_select != max_options_to_select:
             insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
+        elif min_options_to_select == 1:
+            insert_text = f" exactly <b>{min_options_to_select}</b> option"
         else:
             insert_text = f" exactly <b>{min_options_to_select}</b> options"
     elif show_min_select:
-        insert_text = f" at least <b>{min_options_to_select}</b> options"
+        if min_options_to_select == 1:
+            insert_text = f" at least <b>{min_options_to_select}</b> option"
+        else:
+            insert_text = f" at least <b>{min_options_to_select}</b> options"
     elif show_max_select:
-        insert_text = f" at most <b>{max_options_to_select}</b> options"
+        if max_options_to_select == 1:
+            insert_text = f" at most <b>{max_options_to_select}</b> option"
+        else:
+            insert_text = f" at most <b>{max_options_to_select}</b> options"
     else:
         insert_text = " at least 1 option"
 
