@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { type Octokit } from '@octokit/rest';
+import { Octokit } from '@octokit/rest';
 import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
@@ -13,13 +13,22 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User } from './db-types.js';
-import { getGithubClient } from './github-client.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobLogger, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/**
+ * Creates an octokit client from the client token specified in the config.
+ */
+export function getGithubClient(): Octokit | null {
+  if (config.githubClientToken === null) {
+    return null;
+  }
+  return new Octokit({ auth: config.githubClientToken });
+}
 
 /*
   Required configuration options to get this working:
@@ -55,8 +64,10 @@ export function isPlatformDefaultOrg(value: string): boolean {
  * Unexpected errors (5xx, network) are re-thrown so callers can surface them as server
  * errors instead of persisting an unverified value.
  */
-export async function checkGithubOrgAccess(org: string): Promise<GithubOrgAccessResult> {
-  const client = getGithubClient();
+export async function checkGithubOrgAccess(
+  client: Octokit | null,
+  org: string,
+): Promise<GithubOrgAccessResult> {
   if (client === null) return { ok: false, reason: 'no_client' };
   if (config.githubMachineUser === null) return { ok: false, reason: 'no_machine_user' };
 
@@ -121,7 +132,7 @@ export async function validateGithubCourseOwner(
   org: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   if (isPlatformDefaultOrg(org)) return { ok: true };
-  const access = await checkGithubOrgAccess(org);
+  const access = await checkGithubOrgAccess(getGithubClient(), org);
   if (access.ok) return { ok: true };
   return { ok: false, message: githubOrgAccessErrorMessage(access, org) };
 }
@@ -157,10 +168,10 @@ export async function checkGithubRepositoryExists(
 /**
  * Creates a new, empty repository.
  */
-async function createEmptyRepository(client: Octokit, org: string, repo: string) {
+async function createEmptyRepository(client: Octokit, owner: string, repo: string) {
   await client.repos.createInOrg({
-    org,
-    owner: org,
+    org: owner,
+    owner,
     name: repo,
     private: true,
   });
@@ -205,14 +216,14 @@ async function addFileToRepo(
  */
 async function addTeamToRepo(
   client: Octokit,
-  org: string,
+  owner: string,
   repo: string,
   team: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
-    owner: org,
-    org,
+    owner,
+    org: owner,
     repo,
     team_slug: team,
     permission,
@@ -472,6 +483,16 @@ export async function createCourseRepoJob(
  */
 export function reponameFromShortname(short_name: string) {
   return 'pl-' + short_name.replaceAll(' ', '').toLowerCase();
+}
+
+const GITHUB_REPOSITORY_REGEX =
+  /^(?:git@github\.com:\/?|https?:\/\/github\.com\/)([^/]+)\/([^/]+?)(?:\.git)?\/?$/i;
+
+/** Parses a stored course `repository` string into its GitHub owner and repo, or null if it is not a recognized GitHub URL. */
+export function parseGithubRepository(repository: string): { owner: string; repo: string } | null {
+  const match = GITHUB_REPOSITORY_REGEX.exec(repository.trim());
+  if (match === null) return null;
+  return { owner: match[1], repo: match[2] };
 }
 
 /**

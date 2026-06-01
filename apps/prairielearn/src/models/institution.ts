@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -8,7 +10,8 @@ import {
   InstitutionSettingsSchema,
 } from '../lib/db-types.js';
 
-const AdminInstitutionWithSettingsRowSchema = InstitutionSchema.extend({
+const AdminInstitutionWithSettingsRowSchema = z.object({
+  institution: InstitutionSchema,
   institution_settings: InstitutionSettingsSchema,
 });
 
@@ -41,21 +44,17 @@ export async function selectInstitutionForCourseInstance({
   );
 }
 
-export async function selectAllAdminInstitutions() {
-  return await queryRows(sql.select_all_admin_institutions, InstitutionSchema);
+export async function selectAllInstitutions() {
+  return await queryRows(sql.select_all_institutions, InstitutionSchema);
 }
 
-export async function selectAllAdminInstitutionsWithSettings(): Promise<
+export async function selectAllInstitutionsWithSettings(): Promise<
   { institution: Institution; institution_settings: InstitutionSettings }[]
 > {
-  const rows = await queryRows(
-    sql.select_all_admin_institutions_with_settings,
+  return await queryRows(
+    sql.select_all_institutions_with_settings,
     AdminInstitutionWithSettingsRowSchema,
   );
-  return rows.map(({ institution_settings, ...institution }) => ({
-    institution,
-    institution_settings,
-  }));
 }
 
 export async function insertInstitution({

@@ -30,17 +30,8 @@ SELECT
 FROM
   courses AS c
 WHERE
-  (
-    c.repository ILIKE '%github.com:' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
-    OR c.repository ILIKE '%github.com:' || $owner || '/' || $repo_name ESCAPE '\'
-    OR c.repository ILIKE '%github.com:/' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
-    OR c.repository ILIKE '%github.com:/' || $owner || '/' || $repo_name ESCAPE '\'
-    OR c.repository ILIKE '%github.com/' || $owner || '/' || $repo_name || '.git' ESCAPE '\'
-    OR c.repository ILIKE '%github.com/' || $owner || '/' || $repo_name ESCAPE '\'
-  )
-  AND c.deleted_at IS NULL
-LIMIT
-  1;
+  c.repository ILIKE '%' || $owner || '/' || $repo_name || '%' ESCAPE '\'
+  AND c.deleted_at IS NULL;
 
 -- BLOCK select_course_by_path
 SELECT

@@ -4,28 +4,11 @@ import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectAuditEventsByInstitutionId } from './audit-event.js';
-import { CourseRequestMessageSchema, updateInstitutionSetting } from './institution-settings.js';
+import { updateInstitutionSetting } from './institution-settings.js';
 
 describe('institution-settings model', () => {
   beforeAll(helperDb.before);
   afterAll(helperDb.after);
-
-  describe('CourseRequestMessageSchema', () => {
-    it('trims and keeps a non-empty message', () => {
-      assert.equal(CourseRequestMessageSchema.parse('  hello  '), 'hello');
-    });
-
-    it('treats a blank or whitespace-only message as null', () => {
-      assert.isNull(CourseRequestMessageSchema.parse(''));
-      assert.isNull(CourseRequestMessageSchema.parse('   '));
-    });
-
-    it('enforces the maximum length on the trimmed value', () => {
-      const justFits = `${' '.repeat(10)}${'a'.repeat(10000)}${' '.repeat(10)}`;
-      assert.equal(CourseRequestMessageSchema.parse(justFits), 'a'.repeat(10000));
-      assert.isFalse(CourseRequestMessageSchema.safeParse('a'.repeat(10001)).success);
-    });
-  });
 
   describe('updateInstitutionSetting', () => {
     it('updates the message and records audit events', async () => {

@@ -4,16 +4,16 @@ import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { updateInstitutionSetting } from './institution-settings.js';
-import { selectAllAdminInstitutionsWithSettings } from './institution.js';
+import { selectAllInstitutionsWithSettings } from './institution.js';
 
 describe('institution model', () => {
   beforeAll(helperDb.before);
   afterAll(helperDb.after);
 
-  describe('selectAllAdminInstitutionsWithSettings', () => {
+  describe('selectAllInstitutionsWithSettings', () => {
     it('returns a full settings object even when no settings row exists', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const institutions = await selectAllAdminInstitutionsWithSettings();
+        const institutions = await selectAllInstitutionsWithSettings();
         const row = institutions.find((i) => i.institution.id === '1');
 
         assert.isDefined(row);
@@ -40,10 +40,11 @@ describe('institution model', () => {
           authn_user_id: user.id,
         });
 
-        const institutions = await selectAllAdminInstitutionsWithSettings();
+        const institutions = await selectAllInstitutionsWithSettings();
         const row = institutions.find((i) => i.institution.id === '1');
 
-        assert.equal(row?.institution_settings.github_course_owner, 'ExampleOrg');
+        assert.isDefined(row);
+        assert.equal(row.institution_settings.github_course_owner, 'ExampleOrg');
       });
     });
   });

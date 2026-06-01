@@ -427,7 +427,7 @@ export const AdminInstitutionSettingsSchema =
 export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSchema>;
 
 // An admin institution paired with its institution_settings, as returned by
-// `selectAllAdminInstitutionsWithSettings`. Keeping the institution and its
+// `selectAllInstitutionsWithSettings`. Keeping the institution and its
 // settings as distinct fields lets the institution stay a branded
 // `AdminInstitution` rather than a flattened look-alike.
 export const AdminInstitutionWithSettingsSchema = z.object({

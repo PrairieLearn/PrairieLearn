@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import { CourseRequestMessageSection } from '../../lib/courseRequestMessage.html.js';
+import { CourseRequestMessageSection } from '../../components/courseRequestMessage/CourseRequestMessageSection.js';
 
 export function InstitutionAdminGeneral({
   institution,

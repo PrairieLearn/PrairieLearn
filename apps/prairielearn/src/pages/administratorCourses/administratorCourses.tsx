@@ -10,7 +10,7 @@ import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { selectAllAdminInstitutions } from '../../models/institution.js';
+import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourses } from './administratorCourses.html.js';
 import { CourseWithInstitutionSchema } from './administratorCourses.shared.js';
@@ -26,7 +26,7 @@ router.get(
       accessType: 'instructor',
       withAuthzData: false,
     });
-    const institutions = await selectAllAdminInstitutions();
+    const institutions = await selectAllInstitutions();
     const availableTimezones = await getCanonicalTimezones(
       institutions.map((i) => i.display_timezone),
     );

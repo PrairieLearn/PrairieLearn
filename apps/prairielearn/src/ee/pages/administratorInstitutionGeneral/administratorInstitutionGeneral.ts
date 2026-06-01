@@ -12,7 +12,6 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   CourseRequestMessageSchema,
   selectInstitutionSettings,
   updateInstitutionSetting,
@@ -101,19 +100,11 @@ router.post(
       flash('success', 'Successfully updated institution settings.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_course_request_message') {
-      const parsed = CourseRequestMessageSchema.safeParse(req.body.course_request_message);
-      if (!parsed.success) {
-        flash(
-          'error',
-          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.`,
-        );
-        res.redirect(req.originalUrl);
-        return;
-      }
+      const value = CourseRequestMessageSchema.parse(req.body.course_request_message);
       await updateInstitutionSetting({
         institution_id: req.params.institution_id,
         field: 'course_request_message',
-        value: parsed.data,
+        value,
         authn_user_id: res.locals.authn_user.id,
       });
       flash('success', 'Successfully updated the course request message.');

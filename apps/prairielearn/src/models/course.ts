@@ -22,6 +22,7 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
+import { parseGithubRepository } from '../lib/github.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -60,14 +61,23 @@ export async function selectOptionalCourseByGithubRepository({
   owner: string;
   repoName: string;
 }): Promise<Course | null> {
-  // Escape SQL LIKE wildcards so they are matched literally.
+  // Escape SQL LIKE wildcards so they are matched literally in the loose match.
   const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  return await queryOptionalRow(
+  const candidates = await queryRows(
     sql.select_course_by_github_repository,
     { owner: escapedOwner, repo_name: escapedRepoName },
     CourseSchema,
   );
+  const match = candidates.find((c) => {
+    const parsed = c.repository ? parseGithubRepository(c.repository) : null;
+    if (parsed === null) return false;
+    return (
+      parsed.owner.toLowerCase() === owner.toLowerCase() &&
+      parsed.repo.toLowerCase() === repoName.toLowerCase()
+    );
+  });
+  return match ?? null;
 }
 
 export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {

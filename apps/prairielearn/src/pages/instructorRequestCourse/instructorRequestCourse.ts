@@ -47,7 +47,7 @@ async function checkAutoApprovalOrgAccess(
 ): Promise<AutoApprovalBlockReason | null> {
   if (github.isPlatformDefaultOrg(githubCourseOwner)) return null;
   try {
-    const access = await github.checkGithubOrgAccess(githubCourseOwner);
+    const access = await github.checkGithubOrgAccess(github.getGithubClient(), githubCourseOwner);
     return access.ok ? null : access.reason;
   } catch (err) {
     Sentry.captureException(err, { extra: { course_request_id, githubCourseOwner } });

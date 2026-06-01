@@ -6,7 +6,6 @@ import { markdownToHtml } from '@prairielearn/markdown';
 
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
-  COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   CourseRequestMessageSchema,
   selectInstitutionSettings,
   updateInstitutionSetting,
@@ -61,20 +60,12 @@ router.post(
       throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
 
-    const parsed = CourseRequestMessageSchema.safeParse(req.body.course_request_message);
-    if (!parsed.success) {
-      flash(
-        'error',
-        `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH.toLocaleString()} characters.`,
-      );
-      res.redirect(req.originalUrl);
-      return;
-    }
+    const value = CourseRequestMessageSchema.parse(req.body.course_request_message);
 
     await updateInstitutionSetting({
       institution_id: institution.id,
       field: 'course_request_message',
-      value: parsed.data,
+      value,
       authn_user_id: res.locals.authn_user.id,
     });
 

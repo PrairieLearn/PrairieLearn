@@ -17,7 +17,7 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
--- BLOCK select_all_admin_institutions
+-- BLOCK select_all_institutions
 SELECT
   i.*
 FROM
@@ -27,17 +27,20 @@ ORDER BY
   i.long_name,
   i.id;
 
--- BLOCK select_all_admin_institutions_with_settings
+-- BLOCK select_all_institutions_with_settings
 SELECT
-  i.*,
-  jsonb_build_object(
-    'institution_id',
-    i.id,
-    'course_request_message',
-    ist.course_request_message,
-    'github_course_owner',
-    ist.github_course_owner
-  ) AS institution_settings
+  to_jsonb(i.*) AS institution,
+  CASE
+    WHEN ist.institution_id IS NULL THEN jsonb_build_object(
+      'institution_id',
+      i.id,
+      'course_request_message',
+      NULL,
+      'github_course_owner',
+      NULL
+    )
+    ELSE to_jsonb(ist.*)
+  END AS institution_settings
 FROM
   institutions AS i
   LEFT JOIN institution_settings AS ist ON ist.institution_id = i.id

@@ -1,6 +1,6 @@
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
-import { COURSE_REQUEST_MESSAGE_MAX_LENGTH } from '../../models/institution-settings.js';
+import { COURSE_REQUEST_MESSAGE_MAX_LENGTH } from '../../../models/institution-settings.js';
 
 /**
  * Renders the "Course request message" editor section (heading, description,
