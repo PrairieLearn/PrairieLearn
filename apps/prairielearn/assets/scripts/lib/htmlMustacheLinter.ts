@@ -1,10 +1,11 @@
+import type ace from 'ace-builds';
+
 import { type Formatter, createFormatter } from '@prairielearn/tree-sitter-htmlmustache/formatter';
 import {
   type Diagnostic,
   type Linter,
   createLinter,
 } from '@prairielearn/tree-sitter-htmlmustache/linter';
-import type ace from 'ace-builds';
 
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
