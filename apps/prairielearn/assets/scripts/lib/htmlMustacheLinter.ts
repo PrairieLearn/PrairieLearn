@@ -1,9 +1,9 @@
-import { type Formatter, createFormatter } from '@reteps/tree-sitter-htmlmustache/formatter';
+import { type Formatter, createFormatter } from '@prairielearn/tree-sitter-htmlmustache/formatter';
 import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/linter';
+} from '@prairielearn/tree-sitter-htmlmustache/linter';
 import type ace from 'ace-builds';
 
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
