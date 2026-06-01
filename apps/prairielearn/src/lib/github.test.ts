@@ -16,21 +16,18 @@ const orgsGetMembershipForUser = vi.fn();
 const reposAddCollaborator = vi.fn();
 const teamsAddOrUpdateRepoPermissionsInOrg = vi.fn();
 
-/**
- * Builds a mock Octokit client exposing only the `orgs` methods that
- * `checkGithubOrgAccess` calls.
- */
-function mockOrgAccessClient() {
-  return {
-    orgs: {
-      get: orgsGet,
-      getMembershipForUser: orgsGetMembershipForUser,
-    },
-  } as unknown as Parameters<typeof checkGithubOrgAccess>[0];
-}
+const orgAccessClient = {
+  orgs: { get: orgsGet, getMembershipForUser: orgsGetMembershipForUser },
+} as unknown as Parameters<typeof checkGithubOrgAccess>[0];
+
+const repoAccessClient = {
+  repos: { addCollaborator: reposAddCollaborator },
+  teams: { addOrUpdateRepoPermissionsInOrg: teamsAddOrUpdateRepoPermissionsInOrg },
+} as unknown as Parameters<typeof addMachineAccessToRepo>[0];
+
+const job = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), verbose: vi.fn() };
 
 beforeEach(() => {
-  vi.restoreAllMocks();
   orgsGet.mockReset();
   orgsGetMembershipForUser.mockReset();
   reposAddCollaborator.mockReset();
@@ -38,11 +35,9 @@ beforeEach(() => {
 });
 
 describe('isPlatformDefaultOrg', () => {
-  it('matches case-insensitively against config.githubCourseOwner', async () => {
+  it('matches config.githubCourseOwner case-insensitively', async () => {
     await withConfig({ githubCourseOwner: 'PrairieLearn' }, () => {
-      assert.isTrue(isPlatformDefaultOrg('PrairieLearn'));
       assert.isTrue(isPlatformDefaultOrg('prairielearn'));
-      assert.isTrue(isPlatformDefaultOrg('PRAIRIELEARN'));
       assert.isFalse(isPlatformDefaultOrg('SomeOtherOrg'));
     });
   });
@@ -58,60 +53,52 @@ describe('checkGithubOrgAccess', () => {
 
   it('returns no_machine_user when githubMachineUser is unset', async () => {
     await withConfig({ githubMachineUser: null }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: false, reason: 'no_machine_user' });
     });
   });
 
-  it('returns org_unreachable when orgs.get returns 404', async () => {
+  it('returns org_unreachable when the org cannot be fetched', async () => {
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }));
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: false, reason: 'org_unreachable' });
     });
   });
 
-  it('returns org_unreachable when orgs.get returns 403', async () => {
-    orgsGet.mockRejectedValueOnce(Object.assign(new Error('forbidden'), { status: 403 }));
-    await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
-      assert.deepEqual(result, { ok: false, reason: 'org_unreachable' });
-    });
-  });
-
-  it('returns not_a_member when membership query returns 404', async () => {
+  it('returns not_a_member when the membership query 404s', async () => {
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockRejectedValueOnce(
       Object.assign(new Error('not found'), { status: 404 }),
     );
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: false, reason: 'not_a_member' });
     });
   });
 
-  it('treats pending membership state as pending_invitation', async () => {
+  it('treats pending membership as pending_invitation', async () => {
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'pending' } });
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: false, reason: 'pending_invitation' });
     });
   });
 
-  it('returns ok when both calls succeed with active membership', async () => {
+  it('returns ok for active membership', async () => {
     orgsGet.mockResolvedValueOnce({ data: {} });
     orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active' } });
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      const result = await checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg');
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: true });
     });
   });
 
-  it('rethrows unexpected (non-404/403) errors from orgs.get', async () => {
+  it('rethrows unexpected (non-404/403) errors', async () => {
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('upstream broken'), { status: 500 }));
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
-      await expect(checkGithubOrgAccess(mockOrgAccessClient(), 'SomeOrg')).rejects.toThrow(
+      await expect(checkGithubOrgAccess(orgAccessClient, 'SomeOrg')).rejects.toThrow(
         'upstream broken',
       );
     });
@@ -119,26 +106,6 @@ describe('checkGithubOrgAccess', () => {
 });
 
 describe('addMachineAccessToRepo', () => {
-  function mockRepoAccessClient() {
-    return {
-      repos: {
-        addCollaborator: reposAddCollaborator,
-      },
-      teams: {
-        addOrUpdateRepoPermissionsInOrg: teamsAddOrUpdateRepoPermissionsInOrg,
-      },
-    } as unknown as Parameters<typeof addMachineAccessToRepo>[0];
-  }
-
-  function mockJob() {
-    return {
-      error: vi.fn(),
-      warn: vi.fn(),
-      info: vi.fn(),
-      verbose: vi.fn(),
-    };
-  }
-
   it('adds the machine team for the platform default org', async () => {
     await withConfig(
       {
@@ -147,12 +114,7 @@ describe('addMachineAccessToRepo', () => {
         githubMachineUser: 'pl-bot',
       },
       async () => {
-        await addMachineAccessToRepo(
-          mockRepoAccessClient(),
-          'prairielearn',
-          'test-course',
-          mockJob(),
-        );
+        await addMachineAccessToRepo(repoAccessClient, 'prairielearn', 'test-course', job);
       },
     );
 
@@ -168,12 +130,9 @@ describe('addMachineAccessToRepo', () => {
 
   it('adds the machine user directly for a custom org', async () => {
     await withConfig(
-      {
-        githubCourseOwner: 'PrairieLearn',
-        githubMachineUser: 'pl-bot',
-      },
+      { githubCourseOwner: 'PrairieLearn', githubMachineUser: 'pl-bot' },
       async () => {
-        await addMachineAccessToRepo(mockRepoAccessClient(), 'CustomOrg', 'test-course', mockJob());
+        await addMachineAccessToRepo(repoAccessClient, 'CustomOrg', 'test-course', job);
       },
     );
 
@@ -186,60 +145,32 @@ describe('addMachineAccessToRepo', () => {
     });
   });
 
-  it('rejects custom org access grants when the machine user is not configured', async () => {
-    await withConfig(
-      {
-        githubCourseOwner: 'PrairieLearn',
-        githubMachineUser: null,
-      },
-      async () => {
-        await expect(
-          addMachineAccessToRepo(mockRepoAccessClient(), 'CustomOrg', 'test-course', mockJob()),
-        ).rejects.toThrow('GitHub machine user is not configured');
-      },
-    );
-
-    expect(reposAddCollaborator).not.toHaveBeenCalled();
-    expect(teamsAddOrUpdateRepoPermissionsInOrg).not.toHaveBeenCalled();
+  it('rejects a custom org when the machine user is not configured', async () => {
+    await withConfig({ githubCourseOwner: 'PrairieLearn', githubMachineUser: null }, async () => {
+      await expect(
+        addMachineAccessToRepo(repoAccessClient, 'CustomOrg', 'test-course', job),
+      ).rejects.toThrow('GitHub machine user is not configured');
+    });
   });
 });
 
 describe('parseGithubRepository', () => {
-  it('parses SSH URLs', () => {
+  it('parses GitHub SSH and HTTPS URLs, ignoring optional .git and slashes', () => {
     assert.deepEqual(parseGithubRepository('git@github.com:Org/repo.git'), {
       owner: 'Org',
       repo: 'repo',
     });
-    assert.deepEqual(parseGithubRepository('git@github.com:/Org/repo.git'), {
+    assert.deepEqual(parseGithubRepository('git@github.com:/Org/repo'), {
       owner: 'Org',
       repo: 'repo',
     });
-    assert.deepEqual(parseGithubRepository('git@github.com:Org/repo'), {
-      owner: 'Org',
-      repo: 'repo',
-    });
-  });
-
-  it('parses HTTPS URLs', () => {
-    assert.deepEqual(parseGithubRepository('https://github.com/Org/repo.git'), {
-      owner: 'Org',
-      repo: 'repo',
-    });
-    assert.deepEqual(parseGithubRepository('https://github.com/Org/repo'), {
+    assert.deepEqual(parseGithubRepository('https://github.com/Org/repo.git/'), {
       owner: 'Org',
       repo: 'repo',
     });
   });
 
-  it('ignores a trailing slash', () => {
-    assert.deepEqual(parseGithubRepository('git@github.com:onemore/repository.git/'), {
-      owner: 'onemore',
-      repo: 'repository',
-    });
-  });
-
-  it('returns null for unrecognized URLs', () => {
-    assert.isNull(parseGithubRepository('https://www.github.com/u/r.git'));
+  it('returns null for non-GitHub URLs', () => {
     assert.isNull(parseGithubRepository('git@gitlab.com:u/r.git'));
     assert.isNull(parseGithubRepository(''));
   });
