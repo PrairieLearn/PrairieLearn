@@ -3,14 +3,14 @@
   "type": "object",
   "properties": {
     "correct": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "type": "string"
     },
     "feedback": {
       "type": "string"
     },
     "score": {
-      "format": "pl-float",
+      "format": "float-attrib",
       "type": "string"
     }
   },

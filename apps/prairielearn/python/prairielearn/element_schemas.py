@@ -10,31 +10,37 @@ import lxml.html
 from jsonschema import FormatChecker, ValidationError
 from jsonschema.validators import validator_for
 
-from prairielearn.html_utils import is_pl_boolean, is_pl_float, is_pl_integer
+from prairielearn.html_utils import (
+    is_boolean_attrib,
+    is_float_attrib,
+    is_integer_attrib,
+)
+
+__all__ = ["validate_element"]
 
 pl_format_checker = FormatChecker(formats=())
 
 
-def _check_pl_boolean(value: object) -> bool:
-    return isinstance(value, str) and is_pl_boolean(value)
+def _check_boolean_attrib(value: object) -> bool:
+    return isinstance(value, str) and is_boolean_attrib(value)
 
 
-def _check_pl_integer(value: object) -> bool:
-    return isinstance(value, str) and is_pl_integer(value)
+def _check_integer_attrib(value: object) -> bool:
+    return isinstance(value, str) and is_integer_attrib(value)
 
 
-def _check_pl_float(value: object) -> bool:
-    return isinstance(value, str) and is_pl_float(value)
+def _check_float_attrib(value: object) -> bool:
+    return isinstance(value, str) and is_float_attrib(value)
 
 
-pl_format_checker.checks("pl-boolean")(_check_pl_boolean)
-pl_format_checker.checks("pl-integer")(_check_pl_integer)
-pl_format_checker.checks("pl-float")(_check_pl_float)
+pl_format_checker.checks("boolean-attrib")(_check_boolean_attrib)
+pl_format_checker.checks("integer-attrib")(_check_integer_attrib)
+pl_format_checker.checks("float-attrib")(_check_float_attrib)
 
 _FORMAT_DESCRIPTIONS = {
-    "pl-boolean": "a boolean value",
-    "pl-integer": "an integer",
-    "pl-float": "a number",
+    "boolean-attrib": "a boolean value",
+    "integer-attrib": "an integer",
+    "float-attrib": "a number",
 }
 
 
@@ -116,6 +122,8 @@ def _render_additional_properties_error(error: ValidationError) -> str:
 def _render_not_allowed_attributes(attributes: list[str]) -> str:
     if len(attributes) == 1:
         return f'Attribute "{attributes[0]}" is not allowed.'
+    if len(attributes) == 2:
+        return f'Attributes "{attributes[0]}" and "{attributes[1]}" are not allowed.'
     quoted = ", ".join(f'"{attribute}"' for attribute in attributes[:-1])
     return f'Attributes {quoted}, and "{attributes[-1]}" are not allowed.'
 

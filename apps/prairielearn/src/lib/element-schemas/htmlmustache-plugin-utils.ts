@@ -29,9 +29,9 @@ const plFloat: SchemaFormat = (value) =>
   typeof value === 'string' && /^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(value);
 
 export const formats = {
-  'pl-boolean': plBoolean,
-  'pl-integer': plInteger,
-  'pl-float': plFloat,
+  'boolean-attrib': plBoolean,
+  'integer-attrib': plInteger,
+  'float-attrib': plFloat,
 };
 
 export function isBooleanValue(value: string | true): boolean {

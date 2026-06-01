@@ -4,8 +4,8 @@ import * as parse5 from 'parse5';
 import {
   BOOLEAN_TRUE_VALUES,
   BOOLEAN_VALUES,
-} from './element-schemas/htmlmustache-plugin-utils.js';
-import { lintQuestionHtml } from './htmlMustacheLinterNode.js';
+} from '../../lib/element-schemas/htmlmustache-plugin-utils.js';
+import { lintQuestionHtml } from '../../lib/htmlMustacheLinterNode.js';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];

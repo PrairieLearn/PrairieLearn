@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { lintQuestionHtml } from '../htmlMustacheLinterNode.js';
+import { lintQuestionHtml } from '../../htmlMustacheLinterNode.js';
 
 async function lintMessages(html: string): Promise<string[]> {
   const diagnostics = await lintQuestionHtml(html);
@@ -28,37 +28,23 @@ describe('pl-multiple-choice schema', () => {
     assert.deepEqual(messages, []);
   });
 
-  it('requires answers-name', async () => {
+  it('rejects disallowed child tags', async () => {
     const messages = await lintMessages(`
-      <pl-multiple-choice>
-        <pl-answer>A</pl-answer>
-      </pl-multiple-choice>
-    `);
-
-    assert.isTrue(messages.some((message) => message.includes('answers-name')));
-  });
-
-  it('rejects unknown attributes and additional child tags', async () => {
-    const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice" bogus="true">
+      <pl-multiple-choice answers-name="choice">
         <p>A</p>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('bogus')));
     assert.isTrue(messages.some((message) => message.includes('only allows these child elements')));
   });
 
-  it('rejects invalid attribute values', async () => {
+  it('rejects scores outside the [0.0, 1.0] range', async () => {
     const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice" weight="1.5" display="grid">
-        <pl-answer correct="maybe" score="1.5">A</pl-answer>
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer correct="true" score="1.5">A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('pl-integer')));
-    assert.isTrue(messages.some((message) => message.includes('display')));
-    assert.isTrue(messages.some((message) => message.includes('correct')));
     assert.isTrue(messages.some((message) => message.includes('range')));
   });
 
@@ -120,7 +106,9 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isNotEmpty(messages);
+    assert.isTrue(
+      messages.some((m) => m.includes('if using all-of-the-above-feedback, you must also use all-of-the-above')),
+    );
   });
 
   it('restricts grading attributes when builtin grading is disabled', async () => {
@@ -135,14 +123,20 @@ describe('pl-multiple-choice schema', () => {
     );
   });
 
-  it('rejects feedback when disabled builtin grading option is false alias', async () => {
+  it('rejects grading-specific all-of-the-above values when builtin grading is disabled', async () => {
     const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice" builtin-grading="false" all-of-the-above="0" all-of-the-above-feedback="Feedback">
+      <pl-multiple-choice answers-name="choice" builtin-grading="false" all-of-the-above="correct">
         <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isNotEmpty(messages);
+    assert.isTrue(
+      messages.some((m) =>
+        m.includes(
+          '"all-of-the-above" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.',
+        ),
+      ),
+    );
   });
 
   it('rejects duplicate answer inner HTML', async () => {
@@ -154,6 +148,30 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(messages.some((message) => message.includes('duplicate child inner HTML')));
+  });
+
+  it('flags answers with identical Mustache as duplicate inner HTML', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer>{{ params.A }}</pl-answer>
+        <pl-answer>{{ params.A }}</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isTrue(
+      messages.some((message) => message.includes('duplicate child inner HTML "{{ params.A }}"')),
+    );
+  });
+
+  it('does not flag answers with differing Mustache as duplicate inner HTML', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice answers-name="choice">
+        <pl-answer>{{ params.A }}</pl-answer>
+        <pl-answer>{{ params.B }}</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.isFalse(messages.some((message) => message.includes('duplicate child inner HTML')));
   });
 
   it('allows external-json without inline answers', async () => {

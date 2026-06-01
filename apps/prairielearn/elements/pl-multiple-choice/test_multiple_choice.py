@@ -226,14 +226,14 @@ def test_prepare_rejects_duplicate_external_json_answers(tmp_path: Any) -> None:
                 '<pl-answer correct="true">A</pl-answer>'
                 '<pl-answer correct="true">B</pl-answer>',
             ),
-            r'"all-of-the-above" should be set to true or false',
+            r'"all-of-the-above" cannot use grading-specific values',
         ),
         (
             mc_html(
                 'none-of-the-above="correct"',
                 '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
             ),
-            r'"none-of-the-above" should be set to true or false',
+            r'"none-of-the-above" cannot use grading-specific values',
         ),
         (mc_html('hide-score-badge="true"'), r'"hide-score-badge" should not be set'),
         (

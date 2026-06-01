@@ -6,11 +6,11 @@
       "type": "string"
     },
     "weight": {
-      "format": "pl-integer",
+      "format": "integer-attrib",
       "type": "string"
     },
     "number-answers": {
-      "format": "pl-integer",
+      "format": "integer-attrib",
       "type": "string"
     },
     "order": {
@@ -22,35 +22,35 @@
       "enum": ["block", "inline", "dropdown"]
     },
     "hide-letter-keys": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "type": "string"
     },
     "fixed-order": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "deprecated": true,
       "description": "Use the \"order\" attribute instead.",
       "type": "string"
     },
     "inline": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "deprecated": true,
       "description": "Use the \"display\" attribute instead.",
       "type": "string"
     },
     "hide-score-badge": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "type": "string"
     },
     "allow-blank": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "type": "string"
     },
     "builtin-grading": {
-      "format": "pl-boolean",
+      "format": "boolean-attrib",
       "type": "string"
     },
     "size": {
-      "format": "pl-integer",
+      "format": "integer-attrib",
       "type": "string"
     },
     "placeholder": {
@@ -75,7 +75,7 @@
     "all-of-the-above": {
       "anyOf": [
         {
-          "format": "pl-boolean",
+          "format": "boolean-attrib",
           "type": "string"
         },
         {
@@ -87,7 +87,7 @@
     "none-of-the-above": {
       "anyOf": [
         {
-          "format": "pl-boolean",
+          "format": "boolean-attrib",
           "type": "string"
         },
         {

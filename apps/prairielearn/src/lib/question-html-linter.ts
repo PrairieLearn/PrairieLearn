@@ -6,8 +6,7 @@ import {
   createLinter,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { formats, validators } from '../ee/lib/element-schemas/htmlmustache-plugin.js';
-
+import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
 const require = createRequire(import.meta.url);

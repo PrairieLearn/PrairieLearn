@@ -6,7 +6,7 @@ import {
   defineTagValidators,
 } from '@reteps/tree-sitter-htmlmustache/linter';
 
-import { isBooleanValue, isFalseValue } from './htmlmustache-plugin-utils.ts';
+import { isBooleanValue, isFalseValue } from '../htmlmustache-plugin-utils.ts';
 
 function hasLiteralFalseAttribute(element: TagElement, attribute: string): boolean {
   const value = attr(element, attribute).literal();
@@ -41,20 +41,6 @@ function requireEnabledAotaNota(
       element,
       feedbackAttribute,
       `pl-multiple-choice: if using ${feedbackAttribute}, you must also use ${matchingAttribute}.`,
-    );
-  }
-}
-
-function validateAnswerScoreRange(element: TagElement, context: ValidatorContext) {
-  const score = attr(element, 'score').literal();
-  if (typeof score !== 'string') return;
-
-  const parsedScore = Number(score);
-  if (Number.isNaN(parsedScore) || parsedScore < 0 || parsedScore > 1) {
-    context.reportAttribute(
-      element,
-      'score',
-      'Score must be a numeric value in the range [0.0, 1.0].',
     );
   }
 }
@@ -101,37 +87,31 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
   },
 
   'pl/multiple-choice-builtin-grading'(element, context) {
-    if (hasLiteralFalseAttribute(element, 'builtin-grading')) {
-      if (attr(element, 'weight').present()) {
-        context.reportAttribute(
-          element,
-          'weight',
-          '"weight" should not be set when builtin-grading is false.',
-        );
-      }
-      if (attr(element, 'hide-score-badge').present()) {
-        context.reportAttribute(
-          element,
-          'hide-score-badge',
-          '"hide-score-badge" should not be set when builtin-grading is false.',
-        );
-      }
-      for (const attribute of ['all-of-the-above', 'none-of-the-above']) {
-        const value = attr(element, attribute).literal();
-        if (value !== undefined && !isBooleanValue(value)) {
-          context.reportAttribute(
-            element,
-            attribute,
-            `"${attribute}" should be set to true or false when builtin-grading is false.`,
-          );
-        }
-      }
-    }
-  },
+    if (!hasLiteralFalseAttribute(element, 'builtin-grading')) return;
 
-  'pl/multiple-choice-builtin-grading-answer'(element, context) {
-    if (!hasLiteralFalseAttribute(element, 'builtin-grading')) {
-      return;
+    if (attr(element, 'weight').present()) {
+      context.reportAttribute(
+        element,
+        'weight',
+        '"weight" should not be set when builtin-grading is false.',
+      );
+    }
+    if (attr(element, 'hide-score-badge').present()) {
+      context.reportAttribute(
+        element,
+        'hide-score-badge',
+        '"hide-score-badge" should not be set when builtin-grading is false.',
+      );
+    }
+    for (const attribute of ['all-of-the-above', 'none-of-the-above']) {
+      const value = attr(element, attribute).literal();
+      if (value !== undefined && !isBooleanValue(value)) {
+        context.reportAttribute(
+          element,
+          attribute,
+          `"${attribute}" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.`,
+        );
+      }
     }
 
     for (const child of element.childrenWithTag('pl-answer')) {
@@ -154,7 +134,17 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
 
   'pl/multiple-choice-answer-score-range'(element, context) {
     for (const child of element.childrenWithTag('pl-answer')) {
-      validateAnswerScoreRange(child, context);
+      const score = attr(child, 'score').literal();
+      if (typeof score !== 'string') continue;
+
+      const parsedScore = Number(score);
+      if (Number.isNaN(parsedScore) || parsedScore < 0 || parsedScore > 1) {
+        context.reportAttribute(
+          child,
+          'score',
+          'Score must be a numeric value in the range [0.0, 1.0].',
+        );
+      }
     }
   },
 

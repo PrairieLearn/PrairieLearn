@@ -166,7 +166,7 @@ const config: KnipConfig = {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
       entry: [
         'assets/scripts/**/*.{ts,tsx}',
-        'src/ee/lib/element-schemas/htmlmustache-plugin.ts',
+        'src/lib/element-schemas/htmlmustache-plugin.ts',
         'src/{batched-migrations,migrations}/*.{ts,mts}',
         'src/admin_queries/*.ts',
         'src/executor.ts',

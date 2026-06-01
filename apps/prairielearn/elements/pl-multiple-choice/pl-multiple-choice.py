@@ -61,8 +61,8 @@ PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
-SCHEMA_PATH = pathlib.Path(__file__).with_suffix(".schema.json")
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).with_name("pl-answer.schema.json")
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-multiple-choice.json"
+ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
 
 
 def categorize_options(
@@ -77,11 +77,6 @@ def categorize_options(
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
             pl.validate_element(child, ANSWER_SCHEMA_PATH)
-            pl.check_attribs(
-                child,
-                required_attribs=[],
-                optional_attribs=["score", "correct", "feedback"],
-            )
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
@@ -448,12 +443,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
         if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
+                '"all-of-the-above" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.'
             )
         nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
         if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
+                '"none-of-the-above" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.'
             )
         if pl.has_attrib(element, "hide-score-badge"):
             raise ValueError(
