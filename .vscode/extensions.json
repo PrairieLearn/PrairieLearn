@@ -13,7 +13,7 @@
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
-    "reteps.htmlmustache-lsp",
+    "prairielearn.tree-sitter-htmlmustache",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
     "vitest.explorer",
